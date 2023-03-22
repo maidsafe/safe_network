@@ -48,7 +48,7 @@ fn start_node(my_addr: SocketAddr, peers_addrs: BTreeSet<SocketAddr>) {
 }
 
 fn main() {
-    tracing_log::env_logger::init();// TODO fix this later
+    tracing_subscriber::fmt::init();
 
     let (my_addr, peers_addr) = get_config();
 
