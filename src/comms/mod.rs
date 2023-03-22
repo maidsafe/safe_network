@@ -108,7 +108,6 @@ pub struct MsgReceived<T> {
 #[derive(Clone, Debug)]
 pub struct Comm {
     our_endpoint: Endpoint,
-    public_addr: Option<SocketAddr>,
     cmd_sender: Sender<CommCmd>,
 }
 
@@ -118,19 +117,10 @@ impl Comm {
     #[tracing::instrument(skip_all)]
     pub fn new<T: MsgTrait + 'static>(
         local_addr: SocketAddr,
-        mut public_addr: Option<SocketAddr>,
     ) -> Result<(Self, Receiver<CommEvent<T>>)> {
         let (our_endpoint, incoming_conns) = Endpoint::builder()
             .addr(local_addr)
-            .idle_timeout(70_000)
             .server()?;
-
-        // If public port is `0`, we assume it is equal to our local endpoint port.
-        if let Some(ref mut addr) = public_addr {
-            if addr.port() == 0 {
-                addr.set_port(our_endpoint.local_addr().port());
-            }
-        }
 
         trace!("Creating comms..");
         // comm_events_receiver will be used by upper layer to receive all msgs coming in from the network
@@ -148,7 +138,6 @@ impl Comm {
         Ok((
             Self {
                 our_endpoint,
-                public_addr,
                 cmd_sender,
             },
             comm_events_receiver,
@@ -157,10 +146,7 @@ impl Comm {
 
     /// The socket address of our endpoint.
     pub fn socket_addr(&self) -> SocketAddr {
-        match self.public_addr {
-            Some(addr) => addr,
-            None => self.our_endpoint.local_addr(),
-        }
+        self.our_endpoint.local_addr()
     }
 
     /// Closes the endpoint.

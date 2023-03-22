@@ -34,7 +34,7 @@ async fn start_node(my_addr: SocketAddr, peers_addrs: BTreeSet<SocketAddr>) {
         .map(|p| NetworkNode { addr: p })
         .collect();
 
-    let (sender, receiver) = Comm::new::<StableSetMsg>(my_addr, None).expect("Comms Failed");
+    let (sender, receiver) = Comm::new::<StableSetMsg>(my_addr).expect("Comms Failed");
 
     println!("Run stable set with peers {peers:?}");
     run_stable_set(sender, receiver, peers).await
