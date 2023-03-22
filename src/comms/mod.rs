@@ -107,7 +107,7 @@ pub struct MsgReceived<T> {
 /// in the section (otherwise ignoring failed send to out of section nodes or clients).
 #[derive(Clone, Debug)]
 pub struct Comm {
-    our_endpoint: Endpoint,
+    endpoint: Endpoint,
     cmd_sender: Sender<CommCmd>,
 }
 
@@ -118,7 +118,7 @@ impl Comm {
     pub fn new<T: MsgTrait + 'static>(
         local_addr: SocketAddr,
     ) -> Result<(Self, Receiver<CommEvent<T>>)> {
-        let (our_endpoint, incoming_conns) = Endpoint::builder()
+        let (endpoint, incoming_conns) = Endpoint::builder()
             .addr(local_addr)
             .server()?;
 
@@ -133,11 +133,11 @@ impl Comm {
         // listen for msgs/connections to our endpoint
         listener::listen_for_connections(comm_events_sender.clone(), incoming_conns);
 
-        process_cmds(our_endpoint.clone(), cmd_receiver, comm_events_sender);
+        process_cmds(endpoint.clone(), cmd_receiver, comm_events_sender);
 
         Ok((
             Self {
-                our_endpoint,
+                endpoint,
                 cmd_sender,
             },
             comm_events_receiver,
@@ -146,12 +146,12 @@ impl Comm {
 
     /// The socket address of our endpoint.
     pub fn socket_addr(&self) -> SocketAddr {
-        self.our_endpoint.local_addr()
+        self.endpoint.local_addr()
     }
 
     /// Closes the endpoint.
     pub fn close_endpoint(&self) {
-        self.our_endpoint.close()
+        self.endpoint.close()
     }
 
     /// Sets the available targets to be only those in the passed in set.
