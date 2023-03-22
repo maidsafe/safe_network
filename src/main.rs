@@ -5,8 +5,7 @@ use crate::comms::{Comm, NetworkNode};
 use crate::stableset::{run_stable_set, StableSetMsg};
 
 use std::collections::BTreeSet;
-use std::{env, fs, net::SocketAddr, time::Duration};
-use tokio::runtime::Runtime;
+use std::{env, fs, net::SocketAddr};
 
 const PEERS_CONFIG_FILE: &str = "peers.json";
 
@@ -28,29 +27,24 @@ fn get_config() -> (SocketAddr, BTreeSet<SocketAddr>) {
 }
 
 /// start node and no_return unless fatal error
-fn start_node(my_addr: SocketAddr, peers_addrs: BTreeSet<SocketAddr>) {
-    println!("Starting Fresh Runtime for {:?}", my_addr);
-    let rt = Runtime::new().expect("Failed to start Runtime");
+async fn start_node(my_addr: SocketAddr, peers_addrs: BTreeSet<SocketAddr>) {
+    println!("Starting comms for node {my_addr:?}");
     let peers = peers_addrs
         .into_iter()
         .map(|p| NetworkNode { addr: p })
         .collect();
 
-    let _outcome = rt.block_on(async {
-        let (sender, receiver) = Comm::new::<StableSetMsg>(my_addr, None).expect("Comms Failed");
+    let (sender, receiver) = Comm::new::<StableSetMsg>(my_addr, None).expect("Comms Failed");
 
-        println!("Run stable set with peers {peers:?}");
-        run_stable_set(sender, receiver, peers).await
-    });
-
-    println!("Shutting Down Runtime for {}", my_addr);
-    rt.shutdown_timeout(Duration::from_secs(2));
+    println!("Run stable set with peers {peers:?}");
+    run_stable_set(sender, receiver, peers).await
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     tracing_subscriber::fmt::init();
 
     let (my_addr, peers_addr) = get_config();
 
-    start_node(my_addr, peers_addr);
+    start_node(my_addr, peers_addr).await;
 }
