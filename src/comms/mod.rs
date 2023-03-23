@@ -66,7 +66,9 @@ impl<T: MsgTrait> NetworkMsg<T> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(
+    Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
 pub struct NetworkNode {
     /// Network participant address
     pub addr: SocketAddr,

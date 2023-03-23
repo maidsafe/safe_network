@@ -1,66 +1,48 @@
+mod membership;
+mod ping;
+mod stable_set;
 mod stableset_msg;
 
+use membership::Membership;
 pub use stableset_msg::StableSetMsg;
 
-use crate::comms::{Comm, CommEvent, Error, MsgId, NetworkMsg, NetworkNode};
+use crate::{
+    comms::{Comm, CommEvent, NetworkNode},
+    stableset::membership::Elders,
+};
 
 use std::collections::BTreeSet;
 
-type Rx = tokio::sync::mpsc::Receiver<CommEvent<StableSetMsg>>;
+pub type Rx = tokio::sync::mpsc::Receiver<CommEvent<StableSetMsg>>;
 
-async fn ping_all_peers(sender: &Comm, peers: &BTreeSet<NetworkNode>) -> Result<(), Error> {
-    for p in peers {
-        let ping = StableSetMsg::Ping;
-        let msg = NetworkMsg::<StableSetMsg> {
-            id: MsgId::new(),
-            payload: ping,
-        };
-        sender.send_out_bytes(*p, msg.id, msg.to_bytes()?).await;
-    }
-    Ok(())
-}
+/// start stable set and no_return unless fatal error
+pub async fn run_stable_set(
+    sender: Comm,
+    mut receiver: Rx,
+    myself: NetworkNode,
+    peers: BTreeSet<NetworkNode>,
+) {
+    sender.set_comm_targets(peers.clone()).await;
 
-async fn receive(receiver: &mut Rx) -> Result<BTreeSet<NetworkNode>, Error> {
-    let mut pongers = BTreeSet::new();
+    // make sure peers are alive
+    ping::ensure_peers_alive(&sender, &mut receiver, &peers).await;
 
-    if let Some(comm_event) = receiver.recv().await {
+    // start membership with hardcoded peers
+    let hardcoded_network_nodes = peers.into_iter().chain([myself]).collect();
+    let mut membership = Membership::new(&hardcoded_network_nodes);
+
+    // infinite stableset loop
+    while let Some(comm_event) = receiver.recv().await {
         match comm_event {
             CommEvent::Msg(msg) => {
                 let stableset_msg = msg.wire_msg.payload;
                 let sender = NetworkNode { addr: msg.sender };
-                if stableset_msg == StableSetMsg::Ping {
-                    pongers.insert(sender);
-                }
                 println!("Received {stableset_msg:?} from {sender:?}");
+
+                let elders = &membership.elders();
+                membership.on_msg(elders, myself, sender, stableset_msg);
             }
-            CommEvent::Error { node_id: _, error } => return Err(error),
+            CommEvent::Error { node_id: _, error } => println!("Comm Event Error: {error:?}"),
         }
     }
-    Ok(pongers)
-}
-
-/// start stable set and no_return unless fatal error
-pub async fn run_stable_set(sender: Comm, mut receiver: Rx, peers: BTreeSet<NetworkNode>) {
-    let mut alive_peers = BTreeSet::<NetworkNode>::new();
-    let mut not_alive_peers: BTreeSet<NetworkNode> = peers.clone();
-    sender.set_comm_targets(peers).await;
-
-    // ping peers until they all showed up
-    while !not_alive_peers.is_empty() {
-        println!("Pinging peers: {:?}", not_alive_peers);
-        ping_all_peers(&sender, &not_alive_peers)
-            .await
-            .expect("ping failed");
-
-        println!("Checking responses...");
-        let respondants = receive(&mut receiver).await.expect("pong failed");
-        alive_peers.extend(respondants.clone());
-
-        for r in respondants {
-            not_alive_peers.remove(&r);
-        }
-    }
-
-    println!("Everyone is alive! {:?}", alive_peers);
-    loop {}
 }
