@@ -118,16 +118,14 @@ impl Comm {
     pub fn new<T: MsgTrait + 'static>(
         local_addr: SocketAddr,
     ) -> Result<(Self, Receiver<CommEvent<T>>)> {
-        let (our_endpoint, incoming_conns) = Endpoint::builder()
-            .addr(local_addr)
-            .server()?;
+        let (our_endpoint, incoming_conns) = Endpoint::builder().addr(local_addr).server()?;
 
         trace!("Creating comms..");
         // comm_events_receiver will be used by upper layer to receive all msgs coming in from the network
         // capacity of one as we limit w/ how many cmds we process in the upper layers.
         // any higher and we're not feeding back directly to incoming msgs...
         // (we may want some buffer here?)
-        let (comm_events_sender, comm_events_receiver) = mpsc::channel(1);
+        let (comm_events_sender, comm_events_receiver) = mpsc::channel(STANDARD_CHANNEL_SIZE);
         let (cmd_sender, cmd_receiver) = mpsc::channel(STANDARD_CHANNEL_SIZE);
 
         // listen for msgs/connections to our endpoint
@@ -155,36 +153,44 @@ impl Comm {
     }
 
     /// Sets the available targets to be only those in the passed in set.
-    pub fn set_comm_targets(&self, targets: BTreeSet<NetworkNode>) {
+    pub async fn set_comm_targets(&self, targets: BTreeSet<NetworkNode>) {
+        println!("Setting targets toooo: {targets:?}");
         // We only remove links by calling this function,
         // No removals are made even if we failed to send using all node link's connections,
         // as it's our source of truth for known and connectable nodes.
-        self.send_cmd(CommCmd::SetTargets(targets))
+        self.send_cmd(CommCmd::SetTargets(targets)).await;
     }
 
     /// Sends the payload on a new or existing connection.
     #[tracing::instrument(skip(self, bytes))]
-    pub fn send_out_bytes(&self, node_id: NetworkNode, msg_id: MsgId, bytes: Bytes) {
+    pub async fn send_out_bytes(&self, node_id: NetworkNode, msg_id: MsgId, bytes: Bytes) {
         self.send_cmd(CommCmd::Send {
             msg_id,
             node_id,
             bytes,
         })
+        .await;
     }
 
     /// Sends the payload on a new bidi-stream and pushes the response onto the comm event channel.
     #[tracing::instrument(skip(self, bytes))]
-    pub fn send_and_return_response(&self, node_id: NetworkNode, msg_id: MsgId, bytes: Bytes) {
+    pub async fn send_and_return_response(
+        &self,
+        node_id: NetworkNode,
+        msg_id: MsgId,
+        bytes: Bytes,
+    ) {
         self.send_cmd(CommCmd::SendAndReturnResponse {
             msg_id,
             node_id,
             bytes,
         })
+        .await;
     }
 
     /// Sends the payload on new bidi-stream to noe and sends the response on the dst stream.
     #[tracing::instrument(skip(self, node_bytes))]
-    pub fn send_and_respond_on_stream(
+    pub async fn send_and_respond_on_stream(
         &self,
         msg_id: MsgId,
         node_bytes: BTreeMap<NetworkNode, Bytes>,
@@ -197,16 +203,15 @@ impl Comm {
             expected_targets,
             dst_stream,
         })
+        .await;
     }
 
-    fn send_cmd(&self, cmd: CommCmd) {
+    async fn send_cmd(&self, cmd: CommCmd) {
         let sender = self.cmd_sender.clone();
-        let _handle = task::spawn(async move {
-            let error_msg = format!("Failed to send {cmd:?} on comm cmd channel ");
-            if let Err(error) = sender.send(cmd).await {
-                error!("{error_msg} due to {error}.");
-            }
-        });
+        let error_msg = format!("Failed to send {cmd:?} on comm cmd channel ");
+        if let Err(error) = sender.send(cmd).await {
+            error!("{error_msg} due to {error}.");
+        }
     }
 }
 
@@ -253,6 +258,8 @@ fn process_cmds<T: MsgTrait + 'static>(
                     targets.iter().for_each(|node_id| {
                         if links.get(node_id).is_none() {
                             let link = NodeLink::new(*node_id, our_endpoint.clone());
+
+                            println!("inserting link to {node_id:?}");
                             let _ = links.insert(*node_id, link);
                         }
                     });
@@ -262,10 +269,6 @@ fn process_cmds<T: MsgTrait + 'static>(
                     node_id,
                     bytes,
                 } => {
-                    // add sender to targets (TODO check if thats ok)
-                    let link = NodeLink::new(node_id, our_endpoint.clone());
-                    let _ = links.insert(node_id, link);
-
                     if let Some(link) = get_link(msg_id, node_id, &links, comm_events.clone()) {
                         send(msg_id, link, bytes, comm_events.clone())
                     }
@@ -312,12 +315,17 @@ fn get_link<T: MsgTrait + 'static>(
     links: &BTreeMap<NetworkNode, NodeLink>,
     comm_events: Sender<CommEvent<T>>,
 ) -> Option<NodeLink> {
+    debug!("Links len: {:?}", links.len());
     debug!("Trying to get {node_id:?} link in order to send: {msg_id:?}");
     match links.get(&node_id) {
         Some(link) => Some(link.clone()),
         None => {
             error!("Sending message (msg_id: {msg_id:?}) to {node_id:?} failed: unknown node.");
-            send_error(node_id, Error::ConnectingToUnknownNode(node_id), comm_events);
+            send_error(
+                node_id,
+                Error::ConnectingToUnknownNode(node_id),
+                comm_events,
+            );
             None
         }
     }
@@ -485,7 +493,7 @@ async fn send_on_stream(msg_id: MsgId, bytes: Bytes, mut stream: SendStream) {
     }
 }
 
-fn error_response<T: MsgTrait>(dst: NetworkNode) -> Option<Bytes> {
+fn error_response<T: MsgTrait>(_dst: NetworkNode) -> Option<Bytes> {
     let wire_msg = NetworkMsg::<T>::error_msg();
     wire_msg.to_bytes().ok()
 }

@@ -15,7 +15,7 @@ async fn ping_all_peers(sender: &Comm, peers: &BTreeSet<NetworkNode>) -> Result<
             id: MsgId::new(),
             payload: ping,
         };
-        sender.send_out_bytes(*p, msg.id, msg.to_bytes()?);
+        sender.send_out_bytes(*p, msg.id, msg.to_bytes()?).await;
     }
     Ok(())
 }
@@ -43,6 +43,7 @@ async fn receive(receiver: &mut Rx) -> Result<BTreeSet<NetworkNode>, Error> {
 pub async fn run_stable_set(sender: Comm, mut receiver: Rx, peers: BTreeSet<NetworkNode>) {
     let mut alive_peers = BTreeSet::<NetworkNode>::new();
     let mut not_alive_peers: BTreeSet<NetworkNode> = peers.clone();
+    sender.set_comm_targets(peers).await;
 
     // ping peers until they all showed up
     while !not_alive_peers.is_empty() {

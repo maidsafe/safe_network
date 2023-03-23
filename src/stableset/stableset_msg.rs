@@ -1,6 +1,4 @@
-use std::collections::BTreeSet;
-
-use crate::comms::{Comm, CommEvent, Error, MsgId, MsgTrait, NetworkMsg, NetworkNode};
+use crate::comms::MsgTrait;
 
 use serde::{Deserialize, Serialize};
 

@@ -1,0 +1,12 @@
+arr=( $(jq -r '.[]' peers.json) )
+
+for peer in ${arr[@]}
+do
+    echo Starting $peer...
+    printf "#! /bin/sh -\n
+    cd `pwd`\n
+    NODE_ADDR=\"$peer\" cargo run\n
+    " > /tmp/$peer.command
+    chmod +x /tmp/$peer.command
+    open /tmp/$peer.command
+done
