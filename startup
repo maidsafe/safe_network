@@ -5,7 +5,7 @@ do
     echo Starting $peer...
     printf "#! /bin/sh -\n
     cd `pwd`\n
-    NODE_ADDR=\"$peer\" cargo run --bin safenode
+    cargo run --bin safenode -- \"$peer\"
     " > /tmp/$peer.command
     chmod +x /tmp/$peer.command
     open /tmp/$peer.command
