@@ -2,14 +2,15 @@ use safenode::comms::{Comm, NetworkNode};
 use safenode::stableset::{run_stable_set, StableSetMsg};
 
 use std::collections::BTreeSet;
+use std::path::Path;
 use std::{env, fs, net::SocketAddr};
 
 const PEERS_CONFIG_FILE: &str = "peers.json";
 
 /// Read my addr from env var and peers addr from config file
-fn get_config() -> BTreeSet<SocketAddr> {
+fn peers_from_json(path: impl AsRef<Path>) -> BTreeSet<SocketAddr> {
     let peers_json =
-        fs::read_to_string(PEERS_CONFIG_FILE).expect("Unable to read peers config file");
+        fs::read_to_string(path).expect("Unable to read peers config file");
     let peers_ip_str: Vec<String> =
         serde_json::from_str(&peers_json).expect("Unable to parse peers config file");
     let peers_addr: BTreeSet<SocketAddr> = peers_ip_str
@@ -49,7 +50,7 @@ async fn main() {
         args[1].parse().expect("Unable to parse socket address")
     };
 
-    let mut peers_addr = get_config();
+    let mut peers_addr = peers_from_json(PEERS_CONFIG_FILE);
     peers_addr.remove(&my_addr); // Remove our own address from our network list.
 
     start_node(my_addr, peers_addr).await;
