@@ -60,6 +60,14 @@ impl Membership {
         self.stable_set.members()
     }
 
+    pub(crate) fn members_from_our_pov(&self) -> BTreeSet<Member> {
+        let mut members = self.stable_set.members();
+
+        members.extend(self.stable_set.joining());
+
+        members
+    }
+
     pub(crate) fn elders(&self) -> Elders {
         BTreeSet::from_iter(self.members().into_iter().take(ELDER_COUNT).map(|m| m.id))
     }
@@ -114,7 +122,8 @@ impl Membership {
         additional_members_to_sync
     }
 
-    pub(crate) fn on_msg_sync_nodes(
+    /// Handles msg, returns any nodes needing a sync afterwards
+    pub(crate) fn on_msg_return_nodes_to_sync(
         &mut self,
         elders: &BTreeSet<NetworkNode>,
         id: NetworkNode,
@@ -124,6 +133,11 @@ impl Membership {
         debug!("Handling {msg:?}");
         let mut additional_members_to_sync = BTreeSet::new();
         match msg {
+            StableSetMsg::Sync(stable_set) => {
+                // TODO: stuff on sync...
+                self.merge(stable_set, id, src);
+                debug!("Nothing yet happening on sync");
+            }
             StableSetMsg::Ping | StableSetMsg::Pong => {
                 trace!("Nothing to do with ping/pong");
             }
@@ -163,10 +177,6 @@ impl Membership {
                     additional_members_to_sync.insert(m_id);
                     additional_members_to_sync.extend(elders);
                 }
-            }
-            StableSetMsg::Sync(stable_set) => {
-                // TODO: stuff on sync...
-                debug!("Nothing yet happening on sync");
             }
         }
         additional_members_to_sync

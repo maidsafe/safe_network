@@ -53,18 +53,19 @@ pub async fn run_stable_set(
 
                 let elders = &membership.elders();
                 let members_to_sync =
-                    membership.on_msg_sync_nodes(elders, myself, sender, stableset_msg);
+                    membership.on_msg_return_nodes_to_sync(elders, myself, sender, stableset_msg);
 
-                debug!("These members should get synced now: {members_to_sync:?}");
-
-                // TODO: broadcast
-                let mut stable_set_members = membership
-                    .stable_set
-                    .members()
+                let valid_section_targets = membership
+                    .members_from_our_pov()
                     .iter()
                     .map(|n| n.id)
                     .collect();
-                let sync_msg = StableSetMsg::Sync(stable_set_members);
+                comm.set_comm_targets(valid_section_targets).await;
+                debug!("These members should get synced now: {members_to_sync:?}");
+
+                // TODO: broadcast
+                let mut current_stable_set = membership.stable_set.clone();
+                let sync_msg = StableSetMsg::Sync(current_stable_set);
 
                 let msg = NetworkMsg::<StableSetMsg> {
                     id: MsgId::new(),
@@ -74,8 +75,11 @@ pub async fn run_stable_set(
                 for member in members_to_sync {
                     // TODO: if we have repsonse stream, use that..?
                     debug!("Syncing {member:?}");
-                    comm.send_msg(member, msg.id, msg.to_bytes()?);
+                    comm.send_msg(member, msg.id, msg.to_bytes()?).await;
                 }
+
+                // only drop the stream here...?
+                drop(stream);
             }
             CommEvent::Error { node_id: _, error } => info!("Comm Event Error: {error:?}"),
         }

@@ -26,7 +26,7 @@ impl Debug for Member {
 #[derive(
     Clone, Eq, Hash, PartialEq, PartialOrd, Ord, Default, serde::Serialize, serde::Deserialize,
 )]
-pub(crate) struct StableSet {
+pub struct StableSet {
     members: BTreeSet<Member>,
     // dead: BTreeSet<Id>,
     pub(crate) joining_members: BTreeMap<Member, BTreeSet<NetworkNode>>,

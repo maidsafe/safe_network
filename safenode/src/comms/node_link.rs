@@ -151,7 +151,7 @@ impl NodeLink {
             match recv_stream.read().await {
                 Ok((_sn, _bytes, response)) => break Ok(response),
                 Err(err) => {
-                    error!("Error receiving response to {msg_id:?} from {node:?} over {stream_id}: {err:?}");
+                    warn!("Issue receiving response to {msg_id:?} from {node:?} over {stream_id}: {err:?}");
                     let _conn = self.connections.remove(&conn_id);
                     if is_last_attempt {
                         break Err(NodeLinkError::Recv(err));
