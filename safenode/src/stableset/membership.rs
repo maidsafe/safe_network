@@ -114,7 +114,7 @@ impl Membership {
         additional_members_to_sync
     }
 
-    pub(crate) fn on_msg(
+    pub(crate) fn on_msg_sync_nodes(
         &mut self,
         elders: &BTreeSet<NetworkNode>,
         id: NetworkNode,
@@ -163,6 +163,10 @@ impl Membership {
                     additional_members_to_sync.insert(m_id);
                     additional_members_to_sync.extend(elders);
                 }
+            }
+            StableSetMsg::Sync(stable_set) => {
+                // TODO: stuff on sync...
+                debug!("Nothing yet happening on sync");
             }
         }
         additional_members_to_sync

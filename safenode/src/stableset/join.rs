@@ -15,9 +15,7 @@ pub(crate) async fn send_join_msg_to_peers(
             id: MsgId::new(),
             payload: join,
         };
-        sender
-            .send_and_return_response(*p, msg.id, msg.to_bytes()?)
-            .await;
+        sender.send_msg(*p, msg.id, msg.to_bytes()?).await;
     }
     Ok(())
 }

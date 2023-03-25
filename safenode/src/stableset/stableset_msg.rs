@@ -1,4 +1,6 @@
-use super::stable_set::Member;
+use std::collections::BTreeSet;
+
+use super::stable_set::{Member, StableSet};
 use crate::comms::{MsgTrait, NetworkNode};
 
 use serde::{Deserialize, Serialize};
@@ -11,6 +13,7 @@ pub enum StableSetMsg {
     ReqJoin(NetworkNode),
     ReqLeave(NetworkNode),
     JoinShare(Member),
+    Sync(BTreeSet<NetworkNode>),
 }
 
 impl MsgTrait for StableSetMsg {}

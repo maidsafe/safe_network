@@ -7,11 +7,11 @@ use membership::Membership;
 pub use stableset_msg::StableSetMsg;
 
 use crate::{
-    comms::{Comm, CommEvent, NetworkNode},
+    comms::{Comm, CommEvent, MsgId, NetworkMsg, NetworkNode},
     error::Result,
 };
 
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, mem};
 
 pub type Rx = tokio::sync::mpsc::Receiver<CommEvent<StableSetMsg>>;
 
@@ -38,12 +38,44 @@ pub async fn run_stable_set(
     while let Some(comm_event) = receiver.recv().await {
         match comm_event {
             CommEvent::Msg(msg) => {
+                let response_stream = &msg.send_stream;
+
+                // TODO: move this check into comms, we would respond here for AE etc
+                let Some(stream) = response_stream else {
+                    warn!("No response stream provided. Dropping msg: {:?}", msg);
+                    continue;
+                };
+
                 let stableset_msg = msg.wire_msg.payload;
                 let sender = NetworkNode { addr: msg.sender };
+
                 info!("Received {stableset_msg:?} from {sender:?}");
 
                 let elders = &membership.elders();
-                membership.on_msg(elders, myself, sender, stableset_msg);
+                let members_to_sync =
+                    membership.on_msg_sync_nodes(elders, myself, sender, stableset_msg);
+
+                debug!("These members should get synced now: {members_to_sync:?}");
+
+                // TODO: broadcast
+                let mut stable_set_members = membership
+                    .stable_set
+                    .members()
+                    .iter()
+                    .map(|n| n.id)
+                    .collect();
+                let sync_msg = StableSetMsg::Sync(stable_set_members);
+
+                let msg = NetworkMsg::<StableSetMsg> {
+                    id: MsgId::new(),
+                    payload: sync_msg,
+                };
+
+                for member in members_to_sync {
+                    // TODO: if we have repsonse stream, use that..?
+                    debug!("Syncing {member:?}");
+                    comm.send_msg(member, msg.id, msg.to_bytes()?);
+                }
             }
             CommEvent::Error { node_id: _, error } => info!("Comm Event Error: {error:?}"),
         }
