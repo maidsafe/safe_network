@@ -18,7 +18,7 @@ pub const DEFAULT_NODE_LAUNCH_INTERVAL: u64 = 1000;
 pub const SAFENODE_BIN_NAME: &str = "safenode";
 #[cfg(target_os = "windows")]
 pub const SAFENODE_BIN_NAME: &str = "safenode.exe";
-const GENESIS_NODE_DIR_NAME: &str = "safenode-genesis";
+const GENESIS_NODE_DIR_NAME: &str = "safenode-1";
 const TESTNET_DIR_NAME: &str = "local-test-network";
 
 /// This trait exists for unit testing.
@@ -215,13 +215,9 @@ impl Testnet {
 
         let address = address.unwrap_or("127.0.0.1:12000".parse()?);
         // info!("Launching genesis node using address {address}...");
-        let launch_args = self.get_launch_args(
-            "safenode-genesis".to_string(),
-            Some(address),
-            None,
-            node_args,
-        )?;
-        let node_data_dir_path = self.nodes_dir_path.join("safenode-genesis");
+        let launch_args =
+            self.get_launch_args("safenode-1".to_string(), Some(address), None, node_args)?;
+        let node_data_dir_path = self.nodes_dir_path.join("safenode-1");
         std::fs::create_dir_all(node_data_dir_path)?;
 
         let launch_bin = self.get_launch_bin();
@@ -253,7 +249,7 @@ impl Testnet {
         network_contacts_path: &Path,
         node_args: Vec<String>,
     ) -> Result<()> {
-        let start = self.node_count + 1;
+        let start = self.node_count + 2;
         let end = self.node_count + number_of_nodes;
         for i in start..=end {
             info!("Launching node {i} of {end}...");
@@ -333,7 +329,7 @@ impl Testnet {
             launch_args.push("--".to_string());
         }
 
-        if node_name == "safenode-genesis" {
+        if node_name == "safenode-1" {
             let address =
                 address.ok_or_else(|| eyre!("An address must be present for the genesis node"))?;
             launch_args.push("--first".to_string());
@@ -411,7 +407,7 @@ mod test {
     {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
-        let genesis_data_dir = nodes_dir.child("safenode-genesis");
+        let genesis_data_dir = nodes_dir.child("safenode-1");
         genesis_data_dir.create_dir_all()?;
         for i in 1..=20 {
             let node_dir = nodes_dir.child(format!("safenode-{i}"));
@@ -442,7 +438,7 @@ mod test {
     {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
-        let genesis_data_dir = nodes_dir.child("safenode-genesis");
+        let genesis_data_dir = nodes_dir.child("safenode-1");
         genesis_data_dir.create_dir_all()?;
         for i in 1..=20 {
             let node_dir = nodes_dir.child(format!("safenode-{i}"));

@@ -10,7 +10,10 @@ use tokio::io::AsyncWriteExt;
 
 use std::path::Path;
 use std::{collections::BTreeSet, path::PathBuf};
-use std::{fs, net::SocketAddr};
+use std::{
+    fs,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+};
 use tokio::fs::File;
 
 #[macro_use]
@@ -52,7 +55,17 @@ async fn start_node(peers_addrs: BTreeSet<SocketAddr>) -> Result<()> {
 
     let (comm, comm_event_receiver) = Comm::new::<StableSetMsg>().expect("Comms Failed");
 
-    let my_addr = comm.socket_addr();
+    let my_addr = {
+        let addr = comm.socket_addr();
+        // convert 0.0.0.0 -> 127.0.0.1.
+        // i'm not sure why its pulling in 0000...
+        if addr.ip() == IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)) {
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), addr.port())
+        } else {
+            addr
+        }
+    };
+
     let myself = NetworkNode { addr: my_addr };
 
     if is_first_node {

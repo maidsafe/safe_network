@@ -5,11 +5,7 @@ use std::path::PathBuf;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::{Event, Subscriber};
 use tracing_subscriber::{
-    filter::Targets,
-    fmt as tracing_fmt,
-    layer::Filter,
-    prelude::*,
-    Layer, Registry,
+    filter::Targets, fmt as tracing_fmt, layer::Filter, prelude::*, Layer, Registry,
 };
 use tracing_subscriber::{
     fmt::{
