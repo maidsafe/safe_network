@@ -179,6 +179,11 @@ impl Membership {
                 }
             }
         }
+
+        info!(
+            "Current confirmed StableSet length is : {:?}",
+            self.stable_set.members().len()
+        );
         additional_members_to_sync
     }
 
