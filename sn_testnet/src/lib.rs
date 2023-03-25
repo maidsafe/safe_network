@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tracing::{debug, info};
 
-pub const DEFAULT_NODE_LAUNCH_INTERVAL: u64 = 5000;
+pub const DEFAULT_NODE_LAUNCH_INTERVAL: u64 = 1000;
 #[cfg(not(target_os = "windows"))]
 pub const SAFENODE_BIN_NAME: &str = "safenode";
 #[cfg(target_os = "windows")]
@@ -34,7 +34,7 @@ pub trait NodeLauncher {
 pub struct SafeNodeLauncher {}
 impl NodeLauncher for SafeNodeLauncher {
     fn launch(&self, node_bin_path: &Path, args: Vec<String>) -> Result<()> {
-        debug!("Running {:#?} with {:#?}", node_bin_path, args);
+        debug!("Running {:#?} with args: {:#?}", node_bin_path, args);
         Command::new(node_bin_path)
             .args(args)
             .stdout(Stdio::inherit())
@@ -204,8 +204,8 @@ impl Testnet {
     /// * The network has already been launched previously
     pub fn launch_genesis(
         &self,
-        _address: Option<SocketAddr>,
-        _node_args: Vec<String>,
+        address: Option<SocketAddr>,
+        node_args: Vec<String>,
     ) -> Result<()> {
         if self.node_count != 0 {
             return Err(eyre!(
@@ -213,15 +213,14 @@ impl Testnet {
             ));
         }
 
-        // let _address = address.unwrap_or("127.0.0.1:12000".parse()?);
+        let address = address.unwrap_or("127.0.0.1:12000".parse()?);
         // info!("Launching genesis node using address {address}...");
-        let launch_args = vec![];
-        // self.get_launch_args(
-        //     "safenode-genesis".to_string(),
-        //     Some(address),
-        //     None,
-        //     node_args,
-        // )?;
+        let launch_args = self.get_launch_args(
+            "safenode-genesis".to_string(),
+            Some(address),
+            None,
+            node_args,
+        )?;
         let node_data_dir_path = self.nodes_dir_path.join("safenode-genesis");
         std::fs::create_dir_all(node_data_dir_path)?;
 
@@ -300,12 +299,12 @@ impl Testnet {
             .ok_or_else(|| eyre!("Could not obtain user's home directory".to_string()))?
             .join(".safe")
             .join("network_contacts");
-        info!(
-            "Copying network contacts file to {}",
-            network_contacts_dir.display()
-        );
-        std::fs::create_dir_all(&network_contacts_dir)?;
-        let _ = std::fs::copy(network_contacts_path, network_contacts_dir.join("default"))?;
+        // info!(
+        //     "Copying network contacts file to {}",
+        //     network_contacts_dir.display()
+        // );
+        // std::fs::create_dir_all(&network_contacts_dir)?;
+        // let _ = std::fs::copy(network_contacts_path, network_contacts_dir.join("default"))?;
         Ok(())
     }
 
@@ -358,8 +357,8 @@ impl Testnet {
             .to_str()
             .ok_or_else(|| eyre!("Unable to obtain node data directory path"))?
             .to_string();
-        launch_args.push("--root-dir".to_string());
-        launch_args.push(node_data_dir_path.to_string());
+        // launch_args.push("--root-dir".to_string());
+        // launch_args.push(node_data_dir_path.to_string());
         launch_args.push("--log-dir".to_string());
         launch_args.push(node_data_dir_path);
         launch_args.extend(node_args);

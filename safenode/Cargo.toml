@@ -23,3 +23,6 @@ thiserror = "1.0.23"
 tokio = { version = "1.17.0", features = ["fs", "io-util", "macros", "rt", "sync", "parking_lot", "rt-multi-thread"] }
 tracing = { version = "~0.1.26" }
 tracing-subscriber = "0.3.16"
+tracing-appender = "~0.2.0"
+tracing-core = "0.1.30"
+file-rotate = "0.7.3"

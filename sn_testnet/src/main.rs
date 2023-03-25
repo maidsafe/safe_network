@@ -42,7 +42,7 @@ use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
 
 const BASE_TRACING_DIRECTIVES: &str = "sn_testnet=debug";
-const DEFAULT_NODE_COUNT: u32 = 30;
+const DEFAULT_NODE_COUNT: u32 = 5;
 
 #[derive(Debug, clap::StructOpt)]
 #[clap(name = "testnet", version)]

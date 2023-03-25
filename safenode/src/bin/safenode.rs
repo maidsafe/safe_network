@@ -1,3 +1,6 @@
+mod log;
+
+use log::init_node_logging;
 use safenode::{
     comms::{Comm, NetworkNode},
     error::Result,
@@ -5,8 +8,8 @@ use safenode::{
 };
 use tokio::io::AsyncWriteExt;
 
-use std::collections::BTreeSet;
 use std::path::Path;
+use std::{collections::BTreeSet, path::PathBuf};
 use std::{fs, net::SocketAddr};
 use tokio::fs::File;
 
@@ -68,9 +71,35 @@ async fn start_node(peers_addrs: BTreeSet<SocketAddr>) -> Result<()> {
     run_stable_set(comm, comm_event_receiver, myself, peers).await
 }
 
+/// Grabs the log dir arg if passed in
+fn grab_log_dir() -> Option<PathBuf> {
+    let mut args = std::env::args().skip(1); // Skip the first argument (the program name)
+
+    let mut log_dir = None;
+
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--log-dir" => {
+                log_dir = args.next();
+            }
+            _ => {
+                println!("Unknown argument: {}", arg);
+            }
+        }
+    }
+
+    if let Some(log_dir) = log_dir {
+        Some(PathBuf::from(log_dir))
+    } else {
+        None
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
+    // tracing_subscriber::fmt::init();
+    let log_dir = grab_log_dir();
+    let _log_appender_guard = init_node_logging(&log_dir)?;
 
     let peers_addr = peers_from_json(PEERS_CONFIG_FILE)?;
 
