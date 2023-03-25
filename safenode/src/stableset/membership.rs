@@ -121,9 +121,12 @@ impl Membership {
         src: NetworkNode,
         msg: StableSetMsg,
     ) -> BTreeSet<NetworkNode> {
+        debug!("Handling {msg:?}");
         let mut additional_members_to_sync = BTreeSet::new();
         match msg {
-            StableSetMsg::Ping | StableSetMsg::Pong => {}
+            StableSetMsg::Ping | StableSetMsg::Pong => {
+                trace!("Nothing to do with ping/pong");
+            }
             StableSetMsg::ReqJoin(candidate_id) => {
                 if self.stable_set.member_by_id(candidate_id).is_none() && elders.contains(&id) {
                     let latest_ord_idx = self

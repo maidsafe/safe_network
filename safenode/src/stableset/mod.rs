@@ -1,5 +1,5 @@
+mod join;
 mod membership;
-mod ping;
 mod stable_set;
 mod stableset_msg;
 
@@ -24,8 +24,11 @@ pub async fn run_stable_set(
 ) -> Result<()> {
     comm.set_comm_targets(peers.clone()).await;
 
-    // make sure peers are alive
-    ping::ensure_peers_alive(&comm, &mut receiver, &peers).await;
+    // if we're not the first node
+    if !peers.is_empty() {
+        // Join the network
+        join::send_join_msg_to_peers(&comm, myself, &peers).await?;
+    }
 
     // start membership with hardcoded peers
     let hardcoded_network_nodes = peers.into_iter().chain([myself]).collect();
