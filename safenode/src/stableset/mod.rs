@@ -8,6 +8,7 @@ pub use stableset_msg::StableSetMsg;
 
 use crate::{
     comms::{Comm, CommEvent, NetworkNode},
+    error::Result,
     stableset::membership::Elders,
 };
 
@@ -17,15 +18,15 @@ pub type Rx = tokio::sync::mpsc::Receiver<CommEvent<StableSetMsg>>;
 
 /// start stable set and no_return unless fatal error
 pub async fn run_stable_set(
-    sender: Comm,
+    comm: Comm,
     mut receiver: Rx,
     myself: NetworkNode,
     peers: BTreeSet<NetworkNode>,
-) {
-    sender.set_comm_targets(peers.clone()).await;
+) -> Result<()> {
+    comm.set_comm_targets(peers.clone()).await;
 
     // make sure peers are alive
-    ping::ensure_peers_alive(&sender, &mut receiver, &peers).await;
+    ping::ensure_peers_alive(&comm, &mut receiver, &peers).await;
 
     // start membership with hardcoded peers
     let hardcoded_network_nodes = peers.into_iter().chain([myself]).collect();
@@ -37,12 +38,14 @@ pub async fn run_stable_set(
             CommEvent::Msg(msg) => {
                 let stableset_msg = msg.wire_msg.payload;
                 let sender = NetworkNode { addr: msg.sender };
-                println!("Received {stableset_msg:?} from {sender:?}");
+                info!("Received {stableset_msg:?} from {sender:?}");
 
                 let elders = &membership.elders();
                 membership.on_msg(elders, myself, sender, stableset_msg);
             }
-            CommEvent::Error { node_id: _, error } => println!("Comm Event Error: {error:?}"),
+            CommEvent::Error { node_id: _, error } => info!("Comm Event Error: {error:?}"),
         }
     }
+
+    Ok(())
 }

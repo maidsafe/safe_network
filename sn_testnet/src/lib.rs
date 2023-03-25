@@ -205,7 +205,7 @@ impl Testnet {
     pub fn launch_genesis(
         &self,
         address: Option<SocketAddr>,
-        node_args: Vec<String>,
+        _node_args: Vec<String>,
     ) -> Result<()> {
         if self.node_count != 0 {
             return Err(eyre!(
@@ -213,14 +213,15 @@ impl Testnet {
             ));
         }
 
-        let address = address.unwrap_or("127.0.0.1:12000".parse()?);
-        info!("Launching genesis node using address {address}...");
-        let launch_args = self.get_launch_args(
-            "safenode-genesis".to_string(),
-            Some(address),
-            None,
-            node_args,
-        )?;
+        // let _address = address.unwrap_or("127.0.0.1:12000".parse()?);
+        // info!("Launching genesis node using address {address}...");
+        let launch_args = vec![];
+        // self.get_launch_args(
+        //     "safenode-genesis".to_string(),
+        //     Some(address),
+        //     None,
+        //     node_args,
+        // )?;
         let node_data_dir_path = self.nodes_dir_path.join("safenode-genesis");
         std::fs::create_dir_all(node_data_dir_path)?;
 

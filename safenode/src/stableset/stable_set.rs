@@ -17,7 +17,7 @@ pub struct Member {
     pub id: NetworkNode,
 }
 
-impl std::fmt::Debug for Member {
+impl Debug for Member {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}:{:?}", self.ord_idx, self.id)
     }

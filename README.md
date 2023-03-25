@@ -3,8 +3,8 @@
 ## Running it
 
 ```bash
-# provide the wished address for the node in NODE_ADDR
-NODE_ADDR="127.0.0.1:8084" cargo run
+killall safenode || true && rm ./peers.json || true && cargo run --bin testnet -- -b --interval 100
 ```
 
-Nodes find their peers in the `peers.json` file.
+Nodes find their peers in the `peers.json` file. If this doesnt exist, the first node to start will write their ip there. 
+Every node usees a random port, and should eventually discover all ndoes.

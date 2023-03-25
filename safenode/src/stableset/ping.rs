@@ -27,7 +27,7 @@ async fn receive_ping(receiver: &mut Rx) -> Result<BTreeSet<NetworkNode>, Error>
                 if stableset_msg == StableSetMsg::Ping {
                     pongers.insert(sender);
                 }
-                println!("Received {stableset_msg:?} from {sender:?}");
+                debug!("Received {stableset_msg:?} from {sender:?}");
             }
             CommEvent::Error { node_id: _, error } => return Err(error),
         }
@@ -46,12 +46,12 @@ pub(crate) async fn ensure_peers_alive(
 
     // ping peers until they all showed up
     while !not_alive_peers.is_empty() {
-        println!("Pinging peers: {:?}", not_alive_peers);
+        debug!("Pinging peers: {:?}", not_alive_peers);
         ping_all_peers(&sender, &not_alive_peers)
             .await
             .expect("ping failed");
 
-        println!("Checking responses...");
+        debug!("Checking responses...");
         let respondants = receive_ping(receiver).await.expect("pong failed");
         alive_peers.extend(respondants.clone());
 
@@ -60,5 +60,5 @@ pub(crate) async fn ensure_peers_alive(
         }
     }
 
-    println!("Everyone is alive! {:?}", alive_peers);
+    debug!("Everyone is alive! {:?}", alive_peers);
 }

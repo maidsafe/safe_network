@@ -1,57 +1,80 @@
-use safenode::comms::{Comm, NetworkNode};
-use safenode::stableset::{run_stable_set, StableSetMsg};
+use safenode::{
+    comms::{Comm, NetworkNode},
+    error::Result,
+    stableset::{run_stable_set, StableSetMsg},
+};
+use tokio::io::AsyncWriteExt;
 
 use std::collections::BTreeSet;
 use std::path::Path;
-use std::{env, fs, net::SocketAddr};
+use std::{fs, net::SocketAddr};
+use tokio::fs::File;
+
+#[macro_use]
+extern crate tracing;
 
 const PEERS_CONFIG_FILE: &str = "peers.json";
 
 /// Read my addr from env var and peers addr from config file
-fn peers_from_json(path: impl AsRef<Path>) -> BTreeSet<SocketAddr> {
-    let peers_json =
-        fs::read_to_string(path).expect("Unable to read peers config file");
-    let peers_ip_str: Vec<String> =
-        serde_json::from_str(&peers_json).expect("Unable to parse peers config file");
+fn peers_from_json(path: impl AsRef<Path>) -> Result<BTreeSet<SocketAddr>> {
+    let peers_json = match fs::read_to_string(path) {
+        Ok(peers_string) => peers_string,
+        Err(error) => {
+            warn!("Reading json file: {error:?}, using empty peers");
+            return Ok(BTreeSet::default());
+        }
+    };
+    let peers_ip_str: Vec<String> = serde_json::from_str(&peers_json)?;
     let peers_addr: BTreeSet<SocketAddr> = peers_ip_str
         .iter()
         .map(|p| p.parse().expect("Unable to parse socket address"))
         .collect();
-    println!("Read Peers from config: {:?}", peers_addr);
-    peers_addr
+    info!("Read Peers from config: {:?}", peers_addr);
+    Ok(peers_addr)
 }
 
 /// start node and no_return unless fatal error
-async fn start_node(my_addr: SocketAddr, peers_addrs: BTreeSet<SocketAddr>) {
-    println!("Starting comms for node {my_addr:?}");
-    let peers = peers_addrs
+/// chooses a random port for the node
+/// if no peers are supplied, assumes we are starting a fresh network
+///
+/// TODO: proper error handling here
+async fn start_node(peers_addrs: BTreeSet<SocketAddr>) -> Result<()> {
+    info!("Starting a new node");
+    let peers: BTreeSet<_> = peers_addrs
         .into_iter()
         .map(|p| NetworkNode { addr: p })
         .collect();
 
-    let (sender, receiver) = Comm::new::<StableSetMsg>(my_addr).expect("Comms Failed");
+    let is_first_node = peers.is_empty();
+
+    let (comm, comm_event_receiver) = Comm::new::<StableSetMsg>().expect("Comms Failed");
+
+    let my_addr = comm.socket_addr();
     let myself = NetworkNode { addr: my_addr };
 
-    println!("Run stable set with peers {peers:?}");
-    run_stable_set(sender, receiver, myself, peers).await
+    if is_first_node {
+        info!("Starting as the genesis node");
+
+        let our_config_file = vec![my_addr];
+        let json = serde_json::to_string(&our_config_file)?;
+
+        let mut file = File::create(PEERS_CONFIG_FILE).await?;
+        file.write(json.as_bytes()).await?;
+    }
+
+    info!("Started comms for node {my_addr:?}");
+
+    info!("Run stable set with peers {peers:?}");
+    run_stable_set(comm, comm_event_receiver, myself, peers).await
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
-    // Simple parsing of single socket address argument.
-    let my_addr = {
-        let args: Vec<String> = env::args().collect();
-        if args.len() != 2 {
-            eprintln!("Missing argument\nusage: safenode <socket address>");
-            return;
-        }
-        args[1].parse().expect("Unable to parse socket address")
-    };
+    let peers_addr = peers_from_json(PEERS_CONFIG_FILE)?;
 
-    let mut peers_addr = peers_from_json(PEERS_CONFIG_FILE);
-    peers_addr.remove(&my_addr); // Remove our own address from our network list.
+    start_node(peers_addr).await?;
 
-    start_node(my_addr, peers_addr).await;
+    Ok(())
 }

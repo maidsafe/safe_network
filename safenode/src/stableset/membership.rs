@@ -114,7 +114,7 @@ impl Membership {
         additional_members_to_sync
     }
 
-    pub fn on_msg(
+    pub(crate) fn on_msg(
         &mut self,
         elders: &BTreeSet<NetworkNode>,
         id: NetworkNode,

@@ -32,7 +32,7 @@ use tracing::{debug, error, trace, warn};
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct MsgId(u64);
 pub trait MsgTrait:
-    Default + std::marker::Send + Clone + std::fmt::Debug + Serialize + for<'a> Deserialize<'a>
+    Default + Send + Clone + std::fmt::Debug + Serialize + for<'a> Deserialize<'a>
 {
 }
 
@@ -117,10 +117,8 @@ impl Comm {
     /// Creates a new instance of Comm with an endpoint
     /// and starts listening to the incoming messages from other nodes.
     #[tracing::instrument(skip_all)]
-    pub fn new<T: MsgTrait + 'static>(
-        local_addr: SocketAddr,
-    ) -> Result<(Self, Receiver<CommEvent<T>>)> {
-        let (our_endpoint, incoming_conns) = Endpoint::builder().addr(local_addr).server()?;
+    pub fn new<T: MsgTrait + 'static>() -> Result<(Self, Receiver<CommEvent<T>>)> {
+        let (our_endpoint, incoming_conns) = Endpoint::builder().server()?;
 
         trace!("Creating comms..");
         // comm_events_receiver will be used by upper layer to receive all msgs coming in from the network
@@ -156,7 +154,7 @@ impl Comm {
 
     /// Sets the available targets to be only those in the passed in set.
     pub async fn set_comm_targets(&self, targets: BTreeSet<NetworkNode>) {
-        println!("Setting targets toooo: {targets:?}");
+        debug!("Setting targets to: {targets:?}");
         // We only remove links by calling this function,
         // No removals are made even if we failed to send using all node link's connections,
         // as it's our source of truth for known and connectable nodes.
@@ -261,7 +259,7 @@ fn process_cmds<T: MsgTrait + 'static>(
                         if links.get(node_id).is_none() {
                             let link = NodeLink::new(*node_id, our_endpoint.clone());
 
-                            println!("inserting link to {node_id:?}");
+                            debug!("inserting link to {node_id:?}");
                             let _ = links.insert(*node_id, link);
                         }
                     });
