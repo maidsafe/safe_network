@@ -204,7 +204,7 @@ impl Testnet {
     /// * The network has already been launched previously
     pub fn launch_genesis(
         &self,
-        address: Option<SocketAddr>,
+        _address: Option<SocketAddr>,
         _node_args: Vec<String>,
     ) -> Result<()> {
         if self.node_count != 0 {

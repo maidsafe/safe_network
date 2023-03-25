@@ -9,7 +9,6 @@ pub use stableset_msg::StableSetMsg;
 use crate::{
     comms::{Comm, CommEvent, NetworkNode},
     error::Result,
-    stableset::membership::Elders,
 };
 
 use std::collections::BTreeSet;

@@ -316,7 +316,7 @@ async fn create_connection(
 
 /// Errors that can be returned from `Comm::send_to_one`.
 #[derive(Debug, Error)]
-pub enum NodeLinkError {
+pub(crate) enum NodeLinkError {
     #[error("Failed to connect: {0:?}")]
     Connection(qp2p::ConnectionError),
     #[error("Failed to send a message: {0:?}")]

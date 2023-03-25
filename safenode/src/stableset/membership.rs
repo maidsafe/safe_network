@@ -7,17 +7,17 @@ use super::{
 };
 use crate::comms::NetworkNode;
 
-pub type Elders = BTreeSet<NetworkNode>;
+pub(crate) type Elders = BTreeSet<NetworkNode>;
 
 const ELDER_COUNT: usize = 7;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct Membership {
-    pub stable_set: StableSet,
+pub(crate) struct Membership {
+    pub(crate) stable_set: StableSet,
 }
 
 impl Membership {
-    pub fn new(genesis: &BTreeSet<NetworkNode>) -> Self {
+    pub(crate) fn new(genesis: &BTreeSet<NetworkNode>) -> Self {
         let mut stable_set = StableSet::default();
 
         for genesis_id in genesis.iter().copied() {
@@ -41,30 +41,30 @@ impl Membership {
         msg
     }
 
-    pub fn req_join(&self, id: NetworkNode) -> StableSetMsg {
+    pub(crate) fn req_join(&self, id: NetworkNode) -> StableSetMsg {
         self.build_msg(StableSetMsg::ReqJoin(id))
     }
 
-    pub fn req_leave(&mut self, id: NetworkNode) -> StableSetMsg {
+    pub(crate) fn req_leave(&mut self, id: NetworkNode) -> StableSetMsg {
         if let Some(member) = self.stable_set.member_by_id(id) {
             self.handle_leave_share(id, member, id);
         }
         self.build_msg(StableSetMsg::ReqLeave(id))
     }
 
-    pub fn is_member(&self, id: NetworkNode) -> bool {
+    pub(crate) fn is_member(&self, id: NetworkNode) -> bool {
         self.stable_set.contains(id)
     }
 
-    pub fn members(&self) -> BTreeSet<Member> {
+    pub(crate) fn members(&self) -> BTreeSet<Member> {
         self.stable_set.members()
     }
 
-    pub fn elders(&self) -> Elders {
+    pub(crate) fn elders(&self) -> Elders {
         BTreeSet::from_iter(self.members().into_iter().take(ELDER_COUNT).map(|m| m.id))
     }
 
-    pub fn merge(
+    pub(crate) fn merge(
         &mut self,
         stable_set: StableSet,
         id: NetworkNode,
@@ -165,7 +165,7 @@ impl Membership {
         additional_members_to_sync
     }
 
-    pub fn process_pending_actions(&mut self, id: NetworkNode) -> BTreeSet<NetworkNode> {
+    pub(crate) fn process_pending_actions(&mut self, id: NetworkNode) -> BTreeSet<NetworkNode> {
         let stable_set_changed = self.stable_set.process_ready_actions(&self.elders());
 
         if stable_set_changed && self.elders().contains(&id) {
