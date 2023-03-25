@@ -161,17 +161,6 @@ impl Comm {
         self.send_cmd(CommCmd::SetTargets(targets)).await;
     }
 
-    /// Sends the payload on a new or existing connection.
-    #[tracing::instrument(skip(self, bytes))]
-    pub async fn send_out_bytes(&self, node_id: NetworkNode, msg_id: MsgId, bytes: Bytes) {
-        self.send_cmd(CommCmd::Send {
-            msg_id,
-            node_id,
-            bytes,
-        })
-        .await;
-    }
-
     /// Sends the payload on a new bidi-stream and pushes the response onto the comm event channel.
     #[tracing::instrument(skip(self, bytes))]
     pub async fn send_and_return_response(
