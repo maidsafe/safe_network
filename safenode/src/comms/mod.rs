@@ -12,7 +12,7 @@ mod node_link;
 
 pub use self::error::{Error, Result};
 
-use self::node_link::NodeLink;
+use self::node_link::{NodeLink, NodeLinkError};
 
 use bytes::Bytes;
 use custom_debug::Debug;
@@ -202,12 +202,6 @@ impl Comm {
 /// Internal comm cmds.
 #[derive(custom_debug::Debug)]
 enum CommCmd {
-    Send {
-        msg_id: MsgId,
-        node_id: NetworkNode,
-        #[debug(skip)]
-        bytes: Bytes,
-    },
     SetTargets(BTreeSet<NetworkNode>),
     SendAndReturnResponse {
         node_id: NetworkNode,
@@ -247,15 +241,6 @@ fn process_cmds<T: MsgTrait + 'static>(
                             let _ = links.insert(*node_id, link);
                         }
                     });
-                }
-                CommCmd::Send {
-                    msg_id,
-                    node_id,
-                    bytes,
-                } => {
-                    if let Some(link) = get_link(msg_id, node_id, &links, comm_events.clone()) {
-                        send(msg_id, link, bytes, comm_events.clone())
-                    }
                 }
                 CommCmd::SendAndReturnResponse {
                     node_id,
@@ -356,6 +341,11 @@ fn send_and_return_response<T: MsgTrait + 'static>(
                 response_bytes
             }
             Err(error) => {
+                if let NodeLinkError::Recv(e) = error {
+                    // we don't _have_ to have a response.
+                    // so a recv error can be okay here...
+                    return;
+                }
                 error!("Sending message (msg_id: {msg_id:?}) to {node_id:?} failed: {error}");
                 send_error(node_id, Error::FailedSend(msg_id), comm_events.clone());
                 return;

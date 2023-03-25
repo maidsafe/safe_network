@@ -13,7 +13,7 @@ pub enum StableSetMsg {
     ReqJoin(NetworkNode),
     ReqLeave(NetworkNode),
     JoinShare(Member),
-    Sync(BTreeSet<NetworkNode>),
+    Sync(StableSet),
 }
 
 impl MsgTrait for StableSetMsg {}
