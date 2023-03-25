@@ -2,7 +2,7 @@
 
 ![Alt text](assets/ant.png?raw=true "Here come the ants")
 
-This is an advanced implementation of the stableset experiment. In this iteration we use no signatures and depend upon an IP based certificate authority (rustls will release an update fro us to provide this). This no signature approach has certain advantages and disadvantages. The main advantage is that it is much faster and easier to implement. With the burden of signatures removed then nodes should also be much leaner and less cpu bound. 
+This is an advanced implementation of the stableset experiment. In this iteration we use no signatures and depend upon an IP based certificate authority (rustls will release an update for us to provide this). This no signature approach has certain advantages and disadvantages. The main advantage is that it is much faster and easier to implement. With the burden of signatures removed then nodes should also be much leaner and less cpu bound. 
 
 ## Outline
 
