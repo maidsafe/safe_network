@@ -4,7 +4,7 @@ use std::{
     iter::FromIterator,
 };
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::comms::NetworkNode;
 
@@ -200,14 +200,6 @@ impl StableSet {
         self.build_msg(StableSetMsg::LeaveWitness(id))
     }
 
-    pub(crate) fn members_from_our_pov(&self) -> BTreeSet<Member> {
-        let mut members = self.members();
-
-        members.extend(self.joining());
-
-        members
-    }
-
     pub(crate) fn elders(&self) -> Elders {
         BTreeSet::from_iter(self.members().into_iter().take(ELDER_COUNT).map(|m| m.id))
     }
@@ -246,11 +238,7 @@ impl StableSet {
         }
 
         // For each member we know is leaving, check if the other node has already removed it.
-        let to_handle = Vec::from_iter(
-            self
-                .leaving()
-                .filter(|m| !stable_set.is_member(m)),
-        );
+        let to_handle = Vec::from_iter(self.leaving().filter(|m| !stable_set.is_member(m)));
         for member in to_handle {
             let m_id = member.id;
             if self.handle_leave_witness(id, member, src) {
@@ -283,12 +271,8 @@ impl StableSet {
             }
             StableSetMsg::ReqJoin(candidate_id) => {
                 if self.member_by_id(candidate_id).is_none() && elders.contains(&id) {
-                    let latest_ord_idx = self
-                        .members()
-                        .iter()
-                        .map(|m| m.ord_idx)
-                        .max()
-                        .unwrap_or(0);
+                    let latest_ord_idx =
+                        self.members().iter().map(|m| m.ord_idx).max().unwrap_or(0);
                     let ord_idx = latest_ord_idx + 1;
 
                     let member = Member {
@@ -323,6 +307,10 @@ impl StableSet {
             "Current confirmed StableSet length is : {:?}",
             self.members().len()
         );
+        info!(
+            "The set is : {:?}",
+            self.members()
+        );
         additional_members_to_sync
     }
 
@@ -345,6 +333,8 @@ impl StableSet {
         if self.is_member(&member) {
             return false;
         }
+
+        trace!("Adding member: {id:?}");
 
         let first_time_seeing_join = self.add(member.clone(), witness);
         self.add(member, id);

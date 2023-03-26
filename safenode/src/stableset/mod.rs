@@ -2,7 +2,7 @@ mod join;
 mod stable_set;
 mod stableset_msg;
 
-use stable_set::{StableSet, Elders};
+use stable_set::{Elders, StableSet};
 pub use stableset_msg::StableSetMsg;
 
 use crate::{
@@ -51,18 +51,24 @@ pub async fn run_stable_set(
                 info!("Received {stableset_msg:?} from {sender:?}");
 
                 let elders = &stable_set.elders();
-                let members_to_sync =
+                let mut members_to_sync =
                     stable_set.on_msg_return_nodes_to_sync(elders, myself, sender, stableset_msg);
 
-                let valid_section_targets = stable_set
-                    .members_from_our_pov()
+                // process everything we learnt about here...
+                members_to_sync.extend(stable_set.process_pending_actions(myself));
+                
+                
+                let valid_section_targets: BTreeSet<_> = stable_set
+                    .members()
                     .iter()
                     .map(|n| n.id)
                     .collect();
-                comm.set_comm_targets(valid_section_targets).await;
-                debug!("These members should get synced now: {members_to_sync:?}");
+                comm.set_comm_targets(valid_section_targets.clone()).await;
 
-                // TODO: broadcast
+                debug!("These members should get synced now: {members_to_sync:?}");
+    
+                // Finally we send out our current state of affairs to all nodes
+                // who need it
                 let mut current_stable_set = stable_set.clone();
                 let sync_msg = StableSetMsg::Sync(current_stable_set);
 
@@ -76,9 +82,6 @@ pub async fn run_stable_set(
                     debug!("Syncing {member:?}");
                     comm.send_msg(member, msg.id, msg.to_bytes()?).await;
                 }
-
-                // only drop the stream here...?
-                drop(stream);
             }
             CommEvent::Error { node_id: _, error } => info!("Comm Event Error: {error:?}"),
         }

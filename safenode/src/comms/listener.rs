@@ -77,7 +77,7 @@ pub(crate) async fn listen_for_msgs<T: MsgTrait>(
                 msg_received(wire_msg, src, send_stream, comm_events.clone()).await;
             }
             Err(error) => {
-                warn!("Error on connection {conn_id} with {remote_address}: {error:?}");
+                trace!("Issue on connection {conn_id} with {remote_address}: {error:?}");
             }
         }
     }
