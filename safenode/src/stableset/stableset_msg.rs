@@ -11,8 +11,8 @@ pub enum StableSetMsg {
     Ping,
     Pong,
     ReqJoin(NetworkNode),
-    ReqLeave(NetworkNode),
-    JoinShare(Member),
+    LeaveWitness(NetworkNode),
+    JoinWitness(Member),
     Sync(StableSet),
 }
 
