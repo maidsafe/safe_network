@@ -1,9 +1,8 @@
 mod join;
-mod membership;
 mod stable_set;
 mod stableset_msg;
 
-use membership::Membership;
+use stable_set::{StableSet, Elders};
 pub use stableset_msg::StableSetMsg;
 
 use crate::{
@@ -32,7 +31,7 @@ pub async fn run_stable_set(
 
     // start membership with hardcoded peers
     let hardcoded_network_nodes = peers.into_iter().chain([myself]).collect();
-    let mut membership = Membership::new(&hardcoded_network_nodes);
+    let mut stable_set = StableSet::new(&hardcoded_network_nodes);
 
     // infinite stableset loop
     while let Some(comm_event) = receiver.recv().await {
@@ -51,11 +50,11 @@ pub async fn run_stable_set(
 
                 info!("Received {stableset_msg:?} from {sender:?}");
 
-                let elders = &membership.elders();
+                let elders = &stable_set.elders();
                 let members_to_sync =
-                    membership.on_msg_return_nodes_to_sync(elders, myself, sender, stableset_msg);
+                    stable_set.on_msg_return_nodes_to_sync(elders, myself, sender, stableset_msg);
 
-                let valid_section_targets = membership
+                let valid_section_targets = stable_set
                     .members_from_our_pov()
                     .iter()
                     .map(|n| n.id)
@@ -64,7 +63,7 @@ pub async fn run_stable_set(
                 debug!("These members should get synced now: {members_to_sync:?}");
 
                 // TODO: broadcast
-                let mut current_stable_set = membership.stable_set.clone();
+                let mut current_stable_set = stable_set.clone();
                 let sync_msg = StableSetMsg::Sync(current_stable_set);
 
                 let msg = NetworkMsg::<StableSetMsg> {

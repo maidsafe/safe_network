@@ -5,7 +5,7 @@ use crate::comms::{MsgTrait, NetworkNode};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Debug, Hash, Clone, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Hash, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum StableSetMsg {
     #[default]
     Ping,
