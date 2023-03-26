@@ -16,3 +16,5 @@ Cargo.lock
 peers.json
 
 /.trunk
+
+settings.json
