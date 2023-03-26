@@ -14,3 +14,5 @@ Cargo.lock
 
 /target
 peers.json
+
+/.trunk

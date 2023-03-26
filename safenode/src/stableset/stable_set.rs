@@ -28,7 +28,6 @@ impl Debug for Member {
 )]
 pub struct StableSet {
     members: BTreeSet<Member>,
-    // dead: BTreeSet<Id>,
     pub(crate) joining_members: BTreeMap<Member, BTreeSet<NetworkNode>>,
     pub(crate) leaving_members: BTreeMap<Member, BTreeSet<NetworkNode>>,
 }
