@@ -9,7 +9,7 @@ use crate::comms::NetworkNode;
 
 pub(crate) type Elders = BTreeSet<NetworkNode>;
 
-const ELDER_COUNT: usize = 7;
+const ELDER_COUNT: usize = 4;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub(crate) struct Membership {
@@ -47,9 +47,9 @@ impl Membership {
 
     pub(crate) fn req_leave(&mut self, id: NetworkNode) -> StableSetMsg {
         if let Some(member) = self.stable_set.member_by_id(id) {
-            self.handle_leave_share(id, member, id);
+            self.handle_leave_witness(id, member, id);
         }
-        self.build_msg(StableSetMsg::ReqLeave(id))
+        self.build_msg(StableSetMsg::LeaveWitness(id))
     }
 
     pub(crate) fn is_member(&self, id: NetworkNode) -> bool {
@@ -83,7 +83,7 @@ impl Membership {
         for member in stable_set.members() {
             let m_id = member.id;
 
-            if self.handle_join_share(id, member, src) {
+            if self.handle_join_witness(id, member, src) {
                 additional_members_to_sync.insert(m_id);
                 additional_members_to_sync.extend(self.elders());
             }
@@ -91,7 +91,7 @@ impl Membership {
 
         for member in stable_set.joining() {
             let m_id = member.id;
-            if self.handle_join_share(id, member, src) {
+            if self.handle_join_witness(id, member, src) {
                 additional_members_to_sync.insert(m_id);
                 additional_members_to_sync.extend(self.elders());
             }
@@ -99,7 +99,7 @@ impl Membership {
 
         for member in stable_set.leaving() {
             let m_id = member.id;
-            if self.handle_leave_share(id, member, src) {
+            if self.handle_leave_witness(id, member, src) {
                 additional_members_to_sync.insert(m_id);
                 additional_members_to_sync.extend(self.elders());
             }
@@ -113,7 +113,7 @@ impl Membership {
         );
         for member in to_handle {
             let m_id = member.id;
-            if self.handle_leave_share(id, member, src) {
+            if self.handle_leave_witness(id, member, src) {
                 additional_members_to_sync.insert(m_id);
                 additional_members_to_sync.extend(self.elders());
             }
@@ -157,23 +157,23 @@ impl Membership {
                         ord_idx,
                     };
 
-                    if self.handle_join_share(id, member, id) {
+                    if self.handle_join_witness(id, member, id) {
                         additional_members_to_sync.insert(candidate_id);
                         additional_members_to_sync.extend(elders);
                     }
                 }
             }
-            StableSetMsg::ReqLeave(to_remove) => {
+            StableSetMsg::LeaveWitness(to_remove) => {
                 if let Some(member) = self.stable_set.member_by_id(to_remove) {
-                    if self.handle_leave_share(id, member, src) {
+                    if self.handle_leave_witness(id, member, src) {
                         additional_members_to_sync.insert(to_remove);
                         additional_members_to_sync.extend(elders);
                     }
                 }
             }
-            StableSetMsg::JoinShare(member) => {
+            StableSetMsg::JoinWitness(member) => {
                 let m_id = member.id;
-                if self.handle_join_share(id, member, src) {
+                if self.handle_join_witness(id, member, src) {
                     additional_members_to_sync.insert(m_id);
                     additional_members_to_sync.extend(elders);
                 }
@@ -197,7 +197,12 @@ impl Membership {
         }
     }
 
-    fn handle_join_share(&mut self, id: NetworkNode, member: Member, witness: NetworkNode) -> bool {
+    fn handle_join_witness(
+        &mut self,
+        id: NetworkNode,
+        member: Member,
+        witness: NetworkNode,
+    ) -> bool {
         if self.stable_set.is_member(&member) {
             return false;
         }
@@ -208,7 +213,7 @@ impl Membership {
         first_time_seeing_join
     }
 
-    fn handle_leave_share(
+    fn handle_leave_witness(
         &mut self,
         id: NetworkNode,
         member: Member,
