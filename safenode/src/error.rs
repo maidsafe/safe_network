@@ -9,7 +9,7 @@
 use std::io;
 use thiserror::Error;
 
-use crate::stableset::StableSetMsg;
+use crate::{comms::NetworkNode, stableset::StableSetMsg};
 
 /// The type returned by the `sn_routing` message handling methods.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -24,9 +24,6 @@ pub enum Error {
     /// Comms error.
     #[error("Comms error: {0}")]
     Comms(#[from] crate::comms::Error),
-    /// No response stream was returned
-    #[error("No response stream provided from: {0:?}")]
-    NoResponseStream(crate::comms::MsgReceived<StableSetMsg>),
     /// JSON serialisation error.
     #[error("JSON serialisation error:: {0}")]
     JsonSerialisation(#[from] serde_json::Error),
