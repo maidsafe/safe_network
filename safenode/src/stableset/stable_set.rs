@@ -307,10 +307,7 @@ impl StableSet {
             "Current confirmed StableSet length is : {:?}",
             self.members().len()
         );
-        info!(
-            "The set is : {:?}",
-            self.members()
-        );
+        info!("The set is : {:?}", self.members());
         additional_members_to_sync
     }
 

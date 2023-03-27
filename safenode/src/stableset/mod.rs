@@ -6,10 +6,9 @@ use stable_set::{Elders, StableSet};
 pub use stableset_msg::StableSetMsg;
 
 use crate::{
-    comms::{Comm, CommEvent, MsgId, NetworkMsg, NetworkNode},
-    error::Result,
+    comms::{Comm, CommEvent, MsgId, MsgReceived, NetworkMsg, NetworkNode, ResponseStream},
+    error::{Error, Result},
 };
-
 use std::{collections::BTreeSet, mem};
 
 pub type Rx = tokio::sync::mpsc::Receiver<CommEvent<StableSetMsg>>;
@@ -37,18 +36,7 @@ pub async fn run_stable_set(
     while let Some(comm_event) = receiver.recv().await {
         match comm_event {
             CommEvent::Msg(msg) => {
-                let response_stream = &msg.send_stream;
-
-                // TODO: move this check into comms, we would respond here for AE etc
-                let Some(stream) = response_stream else {
-                    warn!("No response stream provided. Dropping msg: {:?}", msg);
-                    continue;
-                };
-
-                let stableset_msg = msg.wire_msg.payload;
-                let sender = NetworkNode { addr: msg.sender };
-
-                info!("Received {stableset_msg:?} from {sender:?}");
+                let (response_stream, stableset_msg, sender) = msg_received_parts(msg)?;
 
                 let elders = &stable_set.elders();
                 let mut members_to_sync =
@@ -56,17 +44,13 @@ pub async fn run_stable_set(
 
                 // process everything we learnt about here...
                 members_to_sync.extend(stable_set.process_pending_actions(myself));
-                
-                
-                let valid_section_targets: BTreeSet<_> = stable_set
-                    .members()
-                    .iter()
-                    .map(|n| n.id)
-                    .collect();
+
+                let valid_section_targets: BTreeSet<_> =
+                    stable_set.members().iter().map(|n| n.id).collect();
                 comm.set_comm_targets(valid_section_targets.clone()).await;
 
                 debug!("These members should get synced now: {members_to_sync:?}");
-    
+
                 // Finally we send out our current state of affairs to all nodes
                 // who need it
                 let mut current_stable_set = stable_set.clone();
@@ -88,4 +72,24 @@ pub async fn run_stable_set(
     }
 
     Ok(())
+}
+
+/// Pulls our relevant parts of a comms MsgReceived event
+fn msg_received_parts(
+    msg_event: MsgReceived<StableSetMsg>,
+) -> Result<(ResponseStream, StableSetMsg, NetworkNode)> {
+    // TODO: move this check into comms
+    let Some(stream) = msg_event.send_stream else {
+        warn!("No response stream provided. Dropping msg: {:?}", msg_event);
+        return Err(Error::NoResponseStream(msg_event));
+    };
+
+    let stableset_msg = msg_event.wire_msg.payload;
+    let sender = NetworkNode {
+        addr: msg_event.sender,
+    };
+
+    info!("Received {stableset_msg:?} from {sender:?}");
+
+    Ok((stream, stableset_msg, sender))
 }
