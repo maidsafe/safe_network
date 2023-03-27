@@ -29,6 +29,8 @@ use tokio::{
 };
 use tracing::{debug, error, trace, warn};
 
+pub use qp2p::SendStream as ResponseStream;
+
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct MsgId(u64);
 pub trait MsgTrait:
