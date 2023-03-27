@@ -38,18 +38,14 @@ pub async fn run_stable_set(
             CommEvent::Msg(msg) => {
                 let (response_stream, stableset_msg, sender) = msg_received_parts(msg)?;
 
-                let elders = &stable_set.elders();
-                let mut members_to_sync =
-                    stable_set.on_msg_return_nodes_to_sync(elders, myself, sender, stableset_msg);
-
-                // process everything we learnt about here...
-                members_to_sync.extend(stable_set.process_pending_actions(myself));
-
-                let valid_section_targets: BTreeSet<_> =
-                    stable_set.members().iter().map(|n| n.id).collect();
-                comm.set_comm_targets(valid_section_targets.clone()).await;
-
-                debug!("These members should get synced now: {members_to_sync:?}");
+                let members_to_sync = update_set_and_get_nodes_to_sync(
+                    &mut stable_set,
+                    stableset_msg,
+                    myself,
+                    sender,
+                    &comm,
+                )
+                .await;
 
                 // Finally we send out our current state of affairs to all nodes
                 // who need it
@@ -72,6 +68,31 @@ pub async fn run_stable_set(
     }
 
     Ok(())
+}
+
+/// Updates our stableset based on a given msg
+/// sets comms targets if we've changed
+async fn update_set_and_get_nodes_to_sync(
+    stable_set: &mut StableSet,
+    stableset_msg: StableSetMsg,
+    myself: NetworkNode,
+    sender: NetworkNode,
+    comm: &Comm,
+) -> BTreeSet<NetworkNode> {
+    let elders = &stable_set.elders();
+    let mut members_to_sync =
+        stable_set.on_msg_return_nodes_to_sync(elders, myself, sender, stableset_msg);
+
+    // process everything we learnt about here...
+    members_to_sync.extend(stable_set.process_pending_actions(sender));
+
+    // update comms
+    let valid_section_targets: BTreeSet<_> = stable_set.members().iter().map(|n| n.id).collect();
+    comm.set_comm_targets(valid_section_targets.clone()).await;
+
+    debug!("These members should get synced now: {members_to_sync:?}");
+
+    members_to_sync
 }
 
 /// Pulls our relevant parts of a comms MsgReceived event
