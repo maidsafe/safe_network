@@ -95,7 +95,7 @@ pub(crate) async fn msg_received<T: MsgTrait>(
     let msg_event = CommEvent::Msg(MsgReceived {
         sender: sender.addr,
         wire_msg,
-        send_stream,
+        response_stream: send_stream,
     });
 
     // handle the message first

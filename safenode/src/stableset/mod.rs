@@ -6,7 +6,10 @@ use stable_set::{Elders, StableSet};
 pub use stableset_msg::StableSetMsg;
 
 use crate::{
-    comms::{Comm, CommEvent, MsgId, MsgReceived, NetworkMsg, NetworkNode, ResponseStream},
+    comms::{
+        send_on_stream, Comm, CommEvent, MsgId, MsgReceived, NetworkMsg, NetworkNode,
+        ResponseStream,
+    },
     error::{Error, Result},
 };
 use std::{collections::BTreeSet, mem};
@@ -48,25 +51,68 @@ pub async fn run_stable_set(
                 .await;
 
                 // Finally we send out our current state of affairs to all nodes
-                // who need it
-                let mut current_stable_set = stable_set.clone();
-                let sync_msg = StableSetMsg::Sync(current_stable_set);
-
-                let msg = NetworkMsg::<StableSetMsg> {
-                    id: MsgId::new(),
-                    payload: sync_msg,
-                };
-
-                for member in members_to_sync {
-                    // TODO: if we have repsonse stream, use that..?
-                    debug!("Syncing {member:?}");
-                    comm.send_msg(member, msg.id, msg.to_bytes()?).await;
-                }
+                sync_nodes(
+                    stable_set.clone(),
+                    members_to_sync,
+                    myself,
+                    sender,
+                    response_stream,
+                    &comm,
+                )
+                .await?
             }
             CommEvent::Error { node_id: _, error } => info!("Comm Event Error: {error:?}"),
         }
     }
 
+    Ok(())
+}
+
+/// Sync all nodes
+/// Will sync the sender on their ReponseStream
+/// OTher nodes are passed through the normal comms flow
+async fn sync_nodes(
+    stable_set: StableSet,
+    members_to_sync: BTreeSet<NetworkNode>,
+
+    myself: NetworkNode,
+    sender: NetworkNode,
+    response_stream: Option<ResponseStream>,
+    comm: &Comm,
+) -> Result<()> {
+    let current_stable_set = stable_set.clone();
+    let sync_msg = StableSetMsg::Sync(current_stable_set);
+
+    let msg = NetworkMsg::<StableSetMsg> {
+        id: MsgId::new(),
+        payload: sync_msg,
+    };
+
+    let msg_bytes = msg.to_bytes()?;
+
+    let mut sender_synced = false;
+    if members_to_sync.contains(&sender) {
+        if let Some(stream) = response_stream {
+            debug!("About to sync sender: {sender:?}");
+            sender_synced = true;
+            send_on_stream(msg.msg_id(), msg_bytes.clone(), stream).await;
+        }
+    }
+
+    for member in members_to_sync {
+        // TODO: I think we can negate self-send when properly contact all elders
+        // if member == myself {
+        //     warn!("There should be no need to self-sync");
+        //     continue;
+        // }
+
+        if member == sender && sender_synced {
+            continue;
+        }
+
+        debug!("Syncing {member:?}");
+        comm.send_msg(member, msg.id, msg_bytes.clone()).await;
+    }
     Ok(())
 }
 
@@ -98,13 +144,9 @@ async fn update_set_and_get_nodes_to_sync(
 /// Pulls our relevant parts of a comms MsgReceived event
 fn msg_received_parts(
     msg_event: MsgReceived<StableSetMsg>,
-) -> Result<(ResponseStream, StableSetMsg, NetworkNode)> {
-    // TODO: move this check into comms
-    let Some(stream) = msg_event.send_stream else {
-        warn!("No response stream provided. Dropping msg: {:?}", msg_event);
-        return Err(Error::NoResponseStream(msg_event));
-    };
-
+) -> Result<(Option<ResponseStream>, StableSetMsg, NetworkNode)> {
+    // If we get a response over a stream... there is no response stream
+    let stream = msg_event.response_stream;
     let stableset_msg = msg_event.wire_msg.payload;
     let sender = NetworkNode {
         addr: msg_event.sender,

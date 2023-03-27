@@ -66,6 +66,10 @@ impl<T: MsgTrait> NetworkMsg<T> {
             payload: Default::default(),
         }
     }
+
+    pub fn msg_id(&self) -> MsgId {
+        self.id
+    }
 }
 
 #[derive(
@@ -102,7 +106,7 @@ pub struct MsgReceived<T> {
     pub wire_msg: NetworkMsg<T>,
     /// An optional stream to return msgs on, if
     /// this msg came on a bidi-stream.
-    pub send_stream: Option<SendStream>,
+    pub response_stream: Option<SendStream>,
 }
 
 /// Communication component of the node to interact with other nodes.
@@ -458,14 +462,14 @@ fn send_error<T: MsgTrait + 'static>(
 }
 
 #[tracing::instrument(skip_all)]
-async fn send_on_stream(msg_id: MsgId, bytes: Bytes, mut stream: SendStream) {
+pub async fn send_on_stream(msg_id: MsgId, bytes: Bytes, mut stream: SendStream) {
     let placeholder = Bytes::from("placeholder");
     match stream
         .send_user_msg((placeholder.clone(), placeholder.clone(), bytes))
         .await
     {
-        Ok(()) => trace!("Response to {msg_id:?} sent to client."),
-        Err(error) => error!("Could not send the response to {msg_id:?} to client due to {error}!"),
+        Ok(()) => trace!("Response msg {msg_id:?} sent."),
+        Err(error) => error!("Could not send the response {msg_id:?} due to {error}!"),
     }
 }
 
