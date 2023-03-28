@@ -10,7 +10,7 @@ use crate::{
         send_on_stream, Comm, CommEvent, MsgId, MsgReceived, NetworkMsg, NetworkNode,
         ResponseStream,
     },
-    error::{Error, Result},
+    error::Result,
 };
 use std::{collections::BTreeSet, mem};
 
