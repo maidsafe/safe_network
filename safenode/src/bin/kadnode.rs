@@ -1,6 +1,7 @@
 mod log;
 
-use futures::select;
+use bincode::de;
+use futures::{select, FutureExt};
 use libp2p::Swarm;
 use log::init_node_logging;
 
@@ -46,6 +47,7 @@ impl From<mdns::Event> for SafeNetBehaviour {
     }
 }
 
+#[derive(Debug)]
 enum SwarmCmd {
     Search,
 }
@@ -54,7 +56,7 @@ enum SwarmCmd {
 type CmdChannel = tokio::sync::mpsc::Sender<SwarmCmd>;
 
 fn run_swarm() -> CmdChannel {
-    let (sender, receiver) = tokio::sync::mpsc::channel::<SwarmCmd>(1);
+    let (sender, mut receiver) = tokio::sync::mpsc::channel::<SwarmCmd>(1);
 
     let _handle = tokio::spawn(async move {
         // Create a random key for ourselves.
@@ -90,6 +92,9 @@ fn run_swarm() -> CmdChannel {
         // Kick it off.
         loop {
             select! {
+                cmd = receiver.recv().fuse() => {
+                    debug!("Cmd innnnnnnnnnnnn: {cmd:?}");
+                }
                 event = swarm.select_next_some() => match event {
                     SwarmEvent::NewListenAddr { address, .. } => {
                         info!("Listening in {address:?}");
@@ -174,6 +179,8 @@ async fn main() -> Result<()> {
     let _log_appender_guard = init_node_logging(&log_dir)?;
 
     let channel = run_swarm();
+
+    channel.send(SwarmCmd::Search).await;
 
     loop {
         tokio::time::sleep(Duration::from_millis(100)).await
