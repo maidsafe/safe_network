@@ -115,6 +115,13 @@ fn run_swarm() -> CmdChannel {
                             swarm.behaviour_mut().kademlia.add_address(&peer_id, multiaddr);
                         }
                     }
+                    SwarmEvent::Behaviour(SafeNetBehaviour::Kademlia(KademliaEvent::OutboundQueryProgressed {
+                        result: QueryResult::GetClosestPeers(result),
+                        ..
+                    })) => {
+
+                        info!("Result for closest peers is in! {result:?}");
+                    }
                     // SwarmEvent::Behaviour(SafeNetBehaviour::Kademlia(KademliaEvent::RoutingUpdated{addresses, ..})) => {
 
                     //     trace!("Kad routing updated: {addresses:?}");
@@ -192,7 +199,7 @@ async fn main() -> Result<()> {
 
     channel.send(SwarmCmd::Search).await;
     
-    tokio::time::sleep(Duration::from_secs(500)).await
+    tokio::time::sleep(Duration::from_secs(5)).await;
     channel.send(SwarmCmd::Search).await;
     loop {
         tokio::time::sleep(Duration::from_millis(100)).await
