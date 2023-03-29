@@ -15,6 +15,7 @@ use libp2p::{
 };
 // use safenode::error::Result;
 use eyre::{Error, Result};
+use xor_name::XorName;
 use std::path::PathBuf;
 use std::{env, time::Duration};
 #[macro_use]
@@ -30,8 +31,8 @@ struct MyBehaviour {
 }
 
 impl MyBehaviour {
-    fn get_closest_peers(&mut self, peer:PeerId){
-        self.kademlia.get_closest_peers(peer);
+    fn get_closest_peers_to_xorname(&mut self, addr:XorName){
+        self.kademlia.get_closest_peers(addr.to_vec());
     }
 }
 
@@ -55,7 +56,7 @@ impl From<mdns::Event> for SafeNetBehaviour {
 
 #[derive(Debug)]
 enum SwarmCmd {
-    Search,
+    Search(XorName),
 }
 
 /// Channel to send Cmds to the swarm
@@ -100,8 +101,8 @@ fn run_swarm() -> CmdChannel {
             select! {
                 cmd = receiver.recv().fuse() => {
                     debug!("Cmd innnnnnnnnnnnn: {cmd:?}");
-                    if let Some(SwarmCmd::Search) =  cmd {
-                        swarm.behaviour_mut().get_closest_peers(PeerId::random());
+                    if let Some(SwarmCmd::Search(xor_name)) =  cmd {
+                        swarm.behaviour_mut().get_closest_peers_to_xorname(xor_name);
                     }
                 }
                 
@@ -197,10 +198,13 @@ async fn main() -> Result<()> {
 
     let channel = run_swarm();
 
-    channel.send(SwarmCmd::Search).await;
+    let x = xor_name::XorName::from_content(b"some random content here for you");
+
+    channel.send(SwarmCmd::Search(x)).await;
     
     tokio::time::sleep(Duration::from_secs(5)).await;
-    channel.send(SwarmCmd::Search).await;
+    
+    channel.send(SwarmCmd::Search(x)).await;
     loop {
         tokio::time::sleep(Duration::from_millis(100)).await
     }
