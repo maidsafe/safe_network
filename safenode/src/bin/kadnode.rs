@@ -2,14 +2,15 @@ mod log;
 
 use bincode::de;
 use futures::{select, FutureExt};
-use libp2p::Swarm;
+use libp2p::{Swarm, Transport};
+use libp2p::core::muxing::StreamMuxerBox;
 use log::init_node_logging;
 
 use futures::StreamExt;
 use libp2p::kad::record::store::MemoryStore;
 use libp2p::kad::{GetClosestPeersError, Kademlia, KademliaConfig, KademliaEvent, QueryResult};
 use libp2p::{
-    development_transport, identity, mdns,
+    identity, mdns,
     swarm::{NetworkBehaviour, SwarmBuilder, SwarmEvent},
     PeerId,
 };
@@ -69,8 +70,12 @@ fn run_swarm() -> CmdChannel {
         let keypair = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(keypair.public());
 
-        // Set up a an encrypted DNS-enabled TCP Transport over the Mplex protocol
-        let transport = development_transport(keypair).await?;
+        // QUIC configuration
+        let quic_config = libp2p_quic::Config::new(&keypair);
+        let transport = libp2p_quic::async_std::Transport::new(quic_config);
+        let transport = transport
+            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+            .boxed();
 
         // Create a Kademlia instance and connect to the network address.
         // Create a swarm to manage peers and events.
