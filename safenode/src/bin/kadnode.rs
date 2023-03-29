@@ -29,6 +29,12 @@ struct MyBehaviour {
     mdns: mdns::async_io::Behaviour,
 }
 
+impl MyBehaviour {
+    fn get_closest_peers(&mut self, peer:PeerId){
+        self.kademlia.get_closest_peers(peer);
+    }
+}
+
 #[allow(clippy::large_enum_variant)]
 enum SafeNetBehaviour {
     Kademlia(KademliaEvent),
@@ -94,7 +100,11 @@ fn run_swarm() -> CmdChannel {
             select! {
                 cmd = receiver.recv().fuse() => {
                     debug!("Cmd innnnnnnnnnnnn: {cmd:?}");
+                    if let Some(SwarmCmd::Search) =  cmd {
+                        swarm.behaviour_mut().get_closest_peers(PeerId::random());
+                    }
                 }
+                
                 event = swarm.select_next_some() => match event {
                     SwarmEvent::NewListenAddr { address, .. } => {
                         info!("Listening in {address:?}");
@@ -181,11 +191,13 @@ async fn main() -> Result<()> {
     let channel = run_swarm();
 
     channel.send(SwarmCmd::Search).await;
-
+    
+    tokio::time::sleep(Duration::from_secs(500)).await
+    channel.send(SwarmCmd::Search).await;
     loop {
         tokio::time::sleep(Duration::from_millis(100)).await
     }
-
+    
     Ok(())
 }
 
