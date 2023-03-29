@@ -4,7 +4,7 @@ use log::init_node_logging;
 use safenode::{
     comms::{Comm, NetworkNode},
     error::Result,
-    stableset::{run_stable_set, StableSetMsg},
+    // stableset::{run_stable_set, StableSetMsg},
 };
 use tokio::io::AsyncWriteExt;
 
@@ -81,7 +81,7 @@ async fn start_node(peers_addrs: BTreeSet<SocketAddr>) -> Result<()> {
     info!("Started comms for node {my_addr:?}");
 
     info!("Run stable set with peers {peers:?}");
-    run_stable_set(comm, comm_event_receiver, myself, peers).await
+    // run_stable_set(comm, comm_event_receiver, myself, peers).await
 }
 
 /// Grabs the log dir arg if passed in
