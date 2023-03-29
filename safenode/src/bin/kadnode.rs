@@ -2,22 +2,23 @@ mod log;
 
 use bincode::de;
 use futures::{select, FutureExt};
-use libp2p::Swarm;
+use libp2p::core::muxing::StreamMuxerBox;
+use libp2p::{Swarm, Transport};
 use log::init_node_logging;
 
 use futures::StreamExt;
 use libp2p::kad::record::store::MemoryStore;
 use libp2p::kad::{GetClosestPeersError, Kademlia, KademliaConfig, KademliaEvent, QueryResult};
 use libp2p::{
-    development_transport, identity, mdns,
+    development_transport, identity, mdns, quic,
     swarm::{NetworkBehaviour, SwarmBuilder, SwarmEvent},
     PeerId,
 };
 // use safenode::error::Result;
 use eyre::{Error, Result};
-use xor_name::XorName;
 use std::path::PathBuf;
 use std::{env, time::Duration};
+use xor_name::XorName;
 #[macro_use]
 extern crate tracing;
 
@@ -31,7 +32,7 @@ struct MyBehaviour {
 }
 
 impl MyBehaviour {
-    fn get_closest_peers_to_xorname(&mut self, addr:XorName){
+    fn get_closest_peers_to_xorname(&mut self, addr: XorName) {
         self.kademlia.get_closest_peers(addr.to_vec());
     }
 }
@@ -65,13 +66,19 @@ type CmdChannel = tokio::sync::mpsc::Sender<SwarmCmd>;
 fn run_swarm() -> CmdChannel {
     let (sender, mut receiver) = tokio::sync::mpsc::channel::<SwarmCmd>(1);
 
-    let _handle = tokio::spawn(async move {
+    let handle = tokio::spawn(async move {
+        debug!("Starting swarm");
         // Create a random key for ourselves.
         let keypair = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(keypair.public());
 
-        // Set up a an encrypted DNS-enabled TCP Transport over the Mplex protocol
-        let transport = development_transport(keypair).await?;
+        // QUIC configuration
+        let quic_config = quic::Config::new(&keypair);
+        let mut transport = quic::async_std::Transport::new(quic_config);
+
+        let transport = transport
+            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+            .boxed();
 
         // Create a Kademlia instance and connect to the network address.
         // Create a swarm to manage peers and events.
@@ -87,8 +94,9 @@ fn run_swarm() -> CmdChannel {
             let mut swarm =
                 SwarmBuilder::with_async_std_executor(transport, behaviour, local_peer_id).build();
 
-            // Listen on all interfaces and whatever port the OS assigns.
-            swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
+            // // Listen on all interfaces and whatever port the OS assigns.
+            let addr = "/ip4/0.0.0.0/udp/0/quic-v1".parse().expect("addr okay");
+            swarm.listen_on(addr).expect("listening failed");
 
             swarm
         };
@@ -100,12 +108,12 @@ fn run_swarm() -> CmdChannel {
         loop {
             select! {
                 cmd = receiver.recv().fuse() => {
-                    debug!("Cmd innnnnnnnnnnnn: {cmd:?}");
+                    debug!("Cmd in: {cmd:?}");
                     if let Some(SwarmCmd::Search(xor_name)) =  cmd {
                         swarm.behaviour_mut().get_closest_peers_to_xorname(xor_name);
                     }
                 }
-                
+
                 event = swarm.select_next_some() => match event {
                     SwarmEvent::NewListenAddr { address, .. } => {
                         info!("Listening in {address:?}");
@@ -196,19 +204,20 @@ async fn main() -> Result<()> {
     let log_dir = grab_log_dir();
     let _log_appender_guard = init_node_logging(&log_dir)?;
 
+    info!("start");
     let channel = run_swarm();
 
     let x = xor_name::XorName::from_content(b"some random content here for you");
 
     channel.send(SwarmCmd::Search(x)).await;
-    
+
     tokio::time::sleep(Duration::from_secs(5)).await;
-    
+
     channel.send(SwarmCmd::Search(x)).await;
     loop {
         tokio::time::sleep(Duration::from_millis(100)).await
     }
-    
+
     Ok(())
 }
 

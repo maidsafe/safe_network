@@ -27,6 +27,6 @@ tracing-subscriber = "0.3.16"
 tracing-appender = "~0.2.0"
 tracing-core = "0.1.30"
 file-rotate = "0.7.3"
-libp2p = { version="0.51", features = ["async-std", "dns", "kad", "mdns", "mplex", "noise", "macros", "tcp", "websocket", "yamux"] }
+libp2p = { version="0.51", features = ["async-std", "dns", "quic", "kad", "mdns", "mplex", "noise", "macros", "tcp", "websocket", "yamux"] }
 eyre = "0.6.8"
 xor_name = "5.0.0"
