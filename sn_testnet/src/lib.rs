@@ -282,28 +282,6 @@ impl Testnet {
         Ok(())
     }
 
-    /// Copies the network contacts to the default location picked up by clients.
-    ///
-    /// This function will not receive any test coverage because it would involve creating files in
-    /// the profile directory of the machine running the tests. It's a separate public function (as
-    /// opposed to just being added on to the end of `launch_nodes`) for the same reason.
-    ///
-    /// It will be the responsibility of the caller of `Testnet` to run this function to put the
-    /// network contacts in place for client tests or otherwise.
-    pub fn configure_network_contacts(&self, network_contacts_path: &Path) -> Result<()> {
-        let network_contacts_dir = dirs_next::home_dir()
-            .ok_or_else(|| eyre!("Could not obtain user's home directory".to_string()))?
-            .join(".safe")
-            .join("network_contacts");
-        // info!(
-        //     "Copying network contacts file to {}",
-        //     network_contacts_dir.display()
-        // );
-        // std::fs::create_dir_all(&network_contacts_dir)?;
-        // let _ = std::fs::copy(network_contacts_path, network_contacts_dir.join("default"))?;
-        Ok(())
-    }
-
     fn get_launch_args(
         &self,
         node_name: String,

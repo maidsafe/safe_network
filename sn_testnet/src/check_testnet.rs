@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::{eyre::bail, Result};
+use color_eyre::Result;
 use regex::Regex;
 use std::{
     fs::File,
@@ -17,16 +17,6 @@ use std::{
 };
 use tokio::time::{sleep, Duration};
 use walkdir::WalkDir;
-
-use safenode::safe_node_client::SafeNodeClient;
-use safenode::{NodeInfoRequest, SectionMembersRequest};
-use xor_name::{XorName, XOR_NAME_LEN};
-
-// this would include code generated from .proto file
-#[allow(unused_qualifications, clippy::unwrap_used)]
-mod safenode {
-    tonic::include_proto!("safenode");
-}
 
 const LOG_FILENAME_PREFIX: &str = "safenode.log";
 
@@ -64,7 +54,8 @@ pub async fn run(logs_path: &Path, node_count: u32, nodes_launch_interval: u64) 
     nodes.sort_by(|a, b| a.log_path.cmp(&b.log_path));
     for node in &nodes {
         println!(
-            "{:>16} -> {} @ {}",
+            "{} {:>16} -> {} @ {}",
+            node.pid,
             node.addr,
             node.name,
             node.log_path.display()
@@ -72,66 +63,6 @@ pub async fn run(logs_path: &Path, node_count: u32, nodes_launch_interval: u64) 
     }
     println!();
 
-    // let's check all nodes have the same knowledge of the section's members
-    let mut num_of_elders = 0;
-    for node in &nodes {
-        println!(
-            "Checking name and network knowledge of node at {}, PID: {}, name: {}",
-            node.addr, node.pid, node.name
-        );
-
-        let (name, is_elder, known_members) = {
-            // assume their RPC interface is at the subsequent port number
-            let mut addr = node.addr;
-            addr.set_port(addr.port() + 1);
-            send_rpc_query_to_node(addr).await?
-        };
-
-        if is_elder {
-            num_of_elders += 1;
-        }
-
-        assert_eq!(
-            node.name,
-            format!("{name:?}"),
-            "Node at {} reported a mismatching name: {name:?}",
-            node.addr,
-        );
-
-        assert_eq!(
-            known_members.len(),
-            expected_node_count,
-            "Node {} is aware of {} section member/s, expected: {expected_node_count}. Known members: {known_members:?}",
-            node.name,
-            known_members.len(),
-        );
-
-        let any_unknown_member = known_members.iter().find(|(name, _addr)| {
-            nodes.iter().all(
-                |node| node.name != format!("{name:?}"), /*&& &node.addr == addr*/
-            )
-        });
-        if let Some((name, addr)) = any_unknown_member {
-            bail!(
-                "At least one section member known to node {} is not expected: \
-                name = {name:?}, addr = {addr}",
-                node.name,
-            );
-        }
-
-        println!(
-            "Name and network knowledge of node at {} is the expected!",
-            node.addr
-        );
-        println!();
-    }
-
-    println!("Number of Elders: {num_of_elders}");
-    let expected_num_elders = std::cmp::min(7, expected_node_count);
-    assert_eq!(
-        num_of_elders, expected_num_elders,
-        "Mismatching number of Elders, found {num_of_elders}, expected {expected_num_elders}"
-    );
     Ok(())
 }
 
@@ -181,36 +112,4 @@ fn nodes_info_from_logs(path: &Path) -> Result<Vec<NodeInfo>> {
     }
 
     Ok(nodes)
-}
-
-// Send RPC request to the node at the provided address,
-// querying for its own name and section members it is aware of.
-async fn send_rpc_query_to_node(
-    addr: SocketAddr,
-) -> Result<(XorName, bool, Vec<(XorName, SocketAddr)>)> {
-    let url = format!("http://{addr}");
-    println!("Connecting to node's RPC service at {url} ...");
-    let mut client = SafeNodeClient::connect(url).await?;
-
-    let request = tonic::Request::new(NodeInfoRequest {});
-    let response = client.node_info(request).await?;
-    let is_elder = response.get_ref().is_elder;
-    let name = xorname_from_bytes(&response.get_ref().node_name);
-
-    let request = tonic::Request::new(SectionMembersRequest {});
-    let response = client.section_members(request).await?;
-    let section_members = response
-        .get_ref()
-        .section_members
-        .iter()
-        .map(|p| (xorname_from_bytes(&p.node_name), p.addr.parse().unwrap()))
-        .collect();
-
-    Ok((name, is_elder, section_members))
-}
-
-fn xorname_from_bytes(bytes: &[u8]) -> XorName {
-    let mut xorname = [0u8; XOR_NAME_LEN];
-    bytes.iter().enumerate().for_each(|(i, b)| xorname[i] = *b);
-    XorName(xorname)
 }

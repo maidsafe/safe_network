@@ -40,9 +40,5 @@
     clippy::unused_async
 )]
 
-#[macro_use]
-extern crate tracing;
-
+/// Errors
 pub mod error;
-
-const PEERS_CONFIG_FILE: &str = "peers.json";
