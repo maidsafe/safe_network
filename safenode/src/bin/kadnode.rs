@@ -1,26 +1,19 @@
 mod log;
 
-use bincode::de;
-use futures::{select, FutureExt};
-use libp2p::core::muxing::StreamMuxerBox;
-use libp2p::{Swarm, Transport};
-use log::init_node_logging;
-
-use futures::StreamExt;
-use libp2p::kad::record::store::MemoryStore;
-use libp2p::kad::{GetClosestPeersError, Kademlia, KademliaConfig, KademliaEvent, QueryResult};
-use libp2p::{
-    development_transport, identity, mdns, quic,
-    swarm::{NetworkBehaviour, SwarmBuilder, SwarmEvent},
-    PeerId,
-};
-// use safenode::error::Result;
 use eyre::{Error, Result};
-use std::path::PathBuf;
-use std::{env, time::Duration};
+use futures::{select, FutureExt, StreamExt};
+use libp2p::{
+    core::muxing::StreamMuxerBox,
+    identity,
+    kad::{record::store::MemoryStore, Kademlia, KademliaConfig, KademliaEvent, QueryResult},
+    mdns, quic,
+    swarm::{NetworkBehaviour, SwarmBuilder, SwarmEvent},
+    PeerId, Transport,
+};
+use log::init_node_logging;
+use std::{path::PathBuf, time::Duration};
+use tracing::{debug, info};
 use xor_name::XorName;
-#[macro_use]
-extern crate tracing;
 
 // We create a custom network behaviour that combines Kademlia and mDNS.
 // mDNS is for local discovery only
@@ -66,7 +59,7 @@ type CmdChannel = tokio::sync::mpsc::Sender<SwarmCmd>;
 fn run_swarm() -> CmdChannel {
     let (sender, mut receiver) = tokio::sync::mpsc::channel::<SwarmCmd>(1);
 
-    let handle = tokio::spawn(async move {
+    let _handle: tokio::task::JoinHandle<Result<(), Error>> = tokio::spawn(async move {
         debug!("Starting swarm");
         // Create a random key for ourselves.
         let keypair = identity::Keypair::generate_ed25519();
@@ -74,7 +67,7 @@ fn run_swarm() -> CmdChannel {
 
         // QUIC configuration
         let quic_config = quic::Config::new(&keypair);
-        let mut transport = quic::async_std::Transport::new(quic_config);
+        let transport = quic::async_std::Transport::new(quic_config);
 
         let transport = transport
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
@@ -192,8 +185,6 @@ fn run_swarm() -> CmdChannel {
 
             }
         }
-
-        Ok::<(), Error>(())
     });
 
     sender
@@ -209,16 +200,18 @@ async fn main() -> Result<()> {
 
     let x = xor_name::XorName::from_content(b"some random content here for you");
 
-    channel.send(SwarmCmd::Search(x)).await;
+    if let Err(e) = channel.send(SwarmCmd::Search(x)).await {
+        debug!("Error while seding SwarmCmd: {e}");
+    }
 
     tokio::time::sleep(Duration::from_secs(5)).await;
 
-    channel.send(SwarmCmd::Search(x)).await;
+    if let Err(e) = channel.send(SwarmCmd::Search(x)).await {
+        debug!("Error while seding SwarmCmd: {e}");
+    }
     loop {
         tokio::time::sleep(Duration::from_millis(100)).await
     }
-
-    Ok(())
 }
 
 /// Grabs the log dir arg if passed in
@@ -237,10 +230,5 @@ fn grab_log_dir() -> Option<PathBuf> {
             }
         }
     }
-
-    if let Some(log_dir) = log_dir {
-        Some(PathBuf::from(log_dir))
-    } else {
-        None
-    }
+    log_dir.map(PathBuf::from)
 }

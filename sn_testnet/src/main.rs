@@ -229,7 +229,6 @@ async fn run_network(
         .build()?;
     testnet.launch_genesis(None, node_args.clone())?;
     testnet.launch_nodes(node_count as usize, &network_contacts_path, node_args)?;
-    testnet.configure_network_contacts(&network_contacts_path)?;
 
     // Perform a verification on the nodes launched (if requested) as a last step
     #[cfg(feature = "verify-nodes")]
@@ -256,7 +255,6 @@ async fn join_network(
         .build()?;
     let network_contacts_path = network_contacts_path.unwrap_or(default_network_contacts_path);
     testnet.launch_nodes(node_count as usize, &network_contacts_path, node_args)?;
-    testnet.configure_network_contacts(&network_contacts_path)?;
     Ok(())
 }
 
