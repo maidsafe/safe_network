@@ -1,0 +1,75 @@
+name: Simple PR checks
+
+on:
+  # on main, we want to know that all commits are passing at a glance, any deviation should help debugging errors at a glance
+  push:
+    branches: [main]
+  # tests must run for a PR to be valid and pass merge queue muster
+  merge_group:
+    branches: [main]
+  pull_request:
+    branches: ["*"]
+
+env:
+  CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
+  NODE_COUNT: 14
+
+jobs:
+  cargo-udeps:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Unused dependency check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          #Needs nightly to distinguish between deps of different versions
+          toolchain: nightly
+          override: true
+
+      - name: Install cargo-udeps
+        run: cargo install cargo-udeps --locked
+      - name: Run cargo-udeps
+        run: cargo +nightly udeps --all-targets
+
+
+  lint:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@f114310111fdbd07e99f47f9ca13d62b3ec98372
+
+  checks:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Run rustfmt and clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        id: toolchain
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v1
+        with:
+          cache-on-failure: true
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - shell: bash
+        run: cargo clippy --all-targets --all-features -- -Dwarnings
+
+      - name: Check documentation
+        # Deny certain `rustdoc` lints that are unwanted.
+        # See https://doc.rust-lang.org/rustdoc/lints.html for lints that are 'warning' by default.
+        run: RUSTDOCFLAGS="--deny=warnings" cargo doc --no-deps
