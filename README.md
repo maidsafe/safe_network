@@ -1,7 +1,5 @@
 # stableset_net
 
-![Alt text](assets/ant.png?raw=true "Here come the ants")
-
 This is an experimental branch for layering safe network data structures atop libp2p
 
 ## Running the network
