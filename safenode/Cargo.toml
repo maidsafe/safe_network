@@ -28,3 +28,4 @@ file-rotate = "0.7.3"
 libp2p = { version="0.51", features = ["async-std", "dns", "quic", "kad", "mdns", "mplex", "noise", "macros", "tcp", "websocket", "yamux"] }
 eyre = "0.6.8"
 xor_name = "5.0.0"
+libp2p-quic = { version = "0.7.0-alpha.3", features = ["async-std"] }
