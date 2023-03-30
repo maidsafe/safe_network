@@ -6,7 +6,7 @@ use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
     kad::{record::store::MemoryStore, Kademlia, KademliaConfig, KademliaEvent, QueryResult},
-    mdns, quic,
+    mdns,
     swarm::{NetworkBehaviour, SwarmBuilder, SwarmEvent},
     PeerId, Transport,
 };
@@ -66,9 +66,8 @@ fn run_swarm() -> CmdChannel {
         let local_peer_id = PeerId::from(keypair.public());
 
         // QUIC configuration
-        let quic_config = quic::Config::new(&keypair);
-        let transport = quic::async_std::Transport::new(quic_config);
-
+        let quic_config = libp2p_quic::Config::new(&keypair);
+        let transport = libp2p_quic::async_std::Transport::new(quic_config);
         let transport = transport
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
