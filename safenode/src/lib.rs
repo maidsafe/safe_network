@@ -40,5 +40,9 @@
     clippy::unused_async
 )]
 
-/// Errors
-pub mod error;
+/// Log
+pub mod log;
+/// Network
+pub mod network;
+/// Storage
+pub mod storage;

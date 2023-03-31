@@ -1,6 +1,13 @@
+// Copyright 2023 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
 mod appender;
 
-use crate::Result;
 use std::path::PathBuf;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::{Event, Subscriber};
@@ -109,7 +116,7 @@ impl TracingLayers {
 /// This guard should be held for the life of the program.
 ///
 /// Logging should be instantiated only once.
-pub fn init_node_logging(log_dir: &Option<PathBuf>) -> Result<Option<WorkerGuard>> {
+pub fn init_node_logging(log_dir: &Option<PathBuf>) -> Result<Option<WorkerGuard>, std::io::Error> {
     let mut layers = TracingLayers::default();
     layers.fmt_layer(log_dir);
 
