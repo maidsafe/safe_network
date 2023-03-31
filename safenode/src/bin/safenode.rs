@@ -1,4 +1,5 @@
 mod log;
+mod protocol;
 
 use log::init_node_logging;
 use safenode::{
