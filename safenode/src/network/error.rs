@@ -24,7 +24,7 @@ pub enum Error {
     JsonSerialisation(#[from] serde_json::Error),
     #[error("Tokio channel could not be sent to: {0}")]
     TokioChannel(String),
-    #[cfg(feature = "otlp")]
-    #[error("OpenTelemetry Tracing error: {0}")]
-    OpenTelemetryTracing(#[from] opentelemetry::trace::TraceError),
+    // #[cfg(feature = "otlp")]
+    // #[error("OpenTelemetry Tracing error: {0}")]
+    // OpenTelemetryTracing(#[from] opentelemetry::trace::TraceError),
 }

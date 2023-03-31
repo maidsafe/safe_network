@@ -1,233 +1,154 @@
-mod log;
+// Copyright 2023 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
 
-use eyre::{Error, Result};
-use futures::{select, FutureExt, StreamExt};
-use libp2p::{
-    core::muxing::StreamMuxerBox,
-    identity,
-    kad::{record::store::MemoryStore, Kademlia, KademliaConfig, KademliaEvent, QueryResult},
-    mdns,
-    swarm::{NetworkBehaviour, SwarmBuilder, SwarmEvent},
-    PeerId, Transport,
+use assert_fs::TempDir;
+use async_std::task::spawn;
+use bytes::Bytes;
+use clap::Parser;
+use futures::{prelude::*, StreamExt};
+use safenode::{
+    log::init_node_logging,
+    network::{self, EventLoop},
+    storage::{
+        chunks::{Chunk, ChunkAddress},
+        DataStorage,
+    },
 };
-use log::init_node_logging;
-use std::{path::PathBuf, time::Duration};
-use tracing::{debug, info};
+use std::{error::Error, fs, path::PathBuf};
+use tracing::info;
+use walkdir::WalkDir;
 use xor_name::XorName;
 
-// We create a custom network behaviour that combines Kademlia and mDNS.
-// mDNS is for local discovery only
-#[derive(NetworkBehaviour)]
-#[behaviour(out_event = "SafeNetBehaviour")]
-struct MyBehaviour {
-    kademlia: Kademlia<MemoryStore>,
-    mdns: mdns::async_io::Behaviour,
-}
+#[async_std::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let _log_appender_guard = init_node_logging(&None)?;
+    let opt = Opt::parse();
 
-impl MyBehaviour {
-    fn get_closest_peers_to_xorname(&mut self, addr: XorName) {
-        self.kademlia.get_closest_peers(addr.to_vec());
+    let (mut network_client, mut network_events, network_event_loop) = EventLoop::new().await?;
+    let temp_dir = TempDir::new()?;
+    let storage = DataStorage::new(&temp_dir);
+
+    // Spawn the network task for it to run in the background.
+    spawn(network_event_loop.run());
+
+    // In case a listen address was provided use it, otherwise listen on any
+    // address.
+    // match opt.listen_adress {
+    //     Some(addr) => network_client
+    //         .start_listening(addr)
+    //         .await
+    //         .expect("Listening not to fail."),
+    //     None => network_client
+    //         .start_listening("/ip4/0.0.0.0/tcp/0".parse()?)
+    //         .await
+    //         .expect("Listening not to fail."),
+    // };
+
+    // In case the user provided an address of a peer on the CLI, dial it.
+    // if let Some(addr) = opt.peer {
+    //     let peer_id = match addr.iter().last() {
+    //         Some(Protocol::P2p(hash)) => PeerId::from_multihash(hash).expect("Valid hash."),
+    //         _ => return Err("Expect peer multiaddr to contain peer ID.".into()),
+    //     };
+    //     network_client
+    //         .dial(peer_id, addr)
+    //         .await
+    //         .expect("Dial to succeed");
+    // }
+    //
+    if let Some(files_path) = opt.upload_chunks {
+        for entry in WalkDir::new(files_path) {
+            if let Ok(entry) = entry {
+                if entry.file_type().is_file() {
+                    let file = fs::read(entry.path())?;
+                    let chunk = Chunk::new(Bytes::from(file));
+                    let xor_name = chunk.name();
+                    info!(
+                        "Storing file {:?} with xorname: {xor_name:x}",
+                        entry.file_name()
+                    );
+                    storage.store(&chunk).await?;
+                    // store the name as key in the network
+                    // Advertise oneself as a provider of the file on the DHT.
+                    network_client.store_chunk(*xor_name).await;
+                }
+            }
+        }
     }
-}
 
-#[allow(clippy::large_enum_variant)]
-enum SafeNetBehaviour {
-    Kademlia(KademliaEvent),
-    Mdns(mdns::Event),
-}
-
-impl From<KademliaEvent> for SafeNetBehaviour {
-    fn from(event: KademliaEvent) -> Self {
-        SafeNetBehaviour::Kademlia(event)
-    }
-}
-
-impl From<mdns::Event> for SafeNetBehaviour {
-    fn from(event: mdns::Event) -> Self {
-        SafeNetBehaviour::Mdns(event)
-    }
-}
-
-#[derive(Debug)]
-enum SwarmCmd {
-    Search(XorName),
-}
-
-/// Channel to send Cmds to the swarm
-type CmdChannel = tokio::sync::mpsc::Sender<SwarmCmd>;
-
-fn run_swarm() -> CmdChannel {
-    let (sender, mut receiver) = tokio::sync::mpsc::channel::<SwarmCmd>(1);
-
-    let _handle: tokio::task::JoinHandle<Result<(), Error>> = tokio::spawn(async move {
-        debug!("Starting swarm");
-        // Create a random key for ourselves.
-        let keypair = identity::Keypair::generate_ed25519();
-        let local_peer_id = PeerId::from(keypair.public());
-
-        // QUIC configuration
-        let quic_config = libp2p_quic::Config::new(&keypair);
-        let transport = libp2p_quic::async_std::Transport::new(quic_config);
-        let transport = transport
-            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
-            .boxed();
-
-        // Create a Kademlia instance and connect to the network address.
-        // Create a swarm to manage peers and events.
-        let mut swarm = {
-            // Create a Kademlia behaviour.
-            let mut cfg = KademliaConfig::default();
-            cfg.set_query_timeout(Duration::from_secs(5 * 60));
-            let store = MemoryStore::new(local_peer_id);
-            let kademlia = Kademlia::new(local_peer_id, store);
-            let mdns = mdns::async_io::Behaviour::new(mdns::Config::default(), local_peer_id)?;
-            let behaviour = MyBehaviour { kademlia, mdns };
-
-            let mut swarm =
-                SwarmBuilder::with_async_std_executor(transport, behaviour, local_peer_id).build();
-
-            // // Listen on all interfaces and whatever port the OS assigns.
-            let addr = "/ip4/0.0.0.0/udp/0/quic-v1".parse().expect("addr okay");
-            swarm.listen_on(addr).expect("listening failed");
-
-            swarm
-        };
-
-        let net_info = swarm.network_info();
-
-        debug!("network info: {net_info:?}");
-        // Kick it off.
+    let mut client_clone = network_client.clone();
+    spawn(async move {
         loop {
-            select! {
-                cmd = receiver.recv().fuse() => {
-                    debug!("Cmd in: {cmd:?}");
-                    if let Some(SwarmCmd::Search(xor_name)) =  cmd {
-                        swarm.behaviour_mut().get_closest_peers_to_xorname(xor_name);
-                    }
+            match network_events.next().await {
+                // Reply with the content of the file on incoming requests.
+                Some(network::Event::InboundChunkRequest { xor_name, channel }) => {
+                    let addr = ChunkAddress(xor_name);
+                    let chunk = storage.query(&addr).await.unwrap();
+                    client_clone
+                        .respond_chunk(chunk.value().to_vec(), channel)
+                        .await;
                 }
-
-                event = swarm.select_next_some() => match event {
-                    SwarmEvent::NewListenAddr { address, .. } => {
-                        info!("Listening in {address:?}");
-                    },
-                    SwarmEvent::Behaviour(SafeNetBehaviour::Mdns(mdns::Event::Discovered(list))) => {
-                        for (peer_id, multiaddr) in list {
-                            info!("Node discovered: {multiaddr:?}");
-                            swarm.behaviour_mut().kademlia.add_address(&peer_id, multiaddr);
-                        }
-                    }
-                    SwarmEvent::Behaviour(SafeNetBehaviour::Kademlia(KademliaEvent::OutboundQueryProgressed {
-                        result: QueryResult::GetClosestPeers(result),
-                        ..
-                    })) => {
-
-                        info!("Result for closest peers is in! {result:?}");
-                    }
-                    // SwarmEvent::Behaviour(SafeNetBehaviour::Kademlia(KademliaEvent::RoutingUpdated{addresses, ..})) => {
-
-                    //     trace!("Kad routing updated: {addresses:?}");
-                    // }
-                    // SwarmEvent::Behaviour(SafeNetBehaviour::Kademlia(KademliaEvent::OutboundQueryProgressed { result, ..})) => {
-                    //     match result {
-                    //         // QueryResult::GetProviders(Ok(GetProvidersOk::FoundProviders { key, providers, .. })) => {
-                    //         //     for peer in providers {
-                    //         //         println!(
-                    //         //             "Peer {peer:?} provides key {:?}",
-                    //         //             std::str::from_utf8(key.as_ref()).unwrap()
-                    //         //         );
-                    //         //     }
-                    //         // }
-                    //         // QueryResult::GetProviders(Err(err)) => {
-                    //         //     eprintln!("Failed to get providers: {err:?}");
-                    //         // }
-                    //         // QueryResult::GetRecord(Ok(
-                    //         //     GetRecordOk::FoundRecord(PeerRecord {
-                    //         //         record: Record { key, value, .. },
-                    //         //         ..
-                    //         //     })
-                    //         // )) => {
-                    //         //     println!(
-                    //         //         "Got record {:?} {:?}",
-                    //         //         std::str::from_utf8(key.as_ref()).unwrap(),
-                    //         //         std::str::from_utf8(&value).unwrap(),
-                    //         //     );
-                    //         // }
-                    //         // QueryResult::GetRecord(Ok(_)) => {}
-                    //         // QueryResult::GetRecord(Err(err)) => {
-                    //         //     eprintln!("Failed to get record: {err:?}");
-                    //         // }
-                    //         // QueryResult::PutRecord(Ok(PutRecordOk { key })) => {
-                    //         //     println!(
-                    //         //         "Successfully put record {:?}",
-                    //         //         std::str::from_utf8(key.as_ref()).unwrap()
-                    //         //     );
-                    //         // }
-                    //         // QueryResult::PutRecord(Err(err)) => {
-                    //         //     eprintln!("Failed to put record: {err:?}");
-                    //         // }
-                    //         // QueryResult::StartProviding(Ok(AddProviderOk { key })) => {
-                    //         //     println!(
-                    //         //         "Successfully put provider record {:?}",
-                    //         //         std::str::from_utf8(key.as_ref()).unwrap()
-                    //         //     );
-                    //         // }
-                    //         // QueryResult::StartProviding(Err(err)) => {
-                    //         //     eprintln!("Failed to put provider record: {err:?}");
-                    //         // }
-                    //         _ => {
-                    //             //
-                    //         }
-                    //     }
-                    // }
-                    _ => {}
-                }
-
+                None => continue,
             }
         }
     });
 
-    sender
-}
+    thread::sleep(time::Duration::from_secs(1));
+    if let Some(xor_name) = opt.get_chunk {
+        info!("trying to get chunk");
+        let vec = hex::decode(xor_name).expect("failed to decode xorname");
+        let mut xor_name = XorName::default();
+        xor_name.0.copy_from_slice(vec.as_slice());
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let log_dir = grab_log_dir();
-    let _log_appender_guard = init_node_logging(&log_dir)?;
-
-    info!("start");
-    let channel = run_swarm();
-
-    let x = xor_name::XorName::from_content(b"some random content here for you");
-
-    if let Err(e) = channel.send(SwarmCmd::Search(x)).await {
-        debug!("Error while seding SwarmCmd: {e}");
-    }
-
-    tokio::time::sleep(Duration::from_secs(5)).await;
-
-    if let Err(e) = channel.send(SwarmCmd::Search(x)).await {
-        debug!("Error while seding SwarmCmd: {e}");
-    }
-    loop {
-        tokio::time::sleep(Duration::from_millis(100)).await
-    }
-}
-
-/// Grabs the log dir arg if passed in
-fn grab_log_dir() -> Option<PathBuf> {
-    let mut args = std::env::args().skip(1); // Skip the first argument (the program name)
-
-    let mut log_dir = None;
-
-    while let Some(arg) = args.next() {
-        match arg.as_str() {
-            "--log-dir" => {
-                log_dir = args.next();
-            }
-            _ => {
-                println!("Unknown argument: {}", arg);
-            }
+        // Locate all nodes providing the file.
+        let providers = network_client.get_chunk_providers(xor_name).await;
+        if providers.is_empty() {
+            return Err(format!("Could not find provider for file {xor_name}.").into());
         }
+        // Request the content of the file from each node.
+        let requests = providers.into_iter().map(|p| {
+            let mut network_client = network_client.clone();
+            async move { network_client.request_chunk(p, xor_name).await }.boxed()
+        });
+        // Await the requests, ignore the remaining once a single one succeeds.
+        let file_content = futures::future::select_ok(requests)
+            .await
+            .map_err(|_| "None of the providers returned file.")?
+            .0;
+        let chunk = Chunk::new(Bytes::from(file_content));
+        info!("got chunk {:x}", chunk.name());
+
+        // std::io::stdout().write_all(&file_content)?;
     }
-    log_dir.map(PathBuf::from)
+
+    use std::{thread, time};
+    loop {
+        thread::sleep(time::Duration::from_millis(100));
+    }
+    Ok(())
+
+    // match opt.argument {
+    //     // Providing a file.
+    //     CliArgument::Provide { path, name } => {
+    //     }
+    //     // Locating and getting a file.
+    //     CliArgument::Get { name } => {
+
+    //     }
+    // }
+}
+
+#[derive(Parser, Debug)]
+#[clap(name = "safenode cli")]
+struct Opt {
+    #[clap(long)]
+    upload_chunks: Option<PathBuf>,
+
+    #[clap(long)]
+    get_chunk: Option<String>,
 }
