@@ -8,7 +8,9 @@
 
 mod chunk_codec;
 mod command;
+mod error;
 
+use error::Result;
 use futures::channel::{mpsc, oneshot};
 use futures::prelude::*;
 use libp2p::{
@@ -25,7 +27,7 @@ use libp2p::{
 };
 use libp2p::{mdns, Multiaddr, Transport};
 use std::collections::{HashMap, HashSet};
-use std::{error::Error, iter, time::Duration};
+use std::{iter, time::Duration};
 use tracing::info;
 use xor_name::XorName;
 
@@ -39,7 +41,7 @@ pub struct Client {
 
 impl Client {
     //  Listen for incoming connections on the given address.
-    pub async fn start_listening(&mut self, addr: Multiaddr) -> Result<(), Box<dyn Error + Send>> {
+    pub async fn start_listening(&mut self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
         self.sender
             .send(CmdToSwarm::StartListening { addr, sender })
@@ -49,11 +51,7 @@ impl Client {
     }
 
     /// Dial the given peer at the given address.
-    pub async fn dial(
-        &mut self,
-        peer_id: PeerId,
-        peer_addr: Multiaddr,
-    ) -> Result<(), Box<dyn Error + Send>> {
+    pub async fn dial(&mut self, peer_id: PeerId, peer_addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
         self.sender
             .send(CmdToSwarm::Dial {
@@ -87,11 +85,7 @@ impl Client {
     }
 
     /// Request the content of the given file from the given peer.
-    pub async fn request_chunk(
-        &mut self,
-        peer: PeerId,
-        xor_name: XorName,
-    ) -> Result<Vec<u8>, Box<dyn Error + Send>> {
+    pub async fn request_chunk(&mut self, peer: PeerId, xor_name: XorName) -> Result<Vec<u8>> {
         let (sender, receiver) = oneshot::channel();
         self.sender
             .send(CmdToSwarm::RequestChunk {
@@ -117,11 +111,10 @@ pub struct EventLoop {
     swarm: Swarm<SafeNodeBehaviour>,
     command_receiver: mpsc::Receiver<CmdToSwarm>,
     event_sender: mpsc::Sender<Event>,
-    pending_dial: HashMap<PeerId, oneshot::Sender<Result<(), Box<dyn Error + Send>>>>,
+    pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_start_providing: HashMap<QueryId, oneshot::Sender<()>>,
     pending_get_providers: HashMap<QueryId, oneshot::Sender<HashSet<PeerId>>>,
-    pending_request_file:
-        HashMap<RequestId, oneshot::Sender<Result<Vec<u8>, Box<dyn Error + Send>>>>,
+    pending_request_file: HashMap<RequestId, oneshot::Sender<Result<Vec<u8>>>>,
 }
 
 impl EventLoop {
@@ -134,7 +127,7 @@ impl EventLoop {
     ///
     /// - The network task driving the network itself.
     pub async fn new(// secret_key_seed: Option<u8>,
-    ) -> Result<(Client, impl Stream<Item = Event>, EventLoop), Box<dyn Error>> {
+    ) -> Result<(Client, impl Stream<Item = Event>, EventLoop)> {
         // Create a random key for ourselves.
         let keypair = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(keypair.public());
@@ -292,7 +285,7 @@ impl EventLoop {
                     .pending_request_file
                     .remove(&request_id)
                     .expect("Request to still be pending.")
-                    .send(Err(Box::new(error)));
+                    .send(Err(error.into()));
             }
             SwarmEvent::Behaviour(SafeNodeEvent::RequestResponse(
                 request_response::Event::ResponseSent { .. },
@@ -318,7 +311,7 @@ impl EventLoop {
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 if let Some(peer_id) = peer_id {
                     if let Some(sender) = self.pending_dial.remove(&peer_id) {
-                        let _ = sender.send(Err(Box::new(error)));
+                        let _ = sender.send(Err(error.into()));
                     }
                 }
             }

@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use libp2p::{request_response::OutboundFailure, swarm::DialError, TransportError};
 use std::io;
 use thiserror::Error;
 
@@ -16,15 +17,12 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
-    /// I/O error.
     #[error("I/O error: {0}")]
     Io(#[from] io::Error),
-    /// JSON serialisation error.
-    #[error("JSON serialisation error:: {0}")]
-    JsonSerialisation(#[from] serde_json::Error),
-    #[error("Tokio channel could not be sent to: {0}")]
-    TokioChannel(String),
-    // #[cfg(feature = "otlp")]
-    // #[error("OpenTelemetry Tracing error: {0}")]
-    // OpenTelemetryTracing(#[from] opentelemetry::trace::TraceError),
+    #[error("Transport Error")]
+    TransportError(#[from] TransportError<std::io::Error>),
+    #[error("Dial Error")]
+    DialError(#[from] DialError),
+    #[error("Outbound Error")]
+    OutboundError(#[from] OutboundFailure),
 }

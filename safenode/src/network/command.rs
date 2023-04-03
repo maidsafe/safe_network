@@ -10,12 +10,10 @@ use super::{
     chunk_codec::{ChunkRequest, ChunkResponse},
     EventLoop,
 };
+use crate::network::error::Result;
 use futures::channel::oneshot;
 use libp2p::{multiaddr::Protocol, request_response::ResponseChannel, Multiaddr, PeerId};
-use std::{
-    collections::{hash_map, HashSet},
-    error::Error,
-};
+use std::collections::{hash_map, HashSet};
 use xor_name::XorName;
 
 /// Commands to send to the Swarm
@@ -23,12 +21,12 @@ use xor_name::XorName;
 pub enum CmdToSwarm {
     StartListening {
         addr: Multiaddr,
-        sender: oneshot::Sender<Result<(), Box<dyn Error + Send>>>,
+        sender: oneshot::Sender<Result<()>>,
     },
     Dial {
         peer_id: PeerId,
         peer_addr: Multiaddr,
-        sender: oneshot::Sender<Result<(), Box<dyn Error + Send>>>,
+        sender: oneshot::Sender<Result<()>>,
     },
     StoreChunk {
         xor_name: XorName,
@@ -41,7 +39,7 @@ pub enum CmdToSwarm {
     RequestChunk {
         xor_name: XorName,
         peer: PeerId,
-        sender: oneshot::Sender<Result<Vec<u8>, Box<dyn Error + Send>>>,
+        sender: oneshot::Sender<Result<Vec<u8>>>,
     },
     RespondChunk {
         file: Vec<u8>,
@@ -55,7 +53,7 @@ impl EventLoop {
             CmdToSwarm::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {
                     Ok(_) => sender.send(Ok(())),
-                    Err(e) => sender.send(Err(Box::new(e))),
+                    Err(e) => sender.send(Err(e.into())),
                 };
             }
             CmdToSwarm::Dial {
@@ -76,7 +74,7 @@ impl EventLoop {
                             e.insert(sender);
                         }
                         Err(e) => {
-                            let _ = sender.send(Err(Box::new(e)));
+                            let _ = sender.send(Err(e.into()));
                         }
                     }
                 } else {
