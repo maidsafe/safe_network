@@ -25,7 +25,7 @@ serde_json = "1.0.94"
 thiserror = "1.0.23"
 tokio = { version = "1.17.0", features = ["fs", "io-util", "macros", "rt", "time", "sync", "parking_lot"] }
 tracing = { version = "~0.1.26" }
-tracing-subscriber = "0.3.16"
+tracing-subscriber = {version= "0.3.16", features=["env-filter"]}
 tracing-appender = "~0.2.0"
 tracing-core = "0.1.30"
 walkdir = "2.3.1"

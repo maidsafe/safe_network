@@ -310,29 +310,13 @@ impl Testnet {
         if node_name == "safenode-1" {
             let address =
                 address.ok_or_else(|| eyre!("An address must be present for the genesis node"))?;
-            launch_args.push("--first".to_string());
-            launch_args.push(address.to_string());
-            launch_args.push("--local-addr".to_string());
-            launch_args.push(format!("0.0.0.0:{}", address.port()));
-        } else {
-            let network_contacts_path = network_contacts_path.ok_or_else(|| {
-                eyre!("A network contacts path must be present for a non-genesis node")
-            })?;
-            launch_args.push("--network-contacts-file".to_string());
-            launch_args.push(
-                network_contacts_path
-                    .to_str()
-                    .ok_or_else(|| eyre!("Unable to obtain path"))?
-                    .to_string(),
-            )
-        }
+        } 
+        
 
         let node_data_dir_path = node_data_dir_path
             .to_str()
             .ok_or_else(|| eyre!("Unable to obtain node data directory path"))?
             .to_string();
-        // launch_args.push("--root-dir".to_string());
-        // launch_args.push(node_data_dir_path.to_string());
         launch_args.push("--log-dir".to_string());
         launch_args.push(node_data_dir_path);
         launch_args.extend(node_args);

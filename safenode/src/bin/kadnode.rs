@@ -27,8 +27,8 @@ use xor_name::XorName;
 
 #[async_std::main]
 async fn main() -> Result<()> {
-    let _log_appender_guard = init_node_logging(&None)?;
     let opt = Opt::parse();
+    let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
     let (mut network_client, mut network_events, network_event_loop) = EventLoop::new().await?;
     let temp_dir = TempDir::new()?;
@@ -147,6 +147,9 @@ async fn main() -> Result<()> {
 #[derive(Parser, Debug)]
 #[clap(name = "safenode cli")]
 struct Opt {
+    #[clap(long)]
+    log_dir: Option<PathBuf>,
+
     #[clap(long)]
     upload_chunks: Option<PathBuf>,
 
