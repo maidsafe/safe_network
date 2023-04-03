@@ -10,7 +10,7 @@ pub mod chunks;
 mod errors;
 
 use chunks::ChunkStorage;
-use errors::{Error, Result};
+use errors::Result;
 use std::path::{Path, PathBuf};
 use tracing::warn;
 use walkdir::WalkDir;

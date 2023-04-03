@@ -19,7 +19,7 @@ use std::{
 };
 use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
 
-pub fn file_rotater(
+pub(super) fn file_rotater(
     dir: &PathBuf,
     max_size: usize,
     max_lines: usize,
@@ -65,13 +65,13 @@ pub fn file_rotater(
 ///  - optional compression of rotated logfiles
 //
 // The above functionality is provided using crate file_rotation
-pub struct FileRotateAppender {
+pub(super) struct FileRotateAppender {
     writer: FileRotate<AppendTimestamp>,
 }
 
 impl FileRotateAppender {
     /// Create `FileRotateAppender` using parameters
-    pub fn make_rotate_appender(
+    pub(super) fn make_rotate_appender(
         directory: impl AsRef<Path>,
         file_name_prefix: impl AsRef<Path>,
         file_limit: AppendTimestamp,

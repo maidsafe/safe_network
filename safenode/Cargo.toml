@@ -36,3 +36,4 @@ eyre = "0.6.8"
 xor_name = "5.0.0"
 clap = { version = "4.2.1", features = ["derive"]}
 assert_fs = "1.0.12"
+rmp-serde = "1.1.1"
