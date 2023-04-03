@@ -7,39 +7,30 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::errors::{Error, Result};
-use super::prefix_tree_path;
+
 use bytes::Bytes;
+use clru::CLruCache;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{
-    fmt::{self, Display, Formatter},
-    io::{self, ErrorKind},
-    path::{Path, PathBuf},
-};
-use tokio::fs::{create_dir_all, read, File};
-use tokio::io::AsyncWriteExt;
-// use tokio::{
-//     fs::{create_dir_all, metadata, read, remove_file, File},
-//     io::AsyncWriteExt,
-// };
-use tracing::{debug, info, trace};
+use std::{num::NonZeroUsize, sync::Arc};
+use tokio::sync::RwLock;
+use tracing::{debug, trace};
 use xor_name::XorName;
 
-const CHUNKS_STORE_DIR_NAME: &str = "chunks";
+const CHUNKS_CACHE_SIZE: usize = 20 * 1024 * 1024;
 
-/// The XorName of the provided `Chunk`
+/// Address of a Chunk
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
-pub struct ChunkAddress(pub XorName);
+pub struct ChunkAddress(XorName);
 impl ChunkAddress {
+    /// Creates a new ChunkAddress.
+    pub fn new(xor_name: XorName) -> Self {
+        Self(xor_name)
+    }
+
     /// Returns the name.
     pub fn name(&self) -> &XorName {
         &self.0
     }
-}
-
-/// Operations on data chunks.
-#[derive(Clone, Debug)]
-pub(super) struct ChunkStorage {
-    file_store_path: PathBuf,
 }
 
 /// Chunk, an immutable chunk of data
@@ -102,85 +93,71 @@ impl<'de> Deserialize<'de> for Chunk {
     }
 }
 
-impl ChunkStorage {
-    /// Creates a new `ChunkStorage` at the specified root location
-    ///
-    /// If the location specified already contains a `ChunkStorage`, it is simply used
-    ///
-    /// Used space of the dir is tracked
-    pub(super) fn new(path: &Path) -> Self {
+/// Operations on data chunks.
+#[derive(Clone)]
+pub(super) struct ChunkStorage {
+    cache: Arc<RwLock<CLruCache<ChunkAddress, Chunk>>>,
+}
+
+impl Default for ChunkStorage {
+    fn default() -> Self {
+        let capacity =
+            NonZeroUsize::new(CHUNKS_CACHE_SIZE).expect("Failed to create in-memory Chunk storage");
         Self {
-            file_store_path: path.join(CHUNKS_STORE_DIR_NAME),
+            cache: Arc::new(RwLock::new(CLruCache::new(capacity))),
         }
-    }
-
-    fn chunk_addr_to_filepath(&self, addr: &ChunkAddress) -> Result<PathBuf> {
-        let xorname = *addr.name();
-        let path = prefix_tree_path(&self.file_store_path, xorname);
-        let filename = hex::encode(xorname);
-        Ok(path.join(filename))
-    }
-
-    pub(super) async fn get_chunk(&self, address: &ChunkAddress) -> Result<Chunk> {
-        trace!("Getting chunk {:?}", address);
-
-        let file_path = self.chunk_addr_to_filepath(address)?;
-        match read(file_path).await {
-            Ok(bytes) => {
-                let chunk = Chunk::new(Bytes::from(bytes));
-                if chunk.address() != address {
-                    // This can happen if the content read is empty, or incomplete,
-                    // possibly due to an issue with the OS synchronising to disk,
-                    // resulting in a mismatch with recreated address of the Chunk.
-                    Err(Error::ChunkNotFound(*address.name()))
-                } else {
-                    Ok(chunk)
-                }
-            }
-            Err(io_error @ io::Error { .. }) if io_error.kind() == ErrorKind::NotFound => {
-                Err(Error::ChunkNotFound(*address.name()))
-            }
-            Err(other) => Err(other.into()),
-        }
-    }
-
-    // Read chunk from local store and return NodeQueryResponse
-    pub(super) async fn get(&self, address: &ChunkAddress) -> Result<Chunk> {
-        self.get_chunk(address).await
-    }
-
-    /// Store a chunk in the local disk store unless it is already there
-    pub(super) async fn store(&self, chunk: &Chunk) -> Result<()> {
-        let addr = chunk.address();
-        let filepath = self.chunk_addr_to_filepath(addr)?;
-
-        if filepath.exists() {
-            info!(
-                "{}: Chunk data already exists, not storing: {:?}",
-                self, addr
-            );
-            // Nothing more to do here
-            return Ok(());
-        }
-
-        // Store the data on disk
-        if let Some(dirs) = filepath.parent() {
-            create_dir_all(dirs).await?;
-        }
-
-        let mut file = File::create(filepath).await?;
-
-        file.write_all(chunk.value()).await?;
-        // Let's sync up OS data to disk to reduce the chances of
-        // concurrent reading failing by reading an empty/incomplete file
-        file.sync_data().await?;
-
-        Ok(())
     }
 }
 
-impl Display for ChunkStorage {
-    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
-        write!(formatter, "ChunkStorage")
+impl ChunkStorage {
+    #[allow(dead_code)]
+    pub(super) async fn addrs(&self) -> Vec<ChunkAddress> {
+        self.cache
+            .read()
+            .await
+            .iter()
+            .map(|(addr, _)| *addr)
+            .collect()
+    }
+
+    #[allow(dead_code)]
+    pub(super) async fn remove_chunk(&self, address: &ChunkAddress) -> Result<()> {
+        trace!("Removing chunk: {address:?}");
+        if self.cache.write().await.pop(address).is_some() {
+            Ok(())
+        } else {
+            Err(Error::ChunkNotFound(*address.name()))
+        }
+    }
+
+    // Read chunk from local store
+    pub(super) async fn get(&self, address: &ChunkAddress) -> Result<Chunk> {
+        trace!("Getting chunk: {address:?}");
+        if let Some(chunk) = self.cache.read().await.peek(address) {
+            Ok(chunk.clone())
+        } else {
+            Err(Error::ChunkNotFound(*address.name()))
+        }
+    }
+
+    /// Store a chunk in the local in-memory store unless it is already there
+    pub(super) async fn store(&self, chunk: &Chunk) -> Result<()> {
+        let address = chunk.address();
+        trace!("About to store chunk: {address:?}");
+
+        let _ = self.cache.write().await.try_put_or_modify(
+            *address,
+            |addr, _| {
+                trace!("Chunk successfully stored: {addr:?}");
+                Ok::<Chunk, Error>(chunk.clone())
+            },
+            |addr, _, _| {
+                trace!("Chunk data already exists in cache, not storing: {addr:?}");
+                Ok(())
+            },
+            (),
+        )?;
+
+        Ok(())
     }
 }

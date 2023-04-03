@@ -6,7 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use assert_fs::TempDir;
 use bytes::Bytes;
 use clap::Parser;
 use eyre::{eyre, Result};
@@ -20,8 +19,7 @@ use safenode::{
         DataStorage,
     },
 };
-use std::{fs, path::PathBuf};
-use std::{thread, time};
+use std::{fs, path::PathBuf, thread, time};
 use tokio::task::spawn;
 use tracing::{info, warn};
 use walkdir::WalkDir;
@@ -35,8 +33,7 @@ async fn main() -> Result<()> {
     info!("Starting safenode...");
 
     let (mut network_api, mut network_events, network_event_loop) = NetworkSwarmLoop::new()?;
-    let temp_dir = TempDir::new()?;
-    let storage = DataStorage::new(&temp_dir);
+    let storage = DataStorage::new();
 
     // Spawn the network task for it to run in the background.
     spawn(network_event_loop.run());
@@ -55,7 +52,7 @@ async fn main() -> Result<()> {
                 NetworkEvent::RequestReceived { req, channel } => {
                     // Reply with the content of the file on incoming requests.
                     if let Request::Query(Query::GetChunk(xor_name)) = req {
-                        let addr = ChunkAddress(xor_name);
+                        let addr = ChunkAddress::new(xor_name);
                         let chunk = storage_clone.query(&addr).await.unwrap();
                         if let Err(err) = api_clone
                             .send_response(Response::Query(QueryResponse::Chunk(chunk)), channel)

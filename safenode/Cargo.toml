@@ -14,6 +14,7 @@ assert_fs = "1.0.12"
 async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
 clap = { version = "4.2.1", features = ["derive"]}
+clru = "~0.6.1"
 custom_debug = "~0.5.0"
 eyre = "0.6.8"
 file-rotate = "0.7.3"
