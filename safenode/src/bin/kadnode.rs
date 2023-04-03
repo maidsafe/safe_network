@@ -64,7 +64,8 @@ fn run_swarm() -> CmdChannel {
         // Create a random key for ourselves.
         let keypair = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(keypair.public());
-
+        
+        debug!("Starting swarm: this peerId : {local_peer_id:?}");
         // QUIC configuration
         let quic_config = libp2p_quic::Config::new(&keypair);
         let transport = libp2p_quic::async_std::Transport::new(quic_config);
