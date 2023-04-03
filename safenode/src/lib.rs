@@ -26,7 +26,6 @@
 )]
 // Turn on some additional warnings to encourage good style.
 #![warn(
-    missing_debug_implementations,
     missing_docs,
     trivial_casts,
     trivial_numeric_casts,

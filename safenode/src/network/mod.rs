@@ -6,115 +6,52 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod chunk_codec;
+mod api;
 mod command;
 mod error;
+mod event;
+mod safe_msg;
 
-use error::Result;
-use futures::channel::{mpsc, oneshot};
-use futures::prelude::*;
+pub use self::{
+    event::NetworkEvent,
+    safe_msg::{SafeRequest, SafeResponse},
+};
+
+use self::{
+    api::NetworkApi,
+    command::CmdToSwarm,
+    error::Result,
+    event::SafeNodeBehaviour,
+    safe_msg::{SafeMsgCodec, SafeMsgProtocol},
+};
+use futures::{
+    channel::{mpsc, oneshot},
+    prelude::*,
+};
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
-    kad::{
-        record::store::MemoryStore, GetProvidersOk, Kademlia, KademliaConfig, KademliaEvent,
-        QueryId, QueryResult,
-    },
-    multiaddr::Protocol,
-    request_response::{self, ProtocolSupport, RequestId, ResponseChannel},
-    swarm::{NetworkBehaviour, Swarm, SwarmBuilder, SwarmEvent},
-    PeerId,
+    kad::{record::store::MemoryStore, Kademlia, KademliaConfig, QueryId},
+    mdns,
+    request_response::{self, ProtocolSupport, RequestId},
+    swarm::{Swarm, SwarmBuilder},
+    PeerId, Transport,
 };
-use libp2p::{mdns, Multiaddr, Transport};
-use std::collections::{HashMap, HashSet};
-use std::{iter, time::Duration};
-use tracing::info;
-use xor_name::XorName;
-
-use self::chunk_codec::{ChunkRequest, ChunkResponse, ChunkStorageCodec, ChunkStorageProtocol};
-use self::command::CmdToSwarm;
-
-#[derive(Clone)]
-pub struct Client {
-    sender: mpsc::Sender<CmdToSwarm>,
-}
-
-impl Client {
-    //  Listen for incoming connections on the given address.
-    pub async fn start_listening(&mut self, addr: Multiaddr) -> Result<()> {
-        let (sender, receiver) = oneshot::channel();
-        self.sender
-            .send(CmdToSwarm::StartListening { addr, sender })
-            .await
-            .expect("Command receiver not to be dropped.");
-        receiver.await.expect("Sender not to be dropped.")
-    }
-
-    /// Dial the given peer at the given address.
-    pub async fn dial(&mut self, peer_id: PeerId, peer_addr: Multiaddr) -> Result<()> {
-        let (sender, receiver) = oneshot::channel();
-        self.sender
-            .send(CmdToSwarm::Dial {
-                peer_id,
-                peer_addr,
-                sender,
-            })
-            .await
-            .expect("Command receiver not to be dropped.");
-        receiver.await.expect("Sender not to be dropped.")
-    }
-
-    /// Advertise the local node as the provider of the given file on the DHT.
-    pub async fn store_chunk(&mut self, xor_name: XorName) {
-        let (sender, receiver) = oneshot::channel();
-        self.sender
-            .send(CmdToSwarm::StoreChunk { xor_name, sender })
-            .await
-            .expect("Command receiver not to be dropped.");
-        receiver.await.expect("Sender not to be dropped.");
-    }
-
-    /// Find the providers for the given file on the DHT.
-    pub async fn get_chunk_providers(&mut self, xor_name: XorName) -> HashSet<PeerId> {
-        let (sender, receiver) = oneshot::channel();
-        self.sender
-            .send(CmdToSwarm::GetChunkProviders { xor_name, sender })
-            .await
-            .expect("Command receiver not to be dropped.");
-        receiver.await.expect("Sender not to be dropped.")
-    }
-
-    /// Request the content of the given file from the given peer.
-    pub async fn request_chunk(&mut self, peer: PeerId, xor_name: XorName) -> Result<Vec<u8>> {
-        let (sender, receiver) = oneshot::channel();
-        self.sender
-            .send(CmdToSwarm::RequestChunk {
-                xor_name,
-                peer,
-                sender,
-            })
-            .await
-            .expect("Command receiver not to be dropped.");
-        receiver.await.expect("Sender not be dropped.")
-    }
-
-    /// Respond with the provided file content to the given request.
-    pub async fn respond_chunk(&mut self, file: Vec<u8>, channel: ResponseChannel<ChunkResponse>) {
-        self.sender
-            .send(CmdToSwarm::RespondChunk { file, channel })
-            .await
-            .expect("Command receiver not to be dropped.");
-    }
-}
+use std::{
+    collections::{HashMap, HashSet},
+    iter,
+    time::Duration,
+};
+use tracing::warn;
 
 pub struct EventLoop {
     swarm: Swarm<SafeNodeBehaviour>,
     command_receiver: mpsc::Receiver<CmdToSwarm>,
-    event_sender: mpsc::Sender<Event>,
+    event_sender: mpsc::Sender<NetworkEvent>,
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
-    pending_start_providing: HashMap<QueryId, oneshot::Sender<()>>,
+    pending_start_providing: HashMap<QueryId, oneshot::Sender<Result<()>>>,
     pending_get_providers: HashMap<QueryId, oneshot::Sender<HashSet<PeerId>>>,
-    pending_request_file: HashMap<RequestId, oneshot::Sender<Result<Vec<u8>>>>,
+    pending_safe_requests: HashMap<RequestId, oneshot::Sender<Result<SafeResponse>>>,
 }
 
 impl EventLoop {
@@ -126,8 +63,8 @@ impl EventLoop {
     /// - The network event stream, e.g. for incoming requests.
     ///
     /// - The network task driving the network itself.
-    pub async fn new(// secret_key_seed: Option<u8>,
-    ) -> Result<(Client, impl Stream<Item = Event>, EventLoop)> {
+    pub fn new(// secret_key_seed: Option<u8>,
+    ) -> Result<(NetworkApi, impl Stream<Item = NetworkEvent>, EventLoop)> {
         // Create a random key for ourselves.
         let keypair = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(keypair.public());
@@ -143,14 +80,14 @@ impl EventLoop {
         let swarm = {
             // Create a Kademlia behaviour.
             let mut cfg = KademliaConfig::default();
-            cfg.set_query_timeout(Duration::from_secs(5 * 60));
+            let _ = cfg.set_query_timeout(Duration::from_secs(5 * 60));
             let kademlia =
                 Kademlia::with_config(local_peer_id, MemoryStore::new(local_peer_id), cfg);
             let mdns = mdns::async_io::Behaviour::new(mdns::Config::default(), local_peer_id)?;
             let behaviour = SafeNodeBehaviour {
                 request_response: request_response::Behaviour::new(
-                    ChunkStorageCodec(),
-                    iter::once((ChunkStorageProtocol(), ProtocolSupport::Full)),
+                    SafeMsgCodec(),
+                    iter::once((SafeMsgProtocol(), ProtocolSupport::Full)),
                     Default::default(),
                 ),
                 kademlia,
@@ -162,7 +99,7 @@ impl EventLoop {
 
             // // Listen on all interfaces and whatever port the OS assigns.
             let addr = "/ip4/0.0.0.0/udp/0/quic-v1".parse().expect("addr okay");
-            swarm.listen_on(addr).expect("listening failed");
+            let _listener_id = swarm.listen_on(addr).expect("listening failed");
 
             swarm
         };
@@ -176,11 +113,11 @@ impl EventLoop {
             pending_dial: Default::default(),
             pending_start_providing: Default::default(),
             pending_get_providers: Default::default(),
-            pending_request_file: Default::default(),
+            pending_safe_requests: Default::default(),
         };
 
         Ok((
-            Client {
+            NetworkApi {
                 sender: command_sender,
             },
             event_receiver,
@@ -191,186 +128,21 @@ impl EventLoop {
     pub async fn run(mut self) {
         loop {
             futures::select! {
-                event = self.swarm.next() => self.handle_event(event.expect("Swarm stream to be infinite.")).await  ,
+                event = self.swarm.next() => {
+                    if let Err(err) = self.handle_event(event.expect("Swarm stream to be infinite!")).await {
+                        warn!("Error while handling event: {err}");
+                    }
+                }  ,
                 command = self.command_receiver.next() => match command {
-                    Some(c) => self.handle_command(c).await,
+                    Some(cmd) => {
+                        if let Err(err) = self.handle_command(cmd) {
+                            warn!("Error while handling cmd: {err}");
+                        }
+                    },
                     // Command channel closed, thus shutting down the network event loop.
                     None=>  return,
                 },
             }
         }
     }
-
-    async fn handle_event<THandleErr: std::error::Error>(
-        &mut self,
-        event: SwarmEvent<SafeNodeEvent, THandleErr>,
-    ) {
-        match event {
-            SwarmEvent::Behaviour(SafeNodeEvent::Kademlia(
-                KademliaEvent::OutboundQueryProgressed {
-                    id,
-                    result: QueryResult::StartProviding(_),
-                    ..
-                },
-            )) => {
-                let sender: oneshot::Sender<()> = self
-                    .pending_start_providing
-                    .remove(&id)
-                    .expect("Completed query to be previously pending.");
-                let _ = sender.send(());
-            }
-            SwarmEvent::Behaviour(SafeNodeEvent::Kademlia(
-                KademliaEvent::OutboundQueryProgressed {
-                    id,
-                    result:
-                        QueryResult::GetProviders(Ok(GetProvidersOk::FoundProviders {
-                            providers, ..
-                        })),
-                    ..
-                },
-            )) => {
-                if let Some(sender) = self.pending_get_providers.remove(&id) {
-                    sender.send(providers).expect("Receiver not to be dropped");
-
-                    // Finish the query. We are only interested in the first result.
-                    self.swarm
-                        .behaviour_mut()
-                        .kademlia
-                        .query_mut(&id)
-                        .unwrap()
-                        .finish();
-                }
-            }
-            SwarmEvent::Behaviour(SafeNodeEvent::Kademlia(
-                KademliaEvent::OutboundQueryProgressed {
-                    result:
-                        QueryResult::GetProviders(Ok(GetProvidersOk::FinishedWithNoAdditionalRecord {
-                            ..
-                        })),
-                    ..
-                },
-            )) => {}
-            SwarmEvent::Behaviour(SafeNodeEvent::Kademlia(_)) => {}
-            SwarmEvent::Behaviour(SafeNodeEvent::RequestResponse(
-                request_response::Event::Message { message, .. },
-            )) => match message {
-                request_response::Message::Request {
-                    request, channel, ..
-                } => {
-                    self.event_sender
-                        .send(Event::InboundChunkRequest {
-                            xor_name: request.0,
-                            channel,
-                        })
-                        .await
-                        .expect("Event receiver not to be dropped.");
-                }
-                request_response::Message::Response {
-                    request_id,
-                    response,
-                } => {
-                    let _ = self
-                        .pending_request_file
-                        .remove(&request_id)
-                        .expect("Request to still be pending.")
-                        .send(Ok(response.0));
-                }
-            },
-            SwarmEvent::Behaviour(SafeNodeEvent::RequestResponse(
-                request_response::Event::OutboundFailure {
-                    request_id, error, ..
-                },
-            )) => {
-                let _ = self
-                    .pending_request_file
-                    .remove(&request_id)
-                    .expect("Request to still be pending.")
-                    .send(Err(error.into()));
-            }
-            SwarmEvent::Behaviour(SafeNodeEvent::RequestResponse(
-                request_response::Event::ResponseSent { .. },
-            )) => {}
-            SwarmEvent::NewListenAddr { address, .. } => {
-                let local_peer_id = *self.swarm.local_peer_id();
-                info!(
-                    "Local node is listening on {:?}",
-                    address.with(Protocol::P2p(local_peer_id.into()))
-                );
-            }
-            SwarmEvent::IncomingConnection { .. } => {}
-            SwarmEvent::ConnectionEstablished {
-                peer_id, endpoint, ..
-            } => {
-                if endpoint.is_dialer() {
-                    if let Some(sender) = self.pending_dial.remove(&peer_id) {
-                        let _ = sender.send(Ok(()));
-                    }
-                }
-            }
-            SwarmEvent::ConnectionClosed { .. } => {}
-            SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
-                if let Some(peer_id) = peer_id {
-                    if let Some(sender) = self.pending_dial.remove(&peer_id) {
-                        let _ = sender.send(Err(error.into()));
-                    }
-                }
-            }
-            SwarmEvent::IncomingConnectionError { .. } => {}
-            SwarmEvent::Dialing(peer_id) => info!("Dialing {peer_id}"),
-            SwarmEvent::Behaviour(SafeNodeEvent::Mdns(mdns_event)) => match *mdns_event {
-                mdns::Event::Discovered(list) => {
-                    for (peer_id, multiaddr) in list {
-                        info!("Node discovered: {multiaddr:?}");
-                        self.swarm
-                            .behaviour_mut()
-                            .kademlia
-                            .add_address(&peer_id, multiaddr);
-                    }
-                }
-                mdns::Event::Expired(_) => todo!(),
-            },
-            e => panic!("{e:?}"),
-        }
-    }
-}
-
-#[derive(NetworkBehaviour)]
-#[behaviour(out_event = "SafeNodeEvent")]
-struct SafeNodeBehaviour {
-    request_response: request_response::Behaviour<ChunkStorageCodec>,
-    kademlia: Kademlia<MemoryStore>,
-    mdns: mdns::async_io::Behaviour,
-}
-
-#[derive(Debug)]
-enum SafeNodeEvent {
-    RequestResponse(request_response::Event<ChunkRequest, ChunkResponse>),
-    Kademlia(KademliaEvent),
-    Mdns(Box<mdns::Event>),
-}
-
-impl From<request_response::Event<ChunkRequest, ChunkResponse>> for SafeNodeEvent {
-    fn from(event: request_response::Event<ChunkRequest, ChunkResponse>) -> Self {
-        SafeNodeEvent::RequestResponse(event)
-    }
-}
-
-impl From<KademliaEvent> for SafeNodeEvent {
-    fn from(event: KademliaEvent) -> Self {
-        SafeNodeEvent::Kademlia(event)
-    }
-}
-
-impl From<mdns::Event> for SafeNodeEvent {
-    fn from(event: mdns::Event) -> Self {
-        SafeNodeEvent::Mdns(Box::new(event))
-    }
-}
-
-#[derive(Debug)]
-pub enum Event {
-    InboundChunkRequest {
-        xor_name: XorName,
-        channel: ResponseChannel<ChunkResponse>,
-    },
 }

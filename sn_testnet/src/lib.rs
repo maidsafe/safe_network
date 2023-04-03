@@ -310,8 +310,7 @@ impl Testnet {
         if node_name == "safenode-1" {
             let address =
                 address.ok_or_else(|| eyre!("An address must be present for the genesis node"))?;
-        } 
-        
+        }
 
         let node_data_dir_path = node_data_dir_path
             .to_str()
