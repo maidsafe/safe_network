@@ -10,6 +10,7 @@ use assert_fs::TempDir;
 use async_std::task::spawn;
 use bytes::Bytes;
 use clap::Parser;
+use eyre::{eyre, Result};
 use futures::{prelude::*, StreamExt};
 use safenode::{
     log::init_node_logging,
@@ -19,13 +20,13 @@ use safenode::{
         DataStorage,
     },
 };
-use std::{error::Error, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 use tracing::info;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
 #[async_std::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
     let _log_appender_guard = init_node_logging(&None)?;
     let opt = Opt::parse();
 
@@ -108,7 +109,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // Locate all nodes providing the file.
         let providers = network_client.get_chunk_providers(xor_name).await;
         if providers.is_empty() {
-            return Err(format!("Could not find provider for file {xor_name}.").into());
+            return Err(eyre!("Could not find provider for file {xor_name}."));
         }
         // Request the content of the file from each node.
         let requests = providers.into_iter().map(|p| {
@@ -118,7 +119,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // Await the requests, ignore the remaining once a single one succeeds.
         let file_content = futures::future::select_ok(requests)
             .await
-            .map_err(|_| "None of the providers returned file.")?
+            .map_err(|_| eyre!("None of the providers returned file."))?
             .0;
         let chunk = Chunk::new(Bytes::from(file_content));
         info!("got chunk {:x}", chunk.name());
