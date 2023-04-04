@@ -12,9 +12,10 @@ use bytes::Bytes;
 use clap::Parser;
 use eyre::{eyre, Result};
 use futures::{channel::oneshot, prelude::*, StreamExt};
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use safenode::{
     log::init_node_logging,
-    network::{EventLoop, NetworkEvent, SafeRequest, SafeResponse},
+    network::{Network, NetworkEvent, NetworkSwarmLoop, Request, Response},
     storage::{
         chunks::{Chunk, ChunkAddress},
         DataStorage,
@@ -31,39 +32,12 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
-    let (mut network_api, mut network_events, network_event_loop) = EventLoop::new()?;
+    let (mut network_api, mut network_events, network_event_loop) = NetworkSwarmLoop::new()?;
     let temp_dir = TempDir::new()?;
     let storage = DataStorage::new(&temp_dir);
 
     // Spawn the network task for it to run in the background.
     spawn(network_event_loop.run());
-
-    // Todo: Implement node bootstrapping to connect to peers from outside local network
-    // In case a listen address was provided use it, otherwise listen on any
-    // address.
-    // match opt.listen_adress {
-    //     Some(addr) => network_client
-    //         .start_listening(addr)
-    //         .await
-    //         .expect("Listening not to fail."),
-    //     None => network_client
-    //         .start_listening("/ip4/0.0.0.0/tcp/0".parse()?)
-    //         .await
-    //         .expect("Listening not to fail."),
-    // };
-
-    // In case the user provided an address of a peer on the CLI, dial it.
-    // if let Some(addr) = opt.peer {
-    //     let peer_id = match addr.iter().last() {
-    //         Some(Protocol::P2p(hash)) => PeerId::from_multihash(hash).expect("Valid hash."),
-    //         _ => return Err("Expect peer multiaddr to contain peer ID.".into()),
-    //     };
-    //     network_client
-    //         .dial(peer_id, addr)
-    //         .await
-    //         .expect("Dial to succeed");
-    // }
-    //
 
     let mut api_clone = network_api.clone();
     let storage_clone = storage.clone();
@@ -76,20 +50,20 @@ async fn main() -> Result<()> {
                 None => continue,
             };
             match event {
-                NetworkEvent::InboundSafeRequest { req, channel } => {
+                NetworkEvent::RequestReceived { req, channel } => {
                     // Reply with the content of the file on incoming requests.
-                    if let SafeRequest::GetChunk(xor_name) = req {
+                    if let Request::GetChunk(xor_name) = req {
                         let addr = ChunkAddress(xor_name);
                         let chunk = storage_clone.query(&addr).await.unwrap();
                         if let Err(err) = api_clone
-                            .send_safe_response(SafeResponse::Chunk(chunk), channel)
+                            .send_response(Response::Chunk(chunk), channel)
                             .await
                         {
-                            warn!("Error while sending safe_response: {err:?}");
+                            warn!("Error while sending response: {err:?}");
                         }
                     }
                 }
-                NetworkEvent::PeerDiscoverd => {
+                NetworkEvent::PeerDiscovered => {
                     if let Some(sender) = peer_dicovered_send.take() {
                         if let Err(err) = sender.send(()) {
                             warn!("Error while sending through channel: {err:?}");
@@ -115,13 +89,13 @@ async fn main() -> Result<()> {
                 let file = fs::read(entry.path())?;
                 let chunk = Chunk::new(Bytes::from(file));
                 let xor_name = chunk.name();
+                // todo: rework storage
                 info!(
                     "Storing file {:?} with xorname: {xor_name:x}",
                     entry.file_name()
                 );
                 storage.store(&chunk).await?;
-                // store the name as key in the network
-                // Advertise oneself as a provider of the file on the DHT.
+                // todo: data storage should not use the provider api
                 network_api.store_data(*xor_name).await?;
             }
         }
@@ -143,7 +117,7 @@ async fn main() -> Result<()> {
             let mut network_api = network_api.clone();
             async move {
                 network_api
-                    .send_safe_request(SafeRequest::GetChunk(xor_name), peer)
+                    .send_request(Request::GetChunk(xor_name), peer)
                     .await
             }
             .boxed()
@@ -153,7 +127,7 @@ async fn main() -> Result<()> {
             .await
             .map_err(|_| eyre!("None of the providers returned file."))?
             .0;
-        if let SafeResponse::Chunk(chunk) = resp {
+        if let Response::Chunk(chunk) = resp {
             info!("got chunk {:x}", chunk.name());
         }
     }
@@ -175,4 +149,18 @@ struct Opt {
 
     #[clap(long)]
     get_chunk: Option<String>,
+}
+
+// Todo: Implement node bootstrapping to connect to peers from outside the local network
+#[allow(dead_code)]
+async fn bootstrap_node(network_api: &mut Network, addr: Multiaddr) -> Result<()> {
+    let peer_id = match addr.iter().last() {
+        Some(Protocol::P2p(hash)) => PeerId::from_multihash(hash).expect("Valid hash."),
+        _ => return Err(eyre!("Expect peer multiaddr to contain peer ID.")),
+    };
+    network_api
+        .dial(peer_id, addr)
+        .await
+        .expect("Dial to succeed");
+    Ok(())
 }

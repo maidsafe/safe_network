@@ -8,8 +8,8 @@
 
 use super::{
     error::{Error, Result},
-    safe_msg::SafeMsgCodec,
-    EventLoop, SafeRequest, SafeResponse,
+    msg::MsgCodec,
+    NetworkSwarmLoop, Request, Response,
 };
 use futures::{channel::oneshot, SinkExt};
 use libp2p::{
@@ -22,68 +22,68 @@ use libp2p::{
 use tracing::{info, warn};
 
 #[derive(NetworkBehaviour)]
-#[behaviour(out_event = "SafeNodeEvent")]
-pub(super) struct SafeNodeBehaviour {
-    pub(super) request_response: request_response::Behaviour<SafeMsgCodec>,
+#[behaviour(out_event = "NodeEvent")]
+pub(super) struct NodeBehaviour {
+    pub(super) request_response: request_response::Behaviour<MsgCodec>,
     pub(super) kademlia: Kademlia<MemoryStore>,
     pub(super) mdns: mdns::async_io::Behaviour,
 }
 
 #[derive(Debug)]
-pub(super) enum SafeNodeEvent {
-    RequestResponse(request_response::Event<SafeRequest, SafeResponse>),
+pub(super) enum NodeEvent {
+    RequestResponse(request_response::Event<Request, Response>),
     Kademlia(KademliaEvent),
     Mdns(Box<mdns::Event>),
 }
 
-impl From<request_response::Event<SafeRequest, SafeResponse>> for SafeNodeEvent {
-    fn from(event: request_response::Event<SafeRequest, SafeResponse>) -> Self {
-        SafeNodeEvent::RequestResponse(event)
+impl From<request_response::Event<Request, Response>> for NodeEvent {
+    fn from(event: request_response::Event<Request, Response>) -> Self {
+        NodeEvent::RequestResponse(event)
     }
 }
 
-impl From<KademliaEvent> for SafeNodeEvent {
+impl From<KademliaEvent> for NodeEvent {
     fn from(event: KademliaEvent) -> Self {
-        SafeNodeEvent::Kademlia(event)
+        NodeEvent::Kademlia(event)
     }
 }
 
-impl From<mdns::Event> for SafeNodeEvent {
+impl From<mdns::Event> for NodeEvent {
     fn from(event: mdns::Event) -> Self {
-        SafeNodeEvent::Mdns(Box::new(event))
+        NodeEvent::Mdns(Box::new(event))
     }
 }
 
 #[derive(Debug)]
 /// Events forwarded by the underlying Network; to be used by the upper layers
 pub enum NetworkEvent {
-    /// Incoming `SafeRequest` from a peer
-    InboundSafeRequest {
+    /// Incoming `Request` from a peer
+    RequestReceived {
         /// Request
-        req: SafeRequest,
-        /// The channel to send the `SafeResponse` through
-        channel: ResponseChannel<SafeResponse>,
+        req: Request,
+        /// The channel to send the `Response` through
+        channel: ResponseChannel<Response>,
     },
     /// Emmited when we discover a peer.
     /// might/might not be successfully added to the DHT; `RoutingUpdate` is private/no debug impl
-    PeerDiscoverd,
+    PeerDiscovered,
 }
 
-impl EventLoop {
+impl NetworkSwarmLoop {
     // Handle `SwarmEvents`
     pub(super) async fn handle_event<EventError: std::error::Error>(
         &mut self,
-        event: SwarmEvent<SafeNodeEvent, EventError>,
+        event: SwarmEvent<NodeEvent, EventError>,
     ) -> Result<()> {
         match event {
             // handle RequestResponse events
-            SwarmEvent::Behaviour(SafeNodeEvent::RequestResponse(event)) => {
-                if let Err(e) = self.handle_safe_msg(event).await {
+            SwarmEvent::Behaviour(NodeEvent::RequestResponse(event)) => {
+                if let Err(e) = self.handle_msg(event).await {
                     warn!("RequestResponseError: {e:?}");
                 }
             }
             // handle Kademlia events
-            SwarmEvent::Behaviour(SafeNodeEvent::Kademlia(event)) => match event {
+            SwarmEvent::Behaviour(NodeEvent::Kademlia(event)) => match event {
                 KademliaEvent::OutboundQueryProgressed {
                     id,
                     result: QueryResult::StartProviding(_),
@@ -115,13 +115,13 @@ impl EventLoop {
                             .behaviour_mut()
                             .kademlia
                             .query_mut(&id)
-                            .ok_or(Error::Other("Query should be exist".to_string()))?
+                            .ok_or(Error::Other("Query should exist".to_string()))?
                             .finish();
                     }
                 }
                 _ => {}
             },
-            SwarmEvent::Behaviour(SafeNodeEvent::Mdns(mdns_event)) => match *mdns_event {
+            SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
                 mdns::Event::Discovered(list) => {
                     for (peer_id, multiaddr) in list {
                         info!("Node discovered: {multiaddr:?}");
@@ -131,7 +131,7 @@ impl EventLoop {
                             .kademlia
                             .add_address(&peer_id, multiaddr);
                     }
-                    self.event_sender.send(NetworkEvent::PeerDiscoverd).await?;
+                    self.event_sender.send(NetworkEvent::PeerDiscovered).await?;
                 }
                 mdns::Event::Expired(_) => {
                     info!("mdns peer expired");

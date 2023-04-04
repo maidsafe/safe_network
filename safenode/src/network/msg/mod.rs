@@ -7,19 +7,19 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod codec;
-pub(crate) use codec::{SafeMsgCodec, SafeMsgProtocol};
-pub use codec::{SafeRequest, SafeResponse};
+pub(crate) use codec::{MsgCodec, MsgProtocol};
+pub use codec::{Request, Response};
 
-use crate::network::{error::Error, EventLoop, NetworkEvent};
+use crate::network::{error::Error, NetworkEvent, NetworkSwarmLoop};
 use futures::prelude::*;
 use libp2p::request_response::{self, Message};
 use tracing::{trace, warn};
 
-impl EventLoop {
-    /// Forwards `SafeRequest` to the upper layers using `Sender<NetworkEvent>`. Sends `SafeResponse` to the peers
-    pub async fn handle_safe_msg(
+impl NetworkSwarmLoop {
+    /// Forwards `Request` to the upper layers using `Sender<NetworkEvent>`. Sends `Response` to the peers
+    pub async fn handle_msg(
         &mut self,
-        event: request_response::Event<SafeRequest, SafeResponse>,
+        event: request_response::Event<Request, Response>,
     ) -> Result<(), Error> {
         match event {
             request_response::Event::Message { message, .. } => match message {
@@ -31,7 +31,7 @@ impl EventLoop {
                 } => {
                     trace!("Received request with id: {request_id:?}, req: {request:?}");
                     self.event_sender
-                        .send(NetworkEvent::InboundSafeRequest {
+                        .send(NetworkEvent::RequestReceived {
                             req: request,
                             channel,
                         })
@@ -43,9 +43,9 @@ impl EventLoop {
                 } => {
                     trace!("Got response for id: {request_id:?}, res: {response:?} ");
                     let _ = self
-                        .pending_safe_requests
+                        .pending_requests
                         .remove(&request_id)
-                        .ok_or(Error::Other("SafeRequest to still be pending".to_string()))?
+                        .ok_or(Error::Other("Request to still be pending".to_string()))?
                         .send(Ok(response));
                 }
             },
@@ -53,9 +53,9 @@ impl EventLoop {
                 request_id, error, ..
             } => {
                 let _ = self
-                    .pending_safe_requests
+                    .pending_requests
                     .remove(&request_id)
-                    .ok_or(Error::Other("SafeRequest to still be pending.".to_string()))?
+                    .ok_or(Error::Other("Request to still be pending.".to_string()))?
                     .send(Err(error.into()));
             }
             request_response::Event::InboundFailure {

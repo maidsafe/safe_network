@@ -8,8 +8,8 @@
 
 use super::{
     error::Error,
-    safe_msg::{SafeRequest, SafeResponse},
-    EventLoop,
+    msg::{Request, Response},
+    NetworkSwarmLoop,
 };
 use crate::network::error::Result;
 use futures::channel::oneshot;
@@ -20,7 +20,7 @@ use xor_name::XorName;
 
 /// Commands to send to the Swarm
 #[derive(Debug)]
-pub(crate) enum CmdToSwarm {
+pub(crate) enum SwarmCmd {
     StartListening {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
@@ -38,27 +38,27 @@ pub(crate) enum CmdToSwarm {
         xor_name: XorName,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
-    SendSafeRequest {
-        req: SafeRequest,
+    SendRequest {
+        req: Request,
         peer: PeerId,
-        sender: oneshot::Sender<Result<SafeResponse>>,
+        sender: oneshot::Sender<Result<Response>>,
     },
-    SendSafeResponse {
-        resp: SafeResponse,
-        channel: ResponseChannel<SafeResponse>,
+    SendResponse {
+        resp: Response,
+        channel: ResponseChannel<Response>,
     },
 }
 
-impl EventLoop {
-    pub(crate) fn handle_command(&mut self, command: CmdToSwarm) -> Result<(), Error> {
+impl NetworkSwarmLoop {
+    pub(crate) fn handle_command(&mut self, command: SwarmCmd) -> Result<(), Error> {
         match command {
-            CmdToSwarm::StartListening { addr, sender } => {
+            SwarmCmd::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(e.into())),
                 };
             }
-            CmdToSwarm::Dial {
+            SwarmCmd::Dial {
                 peer_id,
                 peer_addr,
                 sender,
@@ -84,7 +84,10 @@ impl EventLoop {
                     warn!("Already dialing peer.");
                 }
             }
-            CmdToSwarm::StoreData { xor_name, sender } => {
+            // todo: the `provider` api should not be used for chunks/dbcs.
+            // 1. get the closest nodes to the data
+            // 2. store data in them directly, not via provider
+            SwarmCmd::StoreData { xor_name, sender } => {
                 let query_id = self
                     .swarm
                     .behaviour_mut()
@@ -92,7 +95,7 @@ impl EventLoop {
                     .start_providing(xor_name.0.to_vec().into())?;
                 let _ = self.pending_start_providing.insert(query_id, sender);
             }
-            CmdToSwarm::GetDataProviders { xor_name, sender } => {
+            SwarmCmd::GetDataProviders { xor_name, sender } => {
                 let query_id = self
                     .swarm
                     .behaviour_mut()
@@ -100,15 +103,15 @@ impl EventLoop {
                     .get_providers(xor_name.0.to_vec().into());
                 let _ = self.pending_get_providers.insert(query_id, sender);
             }
-            CmdToSwarm::SendSafeRequest { req, peer, sender } => {
+            SwarmCmd::SendRequest { req, peer, sender } => {
                 let request_id = self
                     .swarm
                     .behaviour_mut()
                     .request_response
                     .send_request(&peer, req);
-                let _ = self.pending_safe_requests.insert(request_id, sender);
+                let _ = self.pending_requests.insert(request_id, sender);
             }
-            CmdToSwarm::SendSafeResponse { resp, channel } => {
+            SwarmCmd::SendResponse { resp, channel } => {
                 self.swarm
                     .behaviour_mut()
                     .request_response
