@@ -16,7 +16,7 @@ chaos = []
 statemap = []
 otlp = []
 # verify-nodes: performs a last step querying and verifying net knowledge to lanched nodes
-verify-nodes = ["prost", "tonic", "xor_name", "tonic-build"]
+verify-nodes = ["prost", "tonic", "tonic-build", "xor_name"]
 
 [[bin]]
 path="src/main.rs"

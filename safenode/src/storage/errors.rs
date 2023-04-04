@@ -26,7 +26,7 @@ pub enum Error {
     /// I/O error.
     #[error("I/O error: {0}")]
     Io(#[from] io::Error),
-    // /// Hex decoding error.
+    /// Hex decoding error.
     #[error("Hex decoding error:: {0}")]
     HexDecoding(#[from] hex::FromHexError),
     /// No filename found

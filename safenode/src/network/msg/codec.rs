@@ -19,7 +19,7 @@ use xor_name::XorName;
 
 /// Send a request to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum SafeRequest {
+pub enum Request {
     /// todo: impl entire DataStorage struct
     GetChunk(XorName),
     /// todo: impl entire DataStorage struct
@@ -28,7 +28,7 @@ pub enum SafeRequest {
 
 /// Respond to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum SafeResponse {
+pub enum Response {
     /// todo: impl entire DataStorage struct
     Chunk(Chunk),
     /// todo: impl entire DataStorage struct
@@ -36,21 +36,21 @@ pub enum SafeResponse {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct SafeMsgProtocol();
+pub(crate) struct MsgProtocol();
 #[derive(Clone)]
-pub(crate) struct SafeMsgCodec();
+pub(crate) struct MsgCodec();
 
-impl ProtocolName for SafeMsgProtocol {
+impl ProtocolName for MsgProtocol {
     fn protocol_name(&self) -> &[u8] {
-        "/safe-msg/1".as_bytes()
+        "/msg/1".as_bytes()
     }
 }
 
 #[async_trait]
-impl request_response::Codec for SafeMsgCodec {
-    type Protocol = SafeMsgProtocol;
-    type Request = SafeRequest;
-    type Response = SafeResponse;
+impl request_response::Codec for MsgCodec {
+    type Protocol = MsgProtocol;
+    type Request = Request;
+    type Response = Response;
 
     async fn read_request<T>(&mut self, _: &Self::Protocol, io: &mut T) -> io::Result<Self::Request>
     where
@@ -95,7 +95,7 @@ impl request_response::Codec for SafeMsgCodec {
     }
 }
 
-// Encodes the SafeResponse/SafeResponse using rmp_serde
+// Encodes the Response/Response using rmp_serde
 async fn encode_and_write<IO, T>(io: &mut IO, data: T) -> io::Result<()>
 where
     IO: AsyncWrite + Unpin,
@@ -108,7 +108,7 @@ where
     Ok(())
 }
 
-// Decodes the SafeResponse/SafeResponse using rmp_serde
+// Decodes the Response/Response using rmp_serde
 async fn read_and_decode<IO, T>(io: &mut IO) -> io::Result<T>
 where
     IO: AsyncRead + Unpin,
