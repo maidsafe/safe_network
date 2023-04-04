@@ -15,18 +15,23 @@ use libp2p::{
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::io;
-use tracing::info;
 use xor_name::XorName;
 
+/// Send a request to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SafeRequest {
+    /// todo: impl entire DataStorage struct
     GetChunk(XorName),
+    /// todo: impl entire DataStorage struct
     GetDBC,
 }
 
+/// Respond to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SafeResponse {
+    /// todo: impl entire DataStorage struct
     Chunk(Chunk),
+    /// todo: impl entire DataStorage struct
     DBC,
 }
 
@@ -90,6 +95,7 @@ impl request_response::Codec for SafeMsgCodec {
     }
 }
 
+// Encodes the SafeResponse/SafeResponse using rmp_serde
 async fn encode_and_write<IO, T>(io: &mut IO, data: T) -> io::Result<()>
 where
     IO: AsyncWrite + Unpin,
@@ -102,6 +108,7 @@ where
     Ok(())
 }
 
+// Decodes the SafeResponse/SafeResponse using rmp_serde
 async fn read_and_decode<IO, T>(io: &mut IO) -> io::Result<T>
 where
     IO: AsyncRead + Unpin,

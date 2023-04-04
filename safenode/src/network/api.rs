@@ -19,6 +19,7 @@ use xor_name::XorName;
 use super::command::CmdToSwarm;
 
 #[derive(Clone)]
+/// API to interact with the underlying Swarm
 pub struct NetworkApi {
     pub(super) sender: mpsc::Sender<CmdToSwarm>,
 }
@@ -46,7 +47,8 @@ impl NetworkApi {
         receiver.await?
     }
 
-    /// Advertise the local node as the provider of the given file on the DHT.
+    /// Advertise the local node as the provider of a given piece of data; The XorName of the data
+    /// is advertised to the nodes on the DHT
     pub async fn store_data(&mut self, xor_name: XorName) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
         self.sender
@@ -55,7 +57,8 @@ impl NetworkApi {
         receiver.await?
     }
 
-    /// Find the providers for the given file on the DHT.
+    /// Find the providers for the given piece of data; The XorName is used to locate the nodes
+    /// that hold the data
     pub async fn get_data_providers(&mut self, xor_name: XorName) -> Result<HashSet<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.sender
@@ -64,24 +67,20 @@ impl NetworkApi {
         Ok(receiver.await?)
     }
 
-    /// Request the content of the given file from the given peer.
+    /// Send `SafeRequest` to the the given `PeerId`
     pub async fn send_safe_request(
         &mut self,
+        req: SafeRequest,
         peer: PeerId,
-        xor_name: XorName,
     ) -> Result<SafeResponse> {
         let (sender, receiver) = oneshot::channel();
         self.sender
-            .send(CmdToSwarm::SendSafeRequest {
-                req: SafeRequest::GetChunk(xor_name),
-                peer,
-                sender,
-            })
+            .send(CmdToSwarm::SendSafeRequest { req, peer, sender })
             .await?;
         receiver.await?
     }
 
-    /// Respond with the provided file content to the given request.
+    /// Send a `SafeResponse` through the channel opened by the requester.
     pub async fn send_safe_response(
         &mut self,
         resp: SafeResponse,

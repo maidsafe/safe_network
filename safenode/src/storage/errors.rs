@@ -23,39 +23,16 @@ pub enum Error {
     /// Chunk not found.
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(XorName),
-    // /// Storage not supported for type of data address
-    // #[error("Storage not supported for type of data address: {0:?}")]
-    // UnsupportedDataType(DataAddress),
-    // /// Data owner provided is invalid.
-    // #[error("Provided PublicKey could not validate signature {0:?}")]
-    // InvalidSignature(Box<PublicKey>),
     /// I/O error.
     #[error("I/O error: {0}")]
     Io(#[from] io::Error),
-    /// Bincode error.
-    // #[error("Bincode error:: {0}")]
-    // Bincode(#[from] bincode::Error),
     // /// Hex decoding error.
     #[error("Hex decoding error:: {0}")]
     HexDecoding(#[from] hex::FromHexError),
-    // /// NetworkData error.
-    // #[error("Network data error:: {0}")]
-    // NetworkData(#[from] sn_interface::types::Error),
-    // /// Messaging error.
-    // #[error("Messaging error:: {0}")]
-    // Messaging(#[from] Box<sn_interface::messaging::data::Error>),
     /// No filename found
     #[error("Path contains no file name: {0}")]
     NoFilename(PathBuf),
     /// Invalid filename
     #[error("Invalid chunk filename: {0}")]
     InvalidFilename(PathBuf),
-    // /// Register command/op destinaation adddress mistmatch
-    // #[error(
-    //     "Register command destination address ({cmd_dst_addr:?}) doesn't match stored Register address: {reg_addr:?}"
-    // )]
-    // RegisterAddrMismatch {
-    //     cmd_dst_addr: RegisterAddress,
-    //     reg_addr: RegisterAddress,
-    // },
 }

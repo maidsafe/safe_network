@@ -285,8 +285,8 @@ impl Testnet {
     fn get_launch_args(
         &self,
         node_name: String,
-        address: Option<SocketAddr>,
-        network_contacts_path: Option<&Path>,
+        _address: Option<SocketAddr>,
+        _network_contacts_path: Option<&Path>,
         node_args: Vec<String>,
     ) -> Result<Vec<String>> {
         let node_data_dir_path = self.nodes_dir_path.join(node_name.clone());
@@ -305,11 +305,6 @@ impl Testnet {
             launch_args.push("--bin".to_string());
             launch_args.push("safenode".to_string());
             launch_args.push("--".to_string());
-        }
-
-        if node_name == "safenode-1" {
-            let address =
-                address.ok_or_else(|| eyre!("An address must be present for the genesis node"))?;
         }
 
         let node_data_dir_path = node_data_dir_path
