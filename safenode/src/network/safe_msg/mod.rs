@@ -12,16 +12,17 @@ pub use codec::{SafeRequest, SafeResponse};
 
 use crate::network::{error::Error, EventLoop, NetworkEvent};
 use futures::prelude::*;
-use libp2p::request_response::{Event, Message};
+use libp2p::request_response::{self, Message};
 use tracing::{trace, warn};
 
 impl EventLoop {
+    /// Forwards `SafeRequest` to the upper layers using `Sender<NetworkEvent>`. Sends `SafeResponse` to the peers
     pub async fn handle_safe_msg(
         &mut self,
-        event: Event<SafeRequest, SafeResponse>,
+        event: request_response::Event<SafeRequest, SafeResponse>,
     ) -> Result<(), Error> {
         match event {
-            Event::Message { message, .. } => match message {
+            request_response::Event::Message { message, .. } => match message {
                 Message::Request {
                     request,
                     channel,
@@ -48,7 +49,7 @@ impl EventLoop {
                         .send(Ok(response));
                 }
             },
-            Event::OutboundFailure {
+            request_response::Event::OutboundFailure {
                 request_id, error, ..
             } => {
                 let _ = self
@@ -57,14 +58,14 @@ impl EventLoop {
                     .ok_or(Error::Other("SafeRequest to still be pending.".to_string()))?
                     .send(Err(error.into()));
             }
-            Event::InboundFailure {
+            request_response::Event::InboundFailure {
                 peer,
                 request_id,
                 error,
             } => {
                 warn!("RequestResponse: InboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
             }
-            Event::ResponseSent { peer, request_id } => {
+            request_response::Event::ResponseSent { peer, request_id } => {
                 trace!("ResponseSent for request_id: {request_id:?} and peer: {peer:?}");
             }
         }

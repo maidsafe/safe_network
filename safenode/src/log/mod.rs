@@ -58,6 +58,7 @@ where
     }
 }
 
+/// The different Subscribers composed into a list of layers
 #[derive(Default)]
 pub struct TracingLayers {
     layers: Vec<Box<dyn Layer<Registry> + Send + Sync>>,

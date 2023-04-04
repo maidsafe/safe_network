@@ -7,11 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::errors::{Error, Result};
-use super::{list_files_in, prefix_tree_path};
-use async_std::fs::{create_dir_all, metadata, read, remove_file, File};
+use super::prefix_tree_path;
+use async_std::fs::{create_dir_all, read, File};
 use bytes::Bytes;
 use futures::AsyncWriteExt;
-use hex::FromHex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display, Formatter},
@@ -27,6 +26,7 @@ use xor_name::XorName;
 
 const CHUNKS_STORE_DIR_NAME: &str = "chunks";
 
+/// The XorName of the provided `Chunk`
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub struct ChunkAddress(pub XorName);
 impl ChunkAddress {
@@ -114,38 +114,11 @@ impl ChunkStorage {
         }
     }
 
-    pub(super) fn addrs(&self) -> Vec<ChunkAddress> {
-        list_files_in(&self.file_store_path)
-            .iter()
-            .filter_map(|filepath| Self::chunk_filepath_to_address(filepath).ok())
-            .collect()
-    }
-
-    fn chunk_filepath_to_address(path: &Path) -> Result<ChunkAddress> {
-        let filename = path
-            .file_name()
-            .ok_or_else(|| Error::NoFilename(path.to_path_buf()))?
-            .to_str()
-            .ok_or_else(|| Error::InvalidFilename(path.to_path_buf()))?;
-
-        let xorname = XorName(<[u8; 32]>::from_hex(filename)?);
-        Ok(ChunkAddress(xorname))
-    }
-
     fn chunk_addr_to_filepath(&self, addr: &ChunkAddress) -> Result<PathBuf> {
         let xorname = *addr.name();
         let path = prefix_tree_path(&self.file_store_path, xorname);
         let filename = hex::encode(xorname);
         Ok(path.join(filename))
-    }
-
-    pub(super) async fn remove_chunk(&self, address: &ChunkAddress) -> Result<()> {
-        debug!("Removing chunk, {:?}", address);
-        let filepath = self.chunk_addr_to_filepath(address)?;
-        let meta = metadata(filepath.clone()).await?;
-        remove_file(filepath).await?;
-        // self.used_space.decrease(meta.len() as usize);
-        Ok(())
     }
 
     pub(super) async fn get_chunk(&self, address: &ChunkAddress) -> Result<Chunk> {

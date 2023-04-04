@@ -21,7 +21,8 @@ use safenode::{
     },
 };
 use std::{fs, path::PathBuf};
-use tracing::info;
+use std::{thread, time};
+use tracing::{info, warn};
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -30,13 +31,14 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
-    let (mut network_client, mut network_events, network_event_loop) = EventLoop::new()?;
+    let (mut network_api, mut network_events, network_event_loop) = EventLoop::new()?;
     let temp_dir = TempDir::new()?;
     let storage = DataStorage::new(&temp_dir);
 
     // Spawn the network task for it to run in the background.
     spawn(network_event_loop.run());
 
+    // Todo: Implement node bootstrapping to connect to peers from outside local network
     // In case a listen address was provided use it, otherwise listen on any
     // address.
     // match opt.listen_adress {
@@ -63,7 +65,7 @@ async fn main() -> Result<()> {
     // }
     //
 
-    let mut client_clone = network_client.clone();
+    let mut api_clone = network_api.clone();
     let storage_clone = storage.clone();
     let (peer_dicovered_send, peer_dicovered_rx) = oneshot::channel();
     let mut peer_dicovered_send = Some(peer_dicovered_send);
@@ -74,18 +76,24 @@ async fn main() -> Result<()> {
                 None => continue,
             };
             match event {
-                // Reply with the content of the file on incoming requests.
                 NetworkEvent::InboundSafeRequest { req, channel } => {
+                    // Reply with the content of the file on incoming requests.
                     if let SafeRequest::GetChunk(xor_name) = req {
                         let addr = ChunkAddress(xor_name);
                         let chunk = storage_clone.query(&addr).await.unwrap();
-                        let resp = SafeResponse::Chunk(chunk);
-                        client_clone.send_safe_response(resp, channel).await;
+                        if let Err(err) = api_clone
+                            .send_safe_response(SafeResponse::Chunk(chunk), channel)
+                            .await
+                        {
+                            warn!("Error while sending safe_response: {err:?}");
+                        }
                     }
                 }
                 NetworkEvent::PeerDiscoverd => {
                     if let Some(sender) = peer_dicovered_send.take() {
-                        sender.send(());
+                        if let Err(err) = sender.send(()) {
+                            warn!("Error while sending through channel: {err:?}");
+                        }
                     }
                 }
             }
@@ -95,23 +103,26 @@ async fn main() -> Result<()> {
     // wait until we discover atleast one peer
     peer_dicovered_rx.await?;
     info!("Discovered a Peer");
+    // todo: sometimes, the node might query the network before it adds a peer to the DHT. The
+    // PeerDiscoverd event is triggered when it adds the peer to the DHT, but the op might fail and
+    // there is no way to confirm it since `RoutingUpdate` is private/no debug impl.
+    // Hence sleep for sometime before querying the network
+    thread::sleep(time::Duration::from_millis(100));
 
     if let Some(files_path) = opt.upload_chunks {
-        for entry in WalkDir::new(files_path) {
-            if let Ok(entry) = entry {
-                if entry.file_type().is_file() {
-                    let file = fs::read(entry.path())?;
-                    let chunk = Chunk::new(Bytes::from(file));
-                    let xor_name = chunk.name();
-                    info!(
-                        "Storing file {:?} with xorname: {xor_name:x}",
-                        entry.file_name()
-                    );
-                    storage.store(&chunk).await?;
-                    // store the name as key in the network
-                    // Advertise oneself as a provider of the file on the DHT.
-                    network_client.store_data(*xor_name).await;
-                }
+        for entry in WalkDir::new(files_path).into_iter().flatten() {
+            if entry.file_type().is_file() {
+                let file = fs::read(entry.path())?;
+                let chunk = Chunk::new(Bytes::from(file));
+                let xor_name = chunk.name();
+                info!(
+                    "Storing file {:?} with xorname: {xor_name:x}",
+                    entry.file_name()
+                );
+                storage.store(&chunk).await?;
+                // store the name as key in the network
+                // Advertise oneself as a provider of the file on the DHT.
+                network_api.store_data(*xor_name).await?;
             }
         }
     }
@@ -123,14 +134,19 @@ async fn main() -> Result<()> {
         xor_name.0.copy_from_slice(vec.as_slice());
 
         // Locate all nodes providing the file.
-        let providers = network_client.get_data_providers(xor_name).await?;
+        let providers = network_api.get_data_providers(xor_name).await?;
         if providers.is_empty() {
             return Err(eyre!("Could not find provider for file {xor_name}."));
         }
         // Request the content of the file from each node.
-        let requests = providers.into_iter().map(|p| {
-            let mut network_client = network_client.clone();
-            async move { network_client.send_safe_request(p, xor_name).await }.boxed()
+        let requests = providers.into_iter().map(|peer| {
+            let mut network_api = network_api.clone();
+            async move {
+                network_api
+                    .send_safe_request(SafeRequest::GetChunk(xor_name), peer)
+                    .await
+            }
+            .boxed()
         });
         // Await the requests, ignore the remaining once a single one succeeds.
         let resp = futures::future::select_ok(requests)
@@ -142,13 +158,10 @@ async fn main() -> Result<()> {
         }
     }
 
-    thread::sleep(time::Duration::from_secs(5));
-
-    use std::{thread, time};
+    // Keep the node running
     loop {
         thread::sleep(time::Duration::from_millis(100));
     }
-    Ok(())
 }
 
 #[derive(Parser, Debug)]

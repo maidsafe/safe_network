@@ -44,6 +44,10 @@ use std::{
 };
 use tracing::warn;
 
+/// The main event loop recieves `SwarmEvents` from the network, `CmdToSwarm` from the upper layers and
+/// emmits `NetworkEvent` to the upper layers
+/// Also keeps track of the pending queries/requests and their channels. Once we recieve an event
+/// that is the outcome of a previously executed cmd, send a response to them via the stored channel.
 pub struct EventLoop {
     swarm: Swarm<SafeNodeBehaviour>,
     command_receiver: mpsc::Receiver<CmdToSwarm>,
@@ -55,14 +59,13 @@ pub struct EventLoop {
 }
 
 impl EventLoop {
-    /// Creates the network components, namely:
-    ///
-    /// - The network client to interact with the network layer from anywhere
+    /// Creates the network components
+    /// - The `NetworkApi` to interact with the network layer from anywhere
     ///   within your application.
     ///
-    /// - The network event stream, e.g. for incoming requests.
+    /// - The `NetworkEvent` receiver to get the events from the network layer.
     ///
-    /// - The network task driving the network itself.
+    /// - The `EventLoop` taht drives the network.
     pub fn new(// secret_key_seed: Option<u8>,
     ) -> Result<(NetworkApi, impl Stream<Item = NetworkEvent>, EventLoop)> {
         // Create a random key for ourselves.
@@ -125,6 +128,7 @@ impl EventLoop {
         ))
     }
 
+    /// Drive the network
     pub async fn run(mut self) {
         loop {
             futures::select! {

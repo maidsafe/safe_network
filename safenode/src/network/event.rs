@@ -55,16 +55,22 @@ impl From<mdns::Event> for SafeNodeEvent {
 }
 
 #[derive(Debug)]
+/// Events forwarded by the underlying Network; to be used by the upper layers
 pub enum NetworkEvent {
+    /// Incoming `SafeRequest` from a peer
     InboundSafeRequest {
+        /// Request
         req: SafeRequest,
+        /// The channel to send the `SafeResponse` through
         channel: ResponseChannel<SafeResponse>,
     },
-    // might/might not be successfully added to the DHT; `RoutingUpdate` is private/no debug impl
+    /// Emmited when we discover a peer.
+    /// might/might not be successfully added to the DHT; `RoutingUpdate` is private/no debug impl
     PeerDiscoverd,
 }
 
 impl EventLoop {
+    // Handle `SwarmEvents`
     pub(super) async fn handle_event<EventError: std::error::Error>(
         &mut self,
         event: SwarmEvent<SafeNodeEvent, EventError>,
