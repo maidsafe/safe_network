@@ -39,6 +39,9 @@
     clippy::unused_async
 )]
 
+#[macro_use]
+extern crate tracing;
+
 /// Log
 pub mod log;
 /// Network
