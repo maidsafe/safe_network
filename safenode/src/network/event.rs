@@ -64,9 +64,8 @@ pub enum NetworkEvent {
         /// The channel to send the `Response` through
         channel: ResponseChannel<Response>,
     },
-    /// Emmited when we discover a peer.
-    /// might/might not be successfully added to the DHT; `RoutingUpdate` is private/no debug impl
-    PeerDiscovered,
+    /// Emmited when the DHT is updated
+    PeerAdded,
 }
 
 impl NetworkSwarmLoop {
@@ -119,6 +118,9 @@ impl NetworkSwarmLoop {
                             .finish();
                     }
                 }
+                KademliaEvent::RoutingUpdated { .. } => {
+                    self.event_sender.send(NetworkEvent::PeerAdded).await?;
+                }
                 _ => {}
             },
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
@@ -131,7 +133,6 @@ impl NetworkSwarmLoop {
                             .kademlia
                             .add_address(&peer_id, multiaddr);
                     }
-                    self.event_sender.send(NetworkEvent::PeerDiscovered).await?;
                 }
                 mdns::Event::Expired(_) => {
                     info!("mdns peer expired");

@@ -43,8 +43,8 @@ async fn main() -> Result<()> {
 
     let mut api_clone = network_api.clone();
     let storage_clone = storage.clone();
-    let (peer_dicovered_send, peer_dicovered_rx) = oneshot::channel();
-    let mut peer_dicovered_send = Some(peer_dicovered_send);
+    let (peer_added_tx, peer_added_rx) = oneshot::channel();
+    let mut peer_added_tx = Some(peer_added_tx);
     spawn(async move {
         loop {
             let event = match network_events.next().await {
@@ -65,8 +65,8 @@ async fn main() -> Result<()> {
                         }
                     }
                 }
-                NetworkEvent::PeerDiscovered => {
-                    if let Some(sender) = peer_dicovered_send.take() {
+                NetworkEvent::PeerAdded => {
+                    if let Some(sender) = peer_added_tx.take() {
                         if let Err(err) = sender.send(()) {
                             warn!("Error while sending through channel: {err:?}");
                         }
@@ -76,14 +76,9 @@ async fn main() -> Result<()> {
         }
     });
 
-    // wait until we discover atleast one peer
-    peer_dicovered_rx.await?;
-    info!("Discovered a Peer");
-    // todo: sometimes, the node might query the network before it adds a peer to the DHT. The
-    // PeerDiscoverd event is triggered when it adds the peer to the DHT, but the op might fail and
-    // there is no way to confirm it since `RoutingUpdate` is private/no debug impl.
-    // Hence sleep for sometime before querying the network
-    thread::sleep(time::Duration::from_millis(100));
+    // wait until we add atleast 1 peer to the DHT
+    peer_added_rx.await?;
+    info!("Added a Peer to DHT");
 
     if let Some(files_path) = opt.upload_chunks {
         for entry in WalkDir::new(files_path).into_iter().flatten() {
