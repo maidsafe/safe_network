@@ -6,12 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{
-    error::Error,
-    msg::{Request, Response},
-    NetworkSwarmLoop,
+use crate::{
+    network::error::Result,
+    protocol::messages::{Request, Response},
 };
-use crate::network::error::Result;
+
+use super::{error::Error, NetworkSwarmLoop};
+
 use futures::channel::oneshot;
 use libp2p::{multiaddr::Protocol, request_response::ResponseChannel, Multiaddr, PeerId};
 use std::collections::{hash_map, HashSet};

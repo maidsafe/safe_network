@@ -46,5 +46,7 @@ extern crate tracing;
 pub mod log;
 /// Network
 pub mod network;
+/// SAFE Protocol
+pub mod protocol;
 /// Storage
 pub mod storage;

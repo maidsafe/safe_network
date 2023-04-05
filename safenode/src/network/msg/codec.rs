@@ -6,52 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::storage::chunks::Chunk;
+use crate::protocol::messages::{Request, Response};
 use async_trait::async_trait;
 use futures::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use libp2p::{
     core::upgrade::{read_length_prefixed, write_length_prefixed},
     request_response::{self, ProtocolName},
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use std::io;
-use xor_name::XorName;
-
-/// Send a request to other peers in the network
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Request {
-    /// A query sent to nodes.
-    Query(Query),
-    //Cmd(Cmd),
-}
-
-/// Respond to other peers in the network
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Response {
-    /// The response to a query.
-    Query(QueryResponse),
-    /// The response to a cmd, an ack.
-    Cmd,
-    // Cmd(CmdResponse),
-}
-
-/// Send a request to other peers in the network
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Query {
-    /// todo: impl entire DataStorage struct
-    GetChunk(XorName),
-    /// todo: impl entire DataStorage struct
-    GetDbc(XorName),
-}
-
-/// Respond to other peers in the network
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum QueryResponse {
-    /// todo: impl entire DataStorage struct
-    Chunk(Chunk),
-    // /// todo: impl entire DataStorage struct
-    // Dbc(Dbc),
-}
 
 #[derive(Debug, Clone)]
 pub(crate) struct MsgProtocol();
@@ -60,7 +23,7 @@ pub(crate) struct MsgCodec();
 
 impl ProtocolName for MsgProtocol {
     fn protocol_name(&self) -> &[u8] {
-        "/msg/1".as_bytes()
+        "/safe/1".as_bytes()
     }
 }
 

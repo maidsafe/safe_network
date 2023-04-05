@@ -11,10 +11,9 @@ mod error;
 mod event;
 mod msg;
 
-pub use self::{
-    event::NetworkEvent,
-    msg::{Query, QueryResponse, Request, Response},
-};
+pub use self::event::NetworkEvent;
+
+use crate::protocol::messages::{Request, Response};
 
 use self::{
     cmd::SwarmCmd,
