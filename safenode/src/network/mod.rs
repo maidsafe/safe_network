@@ -10,17 +10,15 @@ mod command;
 mod error;
 mod event;
 mod msg;
-
-pub use self::{
-    event::NetworkEvent,
-    msg::{Request, Response},
-};
-
 use self::{
     command::SwarmCmd,
     error::Result,
     event::NodeBehaviour,
     msg::{MsgCodec, MsgProtocol},
+};
+pub use self::{
+    event::NetworkEvent,
+    msg::{Request, Response},
 };
 use futures::{
     channel::{mpsc, oneshot},
@@ -35,9 +33,11 @@ use libp2p::{
     swarm::{Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
+use rand::Rng;
 use std::{
     collections::{HashMap, HashSet},
-    iter,
+    env, iter,
+    process::{self, Command, Stdio},
     time::Duration,
 };
 use tracing::warn;
@@ -69,6 +69,8 @@ impl NetworkSwarmLoop {
         // Create a random key for ourselves.
         let keypair = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(keypair.public());
+
+        info!("Local peer id: {:?}", local_peer_id);
 
         // QUIC configuration
         let quic_config = libp2p_quic::Config::new(&keypair);
@@ -129,6 +131,7 @@ impl NetworkSwarmLoop {
         loop {
             futures::select! {
                 event = self.swarm.next() => {
+                    Self::restart_at_random(self.swarm.local_peer_id());
                     if let Err(err) = self.handle_event(event.expect("Swarm stream to be infinite!")).await {
                         warn!("Error while handling event: {err}");
                     }
@@ -143,6 +146,42 @@ impl NetworkSwarmLoop {
                     None=>  return,
                 },
             }
+        }
+    }
+
+    /// Restarts the whole program.
+    /// It does this at random, one in X times called.
+    ///
+    /// This provides a way to test the network layer's ability to recover from
+    /// unexpected shutdowns.
+    fn restart_at_random(peer_id: &PeerId) {
+        let mut rng = rand::thread_rng();
+        let random_num = rng.gen_range(0..500);
+
+        if random_num == 0 {
+            warn!("Restarting {peer_id:?} at random!");
+
+            let ten_millis = std::time::Duration::from_millis(10);
+            std::thread::sleep(ten_millis);
+
+            // Get the current executable's path
+            let executable = env::current_exe().expect("Failed to get current executable path");
+
+            info!("Spawned executable: {executable:?}");
+
+            // Spawn a new process to restart the binary with the same arguments and environment
+            let _ = Command::new(executable)
+                .args(env::args().skip(1))
+                .envs(env::vars())
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+                .expect("Failed to restart the app.");
+
+            debug!("New exec called.");
+            // exit the current process now that we've spawned a new one
+            process::exit(0);
         }
     }
 }
