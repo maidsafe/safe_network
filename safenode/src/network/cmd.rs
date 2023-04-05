@@ -31,11 +31,7 @@ pub(crate) enum SwarmCmd {
         peer_addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
     },
-    StoreData {
-        xor_name: XorName,
-        sender: oneshot::Sender<Result<()>>,
-    },
-    GetDataProviders {
+    GetClosestNodes {
         xor_name: XorName,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
@@ -85,24 +81,10 @@ impl NetworkSwarmLoop {
                     warn!("Already dialing peer.");
                 }
             }
-            // todo: the `provider` api should not be used for chunks/dbcs.
-            // 1. get the closest nodes to the data
-            // 2. store data in them directly, not via provider
-            SwarmCmd::StoreData { xor_name, sender } => {
-                let query_id = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .start_providing(xor_name.0.to_vec().into())?;
-                let _ = self.pending_start_providing.insert(query_id, sender);
-            }
-            SwarmCmd::GetDataProviders { xor_name, sender } => {
-                let query_id = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .get_providers(xor_name.0.to_vec().into());
-                let _ = self.pending_get_providers.insert(query_id, sender);
+            SwarmCmd::GetClosestNodes { xor_name, sender } => {
+                let key = xor_name.0.to_vec();
+                let query_id = self.swarm.behaviour_mut().kademlia.get_closest_peers(key);
+                let _ = self.pending_get_closest_nodes.insert(query_id, sender);
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 let request_id = self

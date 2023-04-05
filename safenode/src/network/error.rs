@@ -11,7 +11,6 @@ use libp2p::{kad, request_response::OutboundFailure, swarm::DialError, Transport
 use std::io;
 use thiserror::Error;
 
-/// The type returned by the `sn_routing` message handling methods.
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Internal error.

@@ -6,15 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::{
-    messages::{Query, QueryResponse, ReplicatedData},
-    types::{address::ChunkAddress, chunk::Chunk, errors::Result, register::User},
-};
-
 mod chunks;
 mod register_store;
 mod registers;
 
+use crate::protocol::{
+    messages::{Cmd, CmdResponse, Query, QueryResponse, RegisterCmd},
+    types::register::User,
+};
 use chunks::ChunkStorage;
 use registers::RegisterStorage;
 use tracing::debug;
@@ -38,23 +37,25 @@ impl DataStorage {
         }
     }
 
-    /// Query the local store and return the Chunk
-    pub async fn query_chunk(&self, addr: &ChunkAddress) -> Result<Chunk> {
-        self.chunks.get(addr).await
-    }
+    /// Store data in the local store and return `CmdResponse`
+    pub async fn store(&self, cmd: &Cmd) -> CmdResponse {
+        debug!("Replicating {cmd:?}");
 
-    /// Store data in the local store
-    pub async fn store(&self, data: &ReplicatedData) -> Result<()> {
-        debug!("Replicating {data:?}");
-        match data {
-            ReplicatedData::Chunk(chunk) => self.chunks.store(chunk).await,
-            ReplicatedData::RegisterLog(data) => self.registers.update(data).await,
-            ReplicatedData::RegisterWrite(cmd) => self.registers.write(cmd).await,
+        match cmd {
+            Cmd::StoreChunk(chunk) => CmdResponse::StoreChunk(self.chunks.store(chunk).await),
+            Cmd::Register(cmd) => {
+                let result = self.registers.write(cmd).await;
+                match cmd {
+                    RegisterCmd::Create(_) => CmdResponse::CreateRegister(result),
+                    RegisterCmd::Edit(_) => CmdResponse::EditRegister(result),
+                }
+            }
         }
     }
 
-    /// Query the local store and return QueryResponse
+    /// Query the local store and return `QueryResponse`
     pub async fn query(&self, query: &Query, requester: User) -> QueryResponse {
+        debug!("Query {query:?}");
         match query {
             Query::GetChunk(addr) => QueryResponse::GetChunk(self.chunks.get(addr).await),
             Query::Register(read) => self.registers.read(read, requester).await,

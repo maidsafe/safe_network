@@ -13,10 +13,9 @@ use super::{
 };
 
 use crate::protocol::messages::{Request, Response};
-
-use futures::{channel::oneshot, SinkExt};
+use futures::SinkExt;
 use libp2p::{
-    kad::{store::MemoryStore, GetProvidersOk, Kademlia, KademliaEvent, QueryResult},
+    kad::{store::MemoryStore, Kademlia, KademliaEvent, QueryResult},
     mdns,
     multiaddr::Protocol,
     request_response::{self, ResponseChannel},
@@ -67,14 +66,13 @@ pub enum NetworkEvent {
         /// The channel to send the `Response` through
         channel: ResponseChannel<Response>,
     },
-    /// Emmited when we discover a peer.
-    /// might/might not be successfully added to the DHT; `RoutingUpdate` is private/no debug impl
-    PeerDiscovered,
+    /// Emmited when the DHT is updated
+    PeerAdded,
 }
 
 impl NetworkSwarmLoop {
     // Handle `SwarmEvents`
-    pub(super) async fn handle_event<EventError: std::error::Error>(
+    pub(super) async fn handle_swarm_events<EventError: std::error::Error>(
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
     ) -> Result<()> {
@@ -89,40 +87,24 @@ impl NetworkSwarmLoop {
             SwarmEvent::Behaviour(NodeEvent::Kademlia(event)) => match event {
                 KademliaEvent::OutboundQueryProgressed {
                     id,
-                    result: QueryResult::StartProviding(_),
+                    result: QueryResult::GetClosestPeers(Ok(closest_peers)),
                     ..
                 } => {
-                    let sender: oneshot::Sender<Result<()>> = self
-                        .pending_start_providing
-                        .remove(&id)
-                        .ok_or(Error::Other(
-                            "Completed query to be previously pending.".to_string(),
-                        ))?;
-                    let _ = sender.send(Ok(()));
-                }
-                KademliaEvent::OutboundQueryProgressed {
-                    id,
-                    result:
-                        QueryResult::GetProviders(Ok(GetProvidersOk::FoundProviders {
-                            providers, ..
-                        })),
-                    ..
-                } => {
-                    if let Some(sender) = self.pending_get_providers.remove(&id) {
+                    if let Some(sender) = self.pending_get_closest_nodes.remove(&id) {
                         sender
-                            .send(providers)
+                            .send(closest_peers.peers.into_iter().collect())
                             .map_err(|_| Error::Other("Receiver not to be dropped".to_string()))?;
-
-                        // Finish the query. We are only interested in the first result.
-                        self.swarm
-                            .behaviour_mut()
-                            .kademlia
-                            .query_mut(&id)
-                            .ok_or(Error::Other("Query should exist".to_string()))?
-                            .finish();
                     }
                 }
-                _ => {}
+                KademliaEvent::RoutingUpdated { .. } => {
+                    self.event_sender.send(NetworkEvent::PeerAdded).await?;
+                }
+                KademliaEvent::InboundRequest { request } => {
+                    info!("got inboumd request: {request:?}");
+                }
+                todo => {
+                    panic!("KademliaEvent has not been implemented: {todo:?}");
+                }
             },
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
                 mdns::Event::Discovered(list) => {
@@ -134,7 +116,6 @@ impl NetworkSwarmLoop {
                             .kademlia
                             .add_address(&peer_id, multiaddr);
                     }
-                    self.event_sender.send(NetworkEvent::PeerDiscovered).await?;
                 }
                 mdns::Event::Expired(_) => {
                     info!("mdns peer expired");
@@ -168,7 +149,7 @@ impl NetworkSwarmLoop {
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
             SwarmEvent::Dialing(peer_id) => info!("Dialing {peer_id}"),
-            e => panic!("{e:?}"),
+            e => panic!("SwarmEvent has not been implemented: {e:?}"),
         }
         Ok(())
     }
