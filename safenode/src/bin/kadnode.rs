@@ -15,7 +15,7 @@ use futures::{channel::oneshot, prelude::*, StreamExt};
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use safenode::{
     log::init_node_logging,
-    network::{Network, NetworkEvent, NetworkSwarmLoop, Request, Response},
+    network::{Network, NetworkEvent, NetworkSwarmLoop, Query, QueryResponse, Request, Response},
     storage::{
         chunks::{Chunk, ChunkAddress},
         DataStorage,
@@ -54,11 +54,11 @@ async fn main() -> Result<()> {
             match event {
                 NetworkEvent::RequestReceived { req, channel } => {
                     // Reply with the content of the file on incoming requests.
-                    if let Request::GetChunk(xor_name) = req {
+                    if let Request::Query(Query::GetChunk(xor_name)) = req {
                         let addr = ChunkAddress(xor_name);
                         let chunk = storage_clone.query(&addr).await.unwrap();
                         if let Err(err) = api_clone
-                            .send_response(Response::Chunk(chunk), channel)
+                            .send_response(Response::Query(QueryResponse::Chunk(chunk)), channel)
                             .await
                         {
                             warn!("Error while sending response: {err:?}");
@@ -98,7 +98,7 @@ async fn main() -> Result<()> {
                 );
                 storage.store(&chunk).await?;
                 // todo: data storage should not use the provider api
-                network_api.store_data(*xor_name).await?;
+                network_api.announce_holding(*xor_name).await?;
             }
         }
     }
@@ -119,7 +119,7 @@ async fn main() -> Result<()> {
             let mut network_api = network_api.clone();
             async move {
                 network_api
-                    .send_request(Request::GetChunk(xor_name), peer)
+                    .send_request(Request::Query(Query::GetChunk(xor_name)), peer)
                     .await
             }
             .boxed()
@@ -129,9 +129,9 @@ async fn main() -> Result<()> {
             .await
             .map_err(|_| eyre!("None of the providers returned file."))?
             .0;
-        if let Response::Chunk(chunk) = resp {
+        if let Response::Query(QueryResponse::Chunk(chunk)) = resp {
             info!("got chunk {:x}", chunk.name());
-        }
+        };
     }
 
     // Keep the node running

@@ -50,8 +50,8 @@ pub(crate) enum SwarmCmd {
 }
 
 impl NetworkSwarmLoop {
-    pub(crate) fn handle_command(&mut self, command: SwarmCmd) -> Result<(), Error> {
-        match command {
+    pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
+        match cmd {
             SwarmCmd::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {
                     Ok(_) => sender.send(Ok(())),
