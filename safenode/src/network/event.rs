@@ -9,8 +9,11 @@
 use super::{
     error::{Error, Result},
     msg::MsgCodec,
-    NetworkSwarmLoop, Request, Response,
+    NetworkSwarmLoop,
 };
+
+use crate::protocol::messages::{Request, Response};
+
 use futures::{channel::oneshot, SinkExt};
 use libp2p::{
     kad::{store::MemoryStore, GetProvidersOk, Kademlia, KademliaEvent, QueryResult},
