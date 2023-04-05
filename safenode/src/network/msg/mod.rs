@@ -8,7 +8,7 @@
 
 mod codec;
 pub(crate) use codec::{MsgCodec, MsgProtocol};
-pub use codec::{Request, Response};
+pub use codec::{Query, QueryResponse, Request, Response};
 
 use crate::network::{error::Error, NetworkEvent, NetworkSwarmLoop};
 use futures::prelude::*;

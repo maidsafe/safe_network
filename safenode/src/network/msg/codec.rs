@@ -20,19 +20,37 @@ use xor_name::XorName;
 /// Send a request to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Request {
-    /// todo: impl entire DataStorage struct
-    GetChunk(XorName),
-    /// todo: impl entire DataStorage struct
-    GetDBC,
+    /// A query sent to nodes.
+    Query(Query),
+    //Cmd(Cmd),
 }
 
 /// Respond to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Response {
+    /// The response to a query.
+    Query(QueryResponse),
+    /// The response to a cmd, an ack.
+    Cmd,
+    // Cmd(CmdResponse),
+}
+
+/// Send a request to other peers in the network
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Query {
+    /// todo: impl entire DataStorage struct
+    GetChunk(XorName),
+    /// todo: impl entire DataStorage struct
+    GetDbc(XorName),
+}
+
+/// Respond to other peers in the network
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum QueryResponse {
     /// todo: impl entire DataStorage struct
     Chunk(Chunk),
-    /// todo: impl entire DataStorage struct
-    DBC,
+    // /// todo: impl entire DataStorage struct
+    // Dbc(Dbc),
 }
 
 #[derive(Debug, Clone)]

@@ -6,20 +6,23 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod command;
+mod cmd;
 mod error;
 mod event;
 mod msg;
+
+pub use self::{
+    event::NetworkEvent,
+    msg::{Query, QueryResponse, Request, Response},
+};
+
 use self::{
-    command::SwarmCmd,
+    cmd::SwarmCmd,
     error::Result,
     event::NodeBehaviour,
     msg::{MsgCodec, MsgProtocol},
 };
-pub use self::{
-    event::NetworkEvent,
-    msg::{Request, Response},
-};
+
 use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
@@ -130,59 +133,59 @@ impl NetworkSwarmLoop {
     pub async fn run(mut self) {
         loop {
             futures::select! {
-                event = self.swarm.next() => {
-                    Self::restart_at_random(self.swarm.local_peer_id());
-                    if let Err(err) = self.handle_event(event.expect("Swarm stream to be infinite!")).await {
+                some_event = self.swarm.next() => {
+                    restart_at_random(self.swarm.local_peer_id());
+                    if let Err(err) = self.handle_event(some_event.expect("Swarm stream to be infinite!")).await {
                         warn!("Error while handling event: {err}");
                     }
                 }  ,
-                command = self.cmd_receiver.next() => match command {
+                some_cmd = self.cmd_receiver.next() => match some_cmd {
                     Some(cmd) => {
-                        if let Err(err) = self.handle_command(cmd) {
+                        if let Err(err) = self.handle_cmd(cmd) {
                             warn!("Error while handling cmd: {err}");
                         }
                     },
-                    // Command channel closed, thus shutting down the network event loop.
+                    // Cmd channel closed, thus shutting down the network event loop.
                     None=>  return,
                 },
             }
         }
     }
+}
 
-    /// Restarts the whole program.
-    /// It does this at random, one in X times called.
-    ///
-    /// This provides a way to test the network layer's ability to recover from
-    /// unexpected shutdowns.
-    fn restart_at_random(peer_id: &PeerId) {
-        let mut rng = rand::thread_rng();
-        let random_num = rng.gen_range(0..500);
+/// Restarts the whole program.
+/// It does this at random, one in X times called.
+///
+/// This provides a way to test the network layer's ability to recover from
+/// unexpected shutdowns.
+fn restart_at_random(peer_id: &PeerId) {
+    let mut rng = rand::thread_rng();
+    let random_num = rng.gen_range(0..500);
 
-        if random_num == 0 {
-            warn!("Restarting {peer_id:?} at random!");
+    if random_num == 0 {
+        warn!("Restarting {peer_id:?} at random!");
 
-            let ten_millis = std::time::Duration::from_millis(10);
-            std::thread::sleep(ten_millis);
+        let ten_millis = std::time::Duration::from_millis(10);
+        std::thread::sleep(ten_millis);
 
-            // Get the current executable's path
-            let executable = env::current_exe().expect("Failed to get current executable path");
+        // Get the current executable's path
+        let executable = env::current_exe().expect("Failed to get current executable path");
 
-            info!("Spawned executable: {executable:?}");
+        info!("Spawned executable: {executable:?}");
 
-            // Spawn a new process to restart the binary with the same arguments and environment
-            let _ = Command::new(executable)
-                .args(env::args().skip(1))
-                .envs(env::vars())
-                .stdin(Stdio::null())
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .spawn()
-                .expect("Failed to restart the app.");
+        // Spawn a new process to restart the binary with the same arguments and environment
+        let _ = Command::new(executable)
+            .args(env::args().skip(1))
+            .envs(env::vars())
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("Failed to restart the app.");
 
-            debug!("New exec called.");
-            // exit the current process now that we've spawned a new one
-            process::exit(0);
-        }
+        debug!("New exec called.");
+        // exit the current process now that we've spawned a new one
+        process::exit(0);
     }
 }
 
@@ -215,10 +218,10 @@ impl Network {
         receiver.await?
     }
 
-    /// Advertise the local node as the provider of a given piece of data; The XorName of the data
-    /// is advertised to the nodes on the DHT
+    /// Announce the local node as a provider of a given piece of data; The XorName of the data
+    /// is announced to the nodes on the DHT.
     /// todo: do not use the provider api to store stuff
-    pub async fn store_data(&mut self, xor_name: XorName) -> Result<()> {
+    pub async fn announce_holding(&mut self, xor_name: XorName) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
         self.swarm_cmd_sender
             .send(SwarmCmd::StoreData { xor_name, sender })
