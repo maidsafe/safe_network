@@ -26,7 +26,7 @@ use tracing::{info, warn};
 pub(super) struct NodeBehaviour {
     pub(super) request_response: request_response::Behaviour<MsgCodec>,
     pub(super) kademlia: Kademlia<MemoryStore>,
-    pub(super) mdns: mdns::async_io::Behaviour,
+    pub(super) mdns: mdns::tokio::Behaviour,
 }
 
 #[derive(Debug)]

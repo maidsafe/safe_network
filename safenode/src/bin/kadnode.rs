@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use assert_fs::TempDir;
-use async_std::task::spawn;
 use bytes::Bytes;
 use clap::Parser;
 use eyre::{eyre, Result};
@@ -23,11 +22,12 @@ use safenode::{
 };
 use std::{fs, path::PathBuf};
 use std::{thread, time};
+use tokio::task::spawn;
 use tracing::{info, warn};
 use walkdir::WalkDir;
 use xor_name::XorName;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
