@@ -22,7 +22,7 @@ use tracing_subscriber::{
     layer::Filter,
     prelude::*,
     registry::LookupSpan,
-    EnvFilter, Layer, Registry,
+    Layer, Registry,
 };
 
 #[derive(Default, Debug)]
@@ -67,13 +67,9 @@ pub struct TracingLayers {
 
 impl TracingLayers {
     fn fmt_layer(&mut self, optional_log_dir: &Option<PathBuf>) {
-        // Filter by log level either from `RUST_LOG` or default to crate only.
-        let target_filter: Box<dyn Filter<Registry> + Send + Sync> =
-            if let Ok(f) = EnvFilter::try_from_default_env() {
-                Box::new(f)
-            } else {
-                Box::new(Targets::new().with_target(current_crate_str(), tracing::Level::TRACE))
-            };
+        // Filter by log level of this crate only
+        let target_filters: Box<dyn Filter<Registry> + Send + Sync> =
+            Box::new(Targets::new().with_target(current_crate_str(), tracing::Level::TRACE));
         let fmt_layer = tracing_fmt::layer().with_ansi(false);
 
         if let Some(log_dir) = optional_log_dir {
@@ -97,7 +93,7 @@ impl TracingLayers {
 
             let layer = fmt_layer
                 .event_format(LogFormatter::default())
-                .with_filter(target_filter)
+                .with_filter(target_filters)
                 .boxed();
             self.layers.push(layer);
         } else {
@@ -106,7 +102,7 @@ impl TracingLayers {
             let layer = fmt_layer
                 .with_target(false)
                 .event_format(LogFormatter::default())
-                .with_filter(target_filter)
+                .with_filter(target_filters)
                 .boxed();
             self.layers.push(layer);
         };
