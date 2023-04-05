@@ -77,7 +77,7 @@ impl NetworkSwarmLoop {
 
         // QUIC configuration
         let quic_config = libp2p_quic::Config::new(&keypair);
-        let transport = libp2p_quic::async_std::Transport::new(quic_config);
+        let transport = libp2p_quic::tokio::Transport::new(quic_config);
         let transport = transport
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
@@ -89,7 +89,7 @@ impl NetworkSwarmLoop {
             let _ = cfg.set_query_timeout(Duration::from_secs(5 * 60));
             let kademlia =
                 Kademlia::with_config(local_peer_id, MemoryStore::new(local_peer_id), cfg);
-            let mdns = mdns::async_io::Behaviour::new(mdns::Config::default(), local_peer_id)?;
+            let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), local_peer_id)?;
             let behaviour = NodeBehaviour {
                 request_response: request_response::Behaviour::new(
                     MsgCodec(),
@@ -101,7 +101,7 @@ impl NetworkSwarmLoop {
             };
 
             let mut swarm =
-                SwarmBuilder::with_async_std_executor(transport, behaviour, local_peer_id).build();
+                SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id).build();
 
             // Listen on all interfaces and whatever port the OS assigns.
             let addr = "/ip4/0.0.0.0/udp/0/quic-v1"

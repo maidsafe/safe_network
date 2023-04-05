@@ -12,7 +12,6 @@ path = "src/bin/kadnode.rs"
 [dependencies]
 assert_fs = "1.0.12"
 async-trait = "0.1"
-async-std = { version="1.12.0", features = ["attributes"]}
 bytes = { version = "1.0.1", features = ["serde"] }
 clap = { version = "4.2.1", features = ["derive"]}
 custom_debug = "~0.5.0"
@@ -20,8 +19,8 @@ eyre = "0.6.8"
 file-rotate = "0.7.3"
 futures = "~0.3.13"
 hex = "~0.4.3"
-libp2p = { version="0.51", features = ["async-std", "dns", "kad", "macros", "mdns", "mplex", "noise", "quic", "request-response", "tcp", "websocket", "yamux",] }
-libp2p-quic = { version = "0.7.0-alpha.3", features = ["async-std"] }
+libp2p = { version="0.51", features = ["tokio", "dns", "kad", "macros", "mdns", "mplex", "noise", "quic", "request-response", "tcp", "websocket", "yamux",] }
+libp2p-quic = { version = "0.7.0-alpha.3", features = ["tokio"] }
 rmp-serde = "1.1.1"
 serde = {version = "1.0.133", features = [ "derive", "rc" ]}
 serde_json = "1.0.94"
