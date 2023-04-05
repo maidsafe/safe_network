@@ -13,7 +13,8 @@ Cargo.lock
 # Added by cargo
 
 /target
-peers.json
+
+.envrc
 
 /.trunk
 
@@ -21,3 +22,6 @@ settings.json
 
 # ignore log files
 *.log
+
+.terraform
+wan_testnet_tool/workspace
