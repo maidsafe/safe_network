@@ -50,3 +50,5 @@ pub mod network;
 pub mod protocol;
 /// Storage
 pub mod storage;
+/// Vault
+pub mod vault;

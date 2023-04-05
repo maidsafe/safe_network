@@ -11,28 +11,26 @@ use bls::SecretKey;
 use bytes::Bytes;
 use clap::Parser;
 use eyre::{eyre, Result};
-use futures::{channel::oneshot, prelude::*, StreamExt};
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use safenode::{
     log::init_node_logging,
-    network::{Network, NetworkEvent, NetworkSwarmLoop},
+    network::Network,
     protocol::{
         messages::{
-            CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd, ReplicatedData,
-            Request, Response, SignedRegisterCreate, SignedRegisterEdit,
+            CreateRegister, EditRegister, RegisterCmd, ReplicatedData, SignedRegisterCreate,
+            SignedRegisterEdit,
         },
         types::{
-            address::ChunkAddress,
             authority::DataAuthority,
             chunk::Chunk,
             register::{Policy, Register, User},
         },
     },
-    storage::DataStorage,
+    vault::{NodeEvent, Vault},
 };
-use std::{collections::BTreeSet, fs, path::PathBuf, thread, time};
-use tokio::task::spawn;
-use tracing::{info, warn};
+use std::{collections::BTreeSet, fs, path::PathBuf};
+use std::{thread, time};
+use tracing::info;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -41,59 +39,18 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
-    info!("Starting safenode...");
+    info!("Starting vault...");
+    let (vault, vault_events_channel) = Vault::run().await?;
 
-    let (mut network_api, mut network_events, network_event_loop) = NetworkSwarmLoop::new()?;
-    let storage = DataStorage::new();
-
-    // Spawn the network task for it to run in the background.
-    spawn(network_event_loop.run());
-
-    let mut api_clone = network_api.clone();
-    let storage_clone = storage.clone();
-    let (peer_dicovered_send, peer_dicovered_rx) = oneshot::channel();
-    let mut peer_dicovered_send = Some(peer_dicovered_send);
-    spawn(async move {
-        loop {
-            let event = match network_events.next().await {
-                Some(event) => event,
-                None => continue,
-            };
-            match event {
-                NetworkEvent::RequestReceived { req, channel } => {
-                    // Reply with the content of the file on incoming requests.
-                    if let Request::Query(Query::GetChunk(addr)) = req {
-                        let chunk = storage_clone.query_chunk(&addr).await.unwrap();
-                        if let Err(err) = api_clone
-                            .send_response(
-                                Response::Query(QueryResponse::GetChunk(Ok(chunk))),
-                                channel,
-                            )
-                            .await
-                        {
-                            warn!("Error while sending response: {err:?}");
-                        }
-                    }
-                }
-                NetworkEvent::PeerDiscovered => {
-                    if let Some(sender) = peer_dicovered_send.take() {
-                        if let Err(err) = sender.send(()) {
-                            warn!("Error while sending through channel: {err:?}");
-                        }
-                    }
-                }
+    let mut vault_events_rx = vault_events_channel.subscribe();
+    // wait until we connect to the network
+    if let Ok(event) = vault_events_rx.recv().await {
+        match event {
+            NodeEvent::ConnectedToNetwork => {
+                info!("Connected to the Network");
             }
         }
-    });
-
-    // wait until we discover atleast one peer
-    peer_dicovered_rx.await?;
-    info!("Discovered a Peer");
-    // todo: sometimes, the node might query the network before it adds a peer to the DHT. The
-    // PeerDiscoverd event is triggered when it adds the peer to the DHT, but the op might fail and
-    // there is no way to confirm it since `RoutingUpdate` is private/no debug impl.
-    // Hence sleep for sometime before querying the network
-    thread::sleep(time::Duration::from_millis(100));
+    }
 
     if let Some(files_path) = opt.upload_chunks {
         for entry in WalkDir::new(files_path).into_iter().flatten() {
@@ -101,14 +58,12 @@ async fn main() -> Result<()> {
                 let file = fs::read(entry.path())?;
                 let chunk = Chunk::new(Bytes::from(file));
                 let xor_name = *chunk.name();
-                // todo: rework storage
                 info!(
-                    "Storing file {:?} with xorname: {xor_name:x}",
+                    "Storing chunk {:?} with xorname: {xor_name:x}",
                     entry.file_name()
                 );
-                storage.store(&ReplicatedData::Chunk(chunk)).await?;
-                // todo: data storage should not use the provider api
-                network_api.announce_holding(xor_name).await?;
+                vault.store_data(&ReplicatedData::Chunk(chunk)).await?;
+                info!("Successfully stored chunk");
             }
         }
     }
@@ -119,30 +74,8 @@ async fn main() -> Result<()> {
         let mut xor_name = XorName::default();
         xor_name.0.copy_from_slice(vec.as_slice());
 
-        // Locate all nodes providing the file.
-        let providers = network_api.get_data_providers(xor_name).await?;
-        if providers.is_empty() {
-            return Err(eyre!("Could not find provider for file {xor_name}."));
-        }
-        // Request the content of the file from each node.
-        let requests = providers.into_iter().map(|peer| {
-            let mut network_api = network_api.clone();
-            async move {
-                let addr = ChunkAddress::new(xor_name);
-                network_api
-                    .send_request(Request::Query(Query::GetChunk(addr)), peer)
-                    .await
-            }
-            .boxed()
-        });
-        // Await the requests, ignore the remaining once a single one succeeds.
-        let resp = futures::future::select_ok(requests)
-            .await
-            .map_err(|_| eyre!("None of the providers returned file."))?
-            .0;
-        if let Response::Query(QueryResponse::GetChunk(Ok(chunk))) = resp {
-            info!("got chunk {:x}", chunk.name());
-        };
+        vault.get_chunk(xor_name).await?;
+        info!("Successfully got chunk");
     }
 
     if opt.create_register {
@@ -169,7 +102,9 @@ async fn main() -> Result<()> {
 
         let cmd = RegisterCmd::Create(SignedRegisterCreate { op, auth });
 
-        storage.store(&ReplicatedData::RegisterWrite(cmd)).await?;
+        vault
+            .store_data(&ReplicatedData::RegisterWrite(cmd))
+            .await?;
 
         if let Some(entry) = opt.entry {
             let mut register = Register::new(owner, xor_name, tag, policy);
@@ -185,7 +120,9 @@ async fn main() -> Result<()> {
 
             let cmd = RegisterCmd::Edit(SignedRegisterEdit { op, auth });
 
-            storage.store(&ReplicatedData::RegisterWrite(cmd)).await?;
+            vault
+                .store_data(&ReplicatedData::RegisterWrite(cmd))
+                .await?;
         }
     }
 

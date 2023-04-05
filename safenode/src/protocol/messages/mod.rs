@@ -22,10 +22,10 @@ pub use self::{
     response::{CmdResponse, QueryResponse},
 };
 
-use super::types::chunk::Chunk;
-
+use super::types::{address::DataAddress, chunk::Chunk};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use xor_name::XorName;
 
 /// Send a request to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -54,4 +54,24 @@ pub enum ReplicatedData {
     RegisterWrite(RegisterCmd),
     /// An entire op log of a register.
     RegisterLog(ReplicatedRegisterLog),
+}
+
+impl ReplicatedData {
+    /// Returns the name.
+    pub fn name(&self) -> XorName {
+        match self {
+            Self::Chunk(chunk) => *chunk.name(),
+            Self::RegisterLog(log) => *log.address.name(),
+            Self::RegisterWrite(cmd) => *cmd.dst_address().name(),
+        }
+    }
+
+    /// Returns the address.
+    pub fn address(&self) -> DataAddress {
+        match self {
+            Self::Chunk(chunk) => DataAddress::Bytes(*chunk.address()),
+            Self::RegisterLog(log) => DataAddress::Register(log.address),
+            Self::RegisterWrite(cmd) => DataAddress::Register(cmd.dst_address()),
+        }
+    }
 }

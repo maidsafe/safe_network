@@ -11,9 +11,7 @@ mod error;
 mod event;
 mod msg;
 
-pub use self::event::NetworkEvent;
-
-use crate::protocol::messages::{Request, Response};
+pub use self::{error::Error, event::NetworkEvent};
 
 use self::{
     cmd::SwarmCmd,
@@ -21,6 +19,7 @@ use self::{
     event::NodeBehaviour,
     msg::{MsgCodec, MsgProtocol},
 };
+use crate::protocol::messages::{Request, Response};
 
 use futures::{
     channel::{mpsc, oneshot},
@@ -54,8 +53,7 @@ pub struct NetworkSwarmLoop {
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>,
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
-    pending_start_providing: HashMap<QueryId, oneshot::Sender<Result<()>>>,
-    pending_get_providers: HashMap<QueryId, oneshot::Sender<HashSet<PeerId>>>,
+    pending_get_closest_nodes: HashMap<QueryId, oneshot::Sender<HashSet<PeerId>>>,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
 }
 
@@ -120,8 +118,7 @@ impl NetworkSwarmLoop {
             cmd_receiver: swarm_cmd_receiver,
             event_sender,
             pending_dial: Default::default(),
-            pending_start_providing: Default::default(),
-            pending_get_providers: Default::default(),
+            pending_get_closest_nodes: Default::default(),
             pending_requests: Default::default(),
         };
 
@@ -135,7 +132,7 @@ impl NetworkSwarmLoop {
                 some_event = self.swarm.next() => {
                     // TODO: currently disabled to provide a stable network.
                     // restart_at_random(self.swarm.local_peer_id());
-                    if let Err(err) = self.handle_event(some_event.expect("Swarm stream to be infinite!")).await {
+                    if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {
                         warn!("Error while handling event: {err}");
                     }
                 }  ,
@@ -198,67 +195,58 @@ pub struct Network {
 
 impl Network {
     ///  Listen for incoming connections on the given address.
-    pub async fn start_listening(&mut self, addr: Multiaddr) -> Result<()> {
+    pub async fn start_listening(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
-        self.swarm_cmd_sender
-            .send(SwarmCmd::StartListening { addr, sender })
+        self.send_swarm_cmd(SwarmCmd::StartListening { addr, sender })
             .await?;
         receiver.await?
     }
 
     /// Dial the given peer at the given address.
-    pub async fn dial(&mut self, peer_id: PeerId, peer_addr: Multiaddr) -> Result<()> {
+    pub async fn dial(&self, peer_id: PeerId, peer_addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
-        self.swarm_cmd_sender
-            .send(SwarmCmd::Dial {
-                peer_id,
-                peer_addr,
-                sender,
-            })
-            .await?;
-        receiver.await?
-    }
-
-    /// Announce the local node as a provider of a given piece of data; The XorName of the data
-    /// is announced to the nodes on the DHT.
-    /// todo: do not use the provider api to store stuff
-    pub async fn announce_holding(&mut self, xor_name: XorName) -> Result<()> {
-        let (sender, receiver) = oneshot::channel();
-        self.swarm_cmd_sender
-            .send(SwarmCmd::StoreData { xor_name, sender })
-            .await?;
+        self.send_swarm_cmd(SwarmCmd::Dial {
+            peer_id,
+            peer_addr,
+            sender,
+        })
+        .await?;
         receiver.await?
     }
 
     /// Find the providers for the given piece of data; The XorName is used to locate the nodes
     /// that hold the data
-    /// todo: do not use the provider api to store stuff
-    pub async fn get_data_providers(&mut self, xor_name: XorName) -> Result<HashSet<PeerId>> {
+    pub async fn get_closest_nodes(&self, xor_name: XorName) -> Result<HashSet<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.swarm_cmd_sender
-            .send(SwarmCmd::GetDataProviders { xor_name, sender })
+        self.send_swarm_cmd(SwarmCmd::GetClosestNodes { xor_name, sender })
             .await?;
-        Ok(receiver.await?)
+        let closest_nodes = receiver.await?;
+        trace!("Got the closest_nodes to the given XorName-{xor_name}, nodes: {closest_nodes:?}");
+        Ok(closest_nodes)
     }
 
     /// Send `Request` to the the given `PeerId`
-    pub async fn send_request(&mut self, req: Request, peer: PeerId) -> Result<Response> {
+    pub async fn send_request(&self, req: Request, peer: PeerId) -> Result<Response> {
         let (sender, receiver) = oneshot::channel();
-        self.swarm_cmd_sender
-            .send(SwarmCmd::SendRequest { req, peer, sender })
+        self.send_swarm_cmd(SwarmCmd::SendRequest { req, peer, sender })
             .await?;
         receiver.await?
     }
 
     /// Send a `Response` through the channel opened by the requester.
     pub async fn send_response(
-        &mut self,
+        &self,
         resp: Response,
         channel: ResponseChannel<Response>,
     ) -> Result<()> {
-        Ok(self
-            .swarm_cmd_sender
-            .send(SwarmCmd::SendResponse { resp, channel })
-            .await?)
+        self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
+            .await
+    }
+
+    // helper to send SwarmCmd
+    async fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
+        let mut swarm_cmd_sender = self.swarm_cmd_sender.clone();
+        swarm_cmd_sender.send(cmd).await?;
+        Ok(())
     }
 }
