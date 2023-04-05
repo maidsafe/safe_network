@@ -32,7 +32,7 @@ regex = "1.7.1"
 tonic = { version = "~0.8.3", optional = true }
 tracing = "~0.1.26"
 tracing-core = "~0.1.21"
-tracing-subscriber = { version = "~0.3.1", features = ["env-filter", "json"] }
+tracing-subscriber = "~0.3.1"
 xor_name = { version = "~5.0.0", optional = true }
 walkdir = "2"
 

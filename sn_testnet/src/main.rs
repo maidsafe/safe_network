@@ -39,9 +39,7 @@ use std::{
     process::{Command, Stdio},
 };
 use tracing::{debug, info};
-use tracing_subscriber::EnvFilter;
 
-const BASE_TRACING_DIRECTIVES: &str = "sn_testnet=debug";
 const DEFAULT_NODE_COUNT: u32 = 25;
 
 #[derive(Debug, clap::StructOpt)]
@@ -259,30 +257,7 @@ async fn join_network(
 }
 
 fn init_tracing() -> Result<()> {
-    let mut filter = EnvFilter::try_new(BASE_TRACING_DIRECTIVES)
-        .map_err(|_| eyre!("BUG: hard-coded tracing directives are invalid"))?;
-
-    let extra_directives = std::env::var(EnvFilter::DEFAULT_ENV)
-        .map_or_else(
-            |error| match error {
-                std::env::VarError::NotPresent => Ok(None),
-                std::env::VarError::NotUnicode(_) => Err(eyre!(error)),
-            },
-            |filter| Ok(Some(EnvFilter::try_new(filter)?)),
-        )
-        .map_err(|_| eyre!("Invalid value for {}", EnvFilter::DEFAULT_ENV))?;
-
-    if let Some(extra_directives) = extra_directives {
-        for directive in extra_directives.to_string().split(',') {
-            filter = filter.add_directive(
-                directive
-                    .parse()
-                    .expect("BUG: invalid directive in parsed EnvFilter"),
-            );
-        }
-    }
-
-    tracing_subscriber::fmt().with_env_filter(filter).init();
+    tracing_subscriber::fmt().init();
 
     Ok(())
 }
