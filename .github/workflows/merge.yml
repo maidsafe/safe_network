@@ -72,6 +72,43 @@ jobs:
         # Deny certain `rustdoc` lints that are unwanted.
         # See https://doc.rust-lang.org/rustdoc/lints.html for lints that are 'warning' by default.
         run: RUSTDOCFLAGS="--deny=warnings" cargo doc --no-deps
+
+  unit:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Unit Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+        continue-on-error: true
+        with:
+          cache-on-failure: true
+          sharedKey: ${{github.run_id}}-unit
+
+      - name: Build tests before running
+        run: cargo test --no-run --release
+        timeout-minutes: 30
+
+      - name: Run protocol tests
+        timeout-minutes: 25
+        run: cargo test --release -p safenode -- protocol
+
+      - name: Run storage tests
+        timeout-minutes: 25
+        run: cargo test --release -p safenode -- storage
+
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: E2E tests
@@ -109,7 +146,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Build sn bins
-        run: cargo build --release --bins 
+        run: cargo build --release --bins
         timeout-minutes: 60
 
       - name: Start a local network
