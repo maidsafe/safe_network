@@ -8,16 +8,14 @@
 
 use crate::protocol::{
     messages::{Query, QueryResponse, ReplicatedData},
-    types::{address::ChunkAddress, chunk::Chunk, register::User},
+    types::{address::ChunkAddress, chunk::Chunk, errors::Result, register::User},
 };
 
 mod chunks;
-mod errors;
 mod register_store;
 mod registers;
 
 use chunks::ChunkStorage;
-use errors::{Error, Result};
 use registers::RegisterStorage;
 use tracing::debug;
 
@@ -63,9 +61,7 @@ impl DataStorage {
     /// Query the local store and return QueryResponse
     pub async fn query(&self, query: &Query, requester: User) -> QueryResponse {
         match query {
-            Query::GetChunk(addr) => {
-                QueryResponse::GetChunk(self.chunks.get(addr).await.map_err(|err| err.into()))
-            }
+            Query::GetChunk(addr) => QueryResponse::GetChunk(self.chunks.get(addr).await),
             Query::Register(read) => self.registers.read(read, requester).await,
             Query::GetDbc(_) => todo!(),
         }

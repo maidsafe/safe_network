@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
             if entry.file_type().is_file() {
                 let file = fs::read(entry.path())?;
                 let chunk = Chunk::new(Bytes::from(file));
-                let xor_name = chunk.name();
+                let xor_name = *chunk.name();
                 // todo: rework storage
                 info!(
                     "Storing file {:?} with xorname: {xor_name:x}",
@@ -108,7 +108,7 @@ async fn main() -> Result<()> {
                 );
                 storage.store_chunk(&chunk).await?;
                 // todo: data storage should not use the provider api
-                network_api.announce_holding(*xor_name).await?;
+                network_api.announce_holding(xor_name).await?;
             }
         }
     }

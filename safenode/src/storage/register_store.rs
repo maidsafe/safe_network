@@ -8,10 +8,12 @@
 
 use crate::protocol::{
     messages::RegisterCmd,
-    types::{address::RegisterAddress, register::Register},
+    types::{
+        address::RegisterAddress,
+        errors::{Error, Result},
+        register::Register,
+    },
 };
-
-use super::{Error, Result};
 
 use clru::CLruCache;
 use std::{num::NonZeroUsize, sync::Arc};
