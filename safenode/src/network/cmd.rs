@@ -12,16 +12,15 @@ use crate::{
 };
 
 use super::{error::Error, NetworkSwarmLoop};
-
-use futures::channel::oneshot;
 use libp2p::{multiaddr::Protocol, request_response::ResponseChannel, Multiaddr, PeerId};
 use std::collections::{hash_map, HashSet};
+use tokio::sync::oneshot;
 use tracing::warn;
 use xor_name::XorName;
 
 /// Commands to send to the Swarm
 #[derive(Debug)]
-pub(crate) enum SwarmCmd {
+pub enum SwarmCmd {
     StartListening {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,

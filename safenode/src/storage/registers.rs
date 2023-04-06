@@ -58,6 +58,7 @@ impl RegisterStorage {
     }
 
     /// Update our Register's replica on receiving data from other nodes.
+    #[allow(dead_code)]
     pub(super) async fn update(&self, data: &ReplicatedRegisterLog) -> Result<()> {
         let addr = data.address;
         debug!("Updating Register store: {addr:?}");
