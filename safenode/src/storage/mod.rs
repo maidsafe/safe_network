@@ -38,11 +38,6 @@ impl DataStorage {
         }
     }
 
-    /// Store Chunk in the local store
-    pub async fn store_chunk(&self, chunk: &Chunk) -> Result<()> {
-        self.chunks.store(chunk).await
-    }
-
     /// Query the local store and return the Chunk
     pub async fn query_chunk(&self, addr: &ChunkAddress) -> Result<Chunk> {
         self.chunks.get(addr).await

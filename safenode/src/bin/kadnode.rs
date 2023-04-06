@@ -106,7 +106,7 @@ async fn main() -> Result<()> {
                     "Storing file {:?} with xorname: {xor_name:x}",
                     entry.file_name()
                 );
-                storage.store_chunk(&chunk).await?;
+                storage.store(&ReplicatedData::Chunk(chunk)).await?;
                 // todo: data storage should not use the provider api
                 network_api.announce_holding(xor_name).await?;
             }
