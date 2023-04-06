@@ -11,7 +11,6 @@ use super::{
     authority::PublicKey,
     register::{EntryHash, User},
 };
-
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};
 use thiserror::Error;
@@ -62,13 +61,27 @@ pub enum Error {
     /// Failed to write file, likely due to a system Io error
     #[error("Failed to write file")]
     FailedToWriteFile,
-    /// Invalid Operation
-    #[error("Invalid operation: {0}")]
-    InvalidOperation(String),
-}
-
-impl From<bincode::Error> for Error {
-    fn from(error: bincode::Error) -> Self {
-        Error::Serialisation(error.as_ref().to_string())
-    }
+    /// Not enough space to store the value.
+    #[error("Not enough space")]
+    NotEnoughSpace,
+    /// Bincode error.
+    #[error("Bincode error:: {0}")]
+    Bincode(String),
+    /// I/O error.
+    #[error("I/O error: {0}")]
+    Io(String),
+    /// Hex decoding error.
+    #[error("Hex decoding error:: {0}")]
+    HexDecoding(String),
+    /// Register command/op destination adddress mistmatch
+    #[error(
+        "Register command destination address ({cmd_dst_addr:?}) \
+         doesn't match stored Register address: {reg_addr:?}"
+    )]
+    RegisterAddrMismatch {
+        /// Register command destination address
+        cmd_dst_addr: RegisterAddress,
+        /// Stored Register address
+        reg_addr: RegisterAddress,
+    },
 }

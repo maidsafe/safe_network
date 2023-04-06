@@ -13,17 +13,14 @@ use crate::protocol::{
     },
     types::{
         address::RegisterAddress,
+        errors::{Error, Result},
         register::{Action, EntryHash, Register, User},
     },
 };
 
-use super::{
-    register_store::{RegisterStore, StoredRegister},
-    Error, Result,
-};
+use super::register_store::{RegisterStore, StoredRegister};
 
 use bincode::serialize;
-use tracing::{debug, error, info, trace, warn};
 
 /// Operations over the Register data type and its storage.
 #[derive(Clone, Default)]
@@ -138,13 +135,7 @@ impl RegisterStorage {
 
     /// Get entire Register.
     async fn get(&self, address: RegisterAddress, requester: User) -> QueryResponse {
-        let result = match self.get_register(&address, Action::Read, requester).await {
-            Ok(register) => Ok(register),
-            Err(error) => {
-                error!("Error reading register from disk {error:?}");
-                Err(error.into())
-            }
-        };
+        let result = self.get_register(&address, Action::Read, requester).await;
 
         QueryResponse::GetRegister(result)
     }
@@ -155,13 +146,13 @@ impl RegisterStorage {
             Err(error) => Err(error),
         };
 
-        QueryResponse::ReadRegister(result.map_err(|error| error.into()))
+        QueryResponse::ReadRegister(result)
     }
 
     async fn get_owner(&self, address: RegisterAddress, requester: User) -> QueryResponse {
         let result = match self.get_register(&address, Action::Read, requester).await {
             Ok(res) => Ok(res.owner()),
-            Err(error) => Err(error.into()),
+            Err(error) => Err(error),
         };
 
         QueryResponse::GetRegisterOwner(result)
@@ -173,14 +164,10 @@ impl RegisterStorage {
         hash: EntryHash,
         requester: User,
     ) -> QueryResponse {
-        let result = match self
+        let result = self
             .get_register(&address, Action::Read, requester)
             .await
-            .and_then(|register| register.get(hash).map(|c| c.clone()).map_err(Error::from))
-        {
-            Ok(res) => Ok(res),
-            Err(error) => Err(error.into()),
-        };
+            .and_then(|register| register.get(hash).map(|c| c.clone()));
 
         QueryResponse::GetRegisterEntry(result)
     }
@@ -191,27 +178,19 @@ impl RegisterStorage {
         user: User,
         requester: User,
     ) -> QueryResponse {
-        let result = match self
+        let result = self
             .get_register(&address, Action::Read, requester)
             .await
-            .and_then(|register| register.permissions(user).map_err(Error::from))
-        {
-            Ok(res) => Ok(res),
-            Err(error) => Err(error.into()),
-        };
+            .and_then(|register| register.permissions(user));
 
         QueryResponse::GetRegisterUserPermissions(result)
     }
 
     async fn get_policy(&self, address: RegisterAddress, requester_pk: User) -> QueryResponse {
-        let result = match self
+        let result = self
             .get_register(&address, Action::Read, requester_pk)
             .await
-            .map(|register| register.policy().clone())
-        {
-            Ok(res) => Ok(res),
-            Err(error) => Err(error.into()),
-        };
+            .map(|register| register.policy().clone());
 
         QueryResponse::GetRegisterPolicy(result)
     }
@@ -241,7 +220,7 @@ impl RegisterStorage {
                 // the target Register is not in our store or we don't have the 'Register create',
                 // let's verify the create cmd we received is valid and try to apply stored cmds we may have.
                 let SignedRegisterCreate { op, auth } = cmd;
-                auth.verify_authority(serialize(op)?)?;
+                auth.verify_authority(serialize(op).map_err(|e| Error::Bincode(e.to_string()))?)?;
 
                 trace!("Creating new register: {:?}", cmd.dst_address());
                 // let's do a final check, let's try to apply all cmds to it,
@@ -275,14 +254,12 @@ impl RegisterStorage {
         match cmd {
             RegisterCmd::Create { .. } => Ok(()),
             RegisterCmd::Edit(SignedRegisterEdit { op, auth }) => {
-                auth.verify_authority(serialize(op)?)?;
+                auth.verify_authority(serialize(op).map_err(|e| Error::Bincode(e.to_string()))?)?;
 
                 info!("Editing Register: {addr:?}");
                 let public_key = auth.public_key;
                 register.check_permissions(Action::Write, Some(User::Key(public_key)))?;
-                let result = register
-                    .apply_op(op.edit.clone())
-                    .map_err(Error::NetworkData);
+                let result = register.apply_op(op.edit.clone());
 
                 match result {
                     Ok(()) => {
@@ -308,9 +285,7 @@ impl RegisterStorage {
             for cmd in &stored_reg.op_log {
                 if let RegisterCmd::Edit(SignedRegisterEdit { op, .. }) = cmd {
                     let EditRegister { edit, .. } = op;
-                    register
-                        .apply_op(edit.clone())
-                        .map_err(Error::NetworkData)?;
+                    register.apply_op(edit.clone())?;
                 }
             }
         }
