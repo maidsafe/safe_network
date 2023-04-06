@@ -21,7 +21,6 @@ use crate::{
     },
     storage::DataStorage,
 };
-use futures::StreamExt;
 use libp2p::request_response::ResponseChannel;
 use tokio::task::spawn;
 
@@ -52,7 +51,7 @@ impl Vault {
         // Spawn a task to handle `NetworkEvents`
         let _handle = spawn(async move {
             loop {
-                let event = match network_events.next().await {
+                let event = match network_events.recv().await {
                     Some(event) => event,
                     None => {
                         error!("The `NetworkEvent` channel has been closed, something went wrong");

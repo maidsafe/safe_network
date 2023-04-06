@@ -20,11 +20,7 @@ use self::{
     msg::{MsgCodec, MsgProtocol},
 };
 use crate::protocol::messages::{Request, Response};
-
-use futures::{
-    channel::{mpsc, oneshot},
-    prelude::*,
-};
+use futures::StreamExt;
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
@@ -41,6 +37,7 @@ use std::{
     process::{self, Command, Stdio},
     time::Duration,
 };
+use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 use xor_name::XorName;
 
@@ -65,7 +62,7 @@ impl NetworkSwarmLoop {
     /// - The `NetworkEvent` receiver to get the events from the network layer.
     ///
     /// - The `NetworkSwarmLoop` that drives the network.
-    pub fn new() -> Result<(Network, impl Stream<Item = NetworkEvent>, NetworkSwarmLoop)> {
+    pub fn new() -> Result<(Network, mpsc::Receiver<NetworkEvent>, NetworkSwarmLoop)> {
         // Create a random key for ourselves.
         let keypair = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(keypair.public());
@@ -111,8 +108,8 @@ impl NetworkSwarmLoop {
             swarm
         };
 
-        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(0);
-        let (event_sender, event_receiver) = mpsc::channel(0);
+        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(100);
+        let (event_sender, event_receiver) = mpsc::channel(100);
         let event_loop = Self {
             swarm,
             cmd_receiver: swarm_cmd_receiver,
@@ -128,7 +125,7 @@ impl NetworkSwarmLoop {
     /// Drive the network
     pub async fn run(mut self) {
         loop {
-            futures::select! {
+            tokio::select! {
                 some_event = self.swarm.next() => {
                     // TODO: currently disabled to provide a stable network.
                     // restart_at_random(self.swarm.local_peer_id());
@@ -136,14 +133,14 @@ impl NetworkSwarmLoop {
                         warn!("Error while handling event: {err}");
                     }
                 }  ,
-                some_cmd = self.cmd_receiver.next() => match some_cmd {
+                some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
                         if let Err(err) = self.handle_cmd(cmd) {
                             warn!("Error while handling cmd: {err}");
                         }
                     },
                     // Cmd channel closed, thus shutting down the network event loop.
-                    None=>  return,
+                    None =>  return,
                 },
             }
         }
@@ -245,7 +242,7 @@ impl Network {
 
     // helper to send SwarmCmd
     async fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
-        let mut swarm_cmd_sender = self.swarm_cmd_sender.clone();
+        let swarm_cmd_sender = self.swarm_cmd_sender.clone();
         swarm_cmd_sender.send(cmd).await?;
         Ok(())
     }

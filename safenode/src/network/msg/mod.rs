@@ -11,7 +11,6 @@ pub(crate) use codec::{MsgCodec, MsgProtocol};
 
 use crate::network::{error::Error, NetworkEvent, NetworkSwarmLoop};
 use crate::protocol::messages::{Request, Response};
-use futures::prelude::*;
 use libp2p::request_response::{self, Message};
 use tracing::{trace, warn};
 

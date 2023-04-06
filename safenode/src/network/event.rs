@@ -13,7 +13,6 @@ use super::{
 };
 
 use crate::protocol::messages::{Request, Response};
-use futures::SinkExt;
 use libp2p::{
     kad::{store::MemoryStore, Kademlia, KademliaEvent, QueryResult},
     mdns,

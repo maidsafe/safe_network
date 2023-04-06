@@ -6,10 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use futures::channel::{mpsc, oneshot};
+use super::{cmd::SwarmCmd, NetworkEvent};
 use libp2p::{kad, request_response::OutboundFailure, swarm::DialError, TransportError};
 use std::io;
 use thiserror::Error;
+use tokio::sync::{mpsc, oneshot};
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -35,9 +36,12 @@ pub enum Error {
     #[error("Kademlia Store error: {0}")]
     KademliaStoreError(#[from] kad::store::Error),
 
-    #[error("The mpsc::receiever has been dropped")]
-    ReceieverDropped(#[from] mpsc::SendError),
+    #[error("The mpsc::receiever for `NetworkEvent` has been dropped")]
+    NetworkEventReceieverDropped(#[from] mpsc::error::SendError<NetworkEvent>),
+
+    #[error("The mpsc::receiever for `SwarmCmd` has been dropped")]
+    SwarmCmdReceieverDropped(#[from] mpsc::error::SendError<SwarmCmd>),
 
     #[error("The oneshot::sender has been dropped")]
-    SenderDropped(#[from] oneshot::Canceled),
+    SenderDropped(#[from] oneshot::error::RecvError),
 }
