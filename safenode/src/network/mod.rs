@@ -41,16 +41,16 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 use xor_name::XorName;
 
-/// The main event loop recieves `SwarmEvents` from the network, `SwarmCmd` from the upper layers and
-/// emmits back `NetworkEvent` to the upper layers.
-/// Also keeps track of the pending queries/requests and their channels. Once we recieve an event
+/// The main event loop receives `SwarmEvents` from the network, `SwarmCmd` from the upper layers and
+/// emits back `NetworkEvent` to the upper layers.
+/// Also keeps track of the pending queries/requests and their channels. Once we receive an event
 /// that is the outcome of a previously executed cmd, send a response to them via the stored channel.
 pub struct NetworkSwarmLoop {
     swarm: Swarm<NodeBehaviour>,
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>,
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
-    pending_get_closest_nodes: HashMap<QueryId, oneshot::Sender<HashSet<PeerId>>>,
+    pending_get_closest_peers: HashMap<QueryId, oneshot::Sender<HashSet<PeerId>>>,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
 }
 
@@ -115,7 +115,7 @@ impl NetworkSwarmLoop {
             cmd_receiver: swarm_cmd_receiver,
             event_sender,
             pending_dial: Default::default(),
-            pending_get_closest_nodes: Default::default(),
+            pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
         };
 
@@ -211,15 +211,17 @@ impl Network {
         receiver.await?
     }
 
-    /// Find the providers for the given piece of data; The XorName is used to locate the nodes
-    /// that hold the data
-    pub async fn get_closest_nodes(&self, xor_name: XorName) -> Result<HashSet<PeerId>> {
+    /// Find the closest peers to the given `XorName`
+    pub async fn get_closest_peers(&self, xor_name: XorName) -> Result<HashSet<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetClosestNodes { xor_name, sender })
+        self.send_swarm_cmd(SwarmCmd::GetClosestPeers { xor_name, sender })
             .await?;
-        let closest_nodes = receiver.await?;
-        trace!("Got the closest_nodes to the given XorName-{xor_name}, nodes: {closest_nodes:?}");
-        Ok(closest_nodes)
+        let closest_peers = receiver.await?;
+        trace!(
+            "Got the {} closest_peers to the given XorName-{xor_name}, nodes: {closest_peers:?}",
+            closest_peers.len()
+        );
+        Ok(closest_peers)
     }
 
     /// Send `Request` to the the given `PeerId`
@@ -240,7 +242,7 @@ impl Network {
             .await
     }
 
-    // helper to send SwarmCmd
+    // Helper to send SwarmCmd
     async fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
         let swarm_cmd_sender = self.swarm_cmd_sender.clone();
         swarm_cmd_sender.send(cmd).await?;

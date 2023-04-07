@@ -12,7 +12,7 @@ mod event;
 
 pub use event::NodeEvent;
 
-use self::{error::Result, event::VaultEventsChannel};
+use self::{error::Result, event::NodeEventsChannel};
 use crate::{
     network::{Network, NetworkEvent, NetworkSwarmLoop},
     protocol::{
@@ -26,22 +26,22 @@ use tokio::task::spawn;
 
 /// Safe node
 #[derive(Clone)]
-pub struct Vault {
+pub struct Node {
     network: Network,
     storage: DataStorage,
-    vault_events_channel: VaultEventsChannel,
+    node_events_channel: NodeEventsChannel,
 }
 
-impl Vault {
+impl Node {
     /// Create and run the `Node`
-    pub async fn run() -> Result<(Self, VaultEventsChannel)> {
+    pub async fn run() -> Result<(Self, NodeEventsChannel)> {
         let (network, mut network_events, network_event_loop) = NetworkSwarmLoop::new()?;
         let storage = DataStorage::new();
-        let vault_events_channel = VaultEventsChannel::default();
+        let node_events_channel = NodeEventsChannel::default();
         let node = Self {
             network,
             storage,
-            vault_events_channel: vault_events_channel.clone(),
+            node_events_channel: node_events_channel.clone(),
         };
         let mut node_clone = node.clone();
 
@@ -64,7 +64,7 @@ impl Vault {
             }
         });
 
-        Ok((node, vault_events_channel))
+        Ok((node, node_events_channel))
     }
 
     /// Handle incoming `NetworkEvent`
@@ -74,7 +74,7 @@ impl Vault {
                 self.handle_request(req, channel).await?
             }
             NetworkEvent::PeerAdded => {
-                self.vault_events_channel
+                self.node_events_channel
                     .broadcast(NodeEvent::ConnectedToNetwork);
             }
         }

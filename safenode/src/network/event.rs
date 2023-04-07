@@ -65,7 +65,7 @@ pub enum NetworkEvent {
         /// The channel to send the `Response` through
         channel: ResponseChannel<Response>,
     },
-    /// Emmited when the DHT is updated
+    /// Emitted when the DHT is updated
     PeerAdded,
 }
 
@@ -89,7 +89,7 @@ impl NetworkSwarmLoop {
                     result: QueryResult::GetClosestPeers(Ok(closest_peers)),
                     ..
                 } => {
-                    if let Some(sender) = self.pending_get_closest_nodes.remove(&id) {
+                    if let Some(sender) = self.pending_get_closest_peers.remove(&id) {
                         sender
                             .send(closest_peers.peers.into_iter().collect())
                             .map_err(|_| Error::Other("Receiver not to be dropped".to_string()))?;
@@ -99,10 +99,10 @@ impl NetworkSwarmLoop {
                     self.event_sender.send(NetworkEvent::PeerAdded).await?;
                 }
                 KademliaEvent::InboundRequest { request } => {
-                    info!("got inboumd request: {request:?}");
+                    info!("got inbound request: {request:?}");
                 }
                 todo => {
-                    panic!("KademliaEvent has not been implemented: {todo:?}");
+                    error!("KademliaEvent has not been implemented: {todo:?}");
                 }
             },
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
@@ -148,7 +148,7 @@ impl NetworkSwarmLoop {
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
             SwarmEvent::Dialing(peer_id) => info!("Dialing {peer_id}"),
-            e => panic!("SwarmEvent has not been implemented: {e:?}"),
+            todo => error!("SwarmEvent has not been implemented: {todo:?}"),
         }
         Ok(())
     }

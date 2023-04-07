@@ -213,7 +213,7 @@ impl RegisterStorage {
         // the cmd in the log anyway, whenever we receive the 'Register create' cmd
         // it can be reconstructed from all cmds we hold in the log. If this is a 'Register create'
         // cmd let's verify it's valid before accepting it, however 'Edits cmds' cannot be
-        // verified untill we have the `Register create` cmd.
+        // verified until we have the `Register create` cmd.
         match (stored_reg.state.as_mut(), cmd) {
             (Some(_), RegisterCmd::Create { .. }) => return Ok(()), // no op, since already created
             (Some(ref mut register), RegisterCmd::Edit(_)) => self.apply(cmd, register)?,

@@ -15,6 +15,7 @@ use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use safenode::{
     log::init_node_logging,
     network::Network,
+    node::{Node, NodeEvent},
     protocol::{
         messages::{
             CreateRegister, EditRegister, RegisterCmd, ReplicatedData, SignedRegisterCreate,
@@ -26,7 +27,6 @@ use safenode::{
             register::{Policy, Register, User},
         },
     },
-    vault::{NodeEvent, Vault},
 };
 use std::{collections::BTreeSet, fs, path::PathBuf};
 use std::{thread, time};
@@ -39,12 +39,12 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
-    info!("Starting vault...");
-    let (vault, vault_events_channel) = Vault::run().await?;
+    info!("Starting node...");
+    let (node, node_events_channel) = Node::run().await?;
 
-    let mut vault_events_rx = vault_events_channel.subscribe();
+    let mut node_events_rx = node_events_channel.subscribe();
     // wait until we connect to the network
-    if let Ok(event) = vault_events_rx.recv().await {
+    if let Ok(event) = node_events_rx.recv().await {
         match event {
             NodeEvent::ConnectedToNetwork => {
                 info!("Connected to the Network");
@@ -62,7 +62,7 @@ async fn main() -> Result<()> {
                     "Storing chunk {:?} with xorname: {xor_name:x}",
                     entry.file_name()
                 );
-                vault.store_data(&ReplicatedData::Chunk(chunk)).await?;
+                node.store_data(&ReplicatedData::Chunk(chunk)).await?;
                 info!("Successfully stored chunk");
             }
         }
@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
         let mut xor_name = XorName::default();
         xor_name.0.copy_from_slice(vec.as_slice());
 
-        vault.get_chunk(xor_name).await?;
+        node.get_chunk(xor_name).await?;
         info!("Successfully got chunk");
     }
 
@@ -102,9 +102,7 @@ async fn main() -> Result<()> {
 
         let cmd = RegisterCmd::Create(SignedRegisterCreate { op, auth });
 
-        vault
-            .store_data(&ReplicatedData::RegisterWrite(cmd))
-            .await?;
+        node.store_data(&ReplicatedData::RegisterWrite(cmd)).await?;
 
         if let Some(entry) = opt.entry {
             let mut register = Register::new(owner, xor_name, tag, policy);
@@ -120,9 +118,7 @@ async fn main() -> Result<()> {
 
             let cmd = RegisterCmd::Edit(SignedRegisterEdit { op, auth });
 
-            vault
-                .store_data(&ReplicatedData::RegisterWrite(cmd))
-                .await?;
+            node.store_data(&ReplicatedData::RegisterWrite(cmd)).await?;
         }
     }
 

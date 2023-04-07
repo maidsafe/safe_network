@@ -36,11 +36,11 @@ pub enum Error {
     #[error("Kademlia Store error: {0}")]
     KademliaStoreError(#[from] kad::store::Error),
 
-    #[error("The mpsc::receiever for `NetworkEvent` has been dropped")]
-    NetworkEventReceieverDropped(#[from] mpsc::error::SendError<NetworkEvent>),
+    #[error("The mpsc::receiver for `NetworkEvent` has been dropped")]
+    NetworkEventReceiverDropped(#[from] mpsc::error::SendError<NetworkEvent>),
 
-    #[error("The mpsc::receiever for `SwarmCmd` has been dropped")]
-    SwarmCmdReceieverDropped(#[from] mpsc::error::SendError<SwarmCmd>),
+    #[error("The mpsc::receiver for `SwarmCmd` has been dropped")]
+    SwarmCmdReceiverDropped(#[from] mpsc::error::SendError<SwarmCmd>),
 
     #[error("The oneshot::sender has been dropped")]
     SenderDropped(#[from] oneshot::error::RecvError),
