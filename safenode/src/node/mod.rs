@@ -14,7 +14,7 @@ pub use event::NodeEvent;
 
 use self::{error::Result, event::NodeEventsChannel};
 use crate::{
-    network::{Network, NetworkEvent, NetworkSwarmLoop},
+    network::{Network, NetworkEvent, SwarmDriver},
     protocol::{
         messages::{Request, Response},
         types::register::User,
@@ -24,42 +24,52 @@ use crate::{
 use libp2p::request_response::ResponseChannel;
 use tokio::task::spawn;
 
-/// Safe node
+/// `Node` represents a single node in the distributed network. It handles
+/// network events, processes incoming requests, interacts with the data
+/// storage, and broadcasts node-related events.
 #[derive(Clone)]
 pub struct Node {
     network: Network,
     storage: DataStorage,
-    node_events_channel: NodeEventsChannel,
+    events_channel: NodeEventsChannel,
 }
 
 impl Node {
-    /// Create and run the `Node`
+    /// Asynchronously runs a new node instance, setting up the swarm driver,
+    /// creating a data storage, and handling network events. Returns the
+    /// created node and a `NodeEventsChannel` for listening to node-related
+    /// events.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing a `Node` instance and a `NodeEventsChannel`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if there is a problem initializing the `SwarmDriver`.
     pub async fn run() -> Result<(Self, NodeEventsChannel)> {
-        let (network, mut network_events, network_event_loop) = NetworkSwarmLoop::new()?;
+        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new()?;
         let storage = DataStorage::new();
         let node_events_channel = NodeEventsChannel::default();
         let node = Self {
             network,
             storage,
-            node_events_channel: node_events_channel.clone(),
+            events_channel: node_events_channel.clone(),
         };
         let mut node_clone = node.clone();
 
-        // Run the network in the background
-        let _handle = spawn(network_event_loop.run());
-
-        // Spawn a task to handle `NetworkEvents`
+        let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
             loop {
-                let event = match network_events.recv().await {
+                let event = match network_event_receiver.recv().await {
                     Some(event) => event,
                     None => {
-                        error!("The `NetworkEvent` channel has been closed, something went wrong");
+                        error!("The `NetworkEvent` channel has been closed");
                         continue;
                     }
                 };
                 if let Err(err) = node_clone.handle_network_events(event).await {
-                    warn!("Error while handling network events: {err}");
+                    warn!("Error handling network events: {err}");
                 }
             }
         });
@@ -67,22 +77,19 @@ impl Node {
         Ok((node, node_events_channel))
     }
 
-    /// Handle incoming `NetworkEvent`
     async fn handle_network_events(&mut self, event: NetworkEvent) -> Result<()> {
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
                 self.handle_request(req, channel).await?
             }
             NetworkEvent::PeerAdded => {
-                self.node_events_channel
-                    .broadcast(NodeEvent::ConnectedToNetwork);
+                self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
             }
         }
 
         Ok(())
     }
 
-    /// Handle incoming `Request` from a peer
     async fn handle_request(
         &mut self,
         request: Request,
@@ -105,7 +112,6 @@ impl Node {
         Ok(())
     }
 
-    // Helper to sender a response back
     async fn send_response(&mut self, resp: Response, response_channel: ResponseChannel<Response>) {
         if let Err(err) = self.network.send_response(resp, response_channel).await {
             warn!("Error while sending response: {err:?}");

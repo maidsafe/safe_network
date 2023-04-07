@@ -9,7 +9,7 @@
 use super::{
     error::{Error, Result},
     msg::MsgCodec,
-    NetworkSwarmLoop,
+    SwarmDriver,
 };
 
 use crate::protocol::messages::{Request, Response};
@@ -69,7 +69,7 @@ pub enum NetworkEvent {
     PeerAdded,
 }
 
-impl NetworkSwarmLoop {
+impl SwarmDriver {
     // Handle `SwarmEvents`
     pub(super) async fn handle_swarm_events<EventError: std::error::Error>(
         &mut self,
