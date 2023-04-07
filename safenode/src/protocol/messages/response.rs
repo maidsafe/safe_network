@@ -6,14 +6,16 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::super::types::{
+use crate::protocol::types::{
     chunk::Chunk,
     error::Result,
     register::{Entry, EntryHash, Permissions, Policy, Register, User},
 };
 
 #[allow(unused_imports)] // needed by rustdocs links
-use super::super::messages::RegisterQuery;
+use crate::protocol::messages::RegisterQuery;
+
+use sn_dbc::SignedSpend;
 
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, fmt::Debug};
@@ -22,6 +24,19 @@ use std::{collections::BTreeSet, fmt::Debug};
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum QueryResponse {
+    //
+    // ===== DBC Data =====
+    //
+    /// If the queried node has validated a corresponding spend
+    /// request, it will return the SignedSpend.
+    /// It is up to the Client to get this SignedSpend from enough
+    /// nodes as to consider it a valid spend. The specific rules
+    /// on how many nodes are enough, are found here: (TODO).
+    ///
+    /// Response to [`GetDbcSpend`]
+    ///
+    /// [`GetDbcSpend`]: crate::protocol::messages::Query::GetDbcSpend
+    GetDbcSpend(Result<SignedSpend>),
     //
     // ===== Chunk =====
     //
@@ -44,16 +59,16 @@ pub enum QueryResponse {
     GetRegisterPolicy(Result<Policy>),
     /// Response to [`RegisterQuery::GetUserPermissions`].
     GetRegisterUserPermissions(Result<Permissions>),
-    //
-    // ===== DBC Data =====
-    //
-    // /// todo: impl entire DataStorage struct
-    // Dbc(Dbc),
 }
 
 /// The response to a Cmd, containing the query result.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CmdResponse {
+    //
+    // ===== Dbc Spends =====
+    //
+    /// Response to DbcCmd::Spend.
+    Spend(Result<()>),
     //
     // ===== Chunk =====
     //

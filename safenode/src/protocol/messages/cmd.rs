@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::types::address::{ChunkAddress, DataAddress};
+use crate::protocol::types::{
+    address::{ChunkAddress, DataAddress},
+    spend::Spend,
+};
 
 use super::{super::types::chunk::Chunk, RegisterCmd};
 use serde::{Deserialize, Serialize};
@@ -17,8 +20,13 @@ use serde::{Deserialize, Serialize};
 /// Network, and their semantics.
 ///
 /// [`types`]: crate::protocol::types
+#[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
 pub enum Cmd {
+    /// [`Spend`] write operation.
+    ///
+    /// [`Spend`]: crate::protocol::types::spend::Spend
+    Dbc(Spend),
     /// [`Chunk`] write operation.
     ///
     /// [`Chunk`]: crate::protocol::types::chunk::Chunk
@@ -35,7 +43,7 @@ impl Cmd {
         match self {
             Cmd::StoreChunk(chunk) => DataAddress::Chunk(ChunkAddress::new(*chunk.name())),
             Cmd::Register(cmd) => DataAddress::Register(cmd.dst()),
-            // Cmd::GetDbc(address) => DataAddress::Spentbook(*address)
+            Cmd::Dbc(spend) => DataAddress::Spend(*spend.address()),
         }
     }
 }

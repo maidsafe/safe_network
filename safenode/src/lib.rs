@@ -42,13 +42,13 @@
 #[macro_use]
 extern crate tracing;
 
-/// Log
+/// Logging.
 pub mod log;
-/// Network
+/// The main logic of the network.
 pub mod network;
 /// Node
 pub mod node;
 /// SAFE Protocol
 pub mod protocol;
-/// Storage
+/// Storage for chunks and registers.
 pub mod storage;

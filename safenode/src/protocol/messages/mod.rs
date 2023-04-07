@@ -22,9 +22,15 @@ pub use self::{
     response::{CmdResponse, QueryResponse},
 };
 
-use super::types::{address::DataAddress, chunk::Chunk};
+use super::types::{
+    address::{dbc_address, dbc_name, DataAddress, DbcAddress},
+    chunk::Chunk,
+};
+
+use sn_dbc::SignedSpend;
+
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::{collections::BTreeSet, fmt::Debug};
 use xor_name::XorName;
 
 /// Send a request to other peers in the network
@@ -46,6 +52,7 @@ pub enum Response {
 }
 
 /// Messages to replicated data among nodes on the network
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum ReplicatedData {
     /// A chunk of data.
@@ -54,6 +61,10 @@ pub enum ReplicatedData {
     RegisterWrite(RegisterCmd),
     /// An entire op log of a register.
     RegisterLog(ReplicatedRegisterLog),
+    /// A valid spend.
+    ValidSpend(SignedSpend),
+    /// A dbc marked as having attempted double spend.
+    DoubleSpend((DbcAddress, BTreeSet<SignedSpend>)),
 }
 
 impl Request {
@@ -73,6 +84,8 @@ impl ReplicatedData {
             Self::Chunk(chunk) => *chunk.name(),
             Self::RegisterLog(log) => *log.address.name(),
             Self::RegisterWrite(cmd) => *cmd.dst().name(),
+            Self::ValidSpend(spend) => dbc_name(spend.dbc_id()),
+            Self::DoubleSpend((address, _)) => *address.name(),
         }
     }
 
@@ -82,6 +95,28 @@ impl ReplicatedData {
             Self::Chunk(chunk) => DataAddress::Chunk(*chunk.address()),
             Self::RegisterLog(log) => DataAddress::Register(log.address),
             Self::RegisterWrite(cmd) => DataAddress::Register(cmd.dst()),
+            Self::ValidSpend(spend) => DataAddress::Spend(dbc_address(spend.dbc_id())),
+            Self::DoubleSpend((address, _)) => DataAddress::Spend(*address),
         }
     }
 }
+
+// impl ReplicatedData {
+//     /// Return the name.
+//     pub fn name(&self) -> XorName {
+//         match self {
+//             Self::Chunk(chunk) => *chunk.name(),
+//             Self::RegisterLog(log) => *log.address.name(),
+//             Self::RegisterWrite(cmd) => *cmd.dst().name(),
+//         }
+//     }
+
+//     /// Return the dst.
+//     pub fn dst(&self) -> DataAddress {
+//         match self {
+//             Self::Chunk(chunk) => DataAddress::Chunk(*chunk.address()),
+//             Self::RegisterLog(log) => DataAddress::Register(log.address),
+//             Self::RegisterWrite(cmd) => DataAddress::Register(cmd.dst()),
+//         }
+//     }
+// }

@@ -99,7 +99,6 @@ impl RegisterStorage {
     }
 
     /// --- Reading ---
-
     pub(super) async fn read(&self, read: &RegisterQuery, requester: User) -> QueryResponse {
         trace!("Reading register: {:?}", read.dst());
         use RegisterQuery::*;

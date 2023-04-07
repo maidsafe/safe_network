@@ -7,17 +7,18 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod chunk;
+mod dbc;
 mod register;
-mod spentbook;
 
 pub use chunk::ChunkAddress;
+pub use dbc::{dbc_address, dbc_name, DbcAddress};
 pub use register::RegisterAddress;
-pub use spentbook::SpentbookAddress;
 
 use serde::{Deserialize, Serialize};
+use sn_dbc::DbcId;
 use xor_name::XorName;
 
-/// An address of data on the network
+/// An address of data on the network.
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub enum DataAddress {
     ///
@@ -25,7 +26,7 @@ pub enum DataAddress {
     ///
     Register(RegisterAddress),
     ///
-    Spentbook(SpentbookAddress),
+    Spend(DbcAddress),
 }
 
 impl DataAddress {
@@ -34,8 +35,13 @@ impl DataAddress {
         match self {
             Self::Chunk(address) => address.name(),
             Self::Register(address) => address.name(),
-            Self::Spentbook(address) => address.name(),
+            Self::Spend(address) => address.name(),
         }
+    }
+
+    ///
+    pub fn chunk(name: XorName) -> Self {
+        Self::Chunk(ChunkAddress::new(name))
     }
 
     ///
@@ -44,7 +50,7 @@ impl DataAddress {
     }
 
     ///
-    pub fn chunk(name: XorName) -> Self {
-        Self::Chunk(ChunkAddress::new(name))
+    pub fn spend(dbc_id: DbcId) -> Self {
+        Self::Spend(DbcAddress::new(dbc_name(&dbc_id)))
     }
 }

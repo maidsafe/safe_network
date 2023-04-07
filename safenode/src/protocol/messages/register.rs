@@ -6,13 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::super::types::{
+use crate::protocol::types::{
     address::RegisterAddress,
     authority::DataAuthority,
     register::{Entry, EntryHash, Policy, RegisterOp, User},
 };
 #[allow(unused_imports)] // needed by rustdocs links
-use super::super::{messages::QueryResponse, types::register::Register};
+use crate::protocol::{messages::QueryResponse, types::register::Register};
 
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;
