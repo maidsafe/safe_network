@@ -133,7 +133,8 @@ impl NetworkSwarmLoop {
         loop {
             futures::select! {
                 some_event = self.swarm.next() => {
-                    restart_at_random(self.swarm.local_peer_id());
+                    // TODO: currently disabled to provide a stable network.
+                    // restart_at_random(self.swarm.local_peer_id());
                     if let Err(err) = self.handle_event(some_event.expect("Swarm stream to be infinite!")).await {
                         warn!("Error while handling event: {err}");
                     }
@@ -157,6 +158,7 @@ impl NetworkSwarmLoop {
 ///
 /// This provides a way to test the network layer's ability to recover from
 /// unexpected shutdowns.
+#[allow(dead_code)]
 fn restart_at_random(peer_id: &PeerId) {
     let mut rng = rand::thread_rng();
     let random_num = rng.gen_range(0..500);
