@@ -9,6 +9,7 @@
 mod chunks;
 mod register_store;
 mod registers;
+mod spends;
 
 use crate::protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, RegisterCmd},
@@ -18,6 +19,8 @@ use chunks::ChunkStorage;
 use registers::RegisterStorage;
 use tracing::debug;
 
+use self::spends::SpendStorage;
+
 /// Operations on data stored to disk.
 /// As data the storage struct may be cloned throughout the node
 /// Operations here must be persisted to disk.
@@ -26,6 +29,7 @@ use tracing::debug;
 pub struct DataStorage {
     chunks: ChunkStorage,
     registers: RegisterStorage,
+    spends: SpendStorage,
 }
 
 impl DataStorage {
@@ -34,12 +38,13 @@ impl DataStorage {
         Self {
             chunks: ChunkStorage::default(),
             registers: RegisterStorage::new(),
+            spends: SpendStorage::default(),
         }
     }
 
     /// Store data in the local store and return `CmdResponse`
     pub async fn write(&self, cmd: &Cmd) -> CmdResponse {
-        debug!("Write {cmd:?}");
+        debug!("Storage write: {cmd:?}");
         match cmd {
             Cmd::StoreChunk(chunk) => CmdResponse::StoreChunk(self.chunks.store(chunk).await),
             Cmd::Register(cmd) => {
@@ -49,16 +54,19 @@ impl DataStorage {
                     RegisterCmd::Edit(_) => CmdResponse::EditRegister(result),
                 }
             }
+            Cmd::Dbc(spend) => CmdResponse::Spend(self.spends.try_add(spend.signed_spend()).await),
         }
     }
 
     /// Query the local store and return `QueryResponse`
     pub async fn read(&self, query: &Query, requester: User) -> QueryResponse {
-        debug!("Read {query:?}");
+        debug!("Storage read: {query:?}");
         match query {
             Query::GetChunk(addr) => QueryResponse::GetChunk(self.chunks.get(addr).await),
             Query::Register(read) => self.registers.read(read, requester).await,
-            Query::GetDbc(_) => todo!(),
+            Query::GetDbcSpend(address) => {
+                QueryResponse::GetDbcSpend(self.spends.get(address).await)
+            }
         }
     }
 }

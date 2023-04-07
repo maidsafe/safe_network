@@ -6,13 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-/// Addresses types
+/// Address types
 pub mod address;
-/// Data/content Authority types
+/// Data/content Authority types.
 pub mod authority;
-/// Chunk type
+/// Chunk type.
 pub mod chunk;
-/// Errors
+/// Errors.
 pub mod error;
-/// Register type
+/// Register type.
 pub mod register;
+/// Spend type.
+pub mod spend;

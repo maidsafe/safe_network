@@ -7,22 +7,35 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use serde::{Deserialize, Serialize};
+use sn_dbc::DbcId;
 use std::hash::Hash;
 use xor_name::XorName;
 
-/// Address of a Spentbook.
+/// The address of a Dbc in the network.
+/// This is used to find information of if it is spent, not to store the actual Dbc.
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
-pub struct SpentbookAddress(XorName);
+pub struct DbcAddress(XorName);
 
-impl SpentbookAddress {
-    /// Constructs a new `SpentbookAddress` given `name`.
+impl DbcAddress {
+    /// Construct a `DbcAddress` given the name of a `DbcId`.
     pub fn new(name: XorName) -> Self {
         Self(name)
     }
 
-    /// Returns the name.
-    /// This is a unique identifier.
+    /// Returns the name, which is the `DbcId` XorName.
     pub fn name(&self) -> &XorName {
         &self.0
     }
+}
+
+/// Still thinking of best location for this.
+/// Wanted to make the DbcAddress take a dbc id actually..
+pub fn dbc_address(dbc_id: &DbcId) -> DbcAddress {
+    DbcAddress::new(dbc_name(dbc_id))
+}
+
+/// Still thinking of best location for this.
+/// Wanted to make the DbcAddress take a dbc id actually..
+pub fn dbc_name(dbc_id: &DbcId) -> XorName {
+    XorName::from_content(&dbc_id.to_bytes())
 }

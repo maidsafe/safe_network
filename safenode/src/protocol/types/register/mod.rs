@@ -171,13 +171,14 @@ impl Register {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{
+    use crate::protocol::types::{
         error::{Error, Result},
         register::{
             Entry, EntryHash, Permissions, Policy, Register, RegisterAddress, RegisterOp, User,
             MAX_REG_NUM_ENTRIES,
         },
     };
+
     use bls::SecretKey;
     use eyre::Context;
     use proptest::prelude::*;

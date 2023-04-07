@@ -7,12 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    address::{ChunkAddress, RegisterAddress},
+    address::{ChunkAddress, DbcAddress, RegisterAddress},
     authority::PublicKey,
     register::{EntryHash, User},
 };
 use serde::{Deserialize, Serialize};
-use std::{fmt::Debug, result};
+use sn_dbc::SignedSpend;
+use std::{collections::BTreeSet, fmt::Debug, result};
 use thiserror::Error;
 
 /// A specialised `Result` type for types crate.
@@ -34,6 +35,12 @@ pub enum Error {
     /// Register not found.
     #[error("Register not found: {0:?}")]
     RegisterNotFound(RegisterAddress),
+    /// Spend not found.
+    #[error("Spend not found: {0:?}")]
+    SpendNotFound(DbcAddress),
+    /// A double spend attempt was detected.
+    #[error("A double spend attempt was detected. Set of mismatching spends: {0:?}")]
+    DoubleSpendAttempt(BTreeSet<SignedSpend>),
     /// Unexpected responses.
     #[error("Unexpected responses")]
     UnexpectedResponses,
