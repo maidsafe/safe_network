@@ -9,12 +9,12 @@
 mod codec;
 pub(crate) use codec::{MsgCodec, MsgProtocol};
 
-use crate::network::{error::Error, NetworkEvent, NetworkSwarmLoop};
+use crate::network::{error::Error, NetworkEvent, SwarmDriver};
 use crate::protocol::messages::{Request, Response};
 use libp2p::request_response::{self, Message};
 use tracing::{trace, warn};
 
-impl NetworkSwarmLoop {
+impl SwarmDriver {
     /// Forwards `Request` to the upper layers using `Sender<NetworkEvent>`. Sends `Response` to the peers
     pub async fn handle_msg(
         &mut self,

@@ -11,7 +11,7 @@ use crate::{
     protocol::messages::{Request, Response},
 };
 
-use super::{error::Error, NetworkSwarmLoop};
+use super::{error::Error, SwarmDriver};
 use libp2p::{multiaddr::Protocol, request_response::ResponseChannel, Multiaddr, PeerId};
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
@@ -45,7 +45,7 @@ pub enum SwarmCmd {
     },
 }
 
-impl NetworkSwarmLoop {
+impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
             SwarmCmd::StartListening { addr, sender } => {

@@ -43,7 +43,6 @@ async fn main() -> Result<()> {
     let (node, node_events_channel) = Node::run().await?;
 
     let mut node_events_rx = node_events_channel.subscribe();
-    // wait until we connect to the network
     if let Ok(event) = node_events_rx.recv().await {
         match event {
             NodeEvent::ConnectedToNetwork => {

@@ -41,11 +41,10 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 use xor_name::XorName;
 
-/// The main event loop receives `SwarmEvents` from the network, `SwarmCmd` from the upper layers and
-/// emits back `NetworkEvent` to the upper layers.
-/// Also keeps track of the pending queries/requests and their channels. Once we receive an event
-/// that is the outcome of a previously executed cmd, send a response to them via the stored channel.
-pub struct NetworkSwarmLoop {
+/// `SwarmDriver` is responsible for managing the swarm of peers, handling
+/// swarm events, processing commands, and maintaining the state of pending
+/// tasks. It serves as the core component for the network functionality.
+pub struct SwarmDriver {
     swarm: Swarm<NodeBehaviour>,
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>,
@@ -54,36 +53,36 @@ pub struct NetworkSwarmLoop {
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
 }
 
-impl NetworkSwarmLoop {
-    /// Creates the network components
-    /// - The `Network` to interact with the network layer from anywhere
-    ///   within your application.
+impl SwarmDriver {
+    /// Creates a new `SwarmDriver` instance, along with a `Network` handle
+    /// for sending commands and an `mpsc::Receiver<NetworkEvent>` for receiving
+    /// network events. It initializes the swarm, sets up the transport, and
+    /// configures the Kademlia and mDNS behaviors for peer discovery.
     ///
-    /// - The `NetworkEvent` receiver to get the events from the network layer.
+    /// # Returns
     ///
-    /// - The `NetworkSwarmLoop` that drives the network.
-    pub fn new() -> Result<(Network, mpsc::Receiver<NetworkEvent>, NetworkSwarmLoop)> {
-        // Create a random key for ourselves.
+    /// A tuple containing a `Network` handle, an `mpsc::Receiver<NetworkEvent>`,
+    /// and a `SwarmDriver` instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if there is a problem initializing the mDNS behavior.
+    pub fn new() -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let keypair = identity::Keypair::generate_ed25519();
-        let local_peer_id = PeerId::from(keypair.public());
+        let peer_id = PeerId::from(keypair.public());
 
-        info!("Local peer id: {:?}", local_peer_id);
+        info!("Peer id: {:?}", peer_id);
 
-        // QUIC configuration
         let quic_config = libp2p_quic::Config::new(&keypair);
         let transport = libp2p_quic::tokio::Transport::new(quic_config);
         let transport = transport
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
-        // Create a Kademlia instance and connect to the network address.
-        // Create a swarm to manage peers and events.
         let swarm = {
-            // Create a Kademlia behaviour.
             let mut cfg = KademliaConfig::default();
             let _ = cfg.set_query_timeout(Duration::from_secs(5 * 60));
-            let kademlia =
-                Kademlia::with_config(local_peer_id, MemoryStore::new(local_peer_id), cfg);
-            let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), local_peer_id)?;
+            let kademlia = Kademlia::with_config(peer_id, MemoryStore::new(peer_id), cfg);
+            let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
             let behaviour = NodeBehaviour {
                 request_response: request_response::Behaviour::new(
                     MsgCodec(),
@@ -95,7 +94,7 @@ impl NetworkSwarmLoop {
             };
 
             let mut swarm =
-                SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id).build();
+                SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
             // Listen on all interfaces and whatever port the OS assigns.
             let addr = "/ip4/0.0.0.0/udp/0/quic-v1"
@@ -109,20 +108,30 @@ impl NetworkSwarmLoop {
         };
 
         let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(100);
-        let (event_sender, event_receiver) = mpsc::channel(100);
-        let event_loop = Self {
+        let (network_event_sender, network_event_receiver) = mpsc::channel(100);
+        let swarm_driver = Self {
             swarm,
             cmd_receiver: swarm_cmd_receiver,
-            event_sender,
+            event_sender: network_event_sender,
             pending_dial: Default::default(),
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
         };
 
-        Ok((Network { swarm_cmd_sender }, event_receiver, event_loop))
+        Ok((
+            Network { swarm_cmd_sender },
+            network_event_receiver,
+            swarm_driver,
+        ))
     }
 
-    /// Drive the network
+    /// Asynchronously drives the swarm event loop, handling events from both
+    /// the swarm and command receiver. This function will run indefinitely,
+    /// until the command channel is closed.
+    ///
+    /// The `tokio::select` macro is used to concurrently process swarm events
+    /// and command receiver messages, ensuring efficient handling of multiple
+    /// asynchronous tasks.
     pub async fn run(mut self) {
         loop {
             tokio::select! {
@@ -139,7 +148,6 @@ impl NetworkSwarmLoop {
                             warn!("Error while handling cmd: {err}");
                         }
                     },
-                    // Cmd channel closed, thus shutting down the network event loop.
                     None =>  return,
                 },
             }
