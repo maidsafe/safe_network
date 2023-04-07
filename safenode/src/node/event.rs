@@ -10,15 +10,15 @@ use tokio::sync::broadcast;
 
 /// Channel where users of the public API can listen to events broadcasted by the node.
 #[derive(Clone, Debug)]
-pub struct VaultEventsChannel(broadcast::Sender<NodeEvent>);
+pub struct NodeEventsChannel(broadcast::Sender<NodeEvent>);
 
-impl Default for VaultEventsChannel {
+impl Default for NodeEventsChannel {
     fn default() -> Self {
         Self(broadcast::channel(100).0)
     }
 }
 
-impl VaultEventsChannel {
+impl NodeEventsChannel {
     /// Returns a new receiver to listen to the channel.
     /// Multiple receivers can be actively listening.
     pub fn subscribe(&self) -> broadcast::Receiver<NodeEvent> {

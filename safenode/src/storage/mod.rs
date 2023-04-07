@@ -19,7 +19,7 @@ use registers::RegisterStorage;
 use tracing::debug;
 
 /// Operations on data stored to disk.
-/// As data the storage struct may be cloned throughoout the node
+/// As data the storage struct may be cloned throughout the node
 /// Operations here must be persisted to disk.
 // Exposed as pub due to benches.
 #[derive(Clone, Default)]

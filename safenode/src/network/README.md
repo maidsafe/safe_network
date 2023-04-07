@@ -1,7 +1,7 @@
 ### Some reference implementations
 The [libp2p/file-sharing](https://github.com/libp2p/rust-libp2p/tree/master/examples/file-sharing) example showcases [how to integrate libp2p into larger applications](https://github.com/libp2p/rust-libp2p/pull/2186)
 
-Couple of codebases that follow a similar pattern,
+Couple of codebase that follow a similar pattern,
 1. https://github.com/paritytech/substrate/blob/be9fa62238fcfd7eb49218809a6b981f71c34eb3/client/network/src/service.rs
 2. [Filecoin node](https://github.com/ChainSafe/forest/blob/bce3deded7af10d3bc4237801d306f8e810a4282/node/forest_libp2p/bitswap/src/behaviour.rs)
 3. https://github.com/eqlabs/pathfinder/blob/00c9bfb9b285fe7de8d77e8a25c0607db2b6dd34/crates/p2p/src/lib.rs

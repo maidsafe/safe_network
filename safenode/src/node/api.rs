@@ -8,7 +8,7 @@
 
 use super::{
     error::{Error, Result},
-    Vault,
+    Node,
 };
 use crate::protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, ReplicatedData, Request, Response},
@@ -19,8 +19,8 @@ use libp2p::PeerId;
 use std::{collections::HashSet, time::Duration};
 use xor_name::XorName;
 
-impl Vault {
-    /// Store `ReplicatedData` to the closest nodes
+impl Node {
+    /// Store `ReplicatedData` to the closest peers
     pub async fn store_data(&self, data: &ReplicatedData) -> Result<()> {
         info!("Storing data: {:?}", data.name());
         let cmd = match data {
@@ -28,30 +28,36 @@ impl Vault {
             ReplicatedData::RegisterWrite(cmd) => Cmd::Register(cmd.clone()),
             ReplicatedData::RegisterLog(_) => todo!(),
         };
-        // forward to the other closest nodes if we're seeing the data for the first time
+        // Forward to the other closest peers if we're seeing the data for the first time
         // return early if we already have the data with us
         match self.storage.store(&cmd).await {
-            CmdResponse::StoreChunk(Err(_)) => return Ok(()),
-            CmdResponse::CreateRegister(Err(_)) => return Ok(()),
-            CmdResponse::EditRegister(Err(_)) => return Ok(()),
+            CmdResponse::StoreChunk(Err(_))
+            | CmdResponse::CreateRegister(Err(_))
+            | CmdResponse::EditRegister(Err(_)) => {
+                info!(
+                    "We already have the data {:?} with us, not forwarding it",
+                    data.name()
+                );
+                return Ok(());
+            }
             _ => {}
         }
-        info!("Forwarding data {:?} to the closest nodes", data.name());
-        let closest_nodes = self.network.get_closest_nodes(data.name()).await?;
+        info!("Forwarding data {:?} to the closest peers", data.name());
+        let closest_peers = self.network.get_closest_peers(data.name()).await?;
         let _responses = self
-            .send_req_and_get_reponses(closest_nodes, &Request::Cmd(cmd), true)
+            .send_req_and_get_responses(closest_peers, &Request::Cmd(cmd), true)
             .await;
 
         Ok(())
     }
 
-    /// Retrieve a `Chunk` from the closest nodes
+    /// Retrieve a `Chunk` from the closest peers
     pub async fn get_chunk(&self, xor_name: XorName) -> Result<Chunk> {
         info!("Get data: {xor_name:?}");
-        let closest_nodes = self.network.get_closest_nodes(xor_name).await?;
+        let closest_peers = self.network.get_closest_peers(xor_name).await?;
         let req = Request::Query(Query::GetChunk(ChunkAddress::new(xor_name)));
         let mut response = self
-            .send_req_and_get_reponses(closest_nodes, &req, false)
+            .send_req_and_get_responses(closest_peers, &req, false)
             .await;
         let response = response.remove(0)?;
         if let Response::Query(QueryResponse::GetChunk(chunk)) = response {
@@ -61,11 +67,11 @@ impl Vault {
         }
     }
 
-    // Send a `Request` to the provided set of nodes and wait for their responses concurretnly.
+    // Send a `Request` to the provided set of nodes and wait for their responses concurrently.
     // If `get_all_responses` is true, we wait for the responses from all the nodes. Will return an
-    // error if the request timesout.
-    // If `get_all_responses` is false, we return the first successfull response that we get
-    async fn send_req_and_get_reponses(
+    // error if the request timeouts.
+    // If `get_all_responses` is false, we return the first successful response that we get
+    async fn send_req_and_get_responses(
         &self,
         nodes: HashSet<PeerId>,
         req: &Request,
@@ -93,9 +99,8 @@ impl Vault {
                     responses.push(res);
                     list_of_futures = remaining_futures;
                 }
-                (Err(timedout_err), _, remaining_futures) => {
-                    responses.push(Err(Error::ResponseTimeout(timedout_err)));
-                    // return Err(timedout_err.into());
+                (Err(timeout_err), _, remaining_futures) => {
+                    responses.push(Err(Error::ResponseTimeout(timeout_err)));
                     list_of_futures = remaining_futures;
                 }
             }

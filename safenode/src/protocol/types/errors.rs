@@ -73,7 +73,7 @@ pub enum Error {
     /// Hex decoding error.
     #[error("Hex decoding error:: {0}")]
     HexDecoding(String),
-    /// Register command/op destination adddress mistmatch
+    /// Register command/op destination address mistmatch
     #[error(
         "Register command destination address ({cmd_dst_addr:?}) \
          doesn't match stored Register address: {reg_addr:?}"

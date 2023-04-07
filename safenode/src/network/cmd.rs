@@ -30,7 +30,7 @@ pub enum SwarmCmd {
         peer_addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
     },
-    GetClosestNodes {
+    GetClosestPeers {
         xor_name: XorName,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
@@ -80,10 +80,10 @@ impl NetworkSwarmLoop {
                     warn!("Already dialing peer.");
                 }
             }
-            SwarmCmd::GetClosestNodes { xor_name, sender } => {
+            SwarmCmd::GetClosestPeers { xor_name, sender } => {
                 let key = xor_name.0.to_vec();
                 let query_id = self.swarm.behaviour_mut().kademlia.get_closest_peers(key);
-                let _ = self.pending_get_closest_nodes.insert(query_id, sender);
+                let _ = self.pending_get_closest_peers.insert(query_id, sender);
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 let request_id = self

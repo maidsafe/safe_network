@@ -8,7 +8,7 @@
 
 /// Addresses types
 pub mod address;
-/// Data/content Authoritty types
+/// Data/content Authority types
 pub mod authority;
 /// Chunk type
 pub mod chunk;
