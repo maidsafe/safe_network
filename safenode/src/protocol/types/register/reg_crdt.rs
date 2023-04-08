@@ -10,7 +10,7 @@ use super::{
     super::{
         address::RegisterAddress,
         authority::Signature,
-        errors::{Error, Result},
+        error::{Error, Result},
     },
     Entry, User,
 };

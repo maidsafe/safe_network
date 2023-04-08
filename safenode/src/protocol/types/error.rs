@@ -7,14 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    address::RegisterAddress,
+    address::{ChunkAddress, RegisterAddress},
     authority::PublicKey,
     register::{EntryHash, User},
 };
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};
 use thiserror::Error;
-use xor_name::XorName;
 
 /// A specialised `Result` type for types crate.
 pub type Result<T> = result::Result<T, Error>;
@@ -31,10 +30,13 @@ pub enum Error {
     Serialisation(String),
     /// Chunk not found.
     #[error("Chunk not found: {0:?}")]
-    ChunkNotFound(XorName),
+    ChunkNotFound(ChunkAddress),
     /// Register not found.
     #[error("Register not found: {0:?}")]
     RegisterNotFound(RegisterAddress),
+    /// Unexpected responses.
+    #[error("Unexpected responses")]
+    UnexpectedResponses,
     /// Entry is too big to fit inside a register
     #[error("Entry is too big to fit inside a register: {size}, max: {max}")]
     EntryTooBig {

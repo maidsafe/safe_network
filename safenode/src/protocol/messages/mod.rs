@@ -30,19 +30,19 @@ use xor_name::XorName;
 /// Send a request to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Request {
-    /// A (read-only) query sent to nodes.
-    Query(Query),
     /// Messages that lead to mutation.
     Cmd(Cmd),
+    /// A (read-only) query sent to nodes.
+    Query(Query),
 }
 
 /// Respond to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Response {
-    /// The response to a query.
-    Query(QueryResponse),
     /// The response to a cmd.
     Cmd(CmdResponse),
+    /// The response to a query.
+    Query(QueryResponse),
 }
 
 /// Messages to replicated data among nodes on the network
@@ -56,22 +56,32 @@ pub enum ReplicatedData {
     RegisterLog(ReplicatedRegisterLog),
 }
 
+impl Request {
+    /// Used to send a request to the close group of the address.
+    pub fn dst(&self) -> DataAddress {
+        match self {
+            Request::Cmd(cmd) => cmd.dst(),
+            Request::Query(query) => query.dst(),
+        }
+    }
+}
+
 impl ReplicatedData {
-    /// Returns the name.
+    /// Return the name.
     pub fn name(&self) -> XorName {
         match self {
             Self::Chunk(chunk) => *chunk.name(),
             Self::RegisterLog(log) => *log.address.name(),
-            Self::RegisterWrite(cmd) => *cmd.dst_address().name(),
+            Self::RegisterWrite(cmd) => *cmd.dst().name(),
         }
     }
 
-    /// Returns the address.
-    pub fn address(&self) -> DataAddress {
+    /// Return the dst.
+    pub fn dst(&self) -> DataAddress {
         match self {
-            Self::Chunk(chunk) => DataAddress::Bytes(*chunk.address()),
+            Self::Chunk(chunk) => DataAddress::Chunk(*chunk.address()),
             Self::RegisterLog(log) => DataAddress::Register(log.address),
-            Self::RegisterWrite(cmd) => DataAddress::Register(cmd.dst_address()),
+            Self::RegisterWrite(cmd) => DataAddress::Register(cmd.dst()),
         }
     }
 }

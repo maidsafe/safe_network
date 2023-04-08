@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::protocol::types::address::{ChunkAddress, DataAddress};
+
 use super::{super::types::chunk::Chunk, RegisterCmd};
 use serde::{Deserialize, Serialize};
 
@@ -25,4 +27,15 @@ pub enum Cmd {
     ///
     /// [`Register`]: crate::protocol::types::register::Register
     Register(RegisterCmd),
+}
+
+impl Cmd {
+    /// Used to send a cmd to the close group of the address.
+    pub fn dst(&self) -> DataAddress {
+        match self {
+            Cmd::StoreChunk(chunk) => DataAddress::Chunk(ChunkAddress::new(*chunk.name())),
+            Cmd::Register(cmd) => DataAddress::Register(cmd.dst()),
+            // Cmd::GetDbc(address) => DataAddress::Spentbook(*address)
+        }
+    }
 }

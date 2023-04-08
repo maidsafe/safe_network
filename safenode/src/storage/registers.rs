@@ -13,7 +13,7 @@ use crate::protocol::{
     },
     types::{
         address::RegisterAddress,
-        errors::{Error, Result},
+        error::{Error, Result},
         register::{Action, EntryHash, Register, User},
     },
 };
@@ -85,7 +85,7 @@ impl RegisterStorage {
 
     pub(super) async fn write(&self, cmd: &RegisterCmd) -> Result<()> {
         info!("Writing register cmd: {cmd:?}");
-        let addr = cmd.dst_address();
+        let addr = cmd.dst();
         // Let's first try to load and reconstruct the replica of targetted Register
         // we have in local storage, to then try to apply the new command onto it.
         let mut stored_reg = self.try_load_stored_register(&addr).await?;
@@ -101,7 +101,7 @@ impl RegisterStorage {
     /// --- Reading ---
 
     pub(super) async fn read(&self, read: &RegisterQuery, requester: User) -> QueryResponse {
-        trace!("Reading register: {:?}", read.dst_address());
+        trace!("Reading register: {:?}", read.dst());
         use RegisterQuery::*;
         match read {
             Get(address) => self.get(*address, requester).await,
@@ -223,7 +223,7 @@ impl RegisterStorage {
                 let SignedRegisterCreate { op, auth } = cmd;
                 auth.verify_authority(serialize(op).map_err(|e| Error::Bincode(e.to_string()))?)?;
 
-                trace!("Creating new register: {:?}", cmd.dst_address());
+                trace!("Creating new register: {:?}", cmd.dst());
                 // let's do a final check, let's try to apply all cmds to it,
                 // those which are new cmds were not validated yet, so let's do it now.
                 let mut register =
@@ -244,7 +244,7 @@ impl RegisterStorage {
 
     // Try to apply the provided cmd to the register state, performing all op validations
     fn apply(&self, cmd: &RegisterCmd, register: &mut Register) -> Result<()> {
-        let addr = cmd.dst_address();
+        let addr = cmd.dst();
         if &addr != register.address() {
             return Err(Error::RegisterAddrMismatch {
                 cmd_dst_addr: addr,
@@ -305,7 +305,7 @@ mod test {
         },
         types::{
             authority::DataAuthority,
-            errors::Error,
+            error::Error,
             register::{EntryHash, Policy, Register, User},
         },
     };
@@ -341,7 +341,7 @@ mod test {
         let store = RegisterStorage::default();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
-        let addr = cmd_create.dst_address();
+        let addr = cmd_create.dst();
         let mut register = Register::new(*policy.owner(), name, 0, policy);
 
         let stored_reg = store.try_load_stored_register(&addr).await?;
@@ -381,7 +381,7 @@ mod test {
         let store = RegisterStorage::default();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
-        let addr = cmd_create.dst_address();
+        let addr = cmd_create.dst();
         let mut register = Register::new(*policy.owner(), name, 0, policy);
 
         // let's first store an edit cmd for the register
@@ -417,7 +417,7 @@ mod test {
         let store = RegisterStorage::default();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
-        let addr = cmd_create.dst_address();
+        let addr = cmd_create.dst();
         let mut register = Register::new(*policy.owner(), name, 0, policy);
         let mut stored_reg = store.try_load_stored_register(&addr).await?;
 
@@ -474,7 +474,7 @@ mod test {
         let store = RegisterStorage::default();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
-        let addr = cmd_create.dst_address();
+        let addr = cmd_create.dst();
         let mut register = Register::new(*policy.owner(), name, 0, policy);
         let mut stored_reg = store.try_load_stored_register(&addr).await?;
 
@@ -531,7 +531,7 @@ mod test {
         store.write(&cmd).await?;
 
         // get register
-        let address = cmd.dst_address();
+        let address = cmd.dst();
         match store.read(&RegisterQuery::Get(address), authority).await {
             QueryResponse::GetRegister(Ok(reg)) => {
                 assert_eq!(reg.address(), &address, "Should have same address!");
@@ -556,7 +556,7 @@ mod test {
         let store = RegisterStorage::default();
 
         let (cmd_create, authority, sk, name, policy) = create_register()?;
-        let addr = cmd_create.dst_address();
+        let addr = cmd_create.dst();
         let mut register = Register::new(*policy.owner(), name, 0, policy);
 
         // store the register along with a few edit ops
@@ -621,7 +621,7 @@ mod test {
         let hash = EntryHash(rand::thread_rng().gen::<[u8; 32]>());
 
         // try get permissions of random user
-        let address = cmd_create.dst_address();
+        let address = cmd_create.dst();
         let res = store
             .read(&RegisterQuery::GetEntry { address, hash }, authority)
             .await;
@@ -650,7 +650,7 @@ mod test {
         let (user, _) = random_user();
 
         // try get permissions of random user
-        let address = cmd_create.dst_address();
+        let address = cmd_create.dst();
         let res = store
             .read(
                 &RegisterQuery::GetUserPermissions { address, user },

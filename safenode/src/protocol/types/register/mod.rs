@@ -18,7 +18,7 @@ pub(crate) use reg_crdt::{CrdtOperation, RegisterCrdt};
 
 use super::{
     super::types::address::RegisterAddress,
-    errors::{Error, Result},
+    error::{Error, Result},
 };
 
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
@@ -172,7 +172,7 @@ impl Register {
 #[cfg(test)]
 mod tests {
     use super::super::{
-        errors::{Error, Result},
+        error::{Error, Result},
         register::{
             Entry, EntryHash, Permissions, Policy, Register, RegisterAddress, RegisterOp, User,
             MAX_REG_NUM_ENTRIES,

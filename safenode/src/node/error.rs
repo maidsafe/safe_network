@@ -18,7 +18,7 @@ pub enum Error {
     Network(#[from] crate::network::Error),
 
     #[error("Protocol error {0}")]
-    Protocol(#[from] crate::protocol::types::errors::Error),
+    Protocol(#[from] crate::protocol::types::error::Error),
 
     #[error("Other Error {0}")]
     Other(String),

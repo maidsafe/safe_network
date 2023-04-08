@@ -10,19 +10,33 @@ mod api;
 mod error;
 mod event;
 
-pub use event::NodeEvent;
+pub use self::event::NodeEvent;
 
-use self::{error::Result, event::NodeEventsChannel};
+use self::{
+    error::{Error, Result},
+    event::NodeEventsChannel,
+};
+
 use crate::{
-    network::{Network, NetworkEvent, SwarmDriver},
+    network::Network,
     protocol::{
-        messages::{Request, Response},
-        types::register::User,
+        messages::{
+            Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, RegisterQuery, Request, Response,
+            SignedRegisterCreate, SignedRegisterEdit,
+        },
+        types::{
+            address::{ChunkAddress, RegisterAddress},
+            chunk::Chunk,
+            error::Error as ProtocolError,
+            register::Register,
+        },
     },
     storage::DataStorage,
 };
-use libp2p::request_response::ResponseChannel;
-use tokio::task::spawn;
+
+use futures::future::select_all;
+use libp2p::PeerId;
+use std::{collections::HashSet, time::Duration};
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
@@ -34,87 +48,212 @@ pub struct Node {
     events_channel: NodeEventsChannel,
 }
 
-impl Node {
-    /// Asynchronously runs a new node instance, setting up the swarm driver,
-    /// creating a data storage, and handling network events. Returns the
-    /// created node and a `NodeEventsChannel` for listening to node-related
-    /// events.
-    ///
-    /// # Returns
-    ///
-    /// A tuple containing a `Node` instance and a `NodeEventsChannel`.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if there is a problem initializing the `SwarmDriver`.
-    pub async fn run() -> Result<(Self, NodeEventsChannel)> {
-        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new()?;
-        let storage = DataStorage::new();
-        let node_events_channel = NodeEventsChannel::default();
-        let node = Self {
-            network,
-            storage,
-            events_channel: node_events_channel.clone(),
-        };
-        let mut node_clone = node.clone();
+// --------------------------------------------------------------------------------------------------------
+// ---------------------------------  Client implementation -----------------------------------------------
+// --------------------------------------------------------------------------------------------------------
 
-        let _handle = spawn(swarm_driver.run());
-        let _handle = spawn(async move {
-            loop {
-                let event = match network_event_receiver.recv().await {
-                    Some(event) => event,
-                    None => {
-                        error!("The `NetworkEvent` channel has been closed");
-                        continue;
+/// A client to store and get data.
+pub struct Client {
+    node: Node,
+}
+
+impl Client {
+    /// A new client.
+    pub fn new(node: Node) -> Self {
+        Self { node }
+    }
+
+    /// Store `Chunk` to its close group.
+    pub async fn store_chunk(&self, chunk: Chunk) -> Result<()> {
+        info!("Store chunk: {:?}", chunk.address());
+        let request = Request::Cmd(Cmd::StoreChunk(chunk));
+        let responses = self.send_to_closest(request).await?;
+
+        let all_ok = responses
+            .iter()
+            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::StoreChunk(Ok(()))))));
+        if all_ok {
+            return Ok(());
+        }
+
+        // If not all were Ok, we will return the first
+        // error we find.
+        for resp in responses {
+            let response = resp?;
+            if let Response::Cmd(CmdResponse::StoreChunk(result)) = response {
+                result?;
+            };
+        }
+
+        // If there were no store chunk errors, then we had unexpected responses.
+        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
+    }
+
+    ///
+    pub async fn create_register(&self, cmd: SignedRegisterCreate) -> Result<()> {
+        info!("Create register: {:?}", cmd.dst());
+        let request = Request::Cmd(Cmd::Register(RegisterCmd::Create(cmd)));
+        let responses = self.send_to_closest(request).await?;
+
+        let all_ok = responses
+            .iter()
+            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::CreateRegister(Ok(()))))));
+        if all_ok {
+            return Ok(());
+        }
+
+        // If not all were Ok, we will return the first
+        // error we find.
+        for resp in responses {
+            let response = resp?;
+            if let Response::Cmd(CmdResponse::CreateRegister(result)) = response {
+                result?;
+            };
+        }
+
+        // If there were no register errors, then we had unexpected responses.
+        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
+    }
+
+    ///
+    pub async fn edit_register(&self, cmd: SignedRegisterEdit) -> Result<()> {
+        info!("Create register: {:?}", cmd.dst());
+        let request = Request::Cmd(Cmd::Register(RegisterCmd::Edit(cmd)));
+        let responses = self.send_to_closest(request).await?;
+
+        let all_ok = responses
+            .iter()
+            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::EditRegister(Ok(()))))));
+        if all_ok {
+            return Ok(());
+        }
+
+        // If not all were Ok, we will return the first
+        // error we find.
+        for resp in responses {
+            let response = resp?;
+            if let Response::Cmd(CmdResponse::EditRegister(result)) = response {
+                result?;
+            };
+        }
+
+        // If there were no register errors, then we had unexpected responses.
+        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
+    }
+
+    /// Retrieve a `Chunk` from the closest peers
+    pub async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
+        info!("Get chunk: {address:?}");
+        let request = Request::Query(Query::GetChunk(address));
+        let responses = self.send_to_closest(request).await?;
+
+        // We will return the first chunk we get.
+        for resp in responses.iter().flatten() {
+            if let Response::Query(QueryResponse::GetChunk(Ok(chunk))) = resp {
+                return Ok(chunk.clone());
+            };
+        }
+
+        // If no chunk was gotten, we try error the first
+        // error to the expected query returned from nodes.
+        for resp in responses.iter().flatten() {
+            if let Response::Query(QueryResponse::GetChunk(result)) = resp {
+                let _ = result.clone()?;
+            };
+        }
+
+        // If there were no success or fail to the expected query,
+        // we check if there were any send errors.
+        for resp in responses {
+            let _ = resp?;
+        }
+
+        // If there was none of the above, then we had unexpected responses.
+        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
+    }
+
+    /// Retrieve a `Register` from the closest peers
+    pub async fn get_register(&self, address: RegisterAddress) -> Result<Register> {
+        info!("Get chunk: {address:?}");
+        let request = Request::Query(Query::Register(RegisterQuery::Get(address)));
+        let responses = self.send_to_closest(request).await?;
+
+        // We will return the first register we get.
+        for resp in responses.iter().flatten() {
+            if let Response::Query(QueryResponse::GetRegister(Ok(register))) = resp {
+                return Ok(register.clone());
+            };
+        }
+
+        // If no register was gotten, we try error the first
+        // error to the expected query returned from nodes.
+        for resp in responses.iter().flatten() {
+            if let Response::Query(QueryResponse::GetChunk(result)) = resp {
+                let _ = result.clone()?;
+            };
+        }
+
+        // If there were no success or fail to the expected query,
+        // we check if there were any send errors.
+        for resp in responses {
+            let _ = resp?;
+        }
+
+        // If there was none of the above, then we had unexpected responses.
+        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
+    }
+
+    async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
+        info!("Sending {:?} to the closest peers", request.dst());
+        let closest_peers = self
+            .node
+            .network
+            .get_closest_peers(*request.dst().name())
+            .await?;
+        Ok(self
+            .send_req_and_get_responses(closest_peers, &request, true)
+            .await)
+    }
+
+    // Send a `Request` to the provided set of nodes and wait for their responses concurrently.
+    // If `get_all_responses` is true, we wait for the responses from all the nodes. Will return an
+    // error if the request timeouts.
+    // If `get_all_responses` is false, we return the first successful response that we get
+    async fn send_req_and_get_responses(
+        &self,
+        nodes: HashSet<PeerId>,
+        req: &Request,
+        get_all_responses: bool,
+    ) -> Vec<Result<Response>> {
+        let mut list_of_futures = Vec::new();
+        for node in nodes {
+            let future = Box::pin(tokio::time::timeout(
+                Duration::from_secs(10),
+                self.node.network.send_request(req.clone(), node),
+            ));
+            list_of_futures.push(future);
+        }
+
+        let mut responses = Vec::new();
+        while !list_of_futures.is_empty() {
+            match select_all(list_of_futures).await {
+                (Ok(res), _, remaining_futures) => {
+                    let res = res.map_err(Error::Network);
+                    info!("Got response for the req: {req:?}, res: {res:?}");
+                    // return the first successful response
+                    if !get_all_responses && res.is_ok() {
+                        return vec![res];
                     }
-                };
-                if let Err(err) = node_clone.handle_network_events(event).await {
-                    warn!("Error handling network events: {err}");
+                    responses.push(res);
+                    list_of_futures = remaining_futures;
+                }
+                (Err(timeout_err), _, remaining_futures) => {
+                    responses.push(Err(Error::ResponseTimeout(timeout_err)));
+                    list_of_futures = remaining_futures;
                 }
             }
-        });
-
-        Ok((node, node_events_channel))
-    }
-
-    async fn handle_network_events(&mut self, event: NetworkEvent) -> Result<()> {
-        match event {
-            NetworkEvent::RequestReceived { req, channel } => {
-                self.handle_request(req, channel).await?
-            }
-            NetworkEvent::PeerAdded => {
-                self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
-            }
         }
 
-        Ok(())
-    }
-
-    async fn handle_request(
-        &mut self,
-        request: Request,
-        response_channel: ResponseChannel<Response>,
-    ) -> Result<()> {
-        trace!("Handling request: {request:?}");
-        match request {
-            Request::Query(query) => {
-                let resp = self.storage.query(&query, User::Anyone).await;
-                self.send_response(Response::Query(resp), response_channel)
-                    .await;
-            }
-            Request::Cmd(cmd) => {
-                let resp = self.storage.store(&cmd).await;
-                self.send_response(Response::Cmd(resp), response_channel)
-                    .await;
-            }
-        }
-
-        Ok(())
-    }
-
-    async fn send_response(&mut self, resp: Response, response_channel: ResponseChannel<Response>) {
-        if let Err(err) = self.network.send_response(resp, response_channel).await {
-            warn!("Error while sending response: {err:?}");
-        }
+        responses
     }
 }

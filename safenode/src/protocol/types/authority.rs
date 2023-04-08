@@ -8,7 +8,7 @@
 
 pub use bls::{PublicKey, Signature};
 
-use super::errors::{Error, Result};
+use super::error::{Error, Result};
 
 use serde::{Deserialize, Serialize};
 

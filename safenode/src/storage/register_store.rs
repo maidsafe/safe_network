@@ -10,7 +10,7 @@ use crate::protocol::{
     messages::RegisterCmd,
     types::{
         address::RegisterAddress,
-        errors::{Error, Result},
+        error::{Error, Result},
         register::Register,
     },
 };
