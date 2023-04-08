@@ -13,6 +13,6 @@ pub mod authority;
 /// Chunk type
 pub mod chunk;
 /// Errors
-pub mod errors;
+pub mod error;
 /// Register type
 pub mod register;

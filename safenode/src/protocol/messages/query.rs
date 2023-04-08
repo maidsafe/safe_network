@@ -6,10 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{super::types::address::ChunkAddress, register::RegisterQuery};
+use super::{
+    super::types::address::{ChunkAddress, DataAddress, SpentbookAddress},
+    register::RegisterQuery,
+};
 
 use serde::{Deserialize, Serialize};
-use xor_name::XorName;
 
 /// Data queries - retrieving data and inspecting their structure.
 ///
@@ -32,5 +34,16 @@ pub enum Query {
     /// [`Register`]: crate::protocol::types::register::Register
     Register(RegisterQuery),
     /// todo: impl entire DataStorage struct
-    GetDbc(XorName),
+    GetDbc(SpentbookAddress),
+}
+
+impl Query {
+    /// Used to send a query to the close group of the address.
+    pub fn dst(&self) -> DataAddress {
+        match self {
+            Query::GetChunk(address) => DataAddress::Chunk(*address),
+            Query::Register(query) => DataAddress::Register(query.dst()),
+            Query::GetDbc(address) => DataAddress::Spentbook(*address),
+        }
+    }
 }

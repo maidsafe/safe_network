@@ -9,7 +9,7 @@
 use crate::protocol::types::{
     address::ChunkAddress,
     chunk::Chunk,
-    errors::{Error, Result},
+    error::{Error, Result},
 };
 
 use clru::CLruCache;
@@ -52,7 +52,7 @@ impl ChunkStorage {
         if self.cache.write().await.pop(address).is_some() {
             Ok(())
         } else {
-            Err(Error::ChunkNotFound(*address.name()))
+            Err(Error::ChunkNotFound(*address))
         }
     }
 
@@ -62,7 +62,7 @@ impl ChunkStorage {
         if let Some(chunk) = self.cache.read().await.peek(address) {
             Ok(chunk.clone())
         } else {
-            Err(Error::ChunkNotFound(*address.name()))
+            Err(Error::ChunkNotFound(*address))
         }
     }
 

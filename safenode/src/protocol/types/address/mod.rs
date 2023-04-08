@@ -21,7 +21,7 @@ use xor_name::XorName;
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub enum DataAddress {
     ///
-    Bytes(ChunkAddress),
+    Chunk(ChunkAddress),
     ///
     Register(RegisterAddress),
     ///
@@ -32,7 +32,7 @@ impl DataAddress {
     /// The xorname.
     pub fn name(&self) -> &XorName {
         match self {
-            Self::Bytes(address) => address.name(),
+            Self::Chunk(address) => address.name(),
             Self::Register(address) => address.name(),
             Self::Spentbook(address) => address.name(),
         }
@@ -44,7 +44,7 @@ impl DataAddress {
     }
 
     ///
-    pub fn bytes(name: XorName) -> Self {
-        Self::Bytes(ChunkAddress::new(name))
+    pub fn chunk(name: XorName) -> Self {
+        Self::Chunk(ChunkAddress::new(name))
     }
 }

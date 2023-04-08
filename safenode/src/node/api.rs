@@ -6,106 +6,124 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{
-    error::{Error, Result},
-    Node,
+use super::{error::Result, event::NodeEventsChannel, Node, NodeEvent};
+
+use crate::{
+    network::{NetworkEvent, SwarmDriver},
+    protocol::{
+        messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
+        types::register::User,
+    },
+    storage::DataStorage,
 };
-use crate::protocol::{
-    messages::{Cmd, CmdResponse, Query, QueryResponse, ReplicatedData, Request, Response},
-    types::{address::ChunkAddress, chunk::Chunk, errors::Error as ProtocolError},
-};
-use futures::future::select_all;
-use libp2p::PeerId;
-use std::{collections::HashSet, time::Duration};
-use xor_name::XorName;
+
+use libp2p::request_response::ResponseChannel;
+use tokio::task::spawn;
 
 impl Node {
-    /// Store `ReplicatedData` to the closest peers
-    pub async fn store_data(&self, data: &ReplicatedData) -> Result<()> {
-        info!("Storing data: {:?}", data.name());
-        let cmd = match data {
-            ReplicatedData::Chunk(chunk) => Cmd::StoreChunk(chunk.clone()),
-            ReplicatedData::RegisterWrite(cmd) => Cmd::Register(cmd.clone()),
-            ReplicatedData::RegisterLog(_) => todo!(),
+    /// Write to storage.
+    pub async fn write(&self, cmd: &Cmd) -> CmdResponse {
+        info!("Write: {cmd:?}");
+        self.storage.write(cmd).await
+    }
+
+    /// Read from storage.
+    pub async fn read(&self, query: &Query) -> QueryResponse {
+        self.storage.read(query, User::Anyone).await
+    }
+
+    // /// Return the closest nodes
+    // pub async fn get_closest(&self, xor_name: XorName) -> Result<HashSet<PeerId>> {
+    //     info!("Getting the closest peers to {:?}", xor_name);
+
+    //     let closest_peers = self
+    //         .network
+    //         .get_closest_peers(xor_name)
+    //         .await?;
+
+    //     Ok(closest_peers)
+    // }
+
+    /// Asynchronously runs a new node instance, setting up the swarm driver,
+    /// creating a data storage, and handling network events. Returns the
+    /// created node and a `NodeEventsChannel` for listening to node-related
+    /// events.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing a `Node` instance and a `NodeEventsChannel`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if there is a problem initializing the `SwarmDriver`.
+    pub async fn run() -> Result<(Self, NodeEventsChannel)> {
+        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new()?;
+        let storage = DataStorage::new();
+        let node_events_channel = NodeEventsChannel::default();
+        let node = Self {
+            network,
+            storage,
+            events_channel: node_events_channel.clone(),
         };
-        // Forward to the other closest peers if we're seeing the data for the first time
-        // return early if we already have the data with us
-        match self.storage.store(&cmd).await {
-            CmdResponse::StoreChunk(Err(_))
-            | CmdResponse::CreateRegister(Err(_))
-            | CmdResponse::EditRegister(Err(_)) => {
-                info!(
-                    "We already have the data {:?} with us, not forwarding it",
-                    data.name()
-                );
-                return Ok(());
+        let mut node_clone = node.clone();
+
+        let _handle = spawn(swarm_driver.run());
+        let _handle = spawn(async move {
+            loop {
+                let event = match network_event_receiver.recv().await {
+                    Some(event) => event,
+                    None => {
+                        error!("The `NetworkEvent` channel has been closed");
+                        continue;
+                    }
+                };
+                if let Err(err) = node_clone.handle_network_event(event).await {
+                    warn!("Error handling network event: {err}");
+                }
             }
-            _ => {}
+        });
+
+        Ok((node, node_events_channel))
+    }
+
+    async fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
+        match event {
+            NetworkEvent::RequestReceived { req, channel } => {
+                self.handle_request(req, channel).await?
+            }
+            NetworkEvent::PeerAdded => {
+                self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
+            }
         }
-        info!("Forwarding data {:?} to the closest peers", data.name());
-        let closest_peers = self.network.get_closest_peers(data.name()).await?;
-        let _responses = self
-            .send_req_and_get_responses(closest_peers, &Request::Cmd(cmd), true)
-            .await;
 
         Ok(())
     }
 
-    /// Retrieve a `Chunk` from the closest peers
-    pub async fn get_chunk(&self, xor_name: XorName) -> Result<Chunk> {
-        info!("Get data: {xor_name:?}");
-        let closest_peers = self.network.get_closest_peers(xor_name).await?;
-        let req = Request::Query(Query::GetChunk(ChunkAddress::new(xor_name)));
-        let mut response = self
-            .send_req_and_get_responses(closest_peers, &req, false)
-            .await;
-        let response = response.remove(0)?;
-        if let Response::Query(QueryResponse::GetChunk(chunk)) = response {
-            Ok(chunk?)
-        } else {
-            Err(Error::Protocol(ProtocolError::ChunkNotFound(xor_name)))
-        }
-    }
-
-    // Send a `Request` to the provided set of nodes and wait for their responses concurrently.
-    // If `get_all_responses` is true, we wait for the responses from all the nodes. Will return an
-    // error if the request timeouts.
-    // If `get_all_responses` is false, we return the first successful response that we get
-    async fn send_req_and_get_responses(
-        &self,
-        nodes: HashSet<PeerId>,
-        req: &Request,
-        get_all_responses: bool,
-    ) -> Vec<Result<Response>> {
-        let mut list_of_futures = Vec::new();
-        for node in nodes {
-            let future = Box::pin(tokio::time::timeout(
-                Duration::from_secs(10),
-                self.network.send_request(req.clone(), node),
-            ));
-            list_of_futures.push(future);
-        }
-
-        let mut responses = Vec::new();
-        while !list_of_futures.is_empty() {
-            match select_all(list_of_futures).await {
-                (Ok(res), _, remaining_futures) => {
-                    let res = res.map_err(Error::Network);
-                    info!("Got response for the req: {req:?}, res: {res:?}");
-                    // return the first successful response
-                    if !get_all_responses && res.is_ok() {
-                        return vec![res];
-                    }
-                    responses.push(res);
-                    list_of_futures = remaining_futures;
-                }
-                (Err(timeout_err), _, remaining_futures) => {
-                    responses.push(Err(Error::ResponseTimeout(timeout_err)));
-                    list_of_futures = remaining_futures;
-                }
+    async fn handle_request(
+        &mut self,
+        request: Request,
+        response_channel: ResponseChannel<Response>,
+    ) -> Result<()> {
+        trace!("Handling request: {request:?}");
+        match request {
+            Request::Cmd(cmd) => {
+                let resp = self.storage.write(&cmd).await;
+                self.send_response(Response::Cmd(resp), response_channel)
+                    .await;
+            }
+            Request::Query(query) => {
+                let resp = self.storage.read(&query, User::Anyone).await;
+                self.send_response(Response::Query(resp), response_channel)
+                    .await;
             }
         }
 
-        responses
+        Ok(())
+    }
+
+    async fn send_response(&mut self, resp: Response, response_channel: ResponseChannel<Response>) {
+        if let Err(err) = self.network.send_response(resp, response_channel).await {
+            warn!("Error while sending response: {err:?}");
+        }
     }
 }

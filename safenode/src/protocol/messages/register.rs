@@ -106,7 +106,7 @@ impl CreateRegister {
     }
 
     /// Returns the address of the register.
-    pub fn address(&self) -> RegisterAddress {
+    pub fn dst(&self) -> RegisterAddress {
         RegisterAddress {
             name: self.name,
             tag: self.tag,
@@ -147,21 +147,21 @@ pub struct SignedRegisterEdit {
 
 impl SignedRegisterCreate {
     /// Returns the dst address of the register.
-    pub fn dst_address(&self) -> RegisterAddress {
-        self.op.address()
+    pub fn dst(&self) -> RegisterAddress {
+        self.op.dst()
     }
 }
 
 impl SignedRegisterEdit {
     /// Returns the dst address of the register.
-    pub fn dst_address(&self) -> RegisterAddress {
+    pub fn dst(&self) -> RegisterAddress {
         self.op.address
     }
 }
 
 impl RegisterQuery {
     /// Returns the dst address for the request.
-    pub fn dst_address(&self) -> RegisterAddress {
+    pub fn dst(&self) -> RegisterAddress {
         match self {
             Self::Get(ref address)
             | Self::Read(ref address)
@@ -177,14 +177,14 @@ impl RegisterCmd {
     /// Returns the name of the register.
     /// This is not a unique identifier.
     pub fn name(&self) -> XorName {
-        *self.dst_address().name()
+        *self.dst().name()
     }
 
     /// Returns the dst address of the register.
-    pub fn dst_address(&self) -> RegisterAddress {
+    pub fn dst(&self) -> RegisterAddress {
         match self {
-            Self::Create(cmd) => cmd.dst_address(),
-            Self::Edit(cmd) => cmd.dst_address(),
+            Self::Create(cmd) => cmd.dst(),
+            Self::Edit(cmd) => cmd.dst(),
         }
     }
 }

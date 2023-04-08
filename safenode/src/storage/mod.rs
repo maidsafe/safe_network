@@ -38,9 +38,8 @@ impl DataStorage {
     }
 
     /// Store data in the local store and return `CmdResponse`
-    pub async fn store(&self, cmd: &Cmd) -> CmdResponse {
-        debug!("Replicating {cmd:?}");
-
+    pub async fn write(&self, cmd: &Cmd) -> CmdResponse {
+        debug!("Write {cmd:?}");
         match cmd {
             Cmd::StoreChunk(chunk) => CmdResponse::StoreChunk(self.chunks.store(chunk).await),
             Cmd::Register(cmd) => {
@@ -54,8 +53,8 @@ impl DataStorage {
     }
 
     /// Query the local store and return `QueryResponse`
-    pub async fn query(&self, query: &Query, requester: User) -> QueryResponse {
-        debug!("Query {query:?}");
+    pub async fn read(&self, query: &Query, requester: User) -> QueryResponse {
+        debug!("Read {query:?}");
         match query {
             Query::GetChunk(addr) => QueryResponse::GetChunk(self.chunks.get(addr).await),
             Query::Register(read) => self.registers.read(read, requester).await,

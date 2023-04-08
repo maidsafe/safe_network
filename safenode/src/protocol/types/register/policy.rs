@@ -9,7 +9,7 @@
 use super::{
     super::{
         authority::PublicKey,
-        errors::{Error, Result},
+        error::{Error, Result},
     },
     Action,
 };

@@ -8,7 +8,7 @@
 
 use super::super::types::{
     chunk::Chunk,
-    errors::Result,
+    error::Result,
     register::{Entry, EntryHash, Permissions, Policy, Register, User},
 };
 
