@@ -34,10 +34,6 @@ use crate::{
     storage::DataStorage,
 };
 
-use futures::future::select_all;
-use libp2p::PeerId;
-use std::{collections::HashSet, time::Duration};
-
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
 /// storage, and broadcasts node-related events.
@@ -211,49 +207,8 @@ impl Client {
             .get_closest_peers(*request.dst().name())
             .await?;
         Ok(self
+            .node
             .send_req_and_get_responses(closest_peers, &request, true)
             .await)
-    }
-
-    // Send a `Request` to the provided set of nodes and wait for their responses concurrently.
-    // If `get_all_responses` is true, we wait for the responses from all the nodes. Will return an
-    // error if the request timeouts.
-    // If `get_all_responses` is false, we return the first successful response that we get
-    async fn send_req_and_get_responses(
-        &self,
-        nodes: HashSet<PeerId>,
-        req: &Request,
-        get_all_responses: bool,
-    ) -> Vec<Result<Response>> {
-        let mut list_of_futures = Vec::new();
-        for node in nodes {
-            let future = Box::pin(tokio::time::timeout(
-                Duration::from_secs(10),
-                self.node.network.send_request(req.clone(), node),
-            ));
-            list_of_futures.push(future);
-        }
-
-        let mut responses = Vec::new();
-        while !list_of_futures.is_empty() {
-            match select_all(list_of_futures).await {
-                (Ok(res), _, remaining_futures) => {
-                    let res = res.map_err(Error::Network);
-                    info!("Got response for the req: {req:?}, res: {res:?}");
-                    // return the first successful response
-                    if !get_all_responses && res.is_ok() {
-                        return vec![res];
-                    }
-                    responses.push(res);
-                    list_of_futures = remaining_futures;
-                }
-                (Err(timeout_err), _, remaining_futures) => {
-                    responses.push(Err(Error::ResponseTimeout(timeout_err)));
-                    list_of_futures = remaining_futures;
-                }
-            }
-        }
-
-        responses
     }
 }

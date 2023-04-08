@@ -41,6 +41,11 @@ pub enum Error {
     /// A double spend attempt was detected.
     #[error("A double spend attempt was detected. Set of mismatching spends: {0:?}")]
     DoubleSpendAttempt(BTreeSet<SignedSpend>),
+    /// A parent spend of a requested spend could not be confirmed as valid.
+    #[error(
+        "A parent spend of a requested spend could not be confirmed as valid. Parent dbc {0:?}"
+    )]
+    InvalidSpendParent(DbcAddress),
     /// Unexpected responses.
     #[error("Unexpected responses")]
     UnexpectedResponses,
