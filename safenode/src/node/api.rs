@@ -22,9 +22,10 @@ use crate::{
     storage::DataStorage,
 };
 
+use sn_dbc::{SignedSpend, TransactionVerifier};
+
 use futures::future::select_all;
 use libp2p::{request_response::ResponseChannel, PeerId};
-use sn_dbc::SignedSpend;
 use std::{
     collections::{BTreeSet, HashSet},
     time::Duration,
@@ -104,13 +105,43 @@ impl Node {
         response_channel: ResponseChannel<Response>,
     ) -> Result<()> {
         trace!("Handling request: {request:?}");
+        let request_dst = request.dst();
         match request {
             Request::Cmd(Cmd::Dbc(spend)) => {
                 // First we need to validate the parents of the spend.
-                self.validate_spend_parents(&spend).await?;
-                let resp = self.storage.write(&Cmd::Dbc(spend)).await;
-                self.send_response(Response::Cmd(resp), response_channel)
-                    .await;
+                match self.validate_spend_parents(&spend).await {
+                    // If the parents do not check out as valid
+                    // we will mark this child dbc as unspendable,
+                    // and broadcast that to every other close node.
+                    Err(super::Error::Protocol(ProtocolError::InvalidSpendParentTx(
+                        parent_addresses,
+                    ))) => {
+                        // TODO: Broadcast this to close groups of every address in parent_addresses!
+                        // Also broadcast this spend as invalid to every peer in this attempted spend's close group.
+                        warn!("Invalid parent/s for spend attempt of {request_dst:?}: {parent_addresses:?}!");
+                    }
+                    Ok(()) => (),
+                    res => res?,
+                };
+                match self.storage.write(&Cmd::Dbc(spend)).await {
+                    CmdResponse::Spend(Err(ProtocolError::DoubleSpendAttempt(
+                        double_spends_of_this_dbc,
+                    ))) => {
+                        // TODO:  Broadcast this to all close nodes!
+                        warn!("Double spend attempt! {:?}", double_spends_of_this_dbc);
+
+                        // let closest_peers = self
+                        //     .network
+                        //     .get_closest_peers(*request_dst.name())
+                        //     .await?;
+
+                        // self.send_req_and_get_responses(closest_peers, &)
+                    }
+                    other => {
+                        self.send_response(Response::Cmd(other), response_channel)
+                            .await;
+                    }
+                }
             }
             Request::Cmd(cmd) => {
                 let resp = self.storage.write(&cmd).await;
@@ -128,28 +159,36 @@ impl Node {
     }
 
     async fn validate_spend_parents(&self, spend: &Spend) -> Result<()> {
-        for input in &spend.signed_spend().spend.tx.inputs {
-            // We validate each input.
-            // input.verify(msg, blinded_amount)
-            // Here is supposedly one and the same spend from its close group.
-            // If we receive a spend here, it is assumed to be valid.
-            let parent_address = dbc_address(&input.dbc_id());
+        // These will be different spends, one for each input that went into
+        // creating the above spend passed in to this function.
+        let mut all_parent_signed_spends = BTreeSet::new();
+
+        for parent_input in &spend.signed_spend().spend.tx.inputs {
+            let parent_address = dbc_address(&parent_input.dbc_id());
+            // This call makes sure we get the same spend from all in the close group.
+            // If we receive a spend here, it is assumed to be valid. But we will verify
+            // that anyway, in the code right after this for loop.
             let parent_spend_by_close_group = self.get_spend(parent_address).await?;
-            // We serialize the transaction.
-            let msg = parent_spend_by_close_group.spend.tx.gen_message();
+            let _ = all_parent_signed_spends.insert(parent_spend_by_close_group);
+        }
 
-            // We check that the input is the expected one, i.e. it has the
-            // same amount as the valid parent spend that we got from the parent spend close group.
-            match input.verify(&msg, *parent_spend_by_close_group.blinded_amount()) {
-                Ok(_) => continue,
-                Err(_) => {
-                    return Err(super::Error::Protocol(ProtocolError::InvalidSpendParent(
-                        parent_address,
-                    )))
-                }
-            };
+        let mut invalid_parents = BTreeSet::new();
 
-            // TODO: Do we need more validation of the input parent??
+        // Here we verify every retrieved spends' tx given all of the retrieved spends.
+        for parent_spend in &all_parent_signed_spends {
+            let parent_address = dbc_address(parent_spend.dbc_id());
+            let creation_tx_of_this_spend = &parent_spend.spend.tx;
+            if TransactionVerifier::verify(creation_tx_of_this_spend, &all_parent_signed_spends)
+                .is_err()
+            {
+                let _ = invalid_parents.insert(parent_address);
+            }
+        }
+
+        if !invalid_parents.is_empty() {
+            return Err(super::Error::Protocol(ProtocolError::InvalidSpendParentTx(
+                invalid_parents,
+            )));
         }
 
         Ok(())
@@ -164,13 +203,16 @@ impl Node {
             .network
             .get_closest_peers(*request.dst().name())
             .await?;
-        // We must know that this size is always the required/expected one.
+        // TODO: We must know that this size is always the required/expected one.
+        // Preferrably getting the size from lower levels! (Because this group returned
+        // may not be complete.)
         let close_group_size = closest_peers.len();
 
         let responses = self
             .send_req_and_get_responses(closest_peers, &request, true)
             .await;
 
+        // Get all Ok results of the expected response type `GetDbcSpend`.
         let spends: Vec<_> = responses
             .iter()
             .flatten()
@@ -184,7 +226,7 @@ impl Node {
             .collect();
 
         if spends.len() >= close_group_size {
-            // All nodes in the close group returned a response.
+            // All nodes in the close group returned an Ok response.
             let spends: BTreeSet<_> = spends.into_iter().collect();
             // All nodes in the close group returned
             // the same spend. It is thus valid.
