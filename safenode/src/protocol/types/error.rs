@@ -43,9 +43,9 @@ pub enum Error {
     DoubleSpendAttempt(BTreeSet<SignedSpend>),
     /// A parent spend of a requested spend could not be confirmed as valid.
     #[error(
-        "A parent spend of a requested spend could not be confirmed as valid. Parent dbc {0:?}"
+        "A parent tx of a requested spend could not be confirmed as valid. All invalid parents' addresses {0:?}"
     )]
-    InvalidSpendParent(DbcAddress),
+    InvalidSpendParentTx(BTreeSet<DbcAddress>),
     /// Unexpected responses.
     #[error("Unexpected responses")]
     UnexpectedResponses,

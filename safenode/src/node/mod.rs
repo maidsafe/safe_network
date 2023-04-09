@@ -72,13 +72,17 @@ impl Client {
             return Ok(());
         }
 
-        // If not all were Ok, we will return the first
-        // error we find.
-        for resp in responses {
-            let response = resp?;
-            if let Response::Cmd(CmdResponse::StoreChunk(result)) = response {
-                result?;
+        // If not all were Ok, we will return the first error sent to us.
+        for resp in responses.iter().flatten() {
+            if let Response::Cmd(CmdResponse::StoreChunk(result)) = resp {
+                result.clone()?;
             };
+        }
+
+        // If there were no success or fail to the expected query,
+        // we check if there were any send errors.
+        for resp in responses {
+            let _ = resp?;
         }
 
         // If there were no store chunk errors, then we had unexpected responses.
@@ -98,13 +102,17 @@ impl Client {
             return Ok(());
         }
 
-        // If not all were Ok, we will return the first
-        // error we find.
-        for resp in responses {
-            let response = resp?;
-            if let Response::Cmd(CmdResponse::CreateRegister(result)) = response {
-                result?;
+        // If not all were Ok, we will return the first error sent to us.
+        for resp in responses.iter().flatten() {
+            if let Response::Cmd(CmdResponse::CreateRegister(result)) = resp {
+                result.clone()?;
             };
+        }
+
+        // If there were no success or fail to the expected query,
+        // we check if there were any send errors.
+        for resp in responses {
+            let _ = resp?;
         }
 
         // If there were no register errors, then we had unexpected responses.
@@ -124,13 +132,17 @@ impl Client {
             return Ok(());
         }
 
-        // If not all were Ok, we will return the first
-        // error we find.
-        for resp in responses {
-            let response = resp?;
-            if let Response::Cmd(CmdResponse::EditRegister(result)) = response {
-                result?;
+        // If not all were Ok, we will return the first error sent to us.
+        for resp in responses.iter().flatten() {
+            if let Response::Cmd(CmdResponse::EditRegister(result)) = resp {
+                result.clone()?;
             };
+        }
+
+        // If there were no success or fail to the expected query,
+        // we check if there were any send errors.
+        for resp in responses {
+            let _ = resp?;
         }
 
         // If there were no register errors, then we had unexpected responses.
@@ -150,8 +162,7 @@ impl Client {
             };
         }
 
-        // If no chunk was gotten, we try error the first
-        // error to the expected query returned from nodes.
+        // If no chunk was found, we will return the first error sent to us.
         for resp in responses.iter().flatten() {
             if let Response::Query(QueryResponse::GetChunk(result)) = resp {
                 let _ = result.clone()?;
@@ -181,8 +192,7 @@ impl Client {
             };
         }
 
-        // If no register was gotten, we try error the first
-        // error to the expected query returned from nodes.
+        // If no register was gotten, we will return the first error sent to us.
         for resp in responses.iter().flatten() {
             if let Response::Query(QueryResponse::GetChunk(result)) = resp {
                 let _ = result.clone()?;
