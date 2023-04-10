@@ -9,6 +9,10 @@ homepage = "https://maidsafe.net"
 name = "safenode"
 path = "src/bin/kadnode.rs"
 
+[[bin]]
+name = "safeclient"
+path = "src/bin/kadclient.rs"
+
 [dependencies]
 async-trait = "0.1"
 bincode = "1.3.1"

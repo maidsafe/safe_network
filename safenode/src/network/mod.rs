@@ -11,6 +11,8 @@ mod error;
 mod event;
 mod msg;
 
+use crate::protocol::messages::{Request, Response};
+
 pub use self::{error::Error, event::NetworkEvent};
 
 use self::{
@@ -19,7 +21,7 @@ use self::{
     event::NodeBehaviour,
     msg::{MsgCodec, MsgProtocol},
 };
-use crate::protocol::messages::{Request, Response};
+
 use futures::StreamExt;
 use libp2p::{
     core::muxing::StreamMuxerBox,
@@ -74,44 +76,72 @@ impl SwarmDriver {
     ///
     /// Returns an error if there is a problem initializing the mDNS behavior.
     pub fn new() -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+        let mut cfg = KademliaConfig::default();
+        let _ = cfg.set_query_timeout(Duration::from_secs(5 * 60));
+
+        let request_response = request_response::Behaviour::new(
+            MsgCodec(),
+            iter::once((MsgProtocol(), ProtocolSupport::Full)),
+            Default::default(),
+        );
+
+        let (network, events_receiver, mut swarm_driver) = Self::with(cfg, request_response)?;
+
+        // Listen on all interfaces and whatever port the OS assigns.
+        let addr = "/ip4/0.0.0.0/udp/0/quic-v1"
+            .parse()
+            .expect("Failed to parse the address");
+        let _listener_id = swarm_driver
+            .swarm
+            .listen_on(addr)
+            .expect("Failed to listen on the provided address");
+
+        Ok((network, events_receiver, swarm_driver))
+    }
+
+    /// Same as `new` API but creates the network components in client mode
+    pub fn new_client() -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+        // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
+        // to outbound-only mode and don't listen on any address
+        let cfg = KademliaConfig::default(); // default query timeout is 60 secs
+        let request_response = request_response::Behaviour::new(
+            MsgCodec(),
+            iter::once((MsgProtocol(), ProtocolSupport::Outbound)),
+            Default::default(),
+        );
+
+        Self::with(cfg, request_response)
+    }
+
+    // Private helper to create the network components with the provided config and req/res behaviour
+    fn with(
+        cfg: KademliaConfig,
+        request_response: request_response::Behaviour<MsgCodec>,
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+        // Create a random key for ourself.
         let keypair = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(keypair.public());
 
         info!("Peer id: {:?}", peer_id);
 
+        // QUIC configuration
         let quic_config = libp2p_quic::Config::new(&keypair);
         let transport = libp2p_quic::tokio::Transport::new(quic_config);
         let transport = transport
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
-        let swarm = {
-            let mut cfg = KademliaConfig::default();
-            let _ = cfg.set_query_timeout(Duration::from_secs(5 * 60));
-            let kademlia = Kademlia::with_config(peer_id, MemoryStore::new(peer_id), cfg);
-            let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
-            let behaviour = NodeBehaviour {
-                request_response: request_response::Behaviour::new(
-                    MsgCodec(),
-                    iter::once((MsgProtocol(), ProtocolSupport::Full)),
-                    Default::default(),
-                ),
-                kademlia,
-                mdns,
-            };
 
-            let mut swarm =
-                SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
-
-            // Listen on all interfaces and whatever port the OS assigns.
-            let addr = "/ip4/0.0.0.0/udp/0/quic-v1"
-                .parse()
-                .expect("Failed to parse the address");
-            let _listener_id = swarm
-                .listen_on(addr)
-                .expect("Failed to listen on the provided address");
-
-            swarm
+        // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
+        // to outbound-only mode and don't listen on any address
+        let kademlia = Kademlia::with_config(peer_id, MemoryStore::new(peer_id), cfg);
+        let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
+        let behaviour = NodeBehaviour {
+            request_response,
+            kademlia,
+            mdns,
         };
+
+        let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
         let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(100);
         let (network_event_sender, network_event_receiver) = mpsc::channel(100);
@@ -147,7 +177,7 @@ impl SwarmDriver {
                     if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {
                         warn!("Error while handling event: {err}");
                     }
-                }  ,
+                },
                 some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
                         if let Err(err) = self.handle_cmd(cmd) {
