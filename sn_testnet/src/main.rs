@@ -40,7 +40,7 @@ use std::{
 };
 use tracing::{debug, info};
 
-const DEFAULT_NODE_COUNT: u32 = 25;
+const DEFAULT_NODE_COUNT: u32 = 50;
 
 #[derive(Debug, clap::StructOpt)]
 #[clap(name = "testnet", version)]

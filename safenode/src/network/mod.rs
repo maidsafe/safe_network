@@ -57,7 +57,7 @@ pub struct SwarmDriver {
     event_sender: mpsc::Sender<NetworkEvent>,
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_get_closest_peers:
-        HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>,
+        HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>, Vec<u8>)>,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
 }
 

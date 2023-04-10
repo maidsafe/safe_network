@@ -82,10 +82,14 @@ impl SwarmDriver {
             }
             SwarmCmd::GetClosestPeers { xor_name, sender } => {
                 let key = xor_name.0.to_vec();
-                let query_id = self.swarm.behaviour_mut().kademlia.get_closest_peers(key);
+                let query_id = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .get_closest_peers(key.clone());
                 let _ = self
                     .pending_get_closest_peers
-                    .insert(query_id, (sender, Default::default()));
+                    .insert(query_id, (sender, Default::default(), key));
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 let request_id = self
