@@ -41,6 +41,8 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 use xor_name::XorName;
 
+const REPLICATION_FACTOR: usize = 8;
+
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
 /// tasks. It serves as the core component for the network functionality.
@@ -49,7 +51,8 @@ pub struct SwarmDriver {
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>,
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
-    pending_get_closest_peers: HashMap<QueryId, oneshot::Sender<HashSet<PeerId>>>,
+    pending_get_closest_peers:
+        HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
 }
 
@@ -229,6 +232,11 @@ impl Network {
             "Got the {} closest_peers to the given XorName-{xor_name}, nodes: {closest_peers:?}",
             closest_peers.len()
         );
+        let closest_peers = closest_peers
+            .iter()
+            .take(REPLICATION_FACTOR)
+            .cloned()
+            .collect();
         Ok(closest_peers)
     }
 

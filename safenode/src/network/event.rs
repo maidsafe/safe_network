@@ -14,12 +14,14 @@ use super::{
 
 use crate::protocol::messages::{Request, Response};
 use libp2p::{
-    kad::{store::MemoryStore, Kademlia, KademliaEvent, QueryResult},
+    kad::{store::MemoryStore, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     mdns,
     multiaddr::Protocol,
     request_response::{self, ResponseChannel},
     swarm::{NetworkBehaviour, SwarmEvent},
+    PeerId,
 };
+use std::collections::HashSet;
 use tracing::{info, warn};
 
 #[derive(NetworkBehaviour)]
@@ -87,12 +89,32 @@ impl SwarmDriver {
                 KademliaEvent::OutboundQueryProgressed {
                     id,
                     result: QueryResult::GetClosestPeers(Ok(closest_peers)),
-                    ..
+                    stats,
+                    step,
                 } => {
-                    if let Some(sender) = self.pending_get_closest_peers.remove(&id) {
-                        sender
-                            .send(closest_peers.peers.into_iter().collect())
-                            .map_err(|_| Error::Other("Receiver not to be dropped".to_string()))?;
+                    trace!("Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}");
+
+                    if let Some((sender, mut cur_closest)) =
+                        self.pending_get_closest_peers.remove(&id)
+                    {
+                        // TODO: consider order the result and terminate when reach any of the
+                        //       following creterias:
+                        //   1, `_stats.num_pending()` is 0
+                        //   2, `_stats.duration()` is longer than a defined period
+                        //   3, `_step.last` is true
+                        let new_peers: HashSet<PeerId> = closest_peers.peers.into_iter().collect();
+                        cur_closest.extend(new_peers);
+                        if cur_closest.len() > usize::from(K_VALUE) {
+                            sender.send(cur_closest).map_err(|_| {
+                                Error::Other("Receiver not to be dropped".to_string())
+                            })?;
+                        } else {
+                            let _ = self
+                                .pending_get_closest_peers
+                                .insert(id, (sender, cur_closest));
+                        }
+                    } else {
+                        trace!("Cann't located query task {id:?}, shall be completed already");
                     }
                 }
                 KademliaEvent::RoutingUpdated { .. } => {
