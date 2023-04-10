@@ -10,18 +10,15 @@ mod api;
 mod error;
 mod event;
 
-pub use self::event::NodeEvent;
+pub use self::event::{ClientEvent, ClientEventsReceiver};
 
-use self::{error::Error, event::NodeEventsChannel};
+use self::event::ClientEventsChannel;
 
-use crate::{network::Network, storage::DataStorage};
+use crate::network::Network;
 
-/// `Node` represents a single node in the distributed network. It handles
-/// network events, processes incoming requests, interacts with the data
-/// storage, and broadcasts node-related events.
+/// Client API implementation store and get data.
 #[derive(Clone)]
-pub struct Node {
+pub struct Client {
     network: Network,
-    storage: DataStorage,
-    events_channel: NodeEventsChannel,
+    events_channel: ClientEventsChannel,
 }
