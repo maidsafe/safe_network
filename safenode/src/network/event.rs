@@ -94,7 +94,7 @@ impl SwarmDriver {
                 } => {
                     trace!("Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}");
 
-                    if let Some((sender, mut cur_closest)) =
+                    if let Some((sender, mut current_closest)) =
                         self.pending_get_closest_peers.remove(&id)
                     {
                         // TODO: consider order the result and terminate when reach any of the
@@ -103,18 +103,18 @@ impl SwarmDriver {
                         //   2, `_stats.duration()` is longer than a defined period
                         //   3, `_step.last` is true
                         let new_peers: HashSet<PeerId> = closest_peers.peers.into_iter().collect();
-                        cur_closest.extend(new_peers);
-                        if cur_closest.len() > usize::from(K_VALUE) {
-                            sender.send(cur_closest).map_err(|_| {
+                        current_closest.extend(new_peers);
+                        if current_closest.len() > usize::from(K_VALUE) {
+                            sender.send(current_closest).map_err(|_| {
                                 Error::Other("Receiver not to be dropped".to_string())
                             })?;
                         } else {
                             let _ = self
                                 .pending_get_closest_peers
-                                .insert(id, (sender, cur_closest));
+                                .insert(id, (sender, current_closest));
                         }
                     } else {
-                        trace!("Cann't located query task {id:?}, shall be completed already");
+                        trace!("Can't locate query task {id:?}, shall be completed already.");
                     }
                 }
                 KademliaEvent::RoutingUpdated { .. } => {

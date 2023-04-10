@@ -9,7 +9,7 @@
 use super::{error::Result, event::NodeEventsChannel, Node, NodeEvent};
 
 use crate::{
-    network::{NetworkEvent, SwarmDriver},
+    network::{NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
     protocol::{
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
         types::{
@@ -119,6 +119,15 @@ impl Node {
                         // TODO: Broadcast this to close groups of every address in parent_addresses!
                         // Also broadcast this spend as invalid to every peer in this attempted spend's close group.
                         warn!("Invalid parent/s for spend attempt of {request_dst:?}: {parent_addresses:?}!");
+
+                        for parent_address in parent_addresses {
+                            let _closest_peers = self
+                                .network
+                                .get_closest_peers(*parent_address.name())
+                                .await?;
+
+                            // self.send_req_and_get_responses(closest_peers, &)
+                        }
                     }
                     Ok(()) => (),
                     res => res?,
@@ -130,10 +139,8 @@ impl Node {
                         // TODO:  Broadcast this to all close nodes!
                         warn!("Double spend attempt! {:?}", double_spends_of_this_dbc);
 
-                        // let closest_peers = self
-                        //     .network
-                        //     .get_closest_peers(*request_dst.name())
-                        //     .await?;
+                        let _other_closest_peers =
+                            self.network.get_closest_peers(*request_dst.name()).await?;
 
                         // self.send_req_and_get_responses(closest_peers, &)
                     }
@@ -203,10 +210,6 @@ impl Node {
             .network
             .get_closest_peers(*request.dst().name())
             .await?;
-        // TODO: We must know that this size is always the required/expected one.
-        // Preferrably getting the size from lower levels! (Because this group returned
-        // may not be complete.)
-        let close_group_size = closest_peers.len();
 
         let responses = self
             .send_req_and_get_responses(closest_peers, &request, true)
@@ -225,7 +228,7 @@ impl Node {
             })
             .collect();
 
-        if spends.len() >= close_group_size {
+        if spends.len() >= CLOSE_GROUP_SIZE {
             // All nodes in the close group returned an Ok response.
             let spends: BTreeSet<_> = spends.into_iter().collect();
             // All nodes in the close group returned

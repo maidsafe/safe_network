@@ -41,7 +41,10 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 use xor_name::XorName;
 
-const REPLICATION_FACTOR: usize = 8;
+/// The maximum number of peers to return in a `GetClosestPeers` response.
+/// This is the group size used in safe network protocol to be responsible for
+/// an item in the network.
+pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
 
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
@@ -227,16 +230,20 @@ impl Network {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers { xor_name, sender })
             .await?;
-        let closest_peers = receiver.await?;
+        let k_bucket_peers = receiver.await?;
+
+        let closest_peers: HashSet<_> = k_bucket_peers.into_iter().take(CLOSE_GROUP_SIZE).collect();
+
+        if CLOSE_GROUP_SIZE > closest_peers.len() {
+            warn!("Not enough peers in the k-bucket to satisfy the request");
+            return Err(Error::NotEnoughPeers);
+        }
+
         trace!(
             "Got the {} closest_peers to the given XorName-{xor_name}, nodes: {closest_peers:?}",
             closest_peers.len()
         );
-        let closest_peers = closest_peers
-            .iter()
-            .take(REPLICATION_FACTOR)
-            .cloned()
-            .collect();
+
         Ok(closest_peers)
     }
 
