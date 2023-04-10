@@ -44,4 +44,7 @@ pub enum Error {
 
     #[error("The oneshot::sender has been dropped")]
     SenderDropped(#[from] oneshot::error::RecvError),
+
+    #[error("Could not get CLOSE_GROUP_SIZE number of peers.")]
+    NotEnoughPeers,
 }
