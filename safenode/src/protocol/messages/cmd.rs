@@ -6,15 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::RegisterCmd;
+
 use crate::protocol::types::{
-    address::{ChunkAddress, DataAddress},
-    spend::Spend,
+    address::{dbc_address, ChunkAddress, DataAddress},
+    chunk::Chunk,
 };
 
-use super::{super::types::chunk::Chunk, RegisterCmd};
+use sn_dbc::SignedSpend;
+
 use serde::{Deserialize, Serialize};
 
-/// Data cmds - creating, updating, or removing data.
+/// Data and Dbc cmds - recording spends or creating, updating, and removing data.
 ///
 /// See the [`types`] module documentation for more details of the types supported by the Safe
 /// Network, and their semantics.
@@ -23,10 +26,10 @@ use serde::{Deserialize, Serialize};
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
 pub enum Cmd {
-    /// [`Spend`] write operation.
+    /// [`SignedSpend`] write operation.
     ///
-    /// [`Spend`]: crate::protocol::types::spend::Spend
-    Dbc(Spend),
+    /// [`SignedSpend`]: sn_dbc::SignedSpend
+    Dbc(SignedSpend),
     /// [`Chunk`] write operation.
     ///
     /// [`Chunk`]: crate::protocol::types::chunk::Chunk
@@ -43,7 +46,7 @@ impl Cmd {
         match self {
             Cmd::StoreChunk(chunk) => DataAddress::Chunk(ChunkAddress::new(*chunk.name())),
             Cmd::Register(cmd) => DataAddress::Register(cmd.dst()),
-            Cmd::Dbc(spend) => DataAddress::Spend(*spend.address()),
+            Cmd::Dbc(spend) => DataAddress::Spend(dbc_address(spend.dbc_id())),
         }
     }
 }

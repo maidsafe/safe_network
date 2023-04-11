@@ -33,7 +33,7 @@ use std::{collections::HashSet, time::Duration};
 use tokio::task::spawn;
 
 impl Client {
-    /// A new client.
+    /// Instantiate a new client.
     pub fn new() -> Result<Self> {
         info!("Starting Kad swarm in client mode...");
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client()?;
@@ -63,7 +63,19 @@ impl Client {
         Ok(client)
     }
 
-    /// Get the client events channel
+    fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
+        match event {
+            NetworkEvent::RequestReceived { .. } => {}
+            NetworkEvent::PeerAdded => {
+                self.events_channel
+                    .broadcast(ClientEvent::ConnectedToNetwork);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Get the client events channel.
     pub fn events_channel(&self) -> ClientEventsReceiver {
         self.events_channel.subscribe()
     }
@@ -98,7 +110,7 @@ impl Client {
         Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    ///
+    /// Create a `Register` on the network.
     pub async fn create_register(&self, cmd: SignedRegisterCreate) -> Result<()> {
         info!("Create register: {:?}", cmd.dst());
         let request = Request::Cmd(Cmd::Register(RegisterCmd::Create(cmd)));
@@ -128,7 +140,7 @@ impl Client {
         Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    ///
+    /// Edit a `Register` in the network.
     pub async fn edit_register(&self, cmd: SignedRegisterEdit) -> Result<()> {
         info!("Create register: {:?}", cmd.dst());
         let request = Request::Cmd(Cmd::Register(RegisterCmd::Edit(cmd)));
@@ -158,7 +170,7 @@ impl Client {
         Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    /// Retrieve a `Chunk` from the closest peers
+    /// Retrieve a `Chunk` from the closest peers.
     pub async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Get chunk: {address:?}");
         let request = Request::Query(Query::GetChunk(address));
@@ -188,7 +200,7 @@ impl Client {
         Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    /// Retrieve a `Register` from the closest peers
+    /// Retrieve a `Register` from the closest peers.
     pub async fn get_register(&self, address: RegisterAddress) -> Result<Register> {
         info!("Get chunk: {address:?}");
         let request = Request::Query(Query::Register(RegisterQuery::Get(address)));
@@ -219,33 +231,21 @@ impl Client {
     }
 
     async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
-        info!("Sending {:?} to the closest peers", request.dst());
+        info!("Sending {:?} to the closest peers.", request.dst());
         let closest_peers = self
             .network
             .get_closest_peers(*request.dst().name())
             .await?;
         Ok(self
-            .send_req_and_get_responses(closest_peers, &request, true)
+            .send_and_get_responses(closest_peers, &request, true)
             .await)
-    }
-
-    fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
-        match event {
-            NetworkEvent::RequestReceived { .. } => {}
-            NetworkEvent::PeerAdded => {
-                self.events_channel
-                    .broadcast(ClientEvent::ConnectedToNetwork);
-            }
-        }
-
-        Ok(())
     }
 
     // Send a `Request` to the provided set of nodes and wait for their responses concurrently.
     // If `get_all_responses` is true, we wait for the responses from all the nodes. Will return an
     // error if the request timeouts.
-    // If `get_all_responses` is false, we return the first successful response that we get
-    async fn send_req_and_get_responses(
+    // If `get_all_responses` is false, we return the first successful response that we get.
+    async fn send_and_get_responses(
         &self,
         nodes: HashSet<PeerId>,
         req: &Request,

@@ -8,12 +8,14 @@
 
 //! Data messages and their possible responses.
 mod cmd;
+mod event;
 mod query;
 mod register;
 mod response;
 
 pub use self::{
     cmd::Cmd,
+    event::Event,
     query::Query,
     register::{
         CreateRegister, EditRegister, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
@@ -36,10 +38,12 @@ use xor_name::XorName;
 /// Send a request to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Request {
-    /// Messages that lead to mutation.
+    /// A cmd sent to peers. Cmds are writes, i.e. can cause mutation.
     Cmd(Cmd),
-    /// A (read-only) query sent to nodes.
+    /// A query sent to peers. Queries are read-only.
     Query(Query),
+    /// A fact sent to peers.
+    Event(Event),
 }
 
 /// Respond to other peers in the network
@@ -73,6 +77,7 @@ impl Request {
         match self {
             Request::Cmd(cmd) => cmd.dst(),
             Request::Query(query) => query.dst(),
+            Request::Event(event) => event.dst(),
         }
     }
 }

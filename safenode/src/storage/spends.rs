@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::used_space::UsedSpace;
+
 use crate::protocol::types::{
     address::DbcAddress,
     error::{Error, Result},
@@ -13,11 +15,9 @@ use crate::protocol::types::{
 
 use sn_dbc::{DbcId, SignedSpend};
 
-use clru::CLruCache;
 use std::{
-    collections::BTreeSet,
+    collections::BTreeMap,
     fmt::{self, Display, Formatter},
-    num::NonZeroUsize,
     sync::Arc,
 };
 use tokio::sync::RwLock;
@@ -25,29 +25,57 @@ use tracing::trace;
 use xor_name::XorName;
 
 /// We will store at most 50MiB of data in a SpendStorage instance.
-const SPENDS_CACHE_SIZE: usize = 45 * 1024 * 1024;
-const DOUBLE_SPENDS_CACHE_SIZE: usize = 5 * 1024 * 1024;
+const VALID_SPENDS_CACHE_SIZE: usize = 45 * 1024 * 1024;
+const INVALID_SPENDS_CACHE_SIZE: usize = 5 * 1024 * 1024;
 
 /// For every DbcId, there is a collection of transactions.
 /// Every transaction has a set of peers who reported that they hold this transaction.
 /// At a higher level, a peer will store a spend to `valid_spends` if the dbc checks out as valid, _and_ the parents of the dbc checks out as valid.
 /// A peer will move a spend from `valid_spends` to `double_spends` if it receives another tx id for the same dbc id.
 /// A peer will never again store such a spend to `valid_spends`.
-type ValidSpends<V> = Arc<RwLock<CLruCache<DbcAddress, V>>>;
-type DoubleSpends<V> = Arc<RwLock<CLruCache<DbcAddress, BTreeSet<V>>>>;
+type ValidSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, V>>>;
+type DoubleSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, (V, V)>>>;
+type InvalidSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, V>>>;
 
 /// Storage of Dbc spends.
 #[derive(Clone, Debug)]
 pub(super) struct SpendStorage {
     valid_spends: ValidSpends<SignedSpend>,
     double_spends: DoubleSpends<SignedSpend>,
+    invalid_spends: InvalidSpends<SignedSpend>,
+    valid_spends_cache_size: UsedSpace,
+    invalid_spends_cache_size: UsedSpace,
 }
 
 impl SpendStorage {
+    pub(crate) fn new() -> Self {
+        Self {
+            valid_spends: Arc::new(RwLock::new(BTreeMap::new())),
+            double_spends: Arc::new(RwLock::new(BTreeMap::new())),
+            invalid_spends: Arc::new(RwLock::new(BTreeMap::new())),
+            valid_spends_cache_size: UsedSpace::new(VALID_SPENDS_CACHE_SIZE),
+            invalid_spends_cache_size: UsedSpace::new(INVALID_SPENDS_CACHE_SIZE),
+        }
+    }
+
+    /// Checks if the given DbcId is seen by us as valid,
+    /// and returns the signed spend if so.
+    pub(crate) async fn contains_valid(&self, dbc_id: &DbcId) -> Option<SignedSpend> {
+        let address = dbc_address(dbc_id);
+        self.valid_spends.read().await.get(&address).cloned()
+    }
+
+    /// Checks if the given DbcId is unspendable.
+    pub(crate) async fn is_unspendable(&self, dbc_id: &DbcId) -> bool {
+        let address = dbc_address(dbc_id);
+        self.invalid_spends.read().await.contains_key(&address)
+            || self.double_spends.read().await.contains_key(&address)
+    }
+
     // Read Spend from local store.
     pub(super) async fn get(&self, address: &DbcAddress) -> Result<SignedSpend> {
         trace!("Getting Spend: {address:?}");
-        if let Some(spend) = self.valid_spends.read().await.peek(address) {
+        if let Some(spend) = self.valid_spends.read().await.get(address) {
             Ok(spend.clone())
         } else {
             Err(Error::SpendNotFound(*address))
@@ -60,101 +88,127 @@ impl SpendStorage {
     /// will be returned including all the `SignedSpends`, for
     /// broadcasting to the other nodes.
     pub(super) async fn try_add(&self, signed_spend: &SignedSpend) -> Result<()> {
-        // We want to return Result<(SignedSpend)> here, so that this node
-        let address = dbc_address(signed_spend.dbc_id());
-        // I was thinking that we perhaps can't hold a reference into the cache, as it could
-        // deadlock if we want to write further down? Not sure if that would happen. To be confirmed.
-        let mut double_spends_of_this_dbc = match self.double_spends.read().await.peek(&address) {
-            Some(set) => set.clone(),
-            None => BTreeSet::new(),
-        };
-
-        // Important: The spend id is from the spend hash. This makes sure
-        // that a spend is compared based on both the `DbcTransaction` and the `DbcReason` being equal.
-        let spend_id = get_spend_id(signed_spend.spend.hash());
-        let tamper_attempted = match self.valid_spends.read().await.peek(&address) {
-            Some(existing) => spend_id != get_spend_id(existing.spend.hash()),
-            None => false,
-        };
-        let tamper_previously_detected = double_spends_of_this_dbc
-            .iter()
-            .any(|s| s.dbc_id() == signed_spend.dbc_id());
-
-        if tamper_attempted || tamper_previously_detected {
-            // The data argument, being a SignedSpend, I don't get where it comes from.
-            let _replaced = self.double_spends.write().await.put_or_modify(
-                address,
-                |_addr, _proof| {
-                    let _ = double_spends_of_this_dbc.insert(signed_spend.clone());
-                    double_spends_of_this_dbc.clone()
-                },
-                |_a, map, _c| {
-                    let _ = map.insert(signed_spend.clone());
-                },
-                signed_spend.clone(),
-            );
-
-            if tamper_attempted {
-                // The spend is now permanently removed from the valid spends.
-                self.valid_spends
-                    .write()
-                    .await
-                    .retain(|key, _| key != &address);
-            }
-
-            return Err(Error::DoubleSpendAttempt(double_spends_of_this_dbc));
+        if self.is_unspendable(signed_spend.dbc_id()).await {
+            return Ok(()); // Already unspendable, so we don't care about this spend.
         }
 
-        if self.valid_spends.read().await.peek(&address).is_none() {
-            // will it deadlock here?
-            let _ = self
-                .valid_spends
-                .write()
-                .await
-                .put(address, signed_spend.clone());
+        let size_of_new = std::mem::size_of_val(signed_spend);
+        if !self.valid_spends_cache_size.can_add(size_of_new) {
+            return Err(Error::NotEnoughSpace); // We don't have space for this spend.
+        }
+
+        // We want to return Result<(SignedSpend)> here, so that this node
+        let address = dbc_address(signed_spend.dbc_id());
+
+        // The spend id is from the spend hash. That makes sure that a spend is compared based
+        // on all of `DbcTransaction`, `DbcReason`, `DbcId` and `BlindedAmount` being equal.
+        let mut valid_spends = self.valid_spends.write().await;
+        if let Some(existing) = valid_spends.get(&address).cloned() {
+            let spend_id = get_spend_id(signed_spend.spend.hash());
+            let tamper_attempted = spend_id != get_spend_id(existing.spend.hash());
+            if tamper_attempted {
+                if !self.invalid_spends_cache_size.can_add(size_of_new) {
+                    return Err(Error::NotEnoughSpace); // We don't have space for this operation.
+                }
+
+                let mut double_spends = self.double_spends.write().await;
+                let replaced =
+                    double_spends.insert(address, (existing.clone(), signed_spend.clone()));
+
+                let size_of_existing = std::mem::size_of_val(&existing);
+                if replaced.is_none() {
+                    self.invalid_spends_cache_size
+                        .increase(size_of_new + size_of_existing);
+                }
+
+                // The spend is now permanently removed from the valid spends.
+                let removed = valid_spends.remove(&address);
+                if removed.is_some() {
+                    self.valid_spends_cache_size.decrease(size_of_existing);
+                }
+
+                return Err(Error::DoubleSpendAttempt {
+                    new: Box::new(signed_spend.clone()),
+                    existing: Box::new(existing.clone()),
+                });
+            }
+        };
+
+        // This hash input is pointless, since it will compare with
+        // the same hash in the verify fn.
+        // It does however verify that the derived key corresponding to
+        // the dbc id signed this spend.
+        signed_spend
+            .verify(signed_spend.tx_hash())
+            .map_err(|e| Error::Dbc(e.to_string()))?;
+        // TODO: We want to verify the transaction somehow as well..
+        // signed_spend.spend.tx.verify(blinded_amounts)
+
+        let replaced = valid_spends.insert(address, signed_spend.clone());
+        if replaced.is_none() {
+            self.valid_spends_cache_size.increase(size_of_new);
         }
 
         Ok(())
-        // Ok(spend.clone())
+    }
+
+    /// This marks it as unspendable without any check on if it really is.
+    /// That is supposed to have been done before calling this api.
+    pub(crate) async fn mark_as_unspendable(&self, invalid_spend: &SignedSpend) {
+        if self.is_unspendable(invalid_spend.dbc_id()).await {
+            return;
+        }
+
+        let address = dbc_address(invalid_spend.dbc_id());
+
+        let mut invalid_spends = self.invalid_spends.write().await;
+        let replaced = invalid_spends.insert(address, invalid_spend.clone());
+        if replaced.is_none() {
+            self.invalid_spends_cache_size
+                .increase(std::mem::size_of_val(invalid_spend));
+        }
+
+        let mut valid_spends = self.valid_spends.write().await;
+        // The spend is now permanently removed from the valid spends.
+        if let Some(removed) = valid_spends.remove(&address) {
+            self.valid_spends_cache_size
+                .decrease(std::mem::size_of_val(&removed));
+        }
     }
 
     /// When data is replicated to a new peer,
     /// it may contain double spends, and thus we need to add that here,
     /// so that we in the future can serve this info to Clients.
-    #[allow(unused)] // to be used when we replicate data between nodes
-    pub(super) async fn try_add_doubles(
+    pub(super) async fn try_add_double(
         &self,
-        received_double_spends: &BTreeSet<SignedSpend>,
+        a_spend: &SignedSpend,
+        b_spend: &SignedSpend,
     ) -> Result<()> {
-        // Since the SignedSpends are in a BTreeSet, we know that they are different.
-        // We will also check that we have more than one SignedSpend for each DbcId,
-        // which would prove to us that there was a double spend attempt for that Dbc.
-        let unique_ids: BTreeSet<_> = received_double_spends.iter().map(|s| s.dbc_id()).collect();
+        if a_spend.dbc_id() != b_spend.dbc_id() {
+            return Err(Error::NotADoubleSpendAttempt(
+                Box::new(a_spend.clone()),
+                Box::new(b_spend.clone()),
+            ));
+        }
 
-        for dbc_id in unique_ids {
-            let copies: BTreeSet<_> = received_double_spends
-                .iter()
-                .map(|s| dbc_id == s.dbc_id())
-                .collect();
-            if copies.len() <= 1 {
-                // We only add these to double_spends if there are two or more of them,
-                // as otherwise we can't actually tell that it's a double spend attempt.
-                continue;
-            }
-            let address = dbc_address(dbc_id);
-            let _replaced = self.double_spends.write().await.put_or_modify(
-                address,
-                |_addr, double_spends| double_spends,
-                |_a, map, double_spends| {
-                    map.extend(double_spends);
-                },
-                received_double_spends.clone(),
-            );
-            // The spend is now permanently removed from the valid spends.
-            self.valid_spends
-                .write()
-                .await
-                .retain(|key, _| key != &address);
+        if self.is_unspendable(a_spend.dbc_id()).await {
+            return Ok(());
+        }
+
+        let address = dbc_address(a_spend.dbc_id());
+
+        let mut double_spends = self.double_spends.write().await;
+        let replaced = double_spends.insert(address, (a_spend.clone(), b_spend.clone()));
+        if replaced.is_none() {
+            self.invalid_spends_cache_size
+                .increase(std::mem::size_of_val(&(a_spend, b_spend)));
+        }
+
+        // The spend is now permanently removed from the valid spends.
+        let mut valid_spends = self.valid_spends.write().await;
+        if let Some(removed) = valid_spends.remove(&address) {
+            self.valid_spends_cache_size
+                .decrease(std::mem::size_of_val(&removed));
         }
 
         Ok(())
@@ -169,14 +223,7 @@ impl Display for SpendStorage {
 
 impl Default for SpendStorage {
     fn default() -> Self {
-        let spend_capacity =
-            NonZeroUsize::new(SPENDS_CACHE_SIZE).expect("Failed to create in-memory Spend cache.");
-        let double_spend_capacity = NonZeroUsize::new(DOUBLE_SPENDS_CACHE_SIZE)
-            .expect("Failed to create in-memory DoubleSpend cache");
-        Self {
-            valid_spends: Arc::new(RwLock::new(CLruCache::new(spend_capacity))),
-            double_spends: Arc::new(RwLock::new(CLruCache::new(double_spend_capacity))),
-        }
+        Self::new()
     }
 }
 

@@ -39,13 +39,25 @@ pub enum Error {
     #[error("Spend not found: {0:?}")]
     SpendNotFound(DbcAddress),
     /// A double spend attempt was detected.
-    #[error("A double spend attempt was detected. Set of mismatching spends: {0:?}")]
-    DoubleSpendAttempt(BTreeSet<SignedSpend>),
-    /// A parent spend of a requested spend could not be confirmed as valid.
+    #[error("A double spend attempt was detected. Incoming and existing spend are not the same: {new:?}. Existing: {existing:?}")]
+    DoubleSpendAttempt {
+        /// New spend that we received.
+        new: Box<SignedSpend>,
+        /// Existing spend of same id that we already have.
+        existing: Box<SignedSpend>,
+    },
+    /// We were notified about a double spend attempt, but they were for different dbcs.
+    #[error("We were notified about a double spend attempt, but they were for different dbcs: {0:?}. Existing: {1:?}")]
+    NotADoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
+    /// One or more parent spends of a requested spend could not be confirmed as valid.
+    /// The full set of parents checked are contained in this error.
     #[error(
-        "A parent tx of a requested spend could not be confirmed as valid. All invalid parents' addresses {0:?}"
+        "A parent tx of a requested spend could not be confirmed as valid. All parent signed spends of that tx {0:?}"
     )]
-    InvalidSpendParentTx(BTreeSet<DbcAddress>),
+    InvalidParentsForSpendFound(BTreeSet<Box<SignedSpend>>),
+    /// An error from the sn_dbc crate.
+    #[error("Dbc Error {0}")]
+    Dbc(String),
     /// Unexpected responses.
     #[error("Unexpected responses")]
     UnexpectedResponses,
