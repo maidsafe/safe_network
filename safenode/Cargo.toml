@@ -26,10 +26,12 @@ eyre = "0.6.8"
 file-rotate = "0.7.3"
 futures = "~0.3.13"
 hex = "~0.4.3"
+itertools = "~0.10.1"
 libp2p = { version="0.51", features = ["tokio", "dns", "kad", "macros", "mdns", "quic", "request-response",] }
 libp2p-quic = { version = "0.7.0-alpha.3", features = ["tokio"] }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
+rayon = "~1.5.1"
 self_encryption = "~0.28.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_dbc = { version = "16.0.0", features = ["serdes"] }
