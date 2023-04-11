@@ -11,12 +11,11 @@ use super::{error::Result, event::NodeEventsChannel, Node, NodeEvent};
 use crate::{
     network::{NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
     protocol::{
-        messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
+        messages::{Cmd, CmdResponse, Event, Query, QueryResponse, Request, Response},
         types::{
-            address::{dbc_address, DbcAddress},
+            address::{dbc_address, dbc_name, DbcAddress},
             error::Error as ProtocolError,
             register::User,
-            spend::Spend,
         },
     },
     storage::DataStorage,
@@ -107,48 +106,9 @@ impl Node {
         trace!("Handling request: {request:?}");
         let request_dst = request.dst();
         match request {
-            Request::Cmd(Cmd::Dbc(spend)) => {
-                // First we need to validate the parents of the spend.
-                match self.validate_spend_parents(&spend).await {
-                    // If the parents do not check out as valid
-                    // we will mark this child dbc as unspendable,
-                    // and broadcast that to every other close node.
-                    Err(super::Error::Protocol(ProtocolError::InvalidSpendParentTx(
-                        parent_addresses,
-                    ))) => {
-                        // TODO: Broadcast this to close groups of every address in parent_addresses!
-                        // Also broadcast this spend as invalid to every peer in this attempted spend's close group.
-                        warn!("Invalid parent/s for spend attempt of {request_dst:?}: {parent_addresses:?}!");
-
-                        for parent_address in parent_addresses {
-                            let _closest_peers = self
-                                .network
-                                .get_closest_peers(*parent_address.name())
-                                .await?;
-
-                            // self.send_req_and_get_responses(closest_peers, &)
-                        }
-                    }
-                    Ok(()) => (),
-                    res => res?,
-                };
-                match self.storage.write(&Cmd::Dbc(spend)).await {
-                    CmdResponse::Spend(Err(ProtocolError::DoubleSpendAttempt(
-                        double_spends_of_this_dbc,
-                    ))) => {
-                        // TODO:  Broadcast this to all close nodes!
-                        warn!("Double spend attempt! {:?}", double_spends_of_this_dbc);
-
-                        let _other_closest_peers =
-                            self.network.get_closest_peers(*request_dst.name()).await?;
-
-                        // self.send_req_and_get_responses(closest_peers, &)
-                    }
-                    other => {
-                        self.send_response(Response::Cmd(other), response_channel)
-                            .await;
-                    }
-                }
+            Request::Cmd(Cmd::Dbc(signed_spend)) => {
+                self.add_if_valid(signed_spend, Some(response_channel))
+                    .await?
             }
             Request::Cmd(cmd) => {
                 let resp = self.storage.write(&cmd).await;
@@ -160,17 +120,166 @@ impl Node {
                 self.send_response(Response::Query(resp), response_channel)
                     .await;
             }
+            Request::Event(event) => {
+                match event {
+                    Event::DoubleSpendAttempted(a_spend, b_spend) => {
+                        let a_addr = dbc_address(a_spend.dbc_id());
+                        let b_addr = dbc_address(b_spend.dbc_id());
+
+                        if a_addr == b_addr {
+                            // We carelessly add the two spends here as they will automatically be
+                            // marked as double spend attempt.
+                            self.try_add_double_if_different_hash(&a_spend, &b_spend)
+                                .await?;
+                        } else {
+                            // We have two of different addresses on the incoming.
+                            // If we have a valid spend with different hash, then we
+                            // will add that pair to the unspendable list, then we notify
+                            // the group of the correctly identified double spend attempt.
+                            let existing_a = self.storage.contains_valid(a_spend.dbc_id()).await;
+                            let existing_b = self.storage.contains_valid(b_spend.dbc_id()).await;
+                            let (one, two) = match (existing_a, existing_b) {
+                                (Some(exists_a), Some(exists_b)) => (exists_a, exists_b),
+                                (Some(exists_a), None) => (exists_a, *a_spend),
+                                (None, Some(exists_b)) => (exists_b, *b_spend),
+                                (None, None) => {
+                                    // We don't know about either of these spends, and they are not for the same dbc
+                                    // so we can't validate them. We can't add them to the unspendable list
+                                    // either, because we don't know if they are valid or not.
+                                    // We could try validate and add them though?
+                                    // (Or else we just ignore them..)
+                                    self.add_if_valid(*a_spend, None).await?;
+                                    self.add_if_valid(*b_spend, None).await?;
+
+                                    return Ok(());
+                                }
+                            };
+
+                            // If their hashes are different, we will add them to the unspendable,
+                            // then we notify the group of the correctly identified double spend attempt.
+                            if self
+                                .try_add_double_if_different_hash(&one, &two)
+                                .await
+                                .is_ok()
+                            {
+                                // We have two that are equal, we tried to add them.
+                                // We populate the address field properly, and then re-route it.
+                                // If we are among the closest, we will add them when it comes
+                                // back to us.
+                                // (This won't loop, as we have populated the address field properly now.)
+                                let request = Request::Event(Event::double_spend_attempt(
+                                    Box::new(one),
+                                    Box::new(two),
+                                )?);
+                                let _res = self.send_to_closest(&request).await?;
+                            }
+                        }
+                    }
+                    Event::InvalidSpendFound(invalid_spend) => {
+                        // If we already know this spend is invalid, we can ignore this event.
+                        if self.storage.is_unspendable(invalid_spend.dbc_id()).await {
+                            return Ok(());
+                        }
+
+                        // If we don't know this spend is invalid, we need to check if it is.
+                        // If it is, we will mark it as invalid, and broadcast that to every other close node.
+                        match self.validate_spend_parents(&invalid_spend).await {
+                            // If the parents do not check out as valid
+                            // we will mark this child dbc as unspendable,
+                            // and broadcast that to every other close node.
+                            Err(super::Error::Protocol(
+                                ProtocolError::InvalidParentsForSpendFound(parents),
+                            )) => {
+                                trace!("Could confirm that parent/s for spend attempt of {request_dst:?} are invalid: {parents:?}!");
+                                self.storage.mark_as_unspendable(&invalid_spend).await;
+                            }
+                            Ok(()) => (),
+                            res => res?,
+                        };
+                    }
+                };
+            }
         }
 
         Ok(())
     }
 
-    async fn validate_spend_parents(&self, spend: &Spend) -> Result<()> {
+    async fn try_add_double_if_different_hash(
+        &mut self,
+        a_spend: &SignedSpend,
+        b_spend: &SignedSpend,
+    ) -> Result<()> {
+        let a_hash = sn_dbc::Hash::hash(&a_spend.to_bytes());
+        let b_hash = sn_dbc::Hash::hash(&b_spend.to_bytes());
+        if a_hash != b_hash {
+            self.storage.try_add_double(a_spend, b_spend).await?;
+        }
+        Ok(())
+    }
+
+    /// This function will validate the parents of the provided spend,
+    /// as well as the actual spend.
+    /// A response will be sent if a response channel is provided.
+    async fn add_if_valid(
+        &mut self,
+        signed_spend: SignedSpend,
+        response_channel: Option<ResponseChannel<Response>>,
+    ) -> Result<()> {
+        let dbc_name = dbc_name(signed_spend.dbc_id());
+
+        // First we need to validate the parents of the spend.
+        match self.validate_spend_parents(&signed_spend).await {
+            // If the parents do not check out as valid
+            // we will mark this child dbc as unspendable,
+            // and broadcast that to every other close node.
+            Err(super::Error::Protocol(ProtocolError::InvalidParentsForSpendFound(
+                all_parents,
+            ))) => {
+                warn!("Invalid parent/s for spend attempt of {dbc_name:?}: {all_parents:?}!");
+
+                // Broadcast this to close groups of every parent spend in all_parents.
+                for invalid_parent in all_parents {
+                    let request =
+                        Request::Event(Event::InvalidSpendFound(Box::new(*invalid_parent)));
+                    let _res = self.send_to_closest(&request).await?;
+                }
+
+                // Also broadcast this spend as invalid to every peer in this attempted spend's close group.
+                let request =
+                    Request::Event(Event::InvalidSpendFound(Box::new(signed_spend.clone())));
+                let _resp = self.send_to_closest(&request).await?;
+            }
+            Ok(()) => (),
+            res => res?,
+        };
+
+        let response = match self.storage.write(&Cmd::Dbc(signed_spend.clone())).await {
+            CmdResponse::Spend(Err(ProtocolError::DoubleSpendAttempt { new, existing })) => {
+                warn!("Double spend attempted! New: {new:?}. Existing:  {existing:?}");
+
+                let request =
+                    Request::Event(Event::double_spend_attempt(new.clone(), existing.clone())?);
+                let _resp = self.send_to_closest(&request).await?;
+
+                CmdResponse::Spend(Err(ProtocolError::DoubleSpendAttempt { new, existing }))
+            }
+            other => other,
+        };
+
+        if let Some(response_channel) = response_channel {
+            self.send_response(Response::Cmd(response), response_channel)
+                .await;
+        }
+
+        Ok(())
+    }
+
+    async fn validate_spend_parents(&self, signed_spend: &SignedSpend) -> Result<()> {
         // These will be different spends, one for each input that went into
         // creating the above spend passed in to this function.
         let mut all_parent_signed_spends = BTreeSet::new();
 
-        for parent_input in &spend.signed_spend().spend.tx.inputs {
+        for parent_input in &signed_spend.spend.tx.inputs {
             let parent_address = dbc_address(&parent_input.dbc_id());
             // This call makes sure we get the same spend from all in the close group.
             // If we receive a spend here, it is assumed to be valid. But we will verify
@@ -179,23 +288,23 @@ impl Node {
             let _ = all_parent_signed_spends.insert(parent_spend_by_close_group);
         }
 
-        let mut invalid_parents = BTreeSet::new();
+        let mut any_invalid = false;
 
         // Here we verify every retrieved spends' tx given all of the retrieved spends.
         for parent_spend in &all_parent_signed_spends {
-            let parent_address = dbc_address(parent_spend.dbc_id());
             let creation_tx_of_this_spend = &parent_spend.spend.tx;
             if TransactionVerifier::verify(creation_tx_of_this_spend, &all_parent_signed_spends)
                 .is_err()
             {
-                let _ = invalid_parents.insert(parent_address);
+                any_invalid = true;
             }
         }
 
-        if !invalid_parents.is_empty() {
-            return Err(super::Error::Protocol(ProtocolError::InvalidSpendParentTx(
-                invalid_parents,
-            )));
+        if any_invalid {
+            let boxed_spends = all_parent_signed_spends.into_iter().map(Box::new).collect();
+            return Err(super::Error::Protocol(
+                ProtocolError::InvalidParentsForSpendFound(boxed_spends),
+            ));
         }
 
         Ok(())
@@ -206,14 +315,7 @@ impl Node {
         let request = Request::Query(Query::GetDbcSpend(address));
         info!("Getting the closest peers to {:?}", request.dst());
 
-        let closest_peers = self
-            .network
-            .get_closest_peers(*request.dst().name())
-            .await?;
-
-        let responses = self
-            .send_req_and_get_responses(closest_peers, &request, true)
-            .await;
+        let responses = self.send_to_closest(&request).await?;
 
         // Get all Ok results of the expected response type `GetDbcSpend`.
         let spends: Vec<_> = responses
@@ -270,21 +372,33 @@ impl Node {
         }
     }
 
-    // Send a `Request` to the provided set of nodes and wait for their responses concurrently.
-    // If `get_all_responses` is true, we wait for the responses from all the nodes. Will return an
+    async fn send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
+        info!("Sending {:?} to the closest peers.", request.dst());
+        let closest_peers = self
+            .network
+            .get_closest_peers(*request.dst().name())
+            .await?;
+
+        Ok(self
+            .send_and_get_responses(closest_peers, request, true)
+            .await)
+    }
+
+    // Send a `Request` to the provided set of peers and wait for their responses concurrently.
+    // If `get_all_responses` is true, we wait for the responses from all the peers. Will return an
     // error if the request timeouts.
     // If `get_all_responses` is false, we return the first successful response that we get
-    pub(super) async fn send_req_and_get_responses(
+    async fn send_and_get_responses(
         &self,
-        nodes: HashSet<PeerId>,
+        peers: HashSet<PeerId>,
         req: &Request,
         get_all_responses: bool,
     ) -> Vec<Result<Response>> {
         let mut list_of_futures = Vec::new();
-        for node in nodes {
+        for peer in peers {
             let future = Box::pin(tokio::time::timeout(
                 Duration::from_secs(10),
-                self.network.send_request(req.clone(), node),
+                self.network.send_request(req.clone(), peer),
             ));
             list_of_futures.push(future);
         }

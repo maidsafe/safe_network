@@ -10,16 +10,18 @@ mod chunks;
 mod register_store;
 mod registers;
 mod spends;
+mod used_space;
+
+use self::{chunks::ChunkStorage, registers::RegisterStorage, spends::SpendStorage};
 
 use crate::protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, RegisterCmd},
-    types::register::User,
+    types::{error::Result, register::User},
 };
-use chunks::ChunkStorage;
-use registers::RegisterStorage;
-use tracing::debug;
 
-use self::spends::SpendStorage;
+use sn_dbc::{DbcId, SignedSpend};
+
+use tracing::debug;
 
 /// Operations on data stored to disk.
 /// As data the storage struct may be cloned throughout the node
@@ -38,24 +40,16 @@ impl DataStorage {
         Self {
             chunks: ChunkStorage::default(),
             registers: RegisterStorage::new(),
-            spends: SpendStorage::default(),
+            spends: SpendStorage::new(),
         }
     }
 
-    /// Store data in the local store and return `CmdResponse`
-    pub async fn write(&self, cmd: &Cmd) -> CmdResponse {
-        debug!("Storage write: {cmd:?}");
-        match cmd {
-            Cmd::StoreChunk(chunk) => CmdResponse::StoreChunk(self.chunks.store(chunk).await),
-            Cmd::Register(cmd) => {
-                let result = self.registers.write(cmd).await;
-                match cmd {
-                    RegisterCmd::Create(_) => CmdResponse::CreateRegister(result),
-                    RegisterCmd::Edit(_) => CmdResponse::EditRegister(result),
-                }
-            }
-            Cmd::Dbc(spend) => CmdResponse::Spend(self.spends.try_add(spend.signed_spend()).await),
-        }
+    pub(crate) async fn contains_valid(&self, dbc_id: &DbcId) -> Option<SignedSpend> {
+        self.spends.contains_valid(dbc_id).await
+    }
+
+    pub(crate) async fn is_unspendable(&self, dbc_id: &DbcId) -> bool {
+        self.spends.is_unspendable(dbc_id).await
     }
 
     /// Query the local store and return `QueryResponse`
@@ -68,5 +62,33 @@ impl DataStorage {
                 QueryResponse::GetDbcSpend(self.spends.get(address).await)
             }
         }
+    }
+
+    pub(crate) async fn mark_as_unspendable(&self, invalid_spend: &SignedSpend) {
+        self.spends.mark_as_unspendable(invalid_spend).await
+    }
+
+    /// Store data in the local store and return `CmdResponse`
+    pub async fn write(&self, cmd: &Cmd) -> CmdResponse {
+        debug!("Storage write: {cmd:?}");
+        match cmd {
+            Cmd::Dbc(signed_spend) => CmdResponse::Spend(self.spends.try_add(signed_spend).await),
+            Cmd::StoreChunk(chunk) => CmdResponse::StoreChunk(self.chunks.store(chunk).await),
+            Cmd::Register(cmd) => {
+                let result = self.registers.write(cmd).await;
+                match cmd {
+                    RegisterCmd::Create(_) => CmdResponse::CreateRegister(result),
+                    RegisterCmd::Edit(_) => CmdResponse::EditRegister(result),
+                }
+            }
+        }
+    }
+
+    pub(crate) async fn try_add_double(
+        &self,
+        a_spend: &SignedSpend,
+        b_spend: &SignedSpend,
+    ) -> Result<()> {
+        self.spends.try_add_double(a_spend, b_spend).await
     }
 }

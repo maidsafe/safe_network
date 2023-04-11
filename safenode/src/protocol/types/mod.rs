@@ -16,5 +16,3 @@ pub mod chunk;
 pub mod error;
 /// Register type.
 pub mod register;
-/// Spend type.
-pub mod spend;
