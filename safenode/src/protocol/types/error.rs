@@ -49,12 +49,42 @@ pub enum Error {
     /// We were notified about a double spend attempt, but they were for different dbcs.
     #[error("We were notified about a double spend attempt, but they were for different dbcs: {0:?}. Existing: {1:?}")]
     NotADoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
+    /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
+    #[error(
+        "The signed spend src tx ({signed_src_tx_hash:?}) did not match the provided source tx's hash: {provided_src_tx_hash:?}"
+    )]
+    SignedSrcTxHashDoesNotMatchProvidedSrcTxHash {
+        /// The signed spend src tx hash.
+        signed_src_tx_hash: sn_dbc::Hash,
+        /// The hash of the provided source tx.
+        provided_src_tx_hash: sn_dbc::Hash,
+    },
+    /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
+    #[error(
+        "The signed spend src tx ({signed_src_tx_hash:?}) did not match a valid parent's dst tx hash: {parent_dst_tx_hash:?}"
+    )]
+    SpendSrcTxHashParentTxHashMismatch {
+        /// The signed spend src tx hash.
+        signed_src_tx_hash: sn_dbc::Hash,
+        /// The dst hash of a parent signed spend.
+        parent_dst_tx_hash: sn_dbc::Hash,
+    },
+    /// The provided source tx did not check out when verified with all supposed inputs to it (i.e. our spends parents).
+    #[error(
+        "The provided source tx (with hash {provided_src_tx_hash:?}) when verified with all supposed inputs to it (i.e. our spends parents).."
+    )]
+    InvalidSourceTxProvided {
+        /// The signed spend src tx hash.
+        signed_src_tx_hash: sn_dbc::Hash,
+        /// The hash of the provided source tx.
+        provided_src_tx_hash: sn_dbc::Hash,
+    },
     /// One or more parent spends of a requested spend could not be confirmed as valid.
     /// The full set of parents checked are contained in this error.
     #[error(
         "A parent tx of a requested spend could not be confirmed as valid. All parent signed spends of that tx {0:?}"
     )]
-    InvalidParentsForSpendFound(BTreeSet<Box<SignedSpend>>),
+    InvalidSpendParent(BTreeSet<Box<SignedSpend>>),
     /// An error from the sn_dbc crate.
     #[error("Dbc Error {0}")]
     Dbc(String),

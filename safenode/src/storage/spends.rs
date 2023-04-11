@@ -26,7 +26,7 @@ use xor_name::XorName;
 
 /// We will store at most 50MiB of data in a SpendStorage instance.
 const VALID_SPENDS_CACHE_SIZE: usize = 45 * 1024 * 1024;
-const INVALID_SPENDS_CACHE_SIZE: usize = 5 * 1024 * 1024;
+const DOUBLE_SPENDS_CACHE_SIZE: usize = 5 * 1024 * 1024;
 
 /// For every DbcId, there is a collection of transactions.
 /// Every transaction has a set of peers who reported that they hold this transaction.
@@ -35,16 +35,14 @@ const INVALID_SPENDS_CACHE_SIZE: usize = 5 * 1024 * 1024;
 /// A peer will never again store such a spend to `valid_spends`.
 type ValidSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, V>>>;
 type DoubleSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, (V, V)>>>;
-type InvalidSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, V>>>;
 
 /// Storage of Dbc spends.
 #[derive(Clone, Debug)]
 pub(super) struct SpendStorage {
     valid_spends: ValidSpends<SignedSpend>,
     double_spends: DoubleSpends<SignedSpend>,
-    invalid_spends: InvalidSpends<SignedSpend>,
     valid_spends_cache_size: UsedSpace,
-    invalid_spends_cache_size: UsedSpace,
+    double_spends_cache_size: UsedSpace,
 }
 
 impl SpendStorage {
@@ -52,9 +50,8 @@ impl SpendStorage {
         Self {
             valid_spends: Arc::new(RwLock::new(BTreeMap::new())),
             double_spends: Arc::new(RwLock::new(BTreeMap::new())),
-            invalid_spends: Arc::new(RwLock::new(BTreeMap::new())),
             valid_spends_cache_size: UsedSpace::new(VALID_SPENDS_CACHE_SIZE),
-            invalid_spends_cache_size: UsedSpace::new(INVALID_SPENDS_CACHE_SIZE),
+            double_spends_cache_size: UsedSpace::new(DOUBLE_SPENDS_CACHE_SIZE),
         }
     }
 
@@ -68,8 +65,7 @@ impl SpendStorage {
     /// Checks if the given DbcId is unspendable.
     pub(crate) async fn is_unspendable(&self, dbc_id: &DbcId) -> bool {
         let address = dbc_address(dbc_id);
-        self.invalid_spends.read().await.contains_key(&address)
-            || self.double_spends.read().await.contains_key(&address)
+        self.double_spends.read().await.contains_key(&address)
     }
 
     // Read Spend from local store.
@@ -107,7 +103,7 @@ impl SpendStorage {
             let spend_id = get_spend_id(signed_spend.spend.hash());
             let tamper_attempted = spend_id != get_spend_id(existing.spend.hash());
             if tamper_attempted {
-                if !self.invalid_spends_cache_size.can_add(size_of_new) {
+                if !self.double_spends_cache_size.can_add(size_of_new) {
                     return Err(Error::NotEnoughSpace); // We don't have space for this operation.
                 }
 
@@ -117,7 +113,7 @@ impl SpendStorage {
 
                 let size_of_existing = std::mem::size_of_val(&existing);
                 if replaced.is_none() {
-                    self.invalid_spends_cache_size
+                    self.double_spends_cache_size
                         .increase(size_of_new + size_of_existing);
                 }
 
@@ -139,7 +135,7 @@ impl SpendStorage {
         // It does however verify that the derived key corresponding to
         // the dbc id signed this spend.
         signed_spend
-            .verify(signed_spend.tx_hash())
+            .verify(signed_spend.dst_tx_hash())
             .map_err(|e| Error::Dbc(e.to_string()))?;
         // TODO: We want to verify the transaction somehow as well..
         // signed_spend.spend.tx.verify(blinded_amounts)
@@ -150,30 +146,6 @@ impl SpendStorage {
         }
 
         Ok(())
-    }
-
-    /// This marks it as unspendable without any check on if it really is.
-    /// That is supposed to have been done before calling this api.
-    pub(crate) async fn mark_as_unspendable(&self, invalid_spend: &SignedSpend) {
-        if self.is_unspendable(invalid_spend.dbc_id()).await {
-            return;
-        }
-
-        let address = dbc_address(invalid_spend.dbc_id());
-
-        let mut invalid_spends = self.invalid_spends.write().await;
-        let replaced = invalid_spends.insert(address, invalid_spend.clone());
-        if replaced.is_none() {
-            self.invalid_spends_cache_size
-                .increase(std::mem::size_of_val(invalid_spend));
-        }
-
-        let mut valid_spends = self.valid_spends.write().await;
-        // The spend is now permanently removed from the valid spends.
-        if let Some(removed) = valid_spends.remove(&address) {
-            self.valid_spends_cache_size
-                .decrease(std::mem::size_of_val(&removed));
-        }
     }
 
     /// When data is replicated to a new peer,
@@ -195,13 +167,19 @@ impl SpendStorage {
             return Ok(());
         }
 
+        let size_of_spends = std::mem::size_of_val(&(a_spend, b_spend));
+        if !self.double_spends_cache_size.can_add(size_of_spends) {
+            return Err(Error::NotEnoughSpace); // We don't have space for this spend.
+        }
+
         let address = dbc_address(a_spend.dbc_id());
 
         let mut double_spends = self.double_spends.write().await;
         let replaced = double_spends.insert(address, (a_spend.clone(), b_spend.clone()));
         if replaced.is_none() {
-            self.invalid_spends_cache_size
-                .increase(std::mem::size_of_val(&(a_spend, b_spend)));
+            // This would only be reached if a double spend was registered
+            // in between the call to `is_unspendable` and the call to `double_spends.insert`.
+            self.double_spends_cache_size.increase(size_of_spends);
         }
 
         // The spend is now permanently removed from the valid spends.
