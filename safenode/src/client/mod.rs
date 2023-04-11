@@ -7,8 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod api;
+mod chunks;
 mod error;
 mod event;
+mod file_apis;
 
 pub use self::event::{ClientEvent, ClientEventsReceiver};
 
