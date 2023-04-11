@@ -13,6 +13,8 @@ use super::{
 };
 
 use crate::protocol::messages::{Request, Response};
+use core::cmp::Ordering;
+use itertools::Itertools;
 use libp2p::{
     kad::{kbucket, store::MemoryStore, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     mdns,
@@ -23,6 +25,7 @@ use libp2p::{
 };
 use std::collections::{BTreeSet, HashSet};
 use tracing::{info, warn};
+use xor_name::XorName;
 
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "NodeEvent")]
@@ -70,9 +73,9 @@ pub enum NetworkEvent {
     /// Emitted when the DHT is updated
     PeerAdded {
         /// Our own id
-        own_id : PeerId,
+        own_id: PeerId,
         /// ID of the added peer
-        added_peer : PeerId
+        added_peer: PeerId,
     },
 }
 
@@ -114,13 +117,13 @@ impl SwarmDriver {
                         if current_closest.contains(self.swarm.local_peer_id()) {
                             trace!("Own id appears in the network closest_peers");
                         }
-                        
+
                         if current_closest.len() >= usize::from(K_VALUE) || step.last {
                             let local_closest_peers: HashSet<PeerId> = self
                                 .swarm
                                 .behaviour_mut()
                                 .kademlia
-                                .get_closest_local_peers(&kbucket::Key::new(key))
+                                .get_closest_local_peers(&kbucket::Key::new(key.clone()))
                                 .map(|key| *key.preimage())
                                 .take(usize::from(K_VALUE))
                                 .collect();
@@ -130,8 +133,10 @@ impl SwarmDriver {
                                 current_closest.len(),
                                 local_closest_peers.len()
                             );
-                            if current_closest.len() != local_closest_peers.len() {
-                                warn!("Local knowledge doesn't match with network knowledge, with different length");
+                            if current_closest.len() > local_closest_peers.len() {
+                                warn!("Network knowledge is aheading of local knowledge");
+                            } else if current_closest.len() < local_closest_peers.len() {
+                                warn!("Local knowledge is aheading of network knowledge");
                             } else {
                                 let network: BTreeSet<PeerId> =
                                     current_closest.iter().cloned().collect();
@@ -141,22 +146,41 @@ impl SwarmDriver {
                                     let presented_in_network_only: BTreeSet<_> = network
                                         .iter()
                                         .filter(|peer_id| !local.contains(peer_id))
-                                        .cloned()
+                                        .map(|peer_id| {
+                                            let mut bytes: [u8; 32] = [0; 32];
+                                            let _ = bytes
+                                                .iter_mut()
+                                                .set_from(peer_id.to_bytes().iter().cloned());
+                                            XorName(bytes)
+                                        })
                                         .collect();
                                     let presented_in_local_only: BTreeSet<_> = local
                                         .iter()
                                         .filter(|peer_id| !network.contains(peer_id))
-                                        .cloned()
+                                        .map(|peer_id| {
+                                            let mut bytes: [u8; 32] = [0; 32];
+                                            let _ = bytes
+                                                .iter_mut()
+                                                .set_from(peer_id.to_bytes().iter().cloned());
+                                            XorName(bytes)
+                                        })
                                         .collect();
+                                    let mut bytes: [u8; 32] = [0; 32];
+                                    let _ = bytes.iter_mut().set_from(key.iter().cloned());
+                                    let target_name = XorName(bytes);
+                                    warn!("target_name is {target_name:?}");
                                     warn!("Closest peers presented in network only: {presented_in_network_only:?}");
                                     warn!("Closest peers presented in local only: {presented_in_local_only:?}");
-                                    if presented_in_network_only.len()
-                                        == presented_in_local_only.len()
-                                    {
-                                        warn!("Closest peers from Network is highly possible of aheading");
+                                    if presented_in_network_only.iter().any(|a| {
+                                        presented_in_local_only.iter().any(|b| {
+                                            target_name.cmp_distance(b, a) == Ordering::Less
+                                        })
+                                    }) {
+                                        warn!("Local closest peers contains entry closer than network");
                                     } else {
-                                        warn!("Closest peers from Network could be lagging");
+                                        warn!("All network closest peers are closer than local");
                                     }
+
                                     warn!("Got closest_peers from network {network:?}");
                                     warn!("Got closest_peers from local   {local:?}");
                                 }
@@ -174,12 +198,17 @@ impl SwarmDriver {
                         trace!("Can't locate query task {id:?}, shall be completed already.");
                     }
                 }
-                KademliaEvent::RoutingUpdated { peer, is_new_peer, .. } => {
+                KademliaEvent::RoutingUpdated {
+                    peer, is_new_peer, ..
+                } => {
                     if is_new_peer {
                         let own_id = *self.swarm.local_peer_id();
-                        self.event_sender.send(NetworkEvent::PeerAdded {
-                            own_id,
-                            added_peer: peer}).await?;
+                        self.event_sender
+                            .send(NetworkEvent::PeerAdded {
+                                own_id,
+                                added_peer: peer,
+                            })
+                            .await?;
                     }
                 }
                 KademliaEvent::InboundRequest { request } => {
@@ -200,9 +229,12 @@ impl SwarmDriver {
                             .add_address(&peer_id, multiaddr);
                     }
                     let own_id = *self.swarm.local_peer_id();
-                    self.event_sender.send(NetworkEvent::PeerAdded {
+                    self.event_sender
+                        .send(NetworkEvent::PeerAdded {
                             own_id,
-                            added_peer: own_id}).await?;
+                            added_peer: own_id,
+                        })
+                        .await?;
                 }
                 mdns::Event::Expired(_) => {
                     info!("mdns peer expired");

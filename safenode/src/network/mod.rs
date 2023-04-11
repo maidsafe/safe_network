@@ -48,7 +48,8 @@ use xor_name::XorName;
 /// an item in the network.
 pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
 
-type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>, Vec<u8>)>;
+type PendingGetClosest =
+    HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>, Vec<u8>)>;
 
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
