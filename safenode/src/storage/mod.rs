@@ -48,10 +48,6 @@ impl DataStorage {
         self.spends.contains_valid(dbc_id).await
     }
 
-    pub(crate) async fn is_unspendable(&self, dbc_id: &DbcId) -> bool {
-        self.spends.is_unspendable(dbc_id).await
-    }
-
     /// Query the local store and return `QueryResponse`
     pub async fn read(&self, query: &Query, requester: User) -> QueryResponse {
         debug!("Storage read: {query:?}");
@@ -64,15 +60,13 @@ impl DataStorage {
         }
     }
 
-    pub(crate) async fn mark_as_unspendable(&self, invalid_spend: &SignedSpend) {
-        self.spends.mark_as_unspendable(invalid_spend).await
-    }
-
     /// Store data in the local store and return `CmdResponse`
     pub async fn write(&self, cmd: &Cmd) -> CmdResponse {
         debug!("Storage write: {cmd:?}");
         match cmd {
-            Cmd::Dbc(signed_spend) => CmdResponse::Spend(self.spends.try_add(signed_spend).await),
+            Cmd::Dbc { signed_spend, .. } => {
+                CmdResponse::Spend(self.spends.try_add(signed_spend).await)
+            }
             Cmd::StoreChunk(chunk) => CmdResponse::StoreChunk(self.chunks.store(chunk).await),
             Cmd::Register(cmd) => {
                 let result = self.registers.write(cmd).await;

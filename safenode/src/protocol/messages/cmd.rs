@@ -13,7 +13,7 @@ use crate::protocol::types::{
     chunk::Chunk,
 };
 
-use sn_dbc::SignedSpend;
+use sn_dbc::{DbcTransaction, SignedSpend};
 
 use serde::{Deserialize, Serialize};
 
@@ -29,7 +29,13 @@ pub enum Cmd {
     /// [`SignedSpend`] write operation.
     ///
     /// [`SignedSpend`]: sn_dbc::SignedSpend
-    Dbc(SignedSpend),
+    Dbc {
+        /// The spend to be recorded.
+        /// It contains the transaction it is being spent in.
+        signed_spend: Box<SignedSpend>,
+        /// The transaction that this spend was created in.
+        source_tx: Box<DbcTransaction>,
+    },
     /// [`Chunk`] write operation.
     ///
     /// [`Chunk`]: crate::protocol::types::chunk::Chunk
@@ -46,7 +52,7 @@ impl Cmd {
         match self {
             Cmd::StoreChunk(chunk) => DataAddress::Chunk(ChunkAddress::new(*chunk.name())),
             Cmd::Register(cmd) => DataAddress::Register(cmd.dst()),
-            Cmd::Dbc(spend) => DataAddress::Spend(dbc_address(spend.dbc_id())),
+            Cmd::Dbc { signed_spend, .. } => DataAddress::Spend(dbc_address(signed_spend.dbc_id())),
         }
     }
 }

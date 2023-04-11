@@ -29,14 +29,6 @@ pub enum Event {
     ///
     /// [`SignedSpend`]: sn_dbc::SignedSpend
     DoubleSpendAttempted(Box<SignedSpend>, Box<SignedSpend>),
-    /// Validation of a parent of, or a [`SignedSpend`], did not check out.
-    ///
-    /// All spends of that tx are sent to each of their close groups,
-    /// for them to verify it themselves.
-    /// And the child spend is sent to its close group.
-    ///
-    /// [`SignedSpend`]: sn_dbc::SignedSpend
-    InvalidSpendFound(Box<SignedSpend>),
 }
 
 impl Event {
@@ -44,7 +36,6 @@ impl Event {
     pub fn dst(&self) -> DataAddress {
         match self {
             Event::DoubleSpendAttempted(a, _) => DataAddress::Spend(dbc_address(a.dbc_id())),
-            Event::InvalidSpendFound(spend) => DataAddress::Spend(dbc_address(spend.dbc_id())),
         }
     }
 

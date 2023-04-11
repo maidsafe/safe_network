@@ -13,7 +13,7 @@ use crate::{
     protocol::{
         messages::{Cmd, CmdResponse, Event, Query, QueryResponse, Request, Response},
         types::{
-            address::{dbc_address, dbc_name, DbcAddress},
+            address::{dbc_address, DbcAddress},
             error::Error as ProtocolError,
             register::User,
         },
@@ -21,7 +21,7 @@ use crate::{
     storage::DataStorage,
 };
 
-use sn_dbc::{SignedSpend, TransactionVerifier};
+use sn_dbc::{DbcTransaction, SignedSpend};
 
 use futures::future::select_all;
 use libp2p::{request_response::ResponseChannel, PeerId};
@@ -104,10 +104,12 @@ impl Node {
         response_channel: ResponseChannel<Response>,
     ) -> Result<()> {
         trace!("Handling request: {request:?}");
-        let request_dst = request.dst();
         match request {
-            Request::Cmd(Cmd::Dbc(signed_spend)) => {
-                self.add_if_valid(signed_spend, Some(response_channel))
+            Request::Cmd(Cmd::Dbc {
+                signed_spend,
+                source_tx,
+            }) => {
+                self.add_if_valid(signed_spend, source_tx, Some(response_channel))
                     .await?
             }
             Request::Cmd(cmd) => {
@@ -146,11 +148,7 @@ impl Node {
                                     // We don't know about either of these spends, and they are not for the same dbc
                                     // so we can't validate them. We can't add them to the unspendable list
                                     // either, because we don't know if they are valid or not.
-                                    // We could try validate and add them though?
-                                    // (Or else we just ignore them..)
-                                    self.add_if_valid(*a_spend, None).await?;
-                                    self.add_if_valid(*b_spend, None).await?;
-
+                                    // So we just ignore them.
                                     return Ok(());
                                 }
                             };
@@ -174,28 +172,6 @@ impl Node {
                                 let _res = self.send_to_closest(&request).await?;
                             }
                         }
-                    }
-                    Event::InvalidSpendFound(invalid_spend) => {
-                        // If we already know this spend is invalid, we can ignore this event.
-                        if self.storage.is_unspendable(invalid_spend.dbc_id()).await {
-                            return Ok(());
-                        }
-
-                        // If we don't know this spend is invalid, we need to check if it is.
-                        // If it is, we will mark it as invalid, and broadcast that to every other close node.
-                        match self.validate_spend_parents(&invalid_spend).await {
-                            // If the parents do not check out as valid
-                            // we will mark this child dbc as unspendable,
-                            // and broadcast that to every other close node.
-                            Err(super::Error::Protocol(
-                                ProtocolError::InvalidParentsForSpendFound(parents),
-                            )) => {
-                                trace!("Could confirm that parent/s for spend attempt of {request_dst:?} are invalid: {parents:?}!");
-                                self.storage.mark_as_unspendable(&invalid_spend).await;
-                            }
-                            Ok(()) => (),
-                            res => res?,
-                        };
                     }
                 };
             }
@@ -222,38 +198,60 @@ impl Node {
     /// A response will be sent if a response channel is provided.
     async fn add_if_valid(
         &mut self,
-        signed_spend: SignedSpend,
+        signed_spend: Box<SignedSpend>,
+        source_tx: Box<DbcTransaction>,
         response_channel: Option<ResponseChannel<Response>>,
     ) -> Result<()> {
-        let dbc_name = dbc_name(signed_spend.dbc_id());
+        // Ensure that the provided src tx is the same as the one we have the hash of in the signed spend.
+        let provided_src_tx_hash = source_tx.hash();
+        let signed_src_tx_hash = signed_spend.src_tx_hash();
+        if provided_src_tx_hash != signed_src_tx_hash {
+            let error = ProtocolError::SignedSrcTxHashDoesNotMatchProvidedSrcTxHash {
+                signed_src_tx_hash,
+                provided_src_tx_hash,
+            };
+            if let Some(response_channel) = response_channel {
+                self.send_response(
+                    Response::Cmd(CmdResponse::Spend(Err(error))),
+                    response_channel,
+                )
+                .await;
+                return Ok(());
+            } else {
+                return Err(super::Error::Protocol(error));
+            }
+        }
 
         // First we need to validate the parents of the spend.
-        match self.validate_spend_parents(&signed_spend).await {
-            // If the parents do not check out as valid
-            // we will mark this child dbc as unspendable,
-            // and broadcast that to every other close node.
-            Err(super::Error::Protocol(ProtocolError::InvalidParentsForSpendFound(
-                all_parents,
-            ))) => {
-                warn!("Invalid parent/s for spend attempt of {dbc_name:?}: {all_parents:?}!");
-
-                // Broadcast this to close groups of every parent spend in all_parents.
-                for invalid_parent in all_parents {
-                    let request =
-                        Request::Event(Event::InvalidSpendFound(Box::new(*invalid_parent)));
-                    let _res = self.send_to_closest(&request).await?;
-                }
-
-                // Also broadcast this spend as invalid to every peer in this attempted spend's close group.
-                let request =
-                    Request::Event(Event::InvalidSpendFound(Box::new(signed_spend.clone())));
-                let _resp = self.send_to_closest(&request).await?;
-            }
+        // This also ensures that all parent's dst tx's are the same as the src tx of this spend.
+        match self
+            .validate_spend_parents(signed_spend.as_ref(), source_tx.as_ref())
+            .await
+        {
             Ok(()) => (),
-            res => res?,
+            Err(super::Error::Protocol(error)) => {
+                // We drop spend attempts with invalid parents,
+                // and return an error to the client.
+                if let Some(response_channel) = response_channel {
+                    self.send_response(
+                        Response::Cmd(CmdResponse::Spend(Err(error))),
+                        response_channel,
+                    )
+                    .await;
+                    return Ok(());
+                }
+            }
+            other => other?,
         };
 
-        let response = match self.storage.write(&Cmd::Dbc(signed_spend.clone())).await {
+        let response = match self
+            .storage
+            .write(&Cmd::Dbc {
+                signed_spend,
+                source_tx,
+            })
+            .await
+        {
             CmdResponse::Spend(Err(ProtocolError::DoubleSpendAttempt { new, existing })) => {
                 warn!("Double spend attempted! New: {new:?}. Existing:  {existing:?}");
 
@@ -274,38 +272,56 @@ impl Node {
         Ok(())
     }
 
-    async fn validate_spend_parents(&self, signed_spend: &SignedSpend) -> Result<()> {
+    /// The src_tx is the tx where the dbc to spend, was created.
+    /// The signed_spend.dbc_id() shall exist among its outputs.
+    async fn validate_spend_parents(
+        &self,
+        signed_spend: &SignedSpend,
+        source_tx: &DbcTransaction,
+    ) -> Result<()> {
         // These will be different spends, one for each input that went into
         // creating the above spend passed in to this function.
-        let mut all_parent_signed_spends = BTreeSet::new();
+        let mut all_parent_spends = BTreeSet::new();
 
-        for parent_input in &signed_spend.spend.tx.inputs {
+        // First we fetch all parent spends from the network.
+        // They shall naturally all exist as valid spends for this current
+        // spend attempt to be valid.
+        for parent_input in &source_tx.inputs {
             let parent_address = dbc_address(&parent_input.dbc_id());
             // This call makes sure we get the same spend from all in the close group.
             // If we receive a spend here, it is assumed to be valid. But we will verify
             // that anyway, in the code right after this for loop.
-            let parent_spend_by_close_group = self.get_spend(parent_address).await?;
-            let _ = all_parent_signed_spends.insert(parent_spend_by_close_group);
-        }
-
-        let mut any_invalid = false;
-
-        // Here we verify every retrieved spends' tx given all of the retrieved spends.
-        for parent_spend in &all_parent_signed_spends {
-            let creation_tx_of_this_spend = &parent_spend.spend.tx;
-            if TransactionVerifier::verify(creation_tx_of_this_spend, &all_parent_signed_spends)
-                .is_err()
-            {
-                any_invalid = true;
+            let parent_spend_at_close_group = self.get_spend(parent_address).await?;
+            // The dst tx of the parent must be the src tx of the spend.
+            if signed_spend.src_tx_hash() != parent_spend_at_close_group.dst_tx_hash() {
+                return Err(super::Error::Protocol(
+                    ProtocolError::SpendSrcTxHashParentTxHashMismatch {
+                        signed_src_tx_hash: signed_spend.src_tx_hash(),
+                        parent_dst_tx_hash: parent_spend_at_close_group.dst_tx_hash(),
+                    },
+                ));
             }
+            let _ = all_parent_spends.insert(parent_spend_at_close_group);
         }
 
-        if any_invalid {
-            let boxed_spends = all_parent_signed_spends.into_iter().map(Box::new).collect();
+        // We have gotten all the parent inputs from the network, so the network consider them all valid.
+        // But the source tx corresponding to the signed_spend, might not match the parents' details, so that's what we check here.
+        let known_parent_blinded_amounts: Vec<_> = all_parent_spends
+            .iter()
+            .map(|s| s.spend.blinded_amount)
+            .collect();
+        // Here we check that the spend that is attempted, was created in a valid tx.
+        let src_tx_validity = source_tx.verify(&known_parent_blinded_amounts);
+        if src_tx_validity.is_err() {
             return Err(super::Error::Protocol(
-                ProtocolError::InvalidParentsForSpendFound(boxed_spends),
+                ProtocolError::InvalidSourceTxProvided {
+                    signed_src_tx_hash: signed_spend.src_tx_hash(),
+                    provided_src_tx_hash: source_tx.hash(),
+                },
             ));
         }
+
+        // All parents check out.
 
         Ok(())
     }
