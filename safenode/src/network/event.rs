@@ -99,12 +99,11 @@ impl SwarmDriver {
                     {
                         // TODO: consider order the result and terminate when reach any of the
                         //       following creterias:
-                        //   1, `_stats.num_pending()` is 0
-                        //   2, `_stats.duration()` is longer than a defined period
-                        //   3, `_step.last` is true
+                        //   1, `stats.num_pending()` is 0
+                        //   2, `stats.duration()` is longer than a defined period
                         let new_peers: HashSet<PeerId> = closest_peers.peers.into_iter().collect();
                         current_closest.extend(new_peers);
-                        if current_closest.len() > usize::from(K_VALUE) {
+                        if current_closest.len() >= usize::from(K_VALUE) || step.last {
                             sender.send(current_closest).map_err(|_| {
                                 Error::Other("Receiver not to be dropped".to_string())
                             })?;
