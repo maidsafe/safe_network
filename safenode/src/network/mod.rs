@@ -26,7 +26,7 @@ use futures::StreamExt;
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
-    kad::{record::store::MemoryStore, Kademlia, KademliaConfig, QueryId},
+    kad::{kbucket, record::store::MemoryStore, Kademlia, KademliaConfig, QueryId},
     mdns,
     request_response::{self, ProtocolSupport, RequestId, ResponseChannel},
     swarm::{Swarm, SwarmBuilder},
@@ -48,6 +48,9 @@ use xor_name::XorName;
 /// an item in the network.
 pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
 
+type PendingGetClosest =
+    HashMap<QueryId, (oneshot::Sender<(PeerId, HashSet<PeerId>)>, HashSet<PeerId>)>;
+
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
 /// tasks. It serves as the core component for the network functionality.
@@ -56,8 +59,7 @@ pub struct SwarmDriver {
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>,
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
-    pending_get_closest_peers:
-        HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>,
+    pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
 }
 
@@ -260,9 +262,23 @@ impl Network {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers { xor_name, sender })
             .await?;
-        let k_bucket_peers = receiver.await?;
+        let (our_id, k_bucket_peers) = receiver.await?;
 
-        let closest_peers: HashSet<_> = k_bucket_peers.into_iter().take(CLOSE_GROUP_SIZE).collect();
+        // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
+        let mut closest_peers: Vec<_> = k_bucket_peers.into_iter().collect();
+        closest_peers.push(our_id);
+        let target = kbucket::Key::new(xor_name.0.to_vec());
+        closest_peers.sort_by(|a, b| {
+            let a = kbucket::Key::new(a.to_bytes());
+            let b = kbucket::Key::new(b.to_bytes());
+            target.distance(&a).cmp(&target.distance(&b))
+        });
+        // TODO: shall the return type shall be `Vec<PeerId>` to retain the order?
+        let closest_peers: HashSet<PeerId> = closest_peers
+            .iter()
+            .take(CLOSE_GROUP_SIZE)
+            .cloned()
+            .collect();
 
         if CLOSE_GROUP_SIZE > closest_peers.len() {
             warn!("Not enough peers in the k-bucket to satisfy the request");
