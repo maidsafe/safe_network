@@ -10,7 +10,7 @@ name = "safenode"
 path = "src/bin/kadnode.rs"
 
 [[bin]]
-name = "safeclient"
+name = "safe"
 path = "src/bin/kadclient.rs"
 
 [dependencies]

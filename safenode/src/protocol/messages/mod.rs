@@ -100,23 +100,3 @@ impl ReplicatedData {
         }
     }
 }
-
-// impl ReplicatedData {
-//     /// Return the name.
-//     pub fn name(&self) -> XorName {
-//         match self {
-//             Self::Chunk(chunk) => *chunk.name(),
-//             Self::RegisterLog(log) => *log.address.name(),
-//             Self::RegisterWrite(cmd) => *cmd.dst().name(),
-//         }
-//     }
-
-//     /// Return the dst.
-//     pub fn dst(&self) -> DataAddress {
-//         match self {
-//             Self::Chunk(chunk) => DataAddress::Chunk(*chunk.address()),
-//             Self::RegisterLog(log) => DataAddress::Register(log.address),
-//             Self::RegisterWrite(cmd) => DataAddress::Register(cmd.dst()),
-//         }
-//     }
-// }
