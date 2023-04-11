@@ -6,8 +6,16 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::protocol::messages::Response;
+
 use super::{cmd::SwarmCmd, NetworkEvent};
-use libp2p::{kad, request_response::OutboundFailure, swarm::DialError, TransportError};
+
+use libp2p::{
+    kad,
+    request_response::{OutboundFailure, RequestId},
+    swarm::DialError,
+    TransportError,
+};
 use std::io;
 use thiserror::Error;
 use tokio::sync::{mpsc, oneshot};
@@ -18,8 +26,14 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
-    #[error("Other error: {0}")]
-    Other(String),
+    #[error("Internal messaging channel was dropped")]
+    InternalMsgChannelDropped,
+
+    #[error("Response received for a request not found in our local tracking map: {0}")]
+    ReceivedResponseDropped(RequestId),
+
+    #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0:?}")]
+    OutgoingResponseDropped(Response),
 
     #[error("I/O error: {0}")]
     Io(#[from] io::Error),
@@ -38,6 +52,9 @@ pub enum Error {
 
     #[error("The mpsc::receiver for `NetworkEvent` has been dropped")]
     NetworkEventReceiverDropped(#[from] mpsc::error::SendError<NetworkEvent>),
+
+    #[error("A Kademlia event has been dropped: {0:?}")]
+    ReceivedKademliaEventDropped(kad::KademliaEvent),
 
     #[error("The mpsc::receiver for `SwarmCmd` has been dropped")]
     SwarmCmdReceiverDropped(#[from] mpsc::error::SendError<SwarmCmd>),

@@ -85,7 +85,7 @@ impl SwarmDriver {
                 }
             }
             // handle Kademlia events
-            SwarmEvent::Behaviour(NodeEvent::Kademlia(event)) => match event {
+            SwarmEvent::Behaviour(NodeEvent::Kademlia(ref event)) => match event {
                 KademliaEvent::OutboundQueryProgressed {
                     id,
                     result: QueryResult::GetClosestPeers(Ok(closest_peers)),
@@ -94,26 +94,27 @@ impl SwarmDriver {
                 } => {
                     trace!("Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}");
 
-                    if let Some((sender, mut current_closest)) =
-                        self.pending_get_closest_peers.remove(&id)
-                    {
-                        // TODO: consider order the result and terminate when reach any of the
-                        //       following creterias:
-                        //   1, `stats.num_pending()` is 0
-                        //   2, `stats.duration()` is longer than a defined period
-                        let new_peers: HashSet<PeerId> = closest_peers.peers.into_iter().collect();
-                        current_closest.extend(new_peers);
-                        if current_closest.len() >= usize::from(K_VALUE) || step.last {
-                            sender.send(current_closest).map_err(|_| {
-                                Error::Other("Receiver not to be dropped".to_string())
-                            })?;
-                        } else {
-                            let _ = self
-                                .pending_get_closest_peers
-                                .insert(id, (sender, current_closest));
-                        }
+                    let (sender, mut current_closest) =
+                        self.pending_get_closest_peers.remove(id).ok_or_else(|| {
+                            trace!("Can't locate query task {id:?}, shall be completed already.");
+                            Error::ReceivedKademliaEventDropped(event.clone())
+                        })?;
+
+                    // TODO: consider order the result and terminate when reach any of the
+                    //       following creterias:
+                    //   1, `stats.num_pending()` is 0
+                    //   2, `stats.duration()` is longer than a defined period
+                    let new_peers: HashSet<PeerId> =
+                        closest_peers.peers.clone().into_iter().collect();
+                    current_closest.extend(new_peers);
+                    if current_closest.len() >= usize::from(K_VALUE) || step.last {
+                        sender
+                            .send(current_closest)
+                            .map_err(|_| Error::InternalMsgChannelDropped)?;
                     } else {
-                        trace!("Can't locate query task {id:?}, shall be completed already.");
+                        let _ = self
+                            .pending_get_closest_peers
+                            .insert(*id, (sender, current_closest));
                     }
                 }
                 KademliaEvent::RoutingUpdated { .. } => {

@@ -100,9 +100,7 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .request_response
                     .send_response(channel, resp)
-                    .map_err(|_| {
-                        Error::Other("Connection to peer to be still open.".to_string())
-                    })?;
+                    .map_err(Error::OutgoingResponseDropped)?;
             }
         }
         Ok(())

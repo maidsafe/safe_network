@@ -41,21 +41,21 @@ impl SwarmDriver {
                     response,
                 } => {
                     trace!("Got response for id: {request_id:?}, res: {response:?} ");
-                    let _ = self
-                        .pending_requests
+                    self.pending_requests
                         .remove(&request_id)
-                        .ok_or(Error::Other("Request to still be pending".to_string()))?
-                        .send(Ok(response));
+                        .ok_or(Error::ReceivedResponseDropped(request_id))?
+                        .send(Ok(response))
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
             },
             request_response::Event::OutboundFailure {
                 request_id, error, ..
             } => {
-                let _ = self
-                    .pending_requests
+                self.pending_requests
                     .remove(&request_id)
-                    .ok_or(Error::Other("Request to still be pending.".to_string()))?
-                    .send(Err(error.into()));
+                    .ok_or(Error::ReceivedResponseDropped(request_id))?
+                    .send(Err(error.into()))
+                    .map_err(|_| Error::InternalMsgChannelDropped)?;
             }
             request_response::Event::InboundFailure {
                 peer,
