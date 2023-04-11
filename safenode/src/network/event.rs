@@ -68,7 +68,12 @@ pub enum NetworkEvent {
         channel: ResponseChannel<Response>,
     },
     /// Emitted when the DHT is updated
-    PeerAdded,
+    PeerAdded {
+        /// Our own id
+        own_id : PeerId,
+        /// ID of the added peer
+        added_peer : PeerId
+    },
 }
 
 impl SwarmDriver {
@@ -105,6 +110,11 @@ impl SwarmDriver {
                         //   3, `step.last` is true
                         let new_peers: HashSet<PeerId> = closest_peers.peers.into_iter().collect();
                         current_closest.extend(new_peers);
+
+                        if current_closest.contains(self.swarm.local_peer_id()) {
+                            trace!("Own id appears in the network closest_peers");
+                        }
+                        
                         if current_closest.len() >= usize::from(K_VALUE) || step.last {
                             let local_closest_peers: HashSet<PeerId> = self
                                 .swarm
@@ -164,9 +174,12 @@ impl SwarmDriver {
                         trace!("Can't locate query task {id:?}, shall be completed already.");
                     }
                 }
-                KademliaEvent::RoutingUpdated { is_new_peer, .. } => {
+                KademliaEvent::RoutingUpdated { peer, is_new_peer, .. } => {
                     if is_new_peer {
-                        self.event_sender.send(NetworkEvent::PeerAdded).await?;
+                        let own_id = *self.swarm.local_peer_id();
+                        self.event_sender.send(NetworkEvent::PeerAdded {
+                            own_id,
+                            added_peer: peer}).await?;
                     }
                 }
                 KademliaEvent::InboundRequest { request } => {
@@ -186,7 +199,10 @@ impl SwarmDriver {
                             .kademlia
                             .add_address(&peer_id, multiaddr);
                     }
-                    self.event_sender.send(NetworkEvent::PeerAdded).await?;
+                    let own_id = *self.swarm.local_peer_id();
+                    self.event_sender.send(NetworkEvent::PeerAdded {
+                            own_id,
+                            added_peer: own_id}).await?;
                 }
                 mdns::Event::Expired(_) => {
                     info!("mdns peer expired");

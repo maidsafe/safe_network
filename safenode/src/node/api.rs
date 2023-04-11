@@ -25,6 +25,7 @@ use crate::{
 use sn_dbc::{SignedSpend, TransactionVerifier};
 
 use futures::future::select_all;
+use itertools::Itertools;
 use libp2p::{request_response::ResponseChannel, PeerId};
 use std::{
     collections::{BTreeSet, HashSet},
@@ -92,11 +93,15 @@ impl Node {
             NetworkEvent::RequestReceived { req, channel } => {
                 self.handle_request(req, channel).await?
             }
-            NetworkEvent::PeerAdded => {
+            NetworkEvent::PeerAdded { own_id, added_peer } => {
+                trace!("handle_network_event got added peer {added_peer:?}");
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
                 let target = {
-                    let mut rng = rand::thread_rng();
-                    XorName::random(&mut rng)
+                    // Both PeerId and XorName are 32 Bytes.
+                    let mut bytes: [u8; 32] = [0; 32];
+                    let _ = bytes.iter_mut().set_from(own_id.to_bytes().iter().cloned());
+                    let name = XorName(bytes);
+                    name.with_bit(255, !name.bit(255))
                 };
 
                 let network = self.network.clone();

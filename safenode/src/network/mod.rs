@@ -48,6 +48,8 @@ use xor_name::XorName;
 /// an item in the network.
 pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
 
+type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>, Vec<u8>)>;
+
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
 /// tasks. It serves as the core component for the network functionality.
@@ -56,8 +58,7 @@ pub struct SwarmDriver {
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>,
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
-    pending_get_closest_peers:
-        HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>, Vec<u8>)>,
+    pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
 }
 

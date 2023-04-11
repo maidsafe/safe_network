@@ -232,7 +232,7 @@ impl Client {
     fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
         match event {
             NetworkEvent::RequestReceived { .. } => {}
-            NetworkEvent::PeerAdded => {
+            NetworkEvent::PeerAdded { .. } => {
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork);
             }
