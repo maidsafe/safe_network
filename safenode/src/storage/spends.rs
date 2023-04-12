@@ -37,6 +37,9 @@ type ValidSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, V>>>;
 type DoubleSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, (V, V)>>>;
 
 /// Storage of Dbc spends.
+///
+/// NB: The used space measurement is just an appromixation, and is not exact.
+/// Later, when all data types have this, we can verify that it is not wildly different.
 #[derive(Clone, Debug)]
 pub(super) struct SpendStorage {
     valid_spends: ValidSpends<SignedSpend>,
@@ -53,13 +56,6 @@ impl SpendStorage {
             valid_spends_cache_size: UsedSpace::new(VALID_SPENDS_CACHE_SIZE),
             double_spends_cache_size: UsedSpace::new(DOUBLE_SPENDS_CACHE_SIZE),
         }
-    }
-
-    /// Checks if the given DbcId is seen by us as valid,
-    /// and returns the signed spend if so.
-    pub(crate) async fn contains_valid(&self, dbc_id: &DbcId) -> Option<SignedSpend> {
-        let address = dbc_address(dbc_id);
-        self.valid_spends.read().await.get(&address).cloned()
     }
 
     /// Checks if the given DbcId is unspendable.

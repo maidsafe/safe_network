@@ -65,6 +65,7 @@ impl Client {
 
     fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
         match event {
+            // Clients do not handle requests.
             NetworkEvent::RequestReceived { .. } => {}
             NetworkEvent::PeerAdded => {
                 self.events_channel
