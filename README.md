@@ -4,12 +4,15 @@ This is an experimental branch for layering safe network data structures atop li
 
 ## Running the network
 
-`killall safenode || true && RUST_LOG=safenode,safe,sn_node cargo run --bin testnet -- -b --interval 100`
+`killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- -b --interval 100`
 
 ## Actions undertaken by a client accessing the network
 
 - Create Register
 `cargo run --release --bin safe -- --create-register`
+
+- Get Register; copy the `XorName` of the register from the previous command
+`cargo run --release --bin safe -- --query-register xor_name`
 
 - Put files
 `cargo run --release --bin safe -- --upload-chunks ~/dir/with/files`
