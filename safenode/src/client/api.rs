@@ -29,7 +29,7 @@ use crate::{
 
 use futures::future::select_all;
 use libp2p::PeerId;
-use std::{collections::HashSet, time::Duration};
+use std::time::Duration;
 use tokio::task::spawn;
 
 impl Client {
@@ -235,7 +235,7 @@ impl Client {
         info!("Sending {:?} to the closest peers.", request.dst());
         let closest_peers = self
             .network
-            .get_closest_peers(*request.dst().name())
+            .client_get_closest_peers(*request.dst().name())
             .await?;
         Ok(self
             .send_and_get_responses(closest_peers, &request, true)
@@ -248,7 +248,7 @@ impl Client {
     // If `get_all_responses` is false, we return the first successful response that we get.
     async fn send_and_get_responses(
         &self,
-        nodes: HashSet<PeerId>,
+        nodes: Vec<PeerId>,
         req: &Request,
         get_all_responses: bool,
     ) -> Vec<Result<Response>> {

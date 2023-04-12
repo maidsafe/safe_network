@@ -25,10 +25,7 @@ use sn_dbc::{DbcTransaction, SignedSpend};
 
 use futures::future::select_all;
 use libp2p::{request_response::ResponseChannel, PeerId};
-use std::{
-    collections::{BTreeSet, HashSet},
-    time::Duration,
-};
+use std::{collections::BTreeSet, time::Duration};
 use tokio::task::spawn;
 
 impl Node {
@@ -327,9 +324,10 @@ impl Node {
 
     async fn send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
         info!("Sending {:?} to the closest peers.", request.dst());
+        // todo: if `self` is present among the closest peers, the request should be routed to self?
         let closest_peers = self
             .network
-            .get_closest_peers(*request.dst().name())
+            .node_get_closest_peers(*request.dst().name())
             .await?;
 
         Ok(self
@@ -343,7 +341,7 @@ impl Node {
     // If `get_all_responses` is false, we return the first successful response that we get
     async fn send_and_get_responses(
         &self,
-        peers: HashSet<PeerId>,
+        peers: Vec<PeerId>,
         req: &Request,
         get_all_responses: bool,
     ) -> Vec<Result<Response>> {

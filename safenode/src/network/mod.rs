@@ -262,8 +262,21 @@ impl Network {
         receiver.await?
     }
 
-    /// Find the closest peers to the given `XorName`
-    pub async fn get_closest_peers(&self, xor_name: XorName) -> Result<HashSet<PeerId>> {
+    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
+    /// Excludes the client's `PeerId` while calculating the closest peers.
+    pub async fn client_get_closest_peers(&self, xor_name: XorName) -> Result<Vec<PeerId>> {
+        self.get_closest_peers(xor_name, true).await
+    }
+
+    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
+    /// Includes our node's `PeerId` while calculating the closest peers.
+    pub async fn node_get_closest_peers(&self, xor_name: XorName) -> Result<Vec<PeerId>> {
+        self.get_closest_peers(xor_name, false).await
+    }
+
+    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
+    /// If `client` is false, then include `self` among the `closest_peers`
+    async fn get_closest_peers(&self, xor_name: XorName, client: bool) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers { xor_name, sender })
             .await?;
@@ -271,15 +284,16 @@ impl Network {
 
         // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
         let mut closest_peers: Vec<_> = k_bucket_peers.into_iter().collect();
-        closest_peers.push(our_id);
+        if !client {
+            closest_peers.push(our_id);
+        }
         let target = KBucketKey::new(xor_name.0.to_vec());
         closest_peers.sort_by(|a, b| {
             let a = KBucketKey::new(a.to_bytes());
             let b = KBucketKey::new(b.to_bytes());
             target.distance(&a).cmp(&target.distance(&b))
         });
-        // TODO: shall the return type shall be `Vec<PeerId>` to retain the order?
-        let closest_peers: HashSet<PeerId> = closest_peers
+        let closest_peers: Vec<PeerId> = closest_peers
             .iter()
             .take(CLOSE_GROUP_SIZE)
             .cloned()
@@ -401,7 +415,7 @@ mod tests {
         info!("Got Closest from table {:?}", expected_from_table.len());
 
         // Ask the other nodes for the closest_peers.
-        let closest = our_net.get_closest_peers(random_data).await?;
+        let closest = our_net.get_closest_peers(random_data, false).await?;
 
         assert_lists(closest, expected_from_table);
         Ok(())
