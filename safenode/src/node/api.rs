@@ -109,7 +109,7 @@ impl Node {
                 signed_spend,
                 source_tx,
             }) => {
-                self.add_if_valid(signed_spend, source_tx, Some(response_channel))
+                self.add_if_valid(signed_spend, source_tx, response_channel)
                     .await?
             }
             Request::Cmd(cmd) => {
@@ -125,53 +125,8 @@ impl Node {
             Request::Event(event) => {
                 match event {
                     Event::DoubleSpendAttempted(a_spend, b_spend) => {
-                        let a_addr = dbc_address(a_spend.dbc_id());
-                        let b_addr = dbc_address(b_spend.dbc_id());
-
-                        if a_addr == b_addr {
-                            // We carelessly add the two spends here as they will automatically be
-                            // marked as double spend attempt.
-                            self.try_add_double_if_different_hash(&a_spend, &b_spend)
-                                .await?;
-                        } else {
-                            // We have two of different addresses on the incoming.
-                            // If we have a valid spend with different hash, then we
-                            // will add that pair to the unspendable list, then we notify
-                            // the group of the correctly identified double spend attempt.
-                            let existing_a = self.storage.contains_valid(a_spend.dbc_id()).await;
-                            let existing_b = self.storage.contains_valid(b_spend.dbc_id()).await;
-                            let (one, two) = match (existing_a, existing_b) {
-                                (Some(exists_a), Some(exists_b)) => (exists_a, exists_b),
-                                (Some(exists_a), None) => (exists_a, *a_spend),
-                                (None, Some(exists_b)) => (exists_b, *b_spend),
-                                (None, None) => {
-                                    // We don't know about either of these spends, and they are not for the same dbc
-                                    // so we can't validate them. We can't add them to the unspendable list
-                                    // either, because we don't know if they are valid or not.
-                                    // So we just ignore them.
-                                    return Ok(());
-                                }
-                            };
-
-                            // If their hashes are different, we will add them to the unspendable,
-                            // then we notify the group of the correctly identified double spend attempt.
-                            if self
-                                .try_add_double_if_different_hash(&one, &two)
-                                .await
-                                .is_ok()
-                            {
-                                // We have two that are equal, we tried to add them.
-                                // We populate the address field properly, and then re-route it.
-                                // If we are among the closest, we will add them when it comes
-                                // back to us.
-                                // (This won't loop, as we have populated the address field properly now.)
-                                let request = Request::Event(Event::double_spend_attempt(
-                                    Box::new(one),
-                                    Box::new(two),
-                                )?);
-                                let _res = self.send_to_closest(&request).await?;
-                            }
-                        }
+                        self.try_add_double_if_different_hash(&a_spend, &b_spend)
+                            .await?;
                     }
                 };
             }
@@ -200,26 +155,23 @@ impl Node {
         &mut self,
         signed_spend: Box<SignedSpend>,
         source_tx: Box<DbcTransaction>,
-        response_channel: Option<ResponseChannel<Response>>,
+        response_channel: ResponseChannel<Response>,
     ) -> Result<()> {
         // Ensure that the provided src tx is the same as the one we have the hash of in the signed spend.
         let provided_src_tx_hash = source_tx.hash();
         let signed_src_tx_hash = signed_spend.src_tx_hash();
+
         if provided_src_tx_hash != signed_src_tx_hash {
             let error = ProtocolError::SignedSrcTxHashDoesNotMatchProvidedSrcTxHash {
                 signed_src_tx_hash,
                 provided_src_tx_hash,
             };
-            if let Some(response_channel) = response_channel {
-                self.send_response(
-                    Response::Cmd(CmdResponse::Spend(Err(error))),
-                    response_channel,
-                )
-                .await;
-                return Ok(());
-            } else {
-                return Err(super::Error::Protocol(error));
-            }
+            self.send_response(
+                Response::Cmd(CmdResponse::Spend(Err(error))),
+                response_channel,
+            )
+            .await;
+            return Ok(());
         }
 
         // First we need to validate the parents of the spend.
@@ -232,14 +184,12 @@ impl Node {
             Err(super::Error::Protocol(error)) => {
                 // We drop spend attempts with invalid parents,
                 // and return an error to the client.
-                if let Some(response_channel) = response_channel {
-                    self.send_response(
-                        Response::Cmd(CmdResponse::Spend(Err(error))),
-                        response_channel,
-                    )
-                    .await;
-                    return Ok(());
-                }
+                self.send_response(
+                    Response::Cmd(CmdResponse::Spend(Err(error))),
+                    response_channel,
+                )
+                .await;
+                return Ok(());
             }
             other => other?,
         };
@@ -264,10 +214,8 @@ impl Node {
             other => other,
         };
 
-        if let Some(response_channel) = response_channel {
-            self.send_response(Response::Cmd(response), response_channel)
-                .await;
-        }
+        self.send_response(Response::Cmd(response), response_channel)
+            .await;
 
         Ok(())
     }

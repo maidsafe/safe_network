@@ -19,7 +19,7 @@ use crate::protocol::{
     types::{error::Result, register::User},
 };
 
-use sn_dbc::{DbcId, SignedSpend};
+use sn_dbc::SignedSpend;
 
 use tracing::debug;
 
@@ -42,10 +42,6 @@ impl DataStorage {
             registers: RegisterStorage::new(),
             spends: SpendStorage::new(),
         }
-    }
-
-    pub(crate) async fn contains_valid(&self, dbc_id: &DbcId) -> Option<SignedSpend> {
-        self.spends.contains_valid(dbc_id).await
     }
 
     /// Query the local store and return `QueryResponse`
