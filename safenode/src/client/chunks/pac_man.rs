@@ -42,29 +42,29 @@ pub(crate) fn encrypt_large(data: Bytes) -> Result<(XorName, Vec<Chunk>)> {
 
 /// Returns the top-most chunk address through which the entire
 /// data tree can be accessed, and all the other encrypted chunks.
-/// If encryption is provided, the additional secret key level chunks are encrypted with it.
+/// If encryption is provided, the additional `DataMapLevel` chunks are encrypted with it.
 /// This is necessary if the data is meant to be private, since a `DataMap` is used to find and decrypt the original file.
 pub(crate) fn pack(
     data_map: DataMap,
     encrypted_chunks: Vec<EncryptedChunk>,
 ) -> Result<(XorName, Vec<Chunk>)> {
-    // Produces a chunk out of the first secret key, which is validated for its size.
-    // If the chunk is too big, it is self-encrypted and the resulting (additional level) secret key is put into a chunk.
+    // Produces a chunk out of the first `DataMap`, which is validated for its size.
+    // If the chunk is too big, it is self-encrypted and the resulting (additional level) `DataMap` is put into a chunk.
     // The above step is repeated as many times as required until the chunk size is valid.
     // In other words: If the chunk content is too big, it will be
-    // self encrypted into additional chunks, and now we have a new secret key
+    // self encrypted into additional chunks, and now we have a new `DataMap`
     // which points to all of those additional chunks.. and so on.
     let mut chunks = vec![];
     let mut chunk_content = pack_data_map(DataMapLevel::First(data_map))?;
 
     let (address, additional_chunks) = loop {
         let chunk = to_chunk(chunk_content);
-        // If datamap chunk is less than `MAX_CHUNK_SIZE` return it so it can be directly sent to the network
+        // If datamap chunk is less than `MAX_CHUNK_SIZE` return it so it can be directly sent to the network.
         if MAX_CHUNK_SIZE >= chunk.serialised_size() {
             let name = *chunk.name();
             chunks.reverse();
             chunks.push(chunk);
-            // returns the address of the last datamap, and all the chunks produced
+            // Returns the address of the last datamap, and all the chunks produced.
             break (name, chunks);
         } else {
             let serialized_chunk = Bytes::from(serialize(&chunk)?);
