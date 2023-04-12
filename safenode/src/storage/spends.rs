@@ -100,8 +100,7 @@ impl SpendStorage {
         // on all of `DbcTransaction`, `DbcReason`, `DbcId` and `BlindedAmount` being equal.
         let mut valid_spends = self.valid_spends.write().await;
         if let Some(existing) = valid_spends.get(&address).cloned() {
-            let spend_id = get_spend_id(signed_spend.spend.hash());
-            let tamper_attempted = spend_id != get_spend_id(existing.spend.hash());
+            let tamper_attempted = signed_spend.spend.hash() != existing.spend.hash();
             if tamper_attempted {
                 if !self.double_spends_cache_size.can_add(size_of_new) {
                     return Err(Error::NotEnoughSpace); // We don't have space for this operation.
@@ -215,11 +214,4 @@ fn dbc_address(dbc_id: &DbcId) -> DbcAddress {
 /// Wanted to make the DbcAddress take a dbc id actually..
 fn get_dbc_name(dbc_id: &DbcId) -> XorName {
     XorName::from_content(&dbc_id.to_bytes())
-}
-
-/// Still thinking of best location for this.
-/// Wanted to make the DbcAddress take a dbc id actually..
-fn get_spend_id(content_hash: sn_dbc::Hash) -> XorName {
-    // TODO: XorName(*content_hash.slice())
-    XorName::from_content(content_hash.as_ref())
 }
