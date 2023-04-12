@@ -26,7 +26,7 @@ use futures::StreamExt;
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
-    kad::{kbucket, record::store::MemoryStore, Kademlia, KademliaConfig, QueryId},
+    kad::{record::store::MemoryStore, KBucketKey, Kademlia, KademliaConfig, QueryId},
     mdns,
     request_response::{self, ProtocolSupport, RequestId, ResponseChannel},
     swarm::{Swarm, SwarmBuilder},
@@ -267,10 +267,10 @@ impl Network {
         // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
         let mut closest_peers: Vec<_> = k_bucket_peers.into_iter().collect();
         closest_peers.push(our_id);
-        let target = kbucket::Key::new(xor_name.0.to_vec());
+        let target = KBucketKey::new(xor_name.0.to_vec());
         closest_peers.sort_by(|a, b| {
-            let a = kbucket::Key::new(a.to_bytes());
-            let b = kbucket::Key::new(b.to_bytes());
+            let a = KBucketKey::new(a.to_bytes());
+            let b = KBucketKey::new(b.to_bytes());
             target.distance(&a).cmp(&target.distance(&b))
         });
         // TODO: shall the return type shall be `Vec<PeerId>` to retain the order?
