@@ -180,7 +180,7 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSendWallet<C> {
         let SpendInfo {
             change,
             spent_dbcs,
-            mut new_dbcs,
+            new_dbcs,
         } = self.client.send(available_dbcs, to, self.address()).await?;
 
         let mut spent_dbcs = spent_dbcs
@@ -190,7 +190,7 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSendWallet<C> {
 
         self.deposit(change.into_iter().collect());
         self.wallet.spent_dbcs.append(&mut spent_dbcs);
-        self.wallet.output_history.append(&mut new_dbcs);
+        self.wallet.output_history.extend(new_dbcs.clone());
 
         Ok(new_dbcs)
     }
@@ -209,6 +209,7 @@ pub trait SendClient {
 }
 
 ///
+#[derive(Debug, Clone)]
 pub struct NewDbc {
     ///
     pub dbc: Dbc,
@@ -343,34 +344,35 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::result_large_err)]
     async fn sending_decreases_balance() -> Result<()> {
-        let genesis_key = MainKey::new(SecretKey::random());
-        let genesis = create_genesis_dbc(&genesis_key).expect("Genesis creation to succeed.");
-        let genesis_public_address = genesis_key.public_address();
+        let sender_main_key = MainKey::new(SecretKey::random());
+        let sender_dbc =
+            create_genesis_dbc(&sender_main_key).expect("Genesis creation to succeed.");
 
         let client = MockSendClient::new();
         let mut send_wallet: LocalSendWallet<MockSendClient> =
-            SendWallet::<MockSendClient>::new(genesis_key, client);
+            SendWallet::<MockSendClient>::new(sender_main_key, client);
 
-        send_wallet.deposit(vec![genesis]);
+        send_wallet.deposit(vec![sender_dbc]);
 
         assert_eq!(GENESIS_DBC_AMOUNT, send_wallet.balance().as_nano());
 
-        // We send to ourselves.
-        let to = vec![(Token::from_nano(100), genesis_public_address)];
+        // We do not send to ourselves.
+        let recipient_main_key = MainKey::new(SecretKey::random());
+        let recipient_public_address = recipient_main_key.public_address();
+        let to = vec![(Token::from_nano(100), recipient_public_address)];
         let new_dbcs = send_wallet.send(to).await?;
 
         assert_eq!(1, new_dbcs.len());
         assert_eq!(GENESIS_DBC_AMOUNT - 100, send_wallet.balance().as_nano());
 
-        let our_new_dbc = new_dbcs
+        let recipient_dbc = new_dbcs
             .first()
-            .expect("Exactly one dbc to exist in the list.");
-        assert_eq!(100, our_new_dbc.amount.value());
-        assert_eq!(&genesis_public_address, our_new_dbc.dbc.public_address());
-
-        send_wallet.deposit(vec![our_new_dbc.dbc.clone()]);
-
-        assert_eq!(GENESIS_DBC_AMOUNT, send_wallet.balance().as_nano());
+            .expect("There shall be two dbcs in the list.");
+        assert_eq!(100, recipient_dbc.amount.value());
+        assert_eq!(
+            &recipient_public_address,
+            recipient_dbc.dbc.public_address()
+        );
 
         Ok(())
     }
