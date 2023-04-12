@@ -44,8 +44,8 @@ impl Client {
         };
         let mut client_clone = client.clone();
 
-        let _handle = spawn(swarm_driver.run());
-        let _handle = spawn(async move {
+        let _swarm_driver = spawn(swarm_driver.run());
+        let _event_handler = spawn(async move {
             loop {
                 let event = match network_event_receiver.recv().await {
                     Some(event) => event,
