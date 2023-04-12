@@ -80,6 +80,7 @@ impl SwarmDriver {
     pub fn new() -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut cfg = KademliaConfig::default();
         let _ = cfg.set_query_timeout(Duration::from_secs(5 * 60));
+        let _ = cfg.set_connection_idle_timeout(Duration::from_secs(10 * 60));
 
         let request_response = request_response::Behaviour::new(
             MsgCodec(),
