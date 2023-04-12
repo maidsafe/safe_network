@@ -151,7 +151,12 @@ impl SpendStorage {
         a_spend: &SignedSpend,
         b_spend: &SignedSpend,
     ) -> Result<()> {
-        if a_spend.dbc_id() != b_spend.dbc_id() {
+        let different_id = a_spend.dbc_id() != b_spend.dbc_id();
+        let a_hash = sn_dbc::Hash::hash(&a_spend.to_bytes());
+        let b_hash = sn_dbc::Hash::hash(&b_spend.to_bytes());
+        let same_hash = a_hash == b_hash;
+
+        if different_id || same_hash {
             return Err(Error::NotADoubleSpendAttempt(
                 Box::new(a_spend.clone()),
                 Box::new(b_spend.clone()),
