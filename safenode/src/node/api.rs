@@ -125,26 +125,14 @@ impl Node {
             Request::Event(event) => {
                 match event {
                     Event::DoubleSpendAttempted(a_spend, b_spend) => {
-                        self.try_add_double_if_different_hash(&a_spend, &b_spend)
+                        self.storage
+                            .try_add_double(a_spend.as_ref(), b_spend.as_ref())
                             .await?;
                     }
                 };
             }
         }
 
-        Ok(())
-    }
-
-    async fn try_add_double_if_different_hash(
-        &mut self,
-        a_spend: &SignedSpend,
-        b_spend: &SignedSpend,
-    ) -> Result<()> {
-        let a_hash = sn_dbc::Hash::hash(&a_spend.to_bytes());
-        let b_hash = sn_dbc::Hash::hash(&b_spend.to_bytes());
-        if a_hash != b_hash {
-            self.storage.try_add_double(a_spend, b_spend).await?;
-        }
         Ok(())
     }
 
@@ -191,6 +179,7 @@ impl Node {
                 .await;
                 return Ok(());
             }
+            // This should be unreachable, as we only return protocol errors.
             other => other?,
         };
 
