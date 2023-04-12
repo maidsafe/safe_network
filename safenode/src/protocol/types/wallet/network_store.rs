@@ -5,18 +5,3 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-
-/// Address types
-pub mod address;
-/// Data/content Authority types.
-pub mod authority;
-/// Chunk type.
-pub mod chunk;
-/// Dbc genesis creation.
-pub mod dbc_genesis;
-/// Errors.
-pub mod error;
-/// Register type.
-pub mod register;
-/// A wallet for network tokens.
-pub mod wallet;

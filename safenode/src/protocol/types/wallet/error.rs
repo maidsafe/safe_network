@@ -6,17 +6,23 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-/// Address types
-pub mod address;
-/// Data/content Authority types.
-pub mod authority;
-/// Chunk type.
-pub mod chunk;
-/// Dbc genesis creation.
-pub mod dbc_genesis;
-/// Errors.
-pub mod error;
-/// Register type.
-pub mod register;
-/// A wallet for network tokens.
-pub mod wallet;
+use thiserror::Error;
+
+/// Specialisation of `std::Result`.
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+/// Payment errors.
+#[derive(Debug, Error)]
+pub enum Error {
+    ///
+    #[error("Current balance: {balance}. Attempted spend: {attempted_spend}")]
+    NotEnoughBalance {
+        ///
+        balance: sn_dbc::Token,
+        ///
+        attempted_spend: sn_dbc::Token,
+    },
+    ///
+    #[error("Failed to send tokens due to {0}")]
+    CouldNotSendTokens(String),
+}
