@@ -17,7 +17,8 @@ use self_encryption::MIN_ENCRYPTABLE_BYTES;
 
 /// Data of size more than 0 bytes less than [`MIN_ENCRYPTABLE_BYTES`] bytes.
 ///
-/// A `Spot` cannot be self-encrypted, thus is encrypted using the client encryption keys instead.
+/// A `SmallFile` cannot be self-encrypted, thus needs
+/// to be encrypted by the Client if they wish to.
 #[allow(missing_debug_implementations)]
 #[derive(Clone)]
 pub(crate) struct SmallFile {
