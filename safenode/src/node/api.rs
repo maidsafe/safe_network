@@ -27,6 +27,7 @@ use futures::future::select_all;
 use libp2p::{request_response::ResponseChannel, PeerId};
 use std::{collections::BTreeSet, time::Duration};
 use tokio::task::spawn;
+use xor_name::XorName;
 
 impl Node {
     /// Write to storage.
@@ -89,6 +90,17 @@ impl Node {
             }
             NetworkEvent::PeerAdded => {
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
+                let target = {
+                    let mut rng = rand::thread_rng();
+                    XorName::random(&mut rng)
+                };
+
+                let network = self.network.clone();
+                let _handle = spawn(async move {
+                    trace!("Getting closest peers for target {target:?}");
+                    let result = network.node_get_closest_peers(target).await;
+                    trace!("For target {target:?}, get closest peers {result:?}");
+                });
             }
         }
 

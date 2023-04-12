@@ -118,8 +118,10 @@ impl SwarmDriver {
                             .insert(*id, (sender, current_closest));
                     }
                 }
-                KademliaEvent::RoutingUpdated { .. } => {
-                    self.event_sender.send(NetworkEvent::PeerAdded).await?;
+                KademliaEvent::RoutingUpdated { is_new_peer, .. } => {
+                    if *is_new_peer {
+                        self.event_sender.send(NetworkEvent::PeerAdded).await?;
+                    }
                 }
                 KademliaEvent::InboundRequest { request } => {
                     info!("got inbound request: {request:?}");
@@ -138,9 +140,10 @@ impl SwarmDriver {
                             .kademlia
                             .add_address(&peer_id, multiaddr);
                     }
+                    self.event_sender.send(NetworkEvent::PeerAdded).await?;
                 }
-                mdns::Event::Expired(_) => {
-                    info!("mdns peer expired");
+                mdns::Event::Expired(peer) => {
+                    info!("mdns peer {peer:?} expired");
                 }
             },
             SwarmEvent::NewListenAddr { address, .. } => {

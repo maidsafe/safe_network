@@ -37,6 +37,7 @@ impl Client {
     pub fn new() -> Result<Self> {
         info!("Starting Kad swarm in client mode...");
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client()?;
+        info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
         let client = Self {
             network,
@@ -47,6 +48,7 @@ impl Client {
         let _swarm_driver = spawn(swarm_driver.run());
         let _event_handler = spawn(async move {
             loop {
+                info!("Client waiting for a network event");
                 let event = match network_event_receiver.recv().await {
                     Some(event) => event,
                     None => {
@@ -54,6 +56,7 @@ impl Client {
                         continue;
                     }
                 };
+                trace!("Client recevied a network event {event:?}");
                 if let Err(err) = client_clone.handle_network_event(event) {
                     warn!("Error handling network event: {err}");
                 }

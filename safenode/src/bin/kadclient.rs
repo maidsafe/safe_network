@@ -24,7 +24,7 @@ use safenode::{
         },
     },
 };
-use std::{collections::BTreeSet, fs, path::PathBuf, thread, time};
+use std::{collections::BTreeSet, fs, path::PathBuf};
 use tracing::{info, warn};
 use walkdir::WalkDir;
 use xor_name::XorName;
@@ -53,6 +53,10 @@ async fn main() -> Result<()> {
                 let chunk = Chunk::new(Bytes::from(file));
                 let xor_name = *chunk.name();
                 info!(
+                    "Storing chunk {:?} with xorname: {xor_name:x}",
+                    entry.file_name()
+                );
+                println!(
                     "Storing chunk {:?} with xorname: {xor_name:x}",
                     entry.file_name()
                 );
@@ -151,10 +155,7 @@ async fn main() -> Result<()> {
         };
     }
 
-    // Keep the client running.
-    loop {
-        thread::sleep(time::Duration::from_millis(100));
-    }
+    Ok(())
 }
 
 #[derive(Parser, Debug)]
