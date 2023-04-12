@@ -157,7 +157,10 @@ impl SwarmDriver {
         };
 
         Ok((
-            Network { swarm_cmd_sender },
+            Network {
+                swarm_cmd_sender,
+                peer_id,
+            },
             network_event_receiver,
             swarm_driver,
         ))
@@ -234,6 +237,8 @@ fn restart_at_random(peer_id: &PeerId) {
 /// API to interact with the underlying Swarm
 pub struct Network {
     pub(super) swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
+    #[allow(dead_code)]
+    pub(super) peer_id: PeerId,
 }
 
 impl Network {
@@ -316,5 +321,114 @@ impl Network {
         let swarm_cmd_sender = self.swarm_cmd_sender.clone();
         swarm_cmd_sender.send(cmd).await?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SwarmDriver;
+    use crate::log::init_node_logging;
+    use eyre::{eyre, Result};
+    use libp2p::{
+        kad::{
+            kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus},
+            KBucketKey,
+        },
+        PeerId,
+    };
+    use rand::thread_rng;
+    use std::{
+        collections::{BTreeMap, HashMap},
+        fmt,
+        time::Duration,
+    };
+    use xor_name::XorName;
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn closest() -> Result<()> {
+        let _ = init_node_logging(&None)?;
+        let mut networks_list = Vec::new();
+        let mut network_events_recievers = BTreeMap::new();
+        for _ in 1..25 {
+            let (net, event_rx, driver) = SwarmDriver::new()?;
+            let _handle = tokio::spawn(driver.run());
+
+            let _ = network_events_recievers.insert(net.peer_id, event_rx);
+            networks_list.push(net);
+        }
+
+        // Check the closest nodes to the following random_data
+        let mut rng = thread_rng();
+        let random_data = XorName::random(&mut rng);
+        let random_data_key = KBucketKey::from(random_data.0.to_vec());
+
+        tokio::time::sleep(Duration::from_secs(5)).await;
+        let our_net = networks_list
+            .get(0)
+            .ok_or_else(|| eyre!("networks_list is not empty"))?;
+
+        // Get the expected list of closest peers by creating a `KBucketsTable` with all the peers
+        // inserted inside it.
+        // The `KBucketsTable::local_key` is considered to be random since the `local_key` will not
+        // be part of the `closest_peers`. Since our implementation of `get_closest_peers` returns
+        // `self`, we'd want to insert `our_net` into the table as well.
+        let mut table =
+            KBucketsTable::<_, ()>::new(KBucketKey::from(PeerId::random()), Duration::from_secs(5));
+        let mut key_to_peer_id = HashMap::new();
+        for net in networks_list.iter() {
+            let key = KBucketKey::from(net.peer_id);
+            let _ = key_to_peer_id.insert(key.clone(), net.peer_id);
+
+            if let Entry::Absent(e) = table.entry(&key) {
+                match e.insert((), NodeStatus::Connected) {
+                    InsertResult::Inserted => {}
+                    _ => continue,
+                }
+            } else {
+                return Err(eyre!("Table entry should be absent"));
+            }
+        }
+        let expected_from_table = table
+            .closest_keys(&random_data_key)
+            .map(|key| {
+                key_to_peer_id
+                    .get(&key)
+                    .cloned()
+                    .ok_or_else(|| eyre::eyre!("Key should be present"))
+            })
+            .take(8)
+            .collect::<Result<Vec<_>>>()?;
+        info!("Got Closest from table {:?}", expected_from_table.len());
+
+        // Ask the other nodes for the closest_peers.
+        let closest = our_net.get_closest_peers(random_data).await?;
+
+        assert_lists(closest, expected_from_table);
+        Ok(())
+    }
+
+    /// Test utility
+
+    fn assert_lists<I, J, K>(a: I, b: J)
+    where
+        K: fmt::Debug + Eq,
+        I: IntoIterator<Item = K>,
+        J: IntoIterator<Item = K>,
+    {
+        let vec1: Vec<_> = a.into_iter().collect();
+        let mut vec2: Vec<_> = b.into_iter().collect();
+
+        assert_eq!(vec1.len(), vec2.len());
+
+        for item1 in &vec1 {
+            let idx2 = vec2
+                .iter()
+                .position(|item2| item1 == item2)
+                .expect("Item not found in second list");
+
+            let _ = vec2.swap_remove(idx2);
+        }
+
+        assert_eq!(vec2.len(), 0);
     }
 }
