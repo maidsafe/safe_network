@@ -151,14 +151,28 @@ jobs:
 
       - name: Build sn bins
         run: cargo build --release --bins
-        timeout-minutes: 60
+        timeout-minutes: 30
 
       - name: Start a local network
         run: cargo run --release --bin testnet -- --interval 1 --node-path ./target/release/safenode
         id: section-startup
         env:
-          RUST_LOG: "safenode,sn_node=trace"
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 10
 
+      - name: Start a client to carry out chunk actions
+        run: cargo run --release --bin safe -- --upload-chunks ./README.md --get-chunk confirm_uploaded
+        id: client-chunk-actions
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+      - name: Start a client to carry out register actions
+        run: cargo run --release --bin safe -- --create-register --query-register confirm_created
+        id: client-register-actions
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
 
       - name: Kill all nodes
         shell: bash
