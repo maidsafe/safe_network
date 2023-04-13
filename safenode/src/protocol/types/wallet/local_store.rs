@@ -16,6 +16,18 @@ use sn_dbc::{Dbc, DbcId, DbcIdSource, DerivedKey, MainKey, PublicAddress, Token}
 
 ///
 #[async_trait]
+pub trait SendClient {
+    ///
+    async fn send(
+        &self,
+        dbcs: Vec<(Dbc, DerivedKey)>,
+        to: Vec<(Token, DbcIdSource)>,
+        change_to: PublicAddress,
+    ) -> Result<SpendInfo>;
+}
+
+///
+#[async_trait]
 pub trait SendWallet<C: SendClient> {
     ///
     fn new(key: MainKey, client: C) -> Self;
@@ -197,18 +209,6 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSendWallet<C> {
 }
 
 ///
-#[async_trait]
-pub trait SendClient {
-    ///
-    async fn send(
-        &self,
-        dbcs: Vec<(Dbc, DerivedKey)>,
-        to: Vec<(Token, DbcIdSource)>,
-        change_to: PublicAddress,
-    ) -> Result<SpendInfo>;
-}
-
-///
 #[derive(Debug, Clone)]
 pub struct NewDbc {
     ///
@@ -234,9 +234,8 @@ mod tests {
     use super::{DepositWallet, LocalDepositWallet, Result, SendClient, SpendInfo};
 
     use crate::protocol::types::{
-        dbc_genesis::{
-            create_genesis_dbc, send_tokens, Result as GenesisResult, GENESIS_DBC_AMOUNT,
-        },
+        dbc_genesis::{create_genesis_dbc, GenesisResult, GENESIS_DBC_AMOUNT},
+        transfers::create_transfer,
         wallet::{LocalSendWallet, SendWallet},
     };
 
@@ -288,8 +287,7 @@ mod tests {
     #[allow(clippy::result_large_err)]
     fn deposit_adds_dbcs_that_belongs_to_the_wallet() -> GenesisResult<()> {
         let genesis_key = MainKey::new(SecretKey::random());
-        let genesis =
-            create_genesis_dbc(&genesis_key).expect("Should be able to create genesis dbc.");
+        let genesis = create_genesis_dbc(&genesis_key)?;
 
         let mut local_wallet: LocalDepositWallet = DepositWallet::new(genesis_key);
 
@@ -304,8 +302,7 @@ mod tests {
     #[allow(clippy::result_large_err)]
     fn deposit_does_not_add_dbcs_not_belonging_to_the_wallet() -> GenesisResult<()> {
         let genesis_key = MainKey::new(SecretKey::random());
-        let genesis =
-            create_genesis_dbc(&genesis_key).expect("Should be able to create genesis dbc.");
+        let genesis = create_genesis_dbc(&genesis_key)?;
 
         let wallet_key = MainKey::new(SecretKey::random());
         let mut local_wallet: LocalDepositWallet = DepositWallet::new(wallet_key);
@@ -394,12 +391,15 @@ mod tests {
             to: Vec<(Token, DbcIdSource)>,
             change_to: PublicAddress,
         ) -> Result<SpendInfo> {
-            let blah = send_tokens(dbcs, to, change_to).expect("yup");
+            // Here we just create a transfer, without network calls,
+            // and without sending it to the network.
+            let transfer = create_transfer(dbcs, to, change_to)
+                .expect("There should be no issues creating this transfer.");
 
             Ok(SpendInfo {
-                change: blah.change,
-                spent_dbcs: blah.spent_dbcs,
-                new_dbcs: blah
+                change: transfer.change,
+                spent_dbcs: transfer.spent_dbcs,
+                new_dbcs: transfer
                     .outputs
                     .into_iter()
                     .map(|(dbc, amount)| super::NewDbc { dbc, amount })
