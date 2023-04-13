@@ -8,17 +8,33 @@ This is an experimental branch for layering safe network data structures atop li
 
 ## Actions undertaken by a client accessing the network
 
-- Create Register
-`cargo run --release --bin safe -- --create-register`
+- Create Register with nickname 'myregister'
+`cargo run --release --bin safe -- --create-register myregister`
 
-- Get Register; copy the `XorName` of the register from the previous command
-`cargo run --release --bin safe -- --query-register xor_name`
+- Get Register using its nickname from the previous command
+`cargo run --release --bin safe -- --query-register myregister`
 
 - Put files
 `cargo run --release --bin safe -- --upload-chunks ~/dir/with/files`
 
 - Get files; copy the `XorName` of the file from the previous command
 `cargo run --release --bin safe -- --get-chunk xor_name`
+
+## Using example app which exercises the Register APIs
+
+You can run the `registers` example client app from multiple consoles simultaneously,
+to write to the same Register on the network, identified by its nickname and
+using different user names from each instance launched, e.g.:
+
+From first console:
+```
+cargo run --release --example registers -- --user alice --reg-nickname myregister
+```
+
+From a second console:
+```
+cargo run --release --example registers -- --user bob --reg-nickname myregister
+```
 
 ### Notes
 

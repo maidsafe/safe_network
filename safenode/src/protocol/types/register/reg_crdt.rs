@@ -17,7 +17,7 @@ use super::{
 
 use crdts::{
     merkle_reg::{MerkleReg, Node},
-    CmRDT,
+    CmRDT, CvRDT,
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -93,6 +93,11 @@ impl RegisterCrdt {
     /// Returns the address.
     pub(crate) fn address(&self) -> &RegisterAddress {
         &self.address
+    }
+
+    /// Merge another register into this one.
+    pub(crate) fn merge(&mut self, other: Self) {
+        self.data.merge(other.data);
     }
 
     /// Returns total number of items in the register.

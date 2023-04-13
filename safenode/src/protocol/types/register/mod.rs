@@ -42,7 +42,7 @@ pub type RegisterOp<T> = CrdtOperation<T>;
 #[derive(Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub struct Register {
     authority: User,
-    pub(super) crdt: RegisterCrdt, // Temporarily exposed to 'super' till spentbook fully implemented.
+    crdt: RegisterCrdt, // Temporarily exposed to 'super' till spentbook fully implemented.
     policy: Policy,
 }
 
@@ -136,6 +136,11 @@ impl Register {
     pub fn apply_op(&mut self, op: RegisterOp<Entry>) -> Result<()> {
         self.check_entry_and_reg_sizes(&op.crdt_op.value)?;
         self.crdt.apply_op(op)
+    }
+
+    /// Merge another Register into this one.
+    pub fn merge(&mut self, other: Self) {
+        self.crdt.merge(other.crdt);
     }
 
     // Private helper to check the given Entry's size is within define limit,

@@ -8,33 +8,27 @@
 
 use super::{
     error::{Error, Result},
-    Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver,
+    Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, Register, RegisterOffline,
 };
 
 use crate::{
     network::{NetworkEvent, SwarmDriver},
     protocol::{
-        messages::{
-            Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, RegisterQuery, Request, Response,
-            SignedRegisterCreate, SignedRegisterEdit,
-        },
-        types::{
-            address::{ChunkAddress, RegisterAddress},
-            chunk::Chunk,
-            error::Error as ProtocolError,
-            register::Register,
-        },
+        messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
+        types::{address::ChunkAddress, chunk::Chunk, error::Error as ProtocolError},
     },
 };
 
+use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use libp2p::PeerId;
 use std::time::Duration;
 use tokio::task::spawn;
+use xor_name::XorName;
 
 impl Client {
     /// Instantiate a new client.
-    pub fn new() -> Result<Self> {
+    pub fn new(signer: SecretKey) -> Result<Self> {
         info!("Starting Kad swarm in client mode...");
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client()?;
         info!("Client constructed network and swarm_driver");
@@ -42,6 +36,7 @@ impl Client {
         let client = Self {
             network,
             events_channel,
+            signer,
         };
         let mut client_clone = client.clone();
 
@@ -87,6 +82,36 @@ impl Client {
         self.events_channel.subscribe()
     }
 
+    /// Sign the given data
+    pub fn sign(&self, data: &[u8]) -> Signature {
+        self.signer.sign(data)
+    }
+
+    /// Return the publick key of the data signing key
+    pub fn signer_pk(&self) -> PublicKey {
+        self.signer.public_key()
+    }
+
+    /// Retrieve a Register from the network.
+    pub async fn get_register(&self, xorname: XorName, tag: u64) -> Result<Register> {
+        info!("Retrieving a Register replica with name {xorname} and tag {tag}");
+        Register::get(self.clone(), xorname, tag).await
+    }
+
+    /// Create a new Register.
+    pub async fn create_register(&self, xorname: XorName, tag: u64) -> Result<Register> {
+        info!("Instantiating a new Register replica with name {xorname} and tag {tag}");
+        Register::create(self.clone(), xorname, tag).await
+    }
+
+    /// Create a new offline Register instance.
+    /// It returns a Rgister instance which can be used to apply operations offline,
+    /// and publish them all to the network on a ad hoc basis.
+    pub fn create_register_offline(&self, xorname: XorName, tag: u64) -> Result<RegisterOffline> {
+        info!("Instantiating a new (offline) Register replica with name {xorname} and tag {tag}");
+        RegisterOffline::create(self.clone(), xorname, tag)
+    }
+
     /// Store `Chunk` to its close group.
     pub async fn store_chunk(&self, chunk: Chunk) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
@@ -114,66 +139,6 @@ impl Client {
         }
 
         // If there were no store chunk errors, then we had unexpected responses.
-        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
-    }
-
-    /// Create a `Register` on the network.
-    pub async fn create_register(&self, cmd: SignedRegisterCreate) -> Result<()> {
-        info!("Create register: {:?}", cmd.dst());
-        let request = Request::Cmd(Cmd::Register(RegisterCmd::Create(cmd)));
-        let responses = self.send_to_closest(request).await?;
-
-        let all_ok = responses
-            .iter()
-            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::CreateRegister(Ok(()))))));
-        if all_ok {
-            return Ok(());
-        }
-
-        // If not all were Ok, we will return the first error sent to us.
-        for resp in responses.iter().flatten() {
-            if let Response::Cmd(CmdResponse::CreateRegister(result)) = resp {
-                result.clone()?;
-            };
-        }
-
-        // If there were no success or fail to the expected query,
-        // we check if there were any send errors.
-        for resp in responses {
-            let _ = resp?;
-        }
-
-        // If there were no register errors, then we had unexpected responses.
-        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
-    }
-
-    /// Edit a `Register` in the network.
-    pub async fn edit_register(&self, cmd: SignedRegisterEdit) -> Result<()> {
-        info!("Create register: {:?}", cmd.dst());
-        let request = Request::Cmd(Cmd::Register(RegisterCmd::Edit(cmd)));
-        let responses = self.send_to_closest(request).await?;
-
-        let all_ok = responses
-            .iter()
-            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::EditRegister(Ok(()))))));
-        if all_ok {
-            return Ok(());
-        }
-
-        // If not all were Ok, we will return the first error sent to us.
-        for resp in responses.iter().flatten() {
-            if let Response::Cmd(CmdResponse::EditRegister(result)) = resp {
-                result.clone()?;
-            };
-        }
-
-        // If there were no success or fail to the expected query,
-        // we check if there were any send errors.
-        for resp in responses {
-            let _ = resp?;
-        }
-
-        // If there were no register errors, then we had unexpected responses.
         Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
@@ -207,37 +172,7 @@ impl Client {
         Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    /// Retrieve a `Register` from the closest peers.
-    pub async fn get_register(&self, address: RegisterAddress) -> Result<Register> {
-        info!("Get chunk: {address:?}");
-        let request = Request::Query(Query::Register(RegisterQuery::Get(address)));
-        let responses = self.send_to_closest(request).await?;
-
-        // We will return the first register we get.
-        for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetRegister(Ok(register))) = resp {
-                return Ok(register.clone());
-            };
-        }
-
-        // If no register was gotten, we will return the first error sent to us.
-        for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetChunk(result)) = resp {
-                let _ = result.clone()?;
-            };
-        }
-
-        // If there were no success or fail to the expected query,
-        // we check if there were any send errors.
-        for resp in responses {
-            let _ = resp?;
-        }
-
-        // If there was none of the above, then we had unexpected responses.
-        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
-    }
-
-    async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
+    pub(super) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
         info!("Sending {:?} to the closest peers.", request.dst());
         let closest_peers = self
             .network

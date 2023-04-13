@@ -168,7 +168,7 @@ jobs:
         timeout-minutes: 2
 
       - name: Start a client to carry out register actions
-        run: cargo run --release --bin safe -- --create-register --query-register confirm_created
+        run: cargo run --release --bin safe -- --create-register myregister --query-register myregister
         id: client-register-actions
         env:
           RUST_LOG: "safenode,safe=trace"

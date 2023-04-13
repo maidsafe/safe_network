@@ -6,9 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use thiserror::Error;
-
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
+
+use crate::protocol::types::register::{Entry, EntryHash};
+
+use std::collections::BTreeSet;
+use thiserror::Error;
 
 /// Internal error.
 #[derive(Debug, Error)]
@@ -28,4 +31,13 @@ pub enum Error {
 
     #[error("Chunks error {0}.")]
     Chunks(#[from] super::chunks::Error),
+
+    #[error("Serialisation error: {0}")]
+    BincodeError(#[from] bincode::Error),
+
+    #[error(
+        "Content branches detected in the Register which need to be merged/resolved by user. \
+        Entries hashes of branches are: {0:?}"
+    )]
+    ContentBranchDetected(BTreeSet<(EntryHash, Entry)>),
 }
