@@ -45,7 +45,10 @@ impl Client {
         };
         let mut client_clone = client.clone();
 
-        let _swarm_driver = spawn(swarm_driver.run());
+        let _swarm_driver = spawn({
+            trace!("Starting up client swarm_driver");
+            swarm_driver.run()
+        });
         let _event_handler = spawn(async move {
             loop {
                 info!("Client waiting for a network event");

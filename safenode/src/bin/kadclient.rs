@@ -46,6 +46,8 @@ async fn main() -> Result<()> {
         }
     }
 
+    let mut chunks_to_fetch = Vec::new();
+
     if let Some(files_path) = opt.upload_chunks {
         for entry in WalkDir::new(files_path).into_iter().flatten() {
             if entry.file_type().is_file() {
@@ -61,26 +63,39 @@ async fn main() -> Result<()> {
                     entry.file_name()
                 );
                 match client.store_chunk(chunk).await {
-                    Ok(()) => info!("Successfully stored chunk"),
+                    Ok(()) => {
+                        info!("Successfully stored chunk {xor_name:?}");
+                        chunks_to_fetch.push(xor_name);
+                    }
                     Err(error) => {
-                        warn!("Did not store chunk to all nodes in the close group! {error}")
+                        panic!("Did not store chunk {xor_name:?} to all nodes in the close group! {error}")
                     }
                 };
             }
         }
     }
 
-    if let Some(xor_name) = opt.get_chunk {
-        info!("Trying to get chunk {xor_name}...");
-        let vec = hex::decode(xor_name).expect("Failed to decode xorname!");
-        let mut xor_name = XorName::default();
-        xor_name.0.copy_from_slice(vec.as_slice());
+    if let Some(input_str) = opt.get_chunk {
+        println!("String passed in via get_chunk is {input_str}...");
+        if input_str.len() == 64 {
+            let vec = hex::decode(input_str).expect("Failed to decode xorname!");
+            let mut xor_name = XorName::default();
+            xor_name.0.copy_from_slice(vec.as_slice());
+            chunks_to_fetch.push(xor_name);
+        }
 
-        match client.get_chunk(ChunkAddress::new(xor_name)).await {
-            Ok(chunk) => info!("Successfully got chunk {}!", chunk.name()),
-            Err(error) => warn!("Did not get any chunk from the close group! {error}"),
-        };
+        for xor_name in chunks_to_fetch.iter() {
+            println!("Fetching chunk {xor_name:?}");
+            match client.get_chunk(ChunkAddress::new(*xor_name)).await {
+                Ok(chunk) => info!("Successfully got chunk {}!", chunk.name()),
+                Err(error) => {
+                    panic!("Did not get chunk {xor_name:?} from the close group! {error}")
+                }
+            };
+        }
     }
+
+    let mut register_to_query = Vec::new();
 
     if opt.create_register {
         let mut rng = rand::thread_rng();
@@ -107,8 +122,13 @@ async fn main() -> Result<()> {
         let cmd = SignedRegisterCreate { op, auth };
 
         match client.create_register(cmd).await {
-            Ok(()) => info!("Successfully created register {xor_name}, {tag}!"),
-            Err(error) => warn!("Did not create register on all nodes in the close group! {error}"),
+            Ok(()) => {
+                register_to_query.push(xor_name);
+                info!("Successfully created register {xor_name:?}, {tag}!");
+            }
+            Err(error) => panic!(
+                "Did not create register {xor_name:?} on all nodes in the close group! {error}"
+            ),
         };
 
         if let Some(entry) = opt.entry {
@@ -134,25 +154,31 @@ async fn main() -> Result<()> {
         }
     }
 
-    if let Some(xor_name) = opt.query_register {
-        info!("Trying to retrieve Register");
-        let vec = hex::decode(xor_name).expect("failed to decode xorname");
-        let mut xor_name = XorName::default();
-        xor_name.0.copy_from_slice(vec.as_slice());
+    if let Some(input_str) = opt.query_register {
+        println!("String passed in via query_register is {input_str}...");
+        if input_str.len() == 64 {
+            let vec = hex::decode(input_str).expect("failed to decode xorname");
+            let mut xor_name = XorName::default();
+            xor_name.0.copy_from_slice(vec.as_slice());
+            register_to_query.push(xor_name);
+        }
+
         let tag = 3006;
+        for xor_name in register_to_query.iter() {
+            println!("Trying to retrieve Register {xor_name:?}");
+            let addr = RegisterAddress::new(*xor_name, tag);
 
-        let addr = RegisterAddress::new(xor_name, tag);
-
-        match client.get_register(addr).await {
-            Ok(register) => info!(
-                "Successfully retrieved Register {}, {}!",
-                register.name(),
-                register.tag()
-            ),
-            Err(error) => {
-                warn!("Did not retrieve Register from all nodes in the close group! {error}")
-            }
-        };
+            match client.get_register(addr).await {
+                Ok(register) => info!(
+                    "Successfully retrieved Register {}, {}!",
+                    register.name(),
+                    register.tag()
+                ),
+                Err(error) => {
+                    panic!("Did not retrieve Register {xor_name:?} from all nodes in the close group! {error}")
+                }
+            };
+        }
     }
 
     Ok(())
