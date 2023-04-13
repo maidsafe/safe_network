@@ -11,16 +11,24 @@ mod chunks;
 mod error;
 mod event;
 mod file_apis;
+mod register;
 
-pub use self::event::{ClientEvent, ClientEventsReceiver};
+pub use self::{
+    error::Error,
+    event::{ClientEvent, ClientEventsReceiver},
+    register::{Register, RegisterOffline},
+};
 
 use self::event::ClientEventsChannel;
 
 use crate::network::Network;
 
-/// Client API implementation store and get data.
+use bls::SecretKey;
+
+/// Client API implementation to store and get data.
 #[derive(Clone)]
 pub struct Client {
     network: Network,
     events_channel: ClientEventsChannel,
+    signer: SecretKey,
 }
