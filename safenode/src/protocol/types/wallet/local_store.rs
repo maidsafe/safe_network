@@ -6,66 +6,22 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::Result;
+use super::{CreatedDbc, DepositWallet, Result, SendClient, SendWallet};
+
+use crate::protocol::types::transfers::Outputs as TransferDetails;
+
+use sn_dbc::{Dbc, DbcId, DbcIdSource, MainKey, PublicAddress, Token};
 
 use async_trait::async_trait;
 use std::collections::{BTreeMap, BTreeSet};
 
-// use crate::dbcs::DbcReason as Reason; // Later also use Reason in send api.
-use sn_dbc::{Dbc, DbcId, DbcIdSource, DerivedKey, MainKey, PublicAddress, Token};
-
-///
-#[async_trait]
-pub trait SendClient {
-    ///
-    async fn send(
-        &self,
-        dbcs: Vec<(Dbc, DerivedKey)>,
-        to: Vec<(Token, DbcIdSource)>,
-        change_to: PublicAddress,
-    ) -> Result<SpendInfo>;
-}
-
-///
-#[async_trait]
-pub trait SendWallet<C: SendClient> {
-    ///
-    fn new(key: MainKey, client: C) -> Self;
-    // fn load_from(path: &Path) -> Self;
-    ///
-    fn address(&self) -> PublicAddress;
-    ///
-    fn balance(&self) -> Token;
-    /// Used to generate a new dbc id for receiving tokens.
-    fn new_dbc_address(&self) -> DbcIdSource;
-    /// Will only deposit those that are actually accessible by this wallet.
-    fn deposit(&mut self, dbcs: Vec<Dbc>);
-    ///
-    async fn send(&mut self, to: Vec<(Token, PublicAddress)>) -> Result<Vec<NewDbc>>;
-}
-
-///
-pub trait DepositWallet {
-    ///
-    fn new(key: MainKey) -> Self;
-    // fn load_from(path: &Path) -> Self;
-    ///
-    fn address(&self) -> PublicAddress;
-    ///
-    fn balance(&self) -> Token;
-    /// Used to generate a new dbc id for receiving tokens.
-    fn new_dbc_address(&self) -> DbcIdSource;
-    /// Will only deposit those that are actually accessible by this wallet.
-    fn deposit(&mut self, dbcs: Vec<Dbc>);
-}
-
-///
+/// A wallet that can send tokens to other addresses.
 pub struct LocalSendWallet<C: SendClient> {
     client: C,
     wallet: LocalDepositWallet,
 }
 
-///
+/// A wallet that can only receive tokens.
 pub struct LocalDepositWallet {
     /// The secret key with which we can access
     /// all the tokens in the available_dbcs.
@@ -79,7 +35,8 @@ pub struct LocalDepositWallet {
     available_dbcs: BTreeMap<DbcId, Dbc>,
     /// These are the dbcs we've created by
     /// sending tokens to other addresses.
-    output_history: Vec<NewDbc>,
+    output_history: Vec<CreatedDbc>,
+    // /// The path to the wallet file.
     // local_store: std::path::PathBuf,
 }
 
@@ -117,7 +74,7 @@ impl DepositWallet for LocalDepositWallet {
             return;
         }
 
-        let mut new_dbcs = dbcs
+        let mut received_dbcs = dbcs
             .into_iter()
             .filter_map(|dbc| {
                 let id = dbc.id();
@@ -126,7 +83,7 @@ impl DepositWallet for LocalDepositWallet {
             .filter_map(|(id, dbc)| dbc.derived_key(&self.key).is_ok().then_some((id, dbc)))
             .collect();
 
-        self.available_dbcs.append(&mut new_dbcs);
+        self.available_dbcs.append(&mut received_dbcs);
 
         let new_balance = self
             .available_dbcs
@@ -151,6 +108,12 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSendWallet<C> {
         }
     }
 
+    // /// Loads a serialized wallet from a path.
+    // fn load_from(path: &Path) -> Self {
+    //     Self {
+    //     }
+    // }
+
     fn address(&self) -> PublicAddress {
         self.wallet.address()
     }
@@ -167,7 +130,7 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSendWallet<C> {
         self.wallet.deposit(dbcs)
     }
 
-    async fn send(&mut self, to: Vec<(Token, PublicAddress)>) -> Result<Vec<NewDbc>> {
+    async fn send(&mut self, to: Vec<(Token, PublicAddress)>) -> Result<Vec<CreatedDbc>> {
         // do not make a pointless send to ourselves
 
         let to: Vec<_> = to
@@ -189,59 +152,41 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSendWallet<C> {
             available_dbcs.push((dbc.clone(), derived_key));
         }
 
-        let SpendInfo {
-            change,
-            spent_dbcs,
-            new_dbcs,
+        let TransferDetails {
+            change_dbc,
+            created_dbcs,
         } = self.client.send(available_dbcs, to, self.address()).await?;
 
-        let mut spent_dbcs = spent_dbcs
-            .into_iter()
-            .filter_map(|id| self.wallet.available_dbcs.remove(&id).map(|dbc| (id, dbc)))
+        let spent_dbc_ids: BTreeSet<_> = created_dbcs
+            .iter()
+            .flat_map(|created| &created.dbc.signed_spends)
+            .map(|spend| spend.dbc_id())
             .collect();
 
-        self.deposit(change.into_iter().collect());
+        let mut spent_dbcs = spent_dbc_ids
+            .into_iter()
+            .filter_map(|id| self.wallet.available_dbcs.remove(id).map(|dbc| (*id, dbc)))
+            .collect();
+
+        self.deposit(change_dbc.into_iter().collect());
         self.wallet.spent_dbcs.append(&mut spent_dbcs);
-        self.wallet.output_history.extend(new_dbcs.clone());
+        self.wallet.output_history.extend(created_dbcs.clone());
 
-        Ok(new_dbcs)
+        Ok(created_dbcs)
     }
-}
-
-///
-#[derive(Debug, Clone)]
-pub struct NewDbc {
-    ///
-    pub dbc: Dbc,
-    ///
-    pub amount: sn_dbc::RevealedAmount,
-}
-
-///
-pub struct SpendInfo {
-    /// Any surplus tokens from the last spent dbc.
-    pub change: Option<Dbc>,
-    /// The dbcs that were spent when sending
-    /// the tokens.
-    pub spent_dbcs: BTreeSet<DbcId>,
-    /// The dbcs that were created containing
-    /// the tokens sent to respective recipient.
-    pub new_dbcs: Vec<NewDbc>,
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{DepositWallet, LocalDepositWallet, Result, SendClient, SpendInfo};
+    use super::{DepositWallet, LocalDepositWallet, Result, SendClient};
 
     use crate::protocol::types::{
         dbc_genesis::{create_genesis_dbc, GenesisResult, GENESIS_DBC_AMOUNT},
-        transfers::create_transfer,
+        transfers::{create_transfer, Outputs as TransferDetails},
         wallet::{LocalSendWallet, SendWallet},
     };
 
     use sn_dbc::{Dbc, DbcIdSource, DerivedKey, MainKey, PublicAddress, Token};
-
-    use bls::SecretKey;
 
     /// -----------------------------------
     /// <-------> DepositWallet <--------->
@@ -249,7 +194,7 @@ mod tests {
 
     #[test]
     fn deposit_wallet_basics() -> Result<()> {
-        let main_key = MainKey::new(SecretKey::random());
+        let main_key = MainKey::random();
         let public_address = main_key.public_address();
         let local_wallet: LocalDepositWallet = DepositWallet::new(main_key);
 
@@ -269,8 +214,7 @@ mod tests {
 
     #[test]
     fn deposit_empty_list_does_nothing() -> Result<()> {
-        let mut local_wallet: LocalDepositWallet =
-            DepositWallet::new(MainKey::new(SecretKey::random()));
+        let mut local_wallet: LocalDepositWallet = DepositWallet::new(MainKey::random());
 
         local_wallet.deposit(vec![]);
 
@@ -286,7 +230,7 @@ mod tests {
     #[test]
     #[allow(clippy::result_large_err)]
     fn deposit_adds_dbcs_that_belongs_to_the_wallet() -> GenesisResult<()> {
-        let genesis_key = MainKey::new(SecretKey::random());
+        let genesis_key = MainKey::random();
         let genesis = create_genesis_dbc(&genesis_key)?;
 
         let mut local_wallet: LocalDepositWallet = DepositWallet::new(genesis_key);
@@ -301,10 +245,10 @@ mod tests {
     #[test]
     #[allow(clippy::result_large_err)]
     fn deposit_does_not_add_dbcs_not_belonging_to_the_wallet() -> GenesisResult<()> {
-        let genesis_key = MainKey::new(SecretKey::random());
+        let genesis_key = MainKey::random();
         let genesis = create_genesis_dbc(&genesis_key)?;
 
-        let wallet_key = MainKey::new(SecretKey::random());
+        let wallet_key = MainKey::random();
         let mut local_wallet: LocalDepositWallet = DepositWallet::new(wallet_key);
 
         local_wallet.deposit(vec![genesis]);
@@ -321,7 +265,7 @@ mod tests {
     #[test]
     #[allow(clippy::result_large_err)]
     fn send_wallet_basics() -> GenesisResult<()> {
-        let main_key = MainKey::new(SecretKey::random());
+        let main_key = MainKey::random();
         let public_address = main_key.public_address();
         let client = MockSendClient::new();
         let send_wallet: LocalSendWallet<MockSendClient> =
@@ -341,7 +285,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::result_large_err)]
     async fn sending_decreases_balance() -> Result<()> {
-        let sender_main_key = MainKey::new(SecretKey::random());
+        let sender_main_key = MainKey::random();
         let sender_dbc =
             create_genesis_dbc(&sender_main_key).expect("Genesis creation to succeed.");
 
@@ -353,18 +297,16 @@ mod tests {
 
         assert_eq!(GENESIS_DBC_AMOUNT, send_wallet.balance().as_nano());
 
-        // We do not send to ourselves.
-        let recipient_main_key = MainKey::new(SecretKey::random());
+        // We send to a new address.
+        let recipient_main_key = MainKey::random();
         let recipient_public_address = recipient_main_key.public_address();
         let to = vec![(Token::from_nano(100), recipient_public_address)];
-        let new_dbcs = send_wallet.send(to).await?;
+        let created_dbcs = send_wallet.send(to).await?;
 
-        assert_eq!(1, new_dbcs.len());
+        assert_eq!(1, created_dbcs.len());
         assert_eq!(GENESIS_DBC_AMOUNT - 100, send_wallet.balance().as_nano());
 
-        let recipient_dbc = new_dbcs
-            .first()
-            .expect("There shall be two dbcs in the list.");
+        let recipient_dbc = &created_dbcs[0];
         assert_eq!(100, recipient_dbc.amount.value());
         assert_eq!(
             &recipient_public_address,
@@ -390,21 +332,13 @@ mod tests {
             dbcs: Vec<(Dbc, DerivedKey)>,
             to: Vec<(Token, DbcIdSource)>,
             change_to: PublicAddress,
-        ) -> Result<SpendInfo> {
+        ) -> Result<TransferDetails> {
             // Here we just create a transfer, without network calls,
             // and without sending it to the network.
             let transfer = create_transfer(dbcs, to, change_to)
                 .expect("There should be no issues creating this transfer.");
 
-            Ok(SpendInfo {
-                change: transfer.change,
-                spent_dbcs: transfer.spent_dbcs,
-                new_dbcs: transfer
-                    .outputs
-                    .into_iter()
-                    .map(|(dbc, amount)| super::NewDbc { dbc, amount })
-                    .collect(),
-            })
+            Ok(transfer)
         }
     }
 }

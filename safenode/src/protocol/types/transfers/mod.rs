@@ -11,19 +11,19 @@ mod error;
 use error::{Error, Result};
 
 use sn_dbc::{
-    rng, Dbc, DbcId, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedAmount,
+    rng, Dbc, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedAmount,
     RevealedInput, Token, TransactionBuilder,
 };
 
-use std::{collections::BTreeSet, fmt::Debug};
+use std::fmt::Debug;
 
 /// The input details to a transfer of tokens.
 #[derive(Debug)]
 pub struct Inputs {
-    /// The dbcs to spend, as to transfer their tokens.
-    pub input_dbcs: Vec<(Dbc, DerivedKey)>,
-    /// The dbcs that will be created, holding the transferred tokens.
-    pub outputs: Vec<(Token, DbcIdSource)>,
+    /// The selected dbcs to spend, as to transfer their tokens to the recipients.
+    pub dbcs_to_spend: Vec<(Dbc, DerivedKey)>,
+    /// The amounts and dbc ids for the dbcs that will be created to hold the transferred tokens.
+    pub recipients: Vec<(Token, DbcIdSource)>,
     /// Any surplus amount after spending the necessary input dbcs.
     pub change: (Token, PublicAddress),
 }
@@ -31,12 +31,22 @@ pub struct Inputs {
 /// The token transfer results.
 #[derive(Debug)]
 pub struct Outputs {
-    /// The dbcs holding the tokens that were transferred.
-    pub outputs: Vec<(Dbc, RevealedAmount)>,
-    /// The ids of the dbcs we spent in this transfer.
-    pub spent_dbcs: BTreeSet<DbcId>,
-    /// The dbc holding surplus amount after spending the necessary input dbcs.
-    pub change: Option<Dbc>,
+    /// The dbcs that were created containing
+    /// the tokens sent to respective recipient.
+    pub created_dbcs: Vec<CreatedDbc>,
+    /// The dbc holding surplus tokens after
+    /// spending the necessary input dbcs.
+    pub change_dbc: Option<Dbc>,
+}
+
+/// A resulting dbc from a token transfer.
+#[derive(Debug, Clone)]
+pub struct CreatedDbc {
+    /// The dbc that was created.
+    pub dbc: Dbc,
+    /// This is useful for the sender to know how much they sent to each recipient.
+    /// They can't know this from the dbc itself, as the amount is encrypted.
+    pub amount: RevealedAmount,
 }
 
 /// A function for creating an offline transfer of tokens.
@@ -73,13 +83,13 @@ pub fn create_transfer(
 #[allow(clippy::result_large_err)]
 fn transfer(send_inputs: Inputs) -> Result<Outputs> {
     let Inputs {
-        input_dbcs,
-        outputs,
+        dbcs_to_spend,
+        recipients,
         change: (change, change_to),
     } = send_inputs;
 
     let mut inputs = vec![];
-    for (dbc, derived_key) in input_dbcs {
+    for (dbc, derived_key) in dbcs_to_spend {
         let revealed_amount = match dbc.revealed_amount(&derived_key) {
             Ok(amount) => amount,
             Err(err) => {
@@ -96,7 +106,7 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
 
     let mut tx_builder = TransactionBuilder::default()
         .add_inputs(inputs)
-        .add_outputs(outputs);
+        .add_outputs(recipients);
 
     let mut rng = rng::thread_rng();
 
@@ -110,17 +120,19 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
         .build(Hash::default(), &mut rng)
         .map_err(Error::Dbcs)?;
 
-    let signed_spends = dbc_builder.signed_spends();
-    let spent_dbcs = signed_spends.iter().map(|spent| *spent.dbc_id()).collect();
-
     // Perform verifications of input TX and spentproofs,
     // as well as building the output DBCs.
-    let mut output_dbcs = dbc_builder.build().map_err(Error::Dbcs)?;
+    let mut created_dbcs: Vec<_> = dbc_builder
+        .build()
+        .map_err(Error::Dbcs)?
+        .into_iter()
+        .map(|(dbc, amount)| CreatedDbc { dbc, amount })
+        .collect();
 
     let mut change_dbc = None;
-    output_dbcs.retain(|(dbc, _)| {
-        if dbc.public_address() == &change_to && change.as_nano() > 0 {
-            change_dbc = Some(dbc.clone());
+    created_dbcs.retain(|created| {
+        if created.dbc.public_address() == &change_to && change.as_nano() > 0 {
+            change_dbc = Some(created.dbc.clone());
             false
         } else {
             true
@@ -128,30 +140,28 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
     });
 
     Ok(Outputs {
-        outputs: output_dbcs,
-        change: change_dbc,
-        spent_dbcs,
+        created_dbcs,
+        change_dbc,
     })
 }
 
-///
+/// Select the necessary number of dbcs from those that we were passed.
 #[allow(clippy::result_large_err)]
 pub(crate) fn select_inputs(
     inputs: Vec<(Dbc, DerivedKey)>,
-    outputs: Vec<(Token, DbcIdSource)>,
+    recipients: Vec<(Token, DbcIdSource)>,
     change_to: PublicAddress,
 ) -> Result<Inputs> {
-    let mut input_dbcs = Vec::new();
+    let mut dbcs_to_spend = Vec::new();
     let mut total_input_amount = Token::zero();
-    let total_output_amount = outputs
+    let total_output_amount = recipients
         .iter()
         .fold(Some(Token::zero()), |total, (amount, _)| {
             total.and_then(|t| t.checked_add(*amount))
         })
         .ok_or_else(|| {
             Error::DbcReissueFailed(
-                "Overflow occurred while summing the output amounts for the output DBCs."
-                    .to_string(),
+                "Overflow occurred while summing the amounts for the recipients.".to_string(),
             )
         })?;
 
@@ -169,7 +179,7 @@ pub(crate) fn select_inputs(
         };
 
         // Add this Dbc as input to be spent.
-        input_dbcs.push((dbc, derived_key));
+        dbcs_to_spend.push((dbc, derived_key));
 
         // Input amount increases with the amount of the dbc.
         total_input_amount = total_input_amount.checked_add(dbc_balance)
@@ -199,8 +209,8 @@ pub(crate) fn select_inputs(
     verify_amounts(total_input_amount, total_output_amount)?;
 
     Ok(Inputs {
-        input_dbcs,
-        outputs,
+        dbcs_to_spend,
+        recipients,
         change: (change_amount, change_to),
     })
 }
