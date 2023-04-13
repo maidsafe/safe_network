@@ -28,6 +28,7 @@ use libp2p::{
     identity,
     kad::{record::store::MemoryStore, KBucketKey, Kademlia, KademliaConfig, QueryId},
     mdns,
+    multiaddr::Protocol,
     request_response::{self, ProtocolSupport, RequestId, ResponseChannel},
     swarm::{Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
@@ -36,6 +37,7 @@ use rand::Rng;
 use std::{
     collections::{HashMap, HashSet},
     env, iter,
+    net::SocketAddr,
     process::{self, Command, Stdio},
     time::Duration,
 };
@@ -77,7 +79,7 @@ impl SwarmDriver {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the mDNS behavior.
-    pub fn new() -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    pub fn new(addr: SocketAddr) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut cfg = KademliaConfig::default();
         let _ = cfg.set_query_timeout(Duration::from_secs(5 * 60));
         let _ = cfg.set_connection_idle_timeout(Duration::from_secs(10 * 60));
@@ -90,10 +92,10 @@ impl SwarmDriver {
 
         let (network, events_receiver, mut swarm_driver) = Self::with(cfg, request_response)?;
 
-        // Listen on all interfaces and whatever port the OS assigns.
-        let addr = "/ip4/0.0.0.0/udp/0/quic-v1"
-            .parse()
-            .expect("Failed to parse the address");
+        // Listen on the provided address
+        let addr = Multiaddr::from(addr.ip())
+            .with(Protocol::Udp(addr.port()))
+            .with(Protocol::QuicV1);
         let _listener_id = swarm_driver
             .swarm
             .listen_on(addr)
@@ -355,6 +357,7 @@ mod tests {
     use std::{
         collections::{BTreeMap, HashMap},
         fmt,
+        net::SocketAddr,
         time::Duration,
     };
     use xor_name::XorName;
@@ -365,7 +368,11 @@ mod tests {
         let mut networks_list = Vec::new();
         let mut network_events_recievers = BTreeMap::new();
         for _ in 1..25 {
-            let (net, event_rx, driver) = SwarmDriver::new()?;
+            let (net, event_rx, driver) = SwarmDriver::new(
+                "0.0.0.0:0"
+                    .parse::<SocketAddr>()
+                    .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
+            )?;
             let _handle = tokio::spawn(driver.run());
 
             let _ = network_events_recievers.insert(net.peer_id, event_rx);

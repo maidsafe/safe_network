@@ -25,7 +25,7 @@ use sn_dbc::{DbcTransaction, SignedSpend};
 
 use futures::future::select_all;
 use libp2p::{request_response::ResponseChannel, PeerId};
-use std::{collections::BTreeSet, time::Duration};
+use std::{collections::BTreeSet, net::SocketAddr, time::Duration};
 use tokio::task::spawn;
 use xor_name::XorName;
 
@@ -53,8 +53,8 @@ impl Node {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
-    pub async fn run() -> Result<(Self, NodeEventsChannel)> {
-        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new()?;
+    pub async fn run(addr: SocketAddr) -> Result<(Self, NodeEventsChannel)> {
+        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
         let storage = DataStorage::new();
         let node_events_channel = NodeEventsChannel::default();
         let node = Self {

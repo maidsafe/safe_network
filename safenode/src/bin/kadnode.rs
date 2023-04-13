@@ -15,7 +15,11 @@ use safenode::{
 use clap::Parser;
 use eyre::{eyre, Result};
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
-use std::{path::PathBuf, thread, time};
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
+    thread, time,
+};
 use tracing::info;
 
 #[tokio::main]
@@ -23,8 +27,10 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
+    let socket_addr = SocketAddr::new(opt.ip, opt.port);
+
     info!("Starting a node...");
-    let (_node, node_events_channel) = Node::run().await?;
+    let (_node, node_events_channel) = Node::run(socket_addr).await?;
 
     let mut node_events_rx = node_events_channel.subscribe();
     if let Ok(event) = node_events_rx.recv().await {
@@ -46,6 +52,16 @@ async fn main() -> Result<()> {
 struct Opt {
     #[clap(long)]
     log_dir: Option<PathBuf>,
+
+    /// Specify specific port to listen on.
+    /// Defaults to 0, which means any available port.
+    #[clap(long, default_value_t = 0)]
+    port: u16,
+
+    /// Specify specific IP to listen on.
+    /// Defaults to 0.0.0.0, which will bind to all network interfaces.
+    #[clap(long, default_value_t = IpAddr::V4(Ipv4Addr::UNSPECIFIED))]
+    ip: IpAddr,
 }
 
 // Todo: Implement node bootstrapping to connect to peers from outside the local network
