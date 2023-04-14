@@ -30,6 +30,9 @@ pub(super) struct NodeBehaviour {
     pub(super) request_response: request_response::Behaviour<MsgCodec>,
     pub(super) kademlia: Kademlia<MemoryStore>,
     pub(super) mdns: mdns::tokio::Behaviour,
+    pub(super) relay: libp2p::relay::Behaviour,
+    pub(super) relay_client: libp2p::relay::client::Behaviour,
+    pub(super) autonat: libp2p::autonat::Behaviour,
 }
 
 #[derive(Debug)]
@@ -37,6 +40,9 @@ pub(super) enum NodeEvent {
     RequestResponse(request_response::Event<Request, Response>),
     Kademlia(KademliaEvent),
     Mdns(Box<mdns::Event>),
+    Relay(libp2p::relay::Event),
+    RelayClient(libp2p::relay::client::Event),
+    Autonat(libp2p::autonat::Event),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -54,6 +60,24 @@ impl From<KademliaEvent> for NodeEvent {
 impl From<mdns::Event> for NodeEvent {
     fn from(event: mdns::Event) -> Self {
         NodeEvent::Mdns(Box::new(event))
+    }
+}
+
+impl From<libp2p::relay::Event> for NodeEvent {
+    fn from(v: libp2p::relay::Event) -> Self {
+        Self::Relay(v)
+    }
+}
+
+impl From<libp2p::relay::client::Event> for NodeEvent {
+    fn from(e: libp2p::relay::client::Event) -> Self {
+        Self::RelayClient(e)
+    }
+}
+
+impl From<libp2p::autonat::Event> for NodeEvent {
+    fn from(v: libp2p::autonat::Event) -> Self {
+        Self::Autonat(v)
     }
 }
 

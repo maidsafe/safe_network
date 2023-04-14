@@ -24,7 +24,6 @@ use self::{
 
 use futures::StreamExt;
 use libp2p::{
-    core::muxing::StreamMuxerBox,
     identity,
     kad::{record::store::MemoryStore, KBucketKey, Kademlia, KademliaConfig, QueryId},
     mdns,
@@ -93,9 +92,7 @@ impl SwarmDriver {
         let (network, events_receiver, mut swarm_driver) = Self::with(cfg, request_response)?;
 
         // Listen on the provided address
-        let addr = Multiaddr::from(addr.ip())
-            .with(Protocol::Udp(addr.port()))
-            .with(Protocol::QuicV1);
+        let addr = Multiaddr::from(addr.ip()).with(Protocol::Tcp(addr.port()));
         let _listener_id = swarm_driver
             .swarm
             .listen_on(addr)
@@ -129,24 +126,40 @@ impl SwarmDriver {
 
         info!("Peer id: {:?}", peer_id);
 
-        // QUIC configuration
-        let quic_config = libp2p_quic::Config::new(&keypair);
-        let transport = libp2p_quic::tokio::Transport::new(quic_config);
-        let transport = transport
-            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+        let (relay_client_transport, relay_client) = libp2p::relay::client::new(peer_id);
+
+        // The transport is a combination of the relay and TCP.
+        let tcp_relay_transport = relay_client_transport
+            .or_transport(libp2p::tcp::tokio::Transport::new(
+                libp2p::tcp::Config::default().port_reuse(true),
+            ))
+            .upgrade(libp2p::core::upgrade::Version::V1)
+            .authenticate(
+                libp2p::noise::NoiseAuthenticated::xx(&keypair)
+                    .expect("Signing libp2p-noise static DH keypair failed."),
+            )
+            .multiplex(libp2p::yamux::YamuxConfig::default())
             .boxed();
 
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let kademlia = Kademlia::with_config(peer_id, MemoryStore::new(peer_id), cfg);
         let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
+        // We act as a relay.
+        // TODO: Make this configurable, as an unreachable node can't act as relay.
+        let relay = libp2p::relay::Behaviour::new(peer_id, libp2p::relay::Config::default());
+        let autonat = libp2p::autonat::Behaviour::new(peer_id, libp2p::autonat::Config::default());
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
             mdns,
+            relay,
+            relay_client,
+            autonat,
         };
 
-        let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
+        let swarm =
+            SwarmBuilder::with_tokio_executor(tcp_relay_transport, behaviour, peer_id).build();
 
         let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(100);
         let (network_event_sender, network_event_receiver) = mpsc::channel(100);
