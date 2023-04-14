@@ -145,7 +145,7 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
         .build(Hash::default(), &mut rng)
         .map_err(Error::Dbcs)?;
 
-    // Perform verifications of input tx and signed spends,
+    // Perform validations of input tx and signed spends,
     // as well as building the output DBCs.
     let mut created_dbcs: Vec<_> = dbc_builder
         .build()

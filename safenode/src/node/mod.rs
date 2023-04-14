@@ -14,14 +14,31 @@ pub use self::event::NodeEvent;
 
 use self::{error::Error, event::NodeEventsChannel};
 
-use crate::{network::Network, storage::DataStorage};
+use crate::{
+    network::Network,
+    storage::{ChunkStorage, RegisterStorage},
+    transfers::Transfers,
+};
+
+use libp2p::PeerId;
+use xor_name::{XorName, XOR_NAME_LEN};
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
 /// storage, and broadcasts node-related events.
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct Node {
     network: Network,
-    storage: DataStorage,
+    chunks: ChunkStorage,
+    registers: RegisterStorage,
+    transfers: Transfers,
     events_channel: NodeEventsChannel,
+}
+
+/// Returns a an `XorName` representation of the `PeerId`.
+pub fn to_xorname(peer_id: PeerId) -> XorName {
+    let mut xorname_bytes = [0u8; XOR_NAME_LEN];
+    let peer_id_bytes = peer_id.to_bytes();
+    xorname_bytes.copy_from_slice(&peer_id_bytes[0..32]);
+    XorName(xorname_bytes)
 }

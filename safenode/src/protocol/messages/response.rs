@@ -9,6 +9,7 @@
 use crate::protocol::types::{
     chunk::Chunk,
     error::Result,
+    fees::RequiredFee,
     register::{Entry, EntryHash, Permissions, Policy, Register, User},
 };
 
@@ -27,6 +28,10 @@ pub enum QueryResponse {
     //
     // ===== DBC Data =====
     //
+    /// Response to [`GetFees`].
+    ///
+    /// [`GetFees`]: crate::protocol::messages::SpendQuery::GetFees
+    GetFees(Result<RequiredFee>),
     /// If the queried node has validated a corresponding spend
     /// request, it will return the SignedSpend.
     /// It is up to the Client to get this SignedSpend from enough
@@ -35,7 +40,7 @@ pub enum QueryResponse {
     ///
     /// Response to [`GetDbcSpend`]
     ///
-    /// [`GetDbcSpend`]: crate::protocol::messages::Query::GetDbcSpend
+    /// [`GetDbcSpend`]: crate::protocol::messages::SpendQuery::GetDbcSpend
     GetDbcSpend(Result<SignedSpend>),
     //
     // ===== Chunk =====

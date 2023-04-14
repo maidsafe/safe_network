@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::register_store::{RegisterStore, StoredRegister};
+
 use crate::protocol::{
     messages::{
         EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
@@ -18,43 +20,37 @@ use crate::protocol::{
     },
 };
 
-use super::register_store::{RegisterStore, StoredRegister};
-
 use bincode::serialize;
 
 /// Operations over the Register data type and its storage.
 #[derive(Clone, Default)]
-pub(super) struct RegisterStorage {
+pub(crate) struct RegisterStorage {
     register_store: RegisterStore,
 }
 
 impl RegisterStorage {
     /// Create new `RegisterStorage`
-    pub(super) fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             register_store: RegisterStore::default(),
         }
     }
 
-    #[cfg(test)]
-    async fn addrs(&self) -> Vec<RegisterAddress> {
-        self.register_store.addrs().await
-    }
+    /// --- Writing ---
 
-    /// Used for replication of data to new nodes.
-    // Currently only used by the tests, to be used by replication logic
-    #[cfg(test)]
-    pub(super) async fn get_register_replica(
-        &self,
-        address: &RegisterAddress,
-    ) -> Result<ReplicatedRegisterLog> {
-        let stored_reg = self.try_load_stored_register(address).await?;
-        // Build the replicated register log assuming ops stored are all valid and correctly
-        // signed since we performed such validations before storing them.
-        Ok(ReplicatedRegisterLog {
-            address: *address,
-            op_log: stored_reg.op_log,
-        })
+    pub(crate) async fn write(&self, cmd: &RegisterCmd) -> Result<()> {
+        info!("Writing register cmd: {cmd:?}");
+        let addr = cmd.dst();
+        // Let's first try to load and reconstruct the replica of targetted Register
+        // we have in local storage, to then try to apply the new command onto it.
+        let mut stored_reg = self.try_load_stored_register(&addr).await?;
+
+        self.try_to_apply_cmd_against_register_state(cmd, &mut stored_reg)?;
+
+        // Everything went fine, let's store the updated Register
+        self.register_store
+            .store_register_ops_log(&vec![cmd.clone()], stored_reg, addr)
+            .await
     }
 
     /// Update our Register's replica on receiving data from other nodes.
@@ -81,25 +77,8 @@ impl RegisterStorage {
             .await
     }
 
-    /// --- Writing ---
-
-    pub(super) async fn write(&self, cmd: &RegisterCmd) -> Result<()> {
-        info!("Writing register cmd: {cmd:?}");
-        let addr = cmd.dst();
-        // Let's first try to load and reconstruct the replica of targetted Register
-        // we have in local storage, to then try to apply the new command onto it.
-        let mut stored_reg = self.try_load_stored_register(&addr).await?;
-
-        self.try_to_apply_cmd_against_register_state(cmd, &mut stored_reg)?;
-
-        // Everything went fine, let's store the updated Register
-        self.register_store
-            .store_register_ops_log(&vec![cmd.clone()], stored_reg, addr)
-            .await
-    }
-
     /// --- Reading ---
-    pub(super) async fn read(&self, read: &RegisterQuery, requester: User) -> QueryResponse {
+    pub(crate) async fn read(&self, read: &RegisterQuery, requester: User) -> QueryResponse {
         trace!("Reading register: {:?}", read.dst());
         use RegisterQuery::*;
         match read {
@@ -291,6 +270,27 @@ impl RegisterStorage {
         }
 
         Ok(stored_reg)
+    }
+
+    #[cfg(test)]
+    async fn addrs(&self) -> Vec<RegisterAddress> {
+        self.register_store.addrs().await
+    }
+
+    /// Used for replication of data to new nodes.
+    // Currently only used by the tests, to be used by replication logic
+    #[cfg(test)]
+    async fn get_register_replica(
+        &self,
+        address: &RegisterAddress,
+    ) -> Result<ReplicatedRegisterLog> {
+        let stored_reg = self.try_load_stored_register(address).await?;
+        // Build the replicated register log assuming ops stored are all valid and correctly
+        // signed since we performed such validations before storing them.
+        Ok(ReplicatedRegisterLog {
+            address: *address,
+            op_log: stored_reg.op_log,
+        })
     }
 }
 

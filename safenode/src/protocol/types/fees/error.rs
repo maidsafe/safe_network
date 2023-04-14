@@ -6,21 +6,30 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use sn_dbc::Error as DbcError;
+
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Specialisation of `std::Result`.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// Payment errors.
-#[derive(Debug, Error)]
+/// Fee errors.
+#[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Error {
     /// The Node signature over the `RequiredFee` is invalid.
-    #[error("signature is invalid")]
+    #[error("Node signature is invalid.")]
     RequiredFeeSignatureInvalid,
     /// Decryption of the amount failed. Wrong key used.
     #[error("Decryption of the amount failed. Wrong key used.")]
     AmountDecryptionFailed,
     /// An error from the `sn_dbc` crate.
-    #[error("dbc error: {0}")]
-    Dbc(#[from] sn_dbc::Error),
+    #[error("Dbc error: {0}")]
+    Dbcs(String),
+}
+
+impl From<DbcError> for Error {
+    fn from(error: DbcError) -> Self {
+        Error::Dbcs(error.to_string())
+    }
 }

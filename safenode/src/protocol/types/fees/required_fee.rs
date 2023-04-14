@@ -26,7 +26,7 @@ pub struct RequiredFee {
 impl RequiredFee {
     /// Instantiate RequiredFee by encrypting the amount to the id of the dbc to spend, and signing
     /// it all with the Node reward main key.
-    pub fn new(amount: Token, dbc_id: &DbcId, reward_main_key: &MainKey) -> Self {
+    pub fn new(amount: Token, dbc_id: DbcId, reward_main_key: &MainKey) -> Self {
         let content = RequiredFeeContent::new(amount, dbc_id, reward_main_key.public_address());
         let reward_address_sig = reward_main_key.sign(&content.to_bytes());
         Self {

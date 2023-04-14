@@ -6,22 +6,30 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{error::Result, event::NodeEventsChannel, Node, NodeEvent};
+use super::{
+    error::{Error, Result},
+    event::NodeEventsChannel,
+    Node, NodeEvent,
+};
 
 use crate::{
     network::{NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
     protocol::{
-        messages::{Cmd, CmdResponse, Event, Query, QueryResponse, Request, Response},
+        messages::{
+            Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
+            SpendQuery,
+        },
         types::{
             address::{dbc_address, DbcAddress},
             error::Error as ProtocolError,
             register::User,
         },
     },
-    storage::DataStorage,
+    storage::{ChunkStorage, RegisterStorage},
+    transfers::{Error as TransferError, Transfers},
 };
 
-use sn_dbc::{DbcTransaction, SignedSpend};
+use sn_dbc::{DbcTransaction, MainKey, SignedSpend};
 
 use futures::future::select_all;
 use libp2p::{request_response::ResponseChannel, PeerId};
@@ -30,17 +38,6 @@ use tokio::task::spawn;
 use xor_name::XorName;
 
 impl Node {
-    /// Write to storage.
-    pub async fn write(&self, cmd: &Cmd) -> CmdResponse {
-        info!("Write: {cmd:?}");
-        self.storage.write(cmd).await
-    }
-
-    /// Read from storage.
-    pub async fn read(&self, query: &Query) -> QueryResponse {
-        self.storage.read(query, User::Anyone).await
-    }
-
     /// Asynchronously runs a new node instance, setting up the swarm driver,
     /// creating a data storage, and handling network events. Returns the
     /// created node and a `NodeEventsChannel` for listening to node-related
@@ -53,16 +50,18 @@ impl Node {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
-    pub async fn run(addr: SocketAddr) -> Result<(Self, NodeEventsChannel)> {
+    pub async fn run(addr: SocketAddr) -> Result<NodeEventsChannel> {
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
-        let storage = DataStorage::new();
         let node_events_channel = NodeEventsChannel::default();
-        let node = Self {
+        let our_name = super::to_xorname(network.peer_id);
+
+        let mut node = Self {
             network,
-            storage,
+            chunks: ChunkStorage::new(),
+            registers: RegisterStorage::new(),
+            transfers: Transfers::new(our_name, MainKey::random()),
             events_channel: node_events_channel.clone(),
         };
-        let mut node_clone = node.clone();
 
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
@@ -74,13 +73,13 @@ impl Node {
                         continue;
                     }
                 };
-                if let Err(err) = node_clone.handle_network_event(event).await {
+                if let Err(err) = node.handle_network_event(event).await {
                     warn!("Error handling network event: {err}");
                 }
             }
         });
 
-        Ok((node, node_events_channel))
+        Ok(node_events_channel)
     }
 
     async fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
@@ -113,118 +112,123 @@ impl Node {
         response_channel: ResponseChannel<Response>,
     ) -> Result<()> {
         trace!("Handling request: {request:?}");
-        match request {
-            Request::Cmd(Cmd::Dbc {
-                signed_spend,
-                source_tx,
-            }) => {
-                self.add_if_valid(signed_spend, source_tx, response_channel)
-                    .await?
-            }
-            Request::Cmd(cmd) => {
-                let resp = self.storage.write(&cmd).await;
-                self.send_response(Response::Cmd(resp), response_channel)
-                    .await;
-            }
-            Request::Query(query) => {
-                let resp = self.storage.read(&query, User::Anyone).await;
-                self.send_response(Response::Query(resp), response_channel)
-                    .await;
-            }
+        let response = match request {
+            Request::Cmd(cmd) => Response::Cmd(self.handle_cmd(cmd).await),
+            Request::Query(query) => Response::Query(self.handle_query(query).await),
             Request::Event(event) => {
                 match event {
                     Event::DoubleSpendAttempted(a_spend, b_spend) => {
-                        self.storage
+                        self.transfers
                             .try_add_double(a_spend.as_ref(), b_spend.as_ref())
-                            .await?;
+                            .await
+                            .map_err(ProtocolError::Transfers)?;
+                        return Ok(());
                     }
                 };
             }
-        }
+        };
+
+        self.send_response(response, response_channel).await;
 
         Ok(())
     }
 
-    /// This function will validate the parents of the provided spend,
-    /// as well as the actual spend.
-    /// A response will be sent if a response channel is provided.
-    async fn add_if_valid(
-        &mut self,
-        signed_spend: Box<SignedSpend>,
-        source_tx: Box<DbcTransaction>,
-        response_channel: ResponseChannel<Response>,
-    ) -> Result<()> {
-        // Ensure that the provided src tx is the same as the one we have the hash of in the signed spend.
-        let provided_src_tx_hash = source_tx.hash();
-        let signed_src_tx_hash = signed_spend.src_tx_hash();
-
-        if provided_src_tx_hash != signed_src_tx_hash {
-            let error = ProtocolError::SignedSrcTxHashDoesNotMatchProvidedSrcTxHash {
-                signed_src_tx_hash,
-                provided_src_tx_hash,
-            };
-            self.send_response(
-                Response::Cmd(CmdResponse::Spend(Err(error))),
-                response_channel,
-            )
-            .await;
-            return Ok(());
-        }
-
-        // First we need to validate the parents of the spend.
-        // This also ensures that all parent's dst tx's are the same as the src tx of this spend.
-        match self
-            .validate_spend_parents(signed_spend.as_ref(), source_tx.as_ref())
-            .await
-        {
-            Ok(()) => (),
-            Err(super::Error::Protocol(error)) => {
-                // We drop spend attempts with invalid parents,
-                // and return an error to the client.
-                self.send_response(
-                    Response::Cmd(CmdResponse::Spend(Err(error))),
-                    response_channel,
-                )
-                .await;
-                return Ok(());
+    async fn handle_query(&mut self, query: Query) -> QueryResponse {
+        match query {
+            Query::Register(query) => self.registers.read(&query, User::Anyone).await,
+            Query::GetChunk(address) => {
+                let resp = self.chunks.get(&address).await;
+                QueryResponse::GetChunk(resp)
             }
-            // This should be unreachable, as we only return protocol errors.
-            other => other?,
-        };
+            Query::Spend(query) => {
+                match query {
+                    SpendQuery::GetFees { dbc_id, priority } => {
+                        // The client is asking for the fee to spend a specific dbc, and including the id of that dbc.
+                        // The required fee content is encrypted to that dbc id, and so only the holder of the dbc secret
+                        // key can unlock the contents.
+                        let required_fee = self.transfers.get_required_fee(dbc_id, priority);
+                        QueryResponse::GetFees(Ok(required_fee))
+                    }
+                    SpendQuery::GetDbcSpend(address) => {
+                        let res = self
+                            .transfers
+                            .get(address)
+                            .await
+                            .map_err(ProtocolError::Transfers);
+                        QueryResponse::GetDbcSpend(res)
+                    }
+                }
+            }
+        }
+    }
 
-        let response = match self
-            .storage
-            .write(&Cmd::Dbc {
+    async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
+        match cmd {
+            Cmd::StoreChunk(chunk) => {
+                let resp = self.chunks.store(&chunk).await;
+                CmdResponse::StoreChunk(resp)
+            }
+            Cmd::Register(cmd) => {
+                let result = self.registers.write(&cmd).await;
+                match cmd {
+                    RegisterCmd::Create(_) => CmdResponse::CreateRegister(result),
+                    RegisterCmd::Edit(_) => CmdResponse::EditRegister(result),
+                }
+            }
+            Cmd::Dbc {
                 signed_spend,
                 source_tx,
-            })
-            .await
-        {
-            CmdResponse::Spend(Err(ProtocolError::DoubleSpendAttempt { new, existing })) => {
-                warn!("Double spend attempted! New: {new:?}. Existing:  {existing:?}");
+                fee_ciphers,
+            } => {
+                // First we fetch all parent spends from the network.
+                // They shall naturally all exist as valid spends for this current
+                // spend attempt to be valid.
+                let parent_spends = match self.get_parent_spends(source_tx.as_ref()).await {
+                    Ok(parent_spends) => parent_spends,
+                    Err(Error::Protocol(err)) => return CmdResponse::Spend(Err(err)),
+                    Err(error) => {
+                        return CmdResponse::Spend(Err(ProtocolError::Transfers(
+                            TransferError::SpendParentCloseGroupIssue(error.to_string()),
+                        )))
+                    }
+                };
 
-                let request =
-                    Request::Event(Event::double_spend_attempt(new.clone(), existing.clone())?);
-                let _resp = self.send_to_closest(&request).await?;
+                // Then we try to add the spend to the transfers.
+                // This will validate all the necessary components of the spend.
+                let res = match self
+                    .transfers
+                    .try_add(signed_spend, source_tx, fee_ciphers, parent_spends)
+                    .await
+                {
+                    Err(TransferError::DoubleSpendAttempt { new, existing }) => {
+                        warn!("Double spend attempted! New: {new:?}. Existing:  {existing:?}");
+                        if let Ok(event) =
+                            Event::double_spend_attempt(new.clone(), existing.clone())
+                        {
+                            match self.send_to_closest(&Request::Event(event)).await {
+                                Ok(_) => {}
+                                Err(err) => {
+                                    warn!("Failed to send double spend event to closest peers: {err:?}");
+                                }
+                            }
+                        }
 
-                CmdResponse::Spend(Err(ProtocolError::DoubleSpendAttempt { new, existing }))
+                        Err(ProtocolError::Transfers(
+                            TransferError::DoubleSpendAttempt { new, existing },
+                        ))
+                    }
+                    other => other.map_err(ProtocolError::Transfers),
+                };
+
+                CmdResponse::Spend(res)
             }
-            other => other,
-        };
-
-        self.send_response(Response::Cmd(response), response_channel)
-            .await;
-
-        Ok(())
+        }
     }
 
-    /// The src_tx is the tx where the dbc to spend, was created.
-    /// The signed_spend.dbc_id() shall exist among its outputs.
-    async fn validate_spend_parents(
-        &self,
-        signed_spend: &SignedSpend,
-        source_tx: &DbcTransaction,
-    ) -> Result<()> {
+    // This call makes sure we get the same spend from all in the close group.
+    // If we receive a spend here, it is assumed to be valid. But we will verify
+    // that anyway, in the code right after this for loop.
+    async fn get_parent_spends(&self, source_tx: &DbcTransaction) -> Result<BTreeSet<SignedSpend>> {
         // These will be different spends, one for each input that went into
         // creating the above spend passed in to this function.
         let mut all_parent_spends = BTreeSet::new();
@@ -237,44 +241,16 @@ impl Node {
             // This call makes sure we get the same spend from all in the close group.
             // If we receive a spend here, it is assumed to be valid. But we will verify
             // that anyway, in the code right after this for loop.
-            let parent_spend_at_close_group = self.get_spend(parent_address).await?;
-            // The dst tx of the parent must be the src tx of the spend.
-            if signed_spend.src_tx_hash() != parent_spend_at_close_group.dst_tx_hash() {
-                return Err(super::Error::Protocol(
-                    ProtocolError::SpendSrcTxHashParentTxHashMismatch {
-                        signed_src_tx_hash: signed_spend.src_tx_hash(),
-                        parent_dst_tx_hash: parent_spend_at_close_group.dst_tx_hash(),
-                    },
-                ));
-            }
-            let _ = all_parent_spends.insert(parent_spend_at_close_group);
+            let parent_spend = self.get_spend(parent_address).await?;
+            let _ = all_parent_spends.insert(parent_spend);
         }
 
-        // We have gotten all the parent inputs from the network, so the network consider them all valid.
-        // But the source tx corresponding to the signed_spend, might not match the parents' details, so that's what we check here.
-        let known_parent_blinded_amounts: Vec<_> = all_parent_spends
-            .iter()
-            .map(|s| s.spend.blinded_amount)
-            .collect();
-        // Here we check that the spend that is attempted, was created in a valid tx.
-        let src_tx_validity = source_tx.verify(&known_parent_blinded_amounts);
-        if src_tx_validity.is_err() {
-            return Err(super::Error::Protocol(
-                ProtocolError::InvalidSourceTxProvided {
-                    signed_src_tx_hash: signed_spend.src_tx_hash(),
-                    provided_src_tx_hash: source_tx.hash(),
-                },
-            ));
-        }
-
-        // All parents check out.
-
-        Ok(())
+        Ok(all_parent_spends)
     }
 
     /// Retrieve a `Spend` from the closest peers
     async fn get_spend(&self, address: DbcAddress) -> Result<SignedSpend> {
-        let request = Request::Query(Query::GetDbcSpend(address));
+        let request = Request::Query(Query::Spend(SpendQuery::GetDbcSpend(address)));
         info!("Getting the closest peers to {:?}", request.dst());
 
         let responses = self.send_to_closest(&request).await?;
@@ -292,6 +268,11 @@ impl Node {
             })
             .collect();
 
+        // NB: This check is not well done. A single rogue node can
+        // deliver a bogus spend, and we would then fail the check here
+        // (we would have more than 1 spend in the BTreeSet).
+        // So, we must look for a majority of the same responses, and
+        // ignore any other responses.
         if spends.len() >= CLOSE_GROUP_SIZE {
             // All nodes in the close group returned an Ok response.
             let spends: BTreeSet<_> = spends.into_iter().collect();
@@ -328,7 +309,7 @@ impl Node {
         Err(super::Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    async fn send_response(&mut self, resp: Response, response_channel: ResponseChannel<Response>) {
+    async fn send_response(&self, resp: Response, response_channel: ResponseChannel<Response>) {
         if let Err(err) = self.network.send_response(resp, response_channel).await {
             warn!("Error while sending response: {err:?}");
         }

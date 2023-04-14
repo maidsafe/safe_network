@@ -12,6 +12,7 @@ mod event;
 mod query;
 mod register;
 mod response;
+mod spend;
 
 pub use self::{
     cmd::Cmd,
@@ -22,6 +23,7 @@ pub use self::{
         SignedRegisterCreate, SignedRegisterEdit,
     },
     response::{CmdResponse, QueryResponse},
+    spend::SpendQuery,
 };
 
 use super::types::{

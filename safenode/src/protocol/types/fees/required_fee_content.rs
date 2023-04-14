@@ -30,7 +30,7 @@ pub struct RequiredFeeContent {
 impl RequiredFeeContent {
     /// Create `RequiredFeeContent` from the fee amount, the id of the `Dbc` to spend, and Node reward `PublicAddress`.
     /// The `DbcId` is used to encrypt the amount, so that only the holder of the `Dbc` to spend can see the fee amount.
-    pub fn new(amount: Token, dbc_id: &DbcId, reward_address: PublicAddress) -> Self {
+    pub fn new(amount: Token, dbc_id: DbcId, reward_address: PublicAddress) -> Self {
         let revealed_amount = RevealedAmount::from_amount(amount.as_nano(), rand::thread_rng());
         Self {
             amount_cipher: dbc_id.encrypt(&revealed_amount),
