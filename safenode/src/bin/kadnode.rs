@@ -8,7 +8,6 @@
 
 use safenode::{
     log::init_node_logging,
-    network::Network,
     node::{Node, NodeEvent},
 };
 
@@ -28,17 +27,33 @@ async fn main() -> Result<()> {
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
     let socket_addr = SocketAddr::new(opt.ip, opt.port);
-    let peers = parse_peer_multiaddres(&opt.peers)?;
+    let peers = parse_peer_multiaddreses(&opt.peers)?;
 
     info!("Starting a node...");
-    let (_node, node_events_channel) = Node::run(socket_addr).await?;
-
-    for (_peer_id, _addr) in peers {
-        // node.network.dial(peer_id, addr).await?;
-    }
+    let (node, node_events_channel) = Node::run(socket_addr).await?;
 
     let mut node_events_rx = node_events_channel.subscribe();
-    if let Ok(event) = node_events_rx.recv().await {
+
+    for (peer_id, addr) in &peers {
+        // TODO: Do we want to wait for the dial?
+        if let Err(err) = node.network.dial(*peer_id, addr.clone()).await {
+            tracing::error!("Failed to dial {peer_id}: {err:?}");
+        };
+    }
+
+    loop {
+        let event = node_events_rx.recv().await;
+        let event = match event {
+            Ok(event) => event,
+            Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                tracing::error!("Node event channel closed!");
+                break;
+            }
+            Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                tracing::warn!("Skipped {n} node events!");
+                continue;
+            }
+        };
         match event {
             NodeEvent::ConnectedToNetwork => {
                 info!("Connected to the Network");
@@ -75,7 +90,7 @@ struct Opt {
 
 /// Parse multiaddresses containing the P2p protocol (`/p2p/<PeerId>`).
 /// Returns an error for the first invalid multiaddress.
-fn parse_peer_multiaddres(multiaddrs: &[Multiaddr]) -> Result<Vec<(PeerId, Multiaddr)>> {
+fn parse_peer_multiaddreses(multiaddrs: &[Multiaddr]) -> Result<Vec<(PeerId, Multiaddr)>> {
     multiaddrs
         .iter()
         .map(|multiaddr| {

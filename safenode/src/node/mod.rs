@@ -21,7 +21,8 @@ use crate::{network::Network, storage::DataStorage};
 /// storage, and broadcasts node-related events.
 #[derive(Clone)]
 pub struct Node {
-    network: Network,
+    /// The `Network` instance.
+    pub network: Network,
     storage: DataStorage,
     events_channel: NodeEventsChannel,
 }
