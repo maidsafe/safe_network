@@ -35,7 +35,10 @@ pub struct LocalDepositWallet {
     available_dbcs: BTreeMap<DbcId, Dbc>,
     /// These are the dbcs we've created by
     /// sending tokens to other addresses.
-    output_history: Vec<CreatedDbc>,
+    /// They are not owned by us, but we
+    /// keep them here so we can track our
+    /// transfer history.
+    dbcs_created_for_others: Vec<CreatedDbc>,
     // /// The path to the wallet file.
     // local_store: std::path::PathBuf,
 }
@@ -47,7 +50,7 @@ impl DepositWallet for LocalDepositWallet {
             balance: Token::zero(),
             spent_dbcs: BTreeMap::new(),
             available_dbcs: BTreeMap::new(),
-            output_history: vec![],
+            dbcs_created_for_others: vec![],
         }
     }
 
@@ -146,10 +149,14 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSendWallet<C> {
 
         let mut available_dbcs = vec![];
         for dbc in self.wallet.available_dbcs.values() {
-            let derived_key = dbc
-                .derived_key(&self.wallet.key)
-                .expect("This dbc to be ours.");
-            available_dbcs.push((dbc.clone(), derived_key));
+            if let Ok(derived_key) = dbc.derived_key(&self.wallet.key) {
+                available_dbcs.push((dbc.clone(), derived_key));
+            } else {
+                warn!(
+                    "Skipping DBC {:?} because we don't have the key to spend it",
+                    dbc.id()
+                );
+            }
         }
 
         let TransferDetails {
@@ -170,7 +177,9 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSendWallet<C> {
 
         self.deposit(change_dbc.into_iter().collect());
         self.wallet.spent_dbcs.append(&mut spent_dbcs);
-        self.wallet.output_history.extend(created_dbcs.clone());
+        self.wallet
+            .dbcs_created_for_others
+            .extend(created_dbcs.clone());
 
         Ok(created_dbcs)
     }
@@ -206,7 +215,7 @@ mod tests {
         assert_eq!(Token::zero(), local_wallet.balance());
 
         assert!(local_wallet.available_dbcs.is_empty());
-        assert!(local_wallet.output_history.is_empty());
+        assert!(local_wallet.dbcs_created_for_others.is_empty());
         assert!(local_wallet.spent_dbcs.is_empty());
 
         Ok(())
@@ -221,7 +230,7 @@ mod tests {
         assert_eq!(Token::zero(), local_wallet.balance());
 
         assert!(local_wallet.available_dbcs.is_empty());
-        assert!(local_wallet.output_history.is_empty());
+        assert!(local_wallet.dbcs_created_for_others.is_empty());
         assert!(local_wallet.spent_dbcs.is_empty());
 
         Ok(())
@@ -267,16 +276,15 @@ mod tests {
     fn send_wallet_basics() -> GenesisResult<()> {
         let main_key = MainKey::random();
         let public_address = main_key.public_address();
-        let client = MockSendClient::new();
-        let send_wallet: LocalSendWallet<MockSendClient> =
-            SendWallet::<MockSendClient>::new(main_key, client);
+        let client = MockSendClient;
+        let send_wallet: LocalSendWallet<MockSendClient> = SendWallet::new(main_key, client);
 
         assert_eq!(public_address, send_wallet.address());
         assert_eq!(public_address, send_wallet.new_dbc_address().public_address);
         assert_eq!(Token::zero(), send_wallet.balance());
 
         assert!(send_wallet.wallet.available_dbcs.is_empty());
-        assert!(send_wallet.wallet.output_history.is_empty());
+        assert!(send_wallet.wallet.dbcs_created_for_others.is_empty());
         assert!(send_wallet.wallet.spent_dbcs.is_empty());
 
         Ok(())
@@ -289,7 +297,7 @@ mod tests {
         let sender_dbc =
             create_genesis_dbc(&sender_main_key).expect("Genesis creation to succeed.");
 
-        let client = MockSendClient::new();
+        let client = MockSendClient;
         let mut send_wallet: LocalSendWallet<MockSendClient> =
             SendWallet::<MockSendClient>::new(sender_main_key, client);
 
@@ -317,13 +325,7 @@ mod tests {
     }
 
     #[derive(Clone)]
-    struct MockSendClient {}
-
-    impl MockSendClient {
-        fn new() -> Self {
-            Self {}
-        }
-    }
+    struct MockSendClient;
 
     #[async_trait::async_trait]
     impl SendClient for MockSendClient {

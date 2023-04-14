@@ -55,11 +55,18 @@ use async_trait::async_trait;
 /// The network will validate the transfer upon receiving it. Once enough peers have accepted it,
 /// the transfer is completed.
 ///  
-/// For tests the implementation can be a local client with no network connection,
-/// that will just return the transfer to the caller.
+/// For tests the implementation can be without network connection,
+/// and just return the transfer to the caller.
 #[async_trait]
 pub trait SendClient {
-    ///
+    /// Sends the given tokens to the given addresses,
+    /// using the given dbcs as inputs, from which to collect
+    /// the necessary number of dbcs, to cover the amounts to send.
+    /// It will return the new dbcs that were created, and the change.
+    /// Within the newly created dbcs, there will be the signed spends,
+    /// which represent each input dbc that was spent. By that the caller
+    /// also knows which of the inputs were spent, and which were not.
+    /// The caller can then use this information to update its own state.
     async fn send(
         &self,
         dbcs: Vec<(Dbc, DerivedKey)>,
@@ -68,8 +75,8 @@ pub trait SendClient {
     ) -> Result<TransferDetails>;
 }
 
-/// A send wallet is a wallet that can send tokens to other addresses.
-/// It is also a deposit wallet, so it can receive tokens from other wallets.
+/// A send wallet is a wallet that, in addition to the capabilities
+/// of a deposit wallet, can also send tokens to other addresses.
 #[async_trait]
 pub trait SendWallet<C: SendClient> {
     // /// Loads a wallet from the given path.

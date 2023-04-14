@@ -20,7 +20,7 @@ pub enum Error {
     /// Not enough balance to perform a transaction
     #[error("Not enough balance: {0}")]
     NotEnoughBalance(String),
-    /// Not enough was paid in fees for the Elders to process the spend.
+    /// Not enough was paid in fees for the nodes to process the spend.
     #[error("Too low amount for the transfer. Highest required fee: {0:?}.")]
     FeeTooLow(Token),
     /// DbcError
