@@ -14,11 +14,14 @@ use sn_dbc::{
 use std::fmt::Debug;
 use thiserror::Error;
 
-/// Amount of tokens to be owned by the Genesis DBC.
-/// At the inception of the Network a total supply of 4,294,967,295 whole tokens will be created.
+/// Total supply of tokens that will eventually exist in the network: 4,294,967,295 * 10^9 = 4,294,967,295,000,000,000.
+const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
+
+/// Number of tokens in the Genesis DBC.
+/// At the inception of the Network 30 % of total supply - i.e. 1,288,490,189 - whole tokens will be created.
 /// Each whole token can be subdivided 10^9 times,
-/// thus creating a total of 4,294,967,295,000,000,000 available units.
-pub const GENESIS_DBC_AMOUNT: u64 = u32::MAX as u64 * u64::pow(10, 9);
+/// thus creating a total of 1,288,490,189,000,000,000 available units.
+pub const GENESIS_DBC_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
 
 /// A specialised `Result` type for types crate.
 pub type GenesisResult<T> = Result<T, GenesisError>;
@@ -37,15 +40,8 @@ pub enum GenesisError {
 }
 
 /// Generate the genesis DBC.
-///
-/// Requires the initial section key to sign the share and a different secret key for the DBC.
-///
-/// The genesis DBC will be created using a different key from the initial section key. This is
-/// because the genesis DBC, along with its secret key, will be publicly available for auditing
-/// purposes. It needs to be a set rather than just a key because a spent proof share gets
-/// generated, which requires a key set. We can't use the same key for the genesis DBC and section
-/// because if the genesis DBC is publicly available, the secret key could be used to create a bad
-/// section that would be accepted by the network.
+/// The genesis DBC is the first DBC in the network. It is created without
+/// a source transaction, as there was nothing before it.
 #[allow(clippy::result_large_err)]
 pub fn create_genesis_dbc(genesis_main_key: &MainKey) -> GenesisResult<Dbc> {
     let rng = &mut rng::thread_rng();

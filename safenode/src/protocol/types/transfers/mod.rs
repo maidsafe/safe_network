@@ -6,6 +6,27 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+//! This module contains the functions for creating an offline transfer of tokens.
+//! This is done by emptying the input dbcs, thereby rendering them spent, and creating
+//! new dbcs to the recipients (and a change dbc if any) containing the transferred tokens.
+//! When a transfer is created, it is not yet registered on the network. The signed spends of
+//! the transfer is found in the new dbcs, and must be uploaded to the network to take effect.
+//! The peers will validate each signed spend they receive, before accepting it.
+//! Once enough peers have accepted all the spends of the transaction, and serve them upon request,
+//! the transfer is completed and globally recognised.
+//!
+//! The transfer is created by selecting from the available input dbcs, and creating the necessary
+//! spends to do so. The input dbcs are selected by the user, and the spends are created by this
+//! module. The user can select the input dbcs by specifying the amount of tokens they want to
+//! transfer, and the module will select the necessary dbcs to transfer that amount. The user can
+//! also specify the amount of tokens they want to transfer to each recipient, and the module will
+//! select the necessary dbcs to transfer that amount to each recipient.
+//!
+//! On the difference between a transfer and a transaction.
+//! The difference is subtle, but very much there. A transfer is a higher level concept, it is the
+//! sending of tokens from one address to another. Or many.
+//! A dbc transaction is the lower layer concept where the blinded inputs and outputs are specified.
+
 mod error;
 
 use error::{Error, Result};
@@ -17,10 +38,12 @@ use sn_dbc::{
 
 use std::fmt::Debug;
 
-/// The input details to a transfer of tokens.
+/// The input details necessary to
+/// carry out a transfer of tokens.
 #[derive(Debug)]
 pub struct Inputs {
-    /// The selected dbcs to spend, as to transfer their tokens to the recipients.
+    /// The selected dbcs to spend, with the necessary amounts contained
+    /// to transfer the below specified amount of tokens to each recipients.
     pub dbcs_to_spend: Vec<(Dbc, DerivedKey)>,
     /// The amounts and dbc ids for the dbcs that will be created to hold the transferred tokens.
     pub recipients: Vec<(Token, DbcIdSource)>,
@@ -28,7 +51,8 @@ pub struct Inputs {
     pub change: (Token, PublicAddress),
 }
 
-/// The token transfer results.
+/// The created dbcs and change dbc from a transfer
+/// of tokens from one or more dbcs, into one or more new dbcs.
 #[derive(Debug)]
 pub struct Outputs {
     /// The dbcs that were created containing
@@ -55,7 +79,7 @@ pub struct CreatedDbc {
 /// spends to do so.
 ///
 /// Those signed spends are found in each new dbc, and must be uploaded to the network
-/// for the transactions to take effect.
+/// for the transaction to take effect.
 /// The peers will validate each signed spend they receive, before accepting it.
 /// Once enough peers have accepted all the spends of the transaction, and serve
 /// them upon request, the transaction will be completed.
@@ -120,7 +144,7 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
         .build(Hash::default(), &mut rng)
         .map_err(Error::Dbcs)?;
 
-    // Perform verifications of input TX and spentproofs,
+    // Perform verifications of input tx and signed spends,
     // as well as building the output DBCs.
     let mut created_dbcs: Vec<_> = dbc_builder
         .build()
@@ -131,6 +155,8 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
 
     let mut change_dbc = None;
     created_dbcs.retain(|created| {
+        // This is not 100% solid in my mind, since we could have another output that is sending to ourselves.
+        // In the wallet (which calls this code) such an operation is skipped. But worth noting anyway.
         if created.dbc.public_address() == &change_to && change.as_nano() > 0 {
             change_dbc = Some(created.dbc.clone());
             false
