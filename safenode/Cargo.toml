@@ -34,7 +34,7 @@ rmp-serde = "1.1.1"
 rayon = "~1.5.1"
 self_encryption = "~0.28.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_dbc = { git = "https://github.com/oetyng/sn_dbc", branch = "refactor-have-dbcs-take-derived-key", features = ["serdes"] }
+sn_dbc = { version = "17.0.0", features = ["serdes"] }
 thiserror = "1.0.23"
 tokio = { version = "1.17.0", features = ["fs", "io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
