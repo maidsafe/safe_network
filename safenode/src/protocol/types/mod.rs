@@ -16,6 +16,8 @@ pub mod chunk;
 pub mod dbc_genesis;
 /// Errors.
 pub mod error;
+/// Types related to transfer fees.
+pub mod fees;
 /// Register type.
 pub mod register;
 /// Token transfers.
