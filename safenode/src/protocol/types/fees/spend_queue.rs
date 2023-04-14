@@ -33,7 +33,7 @@ use tokio::time::Instant;
 /// the fee paid.
 ///
 /// Implemented with generic arg to simplify testing,
-/// as the `SpentProofShare` type, that we know spend queue will
+/// as the `SignedSpend` type, that we know spend queue will
 /// be used with, requires lots of plumbing to setup.
 #[derive(custom_debug::Debug)]
 pub struct SpendQ<T: Eq + Hash> {
@@ -107,7 +107,7 @@ impl SpendQStats {
 
     /// Map the priority to a fee to pay, based on
     /// current state of the spend queue.
-    pub fn map_to_fee(&self, priority: &SpendPriority) -> u64 {
+    pub fn map_to_fee(&self, priority: SpendPriority) -> u64 {
         match priority {
             SpendPriority::Highest => self.highest,
             SpendPriority::High => self.high,

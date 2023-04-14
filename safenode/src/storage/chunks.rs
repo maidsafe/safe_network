@@ -21,21 +21,50 @@ const CHUNKS_CACHE_SIZE: usize = 20 * 1024 * 1024;
 
 /// Operations on data chunks.
 #[derive(Clone)]
-pub(super) struct ChunkStorage {
+pub(crate) struct ChunkStorage {
     cache: Arc<RwLock<CLruCache<ChunkAddress, Chunk>>>,
 }
 
-impl Default for ChunkStorage {
-    fn default() -> Self {
+impl ChunkStorage {
+    pub(crate) fn new() -> Self {
         let capacity =
             NonZeroUsize::new(CHUNKS_CACHE_SIZE).expect("Failed to create in-memory Chunk storage");
         Self {
             cache: Arc::new(RwLock::new(CLruCache::new(capacity))),
         }
     }
-}
 
-impl ChunkStorage {
+    // Read chunk from local store
+    pub(crate) async fn get(&self, address: &ChunkAddress) -> Result<Chunk> {
+        trace!("Getting Chunk: {address:?}");
+        if let Some(chunk) = self.cache.read().await.peek(address) {
+            Ok(chunk.clone())
+        } else {
+            Err(Error::ChunkNotFound(*address))
+        }
+    }
+
+    /// Store a chunk in the local in-memory store unless it is already there
+    pub(crate) async fn store(&self, chunk: &Chunk) -> Result<()> {
+        let address = chunk.address();
+        trace!("About to store Chunk: {address:?}");
+
+        let _ = self.cache.write().await.try_put_or_modify(
+            *address,
+            |addr, _| {
+                trace!("Chunk successfully stored: {addr:?}");
+                Ok::<Chunk, Error>(chunk.clone())
+            },
+            |addr, _, _| {
+                trace!("Chunk data already exists in cache, not storing: {addr:?}");
+                Ok(())
+            },
+            (),
+        )?;
+
+        Ok(())
+    }
+
     #[allow(dead_code)]
     pub(super) async fn addrs(&self) -> Vec<ChunkAddress> {
         self.cache
@@ -55,35 +84,10 @@ impl ChunkStorage {
             Err(Error::ChunkNotFound(*address))
         }
     }
+}
 
-    // Read chunk from local store
-    pub(super) async fn get(&self, address: &ChunkAddress) -> Result<Chunk> {
-        trace!("Getting Chunk: {address:?}");
-        if let Some(chunk) = self.cache.read().await.peek(address) {
-            Ok(chunk.clone())
-        } else {
-            Err(Error::ChunkNotFound(*address))
-        }
-    }
-
-    /// Store a chunk in the local in-memory store unless it is already there
-    pub(super) async fn store(&self, chunk: &Chunk) -> Result<()> {
-        let address = chunk.address();
-        trace!("About to store Chunk: {address:?}");
-
-        let _ = self.cache.write().await.try_put_or_modify(
-            *address,
-            |addr, _| {
-                trace!("Chunk successfully stored: {addr:?}");
-                Ok::<Chunk, Error>(chunk.clone())
-            },
-            |addr, _, _| {
-                trace!("Chunk data already exists in cache, not storing: {addr:?}");
-                Ok(())
-            },
-            (),
-        )?;
-
-        Ok(())
+impl Default for ChunkStorage {
+    fn default() -> Self {
+        Self::new()
     }
 }

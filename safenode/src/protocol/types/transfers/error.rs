@@ -23,8 +23,8 @@ pub enum Error {
     /// Not enough was paid in fees for the nodes to process the spend.
     #[error("Too low amount for the transfer. Highest required fee: {0:?}.")]
     FeeTooLow(Token),
-    /// DbcError
-    #[error("DbcError: {0}")]
+    /// An error from the `sn_dbc` crate.
+    #[error("Dbc error: {0}")]
     Dbcs(#[from] DbcError),
     /// DbcReissueFailed
     #[error("DbcReissueFailed: {0}")]

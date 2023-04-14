@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
     let socket_addr = SocketAddr::new(opt.ip, opt.port);
 
     info!("Starting a node...");
-    let (_node, node_events_channel) = Node::run(socket_addr).await?;
+    let node_events_channel = Node::run(socket_addr).await?;
 
     let mut node_events_rx = node_events_channel.subscribe();
     if let Ok(event) = node_events_rx.recv().await {

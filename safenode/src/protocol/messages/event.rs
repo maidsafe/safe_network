@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::types::{
-    address::{dbc_address, DataAddress},
-    error::{Error, Result},
+use crate::{
+    protocol::types::address::{dbc_address, DataAddress},
+    transfers::{Error, Result},
 };
 
 use sn_dbc::SignedSpend;
@@ -43,10 +43,10 @@ impl Event {
     /// It is validated so that only two spends with same id
     /// can be used to create this event.
     pub fn double_spend_attempt(a: Box<SignedSpend>, b: Box<SignedSpend>) -> Result<Self> {
-        if a.dbc_id() != b.dbc_id() {
-            Err(Error::NotADoubleSpendAttempt(a, b))
-        } else {
+        if a.dbc_id() == b.dbc_id() {
             Ok(Event::DoubleSpendAttempted(a, b))
+        } else {
+            Err(Error::NotADoubleSpendAttempt(a, b))
         }
     }
 }

@@ -11,11 +11,14 @@ use super::RegisterCmd;
 use crate::protocol::types::{
     address::{dbc_address, ChunkAddress, DataAddress},
     chunk::Chunk,
+    fees::FeeCiphers,
 };
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use xor_name::XorName;
 
 /// Data and Dbc cmds - recording spends or creating, updating, and removing data.
 ///
@@ -24,18 +27,8 @@ use serde::{Deserialize, Serialize};
 ///
 /// [`types`]: crate::protocol::types
 #[allow(clippy::large_enum_variant)]
-#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
+#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
 pub enum Cmd {
-    /// [`SignedSpend`] write operation.
-    ///
-    /// [`SignedSpend`]: sn_dbc::SignedSpend
-    Dbc {
-        /// The spend to be recorded.
-        /// It contains the transaction it is being spent in.
-        signed_spend: Box<SignedSpend>,
-        /// The transaction that this spend was created in.
-        source_tx: Box<DbcTransaction>,
-    },
     /// [`Chunk`] write operation.
     ///
     /// [`Chunk`]: crate::protocol::types::chunk::Chunk
@@ -44,6 +37,22 @@ pub enum Cmd {
     ///
     /// [`Register`]: crate::protocol::types::register::Register
     Register(RegisterCmd),
+    /// [`SignedSpend`] write operation.
+    ///
+    /// [`SignedSpend`]: sn_dbc::SignedSpend
+    Dbc {
+        /// The spend to be recorded.
+        /// It contains the transaction it is being spent in.
+        #[debug(skip)]
+        signed_spend: Box<SignedSpend>,
+        /// The transaction that this spend was created in.
+        #[debug(skip)]
+        source_tx: Box<DbcTransaction>,
+        /// As to avoid impl separate cmd flow, we send
+        /// all fee ciphers to all Nodes for now.
+        #[debug(skip)]
+        fee_ciphers: BTreeMap<XorName, FeeCiphers>,
+    },
 }
 
 impl Cmd {

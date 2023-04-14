@@ -68,7 +68,7 @@ mod tests {
         let dbc_id = derived_reward_key.dbc_id();
 
         let fee = Token::from_nano(1234);
-        let required_fee = RequiredFee::new(fee, &dbc_id, &main_key);
+        let required_fee = RequiredFee::new(fee, dbc_id, &main_key);
 
         // verify required fee is correctly signed
         let fee_sig_verification = required_fee.verify();

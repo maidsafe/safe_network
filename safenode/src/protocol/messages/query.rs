@@ -6,10 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::spend::SpendQuery;
+
 use crate::protocol::{
     messages::RegisterQuery,
-    types::address::{ChunkAddress, DataAddress, DbcAddress},
+    types::address::{ChunkAddress, DataAddress},
 };
+
 use serde::{Deserialize, Serialize};
 
 /// Data queries - retrieving data and inspecting their structure.
@@ -19,7 +22,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// [`types`]: crate::protocol::types
 #[allow(clippy::large_enum_variant)]
-#[derive(Hash, Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
+#[derive(Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
 pub enum Query {
     /// Retrieve a [`Chunk`] at the given address.
     ///
@@ -34,8 +37,8 @@ pub enum Query {
     Register(RegisterQuery),
     /// [`Spend`] read operation.
     ///
-    /// [`Spend`]: sn_dbc::SignedSpend.
-    GetDbcSpend(DbcAddress),
+    /// [`Spend`]: super::transfers::SpendQuery.
+    Spend(SpendQuery),
 }
 
 impl Query {
@@ -44,7 +47,7 @@ impl Query {
         match self {
             Query::GetChunk(address) => DataAddress::Chunk(*address),
             Query::Register(query) => DataAddress::Register(query.dst()),
-            Query::GetDbcSpend(address) => DataAddress::Spend(*address),
+            Query::Spend(query) => DataAddress::Spend(query.dst()),
         }
     }
 }

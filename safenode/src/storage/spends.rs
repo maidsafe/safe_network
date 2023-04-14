@@ -6,11 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::used_space::UsedSpace;
-
-use crate::protocol::types::{
-    address::DbcAddress,
-    error::{Error, Result},
+use crate::{
+    protocol::types::address::DbcAddress,
+    storage::used_space::UsedSpace,
+    transfers::{Error, Result},
 };
 
 use sn_dbc::{DbcId, SignedSpend};
@@ -41,7 +40,7 @@ type DoubleSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, (V, V)>>>;
 /// NB: The used space measurement is just an appromixation, and is not exact.
 /// Later, when all data types have this, we can verify that it is not wildly different.
 #[derive(Clone, Debug)]
-pub(super) struct SpendStorage {
+pub(crate) struct SpendStorage {
     valid_spends: ValidSpends<SignedSpend>,
     double_spends: DoubleSpends<SignedSpend>,
     valid_spends_cache_size: UsedSpace,
@@ -58,19 +57,13 @@ impl SpendStorage {
         }
     }
 
-    /// Checks if the given DbcId is unspendable.
-    pub(crate) async fn is_unspendable(&self, dbc_id: &DbcId) -> bool {
-        let address = dbc_address(dbc_id);
-        self.double_spends.read().await.contains_key(&address)
-    }
-
     // Read Spend from local store.
-    pub(super) async fn get(&self, address: &DbcAddress) -> Result<SignedSpend> {
+    pub(crate) async fn get(&self, address: DbcAddress) -> Result<SignedSpend> {
         trace!("Getting Spend: {address:?}");
-        if let Some(spend) = self.valid_spends.read().await.get(address) {
+        if let Some(spend) = self.valid_spends.read().await.get(&address) {
             Ok(spend.clone())
         } else {
-            Err(Error::SpendNotFound(*address))
+            Err(Error::SpendNotFound(address))
         }
     }
 
@@ -79,7 +72,26 @@ impl SpendStorage {
     /// If a double spend attempt is detected, a `DoubleSpendAttempt` error
     /// will be returned including all the `SignedSpends`, for
     /// broadcasting to the other nodes.
-    pub(super) async fn try_add(&self, signed_spend: &SignedSpend) -> Result<()> {
+    pub(crate) async fn try_add(&self, signed_spend: &SignedSpend) -> Result<()> {
+        self.validate(signed_spend).await?;
+
+        let size_of_new = std::mem::size_of_val(signed_spend);
+        let address = dbc_address(signed_spend.dbc_id());
+
+        let mut valid_spends = self.valid_spends.write().await;
+
+        let replaced = valid_spends.insert(address, signed_spend.clone());
+        if replaced.is_none() {
+            self.valid_spends_cache_size.increase(size_of_new);
+        }
+
+        Ok(())
+    }
+
+    /// Validates a spend without adding it to the storage.
+    /// If it however is detected as a double spend, that fact is recorded immediately,
+    /// and an error returned.
+    pub(crate) async fn validate(&self, signed_spend: &SignedSpend) -> Result<()> {
         if self.is_unspendable(signed_spend.dbc_id()).await {
             return Ok(()); // Already unspendable, so we don't care about this spend.
         }
@@ -89,7 +101,6 @@ impl SpendStorage {
             return Err(Error::NotEnoughSpace); // We don't have space for this spend.
         }
 
-        // We want to return Result<(SignedSpend)> here, so that this node
         let address = dbc_address(signed_spend.dbc_id());
 
         // The spend id is from the spend hash. That makes sure that a spend is compared based
@@ -129,16 +140,9 @@ impl SpendStorage {
         // the same hash in the verify fn.
         // It does however verify that the derived key corresponding to
         // the dbc id signed this spend.
-        signed_spend
-            .verify(signed_spend.dst_tx_hash())
-            .map_err(|e| Error::Dbc(e.to_string()))?;
+        signed_spend.verify(signed_spend.dst_tx_hash())?;
         // TODO: We want to verify the transaction somehow as well..
         // signed_spend.spend.tx.verify(blinded_amounts)
-
-        let replaced = valid_spends.insert(address, signed_spend.clone());
-        if replaced.is_none() {
-            self.valid_spends_cache_size.increase(size_of_new);
-        }
 
         Ok(())
     }
@@ -146,7 +150,7 @@ impl SpendStorage {
     /// When data is replicated to a new peer,
     /// it may contain double spends, and thus we need to add that here,
     /// so that we in the future can serve this info to Clients.
-    pub(super) async fn try_add_double(
+    pub(crate) async fn try_add_double(
         &self,
         a_spend: &SignedSpend,
         b_spend: &SignedSpend,
@@ -190,6 +194,12 @@ impl SpendStorage {
         }
 
         Ok(())
+    }
+
+    /// Checks if the given DbcId is unspendable.
+    async fn is_unspendable(&self, dbc_id: &DbcId) -> bool {
+        let address = dbc_address(dbc_id);
+        self.double_spends.read().await.contains_key(&address)
     }
 }
 

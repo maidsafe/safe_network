@@ -54,3 +54,5 @@ pub mod node;
 pub mod protocol;
 /// Storage for chunks and registers.
 pub mod storage;
+/// Transfer fees, queues, validation and storage.
+pub mod transfers;
