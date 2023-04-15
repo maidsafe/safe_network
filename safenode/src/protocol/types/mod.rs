@@ -18,9 +18,9 @@ pub mod dbc_genesis;
 pub mod error;
 /// Types related to transfer fees.
 pub mod fees;
+/// Token transfers.
+pub mod offline_transfers;
 /// Register type.
 pub mod register;
-/// Token transfers.
-pub mod transfers;
 /// A wallet for network tokens.
 pub mod wallet;
