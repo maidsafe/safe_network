@@ -26,7 +26,7 @@ pub use self::{
     spend::SpendQuery,
 };
 
-use super::types::{
+use super::{
     address::{dbc_address, dbc_name, DataAddress, DbcAddress},
     chunk::Chunk,
 };

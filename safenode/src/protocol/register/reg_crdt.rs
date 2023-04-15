@@ -6,13 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{
-    super::{
-        address::RegisterAddress,
-        authority::Signature,
-        error::{Error, Result},
-    },
-    Entry, User,
+use super::{Entry, User};
+
+use crate::protocol::{
+    address::RegisterAddress,
+    authority::Signature,
+    error::{Error, Result},
 };
 
 use crdts::{

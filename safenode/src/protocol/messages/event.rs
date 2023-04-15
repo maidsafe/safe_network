@@ -8,7 +8,7 @@
 
 use crate::{
     network_transfers::{Error, Result},
-    protocol::types::address::{dbc_address, DataAddress},
+    protocol::address::{dbc_address, DataAddress},
 };
 
 use sn_dbc::SignedSpend;
@@ -17,10 +17,10 @@ use serde::{Deserialize, Serialize};
 
 /// Events - creating, updating, or removing data.
 ///
-/// See the [`types`] module documentation for more details of the types supported by the Safe
+/// See the [`protocol`] module documentation for more details of the types supported by the Safe
 /// Network, and their semantics.
 ///
-/// [`types`]: crate::protocol::types
+/// [`protocol`]: crate::protocol
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
 pub enum Event {

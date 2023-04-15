@@ -16,15 +16,13 @@ use crate::{
     network::{majority, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
     network_transfers::{Error as TransferError, Transfers},
     protocol::{
+        address::{dbc_address, DbcAddress},
+        error::Error as ProtocolError,
         messages::{
             Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
             SpendQuery,
         },
-        types::{
-            address::{dbc_address, DbcAddress},
-            error::Error as ProtocolError,
-            register::User,
-        },
+        register::User,
     },
     storage::{ChunkStorage, RegisterStorage},
 };

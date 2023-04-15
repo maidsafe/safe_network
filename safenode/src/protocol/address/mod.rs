@@ -10,12 +10,15 @@ mod chunk;
 mod dbc;
 mod register;
 
-pub use chunk::ChunkAddress;
-pub use dbc::{dbc_address, dbc_name, DbcAddress};
-pub use register::RegisterAddress;
+pub use self::{
+    chunk::ChunkAddress,
+    dbc::{dbc_address, dbc_name, DbcAddress},
+    register::RegisterAddress,
+};
+
+use sn_dbc::DbcId;
 
 use serde::{Deserialize, Serialize};
-use sn_dbc::DbcId;
 use xor_name::XorName;
 
 /// An address of data on the network.

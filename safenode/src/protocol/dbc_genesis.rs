@@ -23,7 +23,7 @@ const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
 /// thus creating a total of 1,288,490,189,000,000,000 available units.
 pub const GENESIS_DBC_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
 
-/// A specialised `Result` type for types crate.
+/// A specialised `Result` type for dbc_genesis crate.
 pub type GenesisResult<T> = Result<T, GenesisError>;
 
 /// Main error type for the crate.

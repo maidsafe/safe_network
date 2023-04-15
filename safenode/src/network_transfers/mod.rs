@@ -11,7 +11,7 @@ mod error;
 pub(crate) use self::error::{Error, Result};
 
 use crate::{
-    protocol::types::{
+    protocol::{
         address::DbcAddress,
         fees::{FeeCiphers, RequiredFee, SpendPriority, SpendQ},
     },

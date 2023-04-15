@@ -8,7 +8,7 @@
 
 use super::RegisterCmd;
 
-use crate::protocol::types::{
+use crate::protocol::{
     address::{dbc_address, ChunkAddress, DataAddress},
     chunk::Chunk,
     fees::FeeCiphers,
@@ -22,20 +22,20 @@ use xor_name::XorName;
 
 /// Data and Dbc cmds - recording spends or creating, updating, and removing data.
 ///
-/// See the [`types`] module documentation for more details of the types supported by the Safe
+/// See the [`protocol`] module documentation for more details of the types supported by the Safe
 /// Network, and their semantics.
 ///
-/// [`types`]: crate::protocol::types
+/// [`protocol`]: crate::protocol
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
 pub enum Cmd {
     /// [`Chunk`] write operation.
     ///
-    /// [`Chunk`]: crate::protocol::types::chunk::Chunk
+    /// [`Chunk`]: crate::protocol::chunk::Chunk
     StoreChunk(Chunk),
     /// [`Register`] write operation.
     ///
-    /// [`Register`]: crate::protocol::types::register::Register
+    /// [`Register`]: crate::protocol::register::Register
     Register(RegisterCmd),
     /// [`SignedSpend`] write operation.
     ///

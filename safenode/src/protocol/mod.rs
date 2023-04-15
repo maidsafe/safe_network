@@ -8,5 +8,22 @@
 
 /// Messages types
 pub mod messages;
-/// Types used within the messages
-pub mod types;
+
+/// Address types
+pub mod address;
+/// Data/content Authority types.
+pub mod authority;
+/// Chunk type.
+pub mod chunk;
+/// Dbc genesis creation.
+pub mod dbc_genesis;
+/// Errors.
+pub mod error;
+/// Types related to transfer fees.
+pub mod fees;
+/// Token transfers.
+pub mod offline_transfers;
+/// Register type.
+pub mod register;
+/// A wallet for network tokens.
+pub mod wallet;

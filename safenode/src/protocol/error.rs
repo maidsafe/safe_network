@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};
 use thiserror::Error;
 
-/// A specialised `Result` type for types crate.
+/// A specialised `Result` type for protocol crate.
 pub type Result<T> = result::Result<T, Error>;
 
 /// Main error type for the crate.

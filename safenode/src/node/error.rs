@@ -18,7 +18,7 @@ pub enum Error {
     Network(#[from] crate::network::Error),
 
     #[error("Protocol error {0}")]
-    Protocol(#[from] crate::protocol::types::error::Error),
+    Protocol(#[from] crate::protocol::error::Error),
 
     #[error("ResponseTimeout")]
     ResponseTimeout(#[from] tokio::time::error::Elapsed),
