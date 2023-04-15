@@ -10,14 +10,16 @@ mod metadata;
 mod policy;
 mod reg_crdt;
 
-pub use metadata::{Action, Entry};
-pub use policy::{Permissions, Policy, User};
-pub use reg_crdt::EntryHash;
+pub use self::{
+    metadata::{Action, Entry},
+    policy::{Permissions, Policy, User},
+    reg_crdt::EntryHash,
+};
 
 pub(crate) use reg_crdt::{CrdtOperation, RegisterCrdt};
 
 use super::{
-    super::types::address::RegisterAddress,
+    address::RegisterAddress,
     error::{Error, Result},
 };
 
@@ -176,11 +178,11 @@ impl Register {
 
 #[cfg(test)]
 mod tests {
-    use crate::protocol::types::{
+    use crate::protocol::{
+        address::RegisterAddress,
         error::{Error, Result},
         register::{
-            Entry, EntryHash, Permissions, Policy, Register, RegisterAddress, RegisterOp, User,
-            MAX_REG_NUM_ENTRIES,
+            Entry, EntryHash, Permissions, Policy, Register, RegisterOp, User, MAX_REG_NUM_ENTRIES,
         },
     };
 

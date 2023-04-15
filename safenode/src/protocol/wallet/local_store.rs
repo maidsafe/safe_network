@@ -8,7 +8,7 @@
 
 use super::{CreatedDbc, DepositWallet, Result, SendClient, SendWallet};
 
-use crate::protocol::types::offline_transfers::Outputs as TransferDetails;
+use crate::protocol::offline_transfers::Outputs as TransferDetails;
 
 use sn_dbc::{Dbc, DbcId, DbcIdSource, MainKey, PublicAddress, Token};
 
@@ -189,7 +189,7 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSendWallet<C> {
 mod tests {
     use super::{DepositWallet, LocalDepositWallet, Result, SendClient};
 
-    use crate::protocol::types::{
+    use crate::protocol::{
         dbc_genesis::{create_genesis_dbc, GenesisResult, GENESIS_DBC_AMOUNT},
         offline_transfers::{create_transfer, Outputs as TransferDetails},
         wallet::{LocalSendWallet, SendWallet},

@@ -12,18 +12,14 @@ use super::{
 };
 
 use crate::protocol::{
+    address::RegisterAddress,
+    authority::DataAuthority,
+    error::Error as ProtocolError,
     messages::{
         Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
         RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
     },
-    types::{
-        address::RegisterAddress,
-        authority::DataAuthority,
-        error::Error as ProtocolError,
-        register::{
-            Action, Entry, EntryHash, Permissions, Policy, Register as RegisterReplica, User,
-        },
-    },
+    register::{Action, Entry, EntryHash, Permissions, Policy, Register as RegisterReplica, User},
 };
 
 use bincode::serialize;

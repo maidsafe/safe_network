@@ -7,12 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::protocol::{
+    address::RegisterAddress,
+    error::{Error, Result},
     messages::RegisterCmd,
-    types::{
-        address::RegisterAddress,
-        error::{Error, Result},
-        register::Register,
-    },
+    register::Register,
 };
 
 use clru::CLruCache;

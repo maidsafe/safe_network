@@ -9,15 +9,13 @@
 use super::register_store::{RegisterStore, StoredRegister};
 
 use crate::protocol::{
+    address::RegisterAddress,
+    error::{Error, Result},
     messages::{
         EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
         SignedRegisterCreate, SignedRegisterEdit,
     },
-    types::{
-        address::RegisterAddress,
-        error::{Error, Result},
-        register::{Action, EntryHash, Register, User},
-    },
+    register::{Action, EntryHash, Register, User},
 };
 
 use bincode::serialize;
@@ -298,15 +296,13 @@ impl RegisterStorage {
 mod test {
     use super::RegisterStorage;
     use crate::protocol::{
+        authority::DataAuthority,
+        error::Error,
         messages::{
             CreateRegister, EditRegister, QueryResponse, RegisterCmd, RegisterQuery,
             SignedRegisterCreate, SignedRegisterEdit,
         },
-        types::{
-            authority::DataAuthority,
-            error::Error,
-            register::{EntryHash, Policy, Register, User},
-        },
+        register::{EntryHash, Policy, Register, User},
     };
 
     use bincode::serialize;

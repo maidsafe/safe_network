@@ -9,7 +9,7 @@
 use safenode::{
     client::{Client, ClientEvent, Error as ClientError},
     log::init_node_logging,
-    protocol::types::{address::ChunkAddress, chunk::Chunk},
+    protocol::{address::ChunkAddress, chunk::Chunk},
 };
 
 use bls::SecretKey;

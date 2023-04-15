@@ -8,7 +8,7 @@
 
 use crate::{
     network_transfers::{Error, Result},
-    protocol::types::address::DbcAddress,
+    protocol::address::DbcAddress,
     storage::used_space::UsedSpace,
 };
 

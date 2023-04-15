@@ -9,18 +9,18 @@
 use super::spend::SpendQuery;
 
 use crate::protocol::{
+    address::{ChunkAddress, DataAddress},
     messages::RegisterQuery,
-    types::address::{ChunkAddress, DataAddress},
 };
 
 use serde::{Deserialize, Serialize};
 
 /// Data queries - retrieving data and inspecting their structure.
 ///
-/// See the [`types`] module documentation for more details of the types supported by the Safe
+/// See the [`protocol`] module documentation for more details of the types supported by the Safe
 /// Network, and their semantics.
 ///
-/// [`types`]: crate::protocol::types
+/// [`protocol`]: crate::protocol
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
 pub enum Query {
@@ -28,12 +28,12 @@ pub enum Query {
     ///
     /// This should eventually lead to a [`GetChunk`] response.
     ///
-    /// [`Chunk`]:  crate::protocol::types::chunk::Chunk
+    /// [`Chunk`]:  crate::protocol::chunk::Chunk
     /// [`GetChunk`]: super::QueryResponse::GetChunk
     GetChunk(ChunkAddress),
     /// [`Register`] read operation.
     ///
-    /// [`Register`]: crate::protocol::types::register::Register
+    /// [`Register`]: crate::protocol::register::Register
     Register(RegisterQuery),
     /// [`Spend`] read operation.
     ///

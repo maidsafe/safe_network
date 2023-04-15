@@ -8,7 +8,7 @@
 
 use super::{Error, Result};
 
-use crate::protocol::types::chunk::Chunk;
+use crate::protocol::chunk::Chunk;
 
 use self_encryption::{DataMap, EncryptedChunk, MAX_CHUNK_SIZE};
 
