@@ -16,8 +16,8 @@ use self::{error::Error, event::NodeEventsChannel};
 
 use crate::{
     network::Network,
+    network_transfers::Transfers,
     storage::{ChunkStorage, RegisterStorage},
-    transfers::Transfers,
 };
 
 use libp2p::PeerId;

@@ -14,6 +14,7 @@ use super::{
 
 use crate::{
     network::{majority, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
+    network_transfers::{Error as TransferError, Transfers},
     protocol::{
         messages::{
             Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
@@ -26,7 +27,6 @@ use crate::{
         },
     },
     storage::{ChunkStorage, RegisterStorage},
-    transfers::{Error as TransferError, Transfers},
 };
 
 use sn_dbc::{DbcTransaction, MainKey, SignedSpend};

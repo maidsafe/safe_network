@@ -12,7 +12,7 @@ use super::{
     register::{EntryHash, User},
 };
 
-use crate::transfers::Error as TransferError;
+use crate::network_transfers::Error as TransferError;
 
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};
