@@ -25,4 +25,22 @@ pub enum Error {
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),
+    /// Failed to parse bytes into a bls key.
+    #[error("Failed to parse bls key")]
+    FailedToParseBlsKey,
+    /// Failed to decode a hex string to a key.
+    #[error("Could not decode hex string to key.")]
+    FailedToDecodeHexToKey,
+    /// Failed to serialize a main key to hex.
+    #[error("Could not serialize main key to hex: {0}")]
+    FailedToHexEncodeKey(String),
+    /// Bls error.
+    #[error("Bls error: {0}")]
+    Bls(#[from] bls::error::Error),
+    /// Bincode error.
+    #[error("Bincode error:: {0}")]
+    Bincode(#[from] bincode::Error),
+    /// I/O error.
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
 }

@@ -64,7 +64,7 @@ pub struct Outputs {
 }
 
 /// A resulting dbc from a token transfer.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CreatedDbc {
     /// The dbc that was created.
     pub dbc: Dbc,
