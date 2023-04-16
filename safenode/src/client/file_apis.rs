@@ -27,11 +27,21 @@ use xor_name::XorName;
 // Maximum number of concurrent chunks to be uploaded/retrieved for a file
 const CHUNKS_BATCH_MAX_SIZE: usize = 5;
 
-impl Client {
+/// File APIs.
+pub struct Files {
+    client: Client,
+}
+
+impl Files {
+    /// Create file apis instance.
+    pub fn new(client: Client) -> Self {
+        Self { client }
+    }
+
     #[instrument(skip(self), level = "debug")]
     /// Reads [`Bytes`] from the network, whose contents are contained within one or more chunks.
     pub async fn read_bytes(&self, address: ChunkAddress) -> Result<Bytes> {
-        let chunk = self.get_chunk(address).await?;
+        let chunk = self.client.get_chunk(address).await?;
 
         // first try to deserialize a LargeFile, if it works, we go and seek it
         if let Ok(data_map) = self.unpack_chunk(chunk.clone()).await {
@@ -61,7 +71,7 @@ impl Client {
         Self: Sized,
     {
         trace!("Reading {length} bytes at: {address:?}, starting from position: {position}");
-        let chunk = self.get_chunk(address).await?;
+        let chunk = self.client.get_chunk(address).await?;
 
         // First try to deserialize a LargeFile, if it works, we go and seek it.
         // If an error occurs, we consider it to be a SmallFile.
@@ -123,7 +133,7 @@ impl Client {
             return Ok(address);
         }
 
-        self.store_chunk(chunk).await?;
+        self.client.store_chunk(chunk).await?;
 
         if verify {
             self.verify_chunk_is_stored(address).await?;
@@ -139,13 +149,13 @@ impl Client {
         let (head_address, all_chunks) = encrypt_large(large)?;
         for next_batch in all_chunks.chunks(CHUNKS_BATCH_MAX_SIZE) {
             let tasks = next_batch.iter().cloned().map(|chunk| {
-                let send_client = self.clone();
+                let client = self.client.clone();
 
                 task::spawn(async move {
                     let chunk_addr = *chunk.address();
-                    send_client.store_chunk(chunk).await?;
+                    client.store_chunk(chunk).await?;
                     if verify {
-                        send_client.verify_chunk_is_stored(chunk_addr).await?;
+                        let _ = client.get_chunk(chunk_addr).await?;
                     }
                     Ok::<(), super::error::Error>(())
                 })
@@ -168,7 +178,7 @@ impl Client {
 
     // Verify a chunk is stored at provided address
     async fn verify_chunk_is_stored(&self, address: ChunkAddress) -> Result<()> {
-        let _ = self.get_chunk(address).await?;
+        let _ = self.client.get_chunk(address).await?;
         Ok(())
     }
 
@@ -228,9 +238,9 @@ impl Client {
         let mut retrieved_chunks = vec![];
         for next_batch in chunks_info.chunks(CHUNKS_BATCH_MAX_SIZE) {
             let tasks = next_batch.iter().cloned().map(|chunk_info| {
-                let file_api = self.clone();
+                let client = self.client.clone();
                 task::spawn(async move {
-                    match file_api
+                    match client
                         .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
                         .await
                     {

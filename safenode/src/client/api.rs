@@ -115,7 +115,7 @@ impl Client {
     }
 
     /// Store `Chunk` to its close group.
-    pub async fn store_chunk(&self, chunk: Chunk) -> Result<()> {
+    pub(super) async fn store_chunk(&self, chunk: Chunk) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let request = Request::Cmd(Cmd::StoreChunk(chunk));
         let responses = self.send_to_closest(request).await?;
@@ -145,7 +145,7 @@ impl Client {
     }
 
     /// Retrieve a `Chunk` from the closest peers.
-    pub async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
+    pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Get chunk: {address:?}");
         let request = Request::Query(Query::GetChunk(address));
         let responses = self.send_to_closest(request).await?;
