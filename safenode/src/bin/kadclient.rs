@@ -7,9 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use safenode::{
-    client::{Client, ClientEvent, Error as ClientError},
+    client::{Client, ClientEvent, Error as ClientError, Files},
     log::init_node_logging,
-    protocol::{address::ChunkAddress, chunk::Chunk},
+    protocol::address::ChunkAddress,
 };
 
 use bls::SecretKey;
@@ -52,6 +52,7 @@ async fn main() -> Result<()> {
     // let's build a random secret key to sign our Register ops
     let signer = SecretKey::random();
     let client = Client::new(signer)?;
+    let file_api = Files::new(client.clone());
 
     let mut client_events_rx = client.events_channel();
     if let Ok(event) = client_events_rx.recv().await {
@@ -68,23 +69,19 @@ async fn main() -> Result<()> {
         for entry in WalkDir::new(files_path).into_iter().flatten() {
             if entry.file_type().is_file() {
                 let file = fs::read(entry.path())?;
-                let chunk = Chunk::new(Bytes::from(file));
-                let xorname = *chunk.name();
-                info!(
-                    "Storing chunk {:?} with xorname: {xorname:x}",
-                    entry.file_name()
-                );
-                println!(
-                    "Storing chunk {:?} with xorname: {xorname:x}",
-                    entry.file_name()
-                );
-                match client.store_chunk(chunk).await {
-                    Ok(()) => {
-                        info!("Successfully stored chunk {xorname:?}");
-                        chunks_to_fetch.push(xorname);
+                let bytes = Bytes::from(file);
+                let file_name = entry.file_name();
+
+                info!("Storing file {file_name:?} of {} bytes..", bytes.len());
+                println!("Storing file {file_name:?}.");
+
+                match file_api.upload(bytes).await {
+                    Ok(address) => {
+                        info!("Successfully stored file to {address:?}");
+                        chunks_to_fetch.push(*address.name());
                     }
                     Err(error) => {
-                        panic!("Did not store chunk {xorname:?} to all nodes in the close group! {error}")
+                        panic!("Did not store file {file_name:?} to all nodes in the close group! {error}")
                     }
                 };
             }
@@ -101,11 +98,11 @@ async fn main() -> Result<()> {
         }
 
         for xorname in chunks_to_fetch.iter() {
-            println!("Fetching chunk {xorname:?}");
-            match client.get_chunk(ChunkAddress::new(*xorname)).await {
-                Ok(chunk) => info!("Successfully got chunk {}!", chunk.name()),
+            println!("Downloading file {xorname:?}");
+            match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
+                Ok(bytes) => info!("Successfully got file {xorname} of {} bytes!", bytes.len()),
                 Err(error) => {
-                    panic!("Did not get chunk {xorname:?} from the close group! {error}")
+                    panic!("Did not get file {xorname:?} from the network! {error}")
                 }
             };
         }

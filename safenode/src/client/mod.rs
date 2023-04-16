@@ -16,6 +16,7 @@ mod register;
 pub use self::{
     error::Error,
     event::{ClientEvent, ClientEventsReceiver},
+    file_apis::Files,
     register::{Register, RegisterOffline},
 };
 
