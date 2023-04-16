@@ -32,18 +32,20 @@
 //! First though, a simpler local storage will be used. But after that a local register store can be implemented.
 
 mod error;
+mod keys;
 mod local_store;
 mod network_store;
+mod wallet_file;
 
 pub use self::{
     error::{Error, Result},
-    local_store::{LocalDepositWallet, LocalSendWallet},
+    local_store::{LocalDepositor as LocalDepositWallet, LocalSender as LocalSendWallet},
     // network_store::NetworkWallet,
 };
 
 use super::offline_transfers::{CreatedDbc, Outputs as TransferDetails};
 
-use sn_dbc::{Dbc, DbcIdSource, DerivedKey, MainKey, PublicAddress, Token};
+use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
 
 use async_trait::async_trait;
 
@@ -79,10 +81,8 @@ pub trait SendClient {
 /// of a deposit wallet, can also send tokens to other addresses.
 #[async_trait]
 pub trait SendWallet<C: SendClient> {
-    // /// Loads a wallet from the given path.
-    // fn load_from(path: &Path) -> Self;
-    /// Creates a new wallet with the given key.
-    fn new(key: MainKey, client: C) -> Self;
+    // /// Creates a new wallet with the given key.
+    // fn new(key: MainKey, wallet: KeyLessWallet, client: C) -> Self;
     /// The address of the wallet, to which others send tokens.
     fn address(&self) -> PublicAddress;
     /// The current balance of the wallet.
@@ -101,10 +101,8 @@ pub trait SendWallet<C: SendClient> {
 /// A deposit wallet is a wallet that can receive tokens from other wallets.
 /// It can however not send tokens to other addresses.
 pub trait DepositWallet {
-    // /// Loads a wallet from the given path.
-    // fn load_from(path: &Path) -> Self;
-    /// Creates a new wallet with the given key.
-    fn new(key: MainKey) -> Self;
+    // /// Creates a new wallet with the given key.
+    // fn new(key: MainKey, wallet: KeyLessWallet) -> Self;
     /// The address of the wallet, to which others send tokens.
     fn address(&self) -> PublicAddress;
     /// The current balance of the wallet.
@@ -113,4 +111,21 @@ pub trait DepositWallet {
     fn new_dbc_address(&self) -> DbcIdSource;
     /// Will only deposit those that are actually accessible by this wallet.
     fn deposit(&mut self, dbcs: Vec<Dbc>);
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub(super) struct KeyLessWallet {
+    /// The current balance of the wallet.
+    balance: Token,
+    /// These are dbcs we've owned, that have been
+    /// spent when sending tokens to other addresses.
+    spent_dbcs: std::collections::BTreeMap<sn_dbc::DbcId, Dbc>,
+    /// These are the dbcs we own that are not yet spent.
+    available_dbcs: std::collections::BTreeMap<sn_dbc::DbcId, Dbc>,
+    /// These are the dbcs we've created by
+    /// sending tokens to other addresses.
+    /// They are not owned by us, but we
+    /// keep them here so we can track our
+    /// transfer history.
+    dbcs_created_for_others: Vec<CreatedDbc>,
 }
