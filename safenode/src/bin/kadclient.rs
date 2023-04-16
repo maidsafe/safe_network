@@ -7,14 +7,14 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use safenode::{
-    client::{Client, ClientEvent, Error as ClientError, Files},
+    client::{Client, ClientEvent, Error as ClientError, Files, WalletClient},
     log::init_node_logging,
-    protocol::address::ChunkAddress,
+    protocol::{address::ChunkAddress, wallet::LocalWallet},
 };
 
-use bls::SecretKey;
 use bytes::Bytes;
 use clap::Parser;
+use dirs_next::home_dir;
 use eyre::Result;
 use std::{fs, path::PathBuf};
 use tracing::info;
@@ -24,6 +24,9 @@ use xor_name::XorName;
 #[derive(Parser, Debug)]
 #[clap(name = "safeclient cli")]
 struct Opt {
+    #[clap(long)]
+    client_dir: Option<PathBuf>,
+
     #[clap(long)]
     log_dir: Option<PathBuf>,
 
@@ -49,10 +52,14 @@ async fn main() -> Result<()> {
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
     info!("Instantiating a SAFE client...");
-    // let's build a random secret key to sign our Register ops
-    let signer = SecretKey::random();
-    let client = Client::new(signer)?;
+
+    let client_dir = opt.client_dir.unwrap_or(get_client_dir().await?);
+    let wallet = LocalWallet::load_from(&client_dir).await?;
+
+    let secret_key = bls::SecretKey::random();
+    let client = Client::new(secret_key)?;
     let file_api = Files::new(client.clone());
+    let _wallet_client = WalletClient::new(client.clone(), wallet);
 
     let mut client_events_rx = client.events_channel();
     if let Ok(event) = client_events_rx.recv().await {
@@ -161,4 +168,12 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+async fn get_client_dir() -> Result<PathBuf> {
+    let mut home_dirs = home_dir().expect("A homedir to exist.");
+    home_dirs.push(".safe");
+    home_dirs.push("client");
+    tokio::fs::create_dir_all(home_dirs.as_path()).await?;
+    Ok(home_dirs)
 }

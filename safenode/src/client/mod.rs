@@ -12,24 +12,24 @@ mod error;
 mod event;
 mod file_apis;
 mod register;
+mod wallet;
 
 pub use self::{
     error::Error,
     event::{ClientEvent, ClientEventsReceiver},
     file_apis::Files,
     register::{Register, RegisterOffline},
+    wallet::WalletClient,
 };
 
 use self::event::ClientEventsChannel;
 
 use crate::network::Network;
 
-use bls::SecretKey;
-
 /// Client API implementation to store and get data.
 #[derive(Clone)]
 pub struct Client {
     network: Network,
     events_channel: ClientEventsChannel,
-    signer: SecretKey,
+    signer: bls::SecretKey,
 }

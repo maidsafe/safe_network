@@ -29,7 +29,7 @@
 
 mod error;
 
-use error::{Error, Result};
+pub(crate) use error::{Error, Result};
 
 use sn_dbc::{
     rng, Dbc, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedAmount,

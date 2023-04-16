@@ -8,8 +8,9 @@
 
 use super::error::{Error, Result};
 
-use hex::{decode, encode};
 use sn_dbc::MainKey;
+
+use hex::{decode, encode};
 use std::path::Path;
 use tokio::fs;
 
@@ -46,6 +47,7 @@ pub(super) async fn get_main_key(root_dir: &Path) -> Result<Option<MainKey>> {
 }
 
 /// Construct a BLS secret key from a hex-encoded string.
+#[allow(clippy::result_large_err)]
 fn bls_secret_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::SecretKey> {
     let bytes = decode(hex).map_err(|_| Error::FailedToDecodeHexToKey)?;
     let bytes_fixed_len: [u8; bls::SK_SIZE] = bytes
@@ -67,9 +69,9 @@ mod test {
     async fn reward_key_to_and_from_file() -> Result<()> {
         let main_key = MainKey::random();
         let dir = create_temp_dir()?;
-        let dir_path = dir.path();
-        store_new_keypair(dir_path, &main_key).await?;
-        let secret_result = get_main_key(dir_path)
+        let root_dir = dir.path().to_path_buf();
+        store_new_keypair(&root_dir, &main_key).await?;
+        let secret_result = get_main_key(&root_dir)
             .await?
             .expect("There to be a key on disk.");
         assert_eq!(secret_result.public_address(), main_key.public_address());

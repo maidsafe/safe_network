@@ -39,7 +39,7 @@ mod wallet_file;
 
 pub use self::{
     error::{Error, Result},
-    local_store::{LocalDepositor as LocalDepositWallet, LocalSender as LocalSendWallet},
+    local_store::LocalWallet,
     // network_store::NetworkWallet,
 };
 
@@ -60,7 +60,7 @@ use async_trait::async_trait;
 /// For tests the implementation can be without network connection,
 /// and just return the transfer to the caller.
 #[async_trait]
-pub trait SendClient {
+pub trait SendClient: Send + Sync + Clone {
     /// Sends the given tokens to the given addresses,
     /// using the given dbcs as inputs, from which to collect
     /// the necessary number of dbcs, to cover the amounts to send.
@@ -77,36 +77,32 @@ pub trait SendClient {
     ) -> Result<TransferDetails>;
 }
 
-/// A send wallet is a wallet that, in addition to the capabilities
-/// of a deposit wallet, can also send tokens to other addresses.
-#[async_trait]
-pub trait SendWallet<C: SendClient> {
-    // /// Creates a new wallet with the given key.
-    // fn new(key: MainKey, wallet: KeyLessWallet, client: C) -> Self;
+/// A wallet has an address and a balance.
+pub trait Wallet {
     /// The address of the wallet, to which others send tokens.
     fn address(&self) -> PublicAddress;
     /// The current balance of the wallet.
     fn balance(&self) -> Token;
-    /// Used to generate a new dbc id for receiving tokens.
-    fn new_dbc_address(&self) -> DbcIdSource;
-    /// Will only deposit those that are actually accessible by this wallet.
-    fn deposit(&mut self, dbcs: Vec<Dbc>);
+}
+
+/// A send wallet is a wallet that, in addition to the capabilities
+/// of a deposit wallet, can also send tokens to other addresses.
+#[async_trait]
+pub trait SendWallet: DepositWallet {
     /// Sends the given tokens to the given addresses.
     /// Returns the new dbcs that were created.
     /// Depending on the implementation of the send client, this may
     /// also register the transaction with the network.
-    async fn send(&mut self, to: Vec<(Token, PublicAddress)>) -> Result<Vec<CreatedDbc>>;
+    async fn send<C: SendClient>(
+        &mut self,
+        to: Vec<(Token, PublicAddress)>,
+        client: &C,
+    ) -> Result<Vec<CreatedDbc>>;
 }
 
 /// A deposit wallet is a wallet that can receive tokens from other wallets.
 /// It can however not send tokens to other addresses.
-pub trait DepositWallet {
-    // /// Creates a new wallet with the given key.
-    // fn new(key: MainKey, wallet: KeyLessWallet) -> Self;
-    /// The address of the wallet, to which others send tokens.
-    fn address(&self) -> PublicAddress;
-    /// The current balance of the wallet.
-    fn balance(&self) -> Token;
+pub trait DepositWallet: Wallet {
     /// Used to generate a new dbc id for receiving tokens.
     fn new_dbc_address(&self) -> DbcIdSource;
     /// Will only deposit those that are actually accessible by this wallet.
