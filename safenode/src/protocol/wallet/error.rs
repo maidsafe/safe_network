@@ -14,14 +14,9 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 /// Transfer errors.
 #[derive(Debug, Error)]
 pub enum Error {
-    /// When a transfer is attempted with a higher amount than what is available.
-    #[error("Current balance: {balance}. Attempted spend: {attempted_spend}")]
-    NotEnoughBalance {
-        /// The actual balance available.
-        balance: sn_dbc::Token,
-        /// The amount to spend that was attempted.
-        attempted_spend: sn_dbc::Token,
-    },
+    /// Failed to create transfer.
+    #[error("CreateTransfer error {0}")]
+    CreateTransfer(#[from] crate::protocol::offline_transfers::Error),
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),

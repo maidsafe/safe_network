@@ -9,7 +9,7 @@
 use super::{
     keys::{get_main_key, store_new_keypair},
     wallet_file::{get_wallet, store_wallet},
-    CreatedDbc, DepositWallet, KeyLessWallet, Result, SendClient, SendWallet,
+    CreatedDbc, DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, Wallet,
 };
 
 use crate::protocol::offline_transfers::Outputs as TransferDetails;
@@ -19,67 +19,33 @@ use sn_dbc::{Dbc, DbcIdSource, MainKey, PublicAddress, Token};
 use async_trait::async_trait;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
-/// A wallet that can send tokens to other addresses.
-pub struct LocalSender<C: SendClient> {
-    client: C,
-    /// The secret key with which we can access
-    /// all the tokens in the available_dbcs.
-    key: MainKey,
-    /// The wallet containing all data.
-    wallet: KeyLessWallet,
-    /// The path to the wallet file.
-    path: std::path::PathBuf,
-}
-
 /// A wallet that can only receive tokens.
-pub struct LocalDepositor {
+pub struct LocalWallet {
     /// The secret key with which we can access
     /// all the tokens in the available_dbcs.
     key: MainKey,
     /// The wallet containing all data.
     wallet: KeyLessWallet,
-    /// The path to the wallet file.
-    path: std::path::PathBuf,
+    /// The dir of the wallet file.
+    root_dir: PathBuf,
 }
 
-impl LocalDepositor {
+impl LocalWallet {
     /// Stores the wallet to disk.
-    #[allow(dead_code)]
-    pub(crate) async fn store(&self) -> Result<()> {
-        store_wallet(&self.path, &self.wallet).await
+    pub async fn store(&self) -> Result<()> {
+        store_wallet(&self.root_dir, &self.wallet).await
     }
 
     /// Loads a serialized wallet from a path.
-    #[allow(dead_code)]
-    pub(crate) async fn load_from(path: &Path) -> Result<Self> {
-        let (key, wallet) = load_from_path(path).await?;
+    pub async fn load_from(root_dir: &Path) -> Result<Self> {
+        let (key, wallet) = load_from_path(root_dir).await?;
         Ok(Self {
             key,
             wallet,
-            path: path.to_path_buf(),
-        })
-    }
-}
-
-impl<C: SendClient + Send + Sync + Clone> LocalSender<C> {
-    /// Stores the wallet to disk.
-    #[allow(dead_code)]
-    pub(crate) async fn store(&self) -> Result<()> {
-        store_wallet(&self.path, &self.wallet).await
-    }
-
-    /// Loads a serialized wallet from a path.
-    #[allow(dead_code)]
-    pub(crate) async fn load_from(path: &Path, client: C) -> Result<Self> {
-        let (key, wallet) = load_from_path(path).await?;
-        Ok(Self {
-            client,
-            key,
-            wallet,
-            path: path.to_path_buf(),
+            root_dir: root_dir.to_path_buf(),
         })
     }
 }
@@ -147,17 +113,19 @@ impl KeyLessWallet {
     }
 }
 
-impl DepositWallet for LocalDepositor {
+impl Wallet for LocalWallet {
     fn address(&self) -> PublicAddress {
         self.key.public_address()
     }
 
-    fn new_dbc_address(&self) -> DbcIdSource {
-        self.key.random_dbc_id_src(&mut rand::thread_rng())
-    }
-
     fn balance(&self) -> Token {
         self.wallet.balance()
+    }
+}
+
+impl DepositWallet for LocalWallet {
+    fn new_dbc_address(&self) -> DbcIdSource {
+        self.key.random_dbc_id_src(&mut rand::thread_rng())
     }
 
     fn deposit(&mut self, dbcs: Vec<Dbc>) {
@@ -166,24 +134,12 @@ impl DepositWallet for LocalDepositor {
 }
 
 #[async_trait]
-impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSender<C> {
-    fn address(&self) -> PublicAddress {
-        self.key.public_address()
-    }
-
-    fn new_dbc_address(&self) -> DbcIdSource {
-        self.key.random_dbc_id_src(&mut rand::thread_rng())
-    }
-
-    fn balance(&self) -> Token {
-        self.wallet.balance()
-    }
-
-    fn deposit(&mut self, dbcs: Vec<Dbc>) {
-        self.wallet.deposit(dbcs, &self.key);
-    }
-
-    async fn send(&mut self, to: Vec<(Token, PublicAddress)>) -> Result<Vec<CreatedDbc>> {
+impl SendWallet for LocalWallet {
+    async fn send<C: SendClient>(
+        &mut self,
+        to: Vec<(Token, PublicAddress)>,
+        client: &C,
+    ) -> Result<Vec<CreatedDbc>> {
         // do not make a pointless send to ourselves
 
         let to: Vec<_> = to
@@ -212,7 +168,7 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSender<C> {
         let TransferDetails {
             change_dbc,
             created_dbcs,
-        } = self.client.send(available_dbcs, to, self.address()).await?;
+        } = client.send(available_dbcs, to, self.address()).await?;
 
         let spent_dbc_ids: BTreeSet<_> = created_dbcs
             .iter()
@@ -237,12 +193,12 @@ impl<C: SendClient + Send + Sync + Clone> SendWallet<C> for LocalSender<C> {
 
 #[cfg(test)]
 mod tests {
-    use super::{get_wallet, store_wallet, LocalDepositor, LocalSender};
+    use super::{get_wallet, store_wallet, LocalWallet};
 
     use crate::protocol::{
         dbc_genesis::{create_genesis_dbc, GENESIS_DBC_AMOUNT},
         offline_transfers::{create_transfer, Outputs as TransferDetails},
-        wallet::{DepositWallet, KeyLessWallet, SendClient, SendWallet},
+        wallet::{KeyLessWallet, SendClient},
     };
 
     use sn_dbc::{Dbc, DbcIdSource, DerivedKey, MainKey, PublicAddress, Token};
@@ -251,19 +207,19 @@ mod tests {
     use tempfile::{tempdir, TempDir};
 
     #[tokio::test]
-    async fn keylesswallet_to_and_from_file() -> Result<()> {
+    async fn keyless_wallet_to_and_from_file() -> Result<()> {
         let key = MainKey::random();
         let mut wallet = KeyLessWallet::new();
         let genesis = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
 
         let dir = create_temp_dir()?;
-        let path = &dir.path();
+        let root_dir = dir.path().to_path_buf();
 
         wallet.deposit(vec![genesis], &key);
 
-        store_wallet(path, &wallet).await?;
+        store_wallet(&root_dir, &wallet).await?;
 
-        let deserialized = get_wallet(path)
+        let deserialized = get_wallet(&root_dir)
             .await?
             .expect("There to be a wallet on disk.");
 
@@ -273,20 +229,19 @@ mod tests {
         Ok(())
     }
 
-    /// -----------------------------------
-    /// <-------> DepositWallet <--------->
-    /// -----------------------------------
-
     #[test]
-    fn deposit_wallet_basics() -> Result<()> {
+    fn wallet_basics() -> Result<()> {
+        // Bring in the necessary traits.
+        use super::{DepositWallet, Wallet};
+
         let key = MainKey::random();
         let public_address = key.public_address();
         let dir = create_temp_dir()?;
 
-        let deposit_only = LocalDepositor {
+        let deposit_only = LocalWallet {
             key,
             wallet: KeyLessWallet::new(),
-            path: dir.path().to_path_buf(),
+            root_dir: dir.path().to_path_buf(),
         };
 
         assert_eq!(public_address, deposit_only.address());
@@ -303,14 +258,21 @@ mod tests {
         Ok(())
     }
 
+    /// -----------------------------------
+    /// <-------> DepositWallet <--------->
+    /// -----------------------------------
+
     #[test]
     fn deposit_empty_list_does_nothing() -> Result<()> {
+        // Bring in the necessary trait.
+        use super::{DepositWallet, Wallet};
+
         let dir = create_temp_dir()?;
 
-        let mut deposit_only = LocalDepositor {
+        let mut deposit_only = LocalWallet {
             key: MainKey::random(),
             wallet: KeyLessWallet::new(),
-            path: dir.path().to_path_buf(),
+            root_dir: dir.path().to_path_buf(),
         };
 
         deposit_only.deposit(vec![]);
@@ -327,14 +289,17 @@ mod tests {
     #[test]
     #[allow(clippy::result_large_err)]
     fn deposit_adds_dbcs_that_belongs_to_the_wallet() -> Result<()> {
+        // Bring in the necessary trait.
+        use super::{DepositWallet, Wallet};
+
         let key = MainKey::random();
         let genesis = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
         let dir = create_temp_dir()?;
 
-        let mut deposit_only = LocalDepositor {
+        let mut deposit_only = LocalWallet {
             key,
             wallet: KeyLessWallet::new(),
-            path: dir.path().to_path_buf(),
+            root_dir: dir.path().to_path_buf(),
         };
 
         deposit_only.deposit(vec![genesis]);
@@ -347,13 +312,16 @@ mod tests {
     #[test]
     #[allow(clippy::result_large_err)]
     fn deposit_does_not_add_dbcs_not_belonging_to_the_wallet() -> Result<()> {
+        // Bring in the necessary traits.
+        use super::{DepositWallet, Wallet};
+
         let genesis = create_genesis_dbc(&MainKey::random()).expect("Genesis creation to succeed.");
         let dir = create_temp_dir()?;
 
-        let mut local_wallet = LocalDepositor {
+        let mut local_wallet = LocalWallet {
             key: MainKey::random(),
             wallet: KeyLessWallet::new(),
-            path: dir.path().to_path_buf(),
+            root_dir: dir.path().to_path_buf(),
         };
 
         local_wallet.deposit(vec![genesis]);
@@ -365,15 +333,18 @@ mod tests {
 
     #[tokio::test]
     async fn deposit_wallet_to_and_from_file() -> Result<()> {
-        let dir = create_temp_dir()?;
-        let path = &dir.path();
+        // Bring in the necessary traits.
+        use super::{DepositWallet, Wallet};
 
-        let mut depositor = LocalDepositor::load_from(path).await?;
+        let dir = create_temp_dir()?;
+        let root_dir = dir.path().to_path_buf();
+
+        let mut depositor = LocalWallet::load_from(&root_dir).await?;
         let genesis = create_genesis_dbc(&depositor.key).expect("Genesis creation to succeed.");
         depositor.deposit(vec![genesis]);
         depositor.store().await?;
 
-        let deserialized = LocalDepositor::load_from(path).await?;
+        let deserialized = LocalWallet::load_from(&root_dir).await?;
 
         assert_eq!(depositor.address(), deserialized.address());
         assert_eq!(GENESIS_DBC_AMOUNT, depositor.balance().as_nano());
@@ -408,40 +379,16 @@ mod tests {
     /// <-------> SendWallet <--------->
     /// --------------------------------
 
-    #[test]
-    #[allow(clippy::result_large_err)]
-    fn send_wallet_basics() -> Result<()> {
-        let key = MainKey::random();
-        let public_address = key.public_address();
-
-        let dir = create_temp_dir()?;
-        let path = dir.path().to_path_buf();
-
-        let sender = LocalSender {
-            key,
-            wallet: KeyLessWallet::new(),
-            client: MockSendClient,
-            path,
-        };
-
-        assert_eq!(public_address, sender.address());
-        assert_eq!(public_address, sender.new_dbc_address().public_address);
-        assert_eq!(Token::zero(), sender.balance());
-
-        assert!(sender.wallet.available_dbcs.is_empty());
-        assert!(sender.wallet.dbcs_created_for_others.is_empty());
-        assert!(sender.wallet.spent_dbcs.is_empty());
-
-        Ok(())
-    }
-
     #[tokio::test]
     #[allow(clippy::result_large_err)]
     async fn sending_decreases_balance() -> Result<()> {
-        let dir = create_temp_dir()?;
-        let path = dir.path().to_path_buf();
+        // Bring in the necessary traits.
+        use super::{DepositWallet, SendWallet, Wallet};
 
-        let mut sender = LocalSender::load_from(&path, MockSendClient).await?;
+        let dir = create_temp_dir()?;
+        let root_dir = dir.path().to_path_buf();
+
+        let mut sender = LocalWallet::load_from(&root_dir).await?;
         let sender_dbc = create_genesis_dbc(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit(vec![sender_dbc]);
 
@@ -452,7 +399,7 @@ mod tests {
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let created_dbcs = sender.send(to).await?;
+        let created_dbcs = sender.send(to, &MockSendClient).await?;
 
         assert_eq!(1, created_dbcs.len());
         assert_eq!(GENESIS_DBC_AMOUNT - send_amount, sender.balance().as_nano());
@@ -469,10 +416,13 @@ mod tests {
 
     #[tokio::test]
     async fn send_wallet_to_and_from_file() -> Result<()> {
-        let dir = create_temp_dir()?;
-        let path = &dir.path();
+        // Bring in the necessary traits.
+        use super::{DepositWallet, SendWallet, Wallet};
 
-        let mut sender = LocalSender::load_from(path, MockSendClient).await?;
+        let dir = create_temp_dir()?;
+        let root_dir = dir.path().to_path_buf();
+
+        let mut sender = LocalWallet::load_from(&root_dir).await?;
         let sender_dbc = create_genesis_dbc(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit(vec![sender_dbc]);
 
@@ -481,11 +431,11 @@ mod tests {
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let _created_dbcs = sender.send(to).await?;
+        let _created_dbcs = sender.send(to, &MockSendClient).await?;
 
         sender.store().await?;
 
-        let deserialized = LocalSender::load_from(path, MockSendClient).await?;
+        let deserialized = LocalWallet::load_from(&root_dir).await?;
 
         assert_eq!(sender.address(), deserialized.address());
         assert_eq!(GENESIS_DBC_AMOUNT - send_amount, sender.balance().as_nano());

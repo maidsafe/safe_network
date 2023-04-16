@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_dbc::{Error as DbcError, Token};
+use sn_dbc::Error as DbcError;
 
 use thiserror::Error;
 
@@ -20,16 +20,10 @@ pub enum Error {
     /// Not enough balance to perform a transaction
     #[error("Not enough balance: {0}")]
     NotEnoughBalance(String),
-    /// Not enough was paid in fees for the nodes to process the spend.
-    #[error("Too low amount for the transfer. Highest required fee: {0:?}.")]
-    FeeTooLow(Token),
     /// An error from the `sn_dbc` crate.
     #[error("Dbc error: {0}")]
     Dbcs(#[from] DbcError),
     /// DbcReissueFailed
     #[error("DbcReissueFailed: {0}")]
     DbcReissueFailed(String),
-    /// Verification of DBC validly signed by a known section failed
-    #[error("DBC validity verification failed: {0}")]
-    DbcVerificationFailed(String),
 }
