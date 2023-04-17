@@ -17,8 +17,9 @@ use libp2p::{
     kad::{store::MemoryStore, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     mdns,
     multiaddr::Protocol,
+    relay,
     request_response::{self, ResponseChannel},
-    swarm::{NetworkBehaviour, SwarmEvent},
+    swarm::{behaviour::toggle::Toggle, NetworkBehaviour, SwarmEvent},
     PeerId,
 };
 use std::collections::HashSet;
@@ -30,6 +31,7 @@ pub(super) struct NodeBehaviour {
     pub(super) request_response: request_response::Behaviour<MsgCodec>,
     pub(super) kademlia: Kademlia<MemoryStore>,
     pub(super) mdns: mdns::tokio::Behaviour,
+    pub(super) relay: Toggle<relay::Behaviour>,
 }
 
 #[derive(Debug)]
@@ -37,6 +39,7 @@ pub(super) enum NodeEvent {
     RequestResponse(request_response::Event<Request, Response>),
     Kademlia(KademliaEvent),
     Mdns(Box<mdns::Event>),
+    Relay(relay::Event),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -54,6 +57,12 @@ impl From<KademliaEvent> for NodeEvent {
 impl From<mdns::Event> for NodeEvent {
     fn from(event: mdns::Event) -> Self {
         NodeEvent::Mdns(Box::new(event))
+    }
+}
+
+impl From<relay::Event> for NodeEvent {
+    fn from(event: relay::Event) -> Self {
+        NodeEvent::Relay(event)
     }
 }
 

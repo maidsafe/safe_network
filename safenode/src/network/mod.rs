@@ -29,6 +29,7 @@ use libp2p::{
     kad::{record::store::MemoryStore, KBucketKey, Kademlia, KademliaConfig, QueryId},
     mdns,
     multiaddr::Protocol,
+    relay,
     request_response::{self, ProtocolSupport, RequestId, ResponseChannel},
     swarm::{Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
@@ -140,10 +141,13 @@ impl SwarmDriver {
         // to outbound-only mode and don't listen on any address
         let kademlia = Kademlia::with_config(peer_id, MemoryStore::new(peer_id), cfg);
         let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
+        // TODO => From the config decide that relay is on or off
+        let relay = Some(relay::Behaviour::new(peer_id, Default::default())).into();
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
             mdns,
+            relay,
         };
 
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
