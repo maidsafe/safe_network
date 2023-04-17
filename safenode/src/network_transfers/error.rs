@@ -51,7 +51,7 @@ pub enum Error {
     #[error(
         "The signed spend src tx ({signed_src_tx_hash:?}) did not match the provided source tx's hash: {provided_src_tx_hash:?}"
     )]
-    SignedSrcTxHashDoesNotMatchProvidedSrcTxHash {
+    TxSourceMismatch {
         /// The signed spend src tx hash.
         signed_src_tx_hash: sn_dbc::Hash,
         /// The hash of the provided source tx.
@@ -59,9 +59,9 @@ pub enum Error {
     },
     /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
     #[error(
-        "The signed spend src tx ({signed_src_tx_hash:?}) did not match a valid parent's dst tx hash: {parent_dst_tx_hash:?}"
+        "The signed spend src tx ({signed_src_tx_hash:?}) did not match a valid parent's dst tx hash: {parent_dst_tx_hash:?}. The trail is invalid."
     )]
-    SpendSrcTxHashParentTxHashMismatch {
+    TxTrailMismatch {
         /// The signed spend src tx hash.
         signed_src_tx_hash: sn_dbc::Hash,
         /// The dst hash of a parent signed spend.

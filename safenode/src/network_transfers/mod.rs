@@ -91,7 +91,7 @@ impl Transfers {
         let signed_src_tx_hash = signed_spend.src_tx_hash();
 
         if provided_src_tx_hash != signed_src_tx_hash {
-            return Err(Error::SignedSrcTxHashDoesNotMatchProvidedSrcTxHash {
+            return Err(Error::TxSourceMismatch {
                 signed_src_tx_hash,
                 provided_src_tx_hash,
             });
@@ -156,7 +156,7 @@ fn validate_parent_spends(
     for parent_spend in &parent_spends {
         // The dst tx of the parent must be the src tx of the spend.
         if signed_spend.src_tx_hash() != parent_spend.dst_tx_hash() {
-            return Err(Error::SpendSrcTxHashParentTxHashMismatch {
+            return Err(Error::TxTrailMismatch {
                 signed_src_tx_hash: signed_spend.src_tx_hash(),
                 parent_dst_tx_hash: parent_spend.dst_tx_hash(),
             });
