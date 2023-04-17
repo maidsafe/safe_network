@@ -52,8 +52,8 @@ pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
-pub const fn majority(group_size: usize) -> usize {
-    group_size / 2 + 1
+pub const fn close_group_majority() -> usize {
+    CLOSE_GROUP_SIZE / 2 + 1
 }
 
 type PendingGetClosest =

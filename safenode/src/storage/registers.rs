@@ -276,7 +276,8 @@ impl RegisterStorage {
     }
 
     /// Used for replication of data to new nodes.
-    // Currently only used by the tests, to be used by replication logic
+    /// Currently only used by the tests.
+    /// TODO: to be used by replication logic.
     #[cfg(test)]
     async fn get_register_replica(
         &self,

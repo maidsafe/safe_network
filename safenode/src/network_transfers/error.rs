@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use thiserror::Error;
 
-/// The type returned by the `sn_routing` message handling methods.
+/// Errors related to node handling of transfers.
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Transfer errors.
