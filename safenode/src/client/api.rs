@@ -95,7 +95,7 @@ impl Client {
     /// Retrieve a Register from the network.
     pub async fn get_register(&self, xorname: XorName, tag: u64) -> Result<Register> {
         info!("Retrieving a Register replica with name {xorname} and tag {tag}");
-        Register::get(self.clone(), xorname, tag).await
+        Register::retrieve(self.clone(), xorname, tag).await
     }
 
     /// Create a new Register.

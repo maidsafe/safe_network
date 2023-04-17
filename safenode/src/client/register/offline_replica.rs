@@ -65,6 +65,12 @@ impl RegisterOffline {
         }
     }
 
+    /// Switch to 'online' mode where each op made locally is immediatelly pushed to the network.
+    pub async fn online(mut self) -> Result<Register> {
+        self.push().await?;
+        Ok(Register { offline_reg: self })
+    }
+
     /// Return the Policy of the Register.
     pub fn policy(&self) -> &Policy {
         self.register.policy()
@@ -78,6 +84,22 @@ impl RegisterOffline {
     /// Return the tag value of the Register.
     pub fn tag(&self) -> u64 {
         self.register.tag()
+    }
+
+    /// Return the number of items held in the register
+    pub fn size(&self) -> u64 {
+        self.register.size()
+    }
+
+    /// Return a value corresponding to the provided 'hash', if present.
+    pub fn get(&self, hash: EntryHash) -> Result<&Entry> {
+        let entry = self.register.get(hash)?;
+        Ok(entry)
+    }
+
+    /// Read the last entry, or entries when there are branches, if the register is not empty.
+    pub fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
+        self.register.read()
     }
 
     /// Write a new value onto the Register atop latest value.
@@ -134,11 +156,6 @@ impl RegisterOffline {
         Ok(())
     }
 
-    /// Read the last entry, or entries when there are branches, if the register is not empty.
-    pub fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
-        self.register.read()
-    }
-
     /// Sync this Register with the replicas on the network.
     pub async fn sync(&mut self) -> Result<()> {
         debug!("Syncing Register at {}, {}!", self.name(), self.tag(),);
@@ -175,12 +192,6 @@ impl RegisterOffline {
         }
 
         Ok(())
-    }
-
-    /// Switch to 'online' mode where each op made locally is immediatelly pushed to the network.
-    pub async fn online(mut self) -> Result<Register> {
-        self.push().await?;
-        Ok(Register { offline_reg: self })
     }
 
     // ********* Private helpers  *********
