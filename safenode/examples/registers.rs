@@ -40,12 +40,14 @@ async fn main() -> Result<()> {
 
     println!("Starting SAFE client...");
     let client = Client::new(signer)?;
+    println!("SAFE client signer public key: {:?}", client.signer_pk());
 
     // Let's wait till we are connected to the network before proceeding further
     let mut client_events_rx = client.events_channel();
     loop {
         if let Ok(ClientEvent::ConnectedToNetwork) = client_events_rx.recv().await {
             println!("Connected to the Network!");
+            println!();
             break;
         }
     }
@@ -69,6 +71,11 @@ async fn main() -> Result<()> {
             client.create_register(xorname, tag).await?.offline()
         }
     };
+    println!("Register owned by: {:?}", reg_replica.policy().owner());
+    println!(
+        "Register permissios: {:?}",
+        reg_replica.policy().permissions
+    );
 
     // We'll loop asking for new msg to write onto the Register offline,
     // then we'll be syncing the offline Register with the network, i.e.
@@ -77,6 +84,10 @@ async fn main() -> Result<()> {
     // replicas of the Register, we'll merge them all back into a single value.
     loop {
         println!();
+        println!(
+            "Current total number of items in Register: {}",
+            reg_replica.size()
+        );
         println!("Latest value (more than one if concurrent writes were made):");
         println!("--------------");
         for (_, entry) in reg_replica.read().into_iter() {

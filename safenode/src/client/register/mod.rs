@@ -33,7 +33,7 @@ impl Register {
     }
 
     /// Retrieve a Register from the network.
-    pub async fn get(client: Client, name: XorName, tag: u64) -> Result<Self> {
+    pub async fn retrieve(client: Client, name: XorName, tag: u64) -> Result<Self> {
         let offline_reg = RegisterOffline::retrieve(client, name, tag).await?;
         Ok(Self { offline_reg })
     }
@@ -56,6 +56,21 @@ impl Register {
     /// Return the tag value of the Register.
     pub fn tag(&self) -> u64 {
         self.offline_reg.tag()
+    }
+
+    /// Return the number of items held in the register
+    pub fn size(&self) -> u64 {
+        self.offline_reg.size()
+    }
+
+    /// Return a value corresponding to the provided 'hash', if present.
+    pub fn get(&self, hash: EntryHash) -> Result<&Entry> {
+        self.offline_reg.get(hash)
+    }
+
+    /// Read the last entry, or entries when there are branches, if the register is not empty.
+    pub fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
+        self.offline_reg.read()
     }
 
     /// Write a new value onto the Register atop latest value.
@@ -83,11 +98,6 @@ impl Register {
     pub async fn write_atop(&mut self, entry: &[u8], children: BTreeSet<EntryHash>) -> Result<()> {
         self.offline_reg.write_atop(entry, children)?;
         self.offline_reg.push().await
-    }
-
-    /// Read the last entry, or entries when there are branches, if the register is not empty.
-    pub fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
-        self.offline_reg.read()
     }
 
     /// Sync this Register with the replicas on the network.

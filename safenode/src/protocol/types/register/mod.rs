@@ -42,7 +42,7 @@ pub type RegisterOp<T> = CrdtOperation<T>;
 #[derive(Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub struct Register {
     authority: User,
-    crdt: RegisterCrdt, // Temporarily exposed to 'super' till spentbook fully implemented.
+    crdt: RegisterCrdt,
     policy: Policy,
 }
 
