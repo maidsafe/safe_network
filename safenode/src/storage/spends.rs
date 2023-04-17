@@ -72,6 +72,8 @@ impl SpendStorage {
     /// If a double spend attempt is detected, a `DoubleSpendAttempt` error
     /// will be returned including all the `SignedSpends`, for
     /// broadcasting to the other nodes.
+    /// NOTE: The &mut self signature is necessary to prevent race conditions
+    /// and double spent attempts to be missed.
     pub(crate) async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         self.validate(signed_spend).await?;
 
@@ -83,6 +85,12 @@ impl SpendStorage {
         let replaced = valid_spends.insert(address, signed_spend.clone());
         if replaced.is_none() {
             self.valid_spends_cache_size.increase(size_of_new);
+        } else {
+            // The `&mut self` signature prevents any race,
+            // so this is a second layer of security on that,
+            // if some developer by mistake removes the &mut self.
+            drop(valid_spends);
+            self.validate(signed_spend).await?;
         }
 
         Ok(())
@@ -91,6 +99,8 @@ impl SpendStorage {
     /// Validates a spend without adding it to the storage.
     /// If it however is detected as a double spend, that fact is recorded immediately,
     /// and an error returned.
+    /// NOTE: The &mut self signature is necessary to prevent race conditions
+    /// and double spent attempts to be missed.
     pub(crate) async fn validate(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         if self.is_unspendable(signed_spend.dbc_id()).await {
             return Ok(()); // Already unspendable, so we don't care about this spend.
@@ -150,6 +160,8 @@ impl SpendStorage {
     /// When data is replicated to a new peer,
     /// it may contain double spends, and thus we need to add that here,
     /// so that we in the future can serve this info to Clients.
+    /// NOTE: The &mut self signature is necessary to prevent race conditions
+    /// and double spent attempts to be missed.
     pub(crate) async fn try_add_double(
         &mut self,
         a_spend: &SignedSpend,
