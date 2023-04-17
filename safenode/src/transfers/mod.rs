@@ -66,7 +66,7 @@ impl Transfers {
 
     /// Tries to add a double spend that was detected by the network.
     pub(crate) async fn try_add_double(
-        &self,
+        &mut self,
         a_spend: &SignedSpend,
         b_spend: &SignedSpend,
     ) -> Result<()> {
