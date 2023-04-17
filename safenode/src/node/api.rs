@@ -13,7 +13,7 @@ use super::{
 };
 
 use crate::{
-    network::{majority, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
+    network::{close_group_majority, NetworkEvent, SwarmDriver},
     network_transfers::{Error as TransferError, Transfers},
     protocol::{
         address::{dbc_address, DbcAddress},
@@ -270,7 +270,7 @@ impl Node {
         // and thereby have us fail the check here
         // (we would have more than 1 spend in the BTreeSet), we must
         // look for a majority of the same responses, and ignore any other responses.
-        if spends.len() >= majority(CLOSE_GROUP_SIZE) {
+        if spends.len() >= close_group_majority() {
             // Majority of nodes in the close group returned an Ok response.
             use itertools::*;
             if let Some(spend) = spends
@@ -278,7 +278,7 @@ impl Node {
                 .map(|x| (x, 1))
                 .into_group_map()
                 .into_iter()
-                .filter(|(_, v)| v.len() >= majority(CLOSE_GROUP_SIZE))
+                .filter(|(_, v)| v.len() >= close_group_majority())
                 .max_by_key(|(_, v)| v.len())
                 .map(|(k, _)| k)
             {

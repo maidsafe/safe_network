@@ -30,7 +30,7 @@ pub enum SpendQuery {
 }
 
 impl SpendQuery {
-    /// Returns the dst address for the request.
+    /// Returns the dst address for the query.
     pub fn dst(&self) -> DbcAddress {
         match self {
             Self::GetFees { dbc_id, .. } => dbc_address(dbc_id),

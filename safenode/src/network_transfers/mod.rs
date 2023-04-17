@@ -113,6 +113,8 @@ impl Transfers {
         // If the rate limit has elapsed..
         if self.spend_queue.elapsed() {
             // .. we process one from the queue.
+            // NB: This works for now. We can look at
+            // a timeout backstop in coming iterations.
             if let Some((signed_spend, _)) = self.spend_queue.pop() {
                 return self.storage.try_add(&signed_spend).await;
             }

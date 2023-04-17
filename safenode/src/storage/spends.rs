@@ -72,8 +72,9 @@ impl SpendStorage {
     /// If a double spend attempt is detected, a `DoubleSpendAttempt` error
     /// will be returned including all the `SignedSpends`, for
     /// broadcasting to the other nodes.
-    /// NOTE: The &mut self signature is necessary to prevent race conditions
-    /// and double spent attempts to be missed.
+    /// NOTE: The `&mut self` signature is necessary to prevent race conditions
+    /// and double spent attempts to be missed (as the validation and adding
+    /// could otherwise happen in parallel in different threads.)
     pub(crate) async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         self.validate(signed_spend).await?;
 
@@ -99,8 +100,9 @@ impl SpendStorage {
     /// Validates a spend without adding it to the storage.
     /// If it however is detected as a double spend, that fact is recorded immediately,
     /// and an error returned.
-    /// NOTE: The &mut self signature is necessary to prevent race conditions
-    /// and double spent attempts to be missed.
+    /// NOTE: The `&mut self` signature is necessary to prevent race conditions
+    /// and double spent attempts to be missed (as the validation and adding
+    /// could otherwise happen in parallel in different threads.)
     pub(crate) async fn validate(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         if self.is_unspendable(signed_spend.dbc_id()).await {
             return Ok(()); // Already unspendable, so we don't care about this spend.
@@ -160,8 +162,9 @@ impl SpendStorage {
     /// When data is replicated to a new peer,
     /// it may contain double spends, and thus we need to add that here,
     /// so that we in the future can serve this info to Clients.
-    /// NOTE: The &mut self signature is necessary to prevent race conditions
-    /// and double spent attempts to be missed.
+    /// NOTE: The `&mut self` signature is necessary to prevent race conditions
+    /// and double spent attempts to be missed (as the validation and adding
+    /// could otherwise happen in parallel in different threads.)
     pub(crate) async fn try_add_double(
         &mut self,
         a_spend: &SignedSpend,

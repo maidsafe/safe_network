@@ -160,7 +160,7 @@ impl SignedRegisterEdit {
 }
 
 impl RegisterQuery {
-    /// Returns the dst address for the request.
+    /// Returns the dst address for the query.
     pub fn dst(&self) -> RegisterAddress {
         match self {
             Self::Get(ref address)
