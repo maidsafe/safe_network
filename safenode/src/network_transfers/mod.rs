@@ -189,28 +189,25 @@ fn decipher_fee(
     our_name: XorName,
     fee_ciphers: BTreeMap<XorName, FeeCiphers>,
 ) -> Result<Token> {
-    // find the ciphers for us
     let fee_ciphers = fee_ciphers.get(&our_name).ok_or(Error::MissingFee)?;
-    // decrypt the ciphers
     let (dbc_id, revealed_amount) = fee_ciphers.decrypt(node_reward_key)?;
-
-    // find the output for the derived key
     let output_proof = match tx.outputs.iter().find(|proof| proof.dbc_id() == &dbc_id) {
         Some(proof) => proof,
         None => return Err(Error::MissingFee),
     };
 
-    // blind the amount
     let blinded_amount = revealed_amount.blinded_amount(&sn_dbc::PedersenGens::default());
     // Since the output proof contains blinded amounts, we can only verify
-    // that the amount is what we expect by..
-    // 1. ..comparing equality to the blinded amount we build from the decrypted revealed amount (i.e. amount + blinding factor)..
+    // that the amount is what we expect by comparing equality to the blinded
+    // amount we build from the decrypted revealed amount (i.e. amount + blinding factor)..
     if blinded_amount != output_proof.blinded_amount() {
         return Err(Error::InvalidFeeBlindedAmount);
     }
-    // .. and 2. checking that the revealed amount we have, (that we now know is what the output blinded amount contains, since the above check 1. passed),
-    // also is what we expect the amount to be.
+
     let paid = Token::from_nano(revealed_amount.value());
 
+    // .. and then checking that the revealed amount we have, (that we now
+    // know is what the output blinded amount contains, since the above check passed),
+    // also is what we expect the amount to be (done in the calling function).
     Ok(paid)
 }
