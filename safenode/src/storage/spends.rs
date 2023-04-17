@@ -176,6 +176,13 @@ impl SpendStorage {
         let same_hash = a_hash == b_hash;
 
         if different_id || same_hash {
+            // If the ids are different, then this is not a double spend attempt.
+            // A double spend attempt is when the contents (the tx) of two spends
+            // with same id are detected as being different.
+            // That means that if the ids are the same, and the hashes the same, then
+            // it isn't a double spend attempt either!
+            // A node could erroneously send a notification of a double spend attempt,
+            // so, we need to validate that.
             return Err(Error::NotADoubleSpendAttempt(
                 Box::new(a_spend.clone()),
                 Box::new(b_spend.clone()),
