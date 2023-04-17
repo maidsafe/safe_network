@@ -135,6 +135,7 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
     let mut rng = rng::thread_rng();
 
     let dbc_id_src = change_to.random_dbc_id_src(&mut rng);
+    let change_id = dbc_id_src.dbc_id();
     if change.as_nano() > 0 {
         tx_builder = tx_builder.add_output(change, dbc_id_src);
     }
@@ -155,9 +156,7 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
 
     let mut change_dbc = None;
     created_dbcs.retain(|created| {
-        // This is not 100% solid in my mind, since we could have another output that is sending to ourselves.
-        // In the wallet (which calls this code) such an operation is skipped. But worth noting anyway.
-        if created.dbc.public_address() == &change_to && change.as_nano() > 0 {
+        if created.dbc.id() == change_id {
             change_dbc = Some(created.dbc.clone());
             false
         } else {
