@@ -1,6 +1,6 @@
 # stableset_net
 
-This is an experimental branch for layering safe network data structures atop libp2p
+This is the Safe Network as it was supposed to be, on a kademlia network, enabled by libp2p.
 
 ## Running the network
 
