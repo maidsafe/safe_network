@@ -1,9 +1,6 @@
 name: Check before merge
 
 on:
-  # on main, we want to know that all commits are passing at a glance, any deviation should help debugging errors at a glance
-  push:
-    branches: [main]
   # tests must run for a PR to be valid and pass merge queue muster
   merge_group:
     branches: [main]
@@ -31,7 +28,6 @@ jobs:
         run: cargo install cargo-udeps --locked
       - name: Run cargo-udeps
         run: cargo +nightly udeps --all-targets
-
 
   lint:
     runs-on: ubuntu-latest
