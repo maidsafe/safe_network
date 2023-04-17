@@ -46,6 +46,11 @@ impl Event {
         if a.dbc_id() == b.dbc_id() {
             Ok(Event::DoubleSpendAttempted(a, b))
         } else {
+            // If the ids are different, then this is not a double spend attempt.
+            // A double spend attempt is when the contents (the tx) of two spends
+            // with same id are detected as being different.
+            // A node could erroneously send a notification of a double spend attempt,
+            // so, we need to validate that.
             Err(Error::NotADoubleSpendAttempt(a, b))
         }
     }
