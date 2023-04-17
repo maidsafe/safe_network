@@ -175,7 +175,7 @@ impl Node {
                     RegisterCmd::Edit(_) => CmdResponse::EditRegister(result),
                 }
             }
-            Cmd::Dbc {
+            Cmd::SpendDbc {
                 signed_spend,
                 source_tx,
                 fee_ciphers,

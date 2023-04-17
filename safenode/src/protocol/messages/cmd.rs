@@ -40,7 +40,7 @@ pub enum Cmd {
     /// [`SignedSpend`] write operation.
     ///
     /// [`SignedSpend`]: sn_dbc::SignedSpend
-    Dbc {
+    SpendDbc {
         /// The spend to be recorded.
         /// It contains the transaction it is being spent in.
         #[debug(skip)]
@@ -61,7 +61,9 @@ impl Cmd {
         match self {
             Cmd::StoreChunk(chunk) => DataAddress::Chunk(ChunkAddress::new(*chunk.name())),
             Cmd::Register(cmd) => DataAddress::Register(cmd.dst()),
-            Cmd::Dbc { signed_spend, .. } => DataAddress::Spend(dbc_address(signed_spend.dbc_id())),
+            Cmd::SpendDbc { signed_spend, .. } => {
+                DataAddress::Spend(dbc_address(signed_spend.dbc_id()))
+            }
         }
     }
 }
