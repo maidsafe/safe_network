@@ -72,7 +72,7 @@ impl SpendStorage {
     /// If a double spend attempt is detected, a `DoubleSpendAttempt` error
     /// will be returned including all the `SignedSpends`, for
     /// broadcasting to the other nodes.
-    pub(crate) async fn try_add(&self, signed_spend: &SignedSpend) -> Result<()> {
+    pub(crate) async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         self.validate(signed_spend).await?;
 
         let size_of_new = std::mem::size_of_val(signed_spend);
@@ -91,7 +91,7 @@ impl SpendStorage {
     /// Validates a spend without adding it to the storage.
     /// If it however is detected as a double spend, that fact is recorded immediately,
     /// and an error returned.
-    pub(crate) async fn validate(&self, signed_spend: &SignedSpend) -> Result<()> {
+    pub(crate) async fn validate(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         if self.is_unspendable(signed_spend.dbc_id()).await {
             return Ok(()); // Already unspendable, so we don't care about this spend.
         }
@@ -151,7 +151,7 @@ impl SpendStorage {
     /// it may contain double spends, and thus we need to add that here,
     /// so that we in the future can serve this info to Clients.
     pub(crate) async fn try_add_double(
-        &self,
+        &mut self,
         a_spend: &SignedSpend,
         b_spend: &SignedSpend,
     ) -> Result<()> {
