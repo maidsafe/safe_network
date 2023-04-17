@@ -13,7 +13,7 @@ use super::{
 };
 
 use crate::{
-    network::{NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
+    network::{majority, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
     protocol::{
         messages::{
             Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
@@ -268,23 +268,25 @@ impl Node {
             })
             .collect();
 
-        // NB: This check is not well done. A single rogue node can
-        // deliver a bogus spend, and we would then fail the check here
-        // (we would have more than 1 spend in the BTreeSet).
-        // So, we must look for a majority of the same responses, and
-        // ignore any other responses.
-        if spends.len() >= CLOSE_GROUP_SIZE {
-            // All nodes in the close group returned an Ok response.
-            let spends: BTreeSet<_> = spends.into_iter().collect();
-            // All nodes in the close group returned
-            // the same spend. It is thus valid.
-            if spends.len() == 1 {
-                return Ok(spends
-                    .first()
-                    .expect("This will contain a single item, due to the check before this.")
-                    .clone());
+        // As to not have a single rogue node deliver a bogus spend,
+        // and thereby have us fail the check here
+        // (we would have more than 1 spend in the BTreeSet), we must
+        // look for a majority of the same responses, and ignore any other responses.
+        if spends.len() >= majority(CLOSE_GROUP_SIZE) {
+            // Majority of nodes in the close group returned an Ok response.
+            use itertools::*;
+            if let Some(spend) = spends
+                .into_iter()
+                .map(|x| (x, 1))
+                .into_group_map()
+                .into_iter()
+                .filter(|(_, v)| v.len() >= majority(CLOSE_GROUP_SIZE))
+                .max_by_key(|(_, v)| v.len())
+                .map(|(k, _)| k)
+            {
+                // Majority of nodes in the close group returned the same spend.
+                return Ok(spend);
             }
-            // Different spends returned, the parent is not valid.
         }
 
         // The parent is not recognised by all peers in its close group.

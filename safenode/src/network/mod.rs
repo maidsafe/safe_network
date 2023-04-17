@@ -50,6 +50,12 @@ use xor_name::XorName;
 /// an item in the network.
 pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
 
+/// Majority of a given group (i.e. > 1/2).
+#[inline]
+pub const fn majority(group_size: usize) -> usize {
+    group_size / 2 + 1
+}
+
 type PendingGetClosest =
     HashMap<QueryId, (oneshot::Sender<(PeerId, HashSet<PeerId>)>, HashSet<PeerId>)>;
 
