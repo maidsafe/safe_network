@@ -85,7 +85,7 @@ pub async fn create_transfer(
     // We need to select the necessary number of dbcs from those that we were passed.
     // This will also account for any fees.
     let selected_inputs = select_inputs(available_dbcs, recipients, change_to, client).await?;
-    crate_transfer_with(selected_inputs)
+    create_transfer_with(selected_inputs)
 }
 
 /// Select the necessary number of dbcs from those that we were passed.
@@ -280,7 +280,7 @@ fn verify_amounts(total_input_amount: Token, total_output_amount: Token) -> Resu
 /// to the network. When those same signed spends can be retrieved from
 /// enough peers in the network, the transaction will be completed.
 #[allow(clippy::result_large_err)]
-fn crate_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
+fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     let Inputs {
         dbcs_to_spend,
         recipients,
