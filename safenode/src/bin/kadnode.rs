@@ -8,7 +8,6 @@
 
 use safenode::{
     log::init_node_logging,
-    network::Network,
     node::{Node, NodeEvent},
 };
 
@@ -28,12 +27,25 @@ async fn main() -> Result<()> {
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
     let socket_addr = SocketAddr::new(opt.ip, opt.port);
+    let peers = parse_peer_multiaddreses(&opt.peers)?;
 
     info!("Starting a node...");
-    let node_events_channel = Node::run(socket_addr).await?;
+    let node_events_channel = Node::run(socket_addr, peers).await?;
 
     let mut node_events_rx = node_events_channel.subscribe();
-    if let Ok(event) = node_events_rx.recv().await {
+
+    loop {
+        let event = match node_events_rx.recv().await {
+            Ok(e) => e,
+            Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                tracing::error!("Node event channel closed!");
+                break;
+            }
+            Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                tracing::warn!("Skipped {n} node events!");
+                continue;
+            }
+        };
         match event {
             NodeEvent::ConnectedToNetwork => {
                 info!("Connected to the Network");
@@ -62,18 +74,32 @@ struct Opt {
     /// Defaults to 0.0.0.0, which will bind to all network interfaces.
     #[clap(long, default_value_t = IpAddr::V4(Ipv4Addr::UNSPECIFIED))]
     ip: IpAddr,
+
+    /// Nodes we dial at start to help us get connected to the network. Can be specified multiple times.
+    #[clap(long = "peer")]
+    peers: Vec<Multiaddr>,
 }
 
-// Todo: Implement node bootstrapping to connect to peers from outside the local network
-#[allow(dead_code)]
-async fn bootstrap_node(network_api: &mut Network, addr: Multiaddr) -> Result<()> {
-    let peer_id = match addr.iter().last() {
-        Some(Protocol::P2p(hash)) => PeerId::from_multihash(hash).expect("Valid hash."),
-        _ => return Err(eyre!("Expect peer multiaddr to contain peer ID.")),
-    };
-    network_api
-        .dial(peer_id, addr)
-        .await
-        .expect("Dial to succeed");
-    Ok(())
+/// Parse multiaddresses containing the P2p protocol (`/p2p/<PeerId>`).
+/// Returns an error for the first invalid multiaddress.
+fn parse_peer_multiaddreses(multiaddrs: &[Multiaddr]) -> Result<Vec<(PeerId, Multiaddr)>> {
+    multiaddrs
+        .iter()
+        .map(|multiaddr| {
+            // Take hash from the `/p2p/<hash>` component.
+            let p2p_multihash = multiaddr
+                .iter()
+                .find_map(|p| match p {
+                    Protocol::P2p(hash) => Some(hash),
+                    _ => None,
+                })
+                .ok_or_else(|| eyre!("address does not contain `/p2p/<PeerId>`"))?;
+            // Parse the multihash into the `PeerId`.
+            let peer_id =
+                PeerId::from_multihash(p2p_multihash).map_err(|_| eyre!("invalid p2p PeerId"))?;
+
+            Ok((peer_id, multiaddr.clone()))
+        })
+        // Short circuit on the first error. See rust docs `Result::from_iter`.
+        .collect::<Result<Vec<(PeerId, Multiaddr)>>>()
 }

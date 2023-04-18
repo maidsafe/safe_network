@@ -19,7 +19,7 @@ use libp2p::{
     multiaddr::Protocol,
     request_response::{self, ResponseChannel},
     swarm::{NetworkBehaviour, SwarmEvent},
-    PeerId,
+    Multiaddr, PeerId,
 };
 use std::collections::HashSet;
 use tracing::{info, warn};
@@ -69,6 +69,8 @@ pub enum NetworkEvent {
     },
     /// Emitted when the DHT is updated
     PeerAdded,
+    /// Started listening on a new address
+    NewListenAddr(Multiaddr),
 }
 
 impl SwarmDriver {
@@ -148,10 +150,11 @@ impl SwarmDriver {
             },
             SwarmEvent::NewListenAddr { address, .. } => {
                 let local_peer_id = *self.swarm.local_peer_id();
-                info!(
-                    "Local node is listening on {:?}",
-                    address.with(Protocol::P2p(local_peer_id.into()))
-                );
+                let address = address.with(Protocol::P2p(local_peer_id.into()));
+                self.event_sender
+                    .send(NetworkEvent::NewListenAddr(address.clone()))
+                    .await?;
+                info!("Local node is listening on {address:?}");
             }
             SwarmEvent::IncomingConnection { .. } => {}
             SwarmEvent::ConnectionEstablished {

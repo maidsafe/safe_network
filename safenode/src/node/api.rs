@@ -30,7 +30,7 @@ use crate::{
 use sn_dbc::{DbcTransaction, MainKey, SignedSpend};
 
 use futures::future::select_all;
-use libp2p::{request_response::ResponseChannel, PeerId};
+use libp2p::{request_response::ResponseChannel, Multiaddr, PeerId};
 use std::{collections::BTreeSet, net::SocketAddr, time::Duration};
 use tokio::task::spawn;
 use xor_name::XorName;
@@ -48,7 +48,10 @@ impl Node {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
-    pub async fn run(addr: SocketAddr) -> Result<NodeEventsChannel> {
+    pub async fn run(
+        addr: SocketAddr,
+        initial_peers: Vec<(PeerId, Multiaddr)>,
+    ) -> Result<NodeEventsChannel> {
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
         let node_events_channel = NodeEventsChannel::default();
         let node_id = super::to_node_id(network.peer_id);
@@ -59,6 +62,7 @@ impl Node {
             registers: RegisterStorage::new(),
             transfers: Transfers::new(node_id, MainKey::random()),
             events_channel: node_events_channel.clone(),
+            initial_peers,
         };
 
         let _handle = spawn(swarm_driver.run());
@@ -97,6 +101,17 @@ impl Node {
                     trace!("Getting closest peers for target {target:?}");
                     let result = network.node_get_closest_peers(target).await;
                     trace!("For target {target:?}, get closest peers {result:?}");
+                });
+            }
+            NetworkEvent::NewListenAddr(_) => {
+                let network = self.network.clone();
+                let peers = self.initial_peers.clone();
+                let _handle = spawn(async move {
+                    for (peer_id, addr) in &peers {
+                        if let Err(err) = network.dial(*peer_id, addr.clone()).await {
+                            tracing::error!("Failed to dial {peer_id}: {err:?}");
+                        };
+                    }
                 });
             }
         }
