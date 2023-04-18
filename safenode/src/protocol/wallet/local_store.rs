@@ -9,10 +9,10 @@
 use super::{
     keys::{get_main_key, store_new_keypair},
     wallet_file::{get_wallet, store_wallet},
-    CreatedDbc, DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, Wallet,
+    DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, Wallet,
 };
 
-use crate::protocol::offline_transfers::Outputs as TransferDetails;
+use crate::protocol::transfers::{CreatedDbc, Outputs as TransferDetails};
 
 use sn_dbc::{Dbc, DbcIdSource, MainKey, PublicAddress, Token};
 
@@ -197,7 +197,7 @@ mod tests {
 
     use crate::protocol::{
         dbc_genesis::{create_genesis_dbc, GENESIS_DBC_AMOUNT},
-        offline_transfers::{create_transfer, Outputs as TransferDetails},
+        transfers::{create_offline_transfer, Outputs as TransferDetails},
         wallet::{KeyLessWallet, SendClient},
     };
 
@@ -512,7 +512,7 @@ mod tests {
         ) -> super::Result<TransferDetails> {
             // Here we just create a transfer, without network calls,
             // and without sending it to the network.
-            let transfer = create_transfer(dbcs, to, change_to)
+            let transfer = create_offline_transfer(dbcs, to, change_to)
                 .expect("There should be no issues creating this transfer.");
 
             Ok(transfer)

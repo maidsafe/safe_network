@@ -9,7 +9,7 @@
 use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
 
 use crate::protocol::{
-    offline_transfers::{create_transfer, Outputs as TransferDetails},
+    transfers::{create_online_transfer, Outputs as TransferDetails},
     wallet::{Result, SendClient, SendWallet},
 };
 
@@ -43,7 +43,9 @@ impl SendClient for Client {
         to: Vec<(Token, DbcIdSource)>,
         change_to: PublicAddress,
     ) -> Result<TransferDetails> {
-        let transfer = create_transfer(dbcs, to, change_to)?;
+        let transfer = create_online_transfer(dbcs, to, change_to, self).await?;
+
+        // Upload the spends to the network:
 
         Ok(transfer)
     }
