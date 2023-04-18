@@ -43,7 +43,7 @@ pub use self::{
     // network_store::NetworkWallet,
 };
 
-use super::offline_transfers::{CreatedDbc, Outputs as TransferDetails};
+use super::transfers::{CreatedDbc, Outputs as TransferDetails};
 
 use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
 

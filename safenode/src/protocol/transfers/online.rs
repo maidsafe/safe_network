@@ -6,61 +6,24 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod error;
+use super::{CreatedDbc, Error, Inputs, Outputs, Result};
 
-pub(crate) use error::{Error, Result};
+use crate::{
+    client::Client,
+    network::close_group_majority,
+    node::NodeId,
+    protocol::{
+        fees::{RequiredFee, SpendPriority},
+        messages::{Query, QueryResponse, Request, Response, SpendQuery},
+    },
+};
 
 use sn_dbc::{
-    rng, Dbc, DbcId, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedAmount,
-    RevealedInput, Token, TransactionBuilder,
+    rng, Dbc, DbcId, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedInput,
+    Token, TransactionBuilder,
 };
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    fmt::Debug,
-};
-
-use crate::{client::Client, network::close_group_majority, node::NodeId};
-
-use super::{
-    fees::{RequiredFee, SpendPriority},
-    messages::{Query, QueryResponse, Request, Response, SpendQuery},
-};
-
-/// The input details necessary to
-/// carry out a transfer of tokens.
-#[derive(Debug)]
-pub struct Inputs {
-    /// The selected dbcs to spend, with the necessary amounts contained
-    /// to transfer the below specified amount of tokens to each recipients.
-    pub dbcs_to_spend: Vec<(Dbc, DerivedKey)>,
-    /// The amounts and dbc ids for the dbcs that will be created to hold the transferred tokens.
-    pub recipients: Vec<(Token, DbcIdSource)>,
-    /// Any surplus amount after spending the necessary input dbcs.
-    pub change: (Token, PublicAddress),
-}
-
-/// The created dbcs and change dbc from a transfer
-/// of tokens from one or more dbcs, into one or more new dbcs.
-#[derive(Debug)]
-pub struct Outputs {
-    /// The dbcs that were created containing
-    /// the tokens sent to respective recipient.
-    pub created_dbcs: Vec<CreatedDbc>,
-    /// The dbc holding surplus tokens after
-    /// spending the necessary input dbcs.
-    pub change_dbc: Option<Dbc>,
-}
-
-/// A resulting dbc from a token transfer.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct CreatedDbc {
-    /// The dbc that was created.
-    pub dbc: Dbc,
-    /// This is useful for the sender to know how much they sent to each recipient.
-    /// They can't know this from the dbc itself, as the amount is encrypted.
-    pub amount: RevealedAmount,
-}
+use std::collections::{BTreeMap, BTreeSet};
 
 /// A function for creating an online transfer of tokens.
 /// This is done by creating new dbcs to the recipients (and a change dbc if any)
@@ -76,7 +39,7 @@ pub struct CreatedDbc {
 ///
 /// (Disabled for now: DbcReason, can be added later.)
 #[allow(clippy::result_large_err)]
-pub async fn create_transfer(
+pub(crate) async fn create_transfer(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
     recipients: Vec<(Token, DbcIdSource)>,
     change_to: PublicAddress,
@@ -90,7 +53,7 @@ pub async fn create_transfer(
 
 /// Select the necessary number of dbcs from those that we were passed.
 #[allow(clippy::result_large_err)]
-pub(crate) async fn select_inputs(
+async fn select_inputs(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
     mut recipients: Vec<(Token, DbcIdSource)>,
     change_to: PublicAddress,
