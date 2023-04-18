@@ -51,13 +51,13 @@ impl Node {
     pub async fn run(addr: SocketAddr) -> Result<NodeEventsChannel> {
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
         let node_events_channel = NodeEventsChannel::default();
-        let our_name = super::to_xorname(network.peer_id);
+        let node_id = super::to_node_id(network.peer_id);
 
         let mut node = Self {
             network,
             chunks: ChunkStorage::new(),
             registers: RegisterStorage::new(),
-            transfers: Transfers::new(our_name, MainKey::random()),
+            transfers: Transfers::new(node_id, MainKey::random()),
             events_channel: node_events_channel.clone(),
         };
 
