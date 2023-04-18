@@ -88,14 +88,93 @@ pub struct CreatedDbc {
 /// (Disabled for now: DbcReason, can be added later.)
 #[allow(clippy::result_large_err)]
 pub fn create_transfer(
-    dbcs: Vec<(Dbc, DerivedKey)>,
+    available_dbcs: Vec<(Dbc, DerivedKey)>,
     recipients: Vec<(Token, DbcIdSource)>,
     change_to: PublicAddress,
 ) -> Result<Outputs> {
     // We need to select the necessary number of dbcs from those that we were passed.
     // This will also account for any fees.
-    let send_inputs = select_inputs(dbcs, recipients, change_to)?;
+    let send_inputs = select_inputs(available_dbcs, recipients, change_to)?;
     transfer(send_inputs)
+}
+
+/// Select the necessary number of dbcs from those that we were passed.
+#[allow(clippy::result_large_err)]
+pub(crate) fn select_inputs(
+    available_dbcs: Vec<(Dbc, DerivedKey)>,
+    recipients: Vec<(Token, DbcIdSource)>,
+    change_to: PublicAddress,
+) -> Result<Inputs> {
+    let mut dbcs_to_spend = Vec::new();
+    let mut total_input_amount = Token::zero();
+    let total_output_amount = recipients
+        .iter()
+        .fold(Some(Token::zero()), |total, (amount, _)| {
+            total.and_then(|t| t.checked_add(*amount))
+        })
+        .ok_or_else(|| {
+            Error::DbcReissueFailed(
+                "Overflow occurred while summing the amounts for the recipients.".to_string(),
+            )
+        })?;
+
+    let mut change_amount = total_output_amount;
+
+    for (dbc, derived_key) in available_dbcs {
+        let input_key = dbc.id();
+
+        let dbc_balance = match dbc.revealed_amount(&derived_key) {
+            Ok(revealed_amount) => Token::from_nano(revealed_amount.value()),
+            Err(err) => {
+                warn!("Ignoring input Dbc (id: {input_key:?}) due to not having correct derived key: {err:?}");
+                continue;
+            }
+        };
+
+        // Add this Dbc as input to be spent.
+        dbcs_to_spend.push((dbc, derived_key));
+
+        // Input amount increases with the amount of the dbc.
+        total_input_amount = total_input_amount.checked_add(dbc_balance)
+            .ok_or_else(|| {
+                Error::DbcReissueFailed(
+                    "Overflow occurred while increasing total input amount while trying to cover the output DBCs."
+                    .to_string(),
+            )
+            })?;
+
+        // If we've already combined input DBCs for the total output amount, then stop.
+        match change_amount.checked_sub(dbc_balance) {
+            Some(pending_output) => {
+                change_amount = pending_output;
+                if change_amount.as_nano() == 0 {
+                    break;
+                }
+            }
+            None => {
+                change_amount = Token::from_nano(dbc_balance.as_nano() - change_amount.as_nano());
+                break;
+            }
+        }
+    }
+
+    // If not enough spendable was found, this check will return an error.
+    verify_amounts(total_input_amount, total_output_amount)?;
+
+    Ok(Inputs {
+        dbcs_to_spend,
+        recipients,
+        change: (change_amount, change_to),
+    })
+}
+
+// Make sure total input amount gathered with input DBCs are enough for the output amount
+#[allow(clippy::result_large_err)]
+fn verify_amounts(total_input_amount: Token, total_output_amount: Token) -> Result<()> {
+    if total_output_amount > total_input_amount {
+        return Err(Error::NotEnoughBalance(total_input_amount.to_string()));
+    }
+    Ok(())
 }
 
 /// The tokens of the input dbcs will be transfered to the
@@ -168,83 +247,4 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
         created_dbcs,
         change_dbc,
     })
-}
-
-/// Select the necessary number of dbcs from those that we were passed.
-#[allow(clippy::result_large_err)]
-pub(crate) fn select_inputs(
-    inputs: Vec<(Dbc, DerivedKey)>,
-    recipients: Vec<(Token, DbcIdSource)>,
-    change_to: PublicAddress,
-) -> Result<Inputs> {
-    let mut dbcs_to_spend = Vec::new();
-    let mut total_input_amount = Token::zero();
-    let total_output_amount = recipients
-        .iter()
-        .fold(Some(Token::zero()), |total, (amount, _)| {
-            total.and_then(|t| t.checked_add(*amount))
-        })
-        .ok_or_else(|| {
-            Error::DbcReissueFailed(
-                "Overflow occurred while summing the amounts for the recipients.".to_string(),
-            )
-        })?;
-
-    let mut change_amount = total_output_amount;
-
-    for (dbc, derived_key) in inputs {
-        let input_key = dbc.id();
-
-        let dbc_balance = match dbc.revealed_amount(&derived_key) {
-            Ok(revealed_amount) => Token::from_nano(revealed_amount.value()),
-            Err(err) => {
-                warn!("Ignoring input Dbc (id: {input_key:?}) due to not having correct derived key: {err:?}");
-                continue;
-            }
-        };
-
-        // Add this Dbc as input to be spent.
-        dbcs_to_spend.push((dbc, derived_key));
-
-        // Input amount increases with the amount of the dbc.
-        total_input_amount = total_input_amount.checked_add(dbc_balance)
-            .ok_or_else(|| {
-                Error::DbcReissueFailed(
-                    "Overflow occurred while increasing total input amount while trying to cover the output DBCs."
-                    .to_string(),
-            )
-            })?;
-
-        // If we've already combined input DBCs for the total output amount, then stop.
-        match change_amount.checked_sub(dbc_balance) {
-            Some(pending_output) => {
-                change_amount = pending_output;
-                if change_amount.as_nano() == 0 {
-                    break;
-                }
-            }
-            None => {
-                change_amount = Token::from_nano(dbc_balance.as_nano() - change_amount.as_nano());
-                break;
-            }
-        }
-    }
-
-    // If not enough spendable was found, this check will return an error.
-    verify_amounts(total_input_amount, total_output_amount)?;
-
-    Ok(Inputs {
-        dbcs_to_spend,
-        recipients,
-        change: (change_amount, change_to),
-    })
-}
-
-// Make sure total input amount gathered with input DBCs are enough for the output amount
-#[allow(clippy::result_large_err)]
-fn verify_amounts(total_input_amount: Token, total_output_amount: Token) -> Result<()> {
-    if total_output_amount > total_input_amount {
-        return Err(Error::NotEnoughBalance(total_input_amount.to_string()));
-    }
-    Ok(())
 }
