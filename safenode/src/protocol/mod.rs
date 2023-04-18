@@ -23,6 +23,8 @@ pub mod error;
 pub mod fees;
 /// Token transfers.
 pub mod offline_transfers;
+/// Token transfers.
+pub mod online_transfers;
 /// Register type.
 pub mod register;
 /// A wallet for network tokens.

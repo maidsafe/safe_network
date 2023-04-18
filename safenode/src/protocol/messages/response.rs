@@ -6,11 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::{
-    chunk::Chunk,
-    error::Result,
-    fees::RequiredFee,
-    register::{Entry, EntryHash, Permissions, Policy, Register, User},
+use crate::{
+    node::NodeId,
+    protocol::{
+        chunk::Chunk,
+        error::Result,
+        fees::RequiredFee,
+        register::{Entry, EntryHash, Permissions, Policy, Register, User},
+    },
 };
 
 #[allow(unused_imports)] // needed by rustdocs links
@@ -31,7 +34,7 @@ pub enum QueryResponse {
     /// Response to [`GetFees`].
     ///
     /// [`GetFees`]: crate::protocol::messages::SpendQuery::GetFees
-    GetFees(Result<RequiredFee>),
+    GetFees(Result<(NodeId, RequiredFee)>),
     /// If the queried node has validated a corresponding spend
     /// request, it will return the SignedSpend.
     /// It is up to the Client to get this SignedSpend from enough

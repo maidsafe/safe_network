@@ -11,6 +11,7 @@ mod error;
 pub(crate) use self::error::{Error, Result};
 
 use crate::{
+    node::NodeId,
     protocol::{
         address::DbcAddress,
         fees::{FeeCiphers, RequiredFee, SpendPriority, SpendQ},
@@ -21,12 +22,11 @@ use crate::{
 use sn_dbc::{DbcId, DbcTransaction, MainKey, SignedSpend, Token};
 
 use std::collections::{BTreeMap, BTreeSet};
-use xor_name::XorName;
 
 const STARTING_FEE: u64 = 4000; // 0.000004 SNT
 
 pub(super) struct Transfers {
-    our_name: XorName,
+    node_id: NodeId,
     node_reward_key: MainKey,
     spend_queue: SpendQ<SignedSpend>,
     storage: SpendStorage,
@@ -34,9 +34,9 @@ pub(super) struct Transfers {
 
 impl Transfers {
     /// Create a new instance of `Transfers`.
-    pub(crate) fn new(our_name: XorName, node_reward_key: MainKey) -> Self {
+    pub(crate) fn new(node_id: NodeId, node_reward_key: MainKey) -> Self {
         Self {
-            our_name,
+            node_id,
             node_reward_key,
             spend_queue: SpendQ::with_fee(STARTING_FEE),
             storage: SpendStorage::new(),
@@ -49,12 +49,19 @@ impl Transfers {
     }
 
     /// Get the required fee for the specified spend priority.
-    pub(crate) fn get_required_fee(&self, dbc_id: DbcId, priority: SpendPriority) -> RequiredFee {
+    pub(crate) fn get_required_fee(
+        &self,
+        dbc_id: DbcId,
+        priority: SpendPriority,
+    ) -> (NodeId, RequiredFee) {
         let amount = self.current_fee(priority);
 
         debug!("Returned amount for priority {priority:?}: {amount}");
 
-        RequiredFee::new(Token::from_nano(amount), dbc_id, &self.node_reward_key)
+        let required_fee =
+            RequiredFee::new(Token::from_nano(amount), dbc_id, &self.node_reward_key);
+
+        (self.node_id, required_fee)
     }
 
     /// Get the current fee for the specified spend priority.
@@ -81,7 +88,7 @@ impl Transfers {
         &mut self,
         signed_spend: Box<SignedSpend>,
         source_tx: Box<DbcTransaction>,
-        fee_ciphers: BTreeMap<XorName, FeeCiphers>,
+        fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
         parent_spends: BTreeSet<SignedSpend>,
     ) -> Result<()> {
         // 1. Validate the tx hash.
@@ -126,9 +133,9 @@ impl Transfers {
     fn validate_fee(
         &self,
         tx: &DbcTransaction,
-        fee_ciphers: BTreeMap<XorName, FeeCiphers>,
+        fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
     ) -> Result<Token> {
-        let fee_paid = decipher_fee(&self.node_reward_key, tx, self.our_name, fee_ciphers)?;
+        let fee_paid = decipher_fee(&self.node_reward_key, tx, self.node_id, fee_ciphers)?;
 
         let spend_q_snapshot = self.spend_queue.snapshot();
         let spend_q_stats = spend_q_snapshot.stats();
@@ -188,10 +195,10 @@ fn validate_parent_spends(
 fn decipher_fee(
     node_reward_key: &MainKey,
     tx: &DbcTransaction,
-    our_name: XorName,
-    fee_ciphers: BTreeMap<XorName, FeeCiphers>,
+    node_id: NodeId,
+    fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
 ) -> Result<Token> {
-    let fee_ciphers = fee_ciphers.get(&our_name).ok_or(Error::MissingFee)?;
+    let fee_ciphers = fee_ciphers.get(&node_id).ok_or(Error::MissingFee)?;
     let (dbc_id, revealed_amount) = fee_ciphers.decrypt(node_reward_key)?;
     let output_proof = match tx.outputs.iter().find(|proof| proof.dbc_id() == &dbc_id) {
         Some(proof) => proof,

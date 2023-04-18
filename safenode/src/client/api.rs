@@ -174,7 +174,7 @@ impl Client {
         Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    pub(super) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
+    pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
         info!("Sending {:?} to the closest peers.", request.dst());
         let closest_peers = self
             .network

@@ -21,6 +21,7 @@ use crate::{
 };
 
 use libp2p::PeerId;
+use serde::{Deserialize, Serialize};
 use xor_name::{XorName, XOR_NAME_LEN};
 
 /// `Node` represents a single node in the distributed network. It handles
@@ -34,10 +35,17 @@ pub struct Node {
     events_channel: NodeEventsChannel,
 }
 
-/// Returns a an `XorName` representation of the `PeerId`.
-pub fn to_xorname(peer_id: PeerId) -> XorName {
+/// A unique identifier for a node in the network,
+/// by which we can know their location in the xor space.
+#[derive(
+    Copy, Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
+)]
+pub struct NodeId(XorName);
+
+/// Returns a `NodeId` representation of the `PeerId`.
+pub fn to_node_id(peer_id: PeerId) -> NodeId {
     let mut xorname_bytes = [0u8; XOR_NAME_LEN];
     let peer_id_bytes = peer_id.to_bytes();
     xorname_bytes.copy_from_slice(&peer_id_bytes[0..32]);
-    XorName(xorname_bytes)
+    NodeId(XorName(xorname_bytes))
 }

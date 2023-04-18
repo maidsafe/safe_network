@@ -14,9 +14,12 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 /// Transfer errors.
 #[derive(Debug, Error)]
 pub enum Error {
-    /// Failed to create transfer.
-    #[error("CreateTransfer error {0}")]
-    CreateTransfer(#[from] crate::protocol::offline_transfers::Error),
+    /// Failed to create offline transfer.
+    #[error("OfflineTransfer error {0}")]
+    OfflineTransfer(#[from] crate::protocol::offline_transfers::Error),
+    /// Failed to create online transfer.
+    #[error("OnlineTransfer error {0}")]
+    OnlineTransfer(#[from] crate::protocol::online_transfers::Error),
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),
