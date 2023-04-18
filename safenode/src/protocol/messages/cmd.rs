@@ -49,7 +49,7 @@ pub enum Cmd {
         signed_spend: Box<SignedSpend>,
         /// The transaction that this spend was created in.
         #[debug(skip)]
-        source_tx: Box<DbcTransaction>,
+        parent_tx: Box<DbcTransaction>,
         /// As to avoid impl separate cmd flow, we send
         /// all fee ciphers to all Nodes for now.
         #[debug(skip)]

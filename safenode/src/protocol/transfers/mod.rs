@@ -39,7 +39,18 @@ pub(crate) use self::{
     online::create_transfer as create_online_transfer,
 };
 
-use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, RevealedAmount, Token};
+use super::fees::{FeeCiphers, RequiredFee};
+
+use crate::node::NodeId;
+
+use sn_dbc::{
+    Dbc, DbcId, DbcIdSource, DbcTransaction, DerivedKey, PublicAddress, RevealedAmount,
+    SignedSpend, Token,
+};
+
+use std::collections::BTreeMap;
+
+type FeeCiphersParams = BTreeMap<DbcId, BTreeMap<NodeId, (RequiredFee, DbcIdSource)>>;
 
 /// The input details necessary to
 /// carry out a transfer of tokens.
@@ -52,6 +63,10 @@ pub struct Inputs {
     pub recipients: Vec<(Token, DbcIdSource)>,
     /// Any surplus amount after spending the necessary input dbcs.
     pub change: (Token, PublicAddress),
+    /// This is the set of input dbc keys, each having a set of
+    /// node ids and their respective fee ciphers.
+    /// Used to produce the fee ciphers for the spends.
+    pub inputs_fee_cipher_params: FeeCiphersParams,
 }
 
 /// The created dbcs and change dbc from a transfer
@@ -64,6 +79,20 @@ pub struct Outputs {
     /// The dbc holding surplus tokens after
     /// spending the necessary input dbcs.
     pub change_dbc: Option<Dbc>,
+    /// The parameters necessary to send all spend requests to the network.
+    pub all_spend_request_params: Vec<SpendRequestParams>,
+}
+
+/// The parameters necessary to send a spend request to the network.
+#[derive(Debug, Clone)]
+pub struct SpendRequestParams {
+    /// The dbc to register in the network as spent.
+    pub signed_spend: SignedSpend,
+    /// The dbc transaction that the spent dbc was created in.
+    pub parent_tx: DbcTransaction,
+    /// This is the set of node ids and their respective fee ciphers.
+    /// Sent together with spends, so that nodes can verify their fee payments.
+    pub fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
 }
 
 /// A resulting dbc from a token transfer.

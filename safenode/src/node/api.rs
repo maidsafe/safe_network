@@ -175,13 +175,13 @@ impl Node {
             }
             Cmd::SpendDbc {
                 signed_spend,
-                source_tx,
+                parent_tx,
                 fee_ciphers,
             } => {
                 // First we fetch all parent spends from the network.
                 // They shall naturally all exist as valid spends for this current
                 // spend attempt to be valid.
-                let parent_spends = match self.get_parent_spends(source_tx.as_ref()).await {
+                let parent_spends = match self.get_parent_spends(parent_tx.as_ref()).await {
                     Ok(parent_spends) => parent_spends,
                     Err(Error::Protocol(err)) => return CmdResponse::Spend(Err(err)),
                     Err(error) => {
@@ -195,7 +195,7 @@ impl Node {
                 // This will validate all the necessary components of the spend.
                 let res = match self
                     .transfers
-                    .try_add(signed_spend, source_tx, fee_ciphers, parent_spends)
+                    .try_add(signed_spend, parent_tx, fee_ciphers, parent_spends)
                     .await
                 {
                     Err(TransferError::DoubleSpendAttempt { new, existing }) => {
@@ -226,7 +226,7 @@ impl Node {
     // This call makes sure we get the same spend from all in the close group.
     // If we receive a spend here, it is assumed to be valid. But we will verify
     // that anyway, in the code right after this for loop.
-    async fn get_parent_spends(&self, source_tx: &DbcTransaction) -> Result<BTreeSet<SignedSpend>> {
+    async fn get_parent_spends(&self, parent_tx: &DbcTransaction) -> Result<BTreeSet<SignedSpend>> {
         // These will be different spends, one for each input that went into
         // creating the above spend passed in to this function.
         let mut all_parent_spends = BTreeSet::new();
@@ -234,7 +234,7 @@ impl Node {
         // First we fetch all parent spends from the network.
         // They shall naturally all exist as valid spends for this current
         // spend attempt to be valid.
-        for parent_input in &source_tx.inputs {
+        for parent_input in &parent_tx.inputs {
             let parent_address = dbc_address(&parent_input.dbc_id());
             // This call makes sure we get the same spend from all in the close group.
             // If we receive a spend here, it is assumed to be valid. But we will verify

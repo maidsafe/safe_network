@@ -6,12 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{CreatedDbc, Error, Inputs, Outputs, Result};
+use super::{CreatedDbc, Error, Inputs, Outputs, Result, SpendRequestParams};
 
 use sn_dbc::{
     rng, Dbc, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedInput, Token,
     TransactionBuilder,
 };
+
+use std::collections::BTreeMap;
 
 /// A function for creating an offline transfer of tokens.
 /// This is done by creating new dbcs to the recipients (and a change dbc if any)
@@ -35,8 +37,8 @@ pub(crate) fn create_transfer(
 ) -> Result<Outputs> {
     // We need to select the necessary number of dbcs from those that we were passed.
     // This will also account for any fees.
-    let send_inputs = select_inputs(available_dbcs, recipients, change_to)?;
-    transfer(send_inputs)
+    let selected_inputs = select_inputs(available_dbcs, recipients, change_to)?;
+    create_transfer_with(selected_inputs)
 }
 
 /// Select the necessary number of dbcs from those that we were passed.
@@ -106,6 +108,7 @@ fn select_inputs(
         dbcs_to_spend,
         recipients,
         change: (change_amount, change_to),
+        inputs_fee_cipher_params: BTreeMap::new(),
     })
 }
 
@@ -125,14 +128,16 @@ fn verify_amounts(total_input_amount: Token, total_output_amount: Token) -> Resu
 /// to the network. When those same signed spends can be retrieved from
 /// enough peers in the network, the transaction will be completed.
 #[allow(clippy::result_large_err)]
-fn transfer(send_inputs: Inputs) -> Result<Outputs> {
+fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     let Inputs {
         dbcs_to_spend,
         recipients,
         change: (change, change_to),
-    } = send_inputs;
+        ..
+    } = selected_inputs;
 
     let mut inputs = vec![];
+    let mut src_txs = BTreeMap::new();
     for (dbc, derived_key) in dbcs_to_spend {
         let revealed_amount = match dbc.revealed_amount(&derived_key) {
             Ok(amount) => amount,
@@ -143,9 +148,10 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
         };
         let input = InputHistory {
             input: RevealedInput::new(derived_key, revealed_amount),
-            input_src_tx: dbc.src_tx,
+            input_src_tx: dbc.src_tx.clone(),
         };
         inputs.push(input);
+        let _ = src_txs.insert(dbc.id(), dbc.src_tx);
     }
 
     let mut tx_builder = TransactionBuilder::default()
@@ -164,6 +170,38 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
     let dbc_builder = tx_builder
         .build(Hash::default(), &mut rng)
         .map_err(Error::Dbcs)?;
+
+    let signed_spends: BTreeMap<_, _> = dbc_builder
+        .signed_spends()
+        .into_iter()
+        .map(|spend| (spend.dbc_id(), spend))
+        .collect();
+
+    // We must have a source transaction for each signed spend (i.e. the tx where the dbc was created).
+    // These are required to upload the spends to the network.
+    if !signed_spends
+        .iter()
+        .all(|(dbc_id, _)| src_txs.contains_key(*dbc_id))
+    {
+        return Err(Error::DbcReissueFailed(
+            "Not all signed spends could be matched to a source dbc transaction.".to_string(),
+        ));
+    }
+
+    let mut all_spend_request_params = vec![];
+    for (dbc_id, signed_spend) in signed_spends.into_iter() {
+        let parent_tx = src_txs.get(dbc_id).ok_or(Error::DbcReissueFailed(format!(
+            "Missing source dbc tx of {dbc_id:?}!"
+        )))?;
+
+        let spend_request_params = SpendRequestParams {
+            signed_spend: signed_spend.clone(),
+            parent_tx: parent_tx.clone(),
+            fee_ciphers: BTreeMap::new(),
+        };
+
+        all_spend_request_params.push(spend_request_params);
+    }
 
     // Perform validations of input tx and signed spends,
     // as well as building the output DBCs.
@@ -187,5 +225,6 @@ fn transfer(send_inputs: Inputs) -> Result<Outputs> {
     Ok(Outputs {
         created_dbcs,
         change_dbc,
+        all_spend_request_params,
     })
 }

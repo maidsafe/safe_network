@@ -6,21 +6,21 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{CreatedDbc, Error, Inputs, Outputs, Result};
+use super::{CreatedDbc, Error, Inputs, Outputs, Result, SpendRequestParams};
 
 use crate::{
     client::Client,
     network::close_group_majority,
     node::NodeId,
     protocol::{
-        fees::{RequiredFee, SpendPriority},
+        fees::{FeeCiphers, RequiredFee, SpendPriority},
         messages::{Query, QueryResponse, Request, Response, SpendQuery},
     },
 };
 
 use sn_dbc::{
-    rng, Dbc, DbcId, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedInput,
-    Token, TransactionBuilder,
+    rng, Dbc, DbcId, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedAmount,
+    RevealedInput, Token, TransactionBuilder,
 };
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -78,7 +78,7 @@ async fn select_inputs(
         })?;
 
     let mut change_amount = total_output_amount;
-    let mut all_fee_cipher_params = BTreeMap::new();
+    let mut inputs_fee_cipher_params = BTreeMap::new();
     let mut fees_paid = Token::zero();
 
     for (dbc, derived_key) in available_dbcs {
@@ -157,7 +157,7 @@ async fn select_inputs(
                     let _ = fee_cipher_params.insert(*node_id, (required_fee.clone(), dbc_id_src));
                 });
 
-            let _ = all_fee_cipher_params.insert(dbc_id, fee_cipher_params);
+            let _ = inputs_fee_cipher_params.insert(dbc_id, fee_cipher_params);
 
             fees_paid = fees_paid.checked_add(fee_per_input).ok_or_else(|| {
                 Error::DbcReissueFailed(
@@ -224,6 +224,7 @@ async fn select_inputs(
         dbcs_to_spend,
         recipients,
         change: (change_amount, change_to),
+        inputs_fee_cipher_params,
     })
 }
 
@@ -248,9 +249,11 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
         dbcs_to_spend,
         recipients,
         change: (change, change_to),
+        inputs_fee_cipher_params,
     } = selected_inputs;
 
     let mut inputs = vec![];
+    let mut src_txs = BTreeMap::new();
     for (dbc, derived_key) in dbcs_to_spend {
         let revealed_amount = match dbc.revealed_amount(&derived_key) {
             Ok(amount) => amount,
@@ -261,9 +264,10 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
         };
         let input = InputHistory {
             input: RevealedInput::new(derived_key, revealed_amount),
-            input_src_tx: dbc.src_tx,
+            input_src_tx: dbc.src_tx.clone(),
         };
         inputs.push(input);
+        let _ = src_txs.insert(dbc.id(), dbc.src_tx);
     }
 
     let mut tx_builder = TransactionBuilder::default()
@@ -282,6 +286,51 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     let dbc_builder = tx_builder
         .build(Hash::default(), &mut rng)
         .map_err(Error::Dbcs)?;
+
+    let signed_spends: BTreeMap<_, _> = dbc_builder
+        .signed_spends()
+        .into_iter()
+        .map(|spend| (spend.dbc_id(), spend))
+        .collect();
+
+    // We must have a source transaction for each signed spend (i.e. the tx where the dbc was created).
+    // These are required to upload the spends to the network.
+    if !signed_spends
+        .iter()
+        .all(|(dbc_id, _)| src_txs.contains_key(*dbc_id))
+    {
+        return Err(Error::DbcReissueFailed(
+            "Not all signed spends could be matched to a source dbc transaction.".to_string(),
+        ));
+    }
+
+    let outputs = dbc_builder
+        .revealed_outputs
+        .iter()
+        .map(|output| (output.dbc_id, output.revealed_amount))
+        .collect();
+
+    let mut all_spend_request_params = vec![];
+    for (dbc_id, signed_spend) in signed_spends.into_iter() {
+        let parent_tx = src_txs.get(dbc_id).ok_or(Error::DbcReissueFailed(format!(
+            "Missing source dbc tx of {dbc_id:?}!"
+        )))?;
+
+        let fee_cipher_params =
+            inputs_fee_cipher_params
+                .get(dbc_id)
+                .ok_or(Error::DbcReissueFailed(format!(
+                    "Missing source dbc tx of {dbc_id:?}!"
+                )))?;
+
+        let spend_request_params = SpendRequestParams {
+            signed_spend: signed_spend.clone(),
+            parent_tx: parent_tx.clone(),
+            fee_ciphers: fee_ciphers(&outputs, fee_cipher_params)?,
+        };
+
+        all_spend_request_params.push(spend_request_params);
+    }
 
     // Perform validations of input tx and signed spends,
     // as well as building the output dbcs.
@@ -305,6 +354,7 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     Ok(Outputs {
         created_dbcs,
         change_dbc,
+        all_spend_request_params,
     })
 }
 
@@ -349,4 +399,39 @@ async fn get_fees(dbc_id: DbcId, client: &Client) -> Result<BTreeMap<NodeId, Req
         .collect();
 
     Ok(results)
+}
+
+/// This will encrypt the necessary components of a fee payment,
+/// so that a node can find and verify the fee paid to them, from
+/// within a request to spend a dbc.
+///
+/// Within all the outputs, will be each fee payment to respective node.
+/// We will encrypt the derivation index to each node public addresss, and
+/// the amount to the derived key corresponding to the dbc id of each node fee payment.
+#[allow(clippy::result_large_err)]
+fn fee_ciphers(
+    outputs: &BTreeMap<DbcId, RevealedAmount>,
+    fee_cipher_params: &BTreeMap<NodeId, (RequiredFee, DbcIdSource)>,
+) -> Result<BTreeMap<NodeId, FeeCiphers>> {
+    let mut input_fee_ciphers = BTreeMap::new();
+    for (node_id, (required_fee, dbc_id_src)) in fee_cipher_params {
+        // Encrypt the index to the reward address (`PublicAddress`) of the node.
+        let derivation_index_cipher = required_fee
+            .content
+            .reward_address
+            .encrypt(&dbc_id_src.derivation_index);
+
+        let dbc_id = dbc_id_src.dbc_id();
+        let revealed_amount = outputs
+            .get(&dbc_id)
+            .ok_or(Error::DbcReissueFailed("Missing output!".to_string()))?;
+
+        // Encrypt the amount to the _derived key_ (i.e. new dbc id).
+        let amount_cipher = revealed_amount.encrypt(&dbc_id);
+        let _ = input_fee_ciphers.insert(
+            *node_id,
+            FeeCiphers::new(amount_cipher, derivation_index_cipher),
+        );
+    }
+    Ok(input_fee_ciphers)
 }

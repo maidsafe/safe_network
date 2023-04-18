@@ -168,6 +168,7 @@ impl SendWallet for LocalWallet {
         let TransferDetails {
             change_dbc,
             created_dbcs,
+            ..
         } = client.send(available_dbcs, to, self.address()).await?;
 
         let spent_dbc_ids: BTreeSet<_> = created_dbcs
