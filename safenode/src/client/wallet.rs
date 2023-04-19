@@ -34,7 +34,6 @@ impl<W: SendWallet> WalletClient<W> {
     /// Send tokens to another wallet.
     pub async fn send(&mut self, amount: Token, to: PublicAddress) -> Result<Vec<CreatedDbc>> {
         let dbcs = self.wallet.send(vec![(amount, to)], &self.client).await?;
-        // self.wallet.store().await;
         Ok(dbcs)
     }
 
