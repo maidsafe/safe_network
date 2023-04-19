@@ -9,7 +9,7 @@
 use super::{
     error::{Error, Result},
     event::NodeEventsChannel,
-    Node, NodeEvent,
+    Node, NodeEvent, NodeId,
 };
 
 use crate::{
@@ -51,10 +51,10 @@ impl Node {
     pub async fn run(
         addr: SocketAddr,
         initial_peers: Vec<(PeerId, Multiaddr)>,
-    ) -> Result<NodeEventsChannel> {
+    ) -> Result<(NodeId, NodeEventsChannel)> {
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
         let node_events_channel = NodeEventsChannel::default();
-        let node_id = super::to_node_id(network.peer_id);
+        let node_id = NodeId::from(network.peer_id);
 
         let mut node = Self {
             network,
@@ -81,7 +81,7 @@ impl Node {
             }
         });
 
-        Ok(node_events_channel)
+        Ok((node_id, node_events_channel))
     }
 
     async fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {

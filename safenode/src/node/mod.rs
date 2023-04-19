@@ -10,9 +10,9 @@ mod api;
 mod error;
 mod event;
 
-pub use self::event::NodeEvent;
+pub use self::event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver};
 
-use self::{error::Error, event::NodeEventsChannel};
+use self::error::Error;
 
 use crate::{
     network::Network,
@@ -22,7 +22,8 @@ use crate::{
 
 use libp2p::{Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
-use xor_name::{XorName, XOR_NAME_LEN};
+use std::fmt::{self, Display};
+use xor_name::XorName;
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
@@ -44,10 +45,20 @@ pub struct Node {
 )]
 pub struct NodeId(XorName);
 
-/// Returns a `NodeId` representation of the `PeerId`.
-pub fn to_node_id(peer_id: PeerId) -> NodeId {
-    let mut xorname_bytes = [0u8; XOR_NAME_LEN];
-    let peer_id_bytes = peer_id.to_bytes();
-    xorname_bytes.copy_from_slice(&peer_id_bytes[0..32]);
-    NodeId(XorName(xorname_bytes))
+impl NodeId {
+    /// Returns a `NodeId` representation of the `PeerId` by hashing its bytes.
+    pub fn from(peer_id: PeerId) -> Self {
+        Self(XorName::from_content(&peer_id.to_bytes()))
+    }
+
+    /// Returns this NodeId as bytes
+    pub fn as_bytes(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+impl Display for NodeId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "NodeId({:?})", self.0)
+    }
 }
