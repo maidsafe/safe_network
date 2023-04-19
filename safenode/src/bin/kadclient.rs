@@ -148,35 +148,32 @@ async fn wallet(opt: &Opt, client: &Client) -> Result<()> {
     if let Some(hex) = &opt.send_to {
         let address = parse_public_address(hex)?;
 
-        if let Some(amount) = opt
-            .send_amount
-            .clone()
-            .map(|amount| parse_tokens_amount(&amount))
-        {
-            if amount.as_nano() > 0 {
-                let mut wallet_client = WalletClient::new(client.clone(), wallet);
-                match wallet_client.send(amount, address).await {
-                    Ok(_new_dbcs) => {
-                        info!("Sent {amount:?} to {address:?}");
-                        println!("Sent {amount:?} to {address:?}");
-                        let wallet = wallet_client.into_wallet();
-                        let new_balance = wallet.balance();
+        let amount_str = match &opt.send_amount {
+            Some(amount_str) => amount_str,
+            None => panic!("An amount is expected when an address has been specified!"),
+        };
+        use std::str::FromStr;
+        let amount = Token::from_str(amount_str)?;
 
-                        if let Err(err) = wallet.store().await {
-                            warn!("Failed to store wallet: {err:?}");
-                            println!("Failed to store wallet: {err:?}");
-                        } else {
-                            info!("Successfully stored wallet with new balance {new_balance:?}.");
-                            println!(
-                                "Successfully stored wallet with new balance {new_balance:?}."
-                            );
-                        }
-                    }
-                    Err(err) => {
-                        warn!("Failed to send {amount:?} to {address:?} due to {err:?}.");
-                        println!("Failed to send {amount:?} to {address:?} due to {err:?}.");
-                    }
+        let mut wallet_client = WalletClient::new(client.clone(), wallet);
+        match wallet_client.send(amount, address).await {
+            Ok(_new_dbcs) => {
+                info!("Sent {amount:?} to {address:?}");
+                println!("Sent {amount:?} to {address:?}");
+                let wallet = wallet_client.into_wallet();
+                let new_balance = wallet.balance();
+
+                if let Err(err) = wallet.store().await {
+                    warn!("Failed to store wallet: {err:?}");
+                    println!("Failed to store wallet: {err:?}");
+                } else {
+                    info!("Successfully stored wallet with new balance {new_balance:?}.");
+                    println!("Successfully stored wallet with new balance {new_balance:?}.");
                 }
+            }
+            Err(err) => {
+                warn!("Failed to send {amount:?} to {address:?} due to {err:?}.");
+                println!("Failed to send {amount:?} to {address:?} due to {err:?}.");
             }
         }
     }
@@ -190,33 +187,6 @@ async fn get_client_dir() -> Result<PathBuf> {
     home_dirs.push("client");
     tokio::fs::create_dir_all(home_dirs.as_path()).await?;
     Ok(home_dirs)
-}
-
-fn parse_tokens_amount(amount_str: &str) -> Token {
-    use std::str::FromStr;
-    match Token::from_str(amount_str) {
-        Ok(amount) => return amount,
-        Err(err) => match err {
-            sn_dbc::Error::ExcessiveTokenValue => {
-                warn!("Invalid amount to send: {amount_str:?}, it exceeds the maximum possible value.");
-                println!("Invalid amount to send: {amount_str:?}, it exceeds the maximum possible value.");
-            }
-            sn_dbc::Error::LossOfTokenPrecision => {
-                warn!("Invalid amount to send: '{amount_str}', the minimum possible amount is one nano token (0.000000001).");
-                println!("Invalid amount to send: '{amount_str}', the minimum possible amount is one nano token (0.000000001).");
-            }
-            sn_dbc::Error::FailedToParseToken(msg) => {
-                warn!("Invalid amount to send: '{amount_str}': {msg}.");
-                println!("Invalid amount to send: '{amount_str}': {msg}.");
-            }
-            other_err => {
-                warn!("Invalid amount to send: '{amount_str}': {other_err:?}.");
-                println!("Invalid amount to send: '{amount_str}': {other_err:?}.");
-            }
-        },
-    }
-
-    Token::from_nano(0)
 }
 
 async fn files(opt: &Opt, file_api: Files) -> Result<()> {
