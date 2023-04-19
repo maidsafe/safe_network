@@ -6,9 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::path::PathBuf;
+use safenode::log::init_node_logging;
 
 use clap::Parser;
+use eyre::Result;
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 pub enum CfgCmds {
@@ -18,4 +20,13 @@ pub enum CfgCmds {
         /// The location of the log files.
         log_dir: Option<PathBuf>,
     },
+}
+
+pub(crate) async fn cfg_cmds(cfg: &CfgCmds) -> Result<()> {
+    match cfg {
+        CfgCmds::Logs { log_dir } => {
+            let _log_appender_guard = init_node_logging(log_dir)?;
+        }
+    }
+    Ok(())
 }
