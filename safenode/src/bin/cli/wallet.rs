@@ -114,10 +114,11 @@ async fn deposit(dbc_dir: PathBuf, wallet_dir: PathBuf) -> Result<()> {
 
 async fn send(amount: String, to: String, wallet_dir: PathBuf, client: &Client) -> Result<()> {
     let address = parse_public_address(to)?;
-    let amount = parse_tokens_amount(&amount);
 
+    use std::str::FromStr;
+    let amount = Token::from_str(&amount)?;
     if amount.as_nano() == 0 {
-        return Ok(());
+        panic!("This should be unreachable. An amount is expected when sending.");
     }
 
     let wallet = LocalWallet::load_from(&wallet_dir).await?;
@@ -144,31 +145,4 @@ async fn send(amount: String, to: String, wallet_dir: PathBuf, client: &Client) 
     }
 
     Ok(())
-}
-
-fn parse_tokens_amount(amount_str: &str) -> Token {
-    use std::str::FromStr;
-    match Token::from_str(amount_str) {
-        Ok(amount) => return amount,
-        Err(err) => match err {
-            sn_dbc::Error::ExcessiveTokenValue => {
-                warn!("Invalid amount to send: {amount_str:?}, it exceeds the maximum possible value.");
-                println!("Invalid amount to send: {amount_str:?}, it exceeds the maximum possible value.");
-            }
-            sn_dbc::Error::LossOfTokenPrecision => {
-                warn!("Invalid amount to send: '{amount_str}', the minimum possible amount is one nano token (0.000000001).");
-                println!("Invalid amount to send: '{amount_str}', the minimum possible amount is one nano token (0.000000001).");
-            }
-            sn_dbc::Error::FailedToParseToken(msg) => {
-                warn!("Invalid amount to send: '{amount_str}': {msg}.");
-                println!("Invalid amount to send: '{amount_str}': {msg}.");
-            }
-            other_err => {
-                warn!("Invalid amount to send: '{amount_str}': {other_err:?}.");
-                println!("Invalid amount to send: '{amount_str}': {other_err:?}.");
-            }
-        },
-    }
-
-    Token::from_nano(0)
 }
