@@ -7,8 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    network_transfers::{Error, Result},
-    protocol::address::DbcAddress,
+    protocol::{
+        address::DbcAddress,
+        node_transfers::{Error, Result},
+    },
     storage::used_space::UsedSpace,
 };
 

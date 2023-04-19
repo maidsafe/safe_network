@@ -12,7 +12,7 @@ use super::{
     DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, Wallet,
 };
 
-use crate::protocol::transfers::{CreatedDbc, Outputs as TransferDetails};
+use crate::protocol::client_transfers::{CreatedDbc, Outputs as TransferDetails};
 
 use sn_dbc::{Dbc, DbcIdSource, MainKey, PublicAddress, Token};
 
@@ -197,8 +197,8 @@ mod tests {
     use super::{get_wallet, store_wallet, LocalWallet};
 
     use crate::protocol::{
+        client_transfers::{create_offline_transfer, Outputs as TransferDetails},
         dbc_genesis::{create_genesis_dbc, GENESIS_DBC_AMOUNT},
-        transfers::{create_offline_transfer, Outputs as TransferDetails},
         wallet::{KeyLessWallet, SendClient},
     };
 
