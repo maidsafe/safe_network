@@ -187,6 +187,17 @@ impl Client {
             .await)
     }
 
+    /// This is for network testing only
+    pub async fn get_closest(&self, dst: XorName) -> Vec<PeerId> {
+        match self.network.client_get_closest_peers(dst).await {
+            Ok(peers) => peers,
+            Err(err) => {
+                error!("Failed to get_closest of {dst:?} with error {err:?}");
+                vec![]
+            }
+        }
+    }
+
     // Send a `Request` to the provided set of nodes and wait for their responses concurrently.
     // If `get_all_responses` is true, we wait for the responses from all the nodes. Will return an
     // error if the request timeouts.
