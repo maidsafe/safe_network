@@ -1,4 +1,4 @@
-name: Nightly: Full Network Tests
+name: Night ly runFull Network Tests
 
 on:
   schedule:
