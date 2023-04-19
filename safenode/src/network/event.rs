@@ -164,7 +164,9 @@ impl SwarmDriver {
                     }
                 }
             }
-            SwarmEvent::ConnectionClosed { .. } => {}
+            SwarmEvent::ConnectionClosed { peer_id, .. } => {
+                info!("Peer {} has gone offline", peer_id);
+            }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 if let Some(peer_id) = peer_id {
                     if let Some(sender) = self.pending_dial.remove(&peer_id) {
