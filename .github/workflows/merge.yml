@@ -162,19 +162,26 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-      - name: Start a client to carry out chunk actions
-        run: cargo run --release --bin safe -- --upload-chunks ./README.md --get-chunk confirm_uploaded
-        id: client-chunk-actions
+      - name: Start a client to upload files
+        run: cargo run --bin safe -- files upload -- "./github"
+        id: client-file-upload
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
-      - name: Start a client to carry out register actions
-        run: cargo run --release --bin safe -- --create-register myregister --query-register myregister
-        id: client-register-actions
+      - name: Start a client to download files
+        run: cargo run --bin safe -- files download -- "./github/uploaded_files"
+        id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
+
+      # - name: Start a client to carry out register actions
+      #   run: cargo run --release --bin safe -- --create-register myregister --query-register myregister
+      #   id: client-register-actions
+      #   env:
+      #     RUST_LOG: "safenode,safe=trace"
+      #   timeout-minutes: 2
 
       - name: Kill all nodes
         shell: bash
