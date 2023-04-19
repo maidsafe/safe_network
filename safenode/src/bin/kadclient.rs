@@ -21,11 +21,10 @@ use bytes::Bytes;
 use clap::Parser;
 use dirs_next::home_dir;
 use eyre::Result;
-use libp2p::PeerId;
 use std::{fs, path::PathBuf, thread, time};
 use tracing::{info, warn};
 use walkdir::WalkDir;
-use xor_name::{XorName, XOR_NAME_LEN};
+use xor_name::XorName;
 
 #[derive(Parser, Debug)]
 #[clap(name = "safeclient cli")]
@@ -298,7 +297,7 @@ async fn registers(opt: &Opt, client: Client) -> Result<()> {
         let target = if closest.is_empty() {
             panic!("Client cann't find closest nodes to {dst:?}");
         } else {
-            let target = to_xorname(closest[0]);
+            let target = XorName::from_content(&closest[0].to_bytes());
             println!("Converted PeerId {:?} to {target:?}", closest[0]);
             target
         };
@@ -318,11 +317,4 @@ async fn registers(opt: &Opt, client: Client) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn to_xorname(peer_id: PeerId) -> XorName {
-    let mut xorname_bytes = [0u8; XOR_NAME_LEN];
-    let peer_id_bytes = peer_id.to_bytes();
-    xorname_bytes.copy_from_slice(&peer_id_bytes[0..32]);
-    XorName(xorname_bytes)
 }
