@@ -8,7 +8,7 @@
 
 use super::error::{Error, Result};
 
-use sn_dbc::MainKey;
+use sn_dbc::{MainKey, PublicAddress};
 
 use hex::{decode, encode};
 use std::path::Path;
@@ -19,7 +19,15 @@ const MAIN_KEY_FILENAME: &str = "main_key";
 /// Filename for storing the node's reward (BLS hex-encoded) public address.
 const PUBLIC_ADDRESS_FILENAME: &str = "public_address";
 
+/// Parse a public address from a hex-encoded string.
+#[allow(clippy::result_large_err)]
+pub fn parse_public_address<T: AsRef<[u8]>>(hex: T) -> Result<PublicAddress> {
+    let public_key = bls_public_from_hex(hex)?;
+    Ok(PublicAddress::new(public_key))
+}
+
 /// Writes the public address and main key (hex-encoded) to different locations at disk.
+#[allow(clippy::result_large_err)]
 pub(super) async fn store_new_keypair(root_dir: &Path, main_key: &MainKey) -> Result<()> {
     let secret_key_path = root_dir.join(MAIN_KEY_FILENAME);
     let public_key_path = root_dir.join(PUBLIC_ADDRESS_FILENAME);
@@ -56,6 +64,18 @@ fn bls_secret_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::SecretKey> {
         .map_err(|_| Error::FailedToParseBlsKey)?;
     let sk = bls::SecretKey::from_bytes(bytes_fixed_len)?;
     Ok(sk)
+}
+
+/// Construct a BLS public key from a hex-encoded string.
+#[allow(clippy::result_large_err)]
+fn bls_public_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::PublicKey> {
+    let bytes = decode(hex).map_err(|_| Error::FailedToDecodeHexToKey)?;
+    let bytes_fixed_len: [u8; bls::PK_SIZE] = bytes
+        .as_slice()
+        .try_into()
+        .map_err(|_| Error::FailedToParseBlsKey)?;
+    let pk = bls::PublicKey::from_bytes(bytes_fixed_len)?;
+    Ok(pk)
 }
 
 #[cfg(test)]

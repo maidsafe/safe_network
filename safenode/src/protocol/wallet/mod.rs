@@ -39,6 +39,7 @@ mod wallet_file;
 
 pub use self::{
     error::{Error, Result},
+    keys::parse_public_address,
     local_store::LocalWallet,
     // network_store::NetworkWallet,
 };

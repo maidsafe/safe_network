@@ -7,15 +7,15 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use safenode::{
-    client::{Client, ClientEvent, Error as ClientError, Files},
+    client::{Client, ClientEvent, Error as ClientError, Files, WalletClient},
     log::init_node_logging,
     protocol::{
         address::ChunkAddress,
-        wallet::{DepositWallet, LocalWallet, Wallet},
+        wallet::{parse_public_address, DepositWallet, LocalWallet, Wallet},
     },
 };
 
-use sn_dbc::Dbc;
+use sn_dbc::{Dbc, Token};
 
 use bytes::Bytes;
 use clap::Parser;
@@ -39,6 +39,13 @@ struct Opt {
     /// given path and deposit it to the wallet.
     #[clap(long)]
     deposit: Option<PathBuf>,
+    /// This must be a hex-encoded `PublicAddress`.
+    #[clap(long)]
+    send_to: Option<String>,
+    /// This shall be the number of nanos to send.
+    /// Necessary if the `send_to` argument has been given.
+    #[clap(long)]
+    send_amount: Option<String>,
 
     #[clap(long)]
     upload_chunks: Option<PathBuf>,
@@ -79,14 +86,14 @@ async fn main() -> Result<()> {
         }
     }
 
-    wallet(&opt).await?;
+    wallet(&opt, &client).await?;
     files(&opt, file_api).await?;
     registers(&opt, client).await?;
 
     Ok(())
 }
 
-async fn wallet(opt: &Opt) -> Result<()> {
+async fn wallet(opt: &Opt, client: &Client) -> Result<()> {
     let wallet_dir = opt.wallet_dir.clone().unwrap_or(get_client_dir().await?);
     let mut wallet = LocalWallet::load_from(&wallet_dir).await?;
 
@@ -138,6 +145,42 @@ async fn wallet(opt: &Opt) -> Result<()> {
         }
     }
 
+    if let Some(hex) = &opt.send_to {
+        let address = parse_public_address(hex)?;
+
+        if let Some(amount) = opt
+            .send_amount
+            .clone()
+            .map(|amount| parse_tokens_amount(&amount))
+        {
+            if amount.as_nano() > 0 {
+                let mut wallet_client = WalletClient::new(client.clone(), wallet);
+                match wallet_client.send(amount, address).await {
+                    Ok(_new_dbcs) => {
+                        info!("Sent {amount:?} to {address:?}");
+                        println!("Sent {amount:?} to {address:?}");
+                        let wallet = wallet_client.into_wallet();
+                        let new_balance = wallet.balance();
+
+                        if let Err(err) = wallet.store().await {
+                            warn!("Failed to store wallet: {err:?}");
+                            println!("Failed to store wallet: {err:?}");
+                        } else {
+                            info!("Successfully stored wallet with new balance {new_balance:?}.");
+                            println!(
+                                "Successfully stored wallet with new balance {new_balance:?}."
+                            );
+                        }
+                    }
+                    Err(err) => {
+                        warn!("Failed to send {amount:?} to {address:?} due to {err:?}.");
+                        println!("Failed to send {amount:?} to {address:?} due to {err:?}.");
+                    }
+                }
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -147,6 +190,33 @@ async fn get_client_dir() -> Result<PathBuf> {
     home_dirs.push("client");
     tokio::fs::create_dir_all(home_dirs.as_path()).await?;
     Ok(home_dirs)
+}
+
+fn parse_tokens_amount(amount_str: &str) -> Token {
+    use std::str::FromStr;
+    match Token::from_str(amount_str) {
+        Ok(amount) => return amount,
+        Err(err) => match err {
+            sn_dbc::Error::ExcessiveTokenValue => {
+                warn!("Invalid amount to send: {amount_str:?}, it exceeds the maximum possible value.");
+                println!("Invalid amount to send: {amount_str:?}, it exceeds the maximum possible value.");
+            }
+            sn_dbc::Error::LossOfTokenPrecision => {
+                warn!("Invalid amount to send: '{amount_str}', the minimum possible amount is one nano token (0.000000001).");
+                println!("Invalid amount to send: '{amount_str}', the minimum possible amount is one nano token (0.000000001).");
+            }
+            sn_dbc::Error::FailedToParseToken(msg) => {
+                warn!("Invalid amount to send: '{amount_str}': {msg}.");
+                println!("Invalid amount to send: '{amount_str}': {msg}.");
+            }
+            other_err => {
+                warn!("Invalid amount to send: '{amount_str}': {other_err:?}.");
+                println!("Invalid amount to send: '{amount_str}': {other_err:?}.");
+            }
+        },
+    }
+
+    Token::from_nano(0)
 }
 
 async fn files(opt: &Opt, file_api: Files) -> Result<()> {
