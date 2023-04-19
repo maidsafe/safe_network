@@ -254,7 +254,9 @@ async fn join_network(
         .node_launch_interval(node_launch_interval)
         .build()?;
     let network_contacts_path = network_contacts_path.unwrap_or(default_network_contacts_path);
-    testnet.launch_nodes(node_count as usize, &network_contacts_path, node_args)?;
+    // The testnet::node_count is set to total_count - 1 to offset for the genesis.
+    // Then plus 2 for start. Hence need an offset 1 here.
+    testnet.launch_nodes(node_count as usize + 1, &network_contacts_path, node_args)?;
     Ok(())
 }
 
