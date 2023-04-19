@@ -21,10 +21,11 @@ use bytes::Bytes;
 use clap::Parser;
 use dirs_next::home_dir;
 use eyre::Result;
-use std::{fs, path::PathBuf};
+use libp2p::PeerId;
+use std::{fs, path::PathBuf, thread, time};
 use tracing::{info, warn};
 use walkdir::WalkDir;
-use xor_name::XorName;
+use xor_name::{XorName, XOR_NAME_LEN};
 
 #[derive(Parser, Debug)]
 #[clap(name = "safeclient cli")]
@@ -53,6 +54,9 @@ struct Opt {
 
     #[clap(long)]
     query_register: Vec<String>,
+
+    #[clap(long)]
+    repeated: bool,
 }
 
 #[tokio::main]
@@ -247,5 +251,38 @@ async fn registers(opt: &Opt, client: Client) -> Result<()> {
         }
     }
 
+    // Repeatedly try to get_closest targeting one of the node for every 10s
+    if opt.repeated {
+        let dst = xor_name::rand::random();
+        let closest = client.get_closest(dst).await;
+        let target = if closest.is_empty() {
+            panic!("Client cann't find closest nodes to {dst:?}");
+        } else {
+            let target = to_xorname(closest[0]);
+            println!("Converted PeerId {:?} to {target:?}", closest[0]);
+            target
+        };
+
+        let mut iteration = 0;
+        loop {
+            iteration += 1;
+            thread::sleep(time::Duration::from_secs(10));
+            println!("Iteration({iteration}) trying to get closest of {target:?}");
+            let closest = client.get_closest(target).await;
+            if closest.is_empty() {
+                panic!("Client cann't find closest nodes to {target:?}");
+            } else {
+                println!("Client got closest {closest:?}");
+            }
+        }
+    }
+
     Ok(())
+}
+
+fn to_xorname(peer_id: PeerId) -> XorName {
+    let mut xorname_bytes = [0u8; XOR_NAME_LEN];
+    let peer_id_bytes = peer_id.to_bytes();
+    xorname_bytes.copy_from_slice(&peer_id_bytes[0..32]);
+    XorName(xorname_bytes)
 }

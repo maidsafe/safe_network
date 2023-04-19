@@ -88,7 +88,6 @@ impl SwarmDriver {
     pub fn new(addr: SocketAddr) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut cfg = KademliaConfig::default();
         let _ = cfg.set_query_timeout(Duration::from_secs(5 * 60));
-        let _ = cfg.set_connection_idle_timeout(Duration::from_secs(10 * 60));
 
         let request_response = request_response::Behaviour::new(
             MsgCodec(),
@@ -195,6 +194,7 @@ impl SwarmDriver {
         loop {
             tokio::select! {
                 some_event = self.swarm.next() => {
+                    trace!("received a swarm event {some_event:?}");
                     // TODO: currently disabled to provide a stable network.
                     // restart_at_random(self.swarm.local_peer_id());
                     if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {

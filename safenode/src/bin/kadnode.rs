@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
     let socket_addr = SocketAddr::new(opt.ip, opt.port);
     let peers = parse_peer_multiaddreses(&opt.peers)?;
 
-    info!("Starting a node...");
+    info!("Starting a node (PID: {}) ...", std::process::id());
     let node_events_channel = Node::run(socket_addr, peers).await?;
 
     let mut node_events_rx = node_events_channel.subscribe();
