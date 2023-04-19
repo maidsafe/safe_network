@@ -46,7 +46,7 @@ pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client) -> Result<()> {
 }
 
 async fn upload_files(files_path: PathBuf, file_api: &Files) -> Result<()> {
-    let file_names_path = files_path.join("uploaded_files/file_names.txt");
+    let file_names_path = files_path.join("uploaded_files");
     let mut chunks_to_fetch = Vec::new();
 
     for entry in WalkDir::new(files_path).into_iter().flatten() {
@@ -56,11 +56,12 @@ async fn upload_files(files_path: PathBuf, file_api: &Files) -> Result<()> {
             let file_name = entry.file_name();
 
             info!("Storing file {file_name:?} of {} bytes..", bytes.len());
-            println!("Storing file {file_name:?}.");
+            println!("Storing file {file_name:?} of {} bytes..", bytes.len());
 
             match file_api.upload(bytes).await {
                 Ok(address) => {
                     info!("Successfully stored file to {address:?}");
+                    println!("Successfully stored file to {address:?}");
                     chunks_to_fetch.push(*address.name());
                 }
                 Err(error) => {
@@ -74,6 +75,7 @@ async fn upload_files(files_path: PathBuf, file_api: &Files) -> Result<()> {
 
     let content = bincode::serialize(&chunks_to_fetch)?;
     tokio::fs::create_dir_all(file_names_path.as_path()).await?;
+    let file_names_path = file_names_path.join("file_names.txt");
     fs::write(file_names_path, content)?;
 
     Ok(())
@@ -94,7 +96,10 @@ async fn download_files(file_names_dir: PathBuf, file_api: &Files) -> Result<()>
                 info!("Downloading file {xorname:?}");
                 println!("Downloading file {xorname:?}");
                 match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
-                    Ok(bytes) => info!("Successfully got file {xorname} of {} bytes!", bytes.len()),
+                    Ok(bytes) => {
+                        info!("Successfully got file {xorname} of {} bytes!", bytes.len());
+                        println!("Successfully got file {xorname} of {} bytes!", bytes.len());
+                    }
                     Err(error) => {
                         panic!("Did not get file {xorname:?} from the network! {error}")
                     }
