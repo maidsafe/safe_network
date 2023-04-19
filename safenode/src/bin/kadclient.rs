@@ -10,6 +10,8 @@ mod cli;
 
 use self::cli::{cfg_cmds, files_cmds, register_cmds, wallet_cmds, Opt};
 
+use crate::cli::SubCmd;
+
 use safenode::client::{Client, ClientEvent};
 
 use clap::Parser;
@@ -20,7 +22,7 @@ use tracing::info;
 async fn main() -> Result<()> {
     let opt = Opt::parse();
 
-    if let Opt::Cfg(cmds) = &opt {
+    if let SubCmd::Cfg(cmds) = &opt.cmd {
         cfg_cmds(cmds).await?;
     }
 
@@ -38,11 +40,11 @@ async fn main() -> Result<()> {
         }
     }
 
-    match opt {
-        Opt::Cfg(cmds) => cfg_cmds(&cmds).await?,
-        Opt::Wallet(cmds) => wallet_cmds(cmds, &client).await?,
-        Opt::Files(cmds) => files_cmds(cmds, client.clone()).await?,
-        Opt::Register(cmds) => register_cmds(cmds, &client).await?,
+    match opt.cmd {
+        SubCmd::Cfg(cmds) => cfg_cmds(&cmds).await?,
+        SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client).await?,
+        SubCmd::Files(cmds) => files_cmds(cmds, client.clone()).await?,
+        SubCmd::Register(cmds) => register_cmds(cmds, &client).await?,
     };
 
     Ok(())
