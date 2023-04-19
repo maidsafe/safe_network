@@ -204,7 +204,7 @@ impl Testnet {
     /// * The network has already been launched previously
     pub fn launch_genesis(
         &self,
-        address: Option<SocketAddr>,
+        _address: Option<SocketAddr>,
         node_args: Vec<String>,
     ) -> Result<()> {
         if self.node_count != 0 {
@@ -213,10 +213,11 @@ impl Testnet {
             ));
         }
 
-        let address = address.unwrap_or("127.0.0.1:12000".parse()?);
         // info!("Launching genesis node using address {address}...");
+
+        let rpc_address = "127.0.0.1:12001".parse()?;
         let launch_args =
-            self.get_launch_args("safenode-1".to_string(), Some(address), None, node_args)?;
+            self.get_launch_args("safenode-1".to_string(), Some(rpc_address), None, node_args)?;
         let node_data_dir_path = self.nodes_dir_path.join("safenode-1");
         std::fs::create_dir_all(node_data_dir_path)?;
 
@@ -261,9 +262,11 @@ impl Testnet {
                 .to_string();
             std::fs::create_dir_all(&node_data_dir_path)?;
 
+            let rpc_address = format!("127.0.0.1:{}", 12000 + i).parse()?;
+
             let launch_args = self.get_launch_args(
                 format!("safenode-{i}"),
-                None,
+                Some(rpc_address),
                 Some(network_contacts_path),
                 node_args.clone(),
             )?;
@@ -285,7 +288,7 @@ impl Testnet {
     fn get_launch_args(
         &self,
         node_name: String,
-        _address: Option<SocketAddr>,
+        rpc_address: Option<SocketAddr>,
         _network_contacts_path: Option<&Path>,
         node_args: Vec<String>,
     ) -> Result<Vec<String>> {
@@ -313,6 +316,10 @@ impl Testnet {
             .to_string();
         launch_args.push("--log-dir".to_string());
         launch_args.push(node_data_dir_path);
+        if let Some(addr) = rpc_address {
+            launch_args.push("--rpc".to_string());
+            launch_args.push(addr.to_string());
+        }
         launch_args.extend(node_args);
 
         Ok(launch_args)

@@ -196,9 +196,6 @@ async fn build_node() -> Result<()> {
     if cfg!(feature = "otlp") {
         args.extend(["--features", "otlp"]);
     }
-    if cfg!(feature = "verify-nodes") {
-        args.extend(["--features", "rpc-service"]);
-    }
 
     info!("Building safenode");
     debug!("Building safenode with args: {:?}", args);

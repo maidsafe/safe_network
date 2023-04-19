@@ -12,6 +12,9 @@ use tokio::sync::broadcast;
 #[derive(Clone, Debug)]
 pub struct NodeEventsChannel(broadcast::Sender<NodeEvent>);
 
+/// Type of channel receiver where events are broadcasted to by the node.
+pub type NodeEventsReceiver = broadcast::Receiver<NodeEvent>;
+
 impl Default for NodeEventsChannel {
     fn default() -> Self {
         Self(broadcast::channel(100).0)
