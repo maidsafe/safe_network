@@ -7,14 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use safenode::{
-    client::{Client, ClientEvent, Error as ClientError, Files, WalletClient},
+    client::{Client, ClientEvent, Error as ClientError, Files},
     log::init_node_logging,
-    protocol::{address::ChunkAddress, wallet::LocalWallet},
+    protocol::address::ChunkAddress,
 };
 
 use bytes::Bytes;
 use clap::Parser;
-use dirs_next::home_dir;
 use eyre::Result;
 use std::{fs, path::PathBuf};
 use tracing::info;
@@ -53,13 +52,9 @@ async fn main() -> Result<()> {
 
     info!("Instantiating a SAFE client...");
 
-    let client_dir = opt.client_dir.unwrap_or(get_client_dir().await?);
-    let wallet = LocalWallet::load_from(&client_dir).await?;
-
     let secret_key = bls::SecretKey::random();
     let client = Client::new(secret_key)?;
-    let file_api = Files::new(client.clone());
-    let _wallet_client = WalletClient::new(client.clone(), wallet);
+    let file_api: Files = Files::new(client.clone());
 
     let mut client_events_rx = client.events_channel();
     if let Ok(event) = client_events_rx.recv().await {
@@ -70,9 +65,16 @@ async fn main() -> Result<()> {
         }
     }
 
+    files(&opt, file_api).await?;
+    registers(&opt, client).await?;
+
+    Ok(())
+}
+
+async fn files(opt: &Opt, file_api: Files) -> Result<()> {
     let mut chunks_to_fetch = Vec::new();
 
-    if let Some(files_path) = opt.upload_chunks {
+    if let Some(files_path) = &opt.upload_chunks {
         for entry in WalkDir::new(files_path).into_iter().flatten() {
             if entry.file_type().is_file() {
                 let file = fs::read(entry.path())?;
@@ -95,7 +97,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    if let Some(input_str) = opt.get_chunk {
+    if let Some(input_str) = &opt.get_chunk {
         println!("String passed in via get_chunk is {input_str}...");
         if input_str.len() == 64 {
             let vec = hex::decode(input_str).expect("Failed to decode xorname!");
@@ -115,7 +117,11 @@ async fn main() -> Result<()> {
         }
     }
 
-    if let Some(reg_nickname) = opt.create_register {
+    Ok(())
+}
+
+async fn registers(opt: &Opt, client: Client) -> Result<()> {
+    if let Some(reg_nickname) = &opt.create_register {
         let xorname = XorName::from_content(reg_nickname.as_bytes());
         let tag = 3006;
         println!("Creating Register with '{reg_nickname}' at xorname: {xorname:x} and tag {tag}");
@@ -130,7 +136,7 @@ async fn main() -> Result<()> {
             ),
         };
 
-        if let Some(entry) = opt.entry {
+        if let Some(entry) = &opt.entry {
             println!("Editing Register '{reg_nickname}' with: {entry}");
             match reg_replica.write(entry.as_bytes()).await {
                 Ok(()) => {}
@@ -168,12 +174,4 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
-}
-
-async fn get_client_dir() -> Result<PathBuf> {
-    let mut home_dirs = home_dir().expect("A homedir to exist.");
-    home_dirs.push(".safe");
-    home_dirs.push("client");
-    tokio::fs::create_dir_all(home_dirs.as_path()).await?;
-    Ok(home_dirs)
 }
