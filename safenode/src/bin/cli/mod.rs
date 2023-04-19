@@ -13,7 +13,9 @@ mod wallet;
 
 use clap::Parser;
 
-pub(super) use self::{cfg::CfgCmds, files::FilesCmds, register::RegisterCmds, wallet::WalletCmds};
+pub(super) use self::{
+    cfg::cfg_cmds, files::files_cmds, register::register_cmds, wallet::wallet_cmds,
+};
 
 #[derive(Parser, Debug)]
 #[clap(name = "safeclient cli")]
