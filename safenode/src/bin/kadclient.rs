@@ -9,14 +9,20 @@
 use safenode::{
     client::{Client, ClientEvent, Error as ClientError, Files},
     log::init_node_logging,
-    protocol::address::ChunkAddress,
+    protocol::{
+        address::ChunkAddress,
+        wallet::{DepositWallet, LocalWallet, Wallet},
+    },
 };
+
+use sn_dbc::Dbc;
 
 use bytes::Bytes;
 use clap::Parser;
+use dirs_next::home_dir;
 use eyre::Result;
 use std::{fs, path::PathBuf};
-use tracing::info;
+use tracing::{info, warn};
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -24,10 +30,14 @@ use xor_name::XorName;
 #[clap(name = "safeclient cli")]
 struct Opt {
     #[clap(long)]
-    client_dir: Option<PathBuf>,
-
-    #[clap(long)]
     log_dir: Option<PathBuf>,
+    /// The location of the wallet file.
+    #[clap(long)]
+    wallet_dir: Option<PathBuf>,
+    /// Tries to load a hex encoded `Dbc` from the
+    /// given path and deposit it to the wallet.
+    #[clap(long)]
+    deposit: Option<PathBuf>,
 
     #[clap(long)]
     upload_chunks: Option<PathBuf>,
@@ -65,10 +75,74 @@ async fn main() -> Result<()> {
         }
     }
 
+    wallet(&opt).await?;
     files(&opt, file_api).await?;
     registers(&opt, client).await?;
 
     Ok(())
+}
+
+async fn wallet(opt: &Opt) -> Result<()> {
+    let wallet_dir = opt.wallet_dir.clone().unwrap_or(get_client_dir().await?);
+    let mut wallet = LocalWallet::load_from(&wallet_dir).await?;
+
+    if let Some(deposit_path) = &opt.deposit {
+        let mut deposits = vec![];
+
+        for entry in WalkDir::new(deposit_path).into_iter().flatten() {
+            if entry.file_type().is_file() {
+                let file_name = entry.file_name();
+                info!("Reading deposited tokens from {file_name:?}.");
+                println!("Reading deposited tokens from {file_name:?}.");
+
+                let dbc_data = fs::read_to_string(entry.path())?;
+                let dbc = match Dbc::from_hex(dbc_data.trim()) {
+                    Ok(dbc) => dbc,
+                    Err(_) => {
+                        warn!(
+                            "This file does not appear to have valid hex-encoded DBC data. \
+                            Skipping it."
+                        );
+                        println!(
+                            "This file does not appear to have valid hex-encoded DBC data. \
+                            Skipping it."
+                        );
+                        continue;
+                    }
+                };
+
+                deposits.push(dbc);
+            }
+        }
+
+        let previous_balance = wallet.balance();
+        wallet.deposit(deposits);
+        let new_balance = wallet.balance();
+        let deposited = previous_balance.as_nano() - new_balance.as_nano();
+
+        if deposited > 0 {
+            if let Err(err) = wallet.store().await {
+                warn!("Failed to store deposited amount: {:?}", err);
+                println!("Failed to store deposited amount: {:?}", err);
+            } else {
+                info!("Deposited {:?}.", sn_dbc::Token::from_nano(deposited));
+                println!("Deposited {:?}.", sn_dbc::Token::from_nano(deposited));
+            }
+        } else {
+            info!("Nothing deposited.");
+            println!("Nothing deposited.");
+        }
+    }
+
+    Ok(())
+}
+
+async fn get_client_dir() -> Result<PathBuf> {
+    let mut home_dirs = home_dir().expect("A homedir to exist.");
+    home_dirs.push(".safe");
+    home_dirs.push("client");
+    tokio::fs::create_dir_all(home_dirs.as_path()).await?;
+    Ok(home_dirs)
 }
 
 async fn files(opt: &Opt, file_api: Files) -> Result<()> {
