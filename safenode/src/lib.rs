@@ -48,8 +48,6 @@ pub mod client;
 pub mod log;
 /// The main logic of the network.
 pub mod network;
-/// Transfer fees, queues, validation and storage.
-pub mod network_transfers;
 /// SAFE Node
 pub mod node;
 /// SAFE Protocol

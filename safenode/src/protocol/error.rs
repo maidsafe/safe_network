@@ -9,10 +9,9 @@
 use super::{
     address::{ChunkAddress, RegisterAddress},
     authority::PublicKey,
+    node_transfers::Error as TransferError,
     register::{EntryHash, User},
 };
-
-use crate::network_transfers::Error as TransferError;
 
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};

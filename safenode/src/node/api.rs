@@ -14,7 +14,6 @@ use super::{
 
 use crate::{
     network::{close_group_majority, NetworkEvent, SwarmDriver},
-    network_transfers::{Error as TransferError, Transfers},
     protocol::{
         address::{dbc_address, DbcAddress},
         error::Error as ProtocolError,
@@ -22,6 +21,7 @@ use crate::{
             Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
             SpendQuery,
         },
+        node_transfers::{Error as TransferError, Transfers},
         register::User,
     },
     storage::{ChunkStorage, RegisterStorage},

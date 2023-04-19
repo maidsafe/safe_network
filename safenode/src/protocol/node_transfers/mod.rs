@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+//! Transfer fees, fee priority queue, validation and storage of spends.
+
 mod error;
 
 pub(crate) use self::error::{Error, Result};
@@ -30,7 +32,7 @@ use std::collections::{BTreeMap, BTreeSet};
 /// as deemed by the market.
 const STARTING_FEE: u64 = 4000; // 0.000004 SNT
 
-pub(super) struct Transfers {
+pub(crate) struct Transfers {
     node_id: NodeId,
     node_reward_key: MainKey,
     spend_queue: SpendQ<SignedSpend>,

@@ -15,15 +15,17 @@ pub mod address;
 pub mod authority;
 /// Chunk type.
 pub mod chunk;
+/// Client handling of token transfers.
+pub mod client_transfers;
 /// Dbc genesis creation.
 pub mod dbc_genesis;
 /// Errors.
 pub mod error;
 /// Types related to transfer fees.
 pub mod fees;
+/// Node handling of token transfers.
+pub mod node_transfers;
 /// Register type.
 pub mod register;
-/// Token transfers.
-pub mod transfers;
 /// A wallet for network tokens.
 pub mod wallet;

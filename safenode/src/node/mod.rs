@@ -16,7 +16,7 @@ use self::{error::Error, event::NodeEventsChannel};
 
 use crate::{
     network::Network,
-    network_transfers::Transfers,
+    protocol::node_transfers::Transfers,
     storage::{ChunkStorage, RegisterStorage},
 };
 

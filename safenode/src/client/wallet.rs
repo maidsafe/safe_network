@@ -9,8 +9,8 @@
 use super::Client;
 
 use crate::protocol::{
+    client_transfers::{create_online_transfer, Outputs as TransferDetails, SpendRequestParams},
     messages::{Cmd, Request},
-    transfers::{create_online_transfer, Outputs as TransferDetails, SpendRequestParams},
     wallet::{Error, Result, SendClient, SendWallet},
 };
 
