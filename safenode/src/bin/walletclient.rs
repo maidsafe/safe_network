@@ -20,7 +20,7 @@ use std::{fs, path::PathBuf};
 use tracing::{info, warn};
 use walkdir::WalkDir;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[clap(name = "safeclient cli")]
 struct Opt {
     /// The location of the wallet file.
@@ -42,12 +42,8 @@ async fn main() -> Result<()> {
 
     info!("Instantiating a SAFE Wallet Client...");
 
-    let wallet_dir = opt.wallet_dir.unwrap_or(get_client_dir().await?);
-    let mut wallet = LocalWallet::load_from(&wallet_dir).await?;
-
     let secret_key = bls::SecretKey::random();
     let client = Client::new(secret_key)?;
-    // let wallet_client = WalletClient::new(client.clone(), wallet);
 
     let mut client_events_rx = client.events_channel();
     if let Ok(event) = client_events_rx.recv().await {
@@ -58,7 +54,16 @@ async fn main() -> Result<()> {
         }
     }
 
-    if let Some(deposit_path) = opt.deposit {
+    wallet(&opt).await?;
+
+    Ok(())
+}
+
+async fn wallet(opt: &Opt) -> Result<()> {
+    let wallet_dir = opt.wallet_dir.clone().unwrap_or(get_client_dir().await?);
+    let mut wallet = LocalWallet::load_from(&wallet_dir).await?;
+
+    if let Some(deposit_path) = &opt.deposit {
         let mut deposits = vec![];
 
         for entry in WalkDir::new(deposit_path).into_iter().flatten() {
