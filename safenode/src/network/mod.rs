@@ -145,7 +145,16 @@ impl SwarmDriver {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let kademlia = Kademlia::with_config(peer_id, MemoryStore::new(peer_id), cfg);
-        let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
+
+        let mdns_config = mdns::Config {
+            // lower query interval to speed up peer discovery
+            // this increases traffic, but means we no longer have clients unable to connect
+            // after a few minutes
+            query_interval: Duration::from_secs(5),
+            ..Default::default()
+        };
+
+        let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
