@@ -50,7 +50,7 @@ use sn_dbc::{
 
 use std::collections::BTreeMap;
 
-type FeeCiphersParams = BTreeMap<DbcId, BTreeMap<NodeId, (RequiredFee, DbcIdSource)>>;
+type NodeFeesPerInput = BTreeMap<DbcId, BTreeMap<NodeId, (RequiredFee, DbcIdSource)>>;
 
 /// The input details necessary to
 /// carry out a transfer of tokens.
@@ -64,9 +64,10 @@ pub struct Inputs {
     /// Any surplus amount after spending the necessary input dbcs.
     pub change: (Token, PublicAddress),
     /// This is the set of input dbc keys, each having a set of
-    /// node ids and their respective fee ciphers.
+    /// node ids and their respective fees to be paid, and the
+    /// dbc id source to generate the dbc the fees shall be paid to.
     /// Used to produce the fee ciphers for the spends.
-    pub inputs_fee_cipher_params: FeeCiphersParams,
+    pub node_fees_per_input: NodeFeesPerInput,
 }
 
 /// The created dbcs and change dbc from a transfer
