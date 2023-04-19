@@ -9,7 +9,9 @@
 use super::Client;
 
 use crate::protocol::{
-    client_transfers::{create_online_transfer, Outputs as TransferDetails, SpendRequestParams},
+    client_transfers::{
+        create_online_transfer, CreatedDbc, Outputs as TransferDetails, SpendRequestParams,
+    },
     messages::{Cmd, Request},
     wallet::{Error, Result, SendClient, SendWallet},
 };
@@ -30,9 +32,15 @@ impl<W: SendWallet> WalletClient<W> {
     }
 
     /// Send tokens to another wallet.
-    pub async fn send(&mut self, amount: Token, to: PublicAddress) -> Result<()> {
-        let _dbcs = self.wallet.send(vec![(amount, to)], &self.client).await?;
-        Ok(())
+    pub async fn send(&mut self, amount: Token, to: PublicAddress) -> Result<Vec<CreatedDbc>> {
+        let dbcs = self.wallet.send(vec![(amount, to)], &self.client).await?;
+        // self.wallet.store().await;
+        Ok(dbcs)
+    }
+
+    /// Return the wallet.
+    pub fn into_wallet(self) -> W {
+        self.wallet
     }
 }
 
