@@ -78,7 +78,7 @@ async fn select_inputs(
         })?;
 
     let mut change_amount = total_output_amount;
-    let mut inputs_fee_cipher_params = BTreeMap::new();
+    let mut node_fees_per_input = BTreeMap::new();
     let mut fees_paid = Token::zero();
 
     for (dbc, derived_key) in available_dbcs {
@@ -143,7 +143,7 @@ async fn select_inputs(
                         .to_string(),
                 ))?;
 
-            let mut fee_cipher_params = BTreeMap::new();
+            let mut node_fees = BTreeMap::new();
 
             // Add nodes to outputs and generate their fee ciphers.
             decrypted_node_fees
@@ -154,10 +154,10 @@ async fn select_inputs(
                         .reward_address
                         .random_dbc_id_src(&mut rand::thread_rng());
                     recipients.push((*fee, dbc_id_src));
-                    let _ = fee_cipher_params.insert(*node_id, (required_fee.clone(), dbc_id_src));
+                    let _ = node_fees.insert(*node_id, (required_fee.clone(), dbc_id_src));
                 });
 
-            let _ = inputs_fee_cipher_params.insert(dbc_id, fee_cipher_params);
+            let _ = node_fees_per_input.insert(dbc_id, node_fees);
 
             fees_paid = fees_paid.checked_add(fee_per_input).ok_or_else(|| {
                 Error::DbcReissueFailed(
@@ -224,7 +224,7 @@ async fn select_inputs(
         dbcs_to_spend,
         recipients,
         change: (change_amount, change_to),
-        inputs_fee_cipher_params,
+        node_fees_per_input,
     })
 }
 
@@ -249,7 +249,7 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
         dbcs_to_spend,
         recipients,
         change: (change, change_to),
-        inputs_fee_cipher_params,
+        node_fees_per_input,
     } = selected_inputs;
 
     let mut inputs = vec![];
@@ -316,17 +316,16 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
             "Missing source dbc tx of {dbc_id:?}!"
         )))?;
 
-        let fee_cipher_params =
-            inputs_fee_cipher_params
-                .get(dbc_id)
-                .ok_or(Error::DbcReissueFailed(format!(
-                    "Missing source dbc tx of {dbc_id:?}!"
-                )))?;
+        let node_fees = node_fees_per_input
+            .get(dbc_id)
+            .ok_or(Error::DbcReissueFailed(format!(
+                "Missing source dbc tx of {dbc_id:?}!"
+            )))?;
 
         let spend_request_params = SpendRequestParams {
             signed_spend: signed_spend.clone(),
             parent_tx: parent_tx.clone(),
-            fee_ciphers: fee_ciphers(&outputs, fee_cipher_params)?,
+            fee_ciphers: fee_ciphers(&outputs, node_fees)?,
         };
 
         all_spend_request_params.push(spend_request_params);
@@ -411,10 +410,10 @@ async fn get_fees(dbc_id: DbcId, client: &Client) -> Result<BTreeMap<NodeId, Req
 #[allow(clippy::result_large_err)]
 fn fee_ciphers(
     outputs: &BTreeMap<DbcId, RevealedAmount>,
-    fee_cipher_params: &BTreeMap<NodeId, (RequiredFee, DbcIdSource)>,
+    node_fees: &BTreeMap<NodeId, (RequiredFee, DbcIdSource)>,
 ) -> Result<BTreeMap<NodeId, FeeCiphers>> {
     let mut input_fee_ciphers = BTreeMap::new();
-    for (node_id, (required_fee, dbc_id_src)) in fee_cipher_params {
+    for (node_id, (required_fee, dbc_id_src)) in node_fees {
         // Encrypt the index to the reward address (`PublicAddress`) of the node.
         let derivation_index_cipher = required_fee
             .content
