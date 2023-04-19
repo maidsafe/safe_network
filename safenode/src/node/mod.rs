@@ -20,7 +20,7 @@ use crate::{
     storage::{ChunkStorage, RegisterStorage},
 };
 
-use libp2p::PeerId;
+use libp2p::{Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
 use xor_name::{XorName, XOR_NAME_LEN};
 
@@ -33,6 +33,8 @@ pub struct Node {
     registers: RegisterStorage,
     transfers: Transfers,
     events_channel: NodeEventsChannel,
+    /// Peers that are dialed at startup of node.
+    initial_peers: Vec<(PeerId, Multiaddr)>,
 }
 
 /// A unique identifier for a node in the network,

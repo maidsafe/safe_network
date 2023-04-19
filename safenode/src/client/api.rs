@@ -70,6 +70,8 @@ impl Client {
         match event {
             // Clients do not handle requests.
             NetworkEvent::RequestReceived { .. } => {}
+            // We do not listen on sockets.
+            NetworkEvent::NewListenAddr(_) => {}
             NetworkEvent::PeerAdded => {
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork);
