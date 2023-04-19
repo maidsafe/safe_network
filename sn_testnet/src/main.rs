@@ -202,12 +202,17 @@ async fn build_node() -> Result<()> {
 
     info!("Building safenode");
     debug!("Building safenode with args: {:?}", args);
-    let _ = Command::new("cargo")
+    let build_result = Command::new("cargo")
         .args(args.clone())
         .current_dir("safenode")
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .output()?;
+
+    if !build_result.status.success() {
+        return Err(eyre!("Failed to build safenode"));
+    }
+
     info!("safenode built successfully");
     Ok(())
 }

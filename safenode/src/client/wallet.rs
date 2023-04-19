@@ -6,14 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
+use super::Client;
 
 use crate::protocol::{
-    transfers::{create_online_transfer, Outputs as TransferDetails},
-    wallet::{Result, SendClient, SendWallet},
+    messages::{Cmd, Request},
+    transfers::{create_online_transfer, Outputs as TransferDetails, SpendRequestParams},
+    wallet::{Error, Result, SendClient, SendWallet},
 };
 
-use super::Client;
+use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
@@ -45,7 +46,26 @@ impl SendClient for Client {
     ) -> Result<TransferDetails> {
         let transfer = create_online_transfer(dbcs, to, change_to, self).await?;
 
-        // Upload the spends to the network:
+        for spend_request_params in transfer.all_spend_request_params.clone() {
+            let SpendRequestParams {
+                signed_spend,
+                parent_tx,
+                fee_ciphers,
+            } = spend_request_params;
+
+            let cmd = Cmd::SpendDbc {
+                signed_spend: Box::new(signed_spend),
+                parent_tx: Box::new(parent_tx),
+                fee_ciphers,
+            };
+
+            let _responses = self
+                .send_to_closest(Request::Cmd(cmd))
+                .await
+                .map_err(|err| Error::CouldNotSendTokens(err.to_string()))?;
+
+            // TODO: validate responses
+        }
 
         Ok(transfer)
     }

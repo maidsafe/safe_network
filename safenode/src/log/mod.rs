@@ -122,9 +122,9 @@ pub fn init_node_logging(log_dir: &Option<PathBuf>) -> Result<Option<WorkerGuard
     Ok(layers.guard)
 }
 
-/// Get current root module name (e.g. "sn_node")
+/// Get current root module name (e.g. "safenode")
 fn current_crate_str() -> &'static str {
-    // Grab root from module path ("sn_node::log::etc" -> "sn_node")
+    // Grab root from module path ("safenode::log::etc" -> "safenode")
     let m = module_path!();
     &m[..m.find(':').unwrap_or(m.len())]
 }
