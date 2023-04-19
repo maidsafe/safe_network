@@ -1,4 +1,4 @@
-# stableset_net
+# The Safe Network
 
 This is the Safe Network as it was supposed to be, on a kademlia network, enabled by libp2p.
 
@@ -44,7 +44,10 @@ cargo run --release --example registers -- --user bob --reg-nickname myregister
 
 ### TODO
 
-- [ ] Basic messaging to target nodes
 - [ ] Add RPC for simplest node/net interaction (do libp2p CLIs help here?)
-- [ ] Add in chunking etc
-- [ ] Add in DBCs and validation handling
+
+
+
+### Archive
+
+The elder-membership agreed, section tree backed implementation of the safe network can be found [here](https://github.com/maidsafe/safe_network_archive)
