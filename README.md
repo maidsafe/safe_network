@@ -1,4 +1,4 @@
-# stableset_net
+# The Safe Network
 
 This is the Safe Network as it was supposed to be, on a kademlia network, enabled by libp2p.
 
