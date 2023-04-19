@@ -11,15 +11,23 @@ mod files;
 mod register;
 mod wallet;
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
 pub(super) use self::{
     cfg::cfg_cmds, files::files_cmds, register::register_cmds, wallet::wallet_cmds,
 };
 
-#[derive(Parser, Debug)]
-#[clap(name = "safeclient cli")]
-pub(super) enum Opt {
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+pub(super) struct Opt {
+    /// Available sub commands.
+    #[clap(subcommand)]
+    pub cmd: SubCmd,
+}
+
+#[derive(Subcommand, Debug)]
+pub(super) enum SubCmd {
+    /// Manage configuration.
     #[clap(name = "cfg", subcommand)]
     Cfg(cfg::CfgCmds),
     #[clap(name = "wallet", subcommand)]
@@ -28,7 +36,7 @@ pub(super) enum Opt {
     #[clap(name = "files", subcommand)]
     /// Manage files on the SAFE Network
     Files(files::FilesCmds),
-    #[clap(name = "files", subcommand)]
+    #[clap(name = "register", subcommand)]
     /// Manage files on the SAFE Network
     Register(register::RegisterCmds),
 }
