@@ -163,25 +163,39 @@ jobs:
         timeout-minutes: 10
 
       - name: Start a client to upload files
-        run: cargo run --bin safe -- files upload -- "./github"
+        run: cargo run --bin safe --release -- files upload -- "./github"
         id: client-file-upload
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a client to download files
-        run: cargo run --bin safe -- files download -- "./github/uploaded_files"
+        run: cargo run --bin safe --release -- files download -- "./github/uploaded_files"
         id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
-      # - name: Start a client to carry out register actions
-      #   run: cargo run --release --bin safe -- --create-register myregister --query-register myregister
-      #   id: client-register-actions
-      #   env:
-      #     RUST_LOG: "safenode,safe=trace"
-      #   timeout-minutes: 2
+      - name: Start a client to create a register
+        run: cargo run --bin safe --release -- register create baobao
+        id: client-register-create
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+      - name: Start a client to get a register
+        run: cargo run --bin safe --release -- register get baobao
+        id: client-register-get
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+      - name: Start a client to edit a register
+        run: cargo run --bin safe --release -- register edit baobao wood
+        id: client-register-edit
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
 
       - name: Kill all nodes
         shell: bash
