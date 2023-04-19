@@ -95,7 +95,7 @@ async fn edit_register(name: String, entry: String, client: &Client) -> Result<(
 async fn get_registers(names: Vec<String>, client: &Client) -> Result<()> {
     let tag = 3006;
     for name in names {
-        println!("Register nickname passed in via --query-register is '{name}'...");
+        println!("Register name passed in via `register get` is '{name}'...");
         let xorname = XorName::from_content(name.as_bytes());
 
         println!("Trying to retrieve Register from {xorname:?}, {tag}");

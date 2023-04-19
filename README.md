@@ -8,17 +8,23 @@ This is the Safe Network as it was supposed to be, on a kademlia network, enable
 
 ## Actions undertaken by a client accessing the network
 
-- Create Register with nickname 'myregister'
-`cargo run --release --bin safe -- --create-register myregister`
+- Create Register with name 'myregister':
+`cargo run --release --bin safe -- register create myregister`
 
-- Get Register using its nickname from the previous command
-`cargo run --release --bin safe -- --query-register myregister`
+- Get Register using its name from the previous cmd:
+`cargo run --release --bin safe -- register get myregister`
 
-- Put files
-`cargo run --release --bin safe -- --upload-chunks ~/dir/with/files`
+- Edit Register using its name from the previous cmd:
+`cargo run --release --bin safe -- register edit myregister somename`
 
-- Get files; copy the `XorName` of the file from the previous command
-`cargo run --release --bin safe -- --get-chunk xor_name`
+- Upload files
+`cargo run --release --bin safe -- files upload ~/dir/with/files`
+
+- Download files
+`cargo run --release --bin safe -- files download ~/dir/with/files/uploaded_files`
+
+Note that the names of the uploaded files will be inserted into a new file, which is placed
+in a new dir named `uploaded_files` in the dir you gave when uploading the files. The names found in that new file will then be used to download the uploaded files.
 
 ## Using example app which exercises the Register APIs
 
