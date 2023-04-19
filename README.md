@@ -36,6 +36,31 @@ From a second console:
 cargo run --release --example registers -- --user bob --reg-nickname myregister
 ```
 
+## Using the example RPC client app to query info and send cmds to a running safenode
+
+- Query basic node info
+```
+$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 info
+Node info received:
+===================
+RPC endpoint: http://127.0.0.1:12001
+Node Id: 65fbed(01100101)..
+Logs dir: /home/bochaco/.safe/node/local-test-network/safenode-1
+Binary version: 0.1.0
+Time since last restart: 650s
+```
+
+- Restarting/Updating/Stopping a node
+```
+$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 restart 5000
+Node successfully received the request to restart in 5s
+
+$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 stop 6000
+Node successfully received the request to stop in 6s
+
+$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 update 7000
+Node successfully received the request to try to update in 7s
+```
 ### Notes
 
 - Currently we've pulled in testnet bin from the main `sn` repo for ease of spinning up nodes.
