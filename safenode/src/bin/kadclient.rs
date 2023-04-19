@@ -203,7 +203,7 @@ async fn files(opt: &Opt, file_api: Files) -> Result<()> {
 
                 match file_api.upload(bytes).await {
                     Ok(address) => {
-                        info!("Successfully stored file to {address:?}");
+                        println!("Successfully stored file to {:x}", address.name());
                         chunks_to_fetch.push(*address.name());
                     }
                     Err(error) => {
