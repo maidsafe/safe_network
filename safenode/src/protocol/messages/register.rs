@@ -8,11 +8,14 @@
 
 use crate::protocol::{
     authority::DataAuthority,
-    register::{Entry, EntryHash, Policy, RegisterOp, User},
-    storage::RegisterAddress,
+    storage::{
+        register::{Entry, EntryHash, Policy, RegisterOp, User},
+        RegisterAddress,
+    },
 };
+
 #[allow(unused_imports)] // needed by rustdocs links
-use crate::protocol::{messages::QueryResponse, register::Register};
+use crate::protocol::{messages::QueryResponse, storage::register::Register};
 
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;

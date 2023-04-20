@@ -6,13 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::register::{Action, EntryHash, Register, User};
+
 use crate::protocol::{
     error::{Error, Result},
     messages::{
         EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
         SignedRegisterCreate, SignedRegisterEdit,
     },
-    register::{Action, EntryHash, Register, User},
     storage::RegisterAddress,
 };
 
@@ -369,7 +370,7 @@ mod test {
             CreateRegister, EditRegister, QueryResponse, RegisterCmd, RegisterQuery,
             SignedRegisterCreate, SignedRegisterEdit,
         },
-        register::{EntryHash, Policy, Register, User},
+        storage::register::{EntryHash, Policy, Register, User},
     };
 
     use bincode::serialize;

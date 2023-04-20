@@ -12,7 +12,7 @@ pub use offline_replica::RegisterOffline;
 
 use super::{error::Result, Client};
 
-use crate::protocol::register::{Entry, EntryHash, Policy};
+use crate::protocol::storage::register::{Entry, EntryHash, Policy};
 
 use std::collections::BTreeSet;
 use xor_name::XorName;
