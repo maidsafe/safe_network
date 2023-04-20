@@ -80,7 +80,7 @@ async fn main() -> Result<()> {
 }
 
 pub async fn node_info(addr: SocketAddr) -> Result<()> {
-    let endpoint = format!("http://{addr}");
+    let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint.clone()).await?;
     let response = client.node_info(Request::new(NodeInfoRequest {})).await?;
     let node_info = response.get_ref();
@@ -101,7 +101,7 @@ pub async fn node_info(addr: SocketAddr) -> Result<()> {
 }
 
 pub async fn node_events(addr: SocketAddr) -> Result<()> {
-    let endpoint = format!("http://{addr}");
+    let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint).await?;
     let response = client
         .node_events(Request::new(NodeEventsRequest {}))
@@ -117,7 +117,7 @@ pub async fn node_events(addr: SocketAddr) -> Result<()> {
 }
 
 pub async fn node_restart(addr: SocketAddr, delay_millis: u64) -> Result<()> {
-    let endpoint = format!("http://{addr}");
+    let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint).await?;
     let _response = client
         .restart(Request::new(RestartRequest { delay_millis }))
@@ -130,7 +130,7 @@ pub async fn node_restart(addr: SocketAddr, delay_millis: u64) -> Result<()> {
 }
 
 pub async fn node_stop(addr: SocketAddr, delay_millis: u64) -> Result<()> {
-    let endpoint = format!("http://{addr}");
+    let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint).await?;
     let _response = client
         .stop(Request::new(StopRequest { delay_millis }))
@@ -143,7 +143,7 @@ pub async fn node_stop(addr: SocketAddr, delay_millis: u64) -> Result<()> {
 }
 
 pub async fn node_update(addr: SocketAddr, delay_millis: u64) -> Result<()> {
-    let endpoint = format!("http://{addr}");
+    let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint).await?;
     let _response = client
         .update(Request::new(UpdateRequest { delay_millis }))
