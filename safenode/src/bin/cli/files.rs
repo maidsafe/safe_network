@@ -8,7 +8,7 @@
 
 use safenode::{
     client::{Client, Files},
-    protocol::address::ChunkAddress,
+    protocol::storage::ChunkAddress,
 };
 
 use bytes::Bytes;

@@ -7,10 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    address::{ChunkAddress, RegisterAddress},
     authority::PublicKey,
     node_transfers::Error as TransferError,
     register::{EntryHash, User},
+    storage::{ChunkAddress, RegisterAddress},
 };
 
 use serde::{Deserialize, Serialize};

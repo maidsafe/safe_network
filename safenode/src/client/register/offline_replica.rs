@@ -12,7 +12,6 @@ use super::{
 };
 
 use crate::protocol::{
-    address::RegisterAddress,
     authority::DataAuthority,
     error::Error as ProtocolError,
     messages::{
@@ -20,6 +19,7 @@ use crate::protocol::{
         RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
     },
     register::{Action, Entry, EntryHash, Permissions, Policy, Register as RegisterReplica, User},
+    storage::RegisterAddress,
 };
 
 use bincode::serialize;

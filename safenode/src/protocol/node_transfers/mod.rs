@@ -15,8 +15,8 @@ pub(crate) use self::error::{Error, Result};
 use crate::{
     node::NodeId,
     protocol::{
-        address::DbcAddress,
         fees::{FeeCiphers, RequiredFee, SpendPriority, SpendQ},
+        storage::DbcAddress,
         storage::SpendStorage,
     },
 };

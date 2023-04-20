@@ -19,8 +19,8 @@ pub use self::{
 pub(crate) use reg_crdt::{CrdtOperation, RegisterCrdt};
 
 use super::{
-    address::RegisterAddress,
     error::{Error, Result},
+    storage::RegisterAddress,
 };
 
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
@@ -179,11 +179,11 @@ impl Register {
 #[cfg(test)]
 mod tests {
     use crate::protocol::{
-        address::RegisterAddress,
         error::{Error, Result},
         register::{
             Entry, EntryHash, Permissions, Policy, Register, RegisterOp, User, MAX_REG_NUM_ENTRIES,
         },
+        storage::RegisterAddress,
     };
 
     use bls::SecretKey;
