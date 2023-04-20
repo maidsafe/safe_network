@@ -18,8 +18,12 @@ use crate::protocol::{
         Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
         RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
     },
-    register::{Action, Entry, EntryHash, Permissions, Policy, Register as RegisterReplica, User},
-    storage::RegisterAddress,
+    storage::{
+        register::{
+            Action, Entry, EntryHash, Permissions, Policy, Register as RegisterReplica, User,
+        },
+        RegisterAddress,
+    },
 };
 
 use bincode::serialize;

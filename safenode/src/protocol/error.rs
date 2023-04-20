@@ -9,8 +9,10 @@
 use super::{
     authority::PublicKey,
     node_transfers::Error as TransferError,
-    register::{EntryHash, User},
-    storage::{ChunkAddress, RegisterAddress},
+    storage::{
+        register::{EntryHash, User},
+        ChunkAddress, RegisterAddress,
+    },
 };
 
 use serde::{Deserialize, Serialize};

@@ -21,9 +21,7 @@ use crate::{
             SpendQuery,
         },
         node_transfers::{Error as TransferError, Transfers},
-        register::User,
-        storage::{dbc_address, DbcAddress},
-        storage::{ChunkStorage, RegisterStorage},
+        storage::{dbc_address, register::User, ChunkStorage, DbcAddress, RegisterStorage},
     },
 };
 

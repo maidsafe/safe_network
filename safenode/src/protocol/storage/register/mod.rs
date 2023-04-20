@@ -18,10 +18,9 @@ pub use self::{
 
 pub(crate) use reg_crdt::{CrdtOperation, RegisterCrdt};
 
-use super::{
-    error::{Error, Result},
-    storage::RegisterAddress,
-};
+use super::RegisterAddress;
+
+use crate::protocol::error::{Error, Result};
 
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use serde::{Deserialize, Serialize};
@@ -178,11 +177,12 @@ impl Register {
 
 #[cfg(test)]
 mod tests {
+    use super::{
+        Entry, EntryHash, Permissions, Policy, Register, RegisterOp, User, MAX_REG_NUM_ENTRIES,
+    };
+
     use crate::protocol::{
         error::{Error, Result},
-        register::{
-            Entry, EntryHash, Permissions, Policy, Register, RegisterOp, User, MAX_REG_NUM_ENTRIES,
-        },
         storage::RegisterAddress,
     };
 

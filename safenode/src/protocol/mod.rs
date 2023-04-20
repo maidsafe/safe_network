@@ -23,8 +23,6 @@ pub mod error;
 pub mod fees;
 /// Node handling of token transfers.
 pub mod node_transfers;
-/// Register type.
-pub mod register;
 /// Storage for spends, chunks and registers.
 pub mod storage;
 /// A wallet for network tokens.
