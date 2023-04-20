@@ -296,11 +296,11 @@ jobs:
         timeout-minutes: 10
 
       - name: Start a client to upload chunk
-        run: cargo run --release --bin safe -- --upload-chunks ./README.md --get-chunk confirm_uploaded
-        id: client-chunk-upload
+        run: cargo run --bin safe --release -- files upload -- "./github"
+        id: client-file-upload
         env:
           RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 2
+        timeout-minutes: 10
 
       - name: Start network churning
         shell: bash
@@ -308,11 +308,11 @@ jobs:
         timeout-minutes: 10
 
       - name: Start a client to confirm chunk still retained
-        run: cargo run --release --bin safe -- --get-chunk 5fa0f09c0e5fb3c36caca572eb0e40987fa2e61c5c5311a4db1efff88c0ce7f1
-        id: client-chunk-download
+        run: cargo run --bin safe --release -- files download -- "./github/uploaded_files"
+        id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 2
+        timeout-minutes: 5
 
       - name: Kill all nodes
         shell: bash
