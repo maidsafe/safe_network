@@ -6,10 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-/// Messages types
-pub mod messages;
-
-/// Dbc genesis creation.
-pub mod dbc_genesis;
-/// Errors.
-pub mod error;
+/// Client handling of token transfers.
+pub mod client_transfers;
+/// Types related to transfer fees.
+pub mod fees;
+/// Node handling of token transfers.
+pub mod node_transfers;
+/// Storage for spends, chunks and registers.
+pub mod storage;
+/// A wallet for network tokens.
+pub mod wallet;

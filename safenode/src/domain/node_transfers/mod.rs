@@ -13,12 +13,12 @@ mod error;
 pub(crate) use self::error::{Error, Result};
 
 use crate::{
-    node::NodeId,
-    protocol::{
+    domain::{
         fees::{FeeCiphers, RequiredFee, SpendPriority, SpendQ},
         storage::DbcAddress,
         storage::SpendStorage,
     },
+    node::NodeId,
 };
 
 use sn_dbc::{DbcId, DbcTransaction, MainKey, SignedSpend, Token};

@@ -15,11 +15,11 @@ pub use self::event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver};
 use self::error::Error;
 
 use crate::{
-    network::Network,
-    protocol::{
+    domain::{
         node_transfers::Transfers,
         storage::{ChunkStorage, RegisterStorage},
     },
+    network::Network,
 };
 
 use libp2p::{Multiaddr, PeerId};

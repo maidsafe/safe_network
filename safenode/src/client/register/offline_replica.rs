@@ -11,18 +11,20 @@ use super::{
     Client, Register,
 };
 
-use crate::protocol::{
-    error::Error as ProtocolError,
-    messages::{
-        Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
-        RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
-    },
-    storage::{
+use crate::{
+    domain::storage::{
         register::{
             Action, DataAuthority, Entry, EntryHash, Permissions, Policy,
             Register as RegisterReplica, User,
         },
         RegisterAddress,
+    },
+    protocol::{
+        error::Error as ProtocolError,
+        messages::{
+            Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
+            RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
+        },
     },
 };
 
