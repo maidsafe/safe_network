@@ -9,7 +9,6 @@
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
 use crate::domain::storage::register::{Entry, EntryHash};
-
 use std::collections::BTreeSet;
 use thiserror::Error;
 
@@ -40,4 +39,7 @@ pub enum Error {
         Entries hashes of branches are: {0:?}"
     )]
     ContentBranchDetected(BTreeSet<(EntryHash, Entry)>),
+
+    #[error("Expected a DataResponse")]
+    DataResponseExpected,
 }

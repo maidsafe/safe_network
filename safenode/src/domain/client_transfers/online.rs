@@ -13,7 +13,7 @@ use crate::{
     domain::fees::{FeeCiphers, RequiredFee, SpendPriority},
     network::close_group_majority,
     node::NodeId,
-    protocol::messages::{Query, QueryResponse, Request, Response, SpendQuery},
+    protocol::messages::{DataRequest, DataResponse, Query, QueryResponse, SpendQuery},
 };
 
 use sn_dbc::{
@@ -167,7 +167,7 @@ async fn select_inputs(
         };
         // ---------------- fee part end ----------------
 
-        // Add this dbc as input to be spent.
+        // Add this dbc Requestas input to be spent.
         dbcs_to_spend.push((dbc, derived_key));
 
         // Input amount increases with the amount of the dbc.
@@ -356,12 +356,12 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
 }
 
 async fn get_fees(dbc_id: DbcId, client: &Client) -> Result<BTreeMap<NodeId, RequiredFee>> {
-    let request = Request::Query(Query::Spend(SpendQuery::GetFees {
+    let request = DataRequest::Query(Query::Spend(SpendQuery::GetFees {
         dbc_id,
         priority: SpendPriority::Normal,
     }));
     let responses = client
-        .send_to_closest(request)
+        .send_data_req_to_closest(request)
         .await
         .map_err(|e| Error::CouldNotGetFees(e.to_string()))?;
 
@@ -376,7 +376,7 @@ async fn get_fees(dbc_id: DbcId, client: &Client) -> Result<BTreeMap<NodeId, Req
             res
         })
         .filter_map(|resp| match resp {
-            Response::Query(resp) => Some(resp),
+            DataResponse::Query(resp) => Some(resp),
             other => {
                 warn!("Unexpected response to fee query: {other:?}");
                 None

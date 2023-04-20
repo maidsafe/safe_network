@@ -11,15 +11,12 @@ use super::{
     error::Result,
     Client,
 };
-
 use crate::domain::storage::{Chunk, ChunkAddress};
-
-use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk};
-
 use bincode::deserialize;
 use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
+use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk};
 use tokio::task;
 use tracing::trace;
 use xor_name::XorName;

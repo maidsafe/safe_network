@@ -10,16 +10,16 @@ use super::{
     error::{Error, Result},
     Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, Register, RegisterOffline,
 };
-
 use crate::{
     domain::storage::{Chunk, ChunkAddress},
     network::{NetworkEvent, SwarmDriver},
     protocol::{
         error::Error as ProtocolError,
-        messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
+        messages::{
+            Cmd, CmdResponse, DataRequest, DataResponse, Query, QueryResponse, Request, Response,
+        },
     },
 };
-
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use libp2p::PeerId;
@@ -118,19 +118,19 @@ impl Client {
     /// Store `Chunk` to its close group.
     pub(super) async fn store_chunk(&self, chunk: Chunk) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
-        let request = Request::Cmd(Cmd::StoreChunk(chunk));
-        let responses = self.send_to_closest(request).await?;
+        let request = DataRequest::Cmd(Cmd::StoreChunk(chunk));
+        let responses = self.send_data_req_to_closest(request).await?;
 
         let all_ok = responses
             .iter()
-            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::StoreChunk(Ok(()))))));
+            .all(|resp| matches!(resp, Ok(DataResponse::Cmd(CmdResponse::StoreChunk(Ok(()))))));
         if all_ok {
             return Ok(());
         }
 
         // If not all were Ok, we will return the first error sent to us.
         for resp in responses.iter().flatten() {
-            if let Response::Cmd(CmdResponse::StoreChunk(result)) = resp {
+            if let DataResponse::Cmd(CmdResponse::StoreChunk(result)) = resp {
                 result.clone()?;
             };
         }
@@ -148,19 +148,19 @@ impl Client {
     /// Retrieve a `Chunk` from the closest peers.
     pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Get chunk: {address:?}");
-        let request = Request::Query(Query::GetChunk(address));
-        let responses = self.send_to_closest(request).await?;
+        let request = DataRequest::Query(Query::GetChunk(address));
+        let responses = self.send_data_req_to_closest(request).await?;
 
         // We will return the first chunk we get.
         for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetChunk(Ok(chunk))) = resp {
+            if let DataResponse::Query(QueryResponse::GetChunk(Ok(chunk))) = resp {
                 return Ok(chunk.clone());
             };
         }
 
         // If no chunk was found, we will return the first error sent to us.
         for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetChunk(result)) = resp {
+            if let DataResponse::Query(QueryResponse::GetChunk(result)) = resp {
                 let _ = result.clone()?;
             };
         }
@@ -175,15 +175,32 @@ impl Client {
         Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
+    pub(crate) async fn send_data_req_to_closest(
+        &self,
+        request: DataRequest,
+    ) -> Result<Vec<Result<DataResponse>>> {
         info!("Sending {:?} to the closest peers.", request.dst());
         let closest_peers = self
             .network
             .client_get_closest_peers(*request.dst().name())
             .await?;
-        Ok(self
-            .send_and_get_responses(closest_peers, &request, true)
-            .await)
+
+        let responses = self
+            .send_and_get_responses(closest_peers, &Request::Data(request), true)
+            .await;
+        // convert `Response` into `DataResponse`
+        let responses = responses
+            .into_iter()
+            .map(|maybe_res| match maybe_res {
+                Ok(res) => match res {
+                    Response::Data(res) => Ok(res),
+                    _ => Err(Error::DataResponseExpected),
+                },
+                Err(err) => Err(err),
+            })
+            .collect();
+
+        Ok(responses)
     }
 
     /// This is for network testing only

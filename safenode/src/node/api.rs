@@ -24,8 +24,8 @@ use crate::{
     protocol::{
         error::Error as ProtocolError,
         messages::{
-            Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
-            SpendQuery,
+            Cmd, CmdResponse, DataRequest, DataResponse, Event, Query, QueryResponse, RegisterCmd,
+            Request, Response, SpendQuery,
         },
     },
 };
@@ -130,8 +130,12 @@ impl Node {
     ) -> Result<()> {
         trace!("Handling request: {request:?}");
         let response = match request {
-            Request::Cmd(cmd) => Response::Cmd(self.handle_cmd(cmd).await),
-            Request::Query(query) => Response::Query(self.handle_query(query).await),
+            Request::Data(DataRequest::Cmd(cmd)) => {
+                Response::Data(DataResponse::Cmd(self.handle_cmd(cmd).await))
+            }
+            Request::Data(DataRequest::Query(query)) => {
+                Response::Data(DataResponse::Query(self.handle_query(query).await))
+            }
             Request::Event(event) => {
                 match event {
                     Event::DoubleSpendAttempted(a_spend, b_spend) => {
@@ -282,8 +286,9 @@ impl Node {
 
     /// Retrieve a `Spend` from the closest peers
     async fn get_spend(&self, address: DbcAddress) -> Result<SignedSpend> {
-        let request = Request::Query(Query::Spend(SpendQuery::GetDbcSpend(address)));
-        info!("Getting the closest peers to {:?}", request.dst());
+        let request = Request::Data(DataRequest::Query(Query::Spend(SpendQuery::GetDbcSpend(
+            address,
+        ))));
 
         let responses = self.send_to_closest(&request).await?;
 
@@ -292,7 +297,10 @@ impl Node {
             .iter()
             .flatten()
             .flat_map(|resp| {
-                if let Response::Query(QueryResponse::GetDbcSpend(Ok(signed_spend))) = resp {
+                if let Response::Data(DataResponse::Query(QueryResponse::GetDbcSpend(Ok(
+                    signed_spend,
+                )))) = resp
+                {
                     Some(signed_spend.clone())
                 } else {
                     None
@@ -328,7 +336,7 @@ impl Node {
         // If not enough spends were gotten, we try error the first
         // error to the expected query returned from nodes.
         for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetDbcSpend(result)) = resp {
+            if let Response::Data(DataResponse::Query(QueryResponse::GetDbcSpend(result))) = resp {
                 let _ = result.clone()?;
             };
         }
@@ -350,12 +358,14 @@ impl Node {
     }
 
     async fn send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
-        info!("Sending {:?} to the closest peers.", request.dst());
+        // todo: make this a better function
+        let xor_name = match request {
+            Request::Data(data) => *data.dst().name(),
+            _ => todo!(),
+        };
+        info!("Sending {xor_name:?} to the closest peers.");
         // todo: if `self` is present among the closest peers, the request should be routed to self?
-        let closest_peers = self
-            .network
-            .node_get_closest_peers(*request.dst().name())
-            .await?;
+        let closest_peers = self.network.node_get_closest_peers(xor_name).await?;
 
         Ok(self
             .send_and_get_responses(closest_peers, request, true)

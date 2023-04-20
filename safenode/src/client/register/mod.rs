@@ -11,9 +11,7 @@ mod offline_replica;
 pub use offline_replica::RegisterOffline;
 
 use super::{error::Result, Client};
-
 use crate::domain::storage::register::{Entry, EntryHash, Policy};
-
 use std::collections::BTreeSet;
 use xor_name::XorName;
 

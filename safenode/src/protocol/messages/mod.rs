@@ -25,29 +25,45 @@ pub use self::{
     response::{CmdResponse, QueryResponse},
     spend::SpendQuery,
 };
-
-use crate::domain::storage::{dbc_address, dbc_name, Chunk, DataAddress, DbcAddress};
-
-use sn_dbc::SignedSpend;
-
+use crate::{
+    domain::storage::{dbc_address, dbc_name, Chunk, DataAddress, DbcAddress},
+    protocol::error::Error as ProtocolError,
+};
 use serde::{Deserialize, Serialize};
+use sn_dbc::SignedSpend;
 use std::{collections::BTreeSet, fmt::Debug};
 use xor_name::XorName;
 
 /// Send a request to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Request {
+    /// A data request sent to peers.
+    Data(DataRequest),
+    /// A fact sent to peers.
+    Event(Event),
+}
+
+/// Send a Data request to other peers in the network
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DataRequest {
     /// A cmd sent to peers. Cmds are writes, i.e. can cause mutation.
     Cmd(Cmd),
     /// A query sent to peers. Queries are read-only.
     Query(Query),
-    /// A fact sent to peers.
-    Event(Event),
 }
 
 /// Respond to other peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Response {
+    /// A response to a Data request
+    Data(DataResponse),
+    /// A response to a fact
+    Ack(Result<(), ProtocolError>),
+}
+
+/// Respond to a Data request
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DataResponse {
     /// The response to a cmd.
     Cmd(CmdResponse),
     /// The response to a query.
@@ -70,13 +86,12 @@ pub enum ReplicatedData {
     DoubleSpend((DbcAddress, BTreeSet<SignedSpend>)),
 }
 
-impl Request {
+impl DataRequest {
     /// Used to send a request to the close group of the address.
     pub fn dst(&self) -> DataAddress {
         match self {
-            Request::Cmd(cmd) => cmd.dst(),
-            Request::Query(query) => query.dst(),
-            Request::Event(event) => event.dst(),
+            DataRequest::Cmd(cmd) => cmd.dst(),
+            DataRequest::Query(query) => query.dst(),
         }
     }
 }

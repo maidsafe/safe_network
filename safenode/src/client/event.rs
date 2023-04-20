@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::error::Result;
-
 use tokio::sync::broadcast;
 
 // Channel where events will be broadcasted by the client.

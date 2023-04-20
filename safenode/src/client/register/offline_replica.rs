@@ -10,7 +10,6 @@ use super::{
     super::error::{Error, Result},
     Client, Register,
 };
-
 use crate::{
     domain::storage::{
         register::{
@@ -22,12 +21,11 @@ use crate::{
     protocol::{
         error::Error as ProtocolError,
         messages::{
-            Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
-            RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
+            Cmd, CmdResponse, CreateRegister, DataRequest, DataResponse, EditRegister, Query,
+            QueryResponse, RegisterCmd, RegisterQuery, SignedRegisterCreate, SignedRegisterEdit,
         },
     },
 };
-
 use bincode::serialize;
 use std::collections::{BTreeSet, LinkedList};
 use xor_name::XorName;
@@ -237,19 +235,22 @@ impl RegisterOffline {
     // Publish a `Register` creation command on the network.
     async fn publish_register_create(&self, cmd: RegisterCmd) -> Result<()> {
         debug!("Publishing Register create cmd: {:?}", cmd.dst());
-        let request = Request::Cmd(Cmd::Register(cmd));
-        let responses = self.client.send_to_closest(request).await?;
+        let request = DataRequest::Cmd(Cmd::Register(cmd));
+        let responses = self.client.send_data_req_to_closest(request).await?;
 
-        let all_ok = responses
-            .iter()
-            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::CreateRegister(Ok(()))))));
+        let all_ok = responses.iter().all(|resp| {
+            matches!(
+                resp,
+                Ok(DataResponse::Cmd(CmdResponse::CreateRegister(Ok(()))))
+            )
+        });
         if all_ok {
             return Ok(());
         }
 
         // If not all were Ok, we will return the first error sent to us.
         for resp in responses.iter().flatten() {
-            if let Response::Cmd(CmdResponse::CreateRegister(result)) = resp {
+            if let DataResponse::Cmd(CmdResponse::CreateRegister(result)) = resp {
                 result.clone()?;
             };
         }
@@ -267,19 +268,22 @@ impl RegisterOffline {
     // Publish a `Register` edit command in the network.
     async fn publish_register_edit(&self, cmd: RegisterCmd) -> Result<()> {
         debug!("Publishing Register edit cmd: {:?}", cmd.dst());
-        let request = Request::Cmd(Cmd::Register(cmd));
-        let responses = self.client.send_to_closest(request).await?;
+        let request = DataRequest::Cmd(Cmd::Register(cmd));
+        let responses = self.client.send_data_req_to_closest(request).await?;
 
-        let all_ok = responses
-            .iter()
-            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::EditRegister(Ok(()))))));
+        let all_ok = responses.iter().all(|resp| {
+            matches!(
+                resp,
+                Ok(DataResponse::Cmd(CmdResponse::EditRegister(Ok(()))))
+            )
+        });
         if all_ok {
             return Ok(());
         }
 
         // If not all were Ok, we will return the first error sent to us.
         for resp in responses.iter().flatten() {
-            if let Response::Cmd(CmdResponse::EditRegister(result)) = resp {
+            if let DataResponse::Cmd(CmdResponse::EditRegister(result)) = resp {
                 result.clone()?;
             };
         }
@@ -298,19 +302,19 @@ impl RegisterOffline {
     async fn get_register(client: &Client, name: XorName, tag: u64) -> Result<RegisterReplica> {
         let address = RegisterAddress { name, tag };
         debug!("Retrieving Register from: {address:?}");
-        let request = Request::Query(Query::Register(RegisterQuery::Get(address)));
-        let responses = client.send_to_closest(request).await?;
+        let request = DataRequest::Query(Query::Register(RegisterQuery::Get(address)));
+        let responses = client.send_data_req_to_closest(request).await?;
 
         // We will return the first register we get.
         for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetRegister(Ok(register))) = resp {
+            if let DataResponse::Query(QueryResponse::GetRegister(Ok(register))) = resp {
                 return Ok(register.clone());
             };
         }
 
         // If no register was gotten, we will return the first error sent to us.
         for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetChunk(result)) = resp {
+            if let DataResponse::Query(QueryResponse::GetChunk(result)) = resp {
                 let _ = result.clone()?;
             };
         }

@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::Client;
-
 use crate::{
     domain::{
         client_transfers::{
@@ -15,9 +14,8 @@ use crate::{
         },
         wallet::{Error, Result, SendClient, SendWallet},
     },
-    protocol::messages::{Cmd, Request},
+    protocol::messages::{Cmd, DataRequest},
 };
-
 use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
 
 /// A wallet client can be used to send and
@@ -69,7 +67,7 @@ impl SendClient for Client {
             };
 
             let _responses = self
-                .send_to_closest(Request::Cmd(cmd))
+                .send_data_req_to_closest(DataRequest::Cmd(cmd))
                 .await
                 .map_err(|err| Error::CouldNotSendTokens(err.to_string()))?;
 

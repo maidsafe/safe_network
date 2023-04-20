@@ -7,14 +7,11 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{Error, Result};
-
 use crate::domain::storage::Chunk;
-
-use self_encryption::{DataMap, EncryptedChunk, MAX_CHUNK_SIZE};
-
 use bincode::serialize;
 use bytes::Bytes;
 use rayon::prelude::*;
+use self_encryption::{DataMap, EncryptedChunk, MAX_CHUNK_SIZE};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use xor_name::XorName;
