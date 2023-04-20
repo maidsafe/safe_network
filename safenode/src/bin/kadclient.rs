@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
     }
 
     match opt.cmd {
-        SubCmd::Cfg(cmds) => cfg_cmds(&cmds).await?,
+        SubCmd::Cfg(_) => (), // already handled above
         SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client).await?,
         SubCmd::Files(cmds) => files_cmds(cmds, client.clone()).await?,
         SubCmd::Register(cmds) => register_cmds(cmds, &client).await?,
