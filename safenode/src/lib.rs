@@ -52,5 +52,3 @@ pub mod network;
 pub mod node;
 /// SAFE Protocol
 pub mod protocol;
-/// Storage for chunks and registers.
-pub mod storage;

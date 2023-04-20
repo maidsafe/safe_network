@@ -23,8 +23,8 @@ use crate::{
         },
         node_transfers::{Error as TransferError, Transfers},
         register::User,
+        storage::{ChunkStorage, RegisterStorage},
     },
-    storage::{ChunkStorage, RegisterStorage},
 };
 
 use sn_dbc::{DbcTransaction, MainKey, SignedSpend};

@@ -16,8 +16,10 @@ use self::error::Error;
 
 use crate::{
     network::Network,
-    protocol::node_transfers::Transfers,
-    storage::{ChunkStorage, RegisterStorage},
+    protocol::{
+        node_transfers::Transfers,
+        storage::{ChunkStorage, RegisterStorage},
+    },
 };
 
 use libp2p::{Multiaddr, PeerId};

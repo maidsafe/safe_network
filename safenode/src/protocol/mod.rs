@@ -27,5 +27,7 @@ pub mod fees;
 pub mod node_transfers;
 /// Register type.
 pub mod register;
+/// Storage for spends, chunks and registers.
+pub mod storage;
 /// A wallet for network tokens.
 pub mod wallet;
