@@ -27,9 +27,6 @@ pub enum WalletCmds {
         /// given path and deposit it to the wallet.
         #[clap(name = "dbc-dir")]
         dbc_dir: PathBuf,
-        /// The location of the wallet file.
-        #[clap(name = "wallet-dir")]
-        wallet_dir: PathBuf,
     },
     Send {
         /// This shall be the number of nanos to send.
@@ -39,29 +36,20 @@ pub enum WalletCmds {
         /// This must be a hex-encoded `PublicAddress`.
         #[clap(name = "to")]
         to: String,
-        /// The location of the wallet file.
-        #[clap(name = "wallet-dir")]
-        wallet_dir: PathBuf,
     },
 }
 
 pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client) -> Result<()> {
     match cmds {
-        WalletCmds::Deposit {
-            dbc_dir,
-            wallet_dir,
-        } => deposit(dbc_dir, wallet_dir).await?,
-        WalletCmds::Send {
-            amount,
-            to,
-            wallet_dir,
-        } => send(amount, to, wallet_dir, client).await?,
+        WalletCmds::Deposit { dbc_dir } => deposit(dbc_dir).await?,
+        WalletCmds::Send { amount, to } => send(amount, to, client).await?,
     }
     Ok(())
 }
 
-async fn deposit(dbc_dir: PathBuf, wallet_dir: PathBuf) -> Result<()> {
-    let mut wallet = LocalWallet::load_from(&wallet_dir).await?;
+async fn deposit(dbc_dir: PathBuf) -> Result<()> {
+    let root_dir = get_client_dir().await?;
+    let mut wallet = LocalWallet::load_from(&root_dir).await?;
 
     let mut deposits = vec![];
 
@@ -112,7 +100,7 @@ async fn deposit(dbc_dir: PathBuf, wallet_dir: PathBuf) -> Result<()> {
     Ok(())
 }
 
-async fn send(amount: String, to: String, wallet_dir: PathBuf, client: &Client) -> Result<()> {
+async fn send(amount: String, to: String, client: &Client) -> Result<()> {
     let address = parse_public_address(to)?;
 
     use std::str::FromStr;
@@ -121,7 +109,8 @@ async fn send(amount: String, to: String, wallet_dir: PathBuf, client: &Client) 
         panic!("This should be unreachable. An amount is expected when sending.");
     }
 
-    let wallet = LocalWallet::load_from(&wallet_dir).await?;
+    let root_dir = get_client_dir().await?;
+    let wallet = LocalWallet::load_from(&root_dir).await?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     match wallet_client.send(amount, address).await {
         Ok(_new_dbcs) => {
@@ -145,4 +134,12 @@ async fn send(amount: String, to: String, wallet_dir: PathBuf, client: &Client) 
     }
 
     Ok(())
+}
+
+async fn get_client_dir() -> Result<PathBuf> {
+    let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
+    home_dirs.push(".safe");
+    home_dirs.push("client");
+    tokio::fs::create_dir_all(home_dirs.as_path()).await?;
+    Ok(home_dirs)
 }
