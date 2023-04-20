@@ -23,13 +23,13 @@ use xor_name::XorName;
 pub enum FilesCmds {
     Upload {
         /// The location of the files to upload.
-        #[clap(name = "files-path")]
-        files_path: PathBuf,
+        #[clap(name = "path", value_name = "DIRECTORY")]
+        path: PathBuf,
     },
     Download {
         /// The location of the file names stored
         /// when uploading files.
-        #[clap(name = "file-names-path")]
+        #[clap(name = "file-names-path", value_name = "DIRECTORY")]
         file_names_path: PathBuf,
     },
 }
@@ -37,7 +37,7 @@ pub enum FilesCmds {
 pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client) -> Result<()> {
     let file_api: Files = Files::new(client);
     match cmds {
-        FilesCmds::Upload { files_path } => upload_files(files_path, &file_api).await?,
+        FilesCmds::Upload { path } => upload_files(path, &file_api).await?,
         FilesCmds::Download { file_names_path } => {
             download_files(file_names_path, &file_api).await?
         }
