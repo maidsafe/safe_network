@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod chunks;
-mod register_store;
 mod registers;
 mod spends;
 
