@@ -16,7 +16,7 @@ sleep 5
 
 count=0
 node_count=25
-while (( $count != 10 ))
+while (( $count != 9 ))
 do
     ((count++))
     echo Iteration $count
