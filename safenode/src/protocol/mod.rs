@@ -11,8 +11,6 @@ pub mod messages;
 
 /// Data/content Authority types.
 pub mod authority;
-/// Chunk type.
-pub mod chunk;
 /// Client handling of token transfers.
 pub mod client_transfers;
 /// Dbc genesis creation.
