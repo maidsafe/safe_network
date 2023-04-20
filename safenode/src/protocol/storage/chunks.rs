@@ -17,7 +17,9 @@ use std::{num::NonZeroUsize, sync::Arc};
 use tokio::sync::RwLock;
 use tracing::trace;
 
-const CHUNKS_CACHE_SIZE: usize = 20 * 1024 * 1024;
+/// We do not want to hinder storage, but a number is needed for the cache ctor.
+/// This will be removed as drive store is implemented.
+const CHUNKS_CACHE_SIZE: usize = 200 * 1024 * 1024;
 
 /// Operations on data chunks.
 #[derive(Clone)]

@@ -24,9 +24,6 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Error {
-    /// Not enough space to store the value.
-    #[error("Not enough space")]
-    NotEnoughSpace,
     /// Unexpected responses.
     #[error("Unexpected responses")]
     UnexpectedResponses,

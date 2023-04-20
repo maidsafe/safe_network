@@ -83,9 +83,6 @@ pub enum Error {
         "A parent tx of a requested spend could not be confirmed as valid. All parent signed spends of that tx {0:?}"
     )]
     InvalidSpendParent(BTreeSet<Box<SignedSpend>>),
-    /// Not enough space to store the value.
-    #[error("Not enough space")]
-    NotEnoughSpace,
 }
 
 impl From<DbcError> for Error {
