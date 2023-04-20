@@ -12,7 +12,7 @@ use super::{
     Client,
 };
 
-use crate::protocol::{address::ChunkAddress, chunk::Chunk};
+use crate::protocol::{chunk::Chunk, storage::ChunkAddress};
 
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk};
 

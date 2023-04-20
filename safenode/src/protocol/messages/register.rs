@@ -7,9 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::protocol::{
-    address::RegisterAddress,
     authority::DataAuthority,
     register::{Entry, EntryHash, Policy, RegisterOp, User},
+    storage::RegisterAddress,
 };
 #[allow(unused_imports)] // needed by rustdocs links
 use crate::protocol::{messages::QueryResponse, register::Register};
