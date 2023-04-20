@@ -10,10 +10,7 @@ mod chunk;
 
 pub use self::chunk::Chunk;
 
-use crate::protocol::{
-    error::{Error, Result},
-    storage::ChunkAddress,
-};
+use super::{ChunkAddress, Error, Result};
 
 use clru::CLruCache;
 use std::{num::NonZeroUsize, sync::Arc};

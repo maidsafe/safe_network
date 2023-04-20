@@ -6,14 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{
-    authority::PublicKey,
-    node_transfers::Error as TransferError,
-    storage::{
-        register::{EntryHash, User},
-        ChunkAddress, RegisterAddress,
-    },
-};
+use super::{node_transfers::Error as TransferError, storage::Error as StorageError};
 
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};
@@ -26,71 +19,22 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Error {
-    /// Unexpected responses.
-    #[error("Unexpected responses")]
-    UnexpectedResponses,
-    /// Chunk not found.
-    #[error("Chunk not found: {0:?}")]
-    ChunkNotFound(ChunkAddress),
-    /// Transfer errors.
+    /// Storage error.
+    #[error("Storage error {0:?}")]
+    Storage(#[from] StorageError),
+    /// Errors in node transfer handling.
     #[error("TransferError: {0:?}")]
     Transfers(#[from] TransferError),
     /// An error from the sn_dbc crate.
     #[error("Dbc Error {0}")]
     Dbc(String),
-    /// Register not found.
-    #[error("Register not found: {0:?}")]
-    RegisterNotFound(RegisterAddress),
-    /// Register command/op destination address mistmatch
-    #[error(
-        "Register command destination address ({cmd_dst_addr:?}) \
-         doesn't match stored Register address: {reg_addr:?}"
-    )]
-    RegisterAddrMismatch {
-        /// Register command destination address
-        cmd_dst_addr: RegisterAddress,
-        /// Stored Register address
-        reg_addr: RegisterAddress,
-    },
-    /// Access denied for user
-    #[error("Access denied for user: {0:?}")]
-    AccessDenied(User),
-    /// Entry is too big to fit inside a register
-    #[error("Entry is too big to fit inside a register: {size}, max: {max}")]
-    EntryTooBig {
-        /// Size of the entry
-        size: usize,
-        /// Maximum entry size allowed
-        max: usize,
-    },
-    /// Cannot add another entry since the register entry cap has been reached.
-    #[error("Cannot add another entry since the register entry cap has been reached: {0}")]
-    TooManyEntries(usize),
-    /// Entry could not be found on the data
-    #[error("Requested entry not found {0}")]
-    NoSuchEntry(EntryHash),
-    /// User entry could not be found on the data
-    #[error("Requested user not found {0:?}")]
-    NoSuchUser(User),
-    /// The CRDT operation cannot be applied as it targets a different content address.
-    #[error("The CRDT operation cannot be applied as it targets a different content address.")]
-    CrdtWrongAddress(RegisterAddress),
-    /// Data authority provided is invalid.
-    #[error("Provided PublicKey could not validate signature {0:?}")]
-    InvalidSignature(PublicKey),
-    /// Serialization error
-    #[error("Serialisation error: {0}")]
-    Serialisation(String),
+    /// Unexpected responses.
+    #[error("Unexpected responses")]
+    UnexpectedResponses,
     /// Bincode error.
     #[error("Bincode error:: {0}")]
     Bincode(String),
     /// I/O error.
     #[error("I/O error: {0}")]
     Io(String),
-    /// Hex decoding error.
-    #[error("Hex decoding error:: {0}")]
-    HexDecoding(String),
-    /// Failed to write file, likely due to a system Io error
-    #[error("Failed to write file")]
-    FailedToWriteFile,
 }

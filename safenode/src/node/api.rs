@@ -148,7 +148,11 @@ impl Node {
         match query {
             Query::Register(query) => self.registers.read(&query, User::Anyone).await,
             Query::GetChunk(address) => {
-                let resp = self.chunks.get(&address).await;
+                let resp = self
+                    .chunks
+                    .get(&address)
+                    .await
+                    .map_err(ProtocolError::Storage);
                 QueryResponse::GetChunk(resp)
             }
             Query::Spend(query) => {
@@ -176,11 +180,19 @@ impl Node {
     async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
         match cmd {
             Cmd::StoreChunk(chunk) => {
-                let resp = self.chunks.store(&chunk).await;
+                let resp = self
+                    .chunks
+                    .store(&chunk)
+                    .await
+                    .map_err(ProtocolError::Storage);
                 CmdResponse::StoreChunk(resp)
             }
             Cmd::Register(cmd) => {
-                let result = self.registers.write(&cmd).await;
+                let result = self
+                    .registers
+                    .write(&cmd)
+                    .await
+                    .map_err(ProtocolError::Storage);
                 match cmd {
                     RegisterCmd::Create(_) => CmdResponse::CreateRegister(result),
                     RegisterCmd::Edit(_) => CmdResponse::EditRegister(result),

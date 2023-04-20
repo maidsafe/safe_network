@@ -6,13 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Entry, User};
-
-use crate::protocol::{
-    authority::Signature,
-    error::{Error, Result},
-    storage::RegisterAddress,
-};
+use super::{Entry, Error, RegisterAddress, Result, User};
 
 use crdts::{
     merkle_reg::{MerkleReg, Node},
@@ -55,7 +49,7 @@ pub struct CrdtOperation<T> {
     /// The PublicKey of the entity that generated the operation
     pub source: User,
     /// The signature of source on the crdt_top, required to apply the op
-    pub signature: Option<Signature>,
+    pub signature: Option<bls::Signature>,
 }
 
 /// Register data type as a CRDT with Access Control
