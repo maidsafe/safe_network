@@ -17,7 +17,6 @@ use clap::Parser;
 use eyre::Result;
 use std::path::PathBuf;
 use tokio::fs;
-use tracing::{info, warn};
 use walkdir::WalkDir;
 
 #[derive(Parser, Debug)]
@@ -56,17 +55,12 @@ async fn deposit(dbc_dir: PathBuf) -> Result<()> {
     for entry in WalkDir::new(dbc_dir).into_iter().flatten() {
         if entry.file_type().is_file() {
             let file_name = entry.file_name();
-            info!("Reading deposited tokens from {file_name:?}.");
             println!("Reading deposited tokens from {file_name:?}.");
 
             let dbc_data = fs::read_to_string(entry.path()).await?;
             let dbc = match Dbc::from_hex(dbc_data.trim()) {
                 Ok(dbc) => dbc,
                 Err(_) => {
-                    warn!(
-                        "This file does not appear to have valid hex-encoded DBC data. \
-                        Skipping it."
-                    );
                     println!(
                         "This file does not appear to have valid hex-encoded DBC data. \
                         Skipping it."
@@ -86,14 +80,11 @@ async fn deposit(dbc_dir: PathBuf) -> Result<()> {
 
     if deposited > 0 {
         if let Err(err) = wallet.store().await {
-            warn!("Failed to store deposited amount: {:?}", err);
             println!("Failed to store deposited amount: {:?}", err);
         } else {
-            info!("Deposited {:?}.", sn_dbc::Token::from_nano(deposited));
             println!("Deposited {:?}.", sn_dbc::Token::from_nano(deposited));
         }
     } else {
-        info!("Nothing deposited.");
         println!("Nothing deposited.");
     }
 
@@ -114,21 +105,17 @@ async fn send(amount: String, to: String, client: &Client) -> Result<()> {
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     match wallet_client.send(amount, address).await {
         Ok(_new_dbcs) => {
-            info!("Sent {amount:?} to {address:?}");
             println!("Sent {amount:?} to {address:?}");
             let wallet = wallet_client.into_wallet();
             let new_balance = wallet.balance();
 
             if let Err(err) = wallet.store().await {
-                warn!("Failed to store wallet: {err:?}");
                 println!("Failed to store wallet: {err:?}");
             } else {
-                info!("Successfully stored wallet with new balance {new_balance:?}.");
                 println!("Successfully stored wallet with new balance {new_balance:?}.");
             }
         }
         Err(err) => {
-            warn!("Failed to send {amount:?} to {address:?} due to {err:?}.");
             println!("Failed to send {amount:?} to {address:?} due to {err:?}.");
         }
     }
