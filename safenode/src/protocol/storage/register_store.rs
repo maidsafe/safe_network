@@ -18,7 +18,9 @@ use std::{num::NonZeroUsize, sync::Arc};
 use tokio::sync::RwLock;
 use tracing::trace;
 
-const REGISTERS_CACHE_SIZE: usize = 20 * 1024 * 1024;
+/// We do not want to hinder storage, but a number is needed for the cache ctor.
+/// This will be removed as drive store is implemented.
+const REGISTERS_CACHE_SIZE: usize = 200 * 1024 * 1024;
 
 pub(super) type RegisterLog = Vec<RegisterCmd>;
 

@@ -9,7 +9,6 @@
 use crate::protocol::{
     address::DbcAddress,
     node_transfers::{Error, Result},
-    storage::used_space::UsedSpace,
 };
 
 use sn_dbc::{DbcId, SignedSpend};
@@ -22,10 +21,6 @@ use std::{
 use tokio::sync::RwLock;
 use tracing::trace;
 use xor_name::XorName;
-
-/// We will store at most 50MiB of data in a SpendStorage instance.
-const VALID_SPENDS_CACHE_SIZE: usize = 45 * 1024 * 1024;
-const DOUBLE_SPENDS_CACHE_SIZE: usize = 5 * 1024 * 1024;
 
 /// For every DbcId, there is a collection of transactions.
 /// Every transaction has a set of peers who reported that they hold this transaction.
@@ -43,8 +38,6 @@ type DoubleSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, (V, V)>>>;
 pub(crate) struct SpendStorage {
     valid_spends: ValidSpends<SignedSpend>,
     double_spends: DoubleSpends<SignedSpend>,
-    valid_spends_cache_size: UsedSpace,
-    double_spends_cache_size: UsedSpace,
 }
 
 impl SpendStorage {
@@ -52,8 +45,6 @@ impl SpendStorage {
         Self {
             valid_spends: Arc::new(RwLock::new(BTreeMap::new())),
             double_spends: Arc::new(RwLock::new(BTreeMap::new())),
-            valid_spends_cache_size: UsedSpace::new(VALID_SPENDS_CACHE_SIZE),
-            double_spends_cache_size: UsedSpace::new(DOUBLE_SPENDS_CACHE_SIZE),
         }
     }
 
@@ -78,15 +69,12 @@ impl SpendStorage {
     pub(crate) async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         self.validate(signed_spend).await?;
 
-        let size_of_new = std::mem::size_of_val(signed_spend);
         let address = dbc_address(signed_spend.dbc_id());
 
         let mut valid_spends = self.valid_spends.write().await;
 
         let replaced = valid_spends.insert(address, signed_spend.clone());
-        if replaced.is_none() {
-            self.valid_spends_cache_size.increase(size_of_new);
-        } else {
+        if replaced.is_some() {
             // The `&mut self` signature prevents any race,
             // so this is a second layer of security on that,
             // if some developer by mistake removes the &mut self.
@@ -108,11 +96,6 @@ impl SpendStorage {
             return Ok(()); // Already unspendable, so we don't care about this spend.
         }
 
-        let size_of_new = std::mem::size_of_val(signed_spend);
-        if !self.valid_spends_cache_size.can_add(size_of_new) {
-            return Err(Error::NotEnoughSpace); // We don't have space for this spend.
-        }
-
         let address = dbc_address(signed_spend.dbc_id());
 
         // The spend id is from the spend hash. That makes sure that a spend is compared based
@@ -121,25 +104,12 @@ impl SpendStorage {
         if let Some(existing) = valid_spends.get(&address).cloned() {
             let tamper_attempted = signed_spend.spend.hash() != existing.spend.hash();
             if tamper_attempted {
-                if !self.double_spends_cache_size.can_add(size_of_new) {
-                    return Err(Error::NotEnoughSpace); // We don't have space for this operation.
-                }
-
                 let mut double_spends = self.double_spends.write().await;
-                let replaced =
+                let _replaced =
                     double_spends.insert(address, (existing.clone(), signed_spend.clone()));
 
-                let size_of_existing = std::mem::size_of_val(&existing);
-                if replaced.is_none() {
-                    self.double_spends_cache_size
-                        .increase(size_of_new + size_of_existing);
-                }
-
                 // The spend is now permanently removed from the valid spends.
-                let removed = valid_spends.remove(&address);
-                if removed.is_some() {
-                    self.valid_spends_cache_size.decrease(size_of_existing);
-                }
+                let _removed = valid_spends.remove(&address);
 
                 return Err(Error::DoubleSpendAttempt {
                     new: Box::new(signed_spend.clone()),
@@ -193,27 +163,14 @@ impl SpendStorage {
             return Ok(());
         }
 
-        let size_of_spends = std::mem::size_of_val(&(a_spend, b_spend));
-        if !self.double_spends_cache_size.can_add(size_of_spends) {
-            return Err(Error::NotEnoughSpace); // We don't have space for this spend.
-        }
-
         let address = dbc_address(a_spend.dbc_id());
 
         let mut double_spends = self.double_spends.write().await;
-        let replaced = double_spends.insert(address, (a_spend.clone(), b_spend.clone()));
-        if replaced.is_none() {
-            // This would only be reached if a double spend was registered
-            // in between the call to `is_unspendable` and the call to `double_spends.insert`.
-            self.double_spends_cache_size.increase(size_of_spends);
-        }
+        let _replaced = double_spends.insert(address, (a_spend.clone(), b_spend.clone()));
 
         // The spend is now permanently removed from the valid spends.
         let mut valid_spends = self.valid_spends.write().await;
-        if let Some(removed) = valid_spends.remove(&address) {
-            self.valid_spends_cache_size
-                .decrease(std::mem::size_of_val(&removed));
-        }
+        let _removed = valid_spends.remove(&address);
 
         Ok(())
     }
