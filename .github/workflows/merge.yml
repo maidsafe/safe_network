@@ -76,7 +76,7 @@ jobs:
         run: RUSTDOCFLAGS="--deny=warnings" cargo doc --no-deps
 
   unit:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
     name: Unit Tests
     runs-on: ${{ matrix.os }}
     strategy:
@@ -86,6 +86,8 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Rust
+        # Only run on PRs w/ ubuntu
+        if: github.event_name != 'pull_request' || matrix.os == 'ubuntu-latest'
         id: toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -94,38 +96,51 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v1
+        # Only run on PRs w/ ubuntu
+        if: github.event_name != 'pull_request' || matrix.os == 'ubuntu-latest'
         continue-on-error: true
         with:
           cache-on-failure: true
           sharedKey: ${{github.run_id}}-unit
 
       - name: Build tests before running
+        # Only run on PRs w/ ubuntu
+        if: github.event_name != 'pull_request' || matrix.os == 'ubuntu-latest'
         run: cargo test --no-run --release
         timeout-minutes: 30
 
       - name: Run network tests
+        # Only run on PRs w/ ubuntu
+        if: github.event_name != 'pull_request' || matrix.os == 'ubuntu-latest'
         timeout-minutes: 25
         run: cargo test --release -p safenode -- network
 
       - name: Run protocol tests
+        # Only run on PRs w/ ubuntu
+        if: github.event_name != 'pull_request' || matrix.os == 'ubuntu-latest'
         timeout-minutes: 25
         run: cargo test --release -p safenode -- protocol
 
       - name: Run storage tests
+        # Only run on PRs w/ ubuntu
+        if: github.event_name != 'pull_request' || matrix.os == 'ubuntu-latest'
         timeout-minutes: 25
         run: cargo test --release -p safenode -- storage
 
   e2e:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
     name: E2E tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+
     steps:
       - uses: actions/checkout@v2
 
       - name: Install Rust
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         id: toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -134,6 +149,8 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v1
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         continue-on-error: true
         with:
           cache-on-failure: true
@@ -145,17 +162,21 @@ jobs:
 
       - name: install ripgrep mac
         run: brew install ripgrep
-        if: matrix.os == 'macos-latest'
+        if: github.event_name != 'pull_request' && matrix.os == 'macos-latest'
 
       - name: install ripgrep windows
         run: choco install ripgrep
-        if: matrix.os == 'windows-latest'
+        if: github.event_name != 'pull_request' && matrix.os == 'windows-latest'
 
       - name: Build sn bins
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         run: cargo build --release --bins
         timeout-minutes: 30
 
       - name: Start a local network
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         run: cargo run --release --bin testnet -- --interval 1 --node-path ./target/release/safenode
         id: section-startup
         env:
@@ -163,6 +184,8 @@ jobs:
         timeout-minutes: 10
 
       - name: Start a client to upload files
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         run: cargo run --bin safe --release -- files upload -- "./github"
         id: client-file-upload
         env:
@@ -170,6 +193,8 @@ jobs:
         timeout-minutes: 2
 
       - name: Start a client to download files
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         run: cargo run --bin safe --release -- files download -- "./github/uploaded_files"
         id: client-file-download
         env:
@@ -177,6 +202,8 @@ jobs:
         timeout-minutes: 2
 
       - name: Start a client to create a register
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         run: cargo run --bin safe --release -- register create baobao
         id: client-register-create
         env:
@@ -184,6 +211,8 @@ jobs:
         timeout-minutes: 2
 
       - name: Start a client to get a register
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         run: cargo run --bin safe --release -- register get baobao
         id: client-register-get
         env:
@@ -191,6 +220,8 @@ jobs:
         timeout-minutes: 2
 
       - name: Start a client to edit a register
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         run: cargo run --bin safe --release -- register edit baobao wood
         id: client-register-edit
         env:
