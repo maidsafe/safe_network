@@ -26,10 +26,7 @@ pub use self::{
     spend::SpendQuery,
 };
 
-use super::{
-    chunk::Chunk,
-    storage::{dbc_address, dbc_name, DataAddress, DbcAddress},
-};
+use super::storage::{dbc_address, dbc_name, Chunk, DataAddress, DbcAddress};
 
 use sn_dbc::SignedSpend;
 

@@ -13,6 +13,7 @@ mod spends;
 
 pub use self::{
     address::{dbc_address, dbc_name, ChunkAddress, DataAddress, DbcAddress, RegisterAddress},
+    chunks::Chunk,
     registers::register,
 };
 
