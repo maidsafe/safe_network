@@ -27,8 +27,8 @@ pub use self::{
 };
 
 use super::{
-    address::{dbc_address, dbc_name, DataAddress, DbcAddress},
     chunk::Chunk,
+    storage::{dbc_address, dbc_name, DataAddress, DbcAddress},
 };
 
 use sn_dbc::SignedSpend;

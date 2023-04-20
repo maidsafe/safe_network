@@ -29,14 +29,12 @@ impl DbcAddress {
     }
 }
 
-/// Still thinking of best location for this.
-/// Wanted to make the DbcAddress take a dbc id actually..
+/// Returns the address of a Dbc with the given id.
 pub fn dbc_address(dbc_id: &DbcId) -> DbcAddress {
     DbcAddress::new(dbc_name(dbc_id))
 }
 
-/// Still thinking of best location for this.
-/// Wanted to make the DbcAddress take a dbc id actually..
+/// Returns the name of a Dbc with the given id.
 pub fn dbc_name(dbc_id: &DbcId) -> XorName {
     XorName::from_content(&dbc_id.to_bytes())
 }

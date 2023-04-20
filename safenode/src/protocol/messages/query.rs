@@ -9,8 +9,8 @@
 use super::spend::SpendQuery;
 
 use crate::protocol::{
-    address::{ChunkAddress, DataAddress},
     messages::RegisterQuery,
+    storage::{ChunkAddress, DataAddress},
 };
 
 use serde::{Deserialize, Serialize};

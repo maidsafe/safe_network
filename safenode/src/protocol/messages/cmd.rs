@@ -11,9 +11,9 @@ use super::RegisterCmd;
 use crate::{
     node::NodeId,
     protocol::{
-        address::{dbc_address, ChunkAddress, DataAddress},
         chunk::Chunk,
         fees::FeeCiphers,
+        storage::{dbc_address, ChunkAddress, DataAddress},
     },
 };
 

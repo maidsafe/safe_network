@@ -9,8 +9,6 @@
 /// Messages types
 pub mod messages;
 
-/// Address types
-pub mod address;
 /// Data/content Authority types.
 pub mod authority;
 /// Chunk type.

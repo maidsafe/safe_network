@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::protocol::{
-    address::{dbc_address, DbcAddress},
     fees::SpendPriority,
+    storage::{dbc_address, DbcAddress},
 };
 
 use sn_dbc::DbcId;

@@ -7,13 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::protocol::{
-    address::RegisterAddress,
     error::{Error, Result},
     messages::{
         EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
         SignedRegisterCreate, SignedRegisterEdit,
     },
     register::{Action, EntryHash, Register, User},
+    storage::RegisterAddress,
 };
 
 use bincode::serialize;

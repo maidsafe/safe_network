@@ -14,10 +14,10 @@ use super::{
 use crate::{
     network::{NetworkEvent, SwarmDriver},
     protocol::{
-        address::ChunkAddress,
         chunk::Chunk,
         error::Error as ProtocolError,
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
+        storage::ChunkAddress,
     },
 };
 

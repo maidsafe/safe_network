@@ -9,9 +9,9 @@
 use super::{Entry, User};
 
 use crate::protocol::{
-    address::RegisterAddress,
     authority::Signature,
     error::{Error, Result},
+    storage::RegisterAddress,
 };
 
 use crdts::{

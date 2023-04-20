@@ -7,9 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::protocol::{
-    address::ChunkAddress,
     chunk::Chunk,
     error::{Error, Result},
+    storage::ChunkAddress,
 };
 
 use clru::CLruCache;
