@@ -6,8 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::register_store::{RegisterStore, StoredRegister};
-
 use crate::protocol::{
     address::RegisterAddress,
     error::{Error, Result},
@@ -20,19 +18,99 @@ use crate::protocol::{
 
 use bincode::serialize;
 
+use clru::CLruCache;
+use std::{num::NonZeroUsize, sync::Arc};
+use tokio::sync::RwLock;
+use tracing::trace;
+
+/// We do not want to hinder storage, but a number is needed for the cache ctor.
+/// This will be removed as drive store is implemented.
+const REGISTERS_CACHE_SIZE: usize = 200 * 1024 * 1024;
+
+pub(super) type RegisterLog = Vec<RegisterCmd>;
+
+#[derive(Clone, Debug)]
+pub(super) struct StoredRegister {
+    pub(super) state: Option<Register>,
+    pub(super) op_log: RegisterLog,
+}
+
 /// Operations over the Register data type and its storage.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub(crate) struct RegisterStorage {
-    register_store: RegisterStore,
+    cache: Arc<RwLock<CLruCache<RegisterAddress, StoredRegister>>>,
 }
 
 impl RegisterStorage {
-    /// Create new `RegisterStorage`
     pub(crate) fn new() -> Self {
+        let capacity = NonZeroUsize::new(REGISTERS_CACHE_SIZE)
+            .expect("Failed to create in-memory Registers storage");
         Self {
-            register_store: RegisterStore::default(),
+            cache: Arc::new(RwLock::new(CLruCache::new(capacity))),
         }
     }
+
+    #[cfg(test)]
+    pub(super) async fn addrs(&self) -> Vec<RegisterAddress> {
+        self.cache
+            .read()
+            .await
+            .iter()
+            .map(|(addr, _)| *addr)
+            .collect()
+    }
+
+    #[allow(dead_code)]
+    pub(super) async fn remove(&self, address: &RegisterAddress) -> Result<()> {
+        trace!("Removing Register: {address:?}");
+        if self.cache.write().await.pop(address).is_some() {
+            Ok(())
+        } else {
+            Err(Error::RegisterNotFound(*address))
+        }
+    }
+
+    /// Opens the log of RegisterCmds for a given Register address.
+    /// Creates a new log if no data is found
+    pub(super) async fn get_stored_reg(&self, address: &RegisterAddress) -> StoredRegister {
+        trace!("Getting Register ops log: {address:?}");
+        if let Some(stored_reg) = self.cache.read().await.peek(address) {
+            stored_reg.clone()
+        } else {
+            StoredRegister {
+                state: None,
+                op_log: RegisterLog::new(),
+            }
+        }
+    }
+
+    /// Persists a RegisterLog
+    pub(super) async fn store_register_ops_log(
+        &self,
+        _log: &RegisterLog, // we'll need to write these ops to disk when disk store is implemented
+        reg: StoredRegister,
+        address: RegisterAddress,
+    ) -> Result<()> {
+        let log_len = reg.op_log.len();
+        trace!("Storing Register ops log with {log_len} cmd/s: {address:?}",);
+
+        let _ = self.cache.write().await.try_put_or_modify(
+            address,
+            |_, _| Ok::<StoredRegister, Error>(reg.clone()),
+            |_, stored_reg, _| {
+                *stored_reg = reg.clone();
+                Ok(())
+            },
+            (),
+        )?;
+
+        trace!("Register ops log of {log_len} cmd/s stored successfully: {address:?}",);
+        Ok(())
+    }
+
+    // ------------------------------------------------
+    // ------------ OLD BLAH ------------------------
+    // ------------------------------------------------
 
     /// --- Writing ---
 
@@ -46,8 +124,7 @@ impl RegisterStorage {
         self.try_to_apply_cmd_against_register_state(cmd, &mut stored_reg)?;
 
         // Everything went fine, let's store the updated Register
-        self.register_store
-            .store_register_ops_log(&vec![cmd.clone()], stored_reg, addr)
+        self.store_register_ops_log(&vec![cmd.clone()], stored_reg, addr)
             .await
     }
 
@@ -70,8 +147,7 @@ impl RegisterStorage {
         }
 
         // Write the new cmds all to disk
-        self.register_store
-            .store_register_ops_log(&log_to_write, stored_reg, addr)
+        self.store_register_ops_log(&log_to_write, stored_reg, addr)
             .await
     }
 
@@ -80,7 +156,9 @@ impl RegisterStorage {
         trace!("Reading register: {:?}", read.dst());
         use RegisterQuery::*;
         match read {
-            Get(address) => self.get(*address, requester).await,
+            Get(address) => QueryResponse::GetRegister(
+                self.get_register(address, Action::Read, requester).await,
+            ),
             Read(address) => self.read_register(*address, requester).await,
             GetOwner(address) => self.get_owner(*address, requester).await,
             GetEntry { address, hash } => self.get_entry(*address, *hash, requester).await,
@@ -108,13 +186,6 @@ impl RegisterStorage {
         } else {
             Err(Error::RegisterNotFound(*address))
         }
-    }
-
-    /// Get entire Register.
-    async fn get(&self, address: RegisterAddress, requester: User) -> QueryResponse {
-        let result = self.get_register(&address, Action::Read, requester).await;
-
-        QueryResponse::GetRegister(result)
     }
 
     async fn read_register(&self, address: RegisterAddress, requester: User) -> QueryResponse {
@@ -256,7 +327,7 @@ impl RegisterStorage {
     // Note this doesn't perform any cmd sig/perms validation, it's only used when the log
     // is read from disk which has already been validated before storing it.
     async fn try_load_stored_register(&self, addr: &RegisterAddress) -> Result<StoredRegister> {
-        let mut stored_reg = self.register_store.get(addr).await;
+        let mut stored_reg = self.get_stored_reg(addr).await;
         // if we have the Register creation cmd, apply all ops to reconstruct the Register
         if let Some(register) = &mut stored_reg.state {
             for cmd in &stored_reg.op_log {
@@ -268,11 +339,6 @@ impl RegisterStorage {
         }
 
         Ok(stored_reg)
-    }
-
-    #[cfg(test)]
-    async fn addrs(&self) -> Vec<RegisterAddress> {
-        self.register_store.addrs().await
     }
 
     /// Used for replication of data to new nodes.
@@ -334,7 +400,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_try_load_stored() -> Result<()> {
-        let store = RegisterStorage::default();
+        let store = RegisterStorage::new();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
@@ -374,7 +440,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_try_load_stored_inverted_cmds_order() -> Result<()> {
-        let store = RegisterStorage::default();
+        let store = RegisterStorage::new();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
@@ -410,7 +476,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_apply_cmd_against_state() -> Result<()> {
-        let store = RegisterStorage::default();
+        let store = RegisterStorage::new();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
@@ -467,7 +533,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_apply_cmd_against_state_inverted_cmds_order() -> Result<()> {
-        let store = RegisterStorage::default();
+        let store = RegisterStorage::new();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
@@ -520,7 +586,7 @@ mod test {
     #[tokio::test]
     async fn test_register_write() -> Result<()> {
         // setup store
-        let store = RegisterStorage::default();
+        let store = RegisterStorage::new();
 
         // create register
         let (cmd, authority, _, _, _) = create_register()?;
@@ -549,7 +615,7 @@ mod test {
     #[tokio::test]
     async fn test_register_export() -> Result<()> {
         // setup store
-        let store = RegisterStorage::default();
+        let store = RegisterStorage::new();
 
         let (cmd_create, authority, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
@@ -575,7 +641,7 @@ mod test {
         let all_addrs = store.addrs().await;
 
         // create new store and update it with the data from first store
-        let new_store = RegisterStorage::default();
+        let new_store = RegisterStorage::new();
         for addr in all_addrs {
             let replica = store.get_register_replica(&addr).await?;
             new_store.update(&replica).await?;
@@ -608,7 +674,7 @@ mod test {
     #[tokio::test]
     async fn test_register_non_existing_entry() -> Result<()> {
         // setup store
-        let store = RegisterStorage::default();
+        let store = RegisterStorage::new();
 
         // create register
         let (cmd_create, authority, _, _, _) = create_register()?;
@@ -637,7 +703,7 @@ mod test {
     #[tokio::test]
     async fn test_register_non_existing_permissions() -> Result<()> {
         // setup store
-        let store = RegisterStorage::default();
+        let store = RegisterStorage::new();
 
         // create register
         let (cmd_create, authority, _, _, _) = create_register()?;
