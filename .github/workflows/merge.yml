@@ -308,7 +308,7 @@ jobs:
         timeout-minutes: 10
 
       - name: Start a client to confirm chunk still retained
-        run: cargo run --release --bin safe -- --get-chunk 2b3b608c6a4b244c282541f03927d17800b5294154dbdc834555e0536ba7baa2
+        run: cargo run --release --bin safe -- --get-chunk 5fa0f09c0e5fb3c36caca572eb0e40987fa2e61c5c5311a4db1efff88c0ce7f1
         id: client-chunk-download
         env:
           RUST_LOG: "safenode,safe=trace"
