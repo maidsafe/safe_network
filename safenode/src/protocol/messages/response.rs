@@ -9,10 +9,12 @@
 use crate::{
     node::NodeId,
     protocol::{
-        chunk::Chunk,
         error::Result,
         fees::RequiredFee,
-        storage::register::{Entry, EntryHash, Permissions, Policy, Register, User},
+        storage::{
+            register::{Entry, EntryHash, Permissions, Policy, Register, User},
+            Chunk,
+        },
     },
 };
 
