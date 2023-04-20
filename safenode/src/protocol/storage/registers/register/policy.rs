@@ -6,12 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::Action;
-
-use crate::protocol::{
-    authority::PublicKey,
-    error::{Error, Result},
-};
+use super::{Action, Error, Result};
 
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, hash::Hash};
@@ -49,7 +44,7 @@ pub enum User {
     /// Any user.
     Anyone,
     /// User identified by its public key.
-    Key(PublicKey),
+    Key(bls::PublicKey),
 }
 
 /// Register permissions.
