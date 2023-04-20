@@ -6,16 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod cfg;
 mod files;
 mod register;
 mod wallet;
 
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 
-pub(super) use self::{
-    cfg::cfg_cmds, files::files_cmds, register::register_cmds, wallet::wallet_cmds,
-};
+pub(super) use self::{files::files_cmds, register::register_cmds, wallet::wallet_cmds};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -23,13 +22,13 @@ pub(super) struct Opt {
     /// Available sub commands.
     #[clap(subcommand)]
     pub cmd: SubCmd,
+    /// Path to the log file.
+    #[clap(name = "log-dir")]
+    pub log_dir: Option<PathBuf>,
 }
 
 #[derive(Subcommand, Debug)]
 pub(super) enum SubCmd {
-    /// Manage configuration.
-    #[clap(name = "cfg", subcommand)]
-    Cfg(cfg::CfgCmds),
     #[clap(name = "wallet", subcommand)]
     /// Manage wallets on the SAFE Network
     Wallet(wallet::WalletCmds),
