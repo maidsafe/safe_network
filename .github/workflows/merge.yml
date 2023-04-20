@@ -126,6 +126,11 @@ jobs:
         if: github.event_name != 'pull_request' || matrix.os == 'ubuntu-latest'
         timeout-minutes: 25
         run: cargo test --release -p safenode -- storage
+        env:
+          # this will speed up PR merge flows, while giving us a modicum
+          # of proptesting
+          # we do many more runs on the nightly run
+          PROPTEST_CASES: 50 
 
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
