@@ -8,11 +8,14 @@
 
 mod cli;
 
-use self::cli::{cfg_cmds, files_cmds, register_cmds, wallet_cmds, Opt};
+use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt};
 
 use crate::cli::SubCmd;
 
-use safenode::client::{Client, ClientEvent};
+use safenode::{
+    client::{Client, ClientEvent},
+    log::init_node_logging,
+};
 
 use clap::Parser;
 use eyre::Result;
@@ -22,9 +25,7 @@ use tracing::info;
 async fn main() -> Result<()> {
     let opt = Opt::parse();
 
-    if let SubCmd::Cfg(cmds) = &opt.cmd {
-        cfg_cmds(cmds).await?;
-    }
+    let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
     info!("Instantiating a SAFE client...");
 
@@ -41,7 +42,6 @@ async fn main() -> Result<()> {
     }
 
     match opt.cmd {
-        SubCmd::Cfg(_) => (), // already handled above
         SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client).await?,
         SubCmd::Files(cmds) => files_cmds(cmds, client.clone()).await?,
         SubCmd::Register(cmds) => register_cmds(cmds, &client).await?,
