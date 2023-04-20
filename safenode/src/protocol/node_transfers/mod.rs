@@ -17,8 +17,8 @@ use crate::{
     protocol::{
         address::DbcAddress,
         fees::{FeeCiphers, RequiredFee, SpendPriority, SpendQ},
+        storage::SpendStorage,
     },
-    storage::SpendStorage,
 };
 
 use sn_dbc::{DbcId, DbcTransaction, MainKey, SignedSpend, Token};
