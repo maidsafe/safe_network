@@ -10,8 +10,6 @@ mod files;
 mod register;
 mod wallet;
 
-use std::path::PathBuf;
-
 use clap::{Parser, Subcommand};
 
 pub(super) use self::{files::files_cmds, register::register_cmds, wallet::wallet_cmds};
@@ -22,9 +20,6 @@ pub(super) struct Opt {
     /// Available sub commands.
     #[clap(subcommand)]
     pub cmd: SubCmd,
-    /// Path to the log file.
-    #[clap(name = "log-dir")]
-    pub log_dir: Option<PathBuf>,
 }
 
 #[derive(Subcommand, Debug)]
