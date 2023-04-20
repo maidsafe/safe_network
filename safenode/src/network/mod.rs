@@ -283,21 +283,35 @@ impl Network {
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// Excludes the client's `PeerId` while calculating the closest peers.
     pub async fn client_get_closest_peers(&self, xor_name: XorName) -> Result<Vec<PeerId>> {
-        self.get_closest_peers(xor_name, true).await
+        let closest_peers = self.get_closest_peers(xor_name.0.to_vec(), true).await?;
+        trace!(
+            "Got the {} closest_peers to the given XorName-{xor_name}, nodes: {closest_peers:?}",
+            closest_peers.len()
+        );
+        Ok(closest_peers)
     }
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// Includes our node's `PeerId` while calculating the closest peers.
     pub async fn node_get_closest_peers(&self, xor_name: XorName) -> Result<Vec<PeerId>> {
-        self.get_closest_peers(xor_name, false).await
+        let closest_peers = self.get_closest_peers(xor_name.0.to_vec(), false).await?;
+        trace!(
+            "Got the {} closest_peers to the given XorName-{xor_name}, nodes: {closest_peers:?}",
+            closest_peers.len()
+        );
+        Ok(closest_peers)
     }
 
-    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
+    /// Returns the closest peers to the given key, sorted by their distance to the key.
     /// If `client` is false, then include `self` among the `closest_peers`
-    async fn get_closest_peers(&self, xor_name: XorName, client: bool) -> Result<Vec<PeerId>> {
+    /// Use `client_get_closest_peers` or `node_get_closest_peers` for convenience.
+    pub async fn get_closest_peers(&self, key: Vec<u8>, client: bool) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetClosestPeers { xor_name, sender })
-            .await?;
+        self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
+            key: key.clone(),
+            sender,
+        })
+        .await?;
         let (our_id, k_bucket_peers) = receiver.await?;
 
         // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
@@ -305,7 +319,7 @@ impl Network {
         if !client {
             closest_peers.push(our_id);
         }
-        let target = KBucketKey::new(xor_name.0.to_vec());
+        let target = KBucketKey::new(key);
         closest_peers.sort_by(|a, b| {
             let a = KBucketKey::new(a.to_bytes());
             let b = KBucketKey::new(b.to_bytes());
@@ -321,11 +335,6 @@ impl Network {
             warn!("Not enough peers in the k-bucket to satisfy the request");
             return Err(Error::NotEnoughPeers);
         }
-
-        trace!(
-            "Got the {} closest_peers to the given XorName-{xor_name}, nodes: {closest_peers:?}",
-            closest_peers.len()
-        );
 
         Ok(closest_peers)
     }
@@ -396,8 +405,8 @@ mod tests {
 
         // Check the closest nodes to the following random_data
         let mut rng = thread_rng();
-        let random_data = XorName::random(&mut rng);
-        let random_data_key = KBucketKey::from(random_data.0.to_vec());
+        let random_data = XorName::random(&mut rng).0.to_vec();
+        let random_data_key = KBucketKey::from(random_data.clone());
 
         tokio::time::sleep(Duration::from_secs(5)).await;
         let our_net = networks_list

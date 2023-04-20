@@ -6,17 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::{error::Error, SwarmDriver};
 use crate::{
     network::error::Result,
     protocol::messages::{Request, Response},
 };
-
-use super::{error::Error, SwarmDriver};
 use libp2p::{multiaddr::Protocol, request_response::ResponseChannel, Multiaddr, PeerId};
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
 use tracing::warn;
-use xor_name::XorName;
 
 /// Commands to send to the Swarm
 #[derive(Debug)]
@@ -31,7 +29,7 @@ pub enum SwarmCmd {
         sender: oneshot::Sender<Result<()>>,
     },
     GetClosestPeers {
-        xor_name: XorName,
+        key: Vec<u8>,
         sender: oneshot::Sender<(PeerId, HashSet<PeerId>)>,
     },
     SendRequest {
@@ -80,8 +78,7 @@ impl SwarmDriver {
                     warn!("Already dialing peer.");
                 }
             }
-            SwarmCmd::GetClosestPeers { xor_name, sender } => {
-                let key = xor_name.0.to_vec();
+            SwarmCmd::GetClosestPeers { key, sender } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_closest_peers(key);
                 let _ = self
                     .pending_get_closest_peers
