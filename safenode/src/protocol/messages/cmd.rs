@@ -32,11 +32,11 @@ use std::collections::BTreeMap;
 pub enum Cmd {
     /// [`Chunk`] write operation.
     ///
-    /// [`Chunk`]: crate::protocol::storage::Chunk
+    /// [`Chunk`]: crate::domain::storage::Chunk
     StoreChunk(Chunk),
     /// [`Register`] write operation.
     ///
-    /// [`Register`]: crate::protocol::storage::register::Register
+    /// [`Register`]: crate::domain::storage::register::Register
     Register(RegisterCmd),
     /// [`SignedSpend`] write operation.
     ///
