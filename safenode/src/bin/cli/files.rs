@@ -15,7 +15,6 @@ use bytes::Bytes;
 use clap::Parser;
 use eyre::Result;
 use std::{fs, path::PathBuf};
-use tracing::info;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -55,12 +54,10 @@ async fn upload_files(files_path: PathBuf, file_api: &Files) -> Result<()> {
             let bytes = Bytes::from(file);
             let file_name = entry.file_name();
 
-            info!("Storing file {file_name:?} of {} bytes..", bytes.len());
             println!("Storing file {file_name:?} of {} bytes..", bytes.len());
 
             match file_api.upload(bytes).await {
                 Ok(address) => {
-                    info!("Successfully stored file to {address:?}");
                     println!("Successfully stored file to {address:?}");
                     chunks_to_fetch.push(*address.name());
                 }
@@ -88,16 +85,16 @@ async fn download_files(file_names_dir: PathBuf, file_api: &Files) -> Result<()>
             let bytes = Bytes::from(file);
             let file_name = entry.file_name();
 
-            info!("Loading file xornames from {file_name:?}");
             println!("Loading file xornames from {file_name:?}");
             let chunks_to_fetch: Vec<XorName> = bincode::deserialize(&bytes)?;
 
+            if chunks_to_fetch.is_empty() {
+                println!("No files to download!");
+            }
             for xorname in chunks_to_fetch.iter() {
-                info!("Downloading file {xorname:?}");
                 println!("Downloading file {xorname:?}");
                 match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
                     Ok(bytes) => {
-                        info!("Successfully got file {xorname} of {} bytes!", bytes.len());
                         println!("Successfully got file {xorname} of {} bytes!", bytes.len());
                     }
                     Err(error) => {
