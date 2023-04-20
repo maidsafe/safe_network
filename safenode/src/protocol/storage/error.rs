@@ -22,18 +22,9 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Error {
-    /// Not enough space to store the value.
-    #[error("Not enough space")]
-    NotEnoughSpace,
     /// Chunk not found.
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
-    // /// Transfer errors.
-    // #[error("TransferError: {0:?}")]
-    // Transfers(#[from] TransferError),
-    /// An error from the sn_dbc crate.
-    #[error("Dbc Error {0}")]
-    Dbc(String),
     /// Register not found.
     #[error("Register not found: {0:?}")]
     RegisterNotFound(RegisterAddress),
@@ -74,19 +65,7 @@ pub enum Error {
     /// Data authority provided is invalid.
     #[error("Provided PublicKey could not validate signature {0:?}")]
     InvalidSignature(bls::PublicKey),
-    /// Serialization error
-    #[error("Serialisation error: {0}")]
-    Serialisation(String),
     /// Bincode error.
     #[error("Bincode error:: {0}")]
     Bincode(String),
-    /// I/O error.
-    #[error("I/O error: {0}")]
-    Io(String),
-    /// Hex decoding error.
-    #[error("Hex decoding error:: {0}")]
-    HexDecoding(String),
-    /// Failed to write file, likely due to a system Io error
-    #[error("Failed to write file")]
-    FailedToWriteFile,
 }
