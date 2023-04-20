@@ -57,8 +57,8 @@ pub enum DataRequest {
 pub enum Response {
     /// A response to a Data request
     Data(DataResponse),
-    /// A response to a fact
-    Ack(Result<(), ProtocolError>),
+    /// A response to a Event
+    EventAck(Result<(), ProtocolError>),
 }
 
 /// Respond to a Data request

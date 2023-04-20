@@ -31,6 +31,9 @@ pub enum Error {
     /// Unexpected responses.
     #[error("Unexpected responses")]
     UnexpectedResponses,
+    /// The node is not the closest to the provided data.
+    #[error("The node is not the closest to the provided data")]
+    NotClosest,
     /// Bincode error.
     #[error("Bincode error:: {0}")]
     Bincode(String),

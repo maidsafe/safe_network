@@ -255,7 +255,6 @@ fn restart_at_random(peer_id: &PeerId) {
 /// API to interact with the underlying Swarm
 pub struct Network {
     pub(super) swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
-    #[allow(dead_code)]
     pub(super) peer_id: PeerId,
 }
 
@@ -339,7 +338,7 @@ impl Network {
         Ok(closest_peers)
     }
 
-    /// Send `Request` to the the given `PeerId`
+    /// Send `Request` to the the given `PeerId` and wait for a `Response`.
     pub async fn send_request(&self, req: Request, peer: PeerId) -> Result<Response> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::SendRequest { req, peer, sender })

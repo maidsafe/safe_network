@@ -11,7 +11,6 @@ use super::{
     event::NodeEventsChannel,
     Node, NodeEvent, NodeId,
 };
-
 use crate::{
     domain::{
         node_transfers::{Error as TransferError, Transfers},
@@ -29,11 +28,9 @@ use crate::{
         },
     },
 };
-
-use sn_dbc::{DbcTransaction, MainKey, SignedSpend};
-
 use futures::future::select_all;
 use libp2p::{request_response::ResponseChannel, Multiaddr, PeerId};
+use sn_dbc::{DbcTransaction, MainKey, SignedSpend};
 use std::{collections::BTreeSet, net::SocketAddr, time::Duration};
 use tokio::task::spawn;
 use xor_name::XorName;
@@ -69,8 +66,8 @@ impl Node {
             initial_peers,
         };
 
-        let _handle = spawn(swarm_driver.run());
-        let _handle = spawn(async move {
+        let _swarm_handle = spawn(swarm_driver.run());
+        let _events_handle = spawn(async move {
             loop {
                 let event = match network_event_receiver.recv().await {
                     Some(event) => event,
@@ -79,19 +76,17 @@ impl Node {
                         continue;
                     }
                 };
-                if let Err(err) = node.handle_network_event(event).await {
-                    warn!("Error handling network event: {err}");
-                }
+                node.handle_network_event(event).await;
             }
         });
 
         Ok((node_id, node_events_channel))
     }
 
-    async fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
+    async fn handle_network_event(&mut self, event: NetworkEvent) {
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
-                self.handle_request(req, channel).await?
+                self.handle_request(req, channel).await
             }
             NetworkEvent::PeerAdded => {
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
@@ -99,7 +94,6 @@ impl Node {
                     let mut rng = rand::thread_rng();
                     XorName::random(&mut rng)
                 };
-
                 let network = self.network.clone();
                 let _handle = spawn(async move {
                     trace!("Getting closest peers for target {target:?}");
@@ -119,15 +113,15 @@ impl Node {
                 });
             }
         }
-
-        Ok(())
     }
 
+    // Handles a request from a remote peer. Should always send a `Response` back as the sender will
+    // be waiting for it.
     async fn handle_request(
         &mut self,
         request: Request,
         response_channel: ResponseChannel<Response>,
-    ) -> Result<()> {
+    ) {
         trace!("Handling request: {request:?}");
         let response = match request {
             Request::Data(DataRequest::Cmd(cmd)) => {
@@ -136,22 +130,20 @@ impl Node {
             Request::Data(DataRequest::Query(query)) => {
                 Response::Data(DataResponse::Query(self.handle_query(query).await))
             }
-            Request::Event(event) => {
-                match event {
-                    Event::DoubleSpendAttempted(a_spend, b_spend) => {
-                        self.transfers
-                            .try_add_double(a_spend.as_ref(), b_spend.as_ref())
-                            .await
-                            .map_err(ProtocolError::Transfers)?;
-                        return Ok(());
+            Request::Event(event) => match event {
+                Event::DoubleSpendAttempted(a_spend, b_spend) => {
+                    match self
+                        .transfers
+                        .try_add_double(a_spend.as_ref(), b_spend.as_ref())
+                        .await
+                    {
+                        Ok(_) => Response::EventAck(Ok(())),
+                        Err(err) => Response::EventAck(Err(ProtocolError::Transfers(err))),
                     }
-                };
-            }
+                }
+            },
         };
-
         self.send_response(response, response_channel).await;
-
-        Ok(())
     }
 
     async fn handle_query(&mut self, query: Query) -> QueryResponse {
@@ -188,6 +180,29 @@ impl Node {
     }
 
     async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
+        // check if we're among the closest node to the data
+        let mut were_closest = false;
+        if let Ok(closest) = self.network.node_get_closest_peers(*cmd.dst().name()).await {
+            if !closest.contains(&self.network.peer_id) {
+                were_closest = true;
+            }
+        }
+        if !were_closest {
+            match cmd {
+                Cmd::StoreChunk(_) => {
+                    return CmdResponse::StoreChunk(Err(ProtocolError::NotClosest))
+                }
+                Cmd::Register(cmd) => match cmd {
+                    RegisterCmd::Create(_) => {
+                        return CmdResponse::CreateRegister(Err(ProtocolError::NotClosest))
+                    }
+                    RegisterCmd::Edit(_) => {
+                        return CmdResponse::EditRegister(Err(ProtocolError::NotClosest))
+                    }
+                },
+                Cmd::SpendDbc { .. } => return CmdResponse::Spend(Err(ProtocolError::NotClosest)),
+            }
+        }
         match cmd {
             Cmd::StoreChunk(chunk) => {
                 let resp = self
