@@ -16,13 +16,15 @@ use xor_name::XorName;
 pub enum RegisterCmds {
     /// Create a new register with the given pet name.
     Create {
+        /// The name of the register to create.
         #[clap(name = "name")]
         name: String,
     },
     Edit {
+        /// The name of the register to edit.
         #[clap(name = "name")]
         name: String,
-        ///
+        /// The entry to add to the register.
         #[clap(name = "entry")]
         entry: String,
     },
