@@ -8,7 +8,7 @@
 
 use safenode::{
     client::{Client, WalletClient},
-    protocol::wallet::{parse_public_address, DepositWallet, LocalWallet, Wallet},
+    domain::wallet::{parse_public_address, DepositWallet, LocalWallet, Wallet},
 };
 
 use sn_dbc::{Dbc, Token};

@@ -26,7 +26,7 @@ pub use self::{
     spend::SpendQuery,
 };
 
-use super::storage::{dbc_address, dbc_name, Chunk, DataAddress, DbcAddress};
+use crate::domain::storage::{dbc_address, dbc_name, Chunk, DataAddress, DbcAddress};
 
 use sn_dbc::SignedSpend;
 

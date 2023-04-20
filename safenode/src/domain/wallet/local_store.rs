@@ -12,7 +12,7 @@ use super::{
     DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, Wallet,
 };
 
-use crate::protocol::client_transfers::{CreatedDbc, Outputs as TransferDetails};
+use crate::domain::client_transfers::{CreatedDbc, Outputs as TransferDetails};
 
 use sn_dbc::{Dbc, DbcIdSource, MainKey, PublicAddress, Token};
 
@@ -196,10 +196,12 @@ impl SendWallet for LocalWallet {
 mod tests {
     use super::{get_wallet, store_wallet, LocalWallet};
 
-    use crate::protocol::{
-        client_transfers::{create_offline_transfer, Outputs as TransferDetails},
-        dbc_genesis::{create_genesis_dbc, GENESIS_DBC_AMOUNT},
-        wallet::{KeyLessWallet, SendClient},
+    use crate::{
+        domain::{
+            client_transfers::{create_offline_transfer, Outputs as TransferDetails},
+            wallet::{KeyLessWallet, SendClient},
+        },
+        protocol::dbc_genesis::{create_genesis_dbc, GENESIS_DBC_AMOUNT},
     };
 
     use sn_dbc::{Dbc, DbcIdSource, DerivedKey, MainKey, PublicAddress, Token};

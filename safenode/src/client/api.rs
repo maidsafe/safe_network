@@ -12,11 +12,11 @@ use super::{
 };
 
 use crate::{
+    domain::storage::{Chunk, ChunkAddress},
     network::{NetworkEvent, SwarmDriver},
     protocol::{
         error::Error as ProtocolError,
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
-        storage::{Chunk, ChunkAddress},
     },
 };
 

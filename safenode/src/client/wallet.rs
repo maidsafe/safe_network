@@ -8,12 +8,14 @@
 
 use super::Client;
 
-use crate::protocol::{
-    client_transfers::{
-        create_online_transfer, CreatedDbc, Outputs as TransferDetails, SpendRequestParams,
+use crate::{
+    domain::{
+        client_transfers::{
+            create_online_transfer, CreatedDbc, Outputs as TransferDetails, SpendRequestParams,
+        },
+        wallet::{Error, Result, SendClient, SendWallet},
     },
-    messages::{Cmd, Request},
-    wallet::{Error, Result, SendClient, SendWallet},
+    protocol::messages::{Cmd, Request},
 };
 
 use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
