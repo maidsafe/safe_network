@@ -8,7 +8,7 @@
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
-use crate::protocol::storage::register::{Entry, EntryHash};
+use crate::domain::storage::register::{Entry, EntryHash};
 
 use std::collections::BTreeSet;
 use thiserror::Error;

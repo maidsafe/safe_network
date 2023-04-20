@@ -13,6 +13,10 @@ use super::{
 };
 
 use crate::{
+    domain::{
+        node_transfers::{Error as TransferError, Transfers},
+        storage::{dbc_address, register::User, ChunkStorage, DbcAddress, RegisterStorage},
+    },
     network::{close_group_majority, NetworkEvent, SwarmDriver},
     protocol::{
         error::Error as ProtocolError,
@@ -20,8 +24,6 @@ use crate::{
             Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
             SpendQuery,
         },
-        node_transfers::{Error as TransferError, Transfers},
-        storage::{dbc_address, register::User, ChunkStorage, DbcAddress, RegisterStorage},
     },
 };
 
