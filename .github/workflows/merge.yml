@@ -26,6 +26,9 @@ jobs:
           #Needs nightly to distinguish between deps of different versions
           toolchain: nightly
           override: true
+          # we need rustfmt here while we have a build step
+          components: rustfmt
+
 
       - name: Install cargo-udeps
         run: cargo install cargo-udeps --locked
