@@ -6,7 +6,6 @@ on:
 
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
-  NODE_COUNT: 14
   WORKFLOW_URL: https://github.com/maidsafe/stableset_net/actions/runs
 
 jobs:
@@ -103,3 +102,44 @@ jobs:
           SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly Test Run Failed"
+
+
+  full_unit:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Full Unit Tests (including proptests)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+        continue-on-error: true
+        with:
+          cache-on-failure: true
+          sharedKey: ${{github.run_id}}-unit
+
+      - name: Build tests before running
+        run: cargo test --no-run --release
+        timeout-minutes: 30
+
+      - name: Run network tests
+        timeout-minutes: 25
+        run: cargo test --release -p safenode -- network
+
+      - name: Run protocol tests
+        timeout-minutes: 25
+        run: cargo test --release -p safenode -- protocol
+
+      - name: Run storage tests
+        timeout-minutes: 25
+        run: PROPTEST_CASES=512 cargo test --release -p safenode -- storage
