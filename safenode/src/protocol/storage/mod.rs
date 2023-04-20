@@ -11,11 +11,9 @@ mod chunks;
 mod registers;
 mod spends;
 
-/// Register type.
-pub mod register;
-
-pub use self::address::{
-    dbc_address, dbc_name, ChunkAddress, DataAddress, DbcAddress, RegisterAddress,
+pub use self::{
+    address::{dbc_address, dbc_name, ChunkAddress, DataAddress, DbcAddress, RegisterAddress},
+    registers::register,
 };
 
 pub(crate) use self::{chunks::ChunkStorage, registers::RegisterStorage, spends::SpendStorage};
