@@ -5,10 +5,9 @@ if ! command -v rg &> /dev/null; then
   exit 1
 fi
 
-nodes=$(\
-  rg ".*PID: .*" "$log_dir" -g "*.log*" -u | \
-  rg ".*PID: (\d{3}.*\)).*" -or '$1->$2')
-nodes_count=$(echo "$nodes" | wc -l)
+log_dir=~/.safe/node/local-test-network
+
+nodes_count=$(ls $log_dir | wc -l)
 
 echo
 echo "Number of existing nodes: $nodes_count"
@@ -21,11 +20,7 @@ while (( $count != 10 ))
 do
     ((count++))
     echo Iteration $count
-    echo Kill node $nodes[$count] first
-	kill -9 $nodes[$count]
-	sleep 5
-	((node_count++))
-    echo Join a new node as $node_count
-	./target/release/testnet -j -c 1
+    echo Restarting node $count
+    cargo run --release --example safenode_rpc_client -- "127.0.0.1:1200$count" restart 5000
 	sleep 5
 done
