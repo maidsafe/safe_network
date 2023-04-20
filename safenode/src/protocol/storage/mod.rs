@@ -10,6 +10,5 @@ mod chunks;
 mod register_store;
 mod registers;
 mod spends;
-mod used_space;
 
 pub(crate) use self::{chunks::ChunkStorage, registers::RegisterStorage, spends::SpendStorage};
