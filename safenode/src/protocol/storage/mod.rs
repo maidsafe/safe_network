@@ -11,6 +11,9 @@ mod chunks;
 mod registers;
 mod spends;
 
+/// Register type.
+pub mod register;
+
 pub use self::address::{
     dbc_address, dbc_name, ChunkAddress, DataAddress, DbcAddress, RegisterAddress,
 };

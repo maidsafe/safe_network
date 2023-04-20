@@ -12,7 +12,7 @@ use crate::{
         chunk::Chunk,
         error::Result,
         fees::RequiredFee,
-        register::{Entry, EntryHash, Permissions, Policy, Register, User},
+        storage::register::{Entry, EntryHash, Permissions, Policy, Register, User},
     },
 };
 
