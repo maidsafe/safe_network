@@ -11,10 +11,10 @@ pub mod register;
 
 use self::register::{Action, EntryHash, Register, User};
 
-use super::RegisterAddress;
+use super::{Error, RegisterAddress, Result};
 
 use crate::protocol::{
-    error::{Error, Result},
+    error::Error as ProtocolError,
     messages::{
         EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
         SignedRegisterCreate, SignedRegisterEdit,
@@ -162,7 +162,9 @@ impl RegisterStorage {
         use RegisterQuery::*;
         match read {
             Get(address) => QueryResponse::GetRegister(
-                self.get_register(address, Action::Read, requester).await,
+                self.get_register(address, Action::Read, requester)
+                    .await
+                    .map_err(ProtocolError::Storage),
             ),
             Read(address) => self.read_register(*address, requester).await,
             GetOwner(address) => self.get_owner(*address, requester).await,
@@ -183,9 +185,7 @@ impl RegisterStorage {
     ) -> Result<Register> {
         let stored_reg = self.try_load_stored_register(address).await?;
         if let Some(register) = stored_reg.state {
-            register
-                .check_permissions(action, Some(requester))
-                .map_err(Error::from)?;
+            register.check_permissions(action, Some(requester))?;
 
             Ok(register)
         } else {
@@ -197,7 +197,8 @@ impl RegisterStorage {
         let result = match self.get_register(&address, Action::Read, requester).await {
             Ok(register) => Ok(register.read()),
             Err(error) => Err(error),
-        };
+        }
+        .map_err(ProtocolError::Storage);
 
         QueryResponse::ReadRegister(result)
     }
@@ -206,7 +207,8 @@ impl RegisterStorage {
         let result = match self.get_register(&address, Action::Read, requester).await {
             Ok(res) => Ok(res.owner()),
             Err(error) => Err(error),
-        };
+        }
+        .map_err(ProtocolError::Storage);
 
         QueryResponse::GetRegisterOwner(result)
     }
@@ -220,7 +222,8 @@ impl RegisterStorage {
         let result = self
             .get_register(&address, Action::Read, requester)
             .await
-            .and_then(|register| register.get(hash).map(|c| c.clone()));
+            .and_then(|register| register.get(hash).map(|c| c.clone()))
+            .map_err(ProtocolError::Storage);
 
         QueryResponse::GetRegisterEntry(result)
     }
@@ -234,7 +237,8 @@ impl RegisterStorage {
         let result = self
             .get_register(&address, Action::Read, requester)
             .await
-            .and_then(|register| register.permissions(user));
+            .and_then(|register| register.permissions(user))
+            .map_err(ProtocolError::Storage);
 
         QueryResponse::GetRegisterUserPermissions(result)
     }
@@ -243,7 +247,8 @@ impl RegisterStorage {
         let result = self
             .get_register(&address, Action::Read, requester_pk)
             .await
-            .map(|register| register.policy().clone());
+            .map(|register| register.policy().clone())
+            .map_err(ProtocolError::Storage);
 
         QueryResponse::GetRegisterPolicy(result)
     }
@@ -367,13 +372,12 @@ impl RegisterStorage {
 #[cfg(test)]
 mod test {
     use super::{
-        register::{EntryHash, Policy, Register, User},
-        RegisterStorage,
+        register::{DataAuthority, EntryHash, Policy, Register, User},
+        Error, RegisterStorage,
     };
 
     use crate::protocol::{
-        authority::DataAuthority,
-        error::Error,
+        error::Error as ProtocolError,
         messages::{
             CreateRegister, EditRegister, QueryResponse, RegisterCmd, RegisterQuery,
             SignedRegisterCreate, SignedRegisterEdit,
@@ -697,7 +701,7 @@ mod test {
             .await;
         match res {
             QueryResponse::GetRegisterEntry(Err(e)) => {
-                assert_eq!(e, Error::NoSuchEntry(hash))
+                assert_eq!(e, ProtocolError::Storage(Error::NoSuchEntry(hash)))
             }
             QueryResponse::GetRegisterEntry(Ok(entry)) => {
                 panic!("Should not exist any entry for random hash! {entry:?}")
@@ -729,7 +733,7 @@ mod test {
             .await;
         match res {
             QueryResponse::GetRegisterUserPermissions(Err(e)) => {
-                assert_eq!(e, Error::NoSuchUser(user))
+                assert_eq!(e, ProtocolError::Storage(Error::NoSuchUser(user)))
             }
             QueryResponse::GetRegisterUserPermissions(Ok(perms)) => {
                 panic!("Should not exist any permissions for random user! {perms:?}",)

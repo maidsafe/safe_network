@@ -9,8 +9,6 @@
 /// Messages types
 pub mod messages;
 
-/// Data/content Authority types.
-pub mod authority;
 /// Client handling of token transfers.
 pub mod client_transfers;
 /// Dbc genesis creation.

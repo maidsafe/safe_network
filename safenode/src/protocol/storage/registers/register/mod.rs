@@ -6,11 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod authority;
 mod metadata;
 mod policy;
 mod reg_crdt;
 
 pub use self::{
+    authority::DataAuthority,
     metadata::{Action, Entry},
     policy::{Permissions, Policy, User},
     reg_crdt::EntryHash,
@@ -18,9 +20,7 @@ pub use self::{
 
 pub(crate) use reg_crdt::{CrdtOperation, RegisterCrdt};
 
-use super::RegisterAddress;
-
-use crate::protocol::error::{Error, Result};
+use super::{Error, RegisterAddress, Result};
 
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use serde::{Deserialize, Serialize};
@@ -178,12 +178,8 @@ impl Register {
 #[cfg(test)]
 mod tests {
     use super::{
-        Entry, EntryHash, Permissions, Policy, Register, RegisterOp, User, MAX_REG_NUM_ENTRIES,
-    };
-
-    use crate::protocol::{
-        error::{Error, Result},
-        storage::RegisterAddress,
+        Entry, EntryHash, Error, Permissions, Policy, Register, RegisterAddress, RegisterOp,
+        Result, User, MAX_REG_NUM_ENTRIES,
     };
 
     use bls::SecretKey;

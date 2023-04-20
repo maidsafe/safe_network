@@ -12,7 +12,6 @@ use super::{
 };
 
 use crate::protocol::{
-    authority::DataAuthority,
     error::Error as ProtocolError,
     messages::{
         Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
@@ -20,7 +19,8 @@ use crate::protocol::{
     },
     storage::{
         register::{
-            Action, Entry, EntryHash, Permissions, Policy, Register as RegisterReplica, User,
+            Action, DataAuthority, Entry, EntryHash, Permissions, Policy,
+            Register as RegisterReplica, User,
         },
         RegisterAddress,
     },
@@ -93,7 +93,7 @@ impl RegisterOffline {
 
     /// Return a value corresponding to the provided 'hash', if present.
     pub fn get(&self, hash: EntryHash) -> Result<&Entry> {
-        let entry = self.register.get(hash)?;
+        let entry = self.register.get(hash).map_err(ProtocolError::Storage)?;
         Ok(entry)
     }
 
@@ -138,9 +138,13 @@ impl RegisterOffline {
         // we need to check permissions first
         let public_key = self.client.signer_pk();
         self.register
-            .check_permissions(Action::Write, Some(User::Key(public_key)))?;
+            .check_permissions(Action::Write, Some(User::Key(public_key)))
+            .map_err(ProtocolError::Storage)?;
 
-        let (_hash, edit) = self.register.write(entry.into(), children)?;
+        let (_hash, edit) = self
+            .register
+            .write(entry.into(), children)
+            .map_err(ProtocolError::Storage)?;
         let op = EditRegister {
             address: *self.register.address(),
             edit,

@@ -6,9 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub use bls::{PublicKey, Signature};
-
-use super::error::{Error, Result};
+use super::{Error, Result};
 
 use serde::{Deserialize, Serialize};
 
@@ -16,9 +14,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct DataAuthority {
     /// Public key.
-    pub public_key: PublicKey,
+    pub public_key: bls::PublicKey,
     /// Signature.
-    pub signature: Signature,
+    pub signature: bls::Signature,
 }
 
 impl DataAuthority {

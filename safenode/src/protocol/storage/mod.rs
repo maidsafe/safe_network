@@ -8,12 +8,14 @@
 
 mod address;
 mod chunks;
+mod error;
 mod registers;
 mod spends;
 
 pub use self::{
     address::{dbc_address, dbc_name, ChunkAddress, DataAddress, DbcAddress, RegisterAddress},
     chunks::Chunk,
+    error::{Error, Result},
     registers::register,
 };
 
