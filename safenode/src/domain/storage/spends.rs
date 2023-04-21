@@ -427,6 +427,46 @@ mod tests {
         assert!(storage.validate(&b_spend).await.is_err());
     }
 
+    #[tokio::test]
+    async fn try_add_fails_after_added_double_spend() {
+        let mut storage = init_file_store();
+        let key = MainKey::random();
+        let src_dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+
+        let dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
+        let (dbc, _) = &dbc[0];
+        let a_spend = dbc.signed_spends.last().expect("Should contain a spend.");
+
+        // The tampered spend will have the same id and src, but another another dst transaction.
+        let mut b_spend = a_spend.clone();
+        let dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
+        let (dbc, _) = &dbc[0];
+        let other_spend = dbc.signed_spends.last().expect("Should contain a spend.");
+        b_spend.spend.dst_tx = other_spend.spend.dst_tx.clone();
+
+        match storage.try_add_double(a_spend, &b_spend).await {
+            Ok(_) => (),
+            Err(_) => panic!("Did not expect an error!"),
+        }
+
+        // Both of these spends result as already marked
+        // as double spend, when trying to add them again.
+        match storage.try_add(a_spend).await {
+            Ok(_) => panic!("Double spend should not be allowed."),
+            Err(super::Error::AlreadyMarkedAsDoubleSpend(address)) => {
+                assert_eq!(dbc_address(a_spend.dbc_id()), address);
+            }
+            Err(other) => panic!("Unexpected error: {:?}", other),
+        }
+        match storage.try_add(&b_spend).await {
+            Ok(_) => panic!("Double spend should not be allowed."),
+            Err(super::Error::AlreadyMarkedAsDoubleSpend(address)) => {
+                assert_eq!(dbc_address(b_spend.dbc_id()), address);
+            }
+            Err(other) => panic!("Unexpected error: {:?}", other),
+        }
+    }
+
     fn init_file_store() -> SpendStorage {
         let root = tempdir().expect("Failed to create temporary directory for spend drive store.");
         SpendStorage::new(root.path())
