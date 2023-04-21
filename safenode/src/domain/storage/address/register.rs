@@ -29,11 +29,9 @@ impl RegisterAddress {
     /// Return the identifier of the register.
     /// This is used to locate the register on the network.
     pub fn id(&self) -> XorName {
-        let mut bytes = [0u8; 40];
-        let name_bytes = self.name.0;
-        let tag_bytes = self.tag.to_be_bytes();
-        bytes.copy_from_slice(&name_bytes[0..32]);
-        bytes.copy_from_slice(&tag_bytes[0..8]);
+        let mut bytes = vec![];
+        bytes.extend_from_slice(&self.name.0);
+        bytes.extend_from_slice(&self.tag.to_be_bytes());
         XorName::from_content(&bytes)
     }
 
