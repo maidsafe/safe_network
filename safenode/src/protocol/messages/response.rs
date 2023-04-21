@@ -14,8 +14,7 @@ use crate::{
             Chunk,
         },
     },
-    node::NodeId,
-    protocol::error::Result,
+    node::{NodeId, Result},
 };
 
 #[allow(unused_imports)] // needed by rustdocs links
@@ -28,7 +27,7 @@ use std::{collections::BTreeSet, fmt::Debug};
 
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum QueryResponse {
     //
     // ===== DBC Data =====
@@ -72,7 +71,7 @@ pub enum QueryResponse {
 }
 
 /// The response to a Cmd, containing the query result.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CmdResponse {
     //
     // ===== Dbc Spends =====

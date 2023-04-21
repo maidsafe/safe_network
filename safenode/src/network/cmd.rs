@@ -100,7 +100,7 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .request_response
                     .send_response(channel, resp)
-                    .map_err(Error::OutgoingResponseDropped)?;
+                    .map_err(|e| Error::OutgoingResponseDropped(e.to_string()))?;
             }
         }
         Ok(())

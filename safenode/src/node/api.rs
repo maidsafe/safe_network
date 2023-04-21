@@ -14,13 +14,14 @@ use super::{
 
 use crate::{
     domain::{
+        error::Error as DomainError,
         node_transfers::{Error as TransferError, Transfers},
         storage::{
             dbc_address, register::User, ChunkStorage, DbcAddress, Error as StorageError,
             RegisterStorage,
         },
     },
-    network::{close_group_majority, NetworkEvent, SwarmDriver},
+    network::{close_group_majority, Error as NetworkError, NetworkEvent, SwarmDriver},
     protocol::{
         error::Error as ProtocolError,
         messages::{
@@ -138,7 +139,7 @@ impl Node {
                         self.transfers
                             .try_add_double(a_spend.as_ref(), b_spend.as_ref())
                             .await
-                            .map_err(ProtocolError::Transfers)?;
+                            .map_err(DomainError::Transfers)?;
                         return Ok(());
                     }
                 };
@@ -158,7 +159,8 @@ impl Node {
                     .chunks
                     .get(&address)
                     .await
-                    .map_err(ProtocolError::Storage);
+                    .map_err(DomainError::Storage)
+                    .map_err(Error::Domain);
                 QueryResponse::GetChunk(resp)
             }
             Query::Spend(query) => {
@@ -175,7 +177,8 @@ impl Node {
                             .transfers
                             .get(address)
                             .await
-                            .map_err(ProtocolError::Transfers);
+                            .map_err(DomainError::Transfers)
+                            .map_err(Error::Domain);
                         QueryResponse::GetDbcSpend(res)
                     }
                 }
@@ -190,7 +193,8 @@ impl Node {
                     .chunks
                     .store(&chunk)
                     .await
-                    .map_err(ProtocolError::Storage);
+                    .map_err(DomainError::Storage)
+                    .map_err(Error::Domain);
                 CmdResponse::StoreChunk(resp)
             }
             Cmd::Register(cmd) => {
@@ -198,7 +202,8 @@ impl Node {
                     .registers
                     .write(&cmd)
                     .await
-                    .map_err(ProtocolError::Storage);
+                    .map_err(DomainError::Storage)
+                    .map_err(Error::Domain);
                 match cmd {
                     RegisterCmd::Create(_) => CmdResponse::CreateRegister(result),
                     RegisterCmd::Edit(_) => CmdResponse::EditRegister(result),
@@ -214,11 +219,10 @@ impl Node {
                 // spend attempt to be valid.
                 let parent_spends = match self.get_parent_spends(parent_tx.as_ref()).await {
                     Ok(parent_spends) => parent_spends,
-                    Err(Error::Protocol(err)) => return CmdResponse::Spend(Err(err)),
                     Err(error) => {
-                        return CmdResponse::Spend(Err(ProtocolError::Transfers(
+                        return CmdResponse::Spend(Err(Error::Domain(DomainError::Transfers(
                             TransferError::SpendParentCloseGroupIssue(error.to_string()),
-                        )))
+                        ))))
                     }
                 };
 
@@ -245,14 +249,14 @@ impl Node {
                             }
                         }
 
-                        Err(ProtocolError::Transfers(TransferError::Storage(
+                        Err(DomainError::Transfers(TransferError::Storage(
                             StorageError::DoubleSpendAttempt { new, existing },
                         )))
                     }
-                    other => other.map_err(ProtocolError::Transfers),
+                    other => other.map_err(DomainError::Transfers),
                 };
 
-                CmdResponse::Spend(res)
+                CmdResponse::Spend(res.map_err(Error::Domain))
             }
         }
     }
@@ -340,7 +344,7 @@ impl Node {
         }
 
         // If there was none of the above, then we had unexpected responses.
-        Err(super::Error::Protocol(ProtocolError::UnexpectedResponses))
+        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
     async fn send_response(&self, resp: Response, response_channel: ResponseChannel<Response>) {
@@ -385,7 +389,7 @@ impl Node {
         while !list_of_futures.is_empty() {
             match select_all(list_of_futures).await {
                 (Ok(res), _, remaining_futures) => {
-                    let res = res.map_err(super::Error::Network);
+                    let res = res.map_err(Error::Network);
                     info!("Got response for the req: {req:?}, res: {res:?}");
                     // return the first successful response
                     if !get_all_responses && res.is_ok() {
@@ -395,7 +399,9 @@ impl Node {
                     list_of_futures = remaining_futures;
                 }
                 (Err(timeout_err), _, remaining_futures) => {
-                    responses.push(Err(super::Error::ResponseTimeout(timeout_err)));
+                    responses.push(Err(Error::Network(NetworkError::ResponseTimeout(
+                        timeout_err.to_string(),
+                    ))));
                     list_of_futures = remaining_futures;
                 }
             }
@@ -406,12 +412,11 @@ impl Node {
 }
 
 async fn get_root_dir() -> Result<std::path::PathBuf> {
-    use crate::protocol::error::Error as StorageError;
     let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
     home_dirs.push(".safe");
     home_dirs.push("node");
     tokio::fs::create_dir_all(home_dirs.as_path())
         .await
-        .map_err(|err| StorageError::Storage(err.into()))?;
+        .map_err(|err| DomainError::Storage(err.into()))?;
     Ok(home_dirs)
 }

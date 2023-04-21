@@ -17,11 +17,17 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
+    #[error("Node Error {0}.")]
+    Node(#[from] crate::node::Error),
+
     #[error("Network Error {0}.")]
     Network(#[from] crate::network::Error),
 
     #[error("Protocol error {0}.")]
     Protocol(#[from] crate::protocol::error::Error),
+
+    #[error("Protocol error {0}.")]
+    Domain(#[from] crate::domain::error::Error),
 
     #[error("Events receiver error {0}.")]
     EventsReceiver(#[from] tokio::sync::broadcast::error::RecvError),

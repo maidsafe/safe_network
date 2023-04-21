@@ -14,13 +14,11 @@ use self::register::{Action, EntryHash, Register, User};
 use super::{prefix_tree_path, Error, RegisterAddress, Result};
 
 use crate::{
-    domain::storage::list_files_in,
-    protocol::{
-        error::Error as ProtocolError,
-        messages::{
-            EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
-            SignedRegisterCreate, SignedRegisterEdit,
-        },
+    domain::{error::Error as DomainError, storage::list_files_in},
+    node::Error as NodeError,
+    protocol::messages::{
+        EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
+        SignedRegisterCreate, SignedRegisterEdit,
     },
 };
 
@@ -64,7 +62,8 @@ impl RegisterStorage {
             Get(address) => QueryResponse::GetRegister(
                 self.get_register(address, Action::Read, requester)
                     .await
-                    .map_err(ProtocolError::Storage),
+                    .map_err(DomainError::Storage)
+                    .map_err(NodeError::Domain),
             ),
             Read(address) => self.read_register(*address, requester).await,
             GetOwner(address) => self.get_owner(*address, requester).await,
@@ -231,7 +230,8 @@ impl RegisterStorage {
             Ok(register) => Ok(register.read()),
             Err(error) => Err(error),
         }
-        .map_err(ProtocolError::Storage);
+        .map_err(DomainError::Storage)
+        .map_err(NodeError::Domain);
 
         QueryResponse::ReadRegister(result)
     }
@@ -241,7 +241,8 @@ impl RegisterStorage {
             Ok(res) => Ok(res.owner()),
             Err(error) => Err(error),
         }
-        .map_err(ProtocolError::Storage);
+        .map_err(DomainError::Storage)
+        .map_err(NodeError::Domain);
 
         QueryResponse::GetRegisterOwner(result)
     }
@@ -256,7 +257,8 @@ impl RegisterStorage {
             .get_register(&address, Action::Read, requester)
             .await
             .and_then(|register| register.get(hash).map(|c| c.clone()))
-            .map_err(ProtocolError::Storage);
+            .map_err(DomainError::Storage)
+            .map_err(NodeError::Domain);
 
         QueryResponse::GetRegisterEntry(result)
     }
@@ -271,7 +273,8 @@ impl RegisterStorage {
             .get_register(&address, Action::Read, requester)
             .await
             .and_then(|register| register.permissions(user))
-            .map_err(ProtocolError::Storage);
+            .map_err(DomainError::Storage)
+            .map_err(NodeError::Domain);
 
         QueryResponse::GetRegisterUserPermissions(result)
     }
@@ -281,7 +284,8 @@ impl RegisterStorage {
             .get_register(&address, Action::Read, requester_pk)
             .await
             .map(|register| register.policy().clone())
-            .map_err(ProtocolError::Storage);
+            .map_err(DomainError::Storage)
+            .map_err(NodeError::Domain);
 
         QueryResponse::GetRegisterPolicy(result)
     }
@@ -504,17 +508,15 @@ fn register_op_id(cmd: &RegisterCmd) -> Result<String> {
 mod test {
     use super::{
         register::{DataAuthority, EntryHash, Policy, Register, User},
-        Error, RegisterStorage,
+        DomainError, Error, NodeError, RegisterStorage,
     };
 
-    use crate::protocol::{
-        error::Error as ProtocolError,
-        messages::{
-            CreateRegister, EditRegister, QueryResponse, RegisterCmd, RegisterQuery,
-            SignedRegisterCreate, SignedRegisterEdit,
-        },
+    use crate::protocol::messages::{
+        CreateRegister, EditRegister, QueryResponse, RegisterCmd, RegisterQuery,
+        SignedRegisterCreate, SignedRegisterEdit,
     };
 
+    use assert_matches::assert_matches;
     use bincode::serialize;
     use bls::SecretKey;
     use eyre::{bail, Result};
@@ -823,7 +825,7 @@ mod test {
             .await;
         match res {
             QueryResponse::GetRegisterEntry(Err(e)) => {
-                assert_eq!(e, ProtocolError::Storage(Error::NoSuchEntry(hash)))
+                assert_matches!(e, NodeError::Domain(DomainError::Storage(Error::NoSuchEntry(returned_hash))) => assert_eq!(hash, returned_hash));
             }
             QueryResponse::GetRegisterEntry(Ok(entry)) => {
                 panic!("Should not exist any entry for random hash! {entry:?}")
@@ -853,7 +855,7 @@ mod test {
             .await;
         match res {
             QueryResponse::GetRegisterUserPermissions(Err(e)) => {
-                assert_eq!(e, ProtocolError::Storage(Error::NoSuchUser(user)))
+                assert_matches!(e, NodeError::Domain(DomainError::Storage(Error::NoSuchUser(returned_user))) => assert_eq!(user, returned_user));
             }
             QueryResponse::GetRegisterUserPermissions(Ok(perms)) => {
                 panic!("Should not exist any permissions for random user! {perms:?}",)

@@ -60,9 +60,3 @@ impl From<std::io::Error> for Error {
         Self::Io(error.to_string())
     }
 }
-
-// impl From<hex::FromHexError> for Error {
-//     fn from(error: hex::FromHexError) -> Self {
-//         Self::HexDecoding(error.to_string())
-//     }
-// }

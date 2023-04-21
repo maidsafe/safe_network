@@ -6,16 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::messages::Response;
-
 use super::{cmd::SwarmCmd, NetworkEvent};
 
-use libp2p::{
-    kad,
-    request_response::{OutboundFailure, RequestId},
-    swarm::DialError,
-    TransportError,
-};
+use libp2p::{kad, request_response::OutboundFailure, swarm::DialError, TransportError};
+use serde::{Deserialize, Serialize};
 use std::io;
 use thiserror::Error;
 use tokio::sync::{mpsc, oneshot};
@@ -23,45 +17,108 @@ use tokio::sync::{mpsc, oneshot};
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Internal error.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub enum Error {
     #[error("Internal messaging channel was dropped")]
     InternalMsgChannelDropped,
 
     #[error("Response received for a request not found in our local tracking map: {0}")]
-    ReceivedResponseDropped(RequestId),
+    ReceivedResponseDropped(String),
 
     #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0:?}")]
-    OutgoingResponseDropped(Response),
+    OutgoingResponseDropped(String),
 
     #[error("I/O error: {0}")]
-    Io(#[from] io::Error),
+    Io(String),
 
     #[error("Transport Error")]
-    TransportError(#[from] TransportError<std::io::Error>),
+    TransportError(String),
 
     #[error("Dial Error")]
-    DialError(#[from] DialError),
+    DialError(String),
 
     #[error("Outbound Error")]
-    OutboundError(#[from] OutboundFailure),
+    OutboundError(String),
 
     #[error("Kademlia Store error: {0}")]
-    KademliaStoreError(#[from] kad::store::Error),
+    KademliaStoreError(String),
 
     #[error("The mpsc::receiver for `NetworkEvent` has been dropped")]
-    NetworkEventReceiverDropped(#[from] mpsc::error::SendError<NetworkEvent>),
+    NetworkEventReceiverDropped(String),
 
     #[error("A Kademlia event has been dropped: {0:?}")]
-    ReceivedKademliaEventDropped(kad::KademliaEvent),
+    ReceivedKademliaEventDropped(String),
 
     #[error("The mpsc::receiver for `SwarmCmd` has been dropped")]
-    SwarmCmdReceiverDropped(#[from] mpsc::error::SendError<SwarmCmd>),
+    SwarmCmdReceiverDropped(String),
 
     #[error("The oneshot::sender has been dropped")]
-    SenderDropped(#[from] oneshot::error::RecvError),
+    SenderDropped(String),
 
     #[error("Could not get CLOSE_GROUP_SIZE number of peers.")]
     NotEnoughPeers,
+
+    #[error("ResponseTimeout")]
+    ResponseTimeout(String),
+}
+
+impl From<mpsc::error::SendError<SwarmCmd>> for Error {
+    fn from(e: mpsc::error::SendError<SwarmCmd>) -> Self {
+        Self::SwarmCmdReceiverDropped(e.to_string())
+    }
+}
+
+impl From<mpsc::error::SendError<NetworkEvent>> for Error {
+    fn from(e: mpsc::error::SendError<NetworkEvent>) -> Self {
+        Self::NetworkEventReceiverDropped(e.to_string())
+    }
+}
+
+impl From<DialError> for Error {
+    fn from(e: DialError) -> Self {
+        Self::DialError(e.to_string())
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(error: io::Error) -> Self {
+        Self::Io(error.to_string())
+    }
+}
+
+impl From<TransportError<io::Error>> for Error {
+    fn from(error: TransportError<io::Error>) -> Self {
+        Self::Io(error.to_string())
+    }
+}
+
+impl From<oneshot::error::RecvError> for Error {
+    fn from(error: oneshot::error::RecvError) -> Self {
+        Self::Io(error.to_string())
+    }
+}
+
+impl From<kad::KademliaEvent> for Error {
+    fn from(_e: kad::KademliaEvent) -> Self {
+        Self::ReceivedKademliaEventDropped("No info attainable".to_string())
+    }
+}
+
+impl From<tokio::time::error::Elapsed> for Error {
+    fn from(e: tokio::time::error::Elapsed) -> Self {
+        Self::ResponseTimeout(e.to_string())
+    }
+}
+
+impl From<kad::store::Error> for Error {
+    fn from(e: kad::store::Error) -> Self {
+        Self::KademliaStoreError(e.to_string())
+    }
+}
+
+impl From<OutboundFailure> for Error {
+    fn from(e: OutboundFailure) -> Self {
+        Self::OutboundError(e.to_string())
+    }
 }

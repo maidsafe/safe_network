@@ -99,7 +99,7 @@ impl SwarmDriver {
                     let (sender, mut current_closest) =
                         self.pending_get_closest_peers.remove(id).ok_or_else(|| {
                             trace!("Can't locate query task {id:?}, shall be completed already.");
-                            Error::ReceivedKademliaEventDropped(event.clone())
+                            Error::ReceivedKademliaEventDropped("No info attainable".to_string())
                         })?;
 
                     // TODO: consider order the result and terminate when reach any of the

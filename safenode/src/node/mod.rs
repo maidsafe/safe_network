@@ -10,9 +10,10 @@ mod api;
 mod error;
 mod event;
 
-pub use self::event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver};
-
-use self::error::Error;
+pub use self::{
+    error::{Error, Result},
+    event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
+};
 
 use crate::{
     domain::{

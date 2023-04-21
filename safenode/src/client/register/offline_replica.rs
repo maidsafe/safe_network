@@ -12,12 +12,15 @@ use super::{
 };
 
 use crate::{
-    domain::storage::{
-        register::{
-            Action, DataAuthority, Entry, EntryHash, Permissions, Policy,
-            Register as RegisterReplica, User,
+    domain::{
+        error::Error as DomainError,
+        storage::{
+            register::{
+                Action, DataAuthority, Entry, EntryHash, Permissions, Policy,
+                Register as RegisterReplica, User,
+            },
+            RegisterAddress,
         },
-        RegisterAddress,
     },
     protocol::{
         error::Error as ProtocolError,
@@ -95,7 +98,7 @@ impl RegisterOffline {
 
     /// Return a value corresponding to the provided 'hash', if present.
     pub fn get(&self, hash: EntryHash) -> Result<&Entry> {
-        let entry = self.register.get(hash).map_err(ProtocolError::Storage)?;
+        let entry = self.register.get(hash).map_err(DomainError::Storage)?;
         Ok(entry)
     }
 
@@ -141,12 +144,12 @@ impl RegisterOffline {
         let public_key = self.client.signer_pk();
         self.register
             .check_permissions(Action::Write, Some(User::Key(public_key)))
-            .map_err(ProtocolError::Storage)?;
+            .map_err(DomainError::Storage)?;
 
         let (_hash, edit) = self
             .register
             .write(entry.into(), children)
-            .map_err(ProtocolError::Storage)?;
+            .map_err(DomainError::Storage)?;
         let op = EditRegister {
             address: *self.register.address(),
             edit,

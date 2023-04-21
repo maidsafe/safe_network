@@ -46,7 +46,7 @@ pub enum Request {
 }
 
 /// Respond to other peers in the network
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Response {
     /// The response to a cmd.
     Cmd(CmdResponse),
@@ -102,5 +102,11 @@ impl ReplicatedData {
             Self::ValidSpend(spend) => DataAddress::Spend(dbc_address(spend.dbc_id())),
             Self::DoubleSpend((address, _)) => DataAddress::Spend(*address),
         }
+    }
+}
+
+impl std::fmt::Display for Response {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(formatter, "Response")
     }
 }

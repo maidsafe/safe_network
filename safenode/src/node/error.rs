@@ -6,12 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
+/// A specialised `Result` type for node crate.
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Internal error.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub enum Error {
     #[error("Network Error {0}")]
@@ -22,7 +24,4 @@ pub enum Error {
 
     #[error("Domain error {0}")]
     Domain(#[from] crate::domain::error::Error),
-
-    #[error("ResponseTimeout")]
-    ResponseTimeout(#[from] tokio::time::error::Elapsed),
 }

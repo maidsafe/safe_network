@@ -6,8 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::domain::{node_transfers::Error as TransferError, storage::Error as StorageError};
-
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};
 use thiserror::Error;
@@ -19,13 +17,7 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Error {
-    /// Storage error.
-    #[error("Storage error {0:?}")]
-    Storage(#[from] StorageError),
-    /// Errors in node transfer handling.
-    #[error("TransferError: {0:?}")]
-    Transfers(#[from] TransferError),
-    /// An error from the sn_dbc crate.
+    /// Dbc error.
     #[error("Dbc Error {0}")]
     Dbc(String),
     /// Unexpected responses.

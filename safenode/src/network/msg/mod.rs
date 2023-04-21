@@ -43,7 +43,7 @@ impl SwarmDriver {
                     trace!("Got response for id: {request_id:?}, res: {response:?} ");
                     self.pending_requests
                         .remove(&request_id)
-                        .ok_or(Error::ReceivedResponseDropped(request_id))?
+                        .ok_or(Error::ReceivedResponseDropped(request_id.to_string()))?
                         .send(Ok(response))
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
@@ -53,7 +53,7 @@ impl SwarmDriver {
             } => {
                 self.pending_requests
                     .remove(&request_id)
-                    .ok_or(Error::ReceivedResponseDropped(request_id))?
+                    .ok_or(Error::ReceivedResponseDropped(request_id.to_string()))?
                     .send(Err(error.into()))
                     .map_err(|_| Error::InternalMsgChannelDropped)?;
             }
