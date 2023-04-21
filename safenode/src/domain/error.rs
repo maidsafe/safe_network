@@ -6,10 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::domain::{
-    node_transfers::Error as TransferError, storage::Error as StorageError,
-    wallet::Error as WalletError,
-};
+use crate::domain::{node_transfers::Error as TransferError, storage::Error as StorageError};
 
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};
@@ -28,7 +25,4 @@ pub enum Error {
     /// Errors in node transfer handling.
     #[error("Transfer error: {0:?}")]
     Transfers(#[from] TransferError),
-    /// An error from the sn_dbc crate.
-    #[error("Wallet error {0}")]
-    Wallet(#[from] WalletError),
 }

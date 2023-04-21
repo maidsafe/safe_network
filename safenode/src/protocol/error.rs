@@ -17,16 +17,7 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Error {
-    /// Dbc error.
-    #[error("Dbc Error {0}")]
-    Dbc(String),
     /// Unexpected responses.
     #[error("Unexpected responses")]
     UnexpectedResponses,
-    /// Bincode error.
-    #[error("Bincode error:: {0}")]
-    Bincode(String),
-    /// I/O error.
-    #[error("I/O error: {0}")]
-    Io(String),
 }

@@ -20,9 +20,6 @@ pub enum Error {
     /// The Node signature over the `RequiredFee` is invalid.
     #[error("Node signature is invalid.")]
     RequiredFeeSignatureInvalid,
-    /// Decryption of the amount failed. Wrong key used.
-    #[error("Decryption of the amount failed. Wrong key used.")]
-    AmountDecryptionFailed,
     /// An error from the `sn_dbc` crate.
     #[error("Dbc error: {0}")]
     Dbcs(String),

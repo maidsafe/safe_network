@@ -8,7 +8,7 @@
 
 use super::{cmd::SwarmCmd, NetworkEvent};
 
-use libp2p::{kad, request_response::OutboundFailure, swarm::DialError, TransportError};
+use libp2p::{request_response::OutboundFailure, swarm::DialError, TransportError};
 use serde::{Deserialize, Serialize};
 use std::io;
 use thiserror::Error;
@@ -41,9 +41,6 @@ pub enum Error {
     #[error("Outbound Error")]
     OutboundError(String),
 
-    #[error("Kademlia Store error: {0}")]
-    KademliaStoreError(String),
-
     #[error("The mpsc::receiver for `NetworkEvent` has been dropped")]
     NetworkEventReceiverDropped(String),
 
@@ -52,9 +49,6 @@ pub enum Error {
 
     #[error("The mpsc::receiver for `SwarmCmd` has been dropped")]
     SwarmCmdReceiverDropped(String),
-
-    #[error("The oneshot::sender has been dropped")]
-    SenderDropped(String),
 
     #[error("Could not get CLOSE_GROUP_SIZE number of peers.")]
     NotEnoughPeers,
@@ -96,24 +90,6 @@ impl From<TransportError<io::Error>> for Error {
 impl From<oneshot::error::RecvError> for Error {
     fn from(error: oneshot::error::RecvError) -> Self {
         Self::Io(error.to_string())
-    }
-}
-
-impl From<kad::KademliaEvent> for Error {
-    fn from(_e: kad::KademliaEvent) -> Self {
-        Self::ReceivedKademliaEventDropped("No info attainable".to_string())
-    }
-}
-
-impl From<tokio::time::error::Elapsed> for Error {
-    fn from(e: tokio::time::error::Elapsed) -> Self {
-        Self::ResponseTimeout(e.to_string())
-    }
-}
-
-impl From<kad::store::Error> for Error {
-    fn from(e: kad::store::Error) -> Self {
-        Self::KademliaStoreError(e.to_string())
     }
 }
 
