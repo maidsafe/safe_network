@@ -55,10 +55,11 @@ impl Node {
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
         let node_events_channel = NodeEventsChannel::default();
         let node_id = NodeId::from(network.peer_id);
+        let root_dir = get_root_dir().await?;
 
         let mut node = Self {
             network,
-            chunks: ChunkStorage::new(),
+            chunks: ChunkStorage::new(&root_dir),
             registers: RegisterStorage::new(),
             transfers: Transfers::new(node_id, MainKey::random()),
             events_channel: node_events_channel.clone(),
@@ -396,4 +397,15 @@ impl Node {
 
         responses
     }
+}
+
+async fn get_root_dir() -> Result<std::path::PathBuf> {
+    use crate::protocol::error::Error as StorageError;
+    let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
+    home_dirs.push(".safe");
+    home_dirs.push("node");
+    tokio::fs::create_dir_all(home_dirs.as_path())
+        .await
+        .map_err(|err| StorageError::Storage(err.into()))?;
+    Ok(home_dirs)
 }
