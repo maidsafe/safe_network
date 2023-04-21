@@ -192,7 +192,9 @@ impl SpendStorage {
         self.try_store_double_spend(a_spend, b_spend).await?;
 
         // The spend is now permanently removed from the valid spends.
-        self.remove(&address, &self.valid_spends_path).await?;
+        // We don't error if the remove failed (not found or whatever)
+        // as that isn't a problem.
+        let _ = self.remove(&address, &self.valid_spends_path).await;
 
         Ok(())
     }
@@ -408,11 +410,12 @@ mod tests {
         b_spend.spend.dst_tx = other_spend.spend.dst_tx.clone();
 
         assert!(storage.validate(a_spend).await.is_ok());
-        assert!(storage.validate(&b_spend).await.is_ok());
+        // This is a malformed spend, and would always fail.
+        assert!(storage.validate(&b_spend).await.is_err());
 
         match storage.try_add_double(a_spend, &b_spend).await {
             Ok(_) => (),
-            Err(_) => panic!("Did not expect an error!"),
+            Err(err) => panic!("Did not expect an error: {err:?}!"),
         }
 
         assert!(storage.validate(a_spend).await.is_err());
