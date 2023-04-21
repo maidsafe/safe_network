@@ -12,7 +12,7 @@ use super::{
 };
 
 use serde::{Deserialize, Serialize};
-use std::{fmt::Debug, result};
+use std::{fmt::Debug, path::PathBuf, result};
 use thiserror::Error;
 
 /// A specialised `Result` type for protocol crate.
@@ -25,6 +25,12 @@ pub enum Error {
     /// Chunk not found.
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
+    /// No filename found
+    #[error("Path contains no file name: {0}")]
+    NoFilename(PathBuf),
+    /// Invalid filename
+    #[error("Invalid chunk filename: {0}")]
+    InvalidFilename(PathBuf),
     /// Register not found.
     #[error("Register not found: {0:?}")]
     RegisterNotFound(RegisterAddress),
@@ -68,4 +74,28 @@ pub enum Error {
     /// Bincode error.
     #[error("Bincode error:: {0}")]
     Bincode(String),
+    /// I/O error.
+    #[error("I/O error: {0}")]
+    Io(String),
+    /// Hex decoding error.
+    #[error("Hex decoding error:: {0}")]
+    HexDecoding(String),
+}
+
+impl From<bincode::Error> for Error {
+    fn from(error: bincode::Error) -> Self {
+        Self::Bincode(error.to_string())
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(error: std::io::Error) -> Self {
+        Self::Io(error.to_string())
+    }
+}
+
+impl From<hex::FromHexError> for Error {
+    fn from(error: hex::FromHexError) -> Self {
+        Self::HexDecoding(error.to_string())
+    }
 }
