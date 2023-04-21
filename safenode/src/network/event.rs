@@ -114,9 +114,8 @@ impl SwarmDriver {
                         closest_peers.peers.clone().into_iter().collect();
                     current_closest.extend(new_peers);
                     if current_closest.len() >= usize::from(K_VALUE) || step.last {
-                        let our_id = *self.swarm.local_peer_id();
                         sender
-                            .send((our_id, current_closest))
+                            .send(current_closest)
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
                     } else {
                         let _ = self
