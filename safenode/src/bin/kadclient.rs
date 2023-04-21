@@ -5,8 +5,7 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-#[macro_use]
-extern crate tracing;
+
 mod cli;
 
 use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt};
