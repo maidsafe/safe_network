@@ -86,3 +86,47 @@ pub(super) fn create_genesis_dbc(genesis_main_key: &MainKey) -> GenesisResult<Db
 
     Ok(genesis_dbc)
 }
+
+/// Split a dbc into multiple.
+#[allow(clippy::result_large_err, unused)]
+pub(super) fn split(
+    dbc: Dbc,
+    main_key: &MainKey,
+    number: usize,
+) -> GenesisResult<Vec<(Dbc, RevealedAmount)>> {
+    let rng = &mut rng::thread_rng();
+
+    let derived_key = dbc.derived_key(main_key)?;
+    let revealed_amount = dbc.revealed_amount(&derived_key)?;
+    let input = InputHistory {
+        input: RevealedInput::new(derived_key, revealed_amount),
+        input_src_tx: dbc.src_tx,
+    };
+
+    let recipients: Vec<_> = (0..number)
+        .map(|_| {
+            let dbc_id_src = main_key.random_dbc_id_src(rng);
+            let amount = revealed_amount.value() / number as u64;
+            (Token::from_nano(amount), dbc_id_src)
+        })
+        .collect();
+
+    let dbc_builder = TransactionBuilder::default()
+        .add_input(input)
+        .add_outputs(recipients)
+        .build(Hash::default(), rng::thread_rng())
+        .map_err(|err| {
+            GenesisError::GenesisDbcError(format!(
+                "Failed to build the DBC transaction for genesis DBC: {err}",
+            ))
+        })?;
+
+    // build the output DBCs
+    let output_dbcs = dbc_builder.build_without_verifying().map_err(|err| {
+        GenesisError::GenesisDbcError(format!(
+            "DBC builder failed to create output genesis DBC: {err}",
+        ))
+    })?;
+
+    Ok(output_dbcs)
+}

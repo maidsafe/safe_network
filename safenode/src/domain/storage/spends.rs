@@ -12,6 +12,8 @@
 //! A peer will move a spend from `valid_spends` to `double_spends` if it receives another tx id for the same dbc id.
 //! A peer will never again store such a spend to `valid_spends`.
 
+use crate::domain::storage::dbc_address;
+
 use super::{prefix_tree_path, DbcAddress, Error, Result};
 
 use sn_dbc::{DbcId, SignedSpend};
@@ -26,7 +28,6 @@ use tokio::{
     io::AsyncWriteExt,
 };
 use tracing::trace;
-use xor_name::XorName;
 
 const VALID_SPENDS_STORE_DIR_NAME: &str = "valid_spends";
 const DOUBLE_SPENDS_STORE_DIR_NAME: &str = "double_spends";
@@ -281,14 +282,44 @@ impl Display for SpendStorage {
     }
 }
 
-/// Still thinking of best location for this.
-/// Wanted to make the DbcAddress take a dbc id actually..
-fn dbc_address(dbc_id: &DbcId) -> DbcAddress {
-    DbcAddress::new(get_dbc_name(dbc_id))
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::dbc_genesis::{create_genesis_dbc, split};
+    use sn_dbc::MainKey;
+    use tempfile::tempdir;
 
-/// Still thinking of best location for this.
-/// Wanted to make the DbcAddress take a dbc id actually..
-fn get_dbc_name(dbc_id: &DbcId) -> XorName {
-    XorName::from_content(&dbc_id.to_bytes())
+    #[tokio::test]
+    async fn write_and_read_100_spends() {
+        // Test that a range of different spends can be stored and read as expected.
+        let number_of_spends = 100;
+        let mut storage = init_file_store();
+        let key = MainKey::random();
+        let dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+        let dbcs = split(dbc, &key, number_of_spends).expect("Split to succeed.");
+        let spends: Vec<_> = dbcs
+            .into_iter()
+            .flat_map(|(dbc, _)| dbc.signed_spends)
+            .collect();
+
+        assert_eq!(spends.len(), number_of_spends);
+
+        for spend in spends {
+            storage
+                .try_add(&spend)
+                .await
+                .expect("Failed to write spend.");
+            let read_spend = storage
+                .get(&dbc_address(spend.dbc_id()))
+                .await
+                .expect("Failed to read spend.");
+
+            assert_eq!(spend.to_bytes(), read_spend.to_bytes());
+        }
+    }
+
+    fn init_file_store() -> SpendStorage {
+        let root = tempdir().expect("Failed to create temporary directory for spend drive store.");
+        SpendStorage::new(root.path())
+    }
 }
