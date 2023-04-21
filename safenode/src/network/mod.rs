@@ -11,8 +11,6 @@ mod error;
 mod event;
 mod msg;
 
-use crate::protocol::messages::{QueryResponse, Request, Response};
-
 pub use self::{cmd::SwarmLocalState, error::Error, event::NetworkEvent};
 
 use self::{
@@ -21,8 +19,8 @@ use self::{
     event::NodeBehaviour,
     msg::{MsgCodec, MsgProtocol},
 };
-
-use futures::StreamExt;
+use crate::protocol::messages::{QueryResponse, Request, Response};
+use futures::{future::select_all, StreamExt};
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
@@ -295,50 +293,31 @@ impl Network {
         self.get_closest_peers(xor_name, false).await
     }
 
-    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
-    /// If `client` is false, then include `self` among the `closest_peers`
-    async fn get_closest_peers(&self, xor_name: XorName, client: bool) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetClosestPeers { xor_name, sender })
-            .await?;
-        let k_bucket_peers = receiver.await?;
-
-        // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
-        let mut closest_peers: Vec<_> = k_bucket_peers.into_iter().collect();
-        if !client {
-            closest_peers.push(self.peer_id);
-        }
-        let target = KBucketKey::new(xor_name.0.to_vec());
-        closest_peers.sort_by(|a, b| {
-            let a = KBucketKey::new(a.to_bytes());
-            let b = KBucketKey::new(b.to_bytes());
-            target.distance(&a).cmp(&target.distance(&b))
-        });
-        let closest_peers: Vec<PeerId> = closest_peers
-            .iter()
-            .take(CLOSE_GROUP_SIZE)
-            .cloned()
-            .collect();
-
-        if CLOSE_GROUP_SIZE > closest_peers.len() {
-            warn!("Not enough peers in the k-bucket to satisfy the request");
-            return Err(Error::NotEnoughPeers);
-        }
-
-        trace!(
-            "Got the {} closest_peers to the given XorName-{xor_name}, nodes: {closest_peers:?}",
-            closest_peers.len()
+    /// Send `Request` to the closest peers. `Self` might be present among the recipients.
+    pub async fn node_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
+        info!(
+            "Sending {request:?} with dst {:?} to the closest peers.",
+            request.dst().name()
         );
+        // todo: if `self` is present among the closest peers, the request should be routed to self?
+        let closest_peers = self.node_get_closest_peers(*request.dst().name()).await?;
 
-        Ok(closest_peers)
+        Ok(self
+            .send_and_get_responses(closest_peers, request, true)
+            .await)
     }
 
-    /// Send `Request` to the the given `PeerId`
-    pub async fn send_request(&self, req: Request, peer: PeerId) -> Result<Response> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::SendRequest { req, peer, sender })
-            .await?;
-        receiver.await?
+    /// Send `Request` to the closest peers. `Self` is not present among the recipients.
+    pub async fn client_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
+        info!(
+            "Sending {request:?} with dst {:?} to the closest peers.",
+            request.dst().name()
+        );
+        let closest_peers = self.client_get_closest_peers(*request.dst().name()).await?;
+
+        Ok(self
+            .send_and_get_responses(closest_peers, request, true)
+            .await)
     }
 
     /// Get `Key` from our Storage
@@ -361,6 +340,14 @@ impl Network {
         );
         self.send_swarm_cmd(SwarmCmd::PutProvidedDataAsRecord { record })
             .await
+    }
+
+    /// Send `Request` to the the given `PeerId`
+    pub async fn send_request(&self, req: Request, peer: PeerId) -> Result<Response> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::SendRequest { req, peer, sender })
+            .await?;
+        receiver.await?
     }
 
     /// Send a `Response` through the channel opened by the requester.
@@ -386,6 +373,73 @@ impl Network {
     async fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
         self.swarm_cmd_sender.send(cmd).await?;
         Ok(())
+    }
+
+    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
+    /// If `client` is false, then include `self` among the `closest_peers`
+    async fn get_closest_peers(&self, xor_name: XorName, client: bool) -> Result<Vec<PeerId>> {
+        debug!("Getting the closest peers to {xor_name:?}");
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetClosestPeers { xor_name, sender })
+            .await?;
+        let k_bucket_peers = receiver.await?;
+
+        // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
+        let mut closest_peers: Vec<_> = k_bucket_peers.into_iter().collect();
+        if !client {
+            closest_peers.push(self.peer_id);
+        }
+        self.sort_peers_by_key(closest_peers, xor_name.0.to_vec())
+    }
+
+    /// Sort the provided peers by their distance to the given key.
+    fn sort_peers_by_key(&self, mut peers: Vec<PeerId>, key: Vec<u8>) -> Result<Vec<PeerId>> {
+        let target = KBucketKey::new(key);
+        peers.sort_by(|a, b| {
+            let a = KBucketKey::new(a.to_bytes());
+            let b = KBucketKey::new(b.to_bytes());
+            target.distance(&a).cmp(&target.distance(&b))
+        });
+        let peers: Vec<PeerId> = peers.iter().take(CLOSE_GROUP_SIZE).cloned().collect();
+
+        if CLOSE_GROUP_SIZE > peers.len() {
+            warn!("Not enough peers in the k-bucket to satisfy the request");
+            return Err(Error::NotEnoughPeers);
+        }
+        Ok(peers)
+    }
+
+    // Send a `Request` to the provided set of peers and wait for their responses concurrently.
+    // If `get_all_responses` is true, we wait for the responses from all the peers. Will return an
+    // error if the request timeouts.
+    // If `get_all_responses` is false, we return the first successful response that we get
+    async fn send_and_get_responses(
+        &self,
+        peers: Vec<PeerId>,
+        req: &Request,
+        get_all_responses: bool,
+    ) -> Vec<Result<Response>> {
+        let mut list_of_futures = peers
+            .iter()
+            .map(|peer| Box::pin(self.send_request(req.clone(), *peer)))
+            .collect::<Vec<_>>();
+
+        let mut responses = Vec::new();
+        while !list_of_futures.is_empty() {
+            let (res, _, remaining_futures) = select_all(list_of_futures).await;
+            let res_string = match &res {
+                Ok(res) => format!("{res}"),
+                Err(err) => format!("{err:?}"),
+            };
+            trace!("Got response for the req: {req:?}, res: {res_string}");
+            if !get_all_responses && res.is_ok() {
+                return vec![res];
+            }
+            responses.push(res);
+            list_of_futures = remaining_futures;
+        }
+
+        responses
     }
 }
 

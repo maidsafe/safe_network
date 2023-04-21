@@ -10,7 +10,6 @@ use super::{
     error::{Error, Result},
     Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, Register, RegisterOffline,
 };
-
 use crate::{
     domain::{
         client_transfers::SpendRequest,
@@ -22,12 +21,11 @@ use crate::{
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
     },
 };
-
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
+use itertools::Itertools;
 use libp2p::{kad::RecordKey, PeerId};
 use sn_dbc::{DbcId, SignedSpend};
-use std::time::Duration;
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
@@ -181,15 +179,14 @@ impl Client {
     }
 
     pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
-        trace!("Getting the closest peers to {:?}.", request.dst());
-        let closest_peers = self
+        let responses = self
             .network
-            .client_get_closest_peers(*request.dst().name())
-            .await?;
-        trace!("Sending {:?} to the closest peers.", request);
-        Ok(self
-            .send_and_get_responses(closest_peers, &request, true)
-            .await)
+            .client_send_to_closest(&request)
+            .await?
+            .into_iter()
+            .map(|res| res.map_err(Error::Network))
+            .collect_vec();
+        Ok(responses)
     }
 
     pub(crate) async fn expect_closest_majority_ok(&self, spend: SpendRequest) -> Result<()> {
@@ -318,48 +315,5 @@ impl Client {
             ok_responses.len(),
             close_group_majority()
         )))
-    }
-
-    // Send a `Request` to the provided set of nodes and wait for their responses concurrently.
-    // If `get_all_responses` is true, we wait for the responses from all the nodes. Will return an
-    // error if the request timeouts.
-    // If `get_all_responses` is false, we return the first successful response that we get.
-    async fn send_and_get_responses(
-        &self,
-        nodes: Vec<PeerId>,
-        req: &Request,
-        get_all_responses: bool,
-    ) -> Vec<Result<Response>> {
-        let mut list_of_futures = Vec::new();
-        for node in nodes {
-            let future = Box::pin(tokio::time::timeout(
-                Duration::from_secs(10),
-                self.network.send_request(req.clone(), node),
-            ));
-            list_of_futures.push(future);
-        }
-
-        let mut responses = Vec::new();
-        while !list_of_futures.is_empty() {
-            match select_all(list_of_futures).await {
-                (Ok(res), _, remaining_futures) => {
-                    let res = res.map_err(Error::Network);
-                    println!("Got response for the req: {req:?}, res: {res:?}");
-
-                    // return the first successful response
-                    if !get_all_responses && res.is_ok() {
-                        return vec![res];
-                    }
-                    responses.push(res);
-                    list_of_futures = remaining_futures;
-                }
-                (Err(timeout_err), _, remaining_futures) => {
-                    responses.push(Err(Error::ResponseTimeout(timeout_err)));
-                    list_of_futures = remaining_futures;
-                }
-            }
-        }
-
-        responses
     }
 }
