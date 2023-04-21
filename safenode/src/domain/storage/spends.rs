@@ -132,7 +132,7 @@ impl SpendStorage {
                 // The spend is now permanently removed from the valid spends.
                 // We don't error if the remove failed, as we rather want to
                 // announce the double spend attempt to close group.
-                // The double spend will still be detected o querying for the spend.
+                // The double spend will still be detected by querying for the spend.
                 let _ = self.remove(&address, &self.valid_spends_path).await;
 
                 return Err(Error::DoubleSpendAttempt {
@@ -226,7 +226,8 @@ impl SpendStorage {
         match read(file_path).await {
             Ok(bytes) => {
                 let (a_spend, b_spend): (SignedSpend, SignedSpend) = deserialize(&bytes)?;
-                // They should have the same dbc id, so we can use either. TODO: Or should we check both? What if they are different?
+                // They should have the same dbc id, so we can use either.
+                // TODO: Or should we check both? What if they are different?
                 if address == &dbc_address(a_spend.dbc_id()) {
                     Ok((a_spend, b_spend))
                 } else {
