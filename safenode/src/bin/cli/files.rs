@@ -45,6 +45,7 @@ pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client) -> Result<()> {
 }
 
 async fn upload_files(files_path: PathBuf, file_api: &Files) -> Result<()> {
+    // The input files_path has to be a dir
     let file_names_path = files_path.join("uploaded_files");
     let mut chunks_to_fetch = Vec::new();
 
@@ -73,6 +74,7 @@ async fn upload_files(files_path: PathBuf, file_api: &Files) -> Result<()> {
     let content = bincode::serialize(&chunks_to_fetch)?;
     tokio::fs::create_dir_all(file_names_path.as_path()).await?;
     let file_names_path = file_names_path.join("file_names.txt");
+    println!("Writing {} bytes to {file_names_path:?}", content.len());
     fs::write(file_names_path, content)?;
 
     Ok(())
