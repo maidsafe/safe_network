@@ -64,4 +64,7 @@ pub enum Error {
 
     #[error("Could not get CLOSE_GROUP_SIZE number of peers.")]
     NotEnoughPeers,
+
+    #[error("ResponseTimeout")]
+    ResponseTimeout(#[from] tokio::time::error::Elapsed),
 }

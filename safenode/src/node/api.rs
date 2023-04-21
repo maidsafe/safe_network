@@ -28,10 +28,9 @@ use crate::{
         },
     },
 };
-use futures::future::select_all;
 use libp2p::{request_response::ResponseChannel, Multiaddr, PeerId};
 use sn_dbc::{DbcTransaction, MainKey, SignedSpend};
-use std::{collections::BTreeSet, net::SocketAddr, time::Duration};
+use std::{collections::BTreeSet, net::SocketAddr};
 use tokio::task::spawn;
 use xor_name::XorName;
 
@@ -256,7 +255,11 @@ impl Node {
                         if let Ok(event) =
                             Event::double_spend_attempt(new.clone(), existing.clone())
                         {
-                            match self.send_to_closest(&Request::Event(event)).await {
+                            match self
+                                .network
+                                .node_send_to_closest(&Request::Event(event))
+                                .await
+                            {
                                 Ok(_) => {}
                                 Err(err) => {
                                     warn!("Failed to send double spend event to closest peers: {err:?}");
@@ -305,7 +308,7 @@ impl Node {
             address,
         ))));
 
-        let responses = self.send_to_closest(&request).await?;
+        let responses = self.network.node_send_to_closest(&request).await?;
 
         // Get all Ok results of the expected response type `GetDbcSpend`.
         let spends: Vec<_> = responses
@@ -370,63 +373,6 @@ impl Node {
         if let Err(err) = self.network.send_response(resp, response_channel).await {
             warn!("Error while sending response: {err:?}");
         }
-    }
-
-    async fn send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
-        // todo: make this a better function
-        let xor_name = match request {
-            Request::Data(data) => *data.dst().name(),
-            _ => todo!(),
-        };
-        info!("Sending {xor_name:?} to the closest peers.");
-        // todo: if `self` is present among the closest peers, the request should be routed to self?
-        let closest_peers = self.network.node_get_closest_peers(xor_name).await?;
-
-        Ok(self
-            .send_and_get_responses(closest_peers, request, true)
-            .await)
-    }
-
-    // Send a `Request` to the provided set of peers and wait for their responses concurrently.
-    // If `get_all_responses` is true, we wait for the responses from all the peers. Will return an
-    // error if the request timeouts.
-    // If `get_all_responses` is false, we return the first successful response that we get
-    async fn send_and_get_responses(
-        &self,
-        peers: Vec<PeerId>,
-        req: &Request,
-        get_all_responses: bool,
-    ) -> Vec<Result<Response>> {
-        let mut list_of_futures = Vec::new();
-        for peer in peers {
-            let future = Box::pin(tokio::time::timeout(
-                Duration::from_secs(10),
-                self.network.send_request(req.clone(), peer),
-            ));
-            list_of_futures.push(future);
-        }
-
-        let mut responses = Vec::new();
-        while !list_of_futures.is_empty() {
-            match select_all(list_of_futures).await {
-                (Ok(res), _, remaining_futures) => {
-                    let res = res.map_err(super::Error::Network);
-                    info!("Got response for the req: {req:?}, res: {res:?}");
-                    // return the first successful response
-                    if !get_all_responses && res.is_ok() {
-                        return vec![res];
-                    }
-                    responses.push(res);
-                    list_of_futures = remaining_futures;
-                }
-                (Err(timeout_err), _, remaining_futures) => {
-                    responses.push(Err(super::Error::ResponseTimeout(timeout_err)));
-                    list_of_futures = remaining_futures;
-                }
-            }
-        }
-
-        responses
     }
 }
 

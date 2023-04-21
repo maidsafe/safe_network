@@ -19,7 +19,4 @@ pub enum Error {
 
     #[error("Protocol error {0}")]
     Protocol(#[from] crate::protocol::error::Error),
-
-    #[error("ResponseTimeout")]
-    ResponseTimeout(#[from] tokio::time::error::Elapsed),
 }

@@ -22,7 +22,7 @@ use self::{
     msg::{MsgCodec, MsgProtocol},
 };
 
-use futures::StreamExt;
+use futures::{future::select_all, StreamExt};
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
@@ -317,24 +317,40 @@ impl Network {
         if !client {
             closest_peers.push(self.peer_id);
         }
-        let target = KBucketKey::new(key);
-        closest_peers.sort_by(|a, b| {
-            let a = KBucketKey::new(a.to_bytes());
-            let b = KBucketKey::new(b.to_bytes());
-            target.distance(&a).cmp(&target.distance(&b))
-        });
-        let closest_peers: Vec<PeerId> = closest_peers
-            .iter()
-            .take(CLOSE_GROUP_SIZE)
-            .cloned()
-            .collect();
+        self.sort_peers_by_key(closest_peers, key)
+    }
 
-        if CLOSE_GROUP_SIZE > closest_peers.len() {
-            warn!("Not enough peers in the k-bucket to satisfy the request");
-            return Err(Error::NotEnoughPeers);
-        }
+    /// Send request to the peers closest to the dst
+    /// todo: fix docs
+    pub async fn node_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
+        // todo: make this a better function
+        let xor_name = match request {
+            Request::Data(data) => *data.dst().name(),
+            _ => todo!(),
+        };
+        info!("Sending {xor_name:?} to the closest peers.");
+        // todo: if `self` is present among the closest peers, the request should be routed to self?
+        let closest_peers = self.node_get_closest_peers(xor_name).await?;
 
-        Ok(closest_peers)
+        Ok(self
+            .send_and_get_responses(closest_peers, request, true)
+            .await)
+    }
+
+    /// Send request to the peers closest to the dst
+    pub async fn client_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
+        // todo: make this a better function
+        let xor_name = match request {
+            Request::Data(data) => *data.dst().name(),
+            _ => todo!(),
+        };
+        info!("Sending {xor_name:?} to the closest peers.");
+        // todo: if `self` is present among the closest peers, the request should be routed to self?
+        let closest_peers = self.client_get_closest_peers(xor_name).await?;
+
+        Ok(self
+            .send_and_get_responses(closest_peers, request, true)
+            .await)
     }
 
     /// Send `Request` to the the given `PeerId` and wait for a `Response`.
@@ -353,6 +369,64 @@ impl Network {
     ) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
             .await
+    }
+
+    /// Sort the provided peers by their distance to the given key.
+    fn sort_peers_by_key(&self, mut peers: Vec<PeerId>, key: Vec<u8>) -> Result<Vec<PeerId>> {
+        let target = KBucketKey::new(key);
+        peers.sort_by(|a, b| {
+            let a = KBucketKey::new(a.to_bytes());
+            let b = KBucketKey::new(b.to_bytes());
+            target.distance(&a).cmp(&target.distance(&b))
+        });
+        let peers: Vec<PeerId> = peers.iter().take(CLOSE_GROUP_SIZE).cloned().collect();
+
+        if CLOSE_GROUP_SIZE > peers.len() {
+            warn!("Not enough peers in the k-bucket to satisfy the request");
+            return Err(Error::NotEnoughPeers);
+        }
+        Ok(peers)
+    }
+
+    // Send a `Request` to the provided set of peers and wait for their responses concurrently.
+    // If `get_all_responses` is true, we wait for the responses from all the peers. Will return an
+    // error if the request timeouts.
+    // If `get_all_responses` is false, we return the first successful response that we get
+    async fn send_and_get_responses(
+        &self,
+        peers: Vec<PeerId>,
+        req: &Request,
+        get_all_responses: bool,
+    ) -> Vec<Result<Response>> {
+        let mut list_of_futures = Vec::new();
+        for peer in peers {
+            let future = Box::pin(tokio::time::timeout(
+                Duration::from_secs(10),
+                self.send_request(req.clone(), peer),
+            ));
+            list_of_futures.push(future);
+        }
+
+        let mut responses = Vec::new();
+        while !list_of_futures.is_empty() {
+            match select_all(list_of_futures).await {
+                (Ok(res), _, remaining_futures) => {
+                    info!("Got response for the req: {req:?}, res: {res:?}");
+                    // return the first successful response
+                    if !get_all_responses && res.is_ok() {
+                        return vec![res];
+                    }
+                    responses.push(res);
+                    list_of_futures = remaining_futures;
+                }
+                (Err(timeout_err), _, remaining_futures) => {
+                    responses.push(Err(Error::ResponseTimeout(timeout_err)));
+                    list_of_futures = remaining_futures;
+                }
+            }
+        }
+
+        responses
     }
 
     // Helper to send SwarmCmd
