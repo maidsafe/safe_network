@@ -60,7 +60,7 @@ impl Node {
         let mut node = Self {
             network,
             chunks: ChunkStorage::new(&root_dir),
-            registers: RegisterStorage::new(),
+            registers: RegisterStorage::new(&root_dir),
             transfers: Transfers::new(node_id, MainKey::random()),
             events_channel: node_events_channel.clone(),
             initial_peers,
