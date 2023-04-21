@@ -35,7 +35,4 @@ pub enum Error {
 
     #[error("Genesis error {0}")]
     Genesis(#[from] GenesisError),
-
-    #[error("ResponseTimeout")]
-    ResponseTimeout(#[from] tokio::time::error::Elapsed),
 }
