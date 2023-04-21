@@ -28,8 +28,8 @@ pub enum Error {
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
     /// No filename found
-    #[error("Path contains no file name: {0}")]
-    NoFilename(PathBuf),
+    #[error("Path is not a file: {0}")]
+    PathIsNotAFile(PathBuf),
     /// Invalid filename
     #[error("Invalid chunk filename: {0}")]
     InvalidFilename(PathBuf),

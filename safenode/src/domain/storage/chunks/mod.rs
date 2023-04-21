@@ -27,7 +27,7 @@ use tokio::{
     io::AsyncWriteExt,
 };
 use tracing::info;
-use xor_name::XorName;
+use xor_name::{XorName, XOR_NAME_LEN};
 
 const CHUNKS_STORE_DIR_NAME: &str = "chunks";
 
@@ -58,11 +58,11 @@ impl ChunkStorage {
     fn chunk_filepath_to_address(path: &Path) -> Result<ChunkAddress> {
         let filename = path
             .file_name()
-            .ok_or_else(|| Error::NoFilename(path.to_path_buf()))?
+            .ok_or_else(|| Error::PathIsNotAFile(path.to_path_buf()))?
             .to_str()
             .ok_or_else(|| Error::InvalidFilename(path.to_path_buf()))?;
 
-        let xorname = XorName(<[u8; 32]>::from_hex(filename)?);
+        let xorname = XorName(<[u8; XOR_NAME_LEN]>::from_hex(filename)?);
         Ok(ChunkAddress::new(xorname))
     }
 
