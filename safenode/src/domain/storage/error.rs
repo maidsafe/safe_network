@@ -8,8 +8,10 @@
 
 use super::{
     register::{EntryHash, User},
-    ChunkAddress, RegisterAddress,
+    ChunkAddress, DbcAddress, RegisterAddress,
 };
+
+use sn_dbc::{Error as DbcError, SignedSpend};
 
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, path::PathBuf, result};
@@ -71,6 +73,23 @@ pub enum Error {
     /// Data authority provided is invalid.
     #[error("Provided PublicKey could not validate signature {0:?}")]
     InvalidSignature(bls::PublicKey),
+    /// Spend not found.
+    #[error("Spend not found: {0:?}")]
+    SpendNotFound(DbcAddress),
+    /// A double spend attempt was detected.
+    #[error("A double spend attempt was detected. Incoming and existing spend are not the same: {new:?}. Existing: {existing:?}")]
+    DoubleSpendAttempt {
+        /// New spend that we received.
+        new: Box<SignedSpend>,
+        /// Existing spend of same id that we already have.
+        existing: Box<SignedSpend>,
+    },
+    /// We were notified about a double spend attempt, but they were for different dbcs.
+    #[error("We were notified about a double spend attempt, but they were for different dbcs: {0:?}. Existing: {1:?}")]
+    NotADoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
+    /// An error from the `sn_dbc` crate.
+    #[error("Dbc error: {0}")]
+    Dbcs(String),
     /// Bincode error.
     #[error("Bincode error:: {0}")]
     Bincode(String),
@@ -80,6 +99,12 @@ pub enum Error {
     /// Hex decoding error.
     #[error("Hex decoding error:: {0}")]
     HexDecoding(String),
+}
+
+impl From<DbcError> for Error {
+    fn from(error: DbcError) -> Self {
+        Error::Dbcs(error.to_string())
+    }
 }
 
 impl From<bincode::Error> for Error {

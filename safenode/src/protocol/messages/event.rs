@@ -8,7 +8,7 @@
 
 use crate::domain::{
     node_transfers::{Error, Result},
-    storage::{dbc_address, DataAddress},
+    storage::{dbc_address, DataAddress, Error as StorageError},
 };
 
 use sn_dbc::SignedSpend;
@@ -51,7 +51,7 @@ impl Event {
             // with same id are detected as being different.
             // A node could erroneously send a notification of a double spend attempt,
             // so, we need to validate that.
-            Err(Error::NotADoubleSpendAttempt(a, b))
+            Err(Error::Storage(StorageError::NotADoubleSpendAttempt(a, b)))
         }
     }
 }
