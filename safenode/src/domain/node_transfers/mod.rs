@@ -23,7 +23,10 @@ use crate::{
 
 use sn_dbc::{DbcId, DbcTransaction, MainKey, SignedSpend, Token};
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 
 /// This is an arbitrary number.
 /// The supply/demand dynamics enabled by the
@@ -41,18 +44,18 @@ pub(crate) struct Transfers {
 
 impl Transfers {
     /// Create a new instance of `Transfers`.
-    pub(crate) fn new(node_id: NodeId, node_reward_key: MainKey) -> Self {
+    pub(crate) fn new(node_id: NodeId, node_reward_key: MainKey, root_dir: &Path) -> Self {
         Self {
             node_id,
             node_reward_key,
             spend_queue: SpendQ::with_fee(STARTING_FEE),
-            storage: SpendStorage::new(),
+            storage: SpendStorage::new(root_dir),
         }
     }
 
     /// Get Spend from local store.
     pub(crate) async fn get(&self, address: DbcAddress) -> Result<SignedSpend> {
-        self.storage.get(address).await
+        Ok(self.storage.get(&address).await?)
     }
 
     /// Get the required fee for the specified spend priority.
@@ -84,7 +87,7 @@ impl Transfers {
         a_spend: &SignedSpend,
         b_spend: &SignedSpend,
     ) -> Result<()> {
-        self.storage.try_add_double(a_spend, b_spend).await
+        Ok(self.storage.try_add_double(a_spend, b_spend).await?)
     }
 
     /// Tries to add a new spend to the queue.
@@ -130,7 +133,7 @@ impl Transfers {
             // NB: This works for now. We can look at
             // a timeout backstop in coming iterations.
             if let Some((signed_spend, _)) = self.spend_queue.pop() {
-                return self.storage.try_add(&signed_spend).await;
+                return Ok(self.storage.try_add(&signed_spend).await?);
             }
         }
 

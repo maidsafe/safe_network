@@ -6,29 +6,30 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::domain::{
-    node_transfers::{Error, Result},
-    storage::DbcAddress,
-};
+//! For every DbcId, there is a collection of transactions.
+//! Every transaction has a set of peers who reported that they hold this transaction.
+//! At a higher level, a peer will store a spend to `valid_spends` if the dbc checks out as valid, _and_ the parents of the dbc checks out as valid.
+//! A peer will move a spend from `valid_spends` to `double_spends` if it receives another tx id for the same dbc id.
+//! A peer will never again store such a spend to `valid_spends`.
+
+use super::{prefix_tree_path, DbcAddress, Error, Result};
 
 use sn_dbc::{DbcId, SignedSpend};
 
+use bincode::{deserialize, serialize};
 use std::{
-    collections::BTreeMap,
     fmt::{self, Display, Formatter},
-    sync::Arc,
+    path::{Path, PathBuf},
 };
-use tokio::sync::RwLock;
+use tokio::{
+    fs::{create_dir_all, read, remove_file, File},
+    io::AsyncWriteExt,
+};
 use tracing::trace;
 use xor_name::XorName;
 
-/// For every DbcId, there is a collection of transactions.
-/// Every transaction has a set of peers who reported that they hold this transaction.
-/// At a higher level, a peer will store a spend to `valid_spends` if the dbc checks out as valid, _and_ the parents of the dbc checks out as valid.
-/// A peer will move a spend from `valid_spends` to `double_spends` if it receives another tx id for the same dbc id.
-/// A peer will never again store such a spend to `valid_spends`.
-type ValidSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, V>>>;
-type DoubleSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, (V, V)>>>;
+const VALID_SPENDS_STORE_DIR_NAME: &str = "valid_spends";
+const DOUBLE_SPENDS_STORE_DIR_NAME: &str = "double_spends";
 
 /// Storage of Dbc spends.
 ///
@@ -36,28 +37,40 @@ type DoubleSpends<V> = Arc<RwLock<BTreeMap<DbcAddress, (V, V)>>>;
 /// Later, when all data types have this, we can verify that it is not wildly different.
 #[derive(Clone, Debug)]
 pub(crate) struct SpendStorage {
-    valid_spends: ValidSpends<SignedSpend>,
-    double_spends: DoubleSpends<SignedSpend>,
+    valid_spends_path: PathBuf,
+    double_spends_path: PathBuf,
 }
 
 impl SpendStorage {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(path: &Path) -> Self {
         Self {
-            valid_spends: Arc::new(RwLock::new(BTreeMap::new())),
-            double_spends: Arc::new(RwLock::new(BTreeMap::new())),
+            valid_spends_path: path.join(VALID_SPENDS_STORE_DIR_NAME),
+            double_spends_path: path.join(DOUBLE_SPENDS_STORE_DIR_NAME),
         }
     }
 
     // Read Spend from local store.
-    pub(crate) async fn get(&self, address: DbcAddress) -> Result<SignedSpend> {
+    pub(crate) async fn get(&self, address: &DbcAddress) -> Result<SignedSpend> {
         trace!("Getting Spend: {address:?}");
-        if let Some(spend) = self.valid_spends.read().await.get(&address) {
-            Ok(spend.clone())
-        } else {
-            Err(Error::SpendNotFound(address))
+        let file_path = self.address_to_filepath(address, &self.valid_spends_path)?;
+        match read(file_path).await {
+            Ok(bytes) => {
+                let spend: SignedSpend = deserialize(&bytes)?;
+                if address == &dbc_address(spend.dbc_id()) {
+                    Ok(spend)
+                } else {
+                    // This can happen if the content read is empty, or incomplete,
+                    // possibly due to an issue with the OS synchronising to disk,
+                    // resulting in a mismatch with recreated address of the Chunk.
+                    Err(Error::SpendNotFound(*address))
+                }
+            }
+            Err(_) => Err(Error::SpendNotFound(*address)),
         }
     }
 
+    /// Try store a spend to local file system.
+    ///
     /// We need to check that the parent is spent before
     /// we try add here.
     /// If a double spend attempt is detected, a `DoubleSpendAttempt` error
@@ -68,19 +81,30 @@ impl SpendStorage {
     /// could otherwise happen in parallel in different threads.)
     pub(crate) async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         self.validate(signed_spend).await?;
+        let addr = dbc_address(signed_spend.dbc_id());
 
-        let address = dbc_address(signed_spend.dbc_id());
+        let filepath = self.address_to_filepath(&addr, &self.valid_spends_path)?;
 
-        let mut valid_spends = self.valid_spends.write().await;
-
-        let replaced = valid_spends.insert(address, signed_spend.clone());
-        if replaced.is_some() {
-            // The `&mut self` signature prevents any race,
-            // so this is a second layer of security on that,
-            // if some developer by mistake removes the &mut self.
-            drop(valid_spends);
+        if filepath.exists() {
             self.validate(signed_spend).await?;
+            return Ok(());
         }
+
+        // Store the spend to local file system.
+        trace!("Storing spend {addr:?}.");
+        if let Some(dirs) = filepath.parent() {
+            create_dir_all(dirs).await?;
+        }
+
+        let mut file = File::create(filepath).await?;
+
+        let bytes = serialize(signed_spend)?;
+        file.write_all(&bytes).await?;
+        // Sync up OS data to disk to reduce the chances of
+        // concurrent reading failing by reading an empty/incomplete file
+        file.sync_data().await?;
+
+        trace!("Stored new spend {addr:?}.");
 
         Ok(())
     }
@@ -98,25 +122,25 @@ impl SpendStorage {
 
         let address = dbc_address(signed_spend.dbc_id());
 
-        // The spend id is from the spend hash. That makes sure that a spend is compared based
-        // on all of `DbcTransaction`, `DbcReason`, `DbcId` and `BlindedAmount` being equal.
-        let mut valid_spends = self.valid_spends.write().await;
-        if let Some(existing) = valid_spends.get(&address).cloned() {
+        if let Ok(existing) = self.get(&address).await {
             let tamper_attempted = signed_spend.spend.hash() != existing.spend.hash();
             if tamper_attempted {
-                let mut double_spends = self.double_spends.write().await;
-                let _replaced =
-                    double_spends.insert(address, (existing.clone(), signed_spend.clone()));
+                // We don't error if the double spend failed, as we rather want to
+                // announce the double spend attempt to close group. TODO: how to handle the error then?
+                let _ = self.try_store_double_spend(&existing, signed_spend).await;
 
                 // The spend is now permanently removed from the valid spends.
-                let _removed = valid_spends.remove(&address);
+                // We don't error if the remove failed, as we rather want to
+                // announce the double spend attempt to close group.
+                // The double spend will still be detected o querying for the spend.
+                let _ = self.remove(&address, &self.valid_spends_path).await;
 
                 return Err(Error::DoubleSpendAttempt {
                     new: Box::new(signed_spend.clone()),
-                    existing: Box::new(existing.clone()),
+                    existing: Box::new(existing),
                 });
             }
-        };
+        }
 
         // This hash input is pointless, since it will compare with
         // the same hash in the verify fn.
@@ -165,12 +189,10 @@ impl SpendStorage {
 
         let address = dbc_address(a_spend.dbc_id());
 
-        let mut double_spends = self.double_spends.write().await;
-        let _replaced = double_spends.insert(address, (a_spend.clone(), b_spend.clone()));
+        self.try_store_double_spend(a_spend, b_spend).await?;
 
         // The spend is now permanently removed from the valid spends.
-        let mut valid_spends = self.valid_spends.write().await;
-        let _removed = valid_spends.remove(&address);
+        self.remove(&address, &self.valid_spends_path).await?;
 
         Ok(())
     }
@@ -178,19 +200,83 @@ impl SpendStorage {
     /// Checks if the given DbcId is unspendable.
     async fn is_unspendable(&self, dbc_id: &DbcId) -> bool {
         let address = dbc_address(dbc_id);
-        self.double_spends.read().await.contains_key(&address)
+        self.try_get_double_spend(&address).await.is_ok()
+    }
+
+    fn address_to_filepath(&self, addr: &DbcAddress, root: &Path) -> Result<PathBuf> {
+        let xorname = *addr.name();
+        let path = prefix_tree_path(root, xorname);
+        let filename = hex::encode(xorname);
+        Ok(path.join(filename))
+    }
+
+    async fn remove(&self, address: &DbcAddress, root: &Path) -> Result<()> {
+        debug!("Removing spend, {:?}", address);
+        let file_path = self.address_to_filepath(address, root)?;
+        remove_file(file_path).await?;
+        Ok(())
+    }
+
+    async fn try_get_double_spend(
+        &self,
+        address: &DbcAddress,
+    ) -> Result<(SignedSpend, SignedSpend)> {
+        trace!("Getting double spend: {address:?}");
+        let file_path = self.address_to_filepath(address, &self.double_spends_path)?;
+        match read(file_path).await {
+            Ok(bytes) => {
+                let (a_spend, b_spend): (SignedSpend, SignedSpend) = deserialize(&bytes)?;
+                // They should have the same dbc id, so we can use either. TODO: Or should we check both? What if they are different?
+                if address == &dbc_address(a_spend.dbc_id()) {
+                    Ok((a_spend, b_spend))
+                } else {
+                    // This can happen if the content read is empty, or incomplete,
+                    // possibly due to an issue with the OS synchronising to disk,
+                    // resulting in a mismatch with recreated address of the Chunk.
+                    Err(Error::SpendNotFound(*address))
+                }
+            }
+            Err(_) => Err(Error::SpendNotFound(*address)),
+        }
+    }
+
+    async fn try_store_double_spend(
+        &mut self,
+        a_spend: &SignedSpend,
+        b_spend: &SignedSpend,
+    ) -> Result<()> {
+        // They have the same dbc id, so we can use either.
+        let addr = dbc_address(a_spend.dbc_id());
+
+        let filepath = self.address_to_filepath(&addr, &self.double_spends_path)?;
+
+        if filepath.exists() {
+            return Ok(());
+        }
+
+        // Store the double spend to local file system.
+        trace!("Storing double spend {addr:?}.");
+        if let Some(dirs) = filepath.parent() {
+            create_dir_all(dirs).await?;
+        }
+
+        let mut file = File::create(filepath).await?;
+
+        let bytes = serialize(&(a_spend, b_spend))?;
+        file.write_all(&bytes).await?;
+        // Sync up OS data to disk to reduce the chances of
+        // concurrent reading failing by reading an empty/incomplete file
+        file.sync_data().await?;
+
+        trace!("Stored double spend {addr:?}.");
+
+        Ok(())
     }
 }
 
 impl Display for SpendStorage {
     fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
         write!(formatter, "SpendStorage")
-    }
-}
-
-impl Default for SpendStorage {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

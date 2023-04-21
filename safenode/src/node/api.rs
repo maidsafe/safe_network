@@ -15,7 +15,10 @@ use super::{
 use crate::{
     domain::{
         node_transfers::{Error as TransferError, Transfers},
-        storage::{dbc_address, register::User, ChunkStorage, DbcAddress, RegisterStorage},
+        storage::{
+            dbc_address, register::User, ChunkStorage, DbcAddress, Error as StorageError,
+            RegisterStorage,
+        },
     },
     network::{close_group_majority, NetworkEvent, SwarmDriver},
     protocol::{
@@ -61,7 +64,7 @@ impl Node {
             network,
             chunks: ChunkStorage::new(&root_dir),
             registers: RegisterStorage::new(&root_dir),
-            transfers: Transfers::new(node_id, MainKey::random()),
+            transfers: Transfers::new(node_id, MainKey::random(), &root_dir),
             events_channel: node_events_channel.clone(),
             initial_peers,
         };
@@ -226,7 +229,10 @@ impl Node {
                     .try_add(signed_spend, parent_tx, fee_ciphers, parent_spends)
                     .await
                 {
-                    Err(TransferError::DoubleSpendAttempt { new, existing }) => {
+                    Err(TransferError::Storage(StorageError::DoubleSpendAttempt {
+                        new,
+                        existing,
+                    })) => {
                         warn!("Double spend attempted! New: {new:?}. Existing:  {existing:?}");
                         if let Ok(event) =
                             Event::double_spend_attempt(new.clone(), existing.clone())
@@ -239,9 +245,9 @@ impl Node {
                             }
                         }
 
-                        Err(ProtocolError::Transfers(
-                            TransferError::DoubleSpendAttempt { new, existing },
-                        ))
+                        Err(ProtocolError::Transfers(TransferError::Storage(
+                            StorageError::DoubleSpendAttempt { new, existing },
+                        )))
                     }
                     other => other.map_err(ProtocolError::Transfers),
                 };
