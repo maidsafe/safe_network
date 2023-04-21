@@ -167,9 +167,7 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     }
 
     // Finalize the tx builder to get the dbc builder.
-    let dbc_builder = tx_builder
-        .build(Hash::default(), &mut rng)
-        .map_err(Error::Dbcs)?;
+    let dbc_builder = tx_builder.build(Hash::default(), &mut rng)?;
 
     let signed_spends: BTreeMap<_, _> = dbc_builder
         .signed_spends()
@@ -206,8 +204,7 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     // Perform validations of input tx and signed spends,
     // as well as building the output DBCs.
     let mut created_dbcs: Vec<_> = dbc_builder
-        .build()
-        .map_err(Error::Dbcs)?
+        .build()?
         .into_iter()
         .map(|(dbc, amount)| CreatedDbc { dbc, amount })
         .collect();

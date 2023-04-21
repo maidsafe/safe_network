@@ -6,17 +6,20 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::domain::client_transfers::Error as ClientTransfersError;
+
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Specialisation of `std::Result`.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// Transfer errors.
-#[derive(Debug, Error)]
+/// Wallet errors.
+#[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Error {
     /// Failed to create transfer.
-    #[error("Transfer error {0}")]
-    CreateTransfer(#[from] crate::domain::client_transfers::Error),
+    #[error("Client transfer error {0}")]
+    CreateTransfer(#[from] ClientTransfersError),
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),
@@ -31,11 +34,35 @@ pub enum Error {
     FailedToHexEncodeKey(String),
     /// Bls error.
     #[error("Bls error: {0}")]
-    Bls(#[from] bls::error::Error),
+    Bls(String),
     /// Bincode error.
     #[error("Bincode error:: {0}")]
-    Bincode(#[from] bincode::Error),
+    Bincode(String),
     /// I/O error.
     #[error("I/O error: {0}")]
-    Io(#[from] std::io::Error),
+    Io(String),
 }
+
+impl From<bls::error::Error> for Error {
+    fn from(error: bls::error::Error) -> Self {
+        Error::Bls(error.to_string())
+    }
+}
+
+impl From<bincode::Error> for Error {
+    fn from(error: bincode::Error) -> Self {
+        Self::Bincode(error.to_string())
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(error: std::io::Error) -> Self {
+        Self::Io(error.to_string())
+    }
+}
+
+// impl From<hex::FromHexError> for Error {
+//     fn from(error: hex::FromHexError) -> Self {
+//         Self::HexDecoding(error.to_string())
+//     }
+// }

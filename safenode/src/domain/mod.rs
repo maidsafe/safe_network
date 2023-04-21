@@ -11,6 +11,8 @@ mod dbc_genesis;
 
 /// Client handling of token transfers.
 pub mod client_transfers;
+/// Errors.
+pub mod error;
 /// Types related to transfer fees.
 pub mod fees;
 /// Node handling of token transfers.
