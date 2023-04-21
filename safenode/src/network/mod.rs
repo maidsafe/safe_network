@@ -56,8 +56,7 @@ pub const fn close_group_majority() -> usize {
     CLOSE_GROUP_SIZE / 2 + 1
 }
 
-type PendingGetClosest =
-    HashMap<QueryId, (oneshot::Sender<(PeerId, HashSet<PeerId>)>, HashSet<PeerId>)>;
+type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
 
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
@@ -311,12 +310,12 @@ impl Network {
             sender,
         })
         .await?;
-        let (our_id, k_bucket_peers) = receiver.await?;
+        let k_bucket_peers = receiver.await?;
 
         // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
         let mut closest_peers: Vec<_> = k_bucket_peers.into_iter().collect();
         if !client {
-            closest_peers.push(our_id);
+            closest_peers.push(self.peer_id);
         }
         let target = KBucketKey::new(key);
         closest_peers.sort_by(|a, b| {

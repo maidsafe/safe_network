@@ -30,7 +30,7 @@ pub enum SwarmCmd {
     },
     GetClosestPeers {
         key: Vec<u8>,
-        sender: oneshot::Sender<(PeerId, HashSet<PeerId>)>,
+        sender: oneshot::Sender<HashSet<PeerId>>,
     },
     SendRequest {
         req: Request,
