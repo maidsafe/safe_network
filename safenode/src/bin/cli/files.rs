@@ -85,7 +85,6 @@ async fn download_files(file_names_dir: PathBuf, file_api: &Files) -> Result<()>
             let bytes = Bytes::from(file);
             let file_name = entry.file_name();
 
-            info!("Loading file xornames from {file_name:?}");
             println!(
                 "Loading file xornames from {file_name:?} with length {:?}",
                 bytes.len()
