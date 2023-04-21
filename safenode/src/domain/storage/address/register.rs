@@ -21,18 +21,29 @@ pub struct RegisterAddress {
 }
 
 impl RegisterAddress {
-    /// Constructs a new `RegisterAddress` given `name` and `tag`.
+    /// Construct a new `RegisterAddress` given `name` and `tag`.
     pub fn new(name: XorName, tag: u64) -> Self {
         Self { name, tag }
     }
 
-    /// Returns the name.
+    /// Return the identifier of the register.
+    /// This is used to locate the register on the network.
+    pub fn id(&self) -> XorName {
+        let mut bytes = [0u8; 40];
+        let name_bytes = self.name.0;
+        let tag_bytes = self.tag.to_be_bytes();
+        bytes.copy_from_slice(&name_bytes[0..32]);
+        bytes.copy_from_slice(&tag_bytes[0..8]);
+        XorName::from_content(&bytes)
+    }
+
+    /// Return the name.
     /// This is not a unique identifier.
     pub fn name(&self) -> &XorName {
         &self.name
     }
 
-    /// Returns the tag.
+    /// Return the tag.
     pub fn tag(&self) -> u64 {
         self.tag
     }
