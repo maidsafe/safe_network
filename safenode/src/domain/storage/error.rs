@@ -87,6 +87,9 @@ pub enum Error {
     /// We were notified about a double spend attempt, but they were for different dbcs.
     #[error("We were notified about a double spend attempt, but they were for different dbcs: {0:?}. Existing: {1:?}")]
     NotADoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
+    /// A spend that was attempted to be added was already marked as double spend.
+    #[error("A spend that was attempted to be added was already marked as double spend: {0:?}")]
+    AlreadyMarkedAsDoubleSpend(DbcAddress),
     /// An error from the `sn_dbc` crate.
     #[error("Dbc error: {0}")]
     Dbcs(String),

@@ -117,24 +117,23 @@ impl SpendStorage {
     /// and double spent attempts to be missed (as the validation and adding
     /// could otherwise happen in parallel in different threads.)
     pub(crate) async fn validate(&mut self, signed_spend: &SignedSpend) -> Result<()> {
-        if self.is_unspendable(signed_spend.dbc_id()).await {
-            return Ok(()); // Already unspendable, so we don't care about this spend.
-        }
-
         let address = dbc_address(signed_spend.dbc_id());
+        if self.try_get_double_spend(&address).await.is_ok() {
+            return Err(Error::AlreadyMarkedAsDoubleSpend(address));
+        }
 
         if let Ok(existing) = self.get(&address).await {
             let tamper_attempted = signed_spend.spend.hash() != existing.spend.hash();
             if tamper_attempted {
                 // We don't error if the double spend failed, as we rather want to
                 // announce the double spend attempt to close group. TODO: how to handle the error then?
-                let _ = self.try_store_double_spend(&existing, signed_spend).await;
+                self.try_store_double_spend(&existing, signed_spend).await?;
 
                 // The spend is now permanently removed from the valid spends.
                 // We don't error if the remove failed, as we rather want to
                 // announce the double spend attempt to close group.
                 // The double spend will still be detected by querying for the spend.
-                let _ = self.remove(&address, &self.valid_spends_path).await;
+                self.remove(&address, &self.valid_spends_path).await?;
 
                 return Err(Error::DoubleSpendAttempt {
                     new: Box::new(signed_spend.clone()),
@@ -296,7 +295,7 @@ mod tests {
         let mut storage = init_file_store();
         let key = MainKey::random();
         let dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
-        let dbcs = split(dbc, &key, number_of_spends).expect("Split to succeed.");
+        let dbcs = split(&dbc, &key, number_of_spends).expect("Split to succeed.");
         let spends: Vec<_> = dbcs
             .into_iter()
             .flat_map(|(dbc, _)| dbc.signed_spends)
@@ -316,6 +315,27 @@ mod tests {
 
             assert_eq!(spend.to_bytes(), read_spend.to_bytes());
         }
+    }
+
+    #[tokio::test]
+    async fn adding_spend_is_idempotent() {
+        let mut storage = init_file_store();
+        let key = MainKey::random();
+        let src_dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+
+        let dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
+        let (dbc, _) = &dbc[0];
+        let spend = dbc.signed_spends.last().expect("Should contain a spend.");
+
+        // Adding the exact same spend is idempotent.
+        storage
+            .try_add(spend)
+            .await
+            .expect("First spend should be added.");
+        storage
+            .try_add(spend)
+            .await
+            .expect("The exact same spend should be added.");
     }
 
     fn init_file_store() -> SpendStorage {
