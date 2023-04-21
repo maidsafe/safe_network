@@ -167,8 +167,24 @@ impl SwarmDriver {
                     }
                 }
             }
-            SwarmEvent::ConnectionClosed { peer_id, .. } => {
-                info!("Peer {} has gone offline", peer_id);
+            SwarmEvent::ConnectionClosed {
+                peer_id, endpoint, ..
+            } => {
+                // The connection closed due to no msg flow show as `endpoint::receiver`
+                // The connection closed due to peer dead show as `endpoint::dialer`
+                info!("Connection closed to Peer {peer_id} - {endpoint:?}");
+                if endpoint.is_dialer() {
+                    info!("Dead Peer {peer_id:?}");
+                    if self
+                        .swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .remove_address(&peer_id, endpoint.get_remote_address())
+                        .is_some()
+                    {
+                        info!("Removed dead peer {peer_id:?} from RT");
+                    }
+                }
             }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 if let Some(peer_id) = peer_id {

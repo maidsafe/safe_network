@@ -109,7 +109,7 @@ async fn start_node(
 ) -> Result<()> {
     let started_instant = std::time::Instant::now();
 
-    info!("Starting node (PID: {}) ...", std::process::id());
+    info!("Starting node ...");
     let (node_id, node_events_channel) = Node::run(node_socket_addr, peers).await?;
 
     // Channel to receive node ctrl cmds from RPC service if enabled
