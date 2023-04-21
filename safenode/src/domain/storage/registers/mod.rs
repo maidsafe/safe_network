@@ -278,7 +278,7 @@ impl RegisterStorage {
                 // the target Register is not in our store or we don't have the 'Register create',
                 // let's verify the create cmd we received is valid and try to apply stored cmds we may have.
                 let SignedRegisterCreate { op, auth } = cmd;
-                auth.verify_authority(serialize(op).map_err(|e| Error::Bincode(e.to_string()))?)?;
+                auth.verify_authority(serialize(op)?)?;
 
                 trace!("Creating new register: {:?}", cmd.dst());
                 // let's do a final check, let's try to apply all cmds to it,
@@ -312,7 +312,7 @@ impl RegisterStorage {
         match cmd {
             RegisterCmd::Create { .. } => Ok(()),
             RegisterCmd::Edit(SignedRegisterEdit { op, auth }) => {
-                auth.verify_authority(serialize(op).map_err(|e| Error::Bincode(e.to_string()))?)?;
+                auth.verify_authority(serialize(op)?)?;
 
                 info!("Editing Register: {addr:?}");
                 let public_key = auth.public_key;
