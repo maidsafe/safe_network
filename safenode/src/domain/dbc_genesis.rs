@@ -21,16 +21,16 @@ const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
 /// At the inception of the Network 30 % of total supply - i.e. 1,288,490,189 - whole tokens will be created.
 /// Each whole token can be subdivided 10^9 times,
 /// thus creating a total of 1,288,490,189,000,000,000 available units.
-pub const GENESIS_DBC_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
+pub(super) const GENESIS_DBC_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
 
 /// A specialised `Result` type for dbc_genesis crate.
-pub type GenesisResult<T> = Result<T, GenesisError>;
+pub(super) type GenesisResult<T> = Result<T, GenesisError>;
 
 /// Main error type for the crate.
 #[derive(Error, Debug, Clone)]
 // #[non_exhaustive]
 #[non_exhaustive]
-pub enum GenesisError {
+pub(super) enum GenesisError {
     /// Error occurred when minting the Genesis DBC.
     #[error("Genesis DBC error:: {0}")]
     GenesisDbcError(String),
@@ -42,8 +42,8 @@ pub enum GenesisError {
 /// Generate the genesis DBC.
 /// The genesis DBC is the first DBC in the network. It is created without
 /// a source transaction, as there was nothing before it.
-#[allow(clippy::result_large_err)]
-pub fn create_genesis_dbc(genesis_main_key: &MainKey) -> GenesisResult<Dbc> {
+#[allow(clippy::result_large_err, unused)]
+pub(super) fn create_genesis_dbc(genesis_main_key: &MainKey) -> GenesisResult<Dbc> {
     let rng = &mut rng::thread_rng();
 
     let dbc_id_src = genesis_main_key.random_dbc_id_src(rng);

@@ -6,10 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-/// Messages types
-pub mod messages;
-
-/// Dbc genesis creation.
-pub mod dbc_genesis;
 /// Errors.
 pub mod error;
+/// Messages types
+pub mod messages;
