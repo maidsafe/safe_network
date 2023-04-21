@@ -164,8 +164,8 @@ impl RegisterStorage {
     /// Persists a RegisterCmd to disk.
     async fn write_register_cmd(&self, cmd: &RegisterCmd, path: &Path) -> Result<()> {
         let addr = cmd.dst();
-        let reg_id = hex::encode(addr.id());
-        let path = path.join(&reg_id);
+        let reg_cmd_id = register_op_id(cmd)?;
+        let path = path.join(&reg_cmd_id);
 
         trace!(
             "Writing cmd register log for {addr:?} at {}",
@@ -202,7 +202,7 @@ impl RegisterStorage {
         file.sync_data().await?;
 
         trace!(
-            "RegisterCmd writing successful for {addr:?}, id {reg_id}, at {}, entry hash: {entry_hash:?}",
+            "RegisterCmd writing successful for {addr:?}, id {reg_cmd_id}, at {}, entry hash: {entry_hash:?}",
             path.display()
         );
 
@@ -487,6 +487,19 @@ impl RegisterStorage {
     }
 }
 
+// Gets an operation id, deterministic for a RegisterCmd, it takes
+// the full Cmd and all signers into consideration
+fn register_op_id(cmd: &RegisterCmd) -> Result<String> {
+    use tiny_keccak::Hasher;
+    let mut hasher = tiny_keccak::Sha3::v256();
+    let bytes = serialize(cmd)?;
+    let mut output = [0; 64];
+    hasher.update(&bytes);
+    hasher.finalize(&mut output);
+    let id = hex::encode(output);
+    Ok(id)
+}
+
 #[cfg(test)]
 mod test {
     use super::{
@@ -681,7 +694,7 @@ mod test {
             "Op log doesn't match"
         );
         assert_eq!(stored_reg.op_log_path, log_path);
-        assert_eq!(stored_reg.state.as_ref().map(|reg| reg.size()), Some(1));
+        assert_eq!(stored_reg.state.as_ref().map(|reg| reg.size()), None);
 
         // Apply the create cmd now.
         store.try_to_apply_cmd_against_register_state(&cmd_create, &mut stored_reg)?;
