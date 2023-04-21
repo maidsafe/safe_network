@@ -338,6 +338,58 @@ mod tests {
             .expect("The exact same spend should be added.");
     }
 
+    #[tokio::test]
+    async fn double_spend_attempt_is_detected() {
+        let mut storage = init_file_store();
+        let key = MainKey::random();
+        let src_dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+
+        let dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
+        let (dbc, _) = &dbc[0];
+        let spend = dbc.signed_spends.last().expect("Should contain a spend.");
+
+        storage
+            .try_add(spend)
+            .await
+            .expect("First spend should be added.");
+
+        // The tampered spend will have the same id and src, but another another dst transaction.
+        let mut tampered_spend = spend.clone();
+        let double_spend_dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
+        let (double_spend_dbc, _) = &double_spend_dbc[0];
+        let double_spend = double_spend_dbc
+            .signed_spends
+            .last()
+            .expect("Should contain a spend.");
+        tampered_spend.spend.dst_tx = double_spend.spend.dst_tx.clone();
+
+        match storage.try_add(&tampered_spend).await {
+            Ok(_) => panic!("Double spend should not be allowed."),
+            Err(super::Error::DoubleSpendAttempt { new, existing }) => {
+                assert_eq!(new.to_bytes(), tampered_spend.to_bytes());
+                assert_eq!(existing.to_bytes(), spend.to_bytes());
+            }
+            Err(other) => panic!("Unexpected error: {:?}", other),
+        }
+
+        // Both of these spends result as already marked
+        // as double spend, when trying to add them again.
+        match storage.try_add(spend).await {
+            Ok(_) => panic!("Double spend should not be allowed."),
+            Err(super::Error::AlreadyMarkedAsDoubleSpend(address)) => {
+                assert_eq!(dbc_address(spend.dbc_id()), address);
+            }
+            Err(other) => panic!("Unexpected error: {:?}", other),
+        }
+        match storage.try_add(&tampered_spend).await {
+            Ok(_) => panic!("Double spend should not be allowed."),
+            Err(super::Error::AlreadyMarkedAsDoubleSpend(address)) => {
+                assert_eq!(dbc_address(spend.dbc_id()), address);
+            }
+            Err(other) => panic!("Unexpected error: {:?}", other),
+        }
+    }
+
     fn init_file_store() -> SpendStorage {
         let root = tempdir().expect("Failed to create temporary directory for spend drive store.");
         SpendStorage::new(root.path())
