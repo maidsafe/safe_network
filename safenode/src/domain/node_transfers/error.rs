@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::domain::{fees, storage::DbcAddress};
+use crate::domain::{fees, storage::Error as StorageError};
 
 use sn_dbc::{Error as DbcError, SignedSpend, Token};
 
@@ -33,20 +33,6 @@ pub enum Error {
     /// An error from the `sn_dbc` crate.
     #[error("Dbc error: {0}")]
     Dbcs(String),
-    /// Spend not found.
-    #[error("Spend not found: {0:?}")]
-    SpendNotFound(DbcAddress),
-    /// A double spend attempt was detected.
-    #[error("A double spend attempt was detected. Incoming and existing spend are not the same: {new:?}. Existing: {existing:?}")]
-    DoubleSpendAttempt {
-        /// New spend that we received.
-        new: Box<SignedSpend>,
-        /// Existing spend of same id that we already have.
-        existing: Box<SignedSpend>,
-    },
-    /// We were notified about a double spend attempt, but they were for different dbcs.
-    #[error("We were notified about a double spend attempt, but they were for different dbcs: {0:?}. Existing: {1:?}")]
-    NotADoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
     /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
     #[error(
         "The signed spend src tx ({signed_src_tx_hash:?}) did not match the provided source tx's hash: {provided_src_tx_hash:?}"
@@ -83,6 +69,9 @@ pub enum Error {
         "A parent tx of a requested spend could not be confirmed as valid. All parent signed spends of that tx {0:?}"
     )]
     InvalidSpendParent(BTreeSet<Box<SignedSpend>>),
+    /// Storage error.
+    #[error("Storage error {0:?}")]
+    Storage(#[from] StorageError),
 }
 
 impl From<DbcError> for Error {
