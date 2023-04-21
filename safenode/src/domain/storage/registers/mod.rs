@@ -515,18 +515,21 @@ mod test {
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
+        let log_path = store.address_to_filepath(&addr)?;
         let mut register = Register::new(*policy.owner(), name, 0, policy);
 
         let stored_reg = store.try_load_stored_register(&addr).await?;
         // It should *not* contain the create cmd.
         assert!(stored_reg.state.is_none());
         assert!(stored_reg.op_log.is_empty());
+        assert_eq!(stored_reg.op_log_path, log_path);
 
         store.write(&cmd_create).await?;
         let stored_reg = store.try_load_stored_register(&addr).await?;
         // It should contain the create cmd.
         assert_eq!(stored_reg.state.as_ref(), Some(&register));
         assert_eq!(stored_reg.op_log, vec![cmd_create.clone()]);
+        assert_eq!(stored_reg.op_log_path, log_path);
         assert_eq!(stored_reg.state.map(|reg| reg.size()), Some(0));
 
         // Edit the register.
@@ -544,6 +547,7 @@ mod test {
                 .all(|op| [&cmd_create, &cmd_edit].contains(&op)),
             "Op log doesn't match"
         );
+        assert_eq!(stored_reg.op_log_path, log_path);
         assert_eq!(stored_reg.state.map(|reg| reg.size()), Some(1));
 
         Ok(())
@@ -555,6 +559,7 @@ mod test {
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
+        let log_path = store.address_to_filepath(&addr)?;
         let mut register = Register::new(*policy.owner(), name, 0, policy);
 
         // Store an edit cmd for the register.
@@ -565,6 +570,7 @@ mod test {
         // It should contain only the edit cmd.
         assert_eq!(stored_reg.state, None);
         assert_eq!(stored_reg.op_log, vec![cmd_edit.clone()]);
+        assert_eq!(stored_reg.op_log_path, log_path);
 
         // Store the create cmd for the register.
         store.write(&cmd_create).await?;
@@ -580,6 +586,7 @@ mod test {
                 .all(|op| [&cmd_create, &cmd_edit].contains(&op)),
             "Op log doesn't match"
         );
+        assert_eq!(stored_reg.op_log_path, log_path);
         assert_eq!(stored_reg.state.map(|reg| reg.size()), Some(1));
 
         Ok(())
@@ -591,6 +598,7 @@ mod test {
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
+        let log_path = store.address_to_filepath(&addr)?;
         let mut register = Register::new(*policy.owner(), name, 0, policy);
         let mut stored_reg = store.try_load_stored_register(&addr).await?;
 
@@ -599,6 +607,7 @@ mod test {
         // It should contain the create cmd.
         assert_eq!(stored_reg.state.as_ref(), Some(&register));
         assert_eq!(stored_reg.op_log, vec![cmd_create.clone()]);
+        assert_eq!(stored_reg.op_log_path, log_path);
         assert_eq!(stored_reg.state.as_ref().map(|reg| reg.size()), Some(0));
 
         // Apply the create cmd again should change nothing.
@@ -623,6 +632,7 @@ mod test {
                 .all(|op| [&cmd_create, &cmd_edit].contains(&op)),
             "Op log doesn't match"
         );
+        assert_eq!(stored_reg.op_log_path, log_path);
         assert_eq!(stored_reg.state.as_ref().map(|reg| reg.size()), Some(1));
 
         // Applying the edit cmd again shouldn't fail or alter the register content,
@@ -637,6 +647,7 @@ mod test {
                 .all(|op| [&cmd_create, &cmd_edit].contains(&op)),
             "Op log doesn't match"
         );
+        assert_eq!(stored_reg.op_log_path, log_path);
         assert_eq!(stored_reg.state.map(|reg| reg.size()), Some(1));
 
         Ok(())
@@ -648,6 +659,7 @@ mod test {
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
+        let log_path = store.address_to_filepath(&addr)?;
         let mut register = Register::new(*policy.owner(), name, 0, policy);
         let mut stored_reg = store.try_load_stored_register(&addr).await?;
 
@@ -657,6 +669,7 @@ mod test {
         // It should contain the edit cmd.
         assert_eq!(stored_reg.state, None);
         assert_eq!(stored_reg.op_log, vec![cmd_edit.clone()]);
+        assert_eq!(stored_reg.op_log_path, log_path);
 
         // Applying the edit cmd again shouldn't fail,
         // although the log will contain the edit cmd duplicated.
@@ -667,6 +680,8 @@ mod test {
             stored_reg.op_log.iter().all(|op| op == &cmd_edit),
             "Op log doesn't match"
         );
+        assert_eq!(stored_reg.op_log_path, log_path);
+        assert_eq!(stored_reg.state.as_ref().map(|reg| reg.size()), Some(1));
 
         // Apply the create cmd now.
         store.try_to_apply_cmd_against_register_state(&cmd_create, &mut stored_reg)?;
@@ -680,6 +695,7 @@ mod test {
                 .all(|op| [&cmd_create, &cmd_edit].contains(&op)),
             "Op log doesn't match"
         );
+        assert_eq!(stored_reg.op_log_path, log_path);
         assert_eq!(stored_reg.state.as_ref().map(|reg| reg.size()), Some(1));
 
         // Apply the create cmd again should change nothing.
