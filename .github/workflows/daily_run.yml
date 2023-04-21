@@ -60,14 +60,14 @@ jobs:
         timeout-minutes: 10
 
       - name: Start a client to carry out chunk actions
-        run: cargo run --release --bin safe -- --upload-chunks ./README.md --get-chunk confirm_uploaded
+        run: cargo run --bin safe --release -- files upload -- "./resources"
         id: client-chunk-actions
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a client to carry out register actions
-        run: cargo run --release --bin safe -- --create-register myregister --query-register myregister
+        run: cargo run --bin safe --release -- files download -- "./resources/uploaded_files"
         id: client-register-actions
         env:
           RUST_LOG: "safenode,safe=trace"
