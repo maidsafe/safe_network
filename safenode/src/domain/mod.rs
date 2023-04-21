@@ -6,6 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+/// Dbc genesis creation.
+mod dbc_genesis;
+
 /// Client handling of token transfers.
 pub mod client_transfers;
 /// Types related to transfer fees.
