@@ -36,7 +36,7 @@ pub enum SwarmCmd {
     },
     GetClosestPeers {
         xor_name: XorName,
-        sender: oneshot::Sender<(PeerId, HashSet<PeerId>)>,
+        sender: oneshot::Sender<HashSet<PeerId>>,
     },
     SendRequest {
         req: Request,
