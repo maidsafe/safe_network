@@ -318,7 +318,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn adding_spend_is_idempotent() {
+    async fn try_add_is_idempotent() {
         let mut storage = init_file_store();
         let key = MainKey::random();
         let src_dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
@@ -388,6 +388,43 @@ mod tests {
             }
             Err(other) => panic!("Unexpected error: {:?}", other),
         }
+    }
+
+    #[tokio::test]
+    async fn try_add_double_is_idempotent() {
+        let mut storage = init_file_store();
+        let key = MainKey::random();
+        let src_dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+
+        let dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
+        let (dbc, _) = &dbc[0];
+        let a_spend = dbc.signed_spends.last().expect("Should contain a spend.");
+
+        // The tampered spend will have the same id and src, but another another dst transaction.
+        let mut b_spend = a_spend.clone();
+        let dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
+        let (dbc, _) = &dbc[0];
+        let other_spend = dbc.signed_spends.last().expect("Should contain a spend.");
+        b_spend.spend.dst_tx = other_spend.spend.dst_tx.clone();
+
+        assert!(storage.validate(a_spend).await.is_ok());
+        assert!(storage.validate(&b_spend).await.is_ok());
+
+        match storage.try_add_double(a_spend, &b_spend).await {
+            Ok(_) => (),
+            Err(_) => panic!("Did not expect an error!"),
+        }
+
+        assert!(storage.validate(a_spend).await.is_err());
+        assert!(storage.validate(&b_spend).await.is_err());
+
+        match storage.try_add_double(a_spend, &b_spend).await {
+            Ok(_) => (),
+            Err(_) => panic!("Did not expect an error!"),
+        }
+
+        assert!(storage.validate(a_spend).await.is_err());
+        assert!(storage.validate(&b_spend).await.is_err());
     }
 
     fn init_file_store() -> SpendStorage {
