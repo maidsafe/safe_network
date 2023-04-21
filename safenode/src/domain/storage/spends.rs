@@ -61,7 +61,7 @@ impl SpendStorage {
                 } else {
                     // This can happen if the content read is empty, or incomplete,
                     // possibly due to an issue with the OS synchronising to disk,
-                    // resulting in a mismatch with recreated address of the Chunk.
+                    // resulting in a mismatch with recreated address of the Spend.
                     Err(Error::SpendNotFound(*address))
                 }
             }
@@ -101,7 +101,7 @@ impl SpendStorage {
         let bytes = serialize(signed_spend)?;
         file.write_all(&bytes).await?;
         // Sync up OS data to disk to reduce the chances of
-        // concurrent reading failing by reading an empty/incomplete file
+        // concurrent reading failing by reading an empty/incomplete file.
         file.sync_data().await?;
 
         trace!("Stored new spend {addr:?}.");
@@ -232,7 +232,7 @@ impl SpendStorage {
                 } else {
                     // This can happen if the content read is empty, or incomplete,
                     // possibly due to an issue with the OS synchronising to disk,
-                    // resulting in a mismatch with recreated address of the Chunk.
+                    // resulting in a mismatch with recreated address of the Spend.
                     Err(Error::SpendNotFound(*address))
                 }
             }
@@ -265,7 +265,7 @@ impl SpendStorage {
         let bytes = serialize(&(a_spend, b_spend))?;
         file.write_all(&bytes).await?;
         // Sync up OS data to disk to reduce the chances of
-        // concurrent reading failing by reading an empty/incomplete file
+        // concurrent reading failing by reading an empty/incomplete file.
         file.sync_data().await?;
 
         trace!("Stored double spend {addr:?}.");

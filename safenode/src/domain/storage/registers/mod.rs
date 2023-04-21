@@ -91,6 +91,7 @@ impl RegisterStorage {
             .await
     }
 
+    /// This is to be used when a node is shrinking the address range it is responsible for.
     #[allow(dead_code)]
     pub(super) async fn remove(&self, address: &RegisterAddress) -> Result<()> {
         trace!("Removing Register: {address:?}");
@@ -160,7 +161,7 @@ impl RegisterStorage {
         }
     }
 
-    /// Persists a RegisterCmd to disk
+    /// Persists a RegisterCmd to disk.
     async fn write_register_cmd(&self, cmd: &RegisterCmd, path: &Path) -> Result<()> {
         let addr = cmd.dst();
         let reg_id = hex::encode(addr.id());
@@ -186,7 +187,7 @@ impl RegisterStorage {
             None
         };
 
-        // it's deterministic, so they are exactly the same op so we can leave
+        // It's deterministic, so they are exactly the same op so we can leave.
         if path.exists() {
             trace!("RegisterCmd exists on disk for {addr:?}, entry hash: {entry_hash:?}, so was not written: {cmd:?}");
             return Ok(());
@@ -196,8 +197,8 @@ impl RegisterStorage {
 
         let serialized_data = serialize(cmd)?;
         file.write_all(&serialized_data).await?;
-        // Let's sync up OS data to disk to reduce the chances of
-        // concurrent reading failing by reading an empty/incomplete file
+        // Sync OS data to disk to reduce the chances of
+        // concurrent reading failing by reading an empty/incomplete file.
         file.sync_data().await?;
 
         trace!(
@@ -391,7 +392,7 @@ impl RegisterStorage {
     }
 
     /// Opens the log of RegisterCmds for a given register address.
-    /// Creates a new log if no data is found
+    /// Creates a new log if no data is found.
     async fn open_reg_log_from_disk(&self, addr: &RegisterAddress) -> Result<StoredRegister> {
         let path = self.address_to_filepath(addr)?;
         let mut stored_reg = StoredRegister {
@@ -873,6 +874,13 @@ mod test {
         }))
     }
 
+    fn new_store() -> Result<RegisterStorage> {
+        let tmp_dir = tempfile::tempdir()?;
+        let path = tmp_dir.path();
+        let store = RegisterStorage::new(path);
+        Ok(store)
+    }
+
     // Helper functions temporarily used for spentbook logic, but also used for tests.
     // This shouldn't be required outside of tests once we have a Spentbook data type.
     fn create_reg_w_policy(
@@ -890,12 +898,5 @@ mod test {
         };
 
         Ok(RegisterCmd::Create(SignedRegisterCreate { op, auth }))
-    }
-
-    fn new_store() -> Result<RegisterStorage> {
-        let tmp_dir = tempfile::tempdir()?;
-        let path = tmp_dir.path();
-        let store = RegisterStorage::new(path);
-        Ok(store)
     }
 }

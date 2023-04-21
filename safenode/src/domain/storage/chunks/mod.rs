@@ -41,8 +41,6 @@ impl ChunkStorage {
     /// Creates a new `ChunkStorage` at the specified root location
     ///
     /// If the location specified already contains a `ChunkStorage`, it is simply used
-    ///
-    /// Used space of the dir is tracked
     pub(crate) fn new(path: &Path) -> Self {
         Self {
             file_store_path: path.join(CHUNKS_STORE_DIR_NAME),
@@ -75,6 +73,7 @@ impl ChunkStorage {
         Ok(path.join(filename))
     }
 
+    /// This is to be used when a node is shrinking the address range it is responsible for.
     #[allow(unused)]
     pub(super) async fn remove(&self, address: &ChunkAddress) -> Result<()> {
         debug!("Removing chunk, {:?}", address);
@@ -107,7 +106,6 @@ impl ChunkStorage {
     }
 
     /// Store a chunk in the local disk store unless it is already there
-    #[instrument(skip_all)]
     pub(crate) async fn store(&self, chunk: &Chunk) -> Result<()> {
         let addr = chunk.address();
         let filepath = self.chunk_addr_to_filepath(addr)?;
@@ -130,8 +128,8 @@ impl ChunkStorage {
         let mut file = File::create(filepath).await?;
 
         file.write_all(chunk.value()).await?;
-        // Let's sync up OS data to disk to reduce the chances of
-        // concurrent reading failing by reading an empty/incomplete file
+        // Sync OS data to disk to reduce the chances of
+        // concurrent reading failing by reading an empty/incomplete file.
         file.sync_data().await?;
 
         trace!("Stored new chunk {addr:?}");
@@ -164,7 +162,7 @@ mod tests {
     #[tokio::test]
     async fn test_write_read_chunk() {
         let storage = init_file_store();
-        // test that a range of different chunks return the written chunk
+        // Test that a range of different chunks return the written chunk.
         for _ in 0..10 {
             let chunk = Chunk::new(random_bytes(100));
 
@@ -205,7 +203,7 @@ mod tests {
         let chunk = Chunk::new(random_bytes(100));
         let address = chunk.address();
 
-        // create chunk file but with empty content
+        // Create chunk file but with empty content.
         let filepath = storage.chunk_addr_to_filepath(address)?;
         if let Some(dirs) = filepath.parent() {
             create_dir_all(dirs).await?;
@@ -213,8 +211,8 @@ mod tests {
         let mut file = File::create(&filepath).await?;
         file.write_all(b"").await?;
 
-        // trying to read the chunk shall return ChunkNotFound error since
-        // its content shouldn't match chunk address
+        // Trying to read the chunk shall return ChunkNotFound error since
+        // its content shouldn't match chunk address.
         match storage.get(address).await {
             Ok(chunk) => Err(eyre!(
                 "Unexpected Chunk read (size: {}): {chunk:?}",
@@ -229,19 +227,19 @@ mod tests {
     }
 
     async fn write_and_read_chunks(chunks: &[Chunk], storage: ChunkStorage) {
-        // write all chunks
+        // Write all chunks.
         let mut tasks = Vec::new();
         for c in chunks.iter() {
             tasks.push(async { storage.store(c).await.map(|_| *c.address()) });
         }
         let results = join_all(tasks).await;
 
-        // read all chunks
+        // Read all chunks.
         let tasks = results.iter().flatten().map(|addr| storage.get(addr));
         let results = join_all(tasks).await;
         let read_chunks: Vec<&Chunk> = results.iter().flatten().collect();
 
-        // verify all written were read
+        // Verify all written were read.
         assert!(chunks
             .par_iter()
             .all(|c| read_chunks.iter().any(|r| r.value() == c.value())))
