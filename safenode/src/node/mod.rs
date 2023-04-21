@@ -9,6 +9,7 @@
 mod api;
 mod error;
 mod event;
+mod replication;
 
 pub use self::event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver};
 

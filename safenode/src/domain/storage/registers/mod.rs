@@ -10,9 +10,7 @@
 pub mod register;
 
 use self::register::{Action, EntryHash, Register, User};
-
 use super::{prefix_tree_path, Error, RegisterAddress, Result};
-
 use crate::{
     domain::storage::list_files_in,
     protocol::{
@@ -23,7 +21,6 @@ use crate::{
         },
     },
 };
-
 use bincode::serialize;
 use std::path::{Path, PathBuf};
 use tokio::{
@@ -89,6 +86,33 @@ impl RegisterStorage {
         // Everything went fine, write the new cmd to disk.
         self.write_log_to_disk(&vec![cmd.clone()], &stored_reg.op_log_path)
             .await
+    }
+
+    pub(crate) async fn addrs(&self) -> Vec<RegisterAddress> {
+        use bincode::deserialize;
+        use std::collections::{btree_map::Entry, BTreeMap};
+
+        trace!("Listing all register addrs");
+
+        let iter = list_files_in(&self.file_store_path)
+            .into_iter()
+            .filter_map(|e| e.parent().map(|parent| (parent.to_path_buf(), e.clone())));
+
+        let mut addrs = BTreeMap::new();
+        for (parent, op_file) in iter {
+            if let Entry::Vacant(vacant) = addrs.entry(parent) {
+                if let Ok(Ok(cmd)) = read(op_file)
+                    .await
+                    .map(|serialized_data| deserialize::<RegisterCmd>(&serialized_data))
+                {
+                    let _existing = vacant.insert(cmd.dst());
+                }
+            }
+        }
+
+        trace!("Listing all register addrs done.");
+
+        addrs.into_values().collect()
     }
 
     /// This is to be used when a node is shrinking the address range it is responsible for.
@@ -457,34 +481,6 @@ impl RegisterStorage {
             op_log: stored_reg.op_log,
         })
     }
-
-    #[cfg(test)]
-    async fn stored_addrs(&self) -> Vec<RegisterAddress> {
-        use bincode::deserialize;
-        use std::collections::{btree_map::Entry, BTreeMap};
-
-        trace!("Listing all register addrs");
-
-        let iter = list_files_in(&self.file_store_path)
-            .into_iter()
-            .filter_map(|e| e.parent().map(|parent| (parent.to_path_buf(), e.clone())));
-
-        let mut addrs = BTreeMap::new();
-        for (parent, op_file) in iter {
-            if let Entry::Vacant(vacant) = addrs.entry(parent) {
-                if let Ok(Ok(cmd)) = read(op_file)
-                    .await
-                    .map(|serialized_data| deserialize::<RegisterCmd>(&serialized_data))
-                {
-                    let _existing = vacant.insert(cmd.dst());
-                }
-            }
-        }
-
-        trace!("Listing all register addrs done.");
-
-        addrs.into_values().collect()
-    }
 }
 
 // Gets an operation id, deterministic for a RegisterCmd, it takes
@@ -774,7 +770,7 @@ mod test {
         }
 
         // Export Registers, get all data we held in storage.
-        let stored_addrs = store.stored_addrs().await;
+        let stored_addrs = store.addrs().await;
 
         // Create new store and update it with the data from first store
         let new_store = new_store()?;

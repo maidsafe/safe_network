@@ -9,6 +9,7 @@
 use super::{
     error::{Error, Result},
     event::NodeEventsChannel,
+    replication::send_out_data_addrs,
     Node, NodeEvent, NodeId,
 };
 use crate::{
@@ -20,6 +21,7 @@ use crate::{
         },
     },
     network::{close_group_majority, NetworkEvent, SwarmDriver},
+    node::replication::ask_peers_for_data,
     protocol::{
         error::Error as ProtocolError,
         messages::{
@@ -57,7 +59,7 @@ impl Node {
         let root_dir = get_root_dir().await?;
 
         let mut node = Self {
-            network,
+            network: network.clone(),
             chunks: ChunkStorage::new(&root_dir),
             registers: RegisterStorage::new(&root_dir),
             transfers: Transfers::new(node_id, MainKey::random(), &root_dir),
@@ -66,6 +68,11 @@ impl Node {
         };
 
         let _swarm_handle = spawn(swarm_driver.run());
+        let _replication_handle = spawn(send_out_data_addrs(
+            network,
+            node.chunks.clone(),
+            node.registers.clone(),
+        ));
         let _events_handle = spawn(async move {
             loop {
                 let event = match network_event_receiver.recv().await {
@@ -139,6 +146,15 @@ impl Node {
                         Ok(_) => Response::EventAck(Ok(())),
                         Err(err) => Response::EventAck(Err(ProtocolError::Transfers(err))),
                     }
+                }
+                Event::ReplicateData(data_addresses) => {
+                    let _handle = spawn(ask_peers_for_data(
+                        self.network.clone(),
+                        self.chunks.clone(),
+                        self.registers.clone(),
+                        data_addresses,
+                    ));
+                    Response::EventAck(Ok(()))
                 }
             },
         };

@@ -300,12 +300,35 @@ impl Network {
         Ok(closest_peers)
     }
 
-    /// Returns the closest peers to the given key, sorted by their distance to the key.
+    /// Get the closest peers to the given key by querying the network. The result is
+    /// sorted by their distance to the key.
+    ///
     /// If `client` is false, then include `self` among the `closest_peers`
     /// Use `client_get_closest_peers` or `node_get_closest_peers` for convenience.
     pub async fn get_closest_peers(&self, key: Vec<u8>, client: bool) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
+            key: key.clone(),
+            sender,
+        })
+        .await?;
+        let k_bucket_peers = receiver.await?;
+
+        // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
+        let mut closest_peers: Vec<_> = k_bucket_peers.into_iter().collect();
+        if !client {
+            closest_peers.push(self.peer_id);
+        }
+        self.sort_peers_by_key(closest_peers, key)
+    }
+
+    /// Get the closest peers to the given key from the local DHT. The result is
+    /// sorted by their distance to the key.
+    ///
+    /// If `client` is false, then include `self` among the `closest_peers`
+    pub async fn get_closest_local_peers(&self, key: Vec<u8>, client: bool) -> Result<Vec<PeerId>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetClosestLocalPeers {
             key: key.clone(),
             sender,
         })

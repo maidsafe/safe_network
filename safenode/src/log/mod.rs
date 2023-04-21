@@ -69,7 +69,7 @@ impl TracingLayers {
     fn fmt_layer(&mut self, optional_log_dir: &Option<PathBuf>) {
         // Filter by log level of this crate only
         let target_filters: Box<dyn Filter<Registry> + Send + Sync> =
-            Box::new(Targets::new().with_target(current_crate_str(), tracing::Level::TRACE));
+            Box::new(Targets::new().with_target(current_crate_str(), tracing::Level::INFO));
         let fmt_layer = tracing_fmt::layer().with_ansi(false);
 
         if let Some(log_dir) = optional_log_dir {

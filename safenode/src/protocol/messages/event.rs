@@ -29,6 +29,9 @@ pub enum Event {
     ///
     /// [`SignedSpend`]: sn_dbc::SignedSpend
     DoubleSpendAttempted(Box<SignedSpend>, Box<SignedSpend>),
+
+    /// Change in closest group, replicate data
+    ReplicateData(Vec<DataAddress>),
 }
 
 impl Event {
@@ -36,6 +39,7 @@ impl Event {
     pub fn dst(&self) -> DataAddress {
         match self {
             Event::DoubleSpendAttempted(a, _) => DataAddress::Spend(dbc_address(a.dbc_id())),
+            Event::ReplicateData(_) => todo!(),
         }
     }
 

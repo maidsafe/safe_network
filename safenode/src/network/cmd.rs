@@ -11,7 +11,9 @@ use crate::{
     network::error::Result,
     protocol::messages::{Request, Response},
 };
-use libp2p::{multiaddr::Protocol, request_response::ResponseChannel, Multiaddr, PeerId};
+use libp2p::{
+    kad::KBucketKey, multiaddr::Protocol, request_response::ResponseChannel, Multiaddr, PeerId,
+};
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
 use tracing::warn;
@@ -29,6 +31,10 @@ pub enum SwarmCmd {
         sender: oneshot::Sender<Result<()>>,
     },
     GetClosestPeers {
+        key: Vec<u8>,
+        sender: oneshot::Sender<HashSet<PeerId>>,
+    },
+    GetClosestLocalPeers {
         key: Vec<u8>,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
@@ -83,6 +89,18 @@ impl SwarmDriver {
                 let _ = self
                     .pending_get_closest_peers
                     .insert(query_id, (sender, Default::default()));
+            }
+            SwarmCmd::GetClosestLocalPeers { key, sender } => {
+                let closest = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .get_closest_local_peers(&KBucketKey::new(key))
+                    .map(|p| p.into_preimage())
+                    .collect();
+                sender
+                    .send(closest)
+                    .map_err(|_| Error::InternalMsgChannelDropped)?;
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 let request_id = self
