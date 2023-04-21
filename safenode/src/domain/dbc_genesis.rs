@@ -87,10 +87,11 @@ pub(super) fn create_genesis_dbc(genesis_main_key: &MainKey) -> GenesisResult<Db
     Ok(genesis_dbc)
 }
 
-/// Split a dbc into multiple.
+/// Split a dbc into multiple. ONLY FOR TEST.
+#[cfg(test)]
 #[allow(clippy::result_large_err, unused)]
 pub(super) fn split(
-    dbc: Dbc,
+    dbc: &Dbc,
     main_key: &MainKey,
     number: usize,
 ) -> GenesisResult<Vec<(Dbc, RevealedAmount)>> {
@@ -100,7 +101,7 @@ pub(super) fn split(
     let revealed_amount = dbc.revealed_amount(&derived_key)?;
     let input = InputHistory {
         input: RevealedInput::new(derived_key, revealed_amount),
-        input_src_tx: dbc.src_tx,
+        input_src_tx: dbc.src_tx.clone(),
     };
 
     let recipients: Vec<_> = (0..number)
