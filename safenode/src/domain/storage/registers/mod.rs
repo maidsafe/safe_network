@@ -55,16 +55,6 @@ impl RegisterStorage {
         }
     }
 
-    #[cfg(test)]
-    pub(super) async fn addrs(&self) -> Vec<RegisterAddress> {
-        self.cache
-            .read()
-            .await
-            .iter()
-            .map(|(addr, _)| *addr)
-            .collect()
-    }
-
     #[allow(dead_code)]
     pub(super) async fn remove(&self, address: &RegisterAddress) -> Result<()> {
         trace!("Removing Register: {address:?}");
@@ -113,12 +103,9 @@ impl RegisterStorage {
         Ok(())
     }
 
-    // ------------------------------------------------
-    // ------------ OLD BLAH ------------------------
-    // ------------------------------------------------
-
     /// --- Writing ---
 
+    /// Write a RegisterCmd to the Register's log.
     pub(crate) async fn write(&self, cmd: &RegisterCmd) -> Result<()> {
         info!("Writing register cmd: {cmd:?}");
         let addr = cmd.dst();
@@ -157,6 +144,8 @@ impl RegisterStorage {
     }
 
     /// --- Reading ---
+
+    /// Read from the Register's log based on provided RegisterQuery.
     pub(crate) async fn read(&self, read: &RegisterQuery, requester: User) -> QueryResponse {
         trace!("Reading register: {:?}", read.dst());
         use RegisterQuery::*;
@@ -366,6 +355,16 @@ impl RegisterStorage {
             address: *address,
             op_log: stored_reg.op_log,
         })
+    }
+
+    #[cfg(test)]
+    async fn addrs(&self) -> Vec<RegisterAddress> {
+        self.cache
+            .read()
+            .await
+            .iter()
+            .map(|(addr, _)| *addr)
+            .collect()
     }
 }
 
