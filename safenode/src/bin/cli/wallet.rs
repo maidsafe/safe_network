@@ -97,7 +97,8 @@ async fn send(amount: String, to: String, client: &Client) -> Result<()> {
     use std::str::FromStr;
     let amount = Token::from_str(&amount)?;
     if amount.as_nano() == 0 {
-        panic!("This should be unreachable. An amount is expected when sending.");
+        println!("Invalid format or zero amount passed in. Nothing sent.");
+        return Ok(());
     }
 
     let root_dir = get_client_dir().await?;

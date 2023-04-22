@@ -49,15 +49,8 @@ async fn create_register(name: String, client: &Client) -> Result<()> {
     let xorname = XorName::from_content(name.as_bytes());
     println!("Creating Register with '{name}' at xorname: {xorname:x} and tag {tag}");
 
-    let _register = match client.create_register(xorname, tag).await {
-        Ok(register) => {
-            println!("Successfully created register '{name}' at {xorname:?}, {tag}!");
-            register
-        }
-        Err(error) => {
-            panic!("Did not create register '{name}' on all nodes in the close group! {error}")
-        }
-    };
+    let _register = client.create_register(xorname, tag).await?;
+    println!("Successfully created register '{name}' at {xorname:?}, {tag}!");
     Ok(())
 }
 
@@ -87,7 +80,9 @@ async fn edit_register(name: String, entry: String, client: &Client) -> Result<(
             }
         }
         Err(error) => {
-            panic!("Did not retrieve Register '{name}' from all nodes in the close group! {error}")
+            println!(
+                "Did not retrieve Register '{name}' from all nodes in the close group! {error}"
+            )
         }
     }
 
@@ -109,7 +104,7 @@ async fn get_registers(names: Vec<String>, client: &Client) -> Result<()> {
                 register.tag()
             ),
             Err(error) => {
-                panic!(
+                println!(
                     "Did not retrieve Register '{name}' from all nodes in the close group! {error}"
                 )
             }
