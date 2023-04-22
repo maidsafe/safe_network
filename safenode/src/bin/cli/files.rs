@@ -63,7 +63,7 @@ async fn upload_files(files_path: PathBuf, file_api: &Files) -> Result<()> {
                     chunks_to_fetch.push(*address.name());
                 }
                 Err(error) => {
-                    panic!(
+                    println!(
                         "Did not store file {file_name:?} to all nodes in the close group! {error}"
                     )
                 }
@@ -103,7 +103,7 @@ async fn download_files(file_names_dir: PathBuf, file_api: &Files) -> Result<()>
                         println!("Successfully got file {xorname} of {} bytes!", bytes.len());
                     }
                     Err(error) => {
-                        panic!("Did not get file {xorname:?} from the network! {error}")
+                        println!("Did not get file {xorname:?} from the network! {error}")
                     }
                 };
             }
