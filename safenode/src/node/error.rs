@@ -22,4 +22,7 @@ pub enum Error {
 
     #[error("ResponseTimeout")]
     ResponseTimeout(#[from] tokio::time::error::Elapsed),
+
+    #[error("Node wallet load issue: {0}.")]
+    CouldNotLoadWallet(String),
 }

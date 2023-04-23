@@ -30,8 +30,8 @@ pub enum Error {
     #[error("Could not serialize main key to hex: {0}")]
     FailedToHexEncodeKey(String),
     /// Failure when decrypting.
-    #[error("Decryption failed: {0}")]
-    FailedToDecrypt(String),
+    #[error("Fee cipher decryption failed: {0}")]
+    FailedToDecryptFeeCipher(String),
     /// Dbc error.
     #[error("Dbc error: {0}")]
     Dbc(#[from] sn_dbc::Error),
