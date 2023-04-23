@@ -44,11 +44,15 @@ pub use self::{
     // network_store::NetworkWallet,
 };
 
-use super::client_transfers::{CreatedDbc, Outputs as TransferDetails};
+use super::{
+    client_transfers::{CreatedDbc, Outputs as TransferDetails},
+    fees::FeeCiphers,
+};
 
-use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
+use sn_dbc::{Dbc, DbcId, DbcIdSource, DerivedKey, PublicAddress, RevealedAmount, Token};
 
 use async_trait::async_trait;
+use std::collections::BTreeMap;
 
 /// A SendClient is used to transfer tokens to other addresses.
 ///
@@ -90,6 +94,10 @@ pub trait Wallet {
 pub trait SigningWallet {
     /// Signs the given msg.
     fn sign(&self, msg: &[u8]) -> bls::Signature;
+    /// Decrypts the given fee ciphers.
+    /// TODO: Referencing fee ciphers, dbc id and revealed amount here is not ideal.
+    #[allow(clippy::result_large_err)]
+    fn decrypt(&self, fee_ciphers: &FeeCiphers) -> Result<(DbcId, RevealedAmount)>;
 }
 
 /// A send wallet is a wallet that, in addition to the capabilities
@@ -122,9 +130,9 @@ pub(super) struct KeyLessWallet {
     balance: Token,
     /// These are dbcs we've owned, that have been
     /// spent when sending tokens to other addresses.
-    spent_dbcs: std::collections::BTreeMap<sn_dbc::DbcId, Dbc>,
+    spent_dbcs: BTreeMap<DbcId, Dbc>,
     /// These are the dbcs we own that are not yet spent.
-    available_dbcs: std::collections::BTreeMap<sn_dbc::DbcId, Dbc>,
+    available_dbcs: BTreeMap<DbcId, Dbc>,
     /// These are the dbcs we've created by
     /// sending tokens to other addresses.
     /// They are not owned by us, but we

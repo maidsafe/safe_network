@@ -149,6 +149,15 @@ impl SigningWallet for LocalWallet {
     fn sign(&self, msg: &[u8]) -> bls::Signature {
         self.key.sign(msg)
     }
+
+    fn decrypt(
+        &self,
+        fee_ciphers: &crate::domain::fees::FeeCiphers,
+    ) -> Result<(sn_dbc::DbcId, sn_dbc::RevealedAmount)> {
+        fee_ciphers
+            .decrypt(&self.key)
+            .map_err(|e| super::Error::FailedToDecrypt(e.to_string()))
+    }
 }
 
 impl DepositWallet for LocalWallet {
