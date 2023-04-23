@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::domain::{fees, storage::Error as StorageError};
+use crate::domain::{fees::Error as FeeError, storage::Error as StorageError};
 
-use sn_dbc::{Error as DbcError, SignedSpend, Token};
+use sn_dbc::{Error as DbcError, Hash, SignedSpend, Token};
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -27,7 +27,7 @@ pub enum Error {
     #[error("Too low amount for the transfer fee: {paid}. Min required: {required}.")]
     FeeTooLow { paid: Token, required: Token },
     #[error(transparent)]
-    Fees(#[from] fees::Error),
+    Fees(#[from] FeeError),
     #[error("Contacting close group of parent spends failed: {0}.")]
     SpendParentCloseGroupIssue(String),
     #[error("Fee cipher cecryption failed {0}.")]
@@ -41,9 +41,9 @@ pub enum Error {
     )]
     TxSourceMismatch {
         /// The signed spend src tx hash.
-        signed_src_tx_hash: sn_dbc::Hash,
+        signed_src_tx_hash: Hash,
         /// The hash of the provided source tx.
-        provided_src_tx_hash: sn_dbc::Hash,
+        provided_src_tx_hash: Hash,
     },
     /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
     #[error(
@@ -51,9 +51,9 @@ pub enum Error {
     )]
     TxTrailMismatch {
         /// The signed spend src tx hash.
-        signed_src_tx_hash: sn_dbc::Hash,
+        signed_src_tx_hash: Hash,
         /// The dst hash of a parent signed spend.
-        parent_dst_tx_hash: sn_dbc::Hash,
+        parent_dst_tx_hash: Hash,
     },
     /// The provided source tx did not check out when verified with all supposed inputs to it (i.e. our spends parents).
     #[error(
@@ -61,9 +61,9 @@ pub enum Error {
     )]
     InvalidSourceTxProvided {
         /// The signed spend src tx hash.
-        signed_src_tx_hash: sn_dbc::Hash,
+        signed_src_tx_hash: Hash,
         /// The hash of the provided source tx.
-        provided_src_tx_hash: sn_dbc::Hash,
+        provided_src_tx_hash: Hash,
     },
     /// One or more parent spends of a requested spend could not be confirmed as valid.
     /// The full set of parents checked are contained in this error.
