@@ -23,18 +23,18 @@ impl DbcAddress {
         Self(name)
     }
 
-    /// Returns the name, which is the `DbcId` XorName.
+    /// Return the name, which is the `DbcId` XorName.
     pub fn name(&self) -> &XorName {
         &self.0
     }
 }
 
-/// Returns the address of a Dbc with the given id.
+/// Return the address of a Dbc with the given id.
 pub fn dbc_address(dbc_id: &DbcId) -> DbcAddress {
     DbcAddress::new(dbc_name(dbc_id))
 }
 
-/// Returns the name of a Dbc with the given id.
+/// Return the name of a Dbc with the given id.
 pub fn dbc_name(dbc_id: &DbcId) -> XorName {
     XorName::from_content(&dbc_id.to_bytes())
 }

@@ -126,3 +126,8 @@ pub(super) struct KeyLessWallet {
     /// transfer history.
     dbcs_created_for_others: Vec<CreatedDbc>,
 }
+
+/// Return the name of a PublicAddress.
+pub fn public_address_name(public_address: &PublicAddress) -> xor_name::XorName {
+    xor_name::XorName::from_content(&public_address.to_bytes())
+}
