@@ -30,11 +30,11 @@ pub const GENESIS_DBC_SK: &str = "0c5152498fc5b2f9ed691ef875f2c16f1f950910391f7b
 pub(super) const GENESIS_DBC_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
 
 /// A specialised `Result` type for dbc_genesis crate.
-pub(super) type GenesisResult<T> = Result<T, GenesisError>;
+pub(super) type GenesisResult<T> = Result<T, Error>;
 
 /// Main error type for the crate.
 #[derive(Error, Debug, Clone)]
-pub enum GenesisError {
+pub enum Error {
     /// Error occurred when creating the Genesis DBC.
     #[error("Genesis DBC error:: {0}")]
     GenesisDbcError(String),
@@ -80,21 +80,21 @@ pub(super) fn create_genesis_dbc(genesis_main_key: &MainKey) -> GenesisResult<Db
         .add_output(Token::from_nano(GENESIS_DBC_AMOUNT), dbc_id_src)
         .build(reason, rng::thread_rng())
         .map_err(|err| {
-            GenesisError::GenesisDbcError(format!(
+            Error::GenesisDbcError(format!(
                 "Failed to build the DBC transaction for genesis DBC: {err}",
             ))
         })?;
 
     // build the output DBCs
     let output_dbcs = dbc_builder.build_without_verifying().map_err(|err| {
-        GenesisError::GenesisDbcError(format!(
+        Error::GenesisDbcError(format!(
             "DBC builder failed to create output genesis DBC: {err}",
         ))
     })?;
 
     // just one output DBC is expected which is the genesis DBC
     let (genesis_dbc, _) = output_dbcs.into_iter().next().ok_or_else(|| {
-        GenesisError::GenesisDbcError(
+        Error::GenesisDbcError(
             "DBC builder (unexpectedly) contains an empty set of outputs.".to_string(),
         )
     })?;
@@ -132,14 +132,14 @@ pub(super) fn split(
         .add_outputs(recipients)
         .build(Hash::default(), rng::thread_rng())
         .map_err(|err| {
-            GenesisError::GenesisDbcError(format!(
+            Error::GenesisDbcError(format!(
                 "Failed to build the DBC transaction for genesis DBC: {err}",
             ))
         })?;
 
     // build the output DBCs
     let output_dbcs = dbc_builder.build_without_verifying().map_err(|err| {
-        GenesisError::GenesisDbcError(format!(
+        Error::GenesisDbcError(format!(
             "DBC builder failed to create output genesis DBC: {err}",
         ))
     })?;
