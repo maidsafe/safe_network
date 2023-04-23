@@ -19,8 +19,12 @@ use std::path::Path;
 
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
-    /// Tries to load any hex encoded `Dbc`s from the `received_dbcs`
+    /// Deposit `Dbc`s to the local wallet.
+    /// Tries to load any `Dbc`s from the `received_dbcs`
     /// path in the wallet dir, and deposit it to the wallet.
+    /// The user has to manually place received dbc files to
+    /// that dir, for example by choosing that path when downloading
+    /// the dbc file from email or browser.
     Deposit,
     Send {
         /// This shall be the number of nanos to send.
