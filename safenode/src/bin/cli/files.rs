@@ -14,7 +14,10 @@ use safenode::{
 use bytes::Bytes;
 use clap::Parser;
 use eyre::Result;
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -25,28 +28,21 @@ pub enum FilesCmds {
         #[clap(name = "path", value_name = "DIRECTORY")]
         path: PathBuf,
     },
-    Download {
-        /// The location of the file names stored
-        /// when uploading files.
-        #[clap(name = "file-names-path", value_name = "DIRECTORY")]
-        file_names_path: PathBuf,
-    },
+    Download,
 }
 
-pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client) -> Result<()> {
+pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path) -> Result<()> {
     let file_api: Files = Files::new(client);
     match cmds {
-        FilesCmds::Upload { path } => upload_files(path, &file_api).await?,
-        FilesCmds::Download { file_names_path } => {
-            download_files(file_names_path, &file_api).await?
-        }
+        FilesCmds::Upload { path } => upload_files(path, &file_api, root_dir).await?,
+        FilesCmds::Download => download_files(&file_api, root_dir).await?,
     };
     Ok(())
 }
 
-async fn upload_files(files_path: PathBuf, file_api: &Files) -> Result<()> {
+async fn upload_files(files_path: PathBuf, file_api: &Files, root_dir: &Path) -> Result<()> {
     // The input files_path has to be a dir
-    let file_names_path = files_path.join("uploaded_files");
+    let file_names_path = root_dir.join("uploaded_files");
     let mut chunks_to_fetch = Vec::new();
 
     for entry in WalkDir::new(files_path).into_iter().flatten() {
@@ -73,15 +69,23 @@ async fn upload_files(files_path: PathBuf, file_api: &Files) -> Result<()> {
 
     let content = bincode::serialize(&chunks_to_fetch)?;
     tokio::fs::create_dir_all(file_names_path.as_path()).await?;
-    let file_names_path = file_names_path.join("file_names.txt");
+    let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+    let file_names_path = file_names_path.join(format!("file_names_{date_time}.txt"));
     println!("Writing {} bytes to {file_names_path:?}", content.len());
     fs::write(file_names_path, content)?;
 
     Ok(())
 }
 
-async fn download_files(file_names_dir: PathBuf, file_api: &Files) -> Result<()> {
-    for entry in WalkDir::new(file_names_dir).into_iter().flatten() {
+async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
+    let docs_of_uploaded_files_path = root_dir.join("uploaded_files");
+    let download_path = root_dir.join("downloaded_files");
+    tokio::fs::create_dir_all(download_path.as_path()).await?;
+
+    for entry in WalkDir::new(docs_of_uploaded_files_path)
+        .into_iter()
+        .flatten()
+    {
         if entry.file_type().is_file() {
             let file = fs::read(entry.path())?;
             let bytes = Bytes::from(file);
@@ -100,7 +104,11 @@ async fn download_files(file_names_dir: PathBuf, file_api: &Files) -> Result<()>
                 println!("Downloading file {xorname:?}");
                 match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
                     Ok(bytes) => {
-                        println!("Successfully got file {xorname} of {} bytes!", bytes.len());
+                        println!("Successfully got file {xorname}!");
+                        let filename = hex::encode(xorname);
+                        let file_name_path = download_path.join(filename);
+                        println!("Writing {} bytes to {file_name_path:?}", bytes.len());
+                        fs::write(file_name_path, bytes)?;
                     }
                     Err(error) => {
                         println!("Did not get file {xorname:?} from the network! {error}")

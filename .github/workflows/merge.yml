@@ -199,7 +199,7 @@ jobs:
       - name: Start a client to download files
         # Only run on non-PR events
         if: github.event_name != 'pull_request'
-        run: cargo run --bin safe --release -- files download -- "./resources/uploaded_files"
+        run: cargo run --bin safe --release -- files download
         id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
@@ -307,7 +307,7 @@ jobs:
         timeout-minutes: 10
 
       - name: Start a client to confirm chunk still retained
-        run: cargo run --bin safe --release -- files download -- "./resources/uploaded_files"
+        run: cargo run --bin safe --release -- files download
         id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
