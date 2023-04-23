@@ -70,7 +70,8 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
     use std::str::FromStr;
     let amount = Token::from_str(&amount)?;
     if amount.as_nano() == 0 {
-        panic!("This should be unreachable. An amount is expected when sending.");
+        println!("Invalid format or zero amount passed in. Nothing sent.");
+        return Ok(());
     }
 
     let wallet = LocalWallet::load_from(root_dir).await?;
