@@ -43,11 +43,20 @@ pub(crate) struct SpendStorage {
 }
 
 impl SpendStorage {
+    /// Create a new instance of `SpendStorage`.
     pub(crate) fn new(path: &Path) -> Self {
         Self {
             valid_spends_path: path.join(VALID_SPENDS_STORE_DIR_NAME),
             double_spends_path: path.join(DOUBLE_SPENDS_STORE_DIR_NAME),
         }
+    }
+
+    /// Create a new instance of `SpendStorage` with a genesis spend.
+    #[allow(unused)]
+    pub(crate) async fn new_with_genesis(path: &Path, genesis_spend: &SignedSpend) -> Result<Self> {
+        let mut storage = Self::new(path);
+        storage.add(genesis_spend).await?;
+        Ok(storage)
     }
 
     // Read Spend from local store.
@@ -82,32 +91,7 @@ impl SpendStorage {
     /// could otherwise happen in parallel in different threads.)
     pub(crate) async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         self.validate(signed_spend).await?;
-        let addr = dbc_address(signed_spend.dbc_id());
-
-        let filepath = self.address_to_filepath(&addr, &self.valid_spends_path)?;
-
-        if filepath.exists() {
-            self.validate(signed_spend).await?;
-            return Ok(());
-        }
-
-        // Store the spend to local file system.
-        trace!("Storing spend {addr:?}.");
-        if let Some(dirs) = filepath.parent() {
-            create_dir_all(dirs).await?;
-        }
-
-        let mut file = File::create(filepath).await?;
-
-        let bytes = serialize(signed_spend)?;
-        file.write_all(&bytes).await?;
-        // Sync up OS data to disk to reduce the chances of
-        // concurrent reading failing by reading an empty/incomplete file.
-        file.sync_data().await?;
-
-        trace!("Stored new spend {addr:?}.");
-
-        Ok(())
+        self.add(signed_spend).await
     }
 
     /// Validates a spend without adding it to the storage.
@@ -195,6 +179,34 @@ impl SpendStorage {
         // We don't error if the remove failed (not found or whatever)
         // as that isn't a problem.
         let _ = self.remove(&address, &self.valid_spends_path).await;
+
+        Ok(())
+    }
+
+    async fn add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
+        let addr = dbc_address(signed_spend.dbc_id());
+        let filepath = self.address_to_filepath(&addr, &self.valid_spends_path)?;
+
+        if filepath.exists() {
+            self.validate(signed_spend).await?;
+            return Ok(());
+        }
+
+        // Store the spend to local file system.
+        trace!("Storing spend {addr:?}.");
+        if let Some(dirs) = filepath.parent() {
+            create_dir_all(dirs).await?;
+        }
+
+        let mut file = File::create(filepath).await?;
+
+        let bytes = serialize(signed_spend)?;
+        file.write_all(&bytes).await?;
+        // Sync up OS data to disk to reduce the chances of
+        // concurrent reading failing by reading an empty/incomplete file.
+        file.sync_data().await?;
+
+        trace!("Stored new spend {addr:?}.");
 
         Ok(())
     }
