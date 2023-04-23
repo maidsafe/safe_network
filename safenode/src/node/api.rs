@@ -14,7 +14,7 @@ use super::{
 
 use crate::{
     domain::{
-        dbc_genesis::{create_genesis, GenesisError},
+        dbc_genesis::{create_genesis, Error as GenesisError},
         node_transfers::{Error as TransferError, Transfers},
         storage::{
             dbc_address, register::User, ChunkStorage, DbcAddress, Error as StorageError,
