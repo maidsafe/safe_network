@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    domain::{dbc_genesis::GenesisError, node_transfers::Error as TransferError},
+    domain::{dbc_genesis::Error as GenesisError, node_transfers::Error as TransferError},
     network::Error as NetworkError,
     protocol::error::Error as ProtocolError,
 };
