@@ -217,7 +217,8 @@ mod tests {
     use crate::domain::{
         client_transfers::{create_offline_transfer, Outputs as TransferDetails},
         dbc_genesis::{create_genesis_dbc, GENESIS_DBC_AMOUNT},
-        wallet::{KeyLessWallet, SendClient},
+        storage::dbc_name,
+        wallet::{local_store::WALLET_DIR_NAME, public_address_name, KeyLessWallet, SendClient},
     };
 
     use sn_dbc::{Dbc, DbcIdSource, DerivedKey, MainKey, PublicAddress, Token};
@@ -510,6 +511,71 @@ mod tests {
             .last()
             .expect("There to be a spent DBC.");
         assert_eq!(a_spent, b_spent);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn created_dbc_to_file_can_be_deposited() -> Result<()> {
+        // Bring in the necessary traits.
+        use super::{DepositWallet, SendWallet};
+
+        let sender_root_dir = create_temp_dir()?;
+        let sender_root_dir = sender_root_dir.path().to_path_buf();
+
+        let mut sender = LocalWallet::load_from(&sender_root_dir).await?;
+        let sender_dbc = create_genesis_dbc(&sender.key).expect("Genesis creation to succeed.");
+        sender.deposit(vec![sender_dbc]);
+
+        let send_amount = 100;
+
+        // Send to a new address.
+        let recipient_root_dir = create_temp_dir()?;
+        let recipient_root_dir = recipient_root_dir.path().to_path_buf();
+        let mut recipient = LocalWallet::load_from(&recipient_root_dir).await?;
+        let recipient_public_address = recipient.key.public_address();
+
+        let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
+        let created_dbcs = sender.send(to, &MockSendClient).await?;
+        let dbc = created_dbcs[0].dbc.clone();
+        let dbc_id = dbc.id();
+        sender.store_created_dbc(dbc).await?;
+
+        let public_address_name = public_address_name(&recipient_public_address);
+        let public_address_dir = format!("public_address_{}", hex::encode(public_address_name));
+        let dbc_id_name = dbc_name(&dbc_id);
+        let dbc_id_file_name = format!("{}.dbc", hex::encode(dbc_id_name));
+
+        let created_dbcs_dir = sender_root_dir.join(WALLET_DIR_NAME).join("created_dbcs");
+        let created_dbc_file = created_dbcs_dir
+            .join(&public_address_dir)
+            .join(&dbc_id_file_name);
+
+        let received_dbc_dir = recipient_root_dir
+            .join(WALLET_DIR_NAME)
+            .join("received_dbcs")
+            .join(&public_address_dir);
+
+        tokio::fs::create_dir_all(&received_dbc_dir).await?;
+
+        let received_dbc_file = received_dbc_dir.join(&dbc_id_file_name);
+
+        tokio::fs::rename(created_dbc_file, &received_dbc_file).await?;
+
+        recipient.try_load_deposits().await?;
+
+        assert_eq!(1, recipient.wallet.available_dbcs.len());
+
+        let a_available = recipient
+            .wallet
+            .available_dbcs
+            .values()
+            .last()
+            .expect("There to be an available DBC.");
+
+        assert_eq!(a_available.id(), dbc_id);
+
+        assert_eq!(send_amount, recipient.wallet.balance().as_nano());
 
         Ok(())
     }
