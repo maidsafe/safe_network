@@ -19,11 +19,17 @@ const WALLET_FILE_NAME: &str = "wallet";
 const CREATED_DBCS_DIR_NAME: &str = "created_dbcs";
 const RECEIVED_DBCS_DIR_NAME: &str = "received_dbcs";
 
+pub(super) async fn create_received_dbcs_dir(wallet_dir: &Path) -> Result<()> {
+    let received_dbcs_dir = wallet_dir.join(RECEIVED_DBCS_DIR_NAME);
+    fs::create_dir_all(&received_dbcs_dir).await?;
+    Ok(())
+}
+
 /// Writes the `KeyLessWallet` to the specified path.
 pub(super) async fn store_wallet(wallet_dir: &Path, wallet: &KeyLessWallet) -> Result<()> {
     let wallet_path = wallet_dir.join(WALLET_FILE_NAME);
     let bytes = bincode::serialize(&wallet)?;
-    fs::write(wallet_path, bytes).await?;
+    fs::write(&wallet_path, bytes).await?;
     Ok(())
 }
 
