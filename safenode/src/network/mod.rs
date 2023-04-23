@@ -37,6 +37,7 @@ use std::{
     collections::{HashMap, HashSet},
     iter,
     net::SocketAddr,
+    num::NonZeroUsize,
     time::Duration,
 };
 use tokio::sync::{mpsc, oneshot};
@@ -85,7 +86,21 @@ impl SwarmDriver {
     /// Returns an error if there is a problem initializing the mDNS behavior.
     pub fn new(addr: SocketAddr) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut cfg = KademliaConfig::default();
+
+        // TODO: (make this dynamic?)
+        // repub every 5s as topology changes
+        let _ = cfg.set_replication_interval(Some(Duration::from_secs(5)));
+        // How many nodes _should_ store data.
+        let _ = cfg.set_replication_factor(
+            NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
+        );
         let _ = cfg.set_query_timeout(Duration::from_secs(5 * 60));
+
+        // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
+        let _ = cfg.disjoint_query_paths(true);
+
+        // Provider records never expire
+        let _ = cfg.set_provider_record_ttl(None);
 
         let request_response = request_response::Behaviour::new(
             MsgCodec(),
