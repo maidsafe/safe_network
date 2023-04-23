@@ -14,7 +14,7 @@ pub(crate) use self::error::{Error, Result};
 
 use crate::{
     domain::{
-        fees::{FeeCiphers, RequiredFee, SpendPriority, SpendQ},
+        fees::{FeeCiphers, RequiredFee, RequiredFeeContent, SpendPriority, SpendQ},
         storage::DbcAddress,
         storage::SpendStorage,
     },
@@ -80,12 +80,14 @@ impl Transfers {
         dbc_id: DbcId,
         priority: SpendPriority,
     ) -> (NodeId, RequiredFee) {
-        let amount = self.current_fee(priority);
+        let amount = Token::from_nano(self.current_fee(priority));
 
         debug!("Returned amount for priority {priority:?}: {amount}");
 
-        let required_fee =
-            RequiredFee::new(Token::from_nano(amount), dbc_id, &self.node_reward_key);
+        let content =
+            RequiredFeeContent::new(amount, dbc_id, self.node_reward_key.public_address());
+        let reward_address_sig = self.node_reward_key.sign(&content.to_bytes());
+        let required_fee = RequiredFee::new(content, reward_address_sig);
 
         (self.node_id, required_fee)
     }
