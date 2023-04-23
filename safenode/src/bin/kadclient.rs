@@ -16,6 +16,7 @@ use safenode::client::{Client, ClientEvent};
 
 use clap::Parser;
 use eyre::Result;
+use std::path::PathBuf;
 use tracing::info;
 
 #[tokio::main]
@@ -36,11 +37,21 @@ async fn main() -> Result<()> {
         }
     }
 
+    let root_dir = get_client_dir().await?;
+
     match opt.cmd {
-        SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client).await?,
+        SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client, &root_dir).await?,
         SubCmd::Files(cmds) => files_cmds(cmds, client.clone()).await?,
         SubCmd::Register(cmds) => register_cmds(cmds, &client).await?,
     };
 
     Ok(())
+}
+
+async fn get_client_dir() -> Result<PathBuf> {
+    let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
+    home_dirs.push(".safe");
+    home_dirs.push("client");
+    tokio::fs::create_dir_all(home_dirs.as_path()).await?;
+    Ok(home_dirs)
 }
