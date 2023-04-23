@@ -49,14 +49,22 @@ async fn upload_files(files_path: PathBuf, file_api: &Files, root_dir: &Path) ->
         if entry.file_type().is_file() {
             let file = fs::read(entry.path())?;
             let bytes = Bytes::from(file);
-            let file_name = entry.file_name();
+            let file_name = if let Some(file_name) = entry.file_name().to_str() {
+                file_name.to_string()
+            } else {
+                print!(
+                    "Skipping file {:?} as it is not valid UTF-8.",
+                    entry.file_name()
+                );
+                continue;
+            };
 
             println!("Storing file {file_name:?} of {} bytes..", bytes.len());
 
             match file_api.upload(bytes).await {
                 Ok(address) => {
                     println!("Successfully stored file to {address:?}");
-                    chunks_to_fetch.push(*address.name());
+                    chunks_to_fetch.push((*address.name(), file_name));
                 }
                 Err(error) => {
                     println!(
@@ -87,31 +95,26 @@ async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
         .flatten()
     {
         if entry.file_type().is_file() {
-            let file = fs::read(entry.path())?;
-            let bytes = Bytes::from(file);
-            let file_name = entry.file_name();
+            let index_doc_bytes = Bytes::from(fs::read(entry.path())?);
+            let index_doc_name = entry.file_name();
 
-            println!(
-                "Loading file xornames from {file_name:?} with length {:?}",
-                bytes.len()
-            );
-            let chunks_to_fetch: Vec<XorName> = bincode::deserialize(&bytes)?;
+            println!("Loading file names from index doc {index_doc_name:?}");
+            let files_to_fetch: Vec<(XorName, String)> = bincode::deserialize(&index_doc_bytes)?;
 
-            if chunks_to_fetch.is_empty() {
+            if files_to_fetch.is_empty() {
                 println!("No files to download!");
             }
-            for xorname in chunks_to_fetch.iter() {
-                println!("Downloading file {xorname:?}");
+            for (xorname, file_name) in files_to_fetch.iter() {
+                println!("Downloading file {file_name:?}");
                 match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
                     Ok(bytes) => {
-                        println!("Successfully got file {xorname}!");
-                        let filename = hex::encode(xorname);
-                        let file_name_path = download_path.join(filename);
+                        println!("Successfully got file {file_name}!");
+                        let file_name_path = download_path.join(file_name);
                         println!("Writing {} bytes to {file_name_path:?}", bytes.len());
                         fs::write(file_name_path, bytes)?;
                     }
                     Err(error) => {
-                        println!("Did not get file {xorname:?} from the network! {error}")
+                        println!("Did not get file {file_name:?} from the network! {error}")
                     }
                 };
             }
