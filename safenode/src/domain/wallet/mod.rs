@@ -86,6 +86,12 @@ pub trait Wallet {
     fn balance(&self) -> Token;
 }
 
+/// A wallet has that can sign msgs.
+pub trait SigningWallet {
+    /// Signs the given msg.
+    fn sign(&self, msg: &[u8]) -> bls::Signature;
+}
+
 /// A send wallet is a wallet that, in addition to the capabilities
 /// of a deposit wallet, can also send tokens to other addresses.
 #[async_trait]

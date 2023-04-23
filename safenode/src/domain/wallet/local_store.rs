@@ -11,7 +11,7 @@ use super::{
     wallet_file::{
         create_received_dbcs_dir, get_wallet, load_received_dbcs, store_created_dbcs, store_wallet,
     },
-    DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, Wallet,
+    DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, SigningWallet, Wallet,
 };
 
 use crate::domain::client_transfers::{CreatedDbc, Outputs as TransferDetails};
@@ -142,6 +142,12 @@ impl Wallet for LocalWallet {
 
     fn balance(&self) -> Token {
         self.wallet.balance()
+    }
+}
+
+impl SigningWallet for LocalWallet {
+    fn sign(&self, msg: &[u8]) -> bls::Signature {
+        self.key.sign(msg)
     }
 }
 
