@@ -53,6 +53,22 @@ impl Transfers {
         }
     }
 
+    /// Create a new instance of `Transfers` with a genesis spend.
+    #[allow(unused)]
+    pub(crate) async fn new_with_genesis(
+        root_dir: &Path,
+        node_id: NodeId,
+        node_reward_key: MainKey,
+        genesis_spend: &SignedSpend,
+    ) -> Result<Self> {
+        Ok(Self {
+            node_id,
+            node_reward_key,
+            spend_queue: SpendQ::with_fee(STARTING_FEE),
+            storage: SpendStorage::new_with_genesis(root_dir, genesis_spend).await?,
+        })
+    }
+
     /// Get Spend from local store.
     pub(crate) async fn get(&self, address: DbcAddress) -> Result<SignedSpend> {
         Ok(self.storage.get(&address).await?)
