@@ -13,6 +13,10 @@ path = "src/bin/safenode/main.rs"
 name = "safe"
 path = "src/bin/safe/mod.rs"
 
+[[bin]]
+name = "faucet"
+path = "src/bin/faucet/mod.rs"
+
 [dependencies]
 async-trait = "0.1"
 bincode = "1.3.1"

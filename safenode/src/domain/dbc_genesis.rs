@@ -17,6 +17,12 @@ use thiserror::Error;
 /// Total supply of tokens that will eventually exist in the network: 4,294,967,295 * 10^9 = 4,294,967,295,000,000,000.
 const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
 
+/// The secret key for the genesis DBC.
+///
+/// This key is public for auditing purposes. Hard coding its value means all nodes will be able to
+/// validate it.
+pub const GENESIS_DBC_SK: &str = "0c5152498fc5b2f9ed691ef875f2c16f1f950910391f7ba1df63e9f0ce4b2780";
+
 /// Number of tokens in the Genesis DBC.
 /// At the inception of the Network 30 % of total supply - i.e. 1,288,490,189 - whole tokens will be created.
 /// Each whole token can be subdivided 10^9 times,
@@ -28,21 +34,28 @@ pub(super) type GenesisResult<T> = Result<T, GenesisError>;
 
 /// Main error type for the crate.
 #[derive(Error, Debug, Clone)]
-// #[non_exhaustive]
-#[non_exhaustive]
-pub(super) enum GenesisError {
-    /// Error occurred when minting the Genesis DBC.
+pub enum GenesisError {
+    /// Error occurred when creating the Genesis DBC.
     #[error("Genesis DBC error:: {0}")]
     GenesisDbcError(String),
-    /// FailedToParseReason
+    /// The dbc error reason that parsing failed.
     #[error("Failed to parse reason: {0}")]
     FailedToParseReason(#[from] DbcError),
 }
 
-/// Generate the genesis DBC.
+/// Create the genesis DBC.
 /// The genesis DBC is the first DBC in the network. It is created without
 /// a source transaction, as there was nothing before it.
-#[allow(clippy::result_large_err, unused)]
+#[allow(clippy::result_large_err)]
+pub fn create_genesis() -> GenesisResult<Dbc> {
+    let secret_key = bls::SecretKey::from_hex(GENESIS_DBC_SK).map_err(sn_dbc::Error::Blsttc)?;
+    let main_key = MainKey::new(secret_key);
+    create_genesis_dbc(&main_key)
+}
+
+/// Create a any first DBC given the key.
+/// This is useful in tests.
+#[allow(clippy::result_large_err)]
 pub(super) fn create_genesis_dbc(genesis_main_key: &MainKey) -> GenesisResult<Dbc> {
     let rng = &mut rng::thread_rng();
 
@@ -60,10 +73,12 @@ pub(super) fn create_genesis_dbc(genesis_main_key: &MainKey) -> GenesisResult<Db
         },
     };
 
+    let reason = Hash::hash(b"GENESIS");
+
     let dbc_builder = TransactionBuilder::default()
         .add_input(genesis_input)
         .add_output(Token::from_nano(GENESIS_DBC_AMOUNT), dbc_id_src)
-        .build(Hash::default(), rng::thread_rng())
+        .build(reason, rng::thread_rng())
         .map_err(|err| {
             GenesisError::GenesisDbcError(format!(
                 "Failed to build the DBC transaction for genesis DBC: {err}",

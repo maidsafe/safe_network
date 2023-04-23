@@ -6,15 +6,23 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-/// Client handling of token transfers.
-pub mod client_transfers;
-/// Dbc genesis creation.
-pub mod dbc_genesis;
-/// Types related to transfer fees.
-pub mod fees;
-/// Node handling of token transfers.
-pub mod node_transfers;
-/// Storage for spends, chunks and registers.
-pub mod storage;
-/// A wallet for network tokens.
-pub mod wallet;
+mod faucet;
+
+use clap::{Parser, Subcommand};
+
+pub(super) use self::faucet::faucet_cmds;
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+pub(super) struct Opt {
+    /// Available sub commands.
+    #[clap(subcommand)]
+    pub cmd: SubCmd,
+}
+
+#[derive(Subcommand, Debug)]
+pub(super) enum SubCmd {
+    #[clap(name = "faucet", subcommand)]
+    /// Manage faucet on a Test SAFE Network
+    Faucet(faucet::FaucetCmds),
+}
