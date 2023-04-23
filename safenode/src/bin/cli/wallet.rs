@@ -15,7 +15,7 @@ use sn_dbc::{Dbc, Token};
 
 use clap::Parser;
 use eyre::Result;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::fs;
 use walkdir::WalkDir;
 
@@ -38,17 +38,16 @@ pub enum WalletCmds {
     },
 }
 
-pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client) -> Result<()> {
+pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Path) -> Result<()> {
     match cmds {
-        WalletCmds::Deposit { dbc_dir } => deposit(dbc_dir).await?,
-        WalletCmds::Send { amount, to } => send(amount, to, client).await?,
+        WalletCmds::Deposit { dbc_dir } => deposit(dbc_dir, root_dir).await?,
+        WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
     }
     Ok(())
 }
 
-async fn deposit(dbc_dir: PathBuf) -> Result<()> {
-    let root_dir = get_client_dir().await?;
-    let mut wallet = LocalWallet::load_from(&root_dir).await?;
+async fn deposit(dbc_dir: PathBuf, root_dir: &Path) -> Result<()> {
+    let mut wallet = LocalWallet::load_from(root_dir).await?;
 
     let mut deposits = vec![];
 
@@ -91,7 +90,7 @@ async fn deposit(dbc_dir: PathBuf) -> Result<()> {
     Ok(())
 }
 
-async fn send(amount: String, to: String, client: &Client) -> Result<()> {
+async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> Result<()> {
     let address = parse_public_address(to)?;
 
     use std::str::FromStr;
@@ -101,8 +100,7 @@ async fn send(amount: String, to: String, client: &Client) -> Result<()> {
         return Ok(());
     }
 
-    let root_dir = get_client_dir().await?;
-    let wallet = LocalWallet::load_from(&root_dir).await?;
+    let wallet = LocalWallet::load_from(root_dir).await?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     match wallet_client.send(amount, address).await {
         Ok(_new_dbcs) => {
@@ -122,12 +120,4 @@ async fn send(amount: String, to: String, client: &Client) -> Result<()> {
     }
 
     Ok(())
-}
-
-async fn get_client_dir() -> Result<PathBuf> {
-    let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
-    home_dirs.push(".safe");
-    home_dirs.push("client");
-    tokio::fs::create_dir_all(home_dirs.as_path()).await?;
-    Ok(home_dirs)
 }
