@@ -28,9 +28,9 @@ pub fn parse_public_address<T: AsRef<[u8]>>(hex: T) -> Result<PublicAddress> {
 
 /// Writes the public address and main key (hex-encoded) to different locations at disk.
 #[allow(clippy::result_large_err)]
-pub(super) async fn store_new_keypair(root_dir: &Path, main_key: &MainKey) -> Result<()> {
-    let secret_key_path = root_dir.join(MAIN_KEY_FILENAME);
-    let public_key_path = root_dir.join(PUBLIC_ADDRESS_FILENAME);
+pub(super) async fn store_new_keypair(wallet_dir: &Path, main_key: &MainKey) -> Result<()> {
+    let secret_key_path = wallet_dir.join(MAIN_KEY_FILENAME);
+    let public_key_path = wallet_dir.join(PUBLIC_ADDRESS_FILENAME);
     fs::write(secret_key_path, encode(main_key.to_bytes())).await?;
     fs::write(
         public_key_path,
@@ -42,8 +42,8 @@ pub(super) async fn store_new_keypair(root_dir: &Path, main_key: &MainKey) -> Re
 }
 
 /// Returns Some(sn_dbc::MainKey) or None if file doesn't exist. It assumes it's hex-encoded.
-pub(super) async fn get_main_key(root_dir: &Path) -> Result<Option<MainKey>> {
-    let path = root_dir.join(MAIN_KEY_FILENAME);
+pub(super) async fn get_main_key(wallet_dir: &Path) -> Result<Option<MainKey>> {
+    let path = wallet_dir.join(MAIN_KEY_FILENAME);
     if !path.is_file() {
         return Ok(None);
     }
