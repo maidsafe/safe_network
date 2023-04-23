@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
 
     match opt.cmd {
         SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client, &root_dir).await?,
-        SubCmd::Files(cmds) => files_cmds(cmds, client.clone()).await?,
+        SubCmd::Files(cmds) => files_cmds(cmds, client.clone(), &root_dir).await?,
         SubCmd::Register(cmds) => register_cmds(cmds, &client).await?,
     };
 
