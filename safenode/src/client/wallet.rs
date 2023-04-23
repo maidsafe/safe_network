@@ -11,7 +11,7 @@ use super::Client;
 use crate::{
     domain::{
         client_transfers::{
-            create_online_transfer, CreatedDbc, Outputs as TransferDetails, SpendRequestParams,
+            create_online_transfer, Outputs as TransferDetails, SpendRequestParams,
         },
         wallet::{Error, Result, SendClient, SendWallet},
     },
@@ -34,9 +34,15 @@ impl<W: SendWallet> WalletClient<W> {
     }
 
     /// Send tokens to another wallet.
-    pub async fn send(&mut self, amount: Token, to: PublicAddress) -> Result<Vec<CreatedDbc>> {
+    pub async fn send(&mut self, amount: Token, to: PublicAddress) -> Result<Dbc> {
         let dbcs = self.wallet.send(vec![(amount, to)], &self.client).await?;
-        Ok(dbcs)
+        if let Some(info) = dbcs.into_iter().next() {
+            Ok(info.dbc)
+        } else {
+            Err(Error::CouldNotSendTokens(
+                "No DBCs were returned from the wallet.".to_string(),
+            ))
+        }
     }
 
     /// Return the wallet.

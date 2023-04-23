@@ -8,7 +8,7 @@
 
 use super::{
     keys::{get_main_key, store_new_keypair},
-    wallet_file::{get_wallet, store_wallet},
+    wallet_file::{get_wallet, load_received_dbcs, store_created_dbcs, store_wallet},
     DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, Wallet,
 };
 
@@ -22,6 +22,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+const WALLET_DIR_NAME: &str = "wallet";
+
 /// A wallet that can only receive tokens.
 pub struct LocalWallet {
     /// The secret key with which we can access
@@ -29,42 +31,58 @@ pub struct LocalWallet {
     key: MainKey,
     /// The wallet containing all data.
     wallet: KeyLessWallet,
-    /// The dir of the wallet file.
-    root_dir: PathBuf,
+    /// The dir of the wallet file, main key, public address, and new dbcs.
+    wallet_dir: PathBuf,
 }
 
 impl LocalWallet {
     /// Stores the wallet to disk.
     pub async fn store(&self) -> Result<()> {
-        store_wallet(&self.root_dir, &self.wallet).await
+        store_wallet(&self.wallet_dir, &self.wallet).await
+    }
+
+    /// Stores the given dbc to the `created dbcs dir` in the wallet dir.
+    /// Each recipient has their own dir, containing all dbcs for them.
+    /// These can then be sent to the recipients out of band, over any channel preferred.
+    pub async fn store_created_dbc(&mut self, dbc: Dbc) -> Result<()> {
+        store_created_dbcs(vec![dbc], &self.wallet_dir).await
+    }
+
+    /// Try to load any new dbcs from the `received dbcs dir` in the wallet dir.
+    pub async fn try_load_deposits(&mut self) -> Result<()> {
+        let deposited = load_received_dbcs(&self.wallet_dir).await?;
+        self.wallet.deposit(deposited, &self.key);
+        Ok(())
     }
 
     /// Loads a serialized wallet from a path.
     pub async fn load_from(root_dir: &Path) -> Result<Self> {
-        let (key, wallet) = load_from_path(root_dir).await?;
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        tokio::fs::create_dir_all(&wallet_dir).await?;
+        let (key, wallet) = load_from_path(&wallet_dir).await?;
         Ok(Self {
             key,
             wallet,
-            root_dir: root_dir.to_path_buf(),
+            wallet_dir: wallet_dir.to_path_buf(),
         })
     }
 }
 
 /// Loads a serialized wallet from a path.
-async fn load_from_path(root_dir: &Path) -> Result<(MainKey, KeyLessWallet)> {
-    let key = match get_main_key(root_dir).await? {
+async fn load_from_path(wallet_dir: &Path) -> Result<(MainKey, KeyLessWallet)> {
+    let key = match get_main_key(wallet_dir).await? {
         Some(key) => key,
         None => {
             let key = MainKey::random();
-            store_new_keypair(root_dir, &key).await?;
+            store_new_keypair(wallet_dir, &key).await?;
             key
         }
     };
-    let wallet = match get_wallet(root_dir).await? {
+    let wallet = match get_wallet(wallet_dir).await? {
         Some(wallet) => wallet,
         None => {
             let wallet = KeyLessWallet::new();
-            store_wallet(root_dir, &wallet).await?;
+            store_wallet(wallet_dir, &wallet).await?;
             wallet
         }
     };
@@ -214,13 +232,13 @@ mod tests {
         let genesis = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
 
         let dir = create_temp_dir()?;
-        let root_dir = dir.path().to_path_buf();
+        let wallet_dir = dir.path().to_path_buf();
 
         wallet.deposit(vec![genesis], &key);
 
-        store_wallet(&root_dir, &wallet).await?;
+        store_wallet(&wallet_dir, &wallet).await?;
 
-        let deserialized = get_wallet(&root_dir)
+        let deserialized = get_wallet(&wallet_dir)
             .await?
             .expect("There to be a wallet on disk.");
 
@@ -242,7 +260,7 @@ mod tests {
         let deposit_only = LocalWallet {
             key,
             wallet: KeyLessWallet::new(),
-            root_dir: dir.path().to_path_buf(),
+            wallet_dir: dir.path().to_path_buf(),
         };
 
         assert_eq!(public_address, deposit_only.address());
@@ -273,7 +291,7 @@ mod tests {
         let mut deposit_only = LocalWallet {
             key: MainKey::random(),
             wallet: KeyLessWallet::new(),
-            root_dir: dir.path().to_path_buf(),
+            wallet_dir: dir.path().to_path_buf(),
         };
 
         deposit_only.deposit(vec![]);
@@ -300,7 +318,7 @@ mod tests {
         let mut deposit_only = LocalWallet {
             key,
             wallet: KeyLessWallet::new(),
-            root_dir: dir.path().to_path_buf(),
+            wallet_dir: dir.path().to_path_buf(),
         };
 
         deposit_only.deposit(vec![genesis]);
@@ -322,7 +340,7 @@ mod tests {
         let mut local_wallet = LocalWallet {
             key: MainKey::random(),
             wallet: KeyLessWallet::new(),
-            root_dir: dir.path().to_path_buf(),
+            wallet_dir: dir.path().to_path_buf(),
         };
 
         local_wallet.deposit(vec![genesis]);

@@ -8,16 +8,14 @@
 
 use safenode::{
     client::{Client, WalletClient},
-    domain::wallet::{parse_public_address, DepositWallet, LocalWallet, Wallet},
+    domain::wallet::{parse_public_address, LocalWallet, Wallet},
 };
 
-use sn_dbc::{Dbc, Token};
+use sn_dbc::Token;
 
 use clap::Parser;
 use eyre::Result;
 use std::path::{Path, PathBuf};
-use tokio::fs;
-use walkdir::WalkDir;
 
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
@@ -46,34 +44,13 @@ pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Pa
     Ok(())
 }
 
-async fn deposit(dbc_dir: PathBuf, root_dir: &Path) -> Result<()> {
+async fn deposit(_dbc_dir: PathBuf, root_dir: &Path) -> Result<()> {
     let mut wallet = LocalWallet::load_from(root_dir).await?;
 
-    let mut deposits = vec![];
-
-    for entry in WalkDir::new(dbc_dir).into_iter().flatten() {
-        if entry.file_type().is_file() {
-            let file_name = entry.file_name();
-            println!("Reading deposited tokens from {file_name:?}.");
-
-            let dbc_data = fs::read_to_string(entry.path()).await?;
-            let dbc = match Dbc::from_hex(dbc_data.trim()) {
-                Ok(dbc) => dbc,
-                Err(_) => {
-                    println!(
-                        "This file does not appear to have valid hex-encoded DBC data. \
-                        Skipping it."
-                    );
-                    continue;
-                }
-            };
-
-            deposits.push(dbc);
-        }
-    }
-
     let previous_balance = wallet.balance();
-    wallet.deposit(deposits);
+
+    wallet.try_load_deposits().await?;
+
     let new_balance = wallet.balance();
     let deposited = previous_balance.as_nano() - new_balance.as_nano();
 
@@ -102,10 +79,11 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
 
     let wallet = LocalWallet::load_from(root_dir).await?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
+
     match wallet_client.send(amount, address).await {
-        Ok(_new_dbcs) => {
+        Ok(new_dbc) => {
             println!("Sent {amount:?} to {address:?}");
-            let wallet = wallet_client.into_wallet();
+            let mut wallet = wallet_client.into_wallet();
             let new_balance = wallet.balance();
 
             if let Err(err) = wallet.store().await {
@@ -113,6 +91,9 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
             } else {
                 println!("Successfully stored wallet with new balance {new_balance:?}.");
             }
+
+            wallet.store_created_dbc(new_dbc).await?;
+            println!("Successfully stored new dbc to wallet dir. It can now be sent to the recipient, using any channel of choice.");
         }
         Err(err) => {
             println!("Failed to send {amount:?} to {address:?} due to {err:?}.");
