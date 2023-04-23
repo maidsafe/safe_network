@@ -8,7 +8,9 @@
 
 use super::{
     keys::{get_main_key, store_new_keypair},
-    wallet_file::{get_wallet, load_received_dbcs, store_created_dbcs, store_wallet},
+    wallet_file::{
+        create_received_dbcs_dir, get_wallet, load_received_dbcs, store_created_dbcs, store_wallet,
+    },
     DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, Wallet,
 };
 
@@ -58,6 +60,7 @@ impl LocalWallet {
     /// Loads a serialized wallet from a path.
     pub async fn load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        // This creates the received_dbcs dir if it doesn't exist.
         tokio::fs::create_dir_all(&wallet_dir).await?;
         let (key, wallet) = load_from_path(&wallet_dir).await?;
         Ok(Self {
@@ -83,6 +86,7 @@ async fn load_from_path(wallet_dir: &Path) -> Result<(MainKey, KeyLessWallet)> {
         None => {
             let wallet = KeyLessWallet::new();
             store_wallet(wallet_dir, &wallet).await?;
+            create_received_dbcs_dir(wallet_dir).await?;
             wallet
         }
     };
@@ -557,7 +561,6 @@ mod tests {
             .join(&public_address_dir);
 
         tokio::fs::create_dir_all(&received_dbc_dir).await?;
-
         let received_dbc_file = received_dbc_dir.join(&dbc_id_file_name);
 
         tokio::fs::rename(created_dbc_file, &received_dbc_file).await?;
