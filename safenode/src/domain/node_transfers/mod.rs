@@ -43,16 +43,6 @@ pub(crate) struct Transfers {
 }
 
 impl Transfers {
-    /// Create a new instance of `Transfers`.
-    pub(crate) fn new(node_id: NodeId, node_wallet: LocalWallet, root_dir: &Path) -> Self {
-        Self {
-            node_id,
-            node_wallet,
-            spend_queue: SpendQ::with_fee(STARTING_FEE),
-            storage: SpendStorage::new(root_dir),
-        }
-    }
-
     /// Create a new instance of `Transfers` with a genesis spend.
     #[allow(unused)]
     pub(crate) async fn new_with_genesis(

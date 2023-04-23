@@ -6,6 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::{
+    domain::{dbc_genesis::GenesisError, node_transfers::Error as TransferError},
+    network::Error as NetworkError,
+    protocol::error::Error as ProtocolError,
+};
+
 use thiserror::Error;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
@@ -14,15 +20,22 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
-    #[error("Network Error {0}")]
-    Network(#[from] crate::network::Error),
+    #[error("Network error {0}")]
+    Network(#[from] NetworkError),
 
     #[error("Protocol error {0}")]
-    Protocol(#[from] crate::protocol::error::Error),
+    Protocol(#[from] ProtocolError),
 
-    #[error("ResponseTimeout")]
-    ResponseTimeout(#[from] tokio::time::error::Elapsed),
+    /// Errors in node transfer handling.
+    #[error("TransferError: {0:?}")]
+    Transfers(#[from] TransferError),
 
     #[error("Node wallet load issue: {0}.")]
     CouldNotLoadWallet(String),
+
+    #[error("Genesis error {0}")]
+    Genesis(#[from] GenesisError),
+
+    #[error("ResponseTimeout")]
+    ResponseTimeout(#[from] tokio::time::error::Elapsed),
 }

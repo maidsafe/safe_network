@@ -43,20 +43,19 @@ pub(crate) struct SpendStorage {
 }
 
 impl SpendStorage {
-    /// Create a new instance of `SpendStorage`.
-    pub(crate) fn new(path: &Path) -> Self {
-        Self {
-            valid_spends_path: path.join(VALID_SPENDS_STORE_DIR_NAME),
-            double_spends_path: path.join(DOUBLE_SPENDS_STORE_DIR_NAME),
-        }
-    }
-
     /// Create a new instance of `SpendStorage` with a genesis spend.
-    #[allow(unused)]
     pub(crate) async fn new_with_genesis(path: &Path, genesis_spend: &SignedSpend) -> Result<Self> {
         let mut storage = Self::new(path);
         storage.add(genesis_spend).await?;
         Ok(storage)
+    }
+
+    /// Create a new instance of `SpendStorage`.
+    fn new(path: &Path) -> Self {
+        Self {
+            valid_spends_path: path.join(VALID_SPENDS_STORE_DIR_NAME),
+            double_spends_path: path.join(DOUBLE_SPENDS_STORE_DIR_NAME),
+        }
     }
 
     // Read Spend from local store.

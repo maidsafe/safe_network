@@ -14,6 +14,7 @@ use super::{
 
 use crate::{
     domain::{
+        dbc_genesis::{create_genesis, GenesisError},
         node_transfers::{Error as TransferError, Transfers},
         storage::{
             dbc_address, register::User, ChunkStorage, DbcAddress, Error as StorageError,
@@ -58,17 +59,28 @@ impl Node {
     ) -> Result<(NodeId, NodeEventsChannel)> {
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
         let node_events_channel = NodeEventsChannel::default();
+
         let node_id = NodeId::from(network.peer_id);
         let root_dir = get_root_dir().await?;
         let node_wallet = LocalWallet::load_from(&root_dir)
             .await
             .map_err(|e| Error::CouldNotLoadWallet(e.to_string()))?;
 
+        let genesis = create_genesis()?;
+        let genesis_spend =
+            genesis
+                .signed_spends
+                .first()
+                .ok_or(Error::Genesis(GenesisError::GenesisDbcError(
+                    "No genesis signed spend!".to_string(),
+                )))?;
+
         let mut node = Self {
             network,
             chunks: ChunkStorage::new(&root_dir),
             registers: RegisterStorage::new(&root_dir),
-            transfers: Transfers::new(node_id, node_wallet, &root_dir),
+            transfers: Transfers::new_with_genesis(&root_dir, node_id, node_wallet, genesis_spend)
+                .await?,
             events_channel: node_events_channel.clone(),
             initial_peers,
         };
