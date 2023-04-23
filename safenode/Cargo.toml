@@ -11,7 +11,7 @@ path = "src/bin/safenode/main.rs"
 
 [[bin]]
 name = "safe"
-path = "src/bin/kadclient/mod.rs"
+path = "src/bin/safe/mod.rs"
 
 [dependencies]
 async-trait = "0.1"
