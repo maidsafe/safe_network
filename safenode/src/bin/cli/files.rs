@@ -78,7 +78,7 @@ async fn upload_files(files_path: PathBuf, file_api: &Files, root_dir: &Path) ->
     let content = bincode::serialize(&chunks_to_fetch)?;
     tokio::fs::create_dir_all(file_names_path.as_path()).await?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-    let file_names_path = file_names_path.join(format!("file_names_{date_time}.txt"));
+    let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
     println!("Writing {} bytes to {file_names_path:?}", content.len());
     fs::write(file_names_path, content)?;
 
