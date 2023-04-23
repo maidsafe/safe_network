@@ -29,6 +29,9 @@ pub enum Error {
     /// Failed to serialize a main key to hex.
     #[error("Could not serialize main key to hex: {0}")]
     FailedToHexEncodeKey(String),
+    /// Failure when decrypting.
+    #[error("Decryption failed: {0}")]
+    FailedToDecrypt(String),
     /// Dbc error.
     #[error("Dbc error: {0}")]
     Dbc(#[from] sn_dbc::Error),
