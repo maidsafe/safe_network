@@ -21,10 +21,12 @@ This is the Safe Network as it was supposed to be, on a kademlia network, enable
 `cargo run --release --bin safe -- files upload ~/dir/with/files`
 
 - Download files
-`cargo run --release --bin safe -- files download ~/dir/with/files/uploaded_files`
+`cargo run --release --bin safe -- files download`
 
-Note that the names of the uploaded files will be inserted into a new file, which is placed
-in a new dir named `uploaded_files` in the dir you gave when uploading the files. The names found in that new file will then be used to download the uploaded files.
+Note that the names of the uploaded files will be inserted into a new text document with a file 
+name of `file_names_%Y-%m-%d_%H-%M-%S.txt` (i.e. unique by date and time of upload) which is placed in `$HOME/.safe/client/uploaded_files`. 
+When calling `files download`, the `uploaded_files` dir will be searched for documents containing the names of uploaded files.
+If you don't wish to download the same files multiple times, remove the text documents after the first download.
 
 ## Using example app which exercises the Register APIs
 
