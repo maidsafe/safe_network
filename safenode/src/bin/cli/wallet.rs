@@ -15,16 +15,13 @@ use sn_dbc::Token;
 
 use clap::Parser;
 use eyre::Result;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
-    Deposit {
-        /// Tries to load a hex encoded `Dbc` from the
-        /// given path and deposit it to the wallet.
-        #[clap(name = "dbc-dir")]
-        dbc_dir: PathBuf,
-    },
+    /// Tries to load any hex encoded `Dbc`s from the `received_dbcs`
+    /// path in the wallet dir, and deposit it to the wallet.
+    Deposit,
     Send {
         /// This shall be the number of nanos to send.
         /// Necessary if the `send_to` argument has been given.
@@ -38,13 +35,13 @@ pub enum WalletCmds {
 
 pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Path) -> Result<()> {
     match cmds {
-        WalletCmds::Deposit { dbc_dir } => deposit(dbc_dir, root_dir).await?,
+        WalletCmds::Deposit => deposit(root_dir).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
     }
     Ok(())
 }
 
-async fn deposit(_dbc_dir: PathBuf, root_dir: &Path) -> Result<()> {
+async fn deposit(root_dir: &Path) -> Result<()> {
     let mut wallet = LocalWallet::load_from(root_dir).await?;
 
     let previous_balance = wallet.balance();
