@@ -6,6 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+//! The `faucet` subcommand is a testnet only command.
+//! It is used to create the genesis DBC and deposit it to the faucet local wallet.
+//! The idea is to then receive a public address from a community member, and send
+//! a small amount of tokens to them. This will allow them to send tokens to others,
+//! and start using the whole feature of token transfers on the network.
+//!
+//! The faucet will be managed by a simple web interface, probably using aws lambda + flask mvc or some such.
+
 use safenode::{
     client::{Client, WalletClient},
     domain::{
@@ -22,8 +30,7 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 pub enum FaucetCmds {
-    /// Tries to load any hex encoded `Dbc`s from the `received_dbcs`
-    /// path in the wallet dir, and deposit it to the wallet.
+    /// Create the genesis DBC and deposit it to the faucet local wallet.
     Genesis,
     Send {
         /// This shall be the number of nanos to send.
