@@ -19,6 +19,7 @@ use crate::{
             dbc_address, register::User, ChunkStorage, DbcAddress, Error as StorageError,
             RegisterStorage,
         },
+        wallet::LocalWallet,
     },
     network::{close_group_majority, NetworkEvent, SwarmDriver},
     protocol::{
@@ -30,7 +31,7 @@ use crate::{
     },
 };
 
-use sn_dbc::{DbcTransaction, MainKey, SignedSpend};
+use sn_dbc::{DbcTransaction, SignedSpend};
 
 use futures::future::select_all;
 use libp2p::{request_response::ResponseChannel, Multiaddr, PeerId};
@@ -59,12 +60,15 @@ impl Node {
         let node_events_channel = NodeEventsChannel::default();
         let node_id = NodeId::from(network.peer_id);
         let root_dir = get_root_dir().await?;
+        let node_wallet = LocalWallet::load_from(&root_dir)
+            .await
+            .map_err(|e| Error::CouldNotLoadWallet(e.to_string()))?;
 
         let mut node = Self {
             network,
             chunks: ChunkStorage::new(&root_dir),
             registers: RegisterStorage::new(&root_dir),
-            transfers: Transfers::new(node_id, MainKey::random(), &root_dir),
+            transfers: Transfers::new(node_id, node_wallet, &root_dir),
             events_channel: node_events_channel.clone(),
             initial_peers,
         };

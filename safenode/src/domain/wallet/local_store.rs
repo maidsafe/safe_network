@@ -156,7 +156,7 @@ impl SigningWallet for LocalWallet {
     ) -> Result<(sn_dbc::DbcId, sn_dbc::RevealedAmount)> {
         fee_ciphers
             .decrypt(&self.key)
-            .map_err(|e| super::Error::FailedToDecrypt(e.to_string()))
+            .map_err(|e| super::Error::FailedToDecryptFeeCipher(e.to_string()))
     }
 }
 

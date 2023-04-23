@@ -15,13 +15,13 @@ pub(crate) use self::error::{Error, Result};
 use crate::{
     domain::{
         fees::{FeeCiphers, RequiredFee, RequiredFeeContent, SpendPriority, SpendQ},
-        storage::DbcAddress,
-        storage::SpendStorage,
+        storage::{DbcAddress, SpendStorage},
+        wallet::LocalWallet,
     },
     node::NodeId,
 };
 
-use sn_dbc::{DbcId, DbcTransaction, MainKey, SignedSpend, Token};
+use sn_dbc::{DbcId, DbcTransaction, SignedSpend, Token};
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -37,17 +37,17 @@ const STARTING_FEE: u64 = 4000; // 0.000004 SNT
 
 pub(crate) struct Transfers {
     node_id: NodeId,
-    node_reward_key: MainKey,
+    node_wallet: LocalWallet,
     spend_queue: SpendQ<SignedSpend>,
     storage: SpendStorage,
 }
 
 impl Transfers {
     /// Create a new instance of `Transfers`.
-    pub(crate) fn new(node_id: NodeId, node_reward_key: MainKey, root_dir: &Path) -> Self {
+    pub(crate) fn new(node_id: NodeId, node_wallet: LocalWallet, root_dir: &Path) -> Self {
         Self {
             node_id,
-            node_reward_key,
+            node_wallet,
             spend_queue: SpendQ::with_fee(STARTING_FEE),
             storage: SpendStorage::new(root_dir),
         }
@@ -58,12 +58,12 @@ impl Transfers {
     pub(crate) async fn new_with_genesis(
         root_dir: &Path,
         node_id: NodeId,
-        node_reward_key: MainKey,
+        node_wallet: LocalWallet,
         genesis_spend: &SignedSpend,
     ) -> Result<Self> {
         Ok(Self {
             node_id,
-            node_reward_key,
+            node_wallet,
             spend_queue: SpendQ::with_fee(STARTING_FEE),
             storage: SpendStorage::new_with_genesis(root_dir, genesis_spend).await?,
         })
@@ -84,9 +84,10 @@ impl Transfers {
 
         debug!("Returned amount for priority {priority:?}: {amount}");
 
-        let content =
-            RequiredFeeContent::new(amount, dbc_id, self.node_reward_key.public_address());
-        let reward_address_sig = self.node_reward_key.sign(&content.to_bytes());
+        use super::wallet::{SigningWallet, Wallet};
+        let public_address = self.node_wallet.address();
+        let content = RequiredFeeContent::new(amount, dbc_id, public_address);
+        let reward_address_sig = self.node_wallet.sign(&content.to_bytes());
         let required_fee = RequiredFee::new(content, reward_address_sig);
 
         (self.node_id, required_fee)
@@ -163,7 +164,7 @@ impl Transfers {
         parent_tx: &DbcTransaction,
         fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
     ) -> Result<Token> {
-        let fee_paid = decipher_fee(&self.node_reward_key, parent_tx, self.node_id, fee_ciphers)?;
+        let fee_paid = decipher_fee(&self.node_wallet, parent_tx, self.node_id, fee_ciphers)?;
 
         let spend_q_snapshot = self.spend_queue.snapshot();
         let spend_q_stats = spend_q_snapshot.stats();
@@ -221,13 +222,16 @@ fn validate_parent_spends(
 
 #[cfg(not(feature = "data-network"))]
 fn decipher_fee(
-    node_reward_key: &MainKey,
+    node_wallet: &LocalWallet,
     parent_tx: &DbcTransaction,
     node_id: NodeId,
     fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
 ) -> Result<Token> {
+    use super::wallet::SigningWallet;
     let fee_ciphers = fee_ciphers.get(&node_id).ok_or(Error::MissingFee)?;
-    let (dbc_id, revealed_amount) = fee_ciphers.decrypt(node_reward_key)?;
+    let (dbc_id, revealed_amount) = node_wallet
+        .decrypt(fee_ciphers)
+        .map_err(|e| Error::FeeCipherDecryptionFailed(e.to_string()))?;
     let output_proof = match parent_tx
         .outputs
         .iter()

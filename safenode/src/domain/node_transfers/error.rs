@@ -30,6 +30,8 @@ pub enum Error {
     Fees(#[from] fees::Error),
     #[error("Contacting close group of parent spends failed: {0}.")]
     SpendParentCloseGroupIssue(String),
+    #[error("Fee cipher cecryption failed {0}.")]
+    FeeCipherDecryptionFailed(String),
     /// An error from the `sn_dbc` crate.
     #[error("Dbc error: {0}")]
     Dbcs(String),
