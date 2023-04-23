@@ -563,21 +563,23 @@ mod tests {
         tokio::fs::create_dir_all(&received_dbc_dir).await?;
         let received_dbc_file = received_dbc_dir.join(&dbc_id_file_name);
 
+        // Move the created dbc to the recipient's received_dbcs dir.
         tokio::fs::rename(created_dbc_file, &received_dbc_file).await?;
+
+        assert_eq!(0, recipient.wallet.balance().as_nano());
 
         recipient.try_load_deposits().await?;
 
         assert_eq!(1, recipient.wallet.available_dbcs.len());
 
-        let a_available = recipient
+        let available = recipient
             .wallet
             .available_dbcs
             .values()
             .last()
             .expect("There to be an available DBC.");
 
-        assert_eq!(a_available.id(), dbc_id);
-
+        assert_eq!(available.id(), dbc_id);
         assert_eq!(send_amount, recipient.wallet.balance().as_nano());
 
         Ok(())
