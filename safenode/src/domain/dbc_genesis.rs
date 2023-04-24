@@ -50,17 +50,17 @@ pub enum Error {
 pub fn create_genesis() -> GenesisResult<Dbc> {
     let secret_key = bls::SecretKey::from_hex(GENESIS_DBC_SK).map_err(sn_dbc::Error::Blsttc)?;
     let main_key = MainKey::new(secret_key);
-    create_genesis_dbc(&main_key)
+    create_first_dbc_from_key(&main_key)
 }
 
 /// Create a first DBC given any key (i.e. not specifically the hard coded genesis key).
 /// This is useful in tests.
 #[allow(clippy::result_large_err)]
-pub(super) fn create_genesis_dbc(genesis_main_key: &MainKey) -> GenesisResult<Dbc> {
+pub(crate) fn create_first_dbc_from_key(first_dbc_key: &MainKey) -> GenesisResult<Dbc> {
     let rng = &mut rng::thread_rng();
 
-    let dbc_id_src = genesis_main_key.random_dbc_id_src(rng);
-    let derived_key = genesis_main_key.derive_key(&dbc_id_src.derivation_index);
+    let dbc_id_src = first_dbc_key.random_dbc_id_src(rng);
+    let derived_key = first_dbc_key.derive_key(&dbc_id_src.derivation_index);
     let revealed_amount = RevealedAmount::from_amount(GENESIS_DBC_AMOUNT, rng);
 
     // Use the same key as the input and output of Genesis Tx.
