@@ -235,7 +235,7 @@ mod tests {
 
     use crate::domain::{
         client_transfers::{create_offline_transfer, Outputs as TransferDetails},
-        dbc_genesis::{create_genesis_dbc, GENESIS_DBC_AMOUNT},
+        dbc_genesis::{create_first_dbc_from_key, GENESIS_DBC_AMOUNT},
         storage::dbc_name,
         wallet::{local_store::WALLET_DIR_NAME, public_address_name, KeyLessWallet, SendClient},
     };
@@ -249,7 +249,7 @@ mod tests {
     async fn keyless_wallet_to_and_from_file() -> Result<()> {
         let key = MainKey::random();
         let mut wallet = KeyLessWallet::new();
-        let genesis = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+        let genesis = create_first_dbc_from_key(&key).expect("Genesis creation to succeed.");
 
         let dir = create_temp_dir();
         let wallet_dir = dir.path().to_path_buf();
@@ -332,7 +332,7 @@ mod tests {
         use super::{DepositWallet, Wallet};
 
         let key = MainKey::random();
-        let genesis = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+        let genesis = create_first_dbc_from_key(&key).expect("Genesis creation to succeed.");
         let dir = create_temp_dir();
 
         let mut deposit_only = LocalWallet {
@@ -354,7 +354,8 @@ mod tests {
         // Bring in the necessary traits.
         use super::{DepositWallet, Wallet};
 
-        let genesis = create_genesis_dbc(&MainKey::random()).expect("Genesis creation to succeed.");
+        let genesis =
+            create_first_dbc_from_key(&MainKey::random()).expect("Genesis creation to succeed.");
         let dir = create_temp_dir();
 
         let mut local_wallet = LocalWallet {
@@ -370,6 +371,35 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    #[allow(clippy::result_large_err)]
+    fn deposit_is_idempotent() -> Result<()> {
+        // Bring in the necessary trait.
+        use super::{DepositWallet, Wallet};
+
+        let key = MainKey::random();
+        let genesis_0 = create_first_dbc_from_key(&key).expect("Genesis creation to succeed.");
+        let genesis_1 = create_first_dbc_from_key(&key).expect("Genesis creation to succeed.");
+        let dir = create_temp_dir();
+
+        let mut deposit_only = LocalWallet {
+            key,
+            wallet: KeyLessWallet::new(),
+            wallet_dir: dir.path().to_path_buf(),
+        };
+
+        deposit_only.deposit(vec![genesis_0.clone()]);
+        assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
+
+        deposit_only.deposit(vec![genesis_0]);
+        assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
+
+        deposit_only.deposit(vec![genesis_1]);
+        assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
+
+        Ok(())
+    }
+
     #[tokio::test]
     async fn deposit_wallet_to_and_from_file() -> Result<()> {
         // Bring in the necessary traits.
@@ -379,7 +409,8 @@ mod tests {
         let root_dir = dir.path().to_path_buf();
 
         let mut depositor = LocalWallet::load_from(&root_dir).await?;
-        let genesis = create_genesis_dbc(&depositor.key).expect("Genesis creation to succeed.");
+        let genesis =
+            create_first_dbc_from_key(&depositor.key).expect("Genesis creation to succeed.");
         depositor.deposit(vec![genesis]);
         depositor.store().await?;
 
@@ -428,7 +459,8 @@ mod tests {
         let root_dir = dir.path().to_path_buf();
 
         let mut sender = LocalWallet::load_from(&root_dir).await?;
-        let sender_dbc = create_genesis_dbc(&sender.key).expect("Genesis creation to succeed.");
+        let sender_dbc =
+            create_first_dbc_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit(vec![sender_dbc]);
 
         assert_eq!(GENESIS_DBC_AMOUNT, sender.balance().as_nano());
@@ -462,7 +494,8 @@ mod tests {
         let root_dir = dir.path().to_path_buf();
 
         let mut sender = LocalWallet::load_from(&root_dir).await?;
-        let sender_dbc = create_genesis_dbc(&sender.key).expect("Genesis creation to succeed.");
+        let sender_dbc =
+            create_first_dbc_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit(vec![sender_dbc]);
 
         // We send to a new address.
@@ -543,7 +576,8 @@ mod tests {
         let sender_root_dir = sender_root_dir.path().to_path_buf();
 
         let mut sender = LocalWallet::load_from(&sender_root_dir).await?;
-        let sender_dbc = create_genesis_dbc(&sender.key).expect("Genesis creation to succeed.");
+        let sender_dbc =
+            create_first_dbc_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit(vec![sender_dbc]);
 
         let send_amount = 100;
