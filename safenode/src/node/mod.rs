@@ -15,10 +15,7 @@ pub use self::event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver};
 use self::error::Error;
 
 use crate::{
-    domain::{
-        node_transfers::Transfers,
-        storage::{ChunkStorage, RegisterStorage},
-    },
+    domain::{node_transfers::Transfers, storage::RegisterStorage},
     network::Network,
 };
 
@@ -32,7 +29,6 @@ use xor_name::XorName;
 /// storage, and broadcasts node-related events.
 pub struct Node {
     network: Network,
-    chunks: ChunkStorage,
     registers: RegisterStorage,
     transfers: Transfers,
     events_channel: NodeEventsChannel,

@@ -16,8 +16,7 @@ use crate::{
     domain::{
         node_transfers::{Error as TransferError, Transfers},
         storage::{
-            dbc_address, register::User, ChunkStorage, DbcAddress, Error as StorageError,
-            RegisterStorage,
+            dbc_address, register::User, DbcAddress, Error as StorageError, RegisterStorage,
         },
     },
     network::{close_group_majority, NetworkEvent, SwarmDriver},
@@ -66,7 +65,6 @@ impl Node {
 
         let mut node = Self {
             network,
-            chunks: ChunkStorage::new(&root_dir),
             registers: RegisterStorage::new(&root_dir),
             transfers: Transfers::new(node_id, MainKey::random(), &root_dir),
             events_channel: node_events_channel.clone(),
@@ -197,7 +195,6 @@ impl Node {
     async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
         match cmd {
             Cmd::StoreChunk(chunk) => {
-
                 debug!("That's a store chunk in for :{:?}", chunk.address().name());
                 // Create a Kademlia record for storage
                 let record = Record {
