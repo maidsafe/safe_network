@@ -284,12 +284,30 @@ impl SwarmDriver {
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
 
+        // Disable AutoNAT if we are either running locally or a client.
+        let autonat = if !local && !is_client {
+            let cfg = libp2p::autonat::Config {
+                // Defaults to 15. But we want to be a little quicker on checking for our NAT status.
+                boot_delay: Duration::from_secs(3),
+                // Defaults to 30. But a timeout should be able to be determined a little faster.
+                timeout: Duration::from_secs(15),
+                // Defaults to 90. If we get a timeout and only have one server, we want to try again with the same server.
+                throttle_server_period: Duration::from_secs(15),
+                ..Default::default()
+            };
+            Some(libp2p::autonat::Behaviour::new(peer_id, cfg))
+        } else {
+            None
+        };
+        let autonat = Toggle::from(autonat);
+
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
             identify,
             #[cfg(feature = "local-discovery")]
             mdns,
+            autonat,
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 

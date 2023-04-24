@@ -25,10 +25,11 @@ use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
+    autonat::{self, NatStatus},
     kad::{GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
-    swarm::{NetworkBehaviour, SwarmEvent},
+    swarm::{behaviour::toggle::Toggle, NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
 #[cfg(feature = "local-discovery")]
@@ -50,6 +51,7 @@ pub(super) struct NodeBehaviour {
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
+    pub(super) autonat: Toggle<autonat::Behaviour>,
 }
 
 #[derive(Debug)]
@@ -59,6 +61,7 @@ pub(super) enum NodeEvent {
     #[cfg(feature = "local-discovery")]
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
+    Autonat(autonat::Event),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -83,6 +86,12 @@ impl From<mdns::Event> for NodeEvent {
 impl From<libp2p::identify::Event> for NodeEvent {
     fn from(event: libp2p::identify::Event) -> Self {
         NodeEvent::Identify(Box::new(event))
+    }
+}
+
+impl From<autonat::Event> for NodeEvent {
+    fn from(event: autonat::Event) -> Self {
+        NodeEvent::Autonat(event)
     }
 }
 
@@ -260,6 +269,28 @@ impl SwarmDriver {
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
             SwarmEvent::Dialing(peer_id) => info!("Dialing {peer_id}"),
+
+            SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
+                autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
+                autonat::Event::OutboundProbe(e) => trace!("AutoNAT outbound probe: {e:?}"),
+                autonat::Event::StatusChanged { old, new } => {
+                    info!("AutoNAT status changed: {old:?} -> {new:?}");
+
+                    match new {
+                        NatStatus::Public(_addr) => {
+                            // In theory, we could actively push our address to our peers now. But, which peers? All of them?
+                            // Or, should we just wait and let Identify do it on its own? But, what if we are not connected
+                            // to any peers anymore? (E.g., our connections timed out etc)
+                            // let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
+                            // self.swarm.behaviour_mut().identify.push(all_peers);
+                        }
+                        NatStatus::Private => {
+                            // We could just straight out error here. In the future we might try to activate a relay mechanism.
+                        }
+                        NatStatus::Unknown => {}
+                    };
+                }
+            },
             other => debug!("SwarmEvent has been ignored: {other:?}"),
         }
         Ok(())
