@@ -13,6 +13,12 @@
 //! and start using the whole feature of token transfers on the network.
 //!
 //! The faucet will be managed by a simple web interface, probably using aws lambda + flask mvc or some such.
+//!
+//! Pattern for calling cli:
+//! `cargo run --bin faucet --release -- faucet send -- [amount per request] [public address hex]`
+//!
+//! Example of calling cli:
+//! `cargo run --bin faucet --release -- faucet send -- 100 9b0f0e917cd7fe75cad2196c4bea7ed1873deec85692e402be287a7068b2c3f7b6795fb7fa10a141f01a5d69b8ddc0a40000000000000001`
 
 use safenode::{
     client::{Client, WalletClient},
