@@ -24,8 +24,8 @@ pub struct RequiredFee {
 }
 
 impl RequiredFee {
-    /// Instantiate RequiredFee by encrypting the amount to the id of the dbc to spend, and signing
-    /// it all with the Node reward main key.
+    /// The required fee consists of the content where the amount is encrypting to the id of
+    /// the dbc to spend, and signing and the signature over that content by the Node reward main key.
     pub fn new(content: RequiredFeeContent, reward_address_sig: Signature) -> Self {
         Self {
             content,
