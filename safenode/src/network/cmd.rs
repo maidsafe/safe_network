@@ -43,6 +43,16 @@ pub enum SwarmCmd {
         resp: Response,
         channel: ResponseChannel<Response>,
     },
+    GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
+}
+
+/// Snapshot of information kept in the Swarm's local state
+#[derive(Debug, Clone)]
+pub struct SwarmLocalState {
+    /// List of currently connected peers
+    pub connected_peers: Vec<PeerId>,
+    /// List of aaddresses the node is currently listening on
+    pub listeners: Vec<Multiaddr>,
 }
 
 impl SwarmDriver {
@@ -101,6 +111,16 @@ impl SwarmDriver {
                     .request_response
                     .send_response(channel, resp)
                     .map_err(Error::OutgoingResponseDropped)?;
+            }
+            SwarmCmd::GetSwarmLocalState(sender) => {
+                let current_state = SwarmLocalState {
+                    connected_peers: self.swarm.connected_peers().cloned().collect(),
+                    listeners: self.swarm.listeners().cloned().collect(),
+                };
+
+                sender
+                    .send(current_state)
+                    .map_err(|_| Error::InternalMsgChannelDropped)?;
             }
         }
         Ok(())

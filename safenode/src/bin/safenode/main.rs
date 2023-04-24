@@ -56,7 +56,6 @@ struct Opt {
 }
 
 #[derive(Debug)]
-#[allow(dead_code)]
 // To be sent to the main thread in order to stop/restart the execution of the safenode app.
 enum NodeCtrl {
     // Request to stop the exeution of the safenode app, providing an error as a reason for it.
@@ -119,25 +118,19 @@ async fn start_node(
     let started_instant = std::time::Instant::now();
 
     info!("Starting node ...");
-    let (node_id, node_events_channel) = Node::run(node_socket_addr, peers, root_dir).await?;
+    let running_node = Node::run(node_socket_addr, peers, root_dir).await?;
 
-    // Channel to receive node ctrl cmds from RPC service if enabled
+    // Channel to receive node ctrl cmds from RPC service (if enabled), and events monitoring task
     let (ctrl_tx, mut ctrl_rx) = mpsc::channel::<NodeCtrl>(5);
+
+    // Monitor `NodeEvents`
+    let node_events_rx = running_node.node_events_channel().subscribe();
+    monitor_node_events(node_events_rx, ctrl_tx.clone());
 
     // Start up gRPC interface if enabled by user
     if let Some(addr) = rpc {
-        rpc::start_rpc_service(
-            addr,
-            log_dir.to_string(),
-            node_events_channel.clone(),
-            node_id,
-            ctrl_tx.clone(),
-            started_instant,
-        );
+        rpc::start_rpc_service(addr, log_dir, running_node, ctrl_tx, started_instant);
     }
-
-    // Monitor NodeEvents
-    monitor_node_events(node_events_channel.subscribe(), ctrl_tx);
 
     // Keep the node and gRPC service (if enabled) running.
     // We'll monitor any NodeCtrl cmd to restart/stop/update,
