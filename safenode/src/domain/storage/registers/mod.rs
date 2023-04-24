@@ -524,7 +524,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_try_load_stored() -> Result<()> {
-        let store = new_store()?;
+        let store = new_store();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
@@ -568,7 +568,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_try_load_stored_inverted_cmds_order() -> Result<()> {
-        let store = new_store()?;
+        let store = new_store();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
@@ -607,7 +607,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_apply_cmd_against_state() -> Result<()> {
-        let store = new_store()?;
+        let store = new_store();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
@@ -668,7 +668,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_apply_cmd_against_state_inverted_cmds_order() -> Result<()> {
-        let store = new_store()?;
+        let store = new_store();
 
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
@@ -725,7 +725,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_write() -> Result<()> {
-        let store = new_store()?;
+        let store = new_store();
 
         let (cmd, authority, _, _, _) = create_register()?;
         store.write(&cmd).await?;
@@ -751,7 +751,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_export() -> Result<()> {
-        let store = new_store()?;
+        let store = new_store();
 
         let (cmd_create, authority, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
@@ -777,7 +777,7 @@ mod test {
         let stored_addrs = store.stored_addrs().await;
 
         // Create new store and update it with the data from first store
-        let new_store = new_store()?;
+        let new_store = new_store();
         for addr in stored_addrs {
             let replica = store.get_register_replica(&addr).await?;
             new_store.update(&replica).await?;
@@ -809,7 +809,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_non_existing_entry() -> Result<()> {
-        let store = new_store()?;
+        let store = new_store();
 
         let (cmd_create, authority, _, _, _) = create_register()?;
         store.write(&cmd_create).await?;
@@ -836,7 +836,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_non_existing_permissions() -> Result<()> {
-        let store = new_store()?;
+        let store = new_store();
 
         let (cmd_create, authority, _, _, _) = create_register()?;
         store.write(&cmd_create).await?;
@@ -903,11 +903,10 @@ mod test {
         }))
     }
 
-    fn new_store() -> Result<RegisterStorage> {
-        let tmp_dir = tempfile::tempdir()?;
+    fn new_store() -> RegisterStorage {
+        let tmp_dir = assert_fs::TempDir::new().expect("Should be able to create a temp dir.");
         let path = tmp_dir.path();
-        let store = RegisterStorage::new(path);
-        Ok(store)
+        RegisterStorage::new(path)
     }
 
     // Helper functions temporarily used for spentbook logic, but also used for tests.
