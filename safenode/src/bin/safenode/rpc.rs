@@ -14,6 +14,7 @@ use eyre::{ErrReport, Result};
 use std::{
     env,
     net::SocketAddr,
+    process,
     time::{Duration, Instant},
 };
 use tokio::sync::mpsc::{self, Sender};
@@ -60,6 +61,7 @@ impl SafeNode for SafeNodeRpcService {
         let resp = Response::new(NodeInfoResponse {
             peer_id: self.running_node.peer_id().to_bytes(),
             log_dir: self.log_dir.clone(),
+            pid: process::id(),
             bin_version: env!("CARGO_PKG_VERSION").to_string(),
             uptime_secs: self.started_instant.elapsed().as_secs(),
         });

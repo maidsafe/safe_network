@@ -49,13 +49,36 @@ cargo run --release --example registers -- --user bob --reg-nickname myregister
 - Query basic node info
 ```
 $ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 info
-Node info received:
+Node info:
 ===================
 RPC endpoint: http://127.0.0.1:12001
-Node Id: 65fbed(01100101)..
+Peer Id: 12D3KooWB5CXPPtbVzZ7K9dv8xLj4JAPVEQu7ehibs2bWrqwiowy
 Logs dir: /home/bochaco/.safe/node/local-test-network/safenode-1
+PID: 490955
 Binary version: 0.1.0
 Time since last restart: 650s
+```
+
+- Query info about node's connections to the network:
+```
+$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 netinfo
+Node's connections to the Network:
+
+Connected peers:
+Peer: 12D3KooWCRN4jQjyACrHq4mAq1ZLDDnA1E9cDGoGuXP1pZbRDJee
+Peer: 12D3KooWFc2PX9Y7bQfUULHrg1VYeNAVKyS5mUjQJfzDy3NqSn2t
+Peer: 12D3KooWA2jeb4YdkTb5zw2ajWK4zqgoVaMN5y1eDrkUCXoin94V
+Peer: 12D3KooWLHZBRw47aqXCedSYvv4QQWsYdEX9HnDV6YwZBjujWAZV
+Peer: 12D3KooWJUExWkuqProAgTBhABMeQoi25zBpqdmGEncs1X62NCtV
+Peer: 12D3KooWENu5uDQsSdb4XCVeLZhXav922uyWHnyfLFwC5KZGKrpR
+Peer: 12D3KooWSaEKWKPGh5Q3fQrn6xqsyvQsKT2y5XxxZXjCqQbP35eE
+Peer: 12D3KooWNCvmBaz1MkByYkYArxKVQdiCA4bKDDBgFBtBzcpfDwA5
+Peer: 12D3KooWJPkWZHnsqwwHCWXj5MV3MaoNXksTKRGMNjAcaqydYKRv
+
+Node's listeners:
+Listener: /ip4/127.0.0.1/udp/47117/quic-v1
+Listener: /ip4/192.168.0.155/udp/47117/quic-v1
+Listener: /ip4/172.17.0.1/udp/47117/quic-v1
 ```
 
 - Restarting/Updating/Stopping a node
