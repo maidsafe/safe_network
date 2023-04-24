@@ -181,7 +181,7 @@ jobs:
       - name: Start a local network
         # Only run on non-PR events
         if: github.event_name != 'pull_request'
-        run: cargo run --release --bin testnet -- --interval 1 --node-path ./target/release/safenode
+        run: cargo run --release --bin testnet --features verify-nodes -- --interval 1 --node-path ./target/release/safenode
         id: section-startup
         env:
           RUST_LOG: "safenode,safe=trace"
@@ -288,7 +288,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        run: cargo run --release --bin testnet -- --interval 1 --node-path ./target/release/safenode
+        run: cargo run --release --bin testnet --features verify-nodes -- --interval 1 --node-path ./target/release/safenode
         id: section-startup
         env:
           RUST_LOG: "safenode,safe=trace"

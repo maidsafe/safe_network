@@ -232,12 +232,7 @@ async fn run_network(
 
     // Perform a verification on the nodes launched (if requested) as a last step
     #[cfg(feature = "verify-nodes")]
-    check_testnet::run(
-        &testnet.nodes_dir_path,
-        node_count,
-        testnet.node_launch_interval,
-    )
-    .await?;
+    check_testnet::run(&testnet.nodes_dir_path, node_count).await?;
 
     Ok(())
 }
