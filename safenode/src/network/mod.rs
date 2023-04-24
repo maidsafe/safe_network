@@ -130,7 +130,7 @@ impl SwarmDriver {
         let keypair = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(keypair.public());
 
-        info!("Node(PID: {}): {:?}", std::process::id(), peer_id);
+        info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
 
         // QUIC configuration
         let quic_config = libp2p_quic::Config::new(&keypair);
