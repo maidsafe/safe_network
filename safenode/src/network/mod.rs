@@ -38,7 +38,8 @@ use libp2p::{
 };
 
 use std::{
-    collections::{HashMap, HashSet}, iter,
+    collections::{HashMap, HashSet},
+    iter,
     net::SocketAddr,
     num::NonZeroUsize,
     time::Duration,
