@@ -6,141 +6,69 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod chunk;
-
-pub use self::chunk::Chunk;
-
-use super::{
-    error::{Error, Result},
-    list_files_in, prefix_tree_path, ChunkAddress,
-};
+use super::ChunkAddress;
 
 use bytes::Bytes;
-use hex::FromHex;
-use std::{
-    fmt::{self, Display, Formatter},
-    io::{self, ErrorKind},
-    path::{Path, PathBuf},
-};
-use tokio::{
-    fs::{create_dir_all, read, remove_file, File},
-    io::AsyncWriteExt,
-};
-use tracing::info;
-use xor_name::{XorName, XOR_NAME_LEN};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use xor_name::XorName;
 
-const CHUNKS_STORE_DIR_NAME: &str = "chunks";
-
-/// Operations on data chunks.
-#[derive(Clone, Debug)]
-pub(crate) struct ChunkStorage {
-    file_store_path: PathBuf,
+/// Chunk, an immutable chunk of data
+#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, custom_debug::Debug)]
+pub struct Chunk {
+    /// Network address. Omitted when serialising and
+    /// calculated from the `value` when deserialising.
+    address: ChunkAddress,
+    /// Contained data.
+    #[debug(skip)]
+    value: Bytes,
 }
 
-impl ChunkStorage {
-    /// Creates a new `ChunkStorage` at the specified root location
-    ///
-    /// If the location specified already contains a `ChunkStorage`, it is simply used
-    pub(crate) fn new(path: &Path) -> Self {
+impl Chunk {
+    /// Creates a new instance of `Chunk`.
+    pub fn new(value: Bytes) -> Self {
         Self {
-            file_store_path: path.join(CHUNKS_STORE_DIR_NAME),
+            address: ChunkAddress::new(XorName::from_content(value.as_ref())),
+            value,
         }
     }
 
-    #[allow(unused)]
-    pub(crate) fn addrs(&self) -> Vec<ChunkAddress> {
-        list_files_in(&self.file_store_path)
-            .iter()
-            .filter_map(|filepath| Self::chunk_filepath_to_address(filepath).ok())
-            .collect()
+    /// Returns the value.
+    pub fn value(&self) -> &Bytes {
+        &self.value
     }
 
-    fn chunk_filepath_to_address(path: &Path) -> Result<ChunkAddress> {
-        let filename = path
-            .file_name()
-            .ok_or_else(|| Error::PathIsNotAFile(path.to_path_buf()))?
-            .to_str()
-            .ok_or_else(|| Error::InvalidFilename(path.to_path_buf()))?;
-
-        let xorname = XorName(<[u8; XOR_NAME_LEN]>::from_hex(filename)?);
-        Ok(ChunkAddress::new(xorname))
+    /// Returns the address.
+    pub fn address(&self) -> &ChunkAddress {
+        &self.address
     }
 
-    fn chunk_addr_to_filepath(&self, addr: &ChunkAddress) -> Result<PathBuf> {
-        let xorname = *addr.name();
-        let path = prefix_tree_path(&self.file_store_path, xorname);
-        let filename = hex::encode(xorname);
-        Ok(path.join(filename))
+    /// Returns the name.
+    pub fn name(&self) -> &XorName {
+        self.address.name()
     }
 
-    /// This is to be used when a node is shrinking the address range it is responsible for.
-    #[allow(unused)]
-    pub(super) async fn remove(&self, address: &ChunkAddress) -> Result<()> {
-        debug!("Removing chunk, {:?}", address);
-        let filepath = self.chunk_addr_to_filepath(address)?;
-        remove_file(filepath).await?;
-        Ok(())
+    /// Returns size of contained value.
+    pub fn payload_size(&self) -> usize {
+        self.value.len()
     }
 
-    pub(crate) async fn get(&self, address: &ChunkAddress) -> Result<Chunk> {
-        trace!("Getting chunk {:?}", address);
-
-        let file_path = self.chunk_addr_to_filepath(address)?;
-        match read(file_path).await {
-            Ok(bytes) => {
-                let chunk = Chunk::new(Bytes::from(bytes));
-                if chunk.address() != address {
-                    // This can happen if the content read is empty, or incomplete,
-                    // possibly due to an issue with the OS synchronising to disk,
-                    // resulting in a mismatch with recreated address of the Chunk.
-                    Err(Error::ChunkNotFound(*address))
-                } else {
-                    Ok(chunk)
-                }
-            }
-            Err(io_error @ io::Error { .. }) if io_error.kind() == ErrorKind::NotFound => {
-                Err(Error::ChunkNotFound(*address))
-            }
-            Err(other) => Err(other.into()),
-        }
-    }
-
-    /// Store a chunk in the local disk store unless it is already there
-    pub(crate) async fn store(&self, chunk: &Chunk) -> Result<()> {
-        let addr = chunk.address();
-        let filepath = self.chunk_addr_to_filepath(addr)?;
-
-        if filepath.exists() {
-            info!(
-                "{}: Chunk data already exists, not storing: {:?}",
-                self, addr
-            );
-            // Nothing more to do here
-            return Ok(());
-        }
-
-        // Store the data on disk
-        trace!("Storing chunk {addr:?}");
-        if let Some(dirs) = filepath.parent() {
-            create_dir_all(dirs).await?;
-        }
-
-        let mut file = File::create(filepath).await?;
-
-        file.write_all(chunk.value()).await?;
-        // Sync OS data to disk to reduce the chances of
-        // concurrent reading failing by reading an empty/incomplete file.
-        file.sync_data().await?;
-
-        trace!("Stored new chunk {addr:?}");
-
-        Ok(())
+    /// Returns size of this chunk after serialisation.
+    pub fn serialised_size(&self) -> usize {
+        self.value.len()
     }
 }
 
-impl Display for ChunkStorage {
-    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
-        write!(formatter, "ChunkStorage")
+impl Serialize for Chunk {
+    fn serialize<S: Serializer>(&self, serialiser: S) -> Result<S::Ok, S::Error> {
+        // Address is omitted since it's derived from value
+        self.value.serialize(serialiser)
+    }
+}
+
+impl<'de> Deserialize<'de> for Chunk {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = Deserialize::deserialize(deserializer)?;
+        Ok(Self::new(value))
     }
 }
 

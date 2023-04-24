@@ -110,9 +110,7 @@ impl SwarmDriver {
                     .kademlia
                     .put_record(record, libp2p::kad::Quorum::All)?;
 
-                    debug!("RECORDED" );
-
-
+                debug!("RECORDED");
             }
             SwarmCmd::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {

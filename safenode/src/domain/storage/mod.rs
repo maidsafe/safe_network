@@ -19,7 +19,7 @@ pub use self::{
     registers::register,
 };
 
-pub(crate) use self::{chunks::ChunkStorage, registers::RegisterStorage, spends::SpendStorage};
+pub(crate) use self::{registers::RegisterStorage, spends::SpendStorage};
 
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
