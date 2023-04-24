@@ -17,7 +17,7 @@ use eyre::{eyre, Error, Result};
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::Duration,
 };
 use tokio::{
@@ -32,6 +32,9 @@ use tracing::{error, info, warn};
 struct Opt {
     #[clap(long)]
     log_dir: Option<PathBuf>,
+
+    #[clap(long)]
+    root_dir: Option<PathBuf>,
 
     /// Specify specific port to listen on.
     /// Defaults to 0, which means any available port.
@@ -69,6 +72,10 @@ fn main() -> Result<()> {
     let opt = Opt::parse();
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
 
+    let root_dir = opt
+        .root_dir
+        .expect("We need a root dir for the node, so it must be set.");
+
     let log_dir = if let Some(path) = opt.log_dir {
         format!("{}", path.display())
     } else {
@@ -94,6 +101,7 @@ fn main() -> Result<()> {
             peers.clone(),
             opt.rpc,
             &log_dir,
+            &root_dir,
         ))?;
 
         // actively shut down the runtime
@@ -106,11 +114,12 @@ async fn start_node(
     peers: Vec<(PeerId, Multiaddr)>,
     rpc: Option<SocketAddr>,
     log_dir: &str,
+    root_dir: &Path,
 ) -> Result<()> {
     let started_instant = std::time::Instant::now();
 
     info!("Starting node ...");
-    let (node_id, node_events_channel) = Node::run(node_socket_addr, peers).await?;
+    let (node_id, node_events_channel) = Node::run(node_socket_addr, peers, root_dir).await?;
 
     // Channel to receive node ctrl cmds from RPC service if enabled
     let (ctrl_tx, mut ctrl_rx) = mpsc::channel::<NodeCtrl>(5);
