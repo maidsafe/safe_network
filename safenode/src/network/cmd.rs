@@ -12,7 +12,9 @@ use crate::{
 };
 
 use super::{error::Error, SwarmDriver};
-use libp2p::{multiaddr::Protocol, request_response::ResponseChannel, Multiaddr, PeerId};
+use libp2p::{
+    kad::Record, multiaddr::Protocol, request_response::ResponseChannel, Multiaddr, PeerId,
+};
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
 use tracing::warn;
@@ -43,11 +45,28 @@ pub enum SwarmCmd {
         resp: Response,
         channel: ResponseChannel<Response>,
     },
+    RegisterProvidedData {
+        record: Record,
+    },
 }
 
 impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
+            SwarmCmd::RegisterProvidedData { record } => {
+                let _ = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .start_providing(record.key.clone())?;
+
+                // TODO: when do we remove records. Do we need to?
+                let _ = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .put_record(record, libp2p::kad::Quorum::All)?;
+            }
             SwarmCmd::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {
                     Ok(_) => sender.send(Ok(())),
