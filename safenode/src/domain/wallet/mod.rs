@@ -90,7 +90,7 @@ pub trait Wallet {
     fn balance(&self) -> Token;
 }
 
-/// A wallet has that can sign msgs.
+/// A wallet that can sign msgs.
 pub trait SigningWallet {
     /// Signs the given msg.
     fn sign(&self, msg: &[u8]) -> bls::Signature;
