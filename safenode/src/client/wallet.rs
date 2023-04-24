@@ -16,7 +16,8 @@ use crate::{
         storage::dbc_address,
         wallet::{Error, Result, SendClient, SendWallet, VerifyingClient},
     },
-    protocol::messages::{Cmd, Query, Request, SpendQuery},
+    network::close_group_majority,
+    protocol::messages::{Cmd, CmdResponse, Query, Request, Response, SpendQuery},
 };
 
 use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
@@ -74,12 +75,32 @@ impl SendClient for Client {
                 fee_ciphers,
             };
 
-            let _responses = self
+            let responses = self
                 .send_to_closest(Request::Cmd(cmd))
                 .await
                 .map_err(|err| Error::CouldNotSendTokens(err.to_string()))?;
 
-            // TODO: validate responses
+            // Get all Ok results of the expected response type `Spend`.
+            let spends: Vec<_> = responses
+                .iter()
+                .flatten()
+                .flat_map(|resp| {
+                    if let Response::Cmd(CmdResponse::Spend(Ok(()))) = resp {
+                        Some(())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            // We require a majority of the close group to respond with Ok.
+            if spends.len() >= close_group_majority() {
+                continue;
+            } else {
+                return Err(Error::CouldNotVerifyTransfer(
+                    "Not enough close group nodes accepted the spend.".into(),
+                ));
+            }
         }
 
         Ok(transfer)
