@@ -36,12 +36,11 @@ impl<W: SendWallet> WalletClient<W> {
     /// Send tokens to another wallet.
     pub async fn send(&mut self, amount: Token, to: PublicAddress) -> Result<Dbc> {
         let dbcs = self.wallet.send(vec![(amount, to)], &self.client).await?;
-        if let Some(info) = dbcs.into_iter().next() {
-            Ok(info.dbc)
-        } else {
-            Err(Error::CouldNotSendTokens(
-                "No DBCs were returned from the wallet.".to_string(),
-            ))
+        match &dbcs[..] {
+            [info, ..] => Ok(info.dbc.clone()),
+            [] => Err(Error::CouldNotSendTokens(
+                "No DBCs were returned from the wallet.".into(),
+            )),
         }
     }
 
