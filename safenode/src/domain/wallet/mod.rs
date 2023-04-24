@@ -62,7 +62,7 @@ use std::collections::BTreeMap;
 /// The network will validate the transfer upon receiving it. Once enough peers have accepted it,
 /// the transfer is completed.
 ///  
-/// For tests the implementation can be without network connection,
+/// For unit tests the implementation can be without network connection,
 /// and just return the transfer to the caller.
 #[async_trait]
 pub trait SendClient: Send + Sync + Clone {
@@ -80,6 +80,21 @@ pub trait SendClient: Send + Sync + Clone {
         to: Vec<(Token, DbcIdSource)>,
         change_to: PublicAddress,
     ) -> Result<TransferDetails>;
+}
+
+/// A VerifyingClient is used to verify the validity of dbcs on the network.
+///
+/// It does so by querying for the necessary info of nodes in the network
+/// and returning the result to the caller.
+/// It is expected that the implementation of this trait is a network client,
+/// that will connect to the network before returning the result.
+///  
+/// For unit tests the implementation can be without network connection,
+/// and just return the transfer to the caller.
+#[async_trait]
+pub trait VerifyingClient: Send + Sync + Clone {
+    ///
+    async fn verify(&self, dbc: &Dbc) -> Result<()>;
 }
 
 /// A wallet has an address and a balance.

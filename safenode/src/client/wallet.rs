@@ -13,9 +13,10 @@ use crate::{
         client_transfers::{
             create_online_transfer, Outputs as TransferDetails, SpendRequestParams,
         },
-        wallet::{Error, Result, SendClient, SendWallet},
+        storage::dbc_address,
+        wallet::{Error, Result, SendClient, SendWallet, VerifyingClient},
     },
-    protocol::messages::{Cmd, Request},
+    protocol::messages::{Cmd, Query, Request, SpendQuery},
 };
 
 use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
@@ -82,5 +83,21 @@ impl SendClient for Client {
         }
 
         Ok(transfer)
+    }
+}
+
+#[async_trait::async_trait]
+impl VerifyingClient for Client {
+    async fn verify(&self, dbc: &Dbc) -> Result<()> {
+        for spend in &dbc.signed_spends {
+            let address = dbc_address(spend.dbc_id());
+            let query = Query::Spend(SpendQuery::GetDbcSpend(address));
+            let _responses = self
+                .send_to_closest(Request::Query(query))
+                .await
+                .map_err(|err| Error::CouldNotVerifyTransfer(err.to_string()))?;
+        }
+
+        Ok(())
     }
 }

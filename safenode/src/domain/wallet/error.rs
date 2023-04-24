@@ -20,6 +20,9 @@ pub enum Error {
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),
+    /// A general error when verifying a transfer validity in the network.
+    #[error("Failed to verify transfer validity in the network {0}")]
+    CouldNotVerifyTransfer(String),
     /// Failed to parse bytes into a bls key.
     #[error("Failed to parse bls key")]
     FailedToParseBlsKey,
