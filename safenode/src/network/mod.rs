@@ -11,7 +11,7 @@ mod error;
 mod event;
 mod msg;
 
-use crate::protocol::messages::{Request, Response};
+use crate::protocol::messages::{QueryResponse, Request, Response};
 
 pub use self::{cmd::SwarmLocalState, error::Error, event::NetworkEvent};
 
@@ -26,7 +26,10 @@ use futures::StreamExt;
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
-    kad::{record::store::MemoryStore, KBucketKey, Kademlia, KademliaConfig, QueryId, Record},
+    kad::{
+        record::store::MemoryStore, KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
+        RecordKey,
+    },
     mdns,
     multiaddr::Protocol,
     request_response::{self, ProtocolSupport, RequestId, ResponseChannel},
@@ -207,7 +210,7 @@ impl SwarmDriver {
         loop {
             tokio::select! {
                 some_event = self.swarm.next() => {
-                    trace!("Received a swarm event {some_event:?}");
+                    trace!("received a swarm event {some_event:?}");
                     if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {
                         warn!("Error while handling event: {err}");
                     }
@@ -311,8 +314,20 @@ impl Network {
         receiver.await?
     }
 
+    /// Get `Key` from our Storage
+    pub async fn get_provided_data(&self, key: RecordKey) -> Result<QueryResponse> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetProvidedData { key, sender })
+            .await?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
     /// Register self as Provider for Data
     pub async fn regigster_as_provider_for_record(&self, record: Record) -> Result<()> {
+        debug!("Registering as provider,,, for '{record:?}'");
         self.send_swarm_cmd(SwarmCmd::RegisterProvidedData { record })
             .await
     }
