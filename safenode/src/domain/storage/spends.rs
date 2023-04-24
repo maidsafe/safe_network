@@ -297,7 +297,7 @@ impl Display for SpendStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::dbc_genesis::{create_genesis_dbc, split};
+    use crate::domain::dbc_genesis::{create_first_dbc_from_key, split};
     use assert_fs::TempDir;
     use sn_dbc::MainKey;
 
@@ -306,8 +306,9 @@ mod tests {
         // Test that a range of different spends can be stored and read as expected.
         let number_of_spends = 100;
         let mut storage = init_file_store();
+
         let key = MainKey::random();
-        let dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+        let dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
         let dbcs = split(&dbc, &key, number_of_spends).expect("Split to succeed.");
         let spends: Vec<_> = dbcs
             .into_iter()
@@ -334,7 +335,7 @@ mod tests {
     async fn try_add_is_idempotent() {
         let mut storage = init_file_store();
         let key = MainKey::random();
-        let src_dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+        let src_dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
 
         let dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
         let (dbc, _) = &dbc[0];
@@ -355,7 +356,7 @@ mod tests {
     async fn double_spend_attempt_is_detected() {
         let mut storage = init_file_store();
         let key = MainKey::random();
-        let src_dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+        let src_dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
 
         let dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
         let (dbc, _) = &dbc[0];
@@ -407,7 +408,7 @@ mod tests {
     async fn try_add_double_is_idempotent() {
         let mut storage = init_file_store();
         let key = MainKey::random();
-        let src_dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+        let src_dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
 
         let dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
         let (dbc, _) = &dbc[0];
@@ -445,7 +446,7 @@ mod tests {
     async fn try_add_fails_after_added_double_spend() {
         let mut storage = init_file_store();
         let key = MainKey::random();
-        let src_dbc = create_genesis_dbc(&key).expect("Genesis creation to succeed.");
+        let src_dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
 
         let dbc = split(&src_dbc, &key, 1).expect("Split to succeed.");
         let (dbc, _) = &dbc[0];
