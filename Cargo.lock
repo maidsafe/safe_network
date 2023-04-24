@@ -2368,11 +2368,14 @@ dependencies = [
  "libp2p-kad",
  "libp2p-mdns",
  "libp2p-metrics",
+ "libp2p-mplex",
+ "libp2p-noise",
  "libp2p-quic",
  "libp2p-request-response",
  "libp2p-swarm",
  "libp2p-tcp",
  "libp2p-webrtc",
+ "libp2p-yamux",
  "multiaddr",
  "pin-project",
 ]
@@ -2546,6 +2549,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "libp2p-mplex"
+version = "0.39.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d34780b514b159e6f3fd70ba3e72664ec89da28dca2d1e7856ee55e2c7031ba"
+dependencies = [
+ "asynchronous-codec",
+ "bytes",
+ "futures",
+ "libp2p-core",
+ "log",
+ "nohash-hasher",
+ "parking_lot",
+ "rand 0.8.5",
+ "smallvec",
+ "unsigned-varint",
+]
+
+[[package]]
 name = "libp2p-noise"
 version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2702,6 +2723,19 @@ dependencies = [
  "tokio",
  "tokio-util 0.7.8",
  "webrtc",
+]
+
+[[package]]
+name = "libp2p-yamux"
+version = "0.43.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4dcd21d950662700a385d4c6d68e2f5f54d778e97068cdd718522222ef513bda"
+dependencies = [
+ "futures",
+ "libp2p-core",
+ "log",
+ "thiserror",
+ "yamux",
 ]
 
 [[package]]
@@ -3051,6 +3085,12 @@ dependencies = [
  "libc",
  "memoffset 0.6.5",
 ]
+
+[[package]]
+name = "nohash-hasher"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
 
 [[package]]
 name = "nom"
@@ -4113,7 +4153,6 @@ dependencies = [
  "itertools",
  "lazy_static",
  "libp2p",
- "libp2p-quic",
  "lru_time_cache",
  "opentelemetry",
  "opentelemetry-otlp",
@@ -5887,6 +5926,20 @@ dependencies = [
  "serde",
  "serde_test",
  "tiny-keccak",
+]
+
+[[package]]
+name = "yamux"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5d9ba232399af1783a58d8eb26f6b5006fbefe2dc9ef36bd283324792d03ea5"
+dependencies = [
+ "futures",
+ "log",
+ "nohash-hasher",
+ "parking_lot",
+ "rand 0.8.5",
+ "static_assertions",
 ]
 
 [[package]]
