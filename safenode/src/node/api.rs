@@ -35,7 +35,11 @@ use crate::{
 use sn_dbc::{DbcTransaction, SignedSpend};
 
 use futures::future::select_all;
-use libp2p::{request_response::ResponseChannel, Multiaddr, PeerId};
+use libp2p::{
+    kad::{Record, RecordKey},
+    request_response::ResponseChannel,
+    Multiaddr, PeerId,
+};
 use std::{collections::BTreeSet, net::SocketAddr, path::Path, time::Duration};
 use tokio::task::spawn;
 use xor_name::XorName;
@@ -232,12 +236,21 @@ impl Node {
     async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
         match cmd {
             Cmd::StoreChunk(chunk) => {
-                let resp = self
-                    .chunks
-                    .store(&chunk)
-                    .await
-                    .map_err(ProtocolError::Storage);
-                CmdResponse::StoreChunk(resp)
+                // Create a Kademlia record for storage
+                let record = Record {
+                    key: RecordKey::new(chunk.address().name()),
+                    value: chunk.value().to_vec(),
+                    publisher: None,
+                    expires: None,
+                };
+
+                match self.network.regigster_as_provider_for_record(record).await {
+                    Ok(()) => CmdResponse::StoreChunk(Ok(())),
+                    Err(err) => {
+                        error!("Failed to register chunk as provider: {err:?}");
+                        CmdResponse::StoreChunk(Err(ProtocolError::ProvideRecordNotSaved))
+                    }
+                }
             }
             Cmd::Register(cmd) => {
                 let result = self
