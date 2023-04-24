@@ -17,7 +17,7 @@ use crate::{
         wallet::{Error, Result, SendClient, SendWallet, VerifyingClient},
     },
     network::close_group_majority,
-    protocol::messages::{Cmd, CmdResponse, Query, Request, Response, SpendQuery},
+    protocol::messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
 };
 
 use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
@@ -110,15 +110,82 @@ impl SendClient for Client {
 #[async_trait::async_trait]
 impl VerifyingClient for Client {
     async fn verify(&self, dbc: &Dbc) -> Result<()> {
+        let mut received_spends = std::collections::BTreeSet::new();
+
         for spend in &dbc.signed_spends {
             let address = dbc_address(spend.dbc_id());
             let query = Query::Spend(SpendQuery::GetDbcSpend(address));
-            let _responses = self
+
+            let responses = self
                 .send_to_closest(Request::Query(query))
                 .await
                 .map_err(|err| Error::CouldNotVerifyTransfer(err.to_string()))?;
+
+            // Get all Ok results of the expected response type `GetDbcSpend`.
+            let spends: Vec<_> = responses
+                .iter()
+                .flatten()
+                .flat_map(|resp| {
+                    if let Response::Query(QueryResponse::GetDbcSpend(Ok(signed_spend))) = resp {
+                        Some(signed_spend.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            // As to not have a single rogue node deliver a bogus spend,
+            // and thereby have us fail the check here
+            // (we would have more than 1 spend in the BTreeSet), we must
+            // look for a majority of the same responses, and ignore any other responses.
+            if spends.len() >= close_group_majority() {
+                // Majority of nodes in the close group returned an Ok response.
+                use itertools::*;
+                if let Some(spend) = spends
+                    .into_iter()
+                    .map(|x| (x, 1))
+                    .into_group_map()
+                    .into_iter()
+                    .filter(|(_, v)| v.len() >= close_group_majority())
+                    .max_by_key(|(_, v)| v.len())
+                    .map(|(k, _)| k)
+                {
+                    // Majority of nodes in the close group returned the same spend.
+                    let _ = received_spends.insert(spend);
+                    continue;
+                }
+            }
+
+            // The parent is not recognised by all peers in its close group.
+            // Thus, the parent is not valid.
+            info!("The spend could not be verified as valid: {address:?}");
+
+            // If not enough spends were gotten, we try error the first
+            // error to the expected query returned from nodes.
+            for resp in responses.iter().flatten() {
+                if let Response::Query(QueryResponse::GetDbcSpend(result)) = resp {
+                    let _ = result
+                        .clone()
+                        .map_err(|err| Error::CouldNotVerifyTransfer(err.to_string()))?;
+                };
+            }
+
+            // If there were no success or fail to the expected query,
+            // we check if there were any send errors.
+            for resp in responses {
+                let _ = resp.map_err(|err| Error::CouldNotVerifyTransfer(err.to_string()))?;
+            }
+
+            // If there was none of the above, then we had unexpected responses.
+            return Err(Error::CouldNotVerifyTransfer("Unexpected response".into()));
         }
 
-        Ok(())
+        if received_spends == dbc.signed_spends {
+            Ok(())
+        } else {
+            Err(Error::CouldNotVerifyTransfer(
+                "The spends in network were not the same as the ones in the DBC.".into(),
+            ))
+        }
     }
 }
