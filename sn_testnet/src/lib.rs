@@ -315,6 +315,8 @@ impl Testnet {
             .ok_or_else(|| eyre!("Unable to obtain node data directory path"))?
             .to_string();
         launch_args.push("--log-dir".to_string());
+        launch_args.push(node_data_dir_path.clone());
+        launch_args.push("--root-dir".to_string());
         launch_args.push(node_data_dir_path);
         if let Some(addr) = rpc_address {
             launch_args.push("--rpc".to_string());

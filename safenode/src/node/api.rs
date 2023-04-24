@@ -36,7 +36,7 @@ use sn_dbc::{DbcTransaction, SignedSpend};
 
 use futures::future::select_all;
 use libp2p::{request_response::ResponseChannel, Multiaddr, PeerId};
-use std::{collections::BTreeSet, net::SocketAddr, time::Duration};
+use std::{collections::BTreeSet, net::SocketAddr, path::Path, time::Duration};
 use tokio::task::spawn;
 use xor_name::XorName;
 
@@ -56,13 +56,13 @@ impl Node {
     pub async fn run(
         addr: SocketAddr,
         initial_peers: Vec<(PeerId, Multiaddr)>,
+        root_dir: &Path,
     ) -> Result<(NodeId, NodeEventsChannel)> {
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
         let node_events_channel = NodeEventsChannel::default();
 
         let node_id = NodeId::from(network.peer_id);
-        let root_dir = get_root_dir().await?;
-        let node_wallet = LocalWallet::load_from(&root_dir)
+        let node_wallet = LocalWallet::load_from(root_dir)
             .await
             .map_err(|e| Error::CouldNotLoadWallet(e.to_string()))?;
 
@@ -77,9 +77,9 @@ impl Node {
 
         let mut node = Self {
             network,
-            chunks: ChunkStorage::new(&root_dir),
-            registers: RegisterStorage::new(&root_dir),
-            transfers: Transfers::new_with_genesis(&root_dir, node_id, node_wallet, genesis_spend)
+            chunks: ChunkStorage::new(root_dir),
+            registers: RegisterStorage::new(root_dir),
+            transfers: Transfers::new_with_genesis(root_dir, node_id, node_wallet, genesis_spend)
                 .await?,
             events_channel: node_events_channel.clone(),
             initial_peers,
@@ -419,15 +419,4 @@ impl Node {
 
         responses
     }
-}
-
-async fn get_root_dir() -> Result<std::path::PathBuf> {
-    use crate::protocol::error::Error as StorageError;
-    let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
-    home_dirs.push(".safe");
-    home_dirs.push("node");
-    tokio::fs::create_dir_all(home_dirs.as_path())
-        .await
-        .map_err(|err| StorageError::Storage(err.into()))?;
-    Ok(home_dirs)
 }
