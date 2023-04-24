@@ -27,8 +27,8 @@ use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
     kad::{
-        record::store::MemoryStore, KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
-        RecordKey,
+        record::store::MemoryStore, store::MemoryStoreConfig, KBucketKey, Kademlia, KademliaConfig,
+        QueryId, Record, RecordKey,
     },
     mdns,
     multiaddr::Protocol,
@@ -93,6 +93,11 @@ impl SwarmDriver {
         // TODO: (make this dynamic?)
         // repub every 5s as topology changes
         let _ = cfg.set_replication_interval(Some(Duration::from_secs(5)));
+
+        // 1mb packet size
+        let _ = cfg.set_max_packet_size(1024 * 1024);
+        let _ = cfg.set_max_packet_size(1024 * 1024);
+
         // How many nodes _should_ store data.
         let _ = cfg.set_replication_factor(
             NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
@@ -157,9 +162,23 @@ impl SwarmDriver {
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
 
+        // Configure the memory store to be able to hold large records
+        // than by default
+        let memory_store_cfg = MemoryStoreConfig {
+            max_value_bytes: 1024 * 1024,
+            // What is the difference between these two?
+            max_provided_keys: 1000,
+            max_records: 1000,
+            ..Default::default()
+        };
+
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
-        let kademlia = Kademlia::with_config(peer_id, MemoryStore::new(peer_id), cfg);
+        let kademlia = Kademlia::with_config(
+            peer_id,
+            MemoryStore::with_config(peer_id, memory_store_cfg),
+            cfg,
+        );
 
         let mdns_config = mdns::Config {
             // lower query interval to speed up peer discovery
@@ -327,7 +346,7 @@ impl Network {
 
     /// Register self as Provider for Data
     pub async fn regigster_as_provider_for_record(&self, record: Record) -> Result<()> {
-        debug!("Registering as provider,,, for '{record:?}'");
+        debug!("Registering as provider,,, for '{:?}'", record.key);
         self.send_swarm_cmd(SwarmCmd::RegisterProvidedData { record })
             .await
     }
