@@ -28,7 +28,7 @@ pub enum WalletCmds {
     Deposit,
     Send {
         /// This shall be the number of nanos to send.
-        /// Necessary if the `send_to` argument has been given.
+        /// Necessary if the `to` argument has been given.
         #[clap(name = "amount")]
         amount: String,
         /// This must be a hex-encoded `PublicAddress`.
