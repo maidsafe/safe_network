@@ -16,7 +16,7 @@ package safenode_proto;
 message NodeInfoRequest {}
 
 message NodeInfoResponse {
-  bytes node_id = 1;
+  bytes peer_id = 1;
   string log_dir = 2;
   string bin_version = 3;
   uint64 uptime_secs = 4;
@@ -49,3 +49,11 @@ message UpdateRequest {
 }
 
 message UpdateResponse {}
+
+// Information about how this node's connections to the network and peers
+message NetworkInfoRequest {}
+
+message NetworkInfoResponse {
+  repeated bytes connected_peers = 1;
+  repeated string listeners = 2;
+}

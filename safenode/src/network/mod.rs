@@ -13,7 +13,7 @@ mod msg;
 
 use crate::protocol::messages::{Request, Response};
 
-pub use self::{error::Error, event::NetworkEvent};
+pub use self::{cmd::SwarmLocalState, error::Error, event::NetworkEvent};
 
 use self::{
     cmd::SwarmCmd,
@@ -33,12 +33,10 @@ use libp2p::{
     swarm::{Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
-use rand::Rng;
 use std::{
     collections::{HashMap, HashSet},
-    env, iter,
+    iter,
     net::SocketAddr,
-    process::{self, Command, Stdio},
     time::Duration,
 };
 use tokio::sync::{mpsc, oneshot};
@@ -194,9 +192,7 @@ impl SwarmDriver {
         loop {
             tokio::select! {
                 some_event = self.swarm.next() => {
-                    trace!("received a swarm event {some_event:?}");
-                    // TODO: currently disabled to provide a stable network.
-                    // restart_at_random(self.swarm.local_peer_id());
+                    trace!("Received a swarm event {some_event:?}");
                     if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {
                         warn!("Error while handling event: {err}");
                     }
@@ -214,48 +210,10 @@ impl SwarmDriver {
     }
 }
 
-/// Restarts the whole program.
-/// It does this at random, one in X times called.
-///
-/// This provides a way to test the network layer's ability to recover from
-/// unexpected shutdowns.
-#[allow(dead_code)]
-fn restart_at_random(peer_id: &PeerId) {
-    let mut rng = rand::thread_rng();
-    let random_num = rng.gen_range(0..500);
-
-    if random_num == 0 {
-        warn!("Restarting {peer_id:?} at random!");
-
-        let ten_millis = std::time::Duration::from_millis(10);
-        std::thread::sleep(ten_millis);
-
-        // Get the current executable's path
-        let executable = env::current_exe().expect("Failed to get current executable path");
-
-        info!("Spawned executable: {executable:?}");
-
-        // Spawn a new process to restart the binary with the same arguments and environment
-        let _ = Command::new(executable)
-            .args(env::args().skip(1))
-            .envs(env::vars())
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
-            .expect("Failed to restart the app.");
-
-        debug!("New exec called.");
-        // exit the current process now that we've spawned a new one
-        process::exit(0);
-    }
-}
-
 #[derive(Clone)]
 /// API to interact with the underlying Swarm
 pub struct Network {
     pub(super) swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
-    #[allow(dead_code)]
     pub(super) peer_id: PeerId,
 }
 
@@ -348,10 +306,18 @@ impl Network {
             .await
     }
 
+    /// Return a `SwarmLocalState` with some information obtained from swarm's local state.
+    pub async fn get_swarm_local_state(&self) -> Result<SwarmLocalState> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetSwarmLocalState(sender))
+            .await?;
+        let state = receiver.await?;
+        Ok(state)
+    }
+
     // Helper to send SwarmCmd
     async fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
-        let swarm_cmd_sender = self.swarm_cmd_sender.clone();
-        swarm_cmd_sender.send(cmd).await?;
+        self.swarm_cmd_sender.send(cmd).await?;
         Ok(())
     }
 }

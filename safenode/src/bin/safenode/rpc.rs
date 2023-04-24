@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use safenode::node::{NodeEventsChannel, NodeId};
+use safenode::node::RunningNode;
 
 use super::NodeCtrl;
 
@@ -23,11 +23,12 @@ use tracing::{debug, info, trace};
 
 use safenode_proto::safe_node_server::{SafeNode, SafeNodeServer};
 use safenode_proto::{
-    NodeEvent, NodeEventsRequest, NodeInfoRequest, NodeInfoResponse, RestartRequest,
-    RestartResponse, StopRequest, StopResponse, UpdateRequest, UpdateResponse,
+    NetworkInfoRequest, NetworkInfoResponse, NodeEvent, NodeEventsRequest, NodeInfoRequest,
+    NodeInfoResponse, RestartRequest, RestartResponse, StopRequest, StopResponse, UpdateRequest,
+    UpdateResponse,
 };
 
-// this includes code generated from .proto file
+// this includes code generated from .proto files
 mod safenode_proto {
     tonic::include_proto!("safenode_proto");
 }
@@ -36,8 +37,7 @@ mod safenode_proto {
 struct SafeNodeRpcService {
     addr: SocketAddr,
     log_dir: String,
-    node_events_chnnel: NodeEventsChannel,
-    node_id: NodeId,
+    running_node: RunningNode,
     ctrl_tx: Sender<NodeCtrl>,
     started_instant: Instant,
 }
@@ -56,11 +56,34 @@ impl SafeNode for SafeNodeRpcService {
             self.addr,
             request.get_ref()
         );
+
         let resp = Response::new(NodeInfoResponse {
-            node_id: self.node_id.as_bytes(),
+            peer_id: self.running_node.peer_id().to_bytes(),
             log_dir: self.log_dir.clone(),
             bin_version: env!("CARGO_PKG_VERSION").to_string(),
             uptime_secs: self.started_instant.elapsed().as_secs(),
+        });
+
+        Ok(resp)
+    }
+
+    async fn network_info(
+        &self,
+        request: Request<NetworkInfoRequest>,
+    ) -> Result<Response<NetworkInfoResponse>, Status> {
+        trace!(
+            "RPC request received at {}: {:?}",
+            self.addr,
+            request.get_ref()
+        );
+
+        let state = self.running_node.get_swarm_local_state().await.unwrap();
+        let connected_peers = state.connected_peers.iter().map(|p| p.to_bytes()).collect();
+        let listeners = state.listeners.iter().map(|m| m.to_string()).collect();
+
+        let resp = Response::new(NetworkInfoResponse {
+            connected_peers,
+            listeners,
         });
 
         Ok(resp)
@@ -78,7 +101,7 @@ impl SafeNode for SafeNodeRpcService {
 
         let (client_tx, client_rx) = mpsc::channel(4);
 
-        let mut events_rx = self.node_events_chnnel.subscribe();
+        let mut events_rx = self.running_node.node_events_channel().subscribe();
         let _handle = tokio::spawn(async move {
             while let Ok(event) = events_rx.recv().await {
                 let event = NodeEvent {
@@ -166,18 +189,16 @@ impl SafeNode for SafeNodeRpcService {
 
 pub(super) fn start_rpc_service(
     addr: SocketAddr,
-    log_dir: String,
-    node_events_chnnel: NodeEventsChannel,
-    node_id: NodeId,
+    log_dir: &str,
+    running_node: RunningNode,
     ctrl_tx: Sender<NodeCtrl>,
     started_instant: Instant,
 ) {
     // creating a service
     let service = SafeNodeRpcService {
         addr,
-        log_dir,
-        node_events_chnnel,
-        node_id,
+        log_dir: log_dir.to_string(),
+        running_node,
         ctrl_tx,
         started_instant,
     };
