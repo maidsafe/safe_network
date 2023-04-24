@@ -82,13 +82,13 @@ fn bls_public_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::PublicKey> {
 mod test {
     use super::{get_main_key, store_new_keypair, MainKey};
 
-    use eyre::{eyre, Result};
-    use tempfile::{tempdir, TempDir};
+    use assert_fs::TempDir;
+    use eyre::Result;
 
     #[tokio::test]
     async fn reward_key_to_and_from_file() -> Result<()> {
         let main_key = MainKey::random();
-        let dir = create_temp_dir()?;
+        let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
         store_new_keypair(&root_dir, &main_key).await?;
         let secret_result = get_main_key(&root_dir)
@@ -98,7 +98,7 @@ mod test {
         Ok(())
     }
 
-    fn create_temp_dir() -> Result<TempDir> {
-        tempdir().map_err(|e| eyre!("Failed to create temp dir: {}", e))
+    fn create_temp_dir() -> TempDir {
+        TempDir::new().expect("Should be able to create a temp dir.")
     }
 }

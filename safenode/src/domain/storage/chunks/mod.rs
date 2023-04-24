@@ -148,16 +148,11 @@ impl Display for ChunkStorage {
 mod tests {
     use super::*;
 
+    use assert_fs::TempDir;
     use eyre::{eyre, Result};
     use futures::future::join_all;
     use rand::{rngs::OsRng, Rng};
     use rayon::{current_num_threads, prelude::*};
-    use tempfile::tempdir;
-
-    fn init_file_store() -> ChunkStorage {
-        let root = tempdir().expect("Failed to create temporary directory for chunk disk store");
-        ChunkStorage::new(root.path())
-    }
 
     #[tokio::test]
     async fn test_write_read_chunk() {
@@ -274,5 +269,10 @@ mod tests {
         bytes.extend(vec![0u8; remainder]);
 
         Bytes::from(bytes)
+    }
+
+    fn init_file_store() -> ChunkStorage {
+        let root = TempDir::new().expect("Should be able to create a temp dir.");
+        ChunkStorage::new(root.path())
     }
 }

@@ -287,8 +287,8 @@ impl Display for SpendStorage {
 mod tests {
     use super::*;
     use crate::domain::dbc_genesis::{create_genesis_dbc, split};
+    use assert_fs::TempDir;
     use sn_dbc::MainKey;
-    use tempfile::tempdir;
 
     #[tokio::test]
     async fn write_and_read_100_spends() {
@@ -471,7 +471,7 @@ mod tests {
     }
 
     fn init_file_store() -> SpendStorage {
-        let root = tempdir().expect("Failed to create temporary directory for spend drive store.");
+        let root = TempDir::new().expect("Should be able to create a temp dir.");
         SpendStorage::new(root.path())
     }
 }
