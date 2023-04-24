@@ -56,7 +56,7 @@ pub enum Response {
 
 /// Messages to replicated data among nodes on the network
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum ReplicatedData {
     /// A chunk of data.
     Chunk(Chunk),
