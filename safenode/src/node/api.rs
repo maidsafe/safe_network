@@ -9,7 +9,7 @@
 use super::{
     error::{Error, Result},
     event::NodeEventsChannel,
-    Node, NodeEvent, NodeId,
+    Network, Node, NodeEvent, NodeId,
 };
 
 use crate::{
@@ -22,7 +22,7 @@ use crate::{
         },
         wallet::LocalWallet,
     },
-    network::{close_group_majority, NetworkEvent, SwarmDriver},
+    network::{close_group_majority, NetworkEvent, SwarmDriver, SwarmLocalState},
     protocol::{
         error::Error as ProtocolError,
         messages::{
@@ -39,6 +39,31 @@ use libp2p::{request_response::ResponseChannel, Multiaddr, PeerId};
 use std::{collections::BTreeSet, net::SocketAddr, path::Path, time::Duration};
 use tokio::task::spawn;
 use xor_name::XorName;
+
+/// Once a node is started and running, the user obtains
+/// a `NodeRunning` object which can be used to interact with it.
+pub struct RunningNode {
+    network: Network,
+    node_events_channel: NodeEventsChannel,
+}
+
+impl RunningNode {
+    /// Returns this node's `PeerId`
+    pub fn peer_id(&self) -> PeerId {
+        self.network.peer_id
+    }
+
+    /// Returns a `SwarmLocalState` with some information obtained from swarm's local state.
+    pub async fn get_swarm_local_state(&self) -> Result<SwarmLocalState> {
+        let state = self.network.get_swarm_local_state().await?;
+        Ok(state)
+    }
+
+    /// Returns the node events channel where to subscribe to receive `NodeEvent`s
+    pub fn node_events_channel(&self) -> &NodeEventsChannel {
+        &self.node_events_channel
+    }
+}
 
 impl Node {
     /// Asynchronously runs a new node instance, setting up the swarm driver,
@@ -57,7 +82,7 @@ impl Node {
         addr: SocketAddr,
         initial_peers: Vec<(PeerId, Multiaddr)>,
         root_dir: &Path,
-    ) -> Result<(NodeId, NodeEventsChannel)> {
+    ) -> Result<RunningNode> {
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
         let node_events_channel = NodeEventsChannel::default();
 
@@ -76,7 +101,7 @@ impl Node {
                 )))?;
 
         let mut node = Self {
-            network,
+            network: network.clone(),
             chunks: ChunkStorage::new(root_dir),
             registers: RegisterStorage::new(root_dir),
             transfers: Transfers::new_with_genesis(root_dir, node_id, node_wallet, genesis_spend)
@@ -101,8 +126,13 @@ impl Node {
             }
         });
 
-        Ok((node_id, node_events_channel))
+        Ok(RunningNode {
+            network,
+            node_events_channel,
+        })
     }
+
+    // **** Private helpers *****
 
     async fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
         match event {
