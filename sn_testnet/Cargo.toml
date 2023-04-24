@@ -16,7 +16,7 @@ chaos = []
 statemap = []
 otlp = []
 # verify-nodes: performs a last step querying and verifying net knowledge to lanched nodes
-verify-nodes = ["prost", "tonic", "tonic-build", "xor_name"]
+verify-nodes = ["prost", "tonic", "tonic-build", "libp2p"]
 
 [[bin]]
 path="src/main.rs"
@@ -27,13 +27,13 @@ color-eyre = "~0.6.0"
 eyre = "~0.6.5"
 clap = { version = "3.0.0", features = ["derive", "env"]}
 dirs-next = "2.0.0"
+libp2p = { version="0.51", optional = true }
 prost = { version = "0.9", optional = true }
 regex = "1.7.1"
 tonic = { version = "0.6.2", optional = true }
 tracing = "~0.1.26"
 tracing-core = "~0.1.21"
 tracing-subscriber = "~0.3.1"
-xor_name = { version = "~5.0.0", optional = true }
 walkdir = "2"
 
 [dependencies.tokio]

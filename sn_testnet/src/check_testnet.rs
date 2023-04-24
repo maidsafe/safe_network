@@ -6,42 +6,71 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use safenode_proto::safe_node_client::SafeNodeClient;
+use safenode_proto::{NetworkInfoRequest, NodeInfoRequest};
+use tonic::Request;
+
+// this includes code generated from .proto files
+#[allow(unused_qualifications)]
+mod safenode_proto {
+    tonic::include_proto!("safenode_proto");
+}
+
 use color_eyre::Result;
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use regex::Regex;
 use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::{self, Display},
     fs::File,
     io::prelude::*,
     io::BufReader,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
+    net::SocketAddr,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 use tokio::time::{sleep, Duration};
 use walkdir::WalkDir;
 
 const LOG_FILENAME_PREFIX: &str = "safenode.log";
 
-#[derive(Debug)]
+// Struct to collect node info from logs and RPC responses
+#[derive(Debug, Clone)]
 struct NodeInfo {
     pid: u32,
-    name: String,
-    addr: SocketAddr,
+    peer_id: PeerId,
+    listeners: Vec<Multiaddr>,
     log_path: PathBuf,
 }
 
-pub async fn run(logs_path: &Path, node_count: u32, nodes_launch_interval: u64) -> Result<()> {
-    sleep(Duration::from_millis(nodes_launch_interval)).await;
-    println!();
-    println!("======== Verifying nodes ========");
+impl Display for NodeInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "- PID: {}", self.pid)?;
+        writeln!(f, "- Peer Id: {}", self.peer_id)?;
+        writeln!(f, "- Listeners:")?;
+        for addr in self.listeners.iter() {
+            writeln!(f, "   * {}", addr)?;
+        }
+        writeln!(f, "- Log dir: {}", self.log_path.display())
+    }
+}
 
-    let expected_node_count = node_count as usize + 1; // we'll also check genesis node
+pub async fn run(logs_path: &Path, node_count: u32) -> Result<()> {
+    let delay = Duration::from_secs(10);
+    println!("We'll be verifying testnet nodes info in {delay:?} ...");
+    sleep(delay).await;
+    println!();
+    println!("======== Verifying testnet nodes ========");
+
+    let expected_node_count = node_count as usize;
     println!(
         "Checking nodes log files to verify all ({expected_node_count}) nodes \
         have joined. Logs path: {}",
         logs_path.display()
     );
-    let mut nodes = nodes_info_from_logs(logs_path)?;
+    let nodes = nodes_info_from_logs(logs_path)?;
 
-    println!("Number of nodes: {}", nodes.len());
+    println!("Number of nodes found in logs: {}", nodes.len());
     assert_eq!(
         expected_node_count,
         nodes.len(),
@@ -50,28 +79,82 @@ pub async fn run(logs_path: &Path, node_count: u32, nodes_launch_interval: u64) 
         nodes.len()
     );
 
-    println!("All nodes have joined. Nodes IPs and names:");
-    nodes.sort_by(|a, b| a.log_path.cmp(&b.log_path));
-    for node in &nodes {
+    println!();
+    println!("All nodes have joined. Nodes PIDs and PeerIds:");
+    for (_, node_info) in nodes.iter() {
         println!(
-            "{} {:>16} -> {} @ {}",
-            node.pid,
-            node.addr,
-            node.name,
-            node.log_path.display()
+            "{} -> {} @ {}",
+            node_info.pid,
+            node_info.peer_id,
+            node_info.log_path.display()
         );
     }
+
+    // let's check all nodes know about each other on the network
+    for i in 1..nodes.len() + 1 {
+        let rpc_addr: SocketAddr = format!("127.0.0.1:{}", 12000 + i as u16).parse()?;
+        println!();
+        println!("Checking peer id and network knowledge of node with RPC at {rpc_addr}");
+        let (node_info, connected_peers) = send_rpc_queries_to_node(rpc_addr).await?;
+        let peer_id = node_info.peer_id;
+
+        let node_log_info = nodes
+            .get(&node_info.pid)
+            .expect("Mismatch in node's PID between logs and RPC response");
+
+        assert_eq!(
+            peer_id, node_log_info.peer_id,
+            "Node at {} reported a mismatching PeerId: {}",
+            rpc_addr, peer_id
+        );
+
+        assert_eq!(
+            node_info.listeners, node_log_info.listeners,
+            "Node at {} reported a mismatching list of listeners: {:?}",
+            rpc_addr, node_info.listeners
+        );
+
+        assert_eq!(
+            connected_peers.len(),
+            expected_node_count - 1,
+            "Node {} is connected to {} peers, expected: {}. Connected peers: {:?}",
+            peer_id,
+            connected_peers.len(),
+            expected_node_count - 1,
+            connected_peers
+        );
+
+        let expected_connections = nodes
+            .iter()
+            .filter_map(|(_, node_info)| {
+                if node_info.peer_id != peer_id {
+                    Some(node_info.peer_id)
+                } else {
+                    None
+                }
+            })
+            .collect::<BTreeSet<_>>();
+
+        assert_eq!(
+            connected_peers, expected_connections,
+            "At least one peer the node is connected to is not expected"
+        );
+
+        println!("{node_info}");
+    }
+
     println!();
+    println!("PeerIds and network knowledge of nodes are the expected!");
 
     Ok(())
 }
 
 // Parse node logs files and extract info for each of them
-fn nodes_info_from_logs(path: &Path) -> Result<Vec<NodeInfo>> {
-    let mut nodes = Vec::<NodeInfo>::new();
-    let re = Regex::new(
-        r"Node PID: (\d+),.*name: (.{6}\(\d{8}\)..),.*connection info: ((127\.0\.0\.1|0\.0\.0\.0):\d{5})",
-    )?;
+fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
+    let mut nodes = BTreeMap::<u32, NodeInfo>::new();
+    let re = Regex::new(r"Node \(PID: (\d+)\) with PeerId: (.*)")?;
+
+    let re_listener = Regex::new("Local node is listening on \"(.+)\"")?;
 
     let log_files = WalkDir::new(path).into_iter().filter_map(|entry| {
         entry.ok().and_then(|f| {
@@ -94,22 +177,83 @@ fn nodes_info_from_logs(path: &Path) -> Result<Vec<NodeInfo>> {
         if file_name.starts_with(LOG_FILENAME_PREFIX) {
             let file = File::open(&file_path)?;
             let lines = BufReader::new(file).lines();
+            let mut node_info = NodeInfo {
+                pid: 0,
+                peer_id: PeerId::random(),
+                listeners: vec![],
+                log_path: file_path
+                    .parent()
+                    .expect("Failed to get parent dir")
+                    .to_path_buf(),
+            };
+
             lines.filter_map(|item| item.ok()).for_each(|line| {
                 if let Some(cap) = re.captures_iter(&line).next() {
-                    let mut addr: SocketAddr = cap[3].parse().unwrap();
-                    if addr.ip() == IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)) {
-                        addr.set_ip(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
-                    }
-                    nodes.push(NodeInfo {
-                        pid: cap[1].parse().unwrap(),
-                        name: cap[2].to_string(),
-                        addr,
-                        log_path: file_path.parent().unwrap().to_path_buf(),
-                    });
+                    node_info.pid = cap[1].parse().expect("Failed to parse PID from node log");
+                    node_info.peer_id =
+                        PeerId::from_str(&cap[2]).expect("Failed to parse PeerId from node log");
+                }
+
+                if let Some(cap) = re_listener.captures_iter(&line).next() {
+                    let multiaddr_str: String = cap[1]
+                        .parse()
+                        .expect("Failed to parse multiaddr from node log");
+                    let multiaddr = Multiaddr::from_str(&multiaddr_str)
+                        .expect("Failed to deserialise Multiaddr from node log");
+                    node_info.listeners.push(multiaddr);
                 }
             });
+
+            let _ = nodes.insert(node_info.pid, node_info);
         }
     }
 
     Ok(nodes)
+}
+
+// Send RPC requests to the node at the provided address,
+// querying for its own info and network connections.
+async fn send_rpc_queries_to_node(addr: SocketAddr) -> Result<(NodeInfo, BTreeSet<PeerId>)> {
+    let endpoint = format!("https://{addr}");
+    println!("Connecting to node's RPC service at {endpoint} ...");
+    let mut client = SafeNodeClient::connect(endpoint).await?;
+
+    let request = Request::new(NodeInfoRequest {});
+    let response = client.node_info(request).await?;
+    let node_info = response.get_ref();
+    let peer_id = PeerId::from_bytes(&node_info.peer_id)?;
+
+    let request = Request::new(NetworkInfoRequest {});
+    let response = client.network_info(request).await?;
+    let net_info = response.get_ref();
+    let multihash = peer_id.as_ref();
+    let listeners = net_info
+        .listeners
+        .iter()
+        .map(|multiaddr| {
+            // let's add the peer id to the addr since that's how it's logged
+            let mut multiaddr = Multiaddr::from_str(multiaddr)
+                .expect("Failed to deserialise Multiaddr from RPC response");
+            multiaddr.push(Protocol::P2p(*multihash));
+            multiaddr
+        })
+        .collect::<Vec<_>>();
+
+    let connected_peers = net_info
+        .connected_peers
+        .iter()
+        .map(|bytes| {
+            PeerId::from_bytes(bytes).expect("Failed to deserialise PeerId from RPC response")
+        })
+        .collect();
+
+    Ok((
+        NodeInfo {
+            pid: node_info.pid,
+            peer_id,
+            listeners,
+            log_path: node_info.log_dir.clone().into(),
+        },
+        connected_peers,
+    ))
 }
