@@ -53,7 +53,7 @@ pub fn create_genesis() -> GenesisResult<Dbc> {
     create_genesis_dbc(&main_key)
 }
 
-/// Create a any first DBC given the key.
+/// Create a first DBC given any key (i.e. not specifically the hard coded genesis key).
 /// This is useful in tests.
 #[allow(clippy::result_large_err)]
 pub(super) fn create_genesis_dbc(genesis_main_key: &MainKey) -> GenesisResult<Dbc> {
