@@ -246,11 +246,14 @@ impl SwarmDriver {
                 .boxed()
         };
 
+        let autonat = libp2p::autonat::Behaviour::new(peer_id, libp2p::autonat::Config::default());
+
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
             mdns,
             identify,
+            autonat,
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
