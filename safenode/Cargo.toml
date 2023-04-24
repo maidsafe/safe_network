@@ -36,7 +36,7 @@ futures = "~0.3.13"
 hex = "~0.4.3"
 itertools = "~0.10.1"
 lazy_static = "~1.4.0"
-libp2p = { version="0.51", features = ["tokio", "dns", "kad", "macros", "mdns", "quic", "request-response", "identify", "autonat"] }
+libp2p = { version="0.51", features = ["tokio", "dns", "kad", "macros", "mdns", "quic", "request-response", "identify", "autonat", "mplex", "noise", "tcp", "yamux"] }
 libp2p-quic = { version = "0.7.0-alpha.3", features = ["tokio"] }
 opentelemetry = { version = "0.17", features = ["rt-tokio"], optional = true }
 opentelemetry-otlp = { version = "0.10", optional = true }
