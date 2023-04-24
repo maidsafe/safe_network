@@ -520,7 +520,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn created_dbc_to_file_can_be_deposited() -> Result<()> {
+    async fn store_created_dbc_gives_file_that_try_load_deposits_can_use() -> Result<()> {
         // Bring in the necessary traits.
         use super::{DepositWallet, SendWallet};
 
