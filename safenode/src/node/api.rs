@@ -16,7 +16,7 @@ use crate::{
     domain::{
         node_transfers::{Error as TransferError, Transfers},
         storage::{
-            dbc_address, register::User, DbcAddress, Error as StorageError, RegisterStorage,
+            dbc_address, register::User, Chunk, DbcAddress, Error as StorageError, RegisterStorage,
         },
     },
     network::{close_group_majority, NetworkEvent, SwarmDriver},
@@ -158,10 +158,12 @@ impl Node {
             Query::GetChunk(address) => {
                 match self
                     .network
-                    .get_provided_data(RecordKey::new(address.name()))
+                    .get_record(RecordKey::new(address.name()))
                     .await
                 {
-                    Ok(response) => response,
+                    Ok(response) => {
+                        QueryResponse::GetChunk(Ok(Chunk::new(response.record.value.into())))
+                    }
                     Err(err) => {
                         error!("Error getting chunk from network: {err}");
                         QueryResponse::GetChunk(Err(ProtocolError::InternalProcessing(
@@ -204,7 +206,7 @@ impl Node {
                     expires: None,
                 };
 
-                match self.network.regigster_as_provider_for_record(record).await {
+                match self.network.put_record(record).await {
                     Ok(()) => CmdResponse::StoreChunk(Ok(())),
                     Err(err) => {
                         error!("Failed to register chunk as provider: {err:?}");

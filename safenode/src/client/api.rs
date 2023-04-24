@@ -23,6 +23,7 @@ use crate::{
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use libp2p::PeerId;
+use rand::thread_rng;
 use std::time::Duration;
 use tokio::task::spawn;
 use xor_name::XorName;
@@ -177,9 +178,10 @@ impl Client {
 
     pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
         info!("Sending {:?} to the closest peers.", request.dst());
+        let random_xorname = XorName::random(&mut thread_rng());
         let closest_peers = self
             .network
-            .client_get_closest_peers(*request.dst().name())
+            .client_get_closest_peers(random_xorname)
             .await?;
         Ok(self
             .send_and_get_responses(closest_peers, &request, true)
@@ -208,7 +210,7 @@ impl Client {
         get_all_responses: bool,
     ) -> Vec<Result<Response>> {
         let mut list_of_futures = Vec::new();
-        for node in nodes {
+        for node in nodes.into_iter().take(1) {
             let future = Box::pin(tokio::time::timeout(
                 Duration::from_secs(10),
                 self.network.send_request(req.clone(), node),

@@ -261,7 +261,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust
@@ -286,13 +286,13 @@ jobs:
         run: sudo apt-get install ripgrep
         if: matrix.os == 'ubuntu-latest'
 
-      - name: install ripgrep mac
-        run: brew install ripgrep
-         && matrix.os == 'macos-latest'
+      # - name: install ripgrep mac
+      #   run: brew install ripgrep
+      #    && matrix.os == 'macos-latest'
 
-      - name: install ripgrep windows
-        run: choco install ripgrep
-         && matrix.os == 'windows-latest'
+      # - name: install ripgrep windows
+      #   run: choco install ripgrep
+      #    && matrix.os == 'windows-latest'
 
       - name: Build sn bins
         # Only run on non-PR events

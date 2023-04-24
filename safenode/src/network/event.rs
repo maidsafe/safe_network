@@ -14,7 +14,7 @@ use super::{
 
 use crate::protocol::messages::{Request, Response};
 use libp2p::{
-    kad::{store::MemoryStore, Kademlia, KademliaEvent, QueryResult, K_VALUE},
+    kad::{store::MemoryStore, GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     mdns,
     multiaddr::Protocol,
     request_response::{self, ResponseChannel},
@@ -119,6 +119,25 @@ impl SwarmDriver {
                             .pending_get_closest_peers
                             .insert(*id, (sender, current_closest));
                     }
+                }
+                KademliaEvent::OutboundQueryProgressed {
+                    id,
+                    result: QueryResult::GetRecord(Ok(GetRecordOk::FoundRecord(record))),
+                    ..
+                } => {
+                    trace!(
+                        "Get record with {id:?} returned with record_key {:?}, from {:?}",
+                        record.record.key,
+                        record.peer
+                    );
+
+                    let sender = self.pending_get_record.remove(id).ok_or_else(|| {
+                        trace!("Can't locate query task {id:?}, shall be completed already.");
+                        Error::ReceivedKademliaEventDropped(event.clone())
+                    })?;
+                    sender
+                        .send(record.clone())
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
                 KademliaEvent::RoutingUpdated { is_new_peer, .. } => {
                     if *is_new_peer {

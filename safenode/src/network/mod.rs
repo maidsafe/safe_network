@@ -11,8 +11,6 @@ mod error;
 mod event;
 mod msg;
 
-use crate::protocol::messages::{QueryResponse, Request, Response};
-
 pub use self::{error::Error, event::NetworkEvent};
 
 use self::{
@@ -21,14 +19,14 @@ use self::{
     event::NodeBehaviour,
     msg::{MsgCodec, MsgProtocol},
 };
-
+use crate::protocol::messages::{Request, Response};
 use futures::StreamExt;
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
     kad::{
         record::store::MemoryStore, store::MemoryStoreConfig, KBucketKey, Kademlia, KademliaConfig,
-        QueryId, Record, RecordKey,
+        PeerRecord, QueryId, Record, RecordKey,
     },
     mdns,
     multiaddr::Protocol,
@@ -36,7 +34,6 @@ use libp2p::{
     swarm::{Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
-
 use std::{
     collections::{HashMap, HashSet},
     iter,
@@ -72,6 +69,7 @@ pub struct SwarmDriver {
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
+    pending_get_record: HashMap<QueryId, oneshot::Sender<PeerRecord>>,
 }
 
 impl SwarmDriver {
@@ -108,8 +106,8 @@ impl SwarmDriver {
         // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
         let _ = cfg.disjoint_query_paths(true);
 
-        // Provider records never expire
-        let _ = cfg.set_provider_record_ttl(None);
+        // Data records never expire.
+        let _ = cfg.set_record_ttl(None);
 
         let request_response = request_response::Behaviour::new(
             MsgCodec(),
@@ -207,6 +205,7 @@ impl SwarmDriver {
             pending_dial: Default::default(),
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
+            pending_get_record: Default::default(),
         };
 
         Ok((
@@ -335,10 +334,10 @@ impl Network {
         receiver.await?
     }
 
-    /// Get `Key` from our Storage
-    pub async fn get_provided_data(&self, key: RecordKey) -> Result<QueryResponse> {
+    /// Get a record from the network
+    pub async fn get_record(&self, key: RecordKey) -> Result<PeerRecord> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetProvidedData { key, sender })
+        self.send_swarm_cmd(SwarmCmd::GetRecord { key, sender })
             .await?;
 
         receiver
@@ -346,11 +345,10 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
-    /// Register self as Provider for Data
-    pub async fn regigster_as_provider_for_record(&self, record: Record) -> Result<()> {
-        debug!("Registering as provider,,, for '{:?}'", record.key);
-        self.send_swarm_cmd(SwarmCmd::RegisterProvidedData { record })
-            .await
+    /// Put a record in the network
+    pub async fn put_record(&self, record: Record) -> Result<()> {
+        debug!("Storing record for '{:?}'", record.key);
+        self.send_swarm_cmd(SwarmCmd::PutRecord { record }).await
     }
 
     /// Send a `Response` through the channel opened by the requester.

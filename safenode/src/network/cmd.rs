@@ -7,16 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    domain::storage::Chunk,
     network::error::Result,
-    protocol::error::Error as ProtocolError,
-    protocol::messages::{QueryResponse, Request, Response},
+    protocol::messages::{Request, Response},
 };
 
 use super::{error::Error, SwarmDriver};
-use bytes::Bytes;
 use libp2p::{
-    kad::{store::RecordStore, Record, RecordKey},
+    kad::{PeerRecord, Record, RecordKey},
     multiaddr::Protocol,
     request_response::ResponseChannel,
     Multiaddr, PeerId,
@@ -50,48 +47,23 @@ pub enum SwarmCmd {
         resp: Response,
         channel: ResponseChannel<Response>,
     },
-    RegisterProvidedData {
-        record: Record,
-    },
-    /// Get data from the kademlia store
-    GetProvidedData {
+    /// Put data on the network
+    PutRecord { record: Record },
+    /// Get data from the network
+    GetRecord {
         key: RecordKey,
-        sender: oneshot::Sender<QueryResponse>,
+        sender: oneshot::Sender<PeerRecord>,
     },
 }
 
 impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
-            SwarmCmd::GetProvidedData { key, sender } => {
-                match self.swarm.behaviour_mut().kademlia.store_mut().get(&key) {
-                    Some(data) => {
-                        sender
-                            .send(crate::protocol::messages::QueryResponse::GetChunk(Ok(
-                                Chunk::new(Bytes::from(data.value.clone())),
-                            )))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
-                    }
-                    None => {
-                        // empty response here just to test out
-                        sender
-                            .send(crate::protocol::messages::QueryResponse::GetChunk(Err(
-                                ProtocolError::ProvideRecordNotFound,
-                            )))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
-
-                        warn!("No data found in kademlia store for key: {:?}", key);
-                    }
-                }
+            SwarmCmd::GetRecord { key, sender } => {
+                let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
+                let _ = self.pending_get_record.insert(query_id, sender);
             }
-            SwarmCmd::RegisterProvidedData { record } => {
-                debug!("RECORDstarttttt: {:?}", record.key);
-                let _ = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .start_providing(record.key.clone())?;
-
+            SwarmCmd::PutRecord { record } => {
                 debug!("RECORDingg: {:?}", record.key);
                 // TODO: when do we remove records. Do we need to?
                 let _ = self
