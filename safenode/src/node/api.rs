@@ -204,12 +204,19 @@ impl Node {
         match query {
             Query::Register(query) => self.registers.read(&query, User::Anyone).await,
             Query::GetChunk(address) => {
-                let resp = self
-                    .chunks
-                    .get(&address)
+                match self
+                    .network
+                    .get_provided_data(RecordKey::new(address.name()))
                     .await
-                    .map_err(ProtocolError::Storage);
-                QueryResponse::GetChunk(resp)
+                {
+                    Ok(response) => response,
+                    Err(err) => {
+                        error!("Error getting chunk from network: {err}");
+                        QueryResponse::GetChunk(Err(ProtocolError::InternalProcessing(
+                            err.to_string(),
+                        )))
+                    }
+                }
             }
             Query::Spend(query) => {
                 match query {
@@ -236,6 +243,8 @@ impl Node {
     async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
         match cmd {
             Cmd::StoreChunk(chunk) => {
+
+                debug!("That's a store chunk in for :{:?}", chunk.address().name());
                 // Create a Kademlia record for storage
                 let record = Record {
                     key: RecordKey::new(chunk.address().name()),

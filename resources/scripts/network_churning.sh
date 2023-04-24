@@ -12,15 +12,16 @@ nodes_count=$(ls $log_dir | wc -l)
 echo
 echo "Number of existing nodes: $nodes_count"
 
-sleep 5
+sleep 1
 
 count=0
-node_count=25
-while (( $count != 9 ))
+while (( $count != $nodes_count ))
 do
     ((count++))
+    target_port=$((12000 + $count))
+
     echo Iteration $count
-    echo Restarting node $count
-    cargo run --release --example safenode_rpc_client -- "127.0.0.1:1200$count" restart 5000
-	sleep 5
+    echo Restarting node on port $target_port
+    cargo run --release --example safenode_rpc_client -- "127.0.0.1:$target_port" restart 1
+	sleep 1
 done

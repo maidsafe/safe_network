@@ -28,6 +28,7 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 pub enum Error {
     #[error("Close group size must be a non-zero usize")]
     InvalidCloseGroupSize,
+
     #[error("Internal messaging channel was dropped")]
     InternalMsgChannelDropped,
 
