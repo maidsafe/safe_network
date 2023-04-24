@@ -128,11 +128,7 @@ impl Files {
     async fn upload_small(&self, small: SmallFile, verify: bool) -> Result<ChunkAddress> {
         let chunk = package_small(small)?;
         let address = *chunk.address();
-
-        if self.verify_chunk_is_stored(address).await.is_ok() {
-            return Ok(address);
-        }
-
+        
         self.client.store_chunk(chunk).await?;
 
         if verify {
