@@ -26,7 +26,7 @@ use futures::StreamExt;
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
-    kad::{record::store::MemoryStore, KBucketKey, Kademlia, KademliaConfig, QueryId},
+    kad::{record::store::MemoryStore, KBucketKey, Kademlia, KademliaConfig, QueryId, Record},
     mdns,
     multiaddr::Protocol,
     request_response::{self, ProtocolSupport, RequestId, ResponseChannel},
@@ -309,6 +309,12 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::SendRequest { req, peer, sender })
             .await?;
         receiver.await?
+    }
+
+    /// Register self as Provider for Data
+    pub async fn regigster_as_provider_for_record(&self, record: Record) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::RegisterProvidedData { record })
+            .await
     }
 
     /// Send a `Response` through the channel opened by the requester.

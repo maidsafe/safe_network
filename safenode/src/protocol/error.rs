@@ -19,6 +19,9 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Error {
+    /// We failed to send the provider record into the sawrm command handler
+    #[error("Provider record was not saved")]
+    ProvideRecordNotSaved,
     /// Storage error.
     #[error("Storage error {0:?}")]
     Storage(#[from] StorageError),
