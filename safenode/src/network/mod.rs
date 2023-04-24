@@ -38,7 +38,6 @@ use futures::{future::select_all, StreamExt};
 use libp2p::mdns;
 
 use libp2p::{
-    core::muxing::StreamMuxerBox,
     identity,
     kad::{Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
@@ -169,9 +168,7 @@ impl SwarmDriver {
         )?;
 
         // Listen on the provided address
-        let addr = Multiaddr::from(addr.ip())
-            .with(Protocol::Udp(addr.port()))
-            .with(Protocol::QuicV1);
+        let addr = Multiaddr::from(addr.ip()).with(Protocol::Tcp(addr.port()));
         let _listener_id = swarm_driver
             .swarm
             .listen_on(addr)
@@ -270,14 +267,14 @@ impl SwarmDriver {
         };
 
         // Transport
-        let transport = {
-            // use the QUIC Protocol for transport
-            let quic_config = libp2p_quic::Config::new(&keypair);
-            let transport = libp2p_quic::tokio::Transport::new(quic_config);
-            transport
-                .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
-                .boxed()
-        };
+        let transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+            .upgrade(libp2p::core::upgrade::Version::V1)
+            .authenticate(
+                libp2p::noise::Config::new(&keypair)
+                    .expect("Signing libp2p-noise static DH keypair failed."),
+            )
+            .multiplex(libp2p::yamux::Config::default())
+            .boxed();
 
         let behaviour = NodeBehaviour {
             request_response,
