@@ -42,6 +42,9 @@
 #[macro_use]
 extern crate tracing;
 
+#[cfg(test)]
+mod tests_e2e;
+
 /// SAFE Client
 pub mod client;
 /// SAFE Domain Logic.
