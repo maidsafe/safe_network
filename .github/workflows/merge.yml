@@ -261,11 +261,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v2
-
       - name: Install Rust
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         id: toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -274,6 +275,8 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v1
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         continue-on-error: true
         with:
           cache-on-failure: true
@@ -283,35 +286,75 @@ jobs:
         run: sudo apt-get install ripgrep
         if: matrix.os == 'ubuntu-latest'
 
+      - name: install ripgrep mac
+        run: brew install ripgrep
+        if: github.event_name != 'pull_request' && matrix.os == 'macos-latest'
+
+      - name: install ripgrep windows
+        run: choco install ripgrep
+        if: github.event_name != 'pull_request' && matrix.os == 'windows-latest'
+
       - name: Build sn bins
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         run: cargo build --release --bins
         timeout-minutes: 30
 
       - name: Start a local network
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 1 --node-path ./target/release/safenode
         id: section-startup
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-      - name: Start a client to upload chunk
-        run: cargo run --bin safe --release -- files upload -- "./resources"
+   
+      - name: Start a client to upload chunks
+        if: github.event_name != 'pull_request'
+        run: cargo run --bin safe --release -- files upload -- "./target/release/safe" # upload the built bins
         id: client-file-upload
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
       - name: Start network churning
+        if: github.event_name != 'pull_request'
         shell: bash
         run: ./resources/scripts/network_churning.sh
         timeout-minutes: 10
 
       - name: Start a client to confirm chunk still retained
+        if: github.event_name != 'pull_request'
         run: cargo run --bin safe --release -- files download
         id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 5
+
+      - name: Downloaded file is same as the original
+        if: github.event_name != 'pull_request'
+        shell: bash
+        timeout-minutes: 1
+        run: |
+          old=./target/release/safe
+          new=~/.safe/client/downloads/safe
+          cmp --silent $old $new
+      
+      - name: Verify restart of nodes using rg
+        if: github.event_name != 'pull_request'
+        shell: bash
+        timeout-minutes: 1
+        # get the counts, then the specific line, and then the digit count only
+        # then check we have an expected level of restarts
+        # TODO: make this use an env var, or relate to testnet size
+        run : |
+            restart_count=$(rg "Starting node ..." ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+            node_count=$(ls $log_dir | wc -l)
+            if [ $restart_count -lt node_count ]; then
+              echo "Restart count of: $restart_count is less than the node count of: $node_count"
+              exit 1
+            fi
 
       - name: Kill all nodes
         shell: bash
@@ -331,7 +374,7 @@ jobs:
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: sn_node_logs_churn_${{matrix.os}}
+          name: sn_node_logs_e2e_${{matrix.os}}
           path: log_files.tar.gz
         if: failure()
         continue-on-error: true
