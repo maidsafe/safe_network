@@ -17,8 +17,7 @@ use crate::{
         dbc_genesis::{create_genesis, Error as GenesisError},
         node_transfers::{Error as TransferError, Transfers},
         storage::{
-            dbc_address, register::User, ChunkStorage, DbcAddress, Error as StorageError,
-            RegisterStorage,
+            dbc_address, register::User, DbcAddress, Error as StorageError, RegisterStorage,
         },
         wallet::LocalWallet,
     },
@@ -106,7 +105,6 @@ impl Node {
 
         let mut node = Self {
             network: network.clone(),
-            chunks: ChunkStorage::new(root_dir),
             registers: RegisterStorage::new(root_dir),
             transfers: Transfers::new_with_genesis(root_dir, node_id, node_wallet, genesis_spend)
                 .await?,
@@ -243,7 +241,6 @@ impl Node {
     async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
         match cmd {
             Cmd::StoreChunk(chunk) => {
-
                 debug!("That's a store chunk in for :{:?}", chunk.address().name());
                 // Create a Kademlia record for storage
                 let record = Record {
