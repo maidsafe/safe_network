@@ -7,19 +7,24 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    domain::storage::Chunk,
     network::error::Result,
-    protocol::messages::{Request, Response},
+    protocol::error::Error as ProtocolError,
+    protocol::messages::{QueryResponse, Request, Response},
 };
 
 use super::{error::Error, SwarmDriver};
+use bytes::Bytes;
 use libp2p::{
-    kad::Record, multiaddr::Protocol, request_response::ResponseChannel, Multiaddr, PeerId,
+    kad::{store::RecordStore, Record, RecordKey},
+    multiaddr::Protocol,
+    request_response::ResponseChannel,
+    Multiaddr, PeerId,
 };
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
 use tracing::warn;
 use xor_name::XorName;
-
 /// Commands to send to the Swarm
 #[derive(Debug)]
 pub enum SwarmCmd {
@@ -49,6 +54,11 @@ pub enum SwarmCmd {
     RegisterProvidedData {
         record: Record,
     },
+    /// Get data from the kademlia store
+    GetProvidedData {
+        key: RecordKey,
+        sender: oneshot::Sender<QueryResponse>,
+    },
 }
 
 /// Snapshot of information kept in the Swarm's local state
@@ -63,19 +73,46 @@ pub struct SwarmLocalState {
 impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
+            SwarmCmd::GetProvidedData { key, sender } => {
+                match self.swarm.behaviour_mut().kademlia.store_mut().get(&key) {
+                    Some(data) => {
+                        sender
+                            .send(crate::protocol::messages::QueryResponse::GetChunk(Ok(
+                                Chunk::new(Bytes::from(data.value.clone())),
+                            )))
+                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    }
+                    None => {
+                        // empty response here just to test out
+                        sender
+                            .send(crate::protocol::messages::QueryResponse::GetChunk(Err(
+                                ProtocolError::ProvideRecordNotFound,
+                            )))
+                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+
+                        warn!("No data found in kademlia store for key: {:?}", key);
+                    }
+                }
+            }
             SwarmCmd::RegisterProvidedData { record } => {
+                debug!("RECORDstarttttt: {:?}", record.key);
                 let _ = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .start_providing(record.key.clone())?;
 
+                debug!("RECORDingg: {:?}", record.key);
                 // TODO: when do we remove records. Do we need to?
                 let _ = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .put_record(record, libp2p::kad::Quorum::All)?;
+
+                    debug!("RECORDED" );
+
+
             }
             SwarmCmd::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {
@@ -109,6 +146,7 @@ impl SwarmDriver {
                     warn!("Already dialing peer.");
                 }
             }
+
             SwarmCmd::GetClosestPeers { xor_name, sender } => {
                 let key = xor_name.0.to_vec();
                 let query_id = self.swarm.behaviour_mut().kademlia.get_closest_peers(key);

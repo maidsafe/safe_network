@@ -137,7 +137,7 @@ async fn start_node(
     loop {
         match ctrl_rx.recv().await {
             Some(NodeCtrl::Restart(delay)) => {
-                let msg = format!("Node is restartig in {delay:?}...");
+                let msg = format!("Node is restarting in {delay:?}...");
                 info!("{msg}");
                 println!("{msg} Node log path: {log_dir}");
                 sleep(delay).await;
