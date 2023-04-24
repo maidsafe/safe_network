@@ -266,7 +266,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install Rust
         # Only run on non-PR events
-        if: github.event_name != 'pull_request'
+        
         id: toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -276,7 +276,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
         # Only run on non-PR events
-        if: github.event_name != 'pull_request'
+        
         continue-on-error: true
         with:
           cache-on-failure: true
@@ -288,21 +288,20 @@ jobs:
 
       - name: install ripgrep mac
         run: brew install ripgrep
-        if: github.event_name != 'pull_request' && matrix.os == 'macos-latest'
+         && matrix.os == 'macos-latest'
 
       - name: install ripgrep windows
         run: choco install ripgrep
-        if: github.event_name != 'pull_request' && matrix.os == 'windows-latest'
+         && matrix.os == 'windows-latest'
 
       - name: Build sn bins
         # Only run on non-PR events
-        if: github.event_name != 'pull_request'
+        
         run: cargo build --release --bins
         timeout-minutes: 30
 
       - name: Start a local network
         # Only run on non-PR events
-        if: github.event_name != 'pull_request'
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 1 --node-path ./target/release/safenode
         id: section-startup
         env:
@@ -311,7 +310,7 @@ jobs:
 
    
       - name: Start a client to upload chunks
-        if: github.event_name != 'pull_request'
+        
         run: cargo run --bin safe --release -- files upload -- "./target/release/safe" # upload the built bins
         id: client-file-upload
         env:
@@ -319,13 +318,13 @@ jobs:
         timeout-minutes: 10
 
       - name: Start network churning
-        if: github.event_name != 'pull_request'
+        
         shell: bash
         run: ./resources/scripts/network_churning.sh
         timeout-minutes: 10
 
       - name: Start a client to confirm chunk still retained
-        if: github.event_name != 'pull_request'
+        
         run: cargo run --bin safe --release -- files download
         id: client-file-download
         env:
@@ -333,7 +332,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Downloaded file is same as the original
-        if: github.event_name != 'pull_request'
+        
         shell: bash
         timeout-minutes: 1
         run: |
@@ -342,7 +341,7 @@ jobs:
           cmp --silent $old $new
       
       - name: Verify restart of nodes using rg
-        if: github.event_name != 'pull_request'
+        
         shell: bash
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only
