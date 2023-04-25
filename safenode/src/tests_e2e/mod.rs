@@ -8,7 +8,10 @@
 
 mod setup;
 
-use crate::domain::wallet::{DepositWallet, VerifyingClient, Wallet};
+use crate::domain::{
+    dbc_genesis::{get_tokens_from_faucet, send},
+    wallet::{DepositWallet, VerifyingClient, Wallet},
+};
 
 use sn_dbc::Token;
 
@@ -19,13 +22,13 @@ use eyre::Result;
 #[tokio::test(flavor = "multi_thread")]
 async fn spend_is_stored_in_network() -> Result<()> {
     let first_wallet_dir = TempDir::new()?;
-    let first_wallet_balance = Token::from_nano(100000);
+    let first_wallet_balance = Token::from_nano(10_000);
 
     let mut first_wallet = setup::get_wallet(first_wallet_dir.path()).await;
     let client = setup::get_client();
     println!("Getting tokens from the faucet...");
     let tokens =
-        setup::get_tokens_from_faucet(first_wallet_balance, first_wallet.address(), &client).await;
+        get_tokens_from_faucet(first_wallet_balance, first_wallet.address(), &client).await;
     println!("Verifying the transfer from faucet...");
     client.verify(&tokens).await?;
     first_wallet.deposit(vec![tokens]);
@@ -39,7 +42,7 @@ async fn spend_is_stored_in_network() -> Result<()> {
 
     assert_eq!(second_wallet.balance(), Token::zero());
 
-    let tokens = setup::send(
+    let tokens = send(
         first_wallet,
         second_wallet_balance,
         second_wallet.address(),

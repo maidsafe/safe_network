@@ -21,10 +21,10 @@
 //! `cargo run --bin faucet --release -- faucet send -- 100 9b0f0e917cd7fe75cad2196c4bea7ed1873deec85692e402be287a7068b2c3f7b6795fb7fa10a141f01a5d69b8ddc0a40000000000000001`
 
 use safenode::{
-    client::{Client, WalletClient},
+    client::Client,
     domain::{
-        dbc_genesis::create_genesis,
-        wallet::{parse_public_address, DepositWallet, LocalWallet, Wallet},
+        dbc_genesis::{get_tokens_from_faucet, load_faucet_wallet},
+        wallet::parse_public_address,
     },
 };
 
@@ -32,7 +32,6 @@ use sn_dbc::Token;
 
 use clap::Parser;
 use eyre::Result;
-use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 pub enum FaucetCmds {
@@ -51,79 +50,22 @@ pub enum FaucetCmds {
 
 pub(crate) async fn faucet_cmds(cmds: FaucetCmds, client: &Client) -> Result<()> {
     match cmds {
-        FaucetCmds::Genesis => genesis().await?,
-        FaucetCmds::Send { amount, to } => send(amount, to, client).await?,
-    }
-    Ok(())
-}
-
-async fn genesis() -> Result<()> {
-    let genesis = create_genesis()?;
-    let root_dir = get_faucet_dir().await?;
-    let mut wallet = LocalWallet::load_from(&root_dir).await?;
-
-    let previous_balance = wallet.balance();
-
-    wallet.deposit(vec![genesis]);
-
-    let new_balance = wallet.balance();
-    let deposited = previous_balance.as_nano() - new_balance.as_nano();
-
-    if deposited > 0 {
-        if let Err(err) = wallet.store().await {
-            println!("Failed to store deposited amount: {:?}", err);
-        } else {
-            println!("Deposited {:?}.", sn_dbc::Token::from_nano(deposited));
+        FaucetCmds::Genesis => {
+            let _wallet = load_faucet_wallet(client).await;
         }
-    } else {
-        println!("Nothing deposited.");
-    }
-
-    Ok(())
-}
-
-async fn send(amount: String, to: String, client: &Client) -> Result<()> {
-    let address = parse_public_address(to)?;
-
-    use std::str::FromStr;
-    let amount = Token::from_str(&amount)?;
-    if amount.as_nano() == 0 {
-        println!("Invalid format or zero amount passed in. Nothing sent.");
-        return Ok(());
-    }
-
-    let root_dir = get_faucet_dir().await?;
-    let wallet = LocalWallet::load_from(&root_dir).await?;
-
-    let mut wallet_client = WalletClient::new(client.clone(), wallet);
-
-    match wallet_client.send(amount, address).await {
-        Ok(new_dbc) => {
-            println!("Sent {amount:?} to {address:?}");
-            let mut wallet = wallet_client.into_wallet();
-            let new_balance = wallet.balance();
-
-            if let Err(err) = wallet.store().await {
-                println!("Failed to store wallet: {err:?}");
-            } else {
-                println!("Successfully stored wallet with new balance {new_balance:?}.");
+        FaucetCmds::Send { amount, to } => {
+            let to = parse_public_address(to)?;
+            use std::str::FromStr;
+            let amount = Token::from_str(&amount)?;
+            if amount.as_nano() == 0 {
+                println!("Invalid format or zero amount passed in. Nothing sent.");
+                return Ok(());
             }
 
-            wallet.store_created_dbc(new_dbc).await?;
-            println!("Successfully stored new dbc to wallet dir. It can now be sent to the recipient, using any channel of choice.");
-        }
-        Err(err) => {
-            println!("Failed to send {amount:?} to {address:?} due to {err:?}.");
+            let dbc = get_tokens_from_faucet(amount, to, client).await;
+            let dbc_hex = dbc.to_hex()?;
+            println!("{dbc_hex}");
         }
     }
-
     Ok(())
-}
-
-async fn get_faucet_dir() -> Result<PathBuf> {
-    let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
-    home_dirs.push(".safe");
-    home_dirs.push("faucet");
-    tokio::fs::create_dir_all(home_dirs.as_path()).await?;
-    Ok(home_dirs)
 }
