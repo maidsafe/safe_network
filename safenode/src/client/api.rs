@@ -165,11 +165,12 @@ impl Client {
     }
 
     pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
-        info!("Sending {:?} to the closest peers.", request.dst());
+        println!("Getting the closest peers to {:?}.", request.dst());
         let closest_peers = self
             .network
             .client_get_closest_peers(*request.dst().name())
             .await?;
+        println!("Sending {:?} to the closest peers.", request);
         Ok(self
             .send_and_get_responses(closest_peers, &request, true)
             .await)
@@ -180,7 +181,7 @@ impl Client {
         match self.network.client_get_closest_peers(dst).await {
             Ok(peers) => peers,
             Err(err) => {
-                error!("Failed to get_closest of {dst:?} with error {err:?}");
+                println!("Failed to get_closest of {dst:?} with error {err:?}");
                 vec![]
             }
         }
@@ -210,7 +211,12 @@ impl Client {
             match select_all(list_of_futures).await {
                 (Ok(res), _, remaining_futures) => {
                     let res = res.map_err(Error::Network);
-                    info!("Got response for the req: {req:?}, res: {res:?}");
+                    let res_string = match &res {
+                        Ok(res) => format!("{res}"),
+                        Err(err) => format!("{err:?}"),
+                    };
+                    println!("Got response for the req: {req:?}, res: {res_string}");
+
                     // return the first successful response
                     if !get_all_responses && res.is_ok() {
                         return vec![res];
