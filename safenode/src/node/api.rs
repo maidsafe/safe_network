@@ -14,6 +14,7 @@ use super::{
 
 use crate::{
     domain::{
+        dbc_genesis::is_genesis_parent_tx,
         node_transfers::{Error as TransferError, Transfers},
         storage::{
             dbc_address, register::User, ChunkStorage, DbcAddress, Error as StorageError,
@@ -69,11 +70,7 @@ impl Node {
             network,
             chunks: ChunkStorage::new(root_dir),
             registers: RegisterStorage::new(root_dir),
-            transfers: Transfers::new(
-                root_dir,
-                node_id,
-                node_wallet,
-            ),
+            transfers: Transfers::new(root_dir, node_id, node_wallet),
             events_channel: node_events_channel.clone(),
             initial_peers,
         };
@@ -273,6 +270,10 @@ impl Node {
         // These will be different spends, one for each input that went into
         // creating the above spend passed in to this function.
         let mut all_parent_spends = BTreeSet::new();
+
+        if is_genesis_parent_tx(parent_tx) {
+            return Ok(all_parent_spends);
+        }
 
         // First we fetch all parent spends from the network.
         // They shall naturally all exist as valid spends for this current

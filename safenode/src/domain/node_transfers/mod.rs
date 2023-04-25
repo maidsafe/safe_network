@@ -44,11 +44,7 @@ pub(crate) struct Transfers {
 
 impl Transfers {
     /// Create a new instance of `Transfers`.
-    pub(crate) fn new(
-        root_dir: &Path,
-        node_id: NodeId,
-        node_wallet: LocalWallet,
-    ) -> Self {
+    pub(crate) fn new(root_dir: &Path, node_id: NodeId, node_wallet: LocalWallet) -> Self {
         Self {
             node_id,
             node_wallet,
@@ -147,6 +143,7 @@ impl Transfers {
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     fn validate_fee(
         &self,
         parent_tx: &DbcTransaction,
@@ -172,6 +169,7 @@ impl Transfers {
 
 /// The src_tx is the tx where the dbc to spend, was created.
 /// The signed_spend.dbc_id() shall exist among its outputs.
+#[allow(clippy::result_large_err)]
 fn validate_parent_spends(
     signed_spend: &SignedSpend,
     parent_tx: &DbcTransaction,
@@ -209,6 +207,7 @@ fn validate_parent_spends(
 }
 
 #[cfg(not(feature = "data-network"))]
+#[allow(clippy::result_large_err)]
 fn decipher_fee(
     node_wallet: &LocalWallet,
     parent_tx: &DbcTransaction,
@@ -216,7 +215,9 @@ fn decipher_fee(
     fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
 ) -> Result<Token> {
     use super::wallet::SigningWallet;
-    let fee_ciphers = fee_ciphers.get(&node_id).ok_or(Error::MissingFee)?;
+    let fee_ciphers = fee_ciphers
+        .get(&node_id)
+        .ok_or(Error::MissingFeeCiphers(node_id))?;
     let (dbc_id, revealed_amount) = node_wallet
         .decrypt(fee_ciphers)
         .map_err(|e| Error::FeeCipherDecryptionFailed(e.to_string()))?;
@@ -226,7 +227,7 @@ fn decipher_fee(
         .find(|proof| proof.dbc_id() == &dbc_id)
     {
         Some(proof) => proof,
-        None => return Err(Error::MissingFee),
+        None => return Err(Error::MissingFee((node_id, dbc_id))),
     };
 
     let blinded_amount = revealed_amount.blinded_amount(&sn_dbc::PedersenGens::default());
