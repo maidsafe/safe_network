@@ -14,6 +14,7 @@ use super::{
 
 use crate::{
     domain::{
+        dbc_genesis::is_genesis_parent_tx,
         node_transfers::{Error as TransferError, Transfers},
         storage::{
             dbc_address, register::User, DbcAddress, Error as StorageError, RegisterStorage,
@@ -321,6 +322,10 @@ impl Node {
         // These will be different spends, one for each input that went into
         // creating the above spend passed in to this function.
         let mut all_parent_spends = BTreeSet::new();
+
+        if is_genesis_parent_tx(parent_tx) {
+            return Ok(all_parent_spends);
+        }
 
         // First we fetch all parent spends from the network.
         // They shall naturally all exist as valid spends for this current
