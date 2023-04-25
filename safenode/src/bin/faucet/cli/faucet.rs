@@ -35,11 +35,12 @@ use eyre::Result;
 
 #[derive(Parser, Debug)]
 pub enum FaucetCmds {
-    /// Create the genesis DBC and deposit it to the faucet local wallet.
-    Genesis,
+    /// Claim the amount in the genesis DBC and deposit it to the faucet local wallet.
+    /// This needs to be run before a testnet is opened to the public, as to not have
+    /// the genesis claimed by someone else (the key and dbc are public for audit).
+    ClaimGenesis,
     Send {
         /// This shall be the number of nanos to send.
-        /// Necessary if the `to` argument has been given.
         #[clap(name = "amount")]
         amount: String,
         /// This must be a hex-encoded `PublicAddress`.
@@ -50,7 +51,7 @@ pub enum FaucetCmds {
 
 pub(crate) async fn faucet_cmds(cmds: FaucetCmds, client: &Client) -> Result<()> {
     match cmds {
-        FaucetCmds::Genesis => {
+        FaucetCmds::ClaimGenesis => {
             let _wallet = load_faucet_wallet(client).await;
         }
         FaucetCmds::Send { amount, to } => {
