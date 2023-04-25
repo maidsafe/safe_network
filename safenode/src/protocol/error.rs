@@ -11,6 +11,7 @@ use crate::domain::{node_transfers::Error as TransferError, storage::Error as St
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};
 use thiserror::Error;
+use xor_name::XorName;
 
 /// A specialised `Result` type for protocol crate.
 pub type Result<T> = result::Result<T, Error>;
@@ -22,12 +23,12 @@ pub enum Error {
     /// There was an internal error while processing the request.
     #[error("There was an internal error while processing the request")]
     InternalProcessing(String),
-    /// We failed to send the provider record into the sawrm command handler
-    #[error("Provider record was not saved")]
-    ProvideRecordNotSaved,
+    /// We failed to send the provided Record into the swarm command handler
+    #[error("Node was not registered as a provider for Record w/ xorname {0:?}")]
+    RecordNotStored(XorName),
     /// We failed to retrieve data from our local record storage
     #[error("Provider record was not found locally")]
-    ProvideRecordNotFound,
+    RecordNotFound,
     /// Storage error.
     #[error("Storage error {0:?}")]
     Storage(#[from] StorageError),
