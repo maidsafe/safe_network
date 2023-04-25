@@ -9,8 +9,11 @@
 use crate::{
     domain::storage::Chunk,
     network::error::Result,
-    protocol::error::Error as ProtocolError,
-    protocol::messages::{QueryResponse, Request, Response},
+    protocol::{
+        error::Error as ProtocolError,
+        messages::QueryResponse::GetChunk,
+        messages::{QueryResponse, Request, Response},
+    },
 };
 
 use super::{error::Error, SwarmDriver};
@@ -51,11 +54,12 @@ pub enum SwarmCmd {
         channel: ResponseChannel<Response>,
     },
     GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
+    /// Register's data in the Kad Provider system
     RegisterProvidedData {
         record: Record,
     },
     /// Get data from the kademlia store
-    GetProvidedData {
+    GetData {
         key: RecordKey,
         sender: oneshot::Sender<QueryResponse>,
     },
@@ -73,21 +77,17 @@ pub struct SwarmLocalState {
 impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
-            SwarmCmd::GetProvidedData { key, sender } => {
+            SwarmCmd::GetData { key, sender } => {
                 match self.swarm.behaviour_mut().kademlia.store_mut().get(&key) {
                     Some(data) => {
                         sender
-                            .send(crate::protocol::messages::QueryResponse::GetChunk(Ok(
-                                Chunk::new(Bytes::from(data.value.clone())),
-                            )))
+                            .send(GetChunk(Ok(Chunk::new(Bytes::from(data.value.clone())))))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
                     }
                     None => {
                         // empty response here just to test out
                         sender
-                            .send(crate::protocol::messages::QueryResponse::GetChunk(Err(
-                                ProtocolError::ProvideRecordNotFound,
-                            )))
+                            .send(GetChunk(Err(ProtocolError::RecordNotFound)))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
 
                         warn!("No data found in kademlia store for key: {:?}", key);
@@ -95,22 +95,19 @@ impl SwarmDriver {
                 }
             }
             SwarmCmd::RegisterProvidedData { record } => {
-                debug!("RECORDstarttttt: {:?}", record.key);
                 let _ = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .start_providing(record.key.clone())?;
 
-                debug!("RECORDingg: {:?}", record.key);
-                // TODO: when do we remove records. Do we need to?
+                // TODO: Does Kad automatically remove irrelevant records?
+                // Or do we need to manage this manually as we move about the network?
                 let _ = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .put_record(record, libp2p::kad::Quorum::All)?;
-
-                debug!("RECORDED");
             }
             SwarmCmd::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {

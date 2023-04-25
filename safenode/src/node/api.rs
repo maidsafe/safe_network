@@ -242,6 +242,7 @@ impl Node {
         match cmd {
             Cmd::StoreChunk(chunk) => {
                 debug!("That's a store chunk in for :{:?}", chunk.address().name());
+
                 // Create a Kademlia record for storage
                 let record = Record {
                     key: RecordKey::new(chunk.address().name()),
@@ -250,11 +251,13 @@ impl Node {
                     expires: None,
                 };
 
-                match self.network.regigster_as_provider_for_record(record).await {
+                match self.network.regigster_as_provider(record).await {
                     Ok(()) => CmdResponse::StoreChunk(Ok(())),
                     Err(err) => {
-                        error!("Failed to register chunk as provider: {err:?}");
-                        CmdResponse::StoreChunk(Err(ProtocolError::ProvideRecordNotSaved))
+                        error!("Failed to register node as chunk provider: {err:?}");
+                        CmdResponse::StoreChunk(Err(ProtocolError::RecordNotStored(
+                            *chunk.address().name(),
+                        )))
                     }
                 }
             }
