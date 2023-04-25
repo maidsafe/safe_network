@@ -12,8 +12,11 @@ mod error;
 
 pub(crate) use self::error::{Error, Result};
 
+use super::dbc_genesis::GENESIS_DBC;
+
 use crate::{
     domain::{
+        dbc_genesis::is_genesis_parent_tx,
         fees::{FeeCiphers, RequiredFee, RequiredFeeContent, SpendPriority, SpendQ},
         storage::{DbcAddress, SpendStorage},
         wallet::LocalWallet,
@@ -191,6 +194,11 @@ fn validate_parent_spends(
         .iter()
         .map(|s| s.spend.blinded_amount)
         .collect();
+
+    if is_genesis_parent_tx(parent_tx) && signed_spend.dbc_id() == &GENESIS_DBC.id {
+        return Ok(());
+    }
+
     // Here we check that the spend that is attempted, was created in a valid tx.
     let src_tx_validity = parent_tx.verify(&known_parent_blinded_amounts);
     if src_tx_validity.is_err() {

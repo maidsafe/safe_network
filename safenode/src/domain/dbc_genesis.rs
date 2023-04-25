@@ -64,6 +64,11 @@ lazy_static! {
     };
 }
 
+/// Return if provided DbcTransaction is genesis parent tx.
+pub(crate) fn is_genesis_parent_tx(parent_tx: &DbcTransaction) -> bool {
+    parent_tx == &GENESIS_DBC.src_tx
+}
+
 /// Returns a dbc with the requested number of tokens, for use by E2E test instances.
 pub async fn get_tokens_from_faucet(amount: Token, to: PublicAddress, client: &Client) -> Dbc {
     send(load_faucet_wallet(client).await, amount, to, client).await
