@@ -118,7 +118,7 @@ impl Transfers {
         }
 
         // 2. Try extract the fee paid for this spend, and validate it.
-        let paid_fee = self.validate_fee(parent_tx.as_ref(), fee_ciphers)?;
+        let paid_fee = self.validate_fee(&signed_spend.spend.dst_tx, fee_ciphers)?;
 
         // 3. Validate the spend itself.
         self.storage.validate(signed_spend.as_ref()).await?;
@@ -145,10 +145,10 @@ impl Transfers {
 
     fn validate_fee(
         &self,
-        parent_tx: &DbcTransaction,
+        dst_tx: &DbcTransaction,
         fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
     ) -> Result<Token> {
-        let fee_paid = decipher_fee(&self.node_wallet, parent_tx, self.node_id, fee_ciphers)?;
+        let fee_paid = decipher_fee(&self.node_wallet, dst_tx, self.node_id, fee_ciphers)?;
 
         let spend_q_snapshot = self.spend_queue.snapshot();
         let spend_q_stats = spend_q_snapshot.stats();
@@ -207,7 +207,7 @@ fn validate_parent_spends(
 #[cfg(not(feature = "data-network"))]
 fn decipher_fee(
     node_wallet: &LocalWallet,
-    parent_tx: &DbcTransaction,
+    dst_tx: &DbcTransaction,
     node_id: NodeId,
     fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
 ) -> Result<Token> {
@@ -218,7 +218,7 @@ fn decipher_fee(
     let (dbc_id, revealed_amount) = node_wallet
         .decrypt(fee_ciphers)
         .map_err(|e| Error::FeeCipherDecryptionFailed(e.to_string()))?;
-    let output_proof = match parent_tx
+    let output_proof = match dst_tx
         .outputs
         .iter()
         .find(|proof| proof.dbc_id() == &dbc_id)
