@@ -142,8 +142,7 @@ impl VerifyingClient for Client {
             // and thereby have us fail the check here
             // (we would have more than 1 spend in the BTreeSet), we must
             // look for a majority of the same responses, and ignore any other responses.
-            if ok_responses >= 1 {
-                //close_group_majority() {
+            if ok_responses >= close_group_majority() {
                 // Majority of nodes in the close group returned an Ok response.
                 use itertools::*;
                 if let Some(spend) = spends
