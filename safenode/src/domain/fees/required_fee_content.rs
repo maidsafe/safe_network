@@ -56,7 +56,6 @@ impl RequiredFeeContent {
     }
 
     /// Decrypts the amount using the `DerivedKey` of the `Dbc` to spend.
-    #[allow(clippy::result_large_err)]
     pub fn decrypt_amount(&self, derived_key: &DerivedKey) -> Result<Token> {
         let amount = RevealedAmount::try_from((derived_key, &self.amount_cipher))?;
         Ok(Token::from_nano(amount.value()))

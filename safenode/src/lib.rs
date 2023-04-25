@@ -38,6 +38,7 @@
     clippy::unwrap_used,
     clippy::unused_async
 )]
+#![allow(clippy::result_large_err)]
 
 #[macro_use]
 extern crate tracing;

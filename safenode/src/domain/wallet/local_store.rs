@@ -326,7 +326,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn deposit_adds_dbcs_that_belongs_to_the_wallet() -> Result<()> {
         // Bring in the necessary trait.
         use super::{DepositWallet, Wallet};
@@ -349,7 +348,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn deposit_does_not_add_dbcs_not_belonging_to_the_wallet() -> Result<()> {
         // Bring in the necessary traits.
         use super::{DepositWallet, Wallet};
@@ -421,7 +419,6 @@ mod tests {
     /// --------------------------------
 
     #[tokio::test]
-    #[allow(clippy::result_large_err)]
     async fn sending_decreases_balance() -> Result<()> {
         // Bring in the necessary traits.
         use super::{DepositWallet, SendWallet, Wallet};

@@ -143,7 +143,6 @@ impl Transfers {
         Ok(())
     }
 
-    #[allow(clippy::result_large_err)]
     fn validate_fee(
         &self,
         parent_tx: &DbcTransaction,
@@ -169,7 +168,6 @@ impl Transfers {
 
 /// The src_tx is the tx where the dbc to spend, was created.
 /// The signed_spend.dbc_id() shall exist among its outputs.
-#[allow(clippy::result_large_err)]
 fn validate_parent_spends(
     signed_spend: &SignedSpend,
     parent_tx: &DbcTransaction,
@@ -207,7 +205,6 @@ fn validate_parent_spends(
 }
 
 #[cfg(not(feature = "data-network"))]
-#[allow(clippy::result_large_err)]
 fn decipher_fee(
     node_wallet: &LocalWallet,
     parent_tx: &DbcTransaction,
