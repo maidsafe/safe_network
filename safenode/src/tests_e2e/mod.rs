@@ -25,7 +25,7 @@ use eyre::Result;
 #[tokio::test(flavor = "multi_thread")]
 async fn spend_is_stored_in_network() -> Result<()> {
     let first_wallet_dir = TempDir::new()?;
-    let first_wallet_balance = Token::from_nano(10_000);
+    let first_wallet_balance = Token::from_nano(1_000_000_000);
 
     let mut first_wallet = get_wallet(first_wallet_dir.path()).await;
     let client = get_client();
@@ -38,7 +38,7 @@ async fn spend_is_stored_in_network() -> Result<()> {
     assert_eq!(first_wallet.balance(), first_wallet_balance);
     println!("Tokens deposited to first wallet: {first_wallet_balance}.");
 
-    let second_wallet_balance = Token::from_nano(first_wallet_balance.as_nano() / 2);
+    let second_wallet_balance = Token::from_nano(first_wallet_balance.as_nano() / 10_000);
     println!("Transferring from first wallet to second wallet: {second_wallet_balance}.");
     let second_wallet_dir = TempDir::new()?;
     let mut second_wallet = get_wallet(second_wallet_dir.path()).await;

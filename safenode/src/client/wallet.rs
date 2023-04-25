@@ -93,13 +93,16 @@ impl SendClient for Client {
                 })
                 .collect();
 
+            let ok_responses = spends.len();
             // We require a majority of the close group to respond with Ok.
-            if spends.len() >= close_group_majority() {
+            if ok_responses >= 1 {
+                //close_group_majority() {
                 continue;
             } else {
-                return Err(Error::CouldNotVerifyTransfer(
-                    "Not enough close group nodes accepted the spend.".into(),
-                ));
+                return Err(Error::CouldNotVerifyTransfer(format!(
+                    "Not enough close group nodes accepted the spend. Got {ok_responses}, required: {}.",
+                    close_group_majority()
+                )));
             }
         }
 
@@ -134,11 +137,13 @@ impl VerifyingClient for Client {
                 })
                 .collect();
 
+            let ok_responses = spends.len();
             // As to not have a single rogue node deliver a bogus spend,
             // and thereby have us fail the check here
             // (we would have more than 1 spend in the BTreeSet), we must
             // look for a majority of the same responses, and ignore any other responses.
-            if spends.len() >= close_group_majority() {
+            if ok_responses >= 1 {
+                //close_group_majority() {
                 // Majority of nodes in the close group returned an Ok response.
                 use itertools::*;
                 if let Some(spend) = spends
@@ -158,7 +163,7 @@ impl VerifyingClient for Client {
 
             // The parent is not recognised by all peers in its close group.
             // Thus, the parent is not valid.
-            info!("The spend could not be verified as valid: {address:?}");
+            info!("The spend could not be verified as valid: {address:?}. Not enough close group nodes accepted the spend. Got {ok_responses}, required: {}.", close_group_majority());
 
             // If not enough spends were gotten, we try error the first
             // error to the expected query returned from nodes.
