@@ -369,6 +369,35 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    #[allow(clippy::result_large_err)]
+    fn deposit_is_idempotent() -> Result<()> {
+        // Bring in the necessary trait.
+        use super::{DepositWallet, Wallet};
+
+        let key = MainKey::random();
+        let genesis_0 = create_first_dbc_from_key(&key).expect("Genesis creation to succeed.");
+        let genesis_1 = create_first_dbc_from_key(&key).expect("Genesis creation to succeed.");
+        let dir = create_temp_dir();
+
+        let mut deposit_only = LocalWallet {
+            key,
+            wallet: KeyLessWallet::new(),
+            wallet_dir: dir.path().to_path_buf(),
+        };
+
+        deposit_only.deposit(vec![genesis_0.clone()]);
+        assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
+
+        deposit_only.deposit(vec![genesis_0]);
+        assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
+
+        deposit_only.deposit(vec![genesis_1]);
+        assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
+
+        Ok(())
+    }
+
     #[tokio::test]
     async fn deposit_wallet_to_and_from_file() -> Result<()> {
         // Bring in the necessary traits.
