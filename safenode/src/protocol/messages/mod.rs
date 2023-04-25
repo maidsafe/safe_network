@@ -111,6 +111,9 @@ impl std::fmt::Display for Response {
             Response::Query(QueryResponse::GetDbcSpend(Ok(spend))) => {
                 write!(f, "GetDbcSpend(Ok({:?}))", spend.dbc_id())
             }
+            Response::Query(QueryResponse::GetFees(Ok((node_id, _)))) => {
+                write!(f, "GetFees(Ok({node_id:?}))")
+            }
             _ => write!(f, "{:?}", self),
         }
     }

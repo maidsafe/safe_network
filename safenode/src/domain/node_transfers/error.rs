@@ -6,9 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::domain::{fees::Error as FeeError, storage::Error as StorageError};
+use crate::{
+    domain::{fees::Error as FeeError, storage::Error as StorageError},
+    node::NodeId,
+};
 
-use sn_dbc::{Error as DbcError, Hash, SignedSpend, Token};
+use sn_dbc::{DbcId, Error as DbcError, Hash, SignedSpend, Token};
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -21,7 +24,9 @@ pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Error {
     #[error("The transfer fee is missing.")]
-    MissingFee,
+    MissingFee((NodeId, DbcId)),
+    #[error("The transfer feeciphers are missing.")]
+    MissingFeeCiphers(NodeId),
     #[error("Invalid fee blinded amount.")]
     InvalidFeeBlindedAmount,
     #[error("Too low amount for the transfer fee: {paid}. Min required: {required}.")]
