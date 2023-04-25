@@ -61,7 +61,6 @@ mod tests {
     use sn_dbc::{MainKey, Token};
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn required_fee_can_be_read_by_client() -> Result<()> {
         let main_key = MainKey::random();
         let derived_reward_key = main_key.random_derived_key(&mut rand::thread_rng());

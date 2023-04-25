@@ -34,7 +34,6 @@ impl RequiredFee {
     }
 
     /// Verifies that reward_address_sig is correct.
-    #[allow(clippy::result_large_err)]
     pub fn verify(&self) -> Result<()> {
         let valid = self
             .content

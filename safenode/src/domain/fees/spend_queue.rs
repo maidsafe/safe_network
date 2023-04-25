@@ -307,7 +307,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn spendq_snapshot_is_sorted_highest_first() -> Result<()> {
         let mut spendq = SpendQ::<usize>::with_fee(0);
 
@@ -334,7 +333,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn zero_init_spendq_default_stats_values() -> Result<()> {
         let spendq = SpendQ::<usize>::with_fee(0);
 
@@ -353,7 +351,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn spendq_instantiated_with_fee_gives_initial_value_in_stats() -> Result<()> {
         // We can pass in an initial value to spend queue, which will reflect in stats
         // while we haven't had any values pushed onto the spend queue.
@@ -375,7 +372,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn pushing_an_item_sets_stats() -> Result<()> {
         // We use an initial value.
         let initial_value = 42;
@@ -416,7 +412,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn when_pushed_to_empty_popped_item_is_preserved_in_stats_until_new_item_is_pushed(
     ) -> Result<()> {
         let mut spendq = SpendQ::<usize>::with_fee(0);
@@ -495,7 +490,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn last_three_item_are_preserved_in_stats_until_new_item_is_pushed() -> Result<()> {
         let mut spendq = SpendQ::<usize>::with_fee(0);
 

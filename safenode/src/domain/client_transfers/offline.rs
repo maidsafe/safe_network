@@ -29,7 +29,6 @@ use std::collections::BTreeMap;
 /// (Disabled for now: Transfer fees will be added if not in data-network.)
 /// (Disabled for now: DbcReason, can be added later.)
 #[allow(unused)]
-#[allow(clippy::result_large_err)]
 pub(crate) fn create_transfer(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
     recipients: Vec<(Token, DbcIdSource)>,
@@ -42,7 +41,6 @@ pub(crate) fn create_transfer(
 }
 
 /// Select the necessary number of dbcs from those that we were passed.
-#[allow(clippy::result_large_err)]
 fn select_inputs(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
     recipients: Vec<(Token, DbcIdSource)>,
@@ -113,7 +111,6 @@ fn select_inputs(
 }
 
 // Make sure total input amount gathered with input DBCs are enough for the output amount
-#[allow(clippy::result_large_err)]
 fn verify_amounts(total_input_amount: Token, total_output_amount: Token) -> Result<()> {
     if total_output_amount > total_input_amount {
         return Err(Error::NotEnoughBalance(total_input_amount.to_string()));
@@ -127,7 +124,6 @@ fn verify_amounts(total_input_amount: Token, total_output_amount: Token) -> Resu
 /// To do that, the `signed_spends` of each new dbc, has to be uploaded
 /// to the network. When those same signed spends can be retrieved from
 /// enough peers in the network, the transaction will be completed.
-#[allow(clippy::result_large_err)]
 fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     let Inputs {
         dbcs_to_spend,

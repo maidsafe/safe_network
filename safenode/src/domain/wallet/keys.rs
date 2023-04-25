@@ -20,14 +20,12 @@ const MAIN_KEY_FILENAME: &str = "main_key";
 const PUBLIC_ADDRESS_FILENAME: &str = "public_address";
 
 /// Parse a public address from a hex-encoded string.
-#[allow(clippy::result_large_err)]
 pub fn parse_public_address<T: AsRef<[u8]>>(hex: T) -> Result<PublicAddress> {
     let public_key = bls_public_from_hex(hex)?;
     Ok(PublicAddress::new(public_key))
 }
 
 /// Writes the public address and main key (hex-encoded) to different locations at disk.
-#[allow(clippy::result_large_err)]
 pub(super) async fn store_new_keypair(wallet_dir: &Path, main_key: &MainKey) -> Result<()> {
     let secret_key_path = wallet_dir.join(MAIN_KEY_FILENAME);
     let public_key_path = wallet_dir.join(PUBLIC_ADDRESS_FILENAME);
@@ -55,7 +53,6 @@ pub(super) async fn get_main_key(wallet_dir: &Path) -> Result<Option<MainKey>> {
 }
 
 /// Construct a BLS secret key from a hex-encoded string.
-#[allow(clippy::result_large_err)]
 fn bls_secret_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::SecretKey> {
     let bytes = decode(hex).map_err(|_| Error::FailedToDecodeHexToKey)?;
     let bytes_fixed_len: [u8; bls::SK_SIZE] = bytes
@@ -67,7 +64,6 @@ fn bls_secret_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::SecretKey> {
 }
 
 /// Construct a BLS public key from a hex-encoded string.
-#[allow(clippy::result_large_err)]
 fn bls_public_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::PublicKey> {
     let bytes = decode(hex).map_err(|_| Error::FailedToDecodeHexToKey)?;
     let bytes_fixed_len: [u8; bls::PK_SIZE] = bytes
