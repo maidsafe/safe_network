@@ -300,6 +300,11 @@ jobs:
         run: cargo build --release --bins
         timeout-minutes: 30
 
+
+      - name: Confirm build files for upload
+        shell: bash
+        run: ls ./target/release
+
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 1 --node-path ./target/release/safenode
         # Only run on non-PR events
