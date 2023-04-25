@@ -7,19 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    domain::storage::Chunk,
     network::error::Result,
-    protocol::{
-        error::Error as ProtocolError,
-        messages::QueryResponse::GetChunk,
-        messages::{QueryResponse, Request, Response},
-    },
+    protocol::messages::{QueryResponse, Request, Response},
 };
 
 use super::{error::Error, SwarmDriver};
-use bytes::Bytes;
 use libp2p::{
-    kad::{store::RecordStore, Record, RecordKey},
+    kad::{Record, RecordKey},
     multiaddr::Protocol,
     request_response::ResponseChannel,
     Multiaddr, PeerId,
@@ -54,8 +48,8 @@ pub enum SwarmCmd {
         channel: ResponseChannel<Response>,
     },
     GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
-    /// Register's data in the Kad Provider system
-    RegisterProvidedData {
+    /// Put data to the Kad network as record
+    PutProvidedDataAsRecord {
         record: Record,
     },
     /// Get data from the kademlia store
@@ -78,31 +72,11 @@ impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
             SwarmCmd::GetData { key, sender } => {
-                match self.swarm.behaviour_mut().kademlia.store_mut().get(&key) {
-                    Some(data) => {
-                        sender
-                            .send(GetChunk(Ok(Chunk::new(Bytes::from(data.value.clone())))))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
-                    }
-                    None => {
-                        // empty response here just to test out
-                        sender
-                            .send(GetChunk(Err(ProtocolError::RecordNotFound)))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
-
-                        warn!("No data found in kademlia store for key: {:?}", key);
-                    }
-                }
+                let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
+                let _ = self.pending_query.insert(query_id, sender);
             }
-            SwarmCmd::RegisterProvidedData { record } => {
-                let _ = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .start_providing(record.key.clone())?;
-
-                // TODO: Does Kad automatically remove irrelevant records?
-                // Or do we need to manage this manually as we move about the network?
+            SwarmCmd::PutProvidedDataAsRecord { record } => {
+                // TODO: when do we remove records. Do we need to?
                 let _ = self
                     .swarm
                     .behaviour_mut()

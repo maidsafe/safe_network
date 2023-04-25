@@ -71,6 +71,7 @@ pub struct SwarmDriver {
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
+    pending_query: HashMap<QueryId, oneshot::Sender<QueryResponse>>,
 }
 
 impl SwarmDriver {
@@ -107,8 +108,8 @@ impl SwarmDriver {
         // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
         let _ = cfg.disjoint_query_paths(true);
 
-        // Provider records never expire
-        let _ = cfg.set_provider_record_ttl(None);
+        // Records never expire
+        let _ = cfg.set_record_ttl(None);
 
         let request_response = request_response::Behaviour::new(
             MsgCodec(),
@@ -206,6 +207,7 @@ impl SwarmDriver {
             pending_dial: Default::default(),
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
+            pending_query: Default::default(),
         };
 
         Ok((
@@ -344,9 +346,10 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
-    /// Register self as Provider for Data
-    pub async fn regigster_as_provider(&self, record: Record) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::RegisterProvidedData { record })
+    /// Put data to KAD network as record
+    pub async fn put_data_as_record(&self, record: Record) -> Result<()> {
+        debug!("Putting data as record, for '{:?}'", record.key);
+        self.send_swarm_cmd(SwarmCmd::PutProvidedDataAsRecord { record })
             .await
     }
 
