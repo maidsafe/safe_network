@@ -162,8 +162,8 @@ impl SwarmDriver {
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
 
-        // Configure the memory store to be able to hold large records
-        // than by default
+        // Configures the memory store to be able to hold larger
+        // records than by default
         let memory_store_cfg = MemoryStoreConfig {
             max_value_bytes: 1024 * 1024,
             // What is the difference between these two?
@@ -336,7 +336,7 @@ impl Network {
     /// Get `Key` from our Storage
     pub async fn get_provided_data(&self, key: RecordKey) -> Result<QueryResponse> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetProvidedData { key, sender })
+        self.send_swarm_cmd(SwarmCmd::GetData { key, sender })
             .await?;
 
         receiver
@@ -345,8 +345,7 @@ impl Network {
     }
 
     /// Register self as Provider for Data
-    pub async fn regigster_as_provider_for_record(&self, record: Record) -> Result<()> {
-        debug!("Registering as provider,,, for '{:?}'", record.key);
+    pub async fn regigster_as_provider(&self, record: Record) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::RegisterProvidedData { record })
             .await
     }
