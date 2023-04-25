@@ -8,7 +8,7 @@
 
 use sn_dbc::{
     rng, Dbc, DbcTransaction, Error as DbcError, Hash, InputHistory, MainKey, RevealedAmount,
-    RevealedInput, Token, TransactionBuilder,
+    RevealedInput, Token, TransactionBuilder, DbcIdSource,
 };
 
 use std::fmt::Debug;
@@ -54,14 +54,19 @@ pub fn create_genesis() -> GenesisResult<Dbc> {
 }
 
 /// Create a first DBC given any key (i.e. not specifically the hard coded genesis key).
+/// The derivation index and blinding factor are hard coded to ensure deterministic creation.
 /// This is useful in tests.
 #[allow(clippy::result_large_err)]
 pub(crate) fn create_first_dbc_from_key(first_dbc_key: &MainKey) -> GenesisResult<Dbc> {
-    let rng = &mut rng::thread_rng();
-
-    let dbc_id_src = first_dbc_key.random_dbc_id_src(rng);
+    let dbc_id_src = DbcIdSource {
+        public_address: first_dbc_key.public_address(),
+        derivation_index: [0u8; 32],
+    };
     let derived_key = first_dbc_key.derive_key(&dbc_id_src.derivation_index);
-    let revealed_amount = RevealedAmount::from_amount(GENESIS_DBC_AMOUNT, rng);
+    let revealed_amount = RevealedAmount {
+        value: GENESIS_DBC_AMOUNT,
+        blinding_factor: sn_dbc::BlindingFactor::from_bits([0u8; 32]),
+    };
 
     // Use the same key as the input and output of Genesis Tx.
     // The src tx is empty as this is the first DBC.
