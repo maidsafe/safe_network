@@ -288,15 +288,15 @@ jobs:
 
       - name: install ripgrep mac
         run: brew install ripgrep
-         && matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-latest'
 
       - name: install ripgrep windows
         run: choco install ripgrep
-         && matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-latest'
 
       - name: Build sn bins
         # Only run on non-PR events
-        
+  
         run: cargo build --release --bins
         timeout-minutes: 30
 
