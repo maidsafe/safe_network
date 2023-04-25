@@ -370,7 +370,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn deposit_is_idempotent() -> Result<()> {
         // Bring in the necessary trait.
         use super::{DepositWallet, Wallet};
