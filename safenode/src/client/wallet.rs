@@ -81,26 +81,26 @@ impl SendClient for Client {
                 .map_err(|err| Error::CouldNotSendTokens(err.to_string()))?;
 
             // Get all Ok results of the expected response type `Spend`.
-            let spends: Vec<_> = responses
+            let ok_responses: Vec<_> = responses
                 .iter()
                 .flatten()
                 .flat_map(|resp| {
                     if let Response::Cmd(CmdResponse::Spend(Ok(()))) = resp {
                         Some(())
                     } else {
+                        println!("Spend error {resp:?}.");
                         None
                     }
                 })
                 .collect();
 
-            let ok_responses = spends.len();
             // We require a majority of the close group to respond with Ok.
-            if ok_responses >= 1 {
-                //close_group_majority() {
+            if ok_responses.len() >= close_group_majority() {
                 continue;
             } else {
                 return Err(Error::CouldNotVerifyTransfer(format!(
-                    "Not enough close group nodes accepted the spend. Got {ok_responses}, required: {}.",
+                    "Not enough close group nodes accepted the spend. Got {}, required: {}.",
+                    ok_responses.len(),
                     close_group_majority()
                 )));
             }
