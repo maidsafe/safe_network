@@ -51,3 +51,19 @@ impl Query {
         }
     }
 }
+
+impl std::fmt::Display for Query {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Query::GetChunk(address) => {
+                write!(f, "Query::GetChunk({address:?})")
+            }
+            Query::Register(query) => {
+                write!(f, "Query::Register({:?})", query.dst()) // more qualification needed
+            }
+            Query::Spend(query) => {
+                write!(f, "Query::Spend({query:?})")
+            }
+        }
+    }
+}
