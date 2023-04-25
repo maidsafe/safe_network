@@ -12,9 +12,12 @@ use super::{
     SwarmDriver,
 };
 
-use crate::protocol::messages::{Request, Response};
+use crate::{
+    domain::storage::Chunk,
+    protocol::messages::{QueryResponse, Request, Response},
+};
 use libp2p::{
-    kad::{store::MemoryStore, Kademlia, KademliaEvent, QueryResult, K_VALUE},
+    kad::{store::MemoryStore, GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     mdns,
     multiaddr::Protocol,
     request_response::{self, ResponseChannel},
@@ -118,6 +121,31 @@ impl SwarmDriver {
                         let _ = self
                             .pending_get_closest_peers
                             .insert(*id, (sender, current_closest));
+                    }
+                }
+                KademliaEvent::OutboundQueryProgressed {
+                    id,
+                    result: QueryResult::GetRecord(result),
+                    stats,
+                    step,
+                } => {
+                    trace!("Record query task {id:?} returned with result, {stats:?} - {step:?}");
+                    if let Ok(GetRecordOk::FoundRecord(peer_record)) = result {
+                        trace!(
+                            "Query {id:?} returned with record {:?} from peer {:?}",
+                            peer_record.record.key,
+                            peer_record.peer
+                        );
+                        if let Some(sender) = self.pending_query.remove(id) {
+                            sender
+                                .send(QueryResponse::GetChunk(Ok(Chunk::new(
+                                    peer_record.record.value.clone().into(),
+                                ))))
+                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        }
+                    } else {
+                        warn!("Query {id:?} failed to get record with result {result:?}");
+                        // TODO: send an error response back?
                     }
                 }
                 KademliaEvent::RoutingUpdated { is_new_peer, .. } => {
