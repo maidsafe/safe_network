@@ -104,3 +104,14 @@ impl ReplicatedData {
         }
     }
 }
+
+impl std::fmt::Display for Response {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Response::Query(QueryResponse::GetDbcSpend(Ok(spend))) => {
+                write!(f, "GetDbcSpend(Ok({:?}))", spend.dbc_id())
+            }
+            _ => write!(f, "{:?}", self),
+        }
+    }
+}

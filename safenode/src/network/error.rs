@@ -35,7 +35,7 @@ pub enum Error {
     #[error("Response received for a request not found in our local tracking map: {0}")]
     ReceivedResponseDropped(RequestId),
 
-    #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0:?}")]
+    #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0}")]
     OutgoingResponseDropped(Response),
 
     #[error("I/O error: {0}")]
