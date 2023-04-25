@@ -38,3 +38,16 @@ impl SpendQuery {
         }
     }
 }
+
+impl std::fmt::Display for SpendQuery {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::GetFees { dbc_id, priority } => {
+                write!(f, "SpendQuery::GetFees({dbc_id:?}, {priority:?})")
+            }
+            Self::GetDbcSpend(address) => {
+                write!(f, "SpendQuery::GetDbcSpend({:?})", address)
+            }
+        }
+    }
+}
