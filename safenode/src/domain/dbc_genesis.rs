@@ -296,8 +296,8 @@ async fn create_faucet_wallet() -> LocalWallet {
         .expect("Faucet wallet shall be created successfully.")
 }
 
-// We need deterministic and fix path for the faucet wallet.
-// Otherwise the test instances will not be able to find the same faucet instance.
+// We need deterministic and fix path for the genesis wallet.
+// Otherwise the test instances will not be able to find the same genesis instance.
 async fn get_genesis_dir() -> PathBuf {
     let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
     home_dirs.push(".safe");
