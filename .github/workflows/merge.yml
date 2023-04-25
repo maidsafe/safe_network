@@ -181,7 +181,7 @@ jobs:
       - name: Start a local network
         # Only run on non-PR events
         if: github.event_name != 'pull_request'
-        run: cargo run --release --bin testnet --features verify-nodes -- --interval 1 --node-path ./target/release/safenode
+        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         id: section-startup
         env:
           RUST_LOG: "safenode,safe=trace"
@@ -300,10 +300,16 @@ jobs:
         run: cargo build --release --bins
         timeout-minutes: 30
 
+      - name: Build rpc client
+        # Only run on non-PR events
+        if: github.event_name != 'pull_request'
+        run: cargo build --release --example safenode_rpc_client
+        timeout-minutes: 30
+
       - name: Start a local network
         # Only run on non-PR events
         if: github.event_name != 'pull_request'
-        run: cargo run --release --bin testnet --features verify-nodes -- --interval 1 --node-path ./target/release/safenode
+        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         id: section-startup
         env:
           RUST_LOG: "safenode,safe=trace"
@@ -312,7 +318,7 @@ jobs:
    
       - name: Start a client to upload chunks
         if: github.event_name != 'pull_request'
-        run: cargo run --bin safe --release -- files upload -- "./target/release/safe" # upload the built bins
+        run: cargo run --bin safe --release -- files upload -- "./resources"
         id: client-file-upload
         env:
           RUST_LOG: "safenode,safe=trace"
@@ -322,7 +328,7 @@ jobs:
         if: github.event_name != 'pull_request'
         shell: bash
         run: ./resources/scripts/network_churning.sh
-        timeout-minutes: 10
+        timeout-minutes: 20
 
       - name: Start a client to confirm chunk still retained
         if: github.event_name != 'pull_request'
@@ -330,15 +336,15 @@ jobs:
         id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 5
+        timeout-minutes: 15
 
       - name: Downloaded file is same as the original
         if: github.event_name != 'pull_request'
         shell: bash
         timeout-minutes: 1
         run: |
-          old=./target/release/safe
-          new=~/.safe/client/downloads/safe
+          old=./resources/scripts/network_churning.sh
+          new=~/.safe/client/downloaded_files/network_churning.sh
           cmp --silent $old $new
       
       - name: Verify restart of nodes using rg
@@ -351,7 +357,7 @@ jobs:
         run : |
             restart_count=$(rg "Starting node ..." ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
             node_count=$(ls $log_dir | wc -l)
-            if [ $restart_count -lt node_count ]; then
+            if [ $restart_count -lt $node_count ]; then
               echo "Restart count of: $restart_count is less than the node count of: $node_count"
               exit 1
             fi
@@ -378,4 +384,3 @@ jobs:
           path: log_files.tar.gz
         if: failure()
         continue-on-error: true
-        

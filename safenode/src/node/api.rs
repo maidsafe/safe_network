@@ -251,11 +251,11 @@ impl Node {
                     expires: None,
                 };
 
-                match self.network.regigster_as_provider(record).await {
+                match self.network.put_data_as_record(record).await {
                     Ok(()) => CmdResponse::StoreChunk(Ok(())),
                     Err(err) => {
                         error!("Failed to register node as chunk provider: {err:?}");
-                        CmdResponse::StoreChunk(Err(ProtocolError::RecordNotStored(
+                        CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(
                             *chunk.address().name(),
                         )))
                     }
