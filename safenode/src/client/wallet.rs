@@ -88,6 +88,7 @@ impl SendClient for Client {
                     if let Response::Cmd(CmdResponse::Spend(Ok(()))) = resp {
                         Some(())
                     } else {
+                        println!("Spend error {resp:?}.");
                         None
                     }
                 })
