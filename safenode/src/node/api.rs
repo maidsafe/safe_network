@@ -14,7 +14,6 @@ use super::{
 
 use crate::{
     domain::{
-        dbc_genesis::{create_genesis, Error as GenesisError},
         node_transfers::{Error as TransferError, Transfers},
         storage::{
             dbc_address, register::User, DbcAddress, Error as StorageError, RegisterStorage,
@@ -94,20 +93,10 @@ impl Node {
             .await
             .map_err(|e| Error::CouldNotLoadWallet(e.to_string()))?;
 
-        let genesis = create_genesis()?;
-        let genesis_spend =
-            genesis
-                .signed_spends
-                .first()
-                .ok_or(Error::Genesis(GenesisError::GenesisDbcError(
-                    "No genesis signed spend!".to_string(),
-                )))?;
-
         let mut node = Self {
             network: network.clone(),
             registers: RegisterStorage::new(root_dir),
-            transfers: Transfers::new_with_genesis(root_dir, node_id, node_wallet, genesis_spend)
-                .await?,
+            transfers: Transfers::new(root_dir, node_id, node_wallet),
             events_channel: node_events_channel.clone(),
             initial_peers,
         };
