@@ -6,11 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod setup;
+use std::path::Path;
 
-use crate::domain::{
-    dbc_genesis::{get_tokens_from_faucet, send},
-    wallet::{DepositWallet, VerifyingClient, Wallet},
+use crate::{
+    client::Client,
+    domain::{
+        dbc_genesis::{get_tokens_from_faucet, send},
+        wallet::{DepositWallet, LocalWallet, VerifyingClient, Wallet},
+    },
 };
 
 use sn_dbc::Token;
@@ -24,8 +27,8 @@ async fn spend_is_stored_in_network() -> Result<()> {
     let first_wallet_dir = TempDir::new()?;
     let first_wallet_balance = Token::from_nano(10_000);
 
-    let mut first_wallet = setup::get_wallet(first_wallet_dir.path()).await;
-    let client = setup::get_client();
+    let mut first_wallet = get_wallet(first_wallet_dir.path()).await;
+    let client = get_client();
     println!("Getting tokens from the faucet...");
     let tokens =
         get_tokens_from_faucet(first_wallet_balance, first_wallet.address(), &client).await;
@@ -38,7 +41,7 @@ async fn spend_is_stored_in_network() -> Result<()> {
     let second_wallet_balance = Token::from_nano(first_wallet_balance.as_nano() / 2);
     println!("Transferring from first wallet to second wallet: {second_wallet_balance}.");
     let second_wallet_dir = TempDir::new()?;
-    let mut second_wallet = setup::get_wallet(second_wallet_dir.path()).await;
+    let mut second_wallet = get_wallet(second_wallet_dir.path()).await;
 
     assert_eq!(second_wallet.balance(), Token::zero());
 
@@ -59,8 +62,19 @@ async fn spend_is_stored_in_network() -> Result<()> {
     // so it will have less than half the amount left, but we can't
     // know how much exactly, so we just check that it has less than
     // the original amount.
-    let first_wallet = setup::get_wallet(first_wallet_dir.path()).await;
+    let first_wallet = get_wallet(first_wallet_dir.path()).await;
     assert!(second_wallet_balance.as_nano() > first_wallet.balance().as_nano());
 
     Ok(())
+}
+
+fn get_client() -> Client {
+    let secret_key = bls::SecretKey::random();
+    Client::new(secret_key).expect("Client shall be successfully created.")
+}
+
+async fn get_wallet(root_dir: &Path) -> LocalWallet {
+    LocalWallet::load_from(root_dir)
+        .await
+        .expect("Wallet shall be successfully created.")
 }
