@@ -42,7 +42,6 @@ impl Event {
     /// Create a new [`Event::DoubleSpendAttempted`] event.
     /// It is validated so that only two spends with same id
     /// can be used to create this event.
-    #[allow(clippy::result_large_err)]
     pub fn double_spend_attempt(a: Box<SignedSpend>, b: Box<SignedSpend>) -> Result<Self> {
         if a.dbc_id() == b.dbc_id() {
             Ok(Event::DoubleSpendAttempted(a, b))

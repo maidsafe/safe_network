@@ -50,7 +50,6 @@ pub enum Error {
 /// Create the genesis DBC.
 /// The genesis DBC is the first DBC in the network. It is created without
 /// a source transaction, as there was nothing before it.
-#[allow(clippy::result_large_err)]
 pub(crate) fn create_genesis() -> GenesisResult<Dbc> {
     create_first_dbc_from_key(&genesis_key())
 }
@@ -174,7 +173,6 @@ async fn create_genesis_wallet() -> LocalWallet {
 /// Create a first DBC given any key (i.e. not specifically the hard coded genesis key).
 /// The derivation index and blinding factor are hard coded to ensure deterministic creation.
 /// This is useful in tests.
-#[allow(clippy::result_large_err)]
 pub(crate) fn create_first_dbc_from_key(first_dbc_key: &MainKey) -> GenesisResult<Dbc> {
     let dbc_id_src = DbcIdSource {
         public_address: first_dbc_key.public_address(),

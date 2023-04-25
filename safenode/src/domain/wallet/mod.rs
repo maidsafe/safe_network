@@ -111,7 +111,6 @@ pub trait SigningWallet {
     fn sign(&self, msg: &[u8]) -> bls::Signature;
     /// Decrypts the given fee ciphers.
     /// TODO: Referencing fee ciphers, dbc id and revealed amount here is not ideal.
-    #[allow(clippy::result_large_err)]
     fn decrypt(&self, fee_ciphers: &FeeCiphers) -> Result<(DbcId, RevealedAmount)>;
 }
 

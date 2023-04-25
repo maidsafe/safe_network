@@ -42,7 +42,6 @@ impl FeeCiphers {
     /// Decrypts the derivation index cipher using the reward `MainKey`, then gets the `DerivedKey`
     /// that was used to decrypt the amount cipher, giving the `RevealedAmount` containing amount and blinding factor.
     /// Returns the `RevealedAmount`, and the DbcId corresponding to the `DerivedKey`.
-    #[allow(clippy::result_large_err)]
     pub fn decrypt(&self, node_reward_key: &MainKey) -> Result<(DbcId, RevealedAmount)> {
         let derivation_index = self.decrypt_derivation_index(node_reward_key)?;
         let derived_key = node_reward_key.derive_key(&derivation_index);
@@ -55,7 +54,6 @@ impl FeeCiphers {
 
     /// The derivation index is encrypted to the Node `PublicAddress` for rewards.
     /// The `DerivedKey` which can be derived from the Node reward `MainKey` using that index, is then used to decrypt the amount cihper.
-    #[allow(clippy::result_large_err)]
     fn decrypt_derivation_index(&self, node_reward_key: &MainKey) -> Result<DerivationIndex> {
         let bytes = node_reward_key.decrypt_index(&self.derivation_index)?;
 
