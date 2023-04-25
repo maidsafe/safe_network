@@ -57,3 +57,13 @@ impl DataAddress {
         Self::Spend(DbcAddress::new(dbc_name(&dbc_id)))
     }
 }
+
+impl std::fmt::Display for DataAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DataAddress::Chunk(addr) => write!(f, "{addr:?}"),
+            DataAddress::Register(addr) => write!(f, "{addr:?}"),
+            DataAddress::Spend(addr) => write!(f, "{addr:?}"),
+        }
+    }
+}
