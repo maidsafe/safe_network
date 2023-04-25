@@ -106,7 +106,9 @@ pub async fn load_faucet_wallet(client: &Client) -> LocalWallet {
     // Transfer to faucet. We will transfer almost all of the genesis wallet's
     // balance to the faucet, only leaving enough to pay for transfer fees.
 
-    let faucet_balance = Token::from_nano(genesis_wallet.balance().as_nano() - 10_000);
+    let initial_fee_margin = 500_000;
+    let faucet_balance = Token::from_nano(genesis_wallet.balance().as_nano() - initial_fee_margin);
+    println!("Sending {faucet_balance} from genesis to faucet wallet..");
     let tokens = send(
         genesis_wallet,
         faucet_balance,
