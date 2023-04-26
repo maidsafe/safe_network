@@ -19,6 +19,8 @@ use std::path::Path;
 
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
+    /// Print the address of the wallet.
+    Address,
     /// Deposit `Dbc`s to the local wallet.
     /// Tries to load any `Dbc`s from the `received_dbcs`
     /// path in the wallet dir, and deposit it to the wallet.
@@ -39,9 +41,17 @@ pub enum WalletCmds {
 
 pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Path) -> Result<()> {
     match cmds {
+        WalletCmds::Address => address(root_dir).await?,
         WalletCmds::Deposit => deposit(root_dir).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
     }
+    Ok(())
+}
+
+async fn address(root_dir: &Path) -> Result<()> {
+    let wallet = LocalWallet::load_from(root_dir).await?;
+    let address_hex = hex::encode(wallet.address().to_bytes());
+    println!("{address_hex}");
     Ok(())
 }
 
