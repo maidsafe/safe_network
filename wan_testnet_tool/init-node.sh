@@ -38,8 +38,7 @@ fi
 
 peers="$4"
 if [[ -z "$peers" ]]; then
-  echo "A node peer must be passed to initialize the node."
-  exit 1
+  echo "No peer supoplied, this must be the first node"
 fi
 
 echo "PEERS PASSED:::: $peers"
@@ -100,14 +99,24 @@ function run_node() {
   # export OTEL_EXPORTER_OTLP_ENDPOINT="${otlp_collector_endpoint}"
   # export TOKIO_CONSOLE_BIND="${bind_ip_address}:6669",
   
-  
-    node_cmd=$(printf '%s' \
+  if [[ -z "$peers" ]]; then
+    echo "supplied peers var is $peers"
+
+     node_cmd=$(printf '%s' \
       "heaptrack ./safenode " \
-      # "--peer $peers" \
+      "--peer $peers" \
       "--root-dir ~/node_data " \
       "--log-dir ~/logs " \
       "$log_level" \
     )
+  else
+    node_cmd=$(printf '%s' \
+      "heaptrack ./safenode " \
+      "--root-dir ~/node_data " \
+      "--log-dir ~/logs " \
+      "$log_level" \
+    )
+  fi
     echo "Launching node with: $node_cmd"
     nohup sh -c "$node_cmd" &
     sleep 5
