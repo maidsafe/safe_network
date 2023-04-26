@@ -15,7 +15,7 @@ path = "src/bin/safe/mod.rs"
 
 [[bin]]
 name = "faucet"
-path = "src/bin/faucet/mod.rs"
+path = "src/bin/faucet.rs"
 
 [dependencies]
 async-trait = "0.1"
