@@ -28,6 +28,25 @@ name of `file_names_%Y-%m-%d_%H-%M-%S.txt` (i.e. unique by date and time of uplo
 When calling `files download`, the `uploaded_files` dir will be searched for documents containing the names of uploaded files.
 If you don't wish to download the same files multiple times, remove the text documents after the first download.
 
+## Token transfers
+
+Start a local network as described above.
+
+First we need to claim the genesis, which means all available supply is sent to a faucet wallet located in the `$HOME/.safe/test_faucet` path.
+Thereafter we can ask the faucet to send tokens to any address we specify.
+To get the address of your wallet, just call the address cmd. It will create the wallet if it doesn't exist.
+
+- Claim genesis
+`cargo run --bin faucet --release -- faucet claim-genesis`
+
+- Get your wallet address
+`cargo run --bin safe --release -- wallet address`
+
+- Send tokens from the faucet to your wallet
+`cargo run --bin faucet --release -- faucet send [amount] [address]`
+
+Please note that this feature is still unstable and most likely won't work yet.
+
 ## Using example app which exercises the Register APIs
 
 You can run the `registers` example client app from multiple consoles simultaneously,
