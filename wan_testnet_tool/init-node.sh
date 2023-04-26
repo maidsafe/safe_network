@@ -38,7 +38,7 @@ fi
 
 peers="$4"
 if [[ -z "$peers" ]]; then
-  echo "No peer supoplied, this must be the first node"
+  echo "No peer supplied, this must be the first node"
 fi
 
 echo "PEERS PASSED:::: $peers"
@@ -99,7 +99,8 @@ function run_node() {
   # export OTEL_EXPORTER_OTLP_ENDPOINT="${otlp_collector_endpoint}"
   # export TOKIO_CONSOLE_BIND="${bind_ip_address}:6669",
   
-  if [[ -z "$peers" ]]; then
+  # peers exists and has length > 0
+  if [[ -n "$peers" ]]; then
     echo "supplied peers var is $peers"
 
      node_cmd=$(printf '%s' \
