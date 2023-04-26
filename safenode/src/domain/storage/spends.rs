@@ -246,8 +246,12 @@ impl SpendStorage {
         match read(file_path).await {
             Ok(bytes) => {
                 let (a_spend, b_spend): (SignedSpend, SignedSpend) = deserialize(&bytes)?;
-                // They should have the same dbc id, so we can use either.
-                // TODO: Or should we check both? What if they are different?
+                if a_spend.dbc_id() != b_spend.dbc_id() {
+                    return Err(Error::NotADoubleSpendAttempt {
+                        one: Box::new(a_spend),
+                        other: Box::new(b_spend),
+                    });
+                }
                 if address == &dbc_address(a_spend.dbc_id()) {
                     Ok((a_spend, b_spend))
                 } else {
