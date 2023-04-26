@@ -235,7 +235,7 @@ jobs:
       - name: Start a faucet client to claim genesis
         # Only run on non-PR events
         if: github.event_name != 'pull_request'
-        run: cargo run --bin faucet --release -- faucet claim-genesis
+        run: cargo run --bin faucet --release -- claim-genesis
         id: faucet-claim-genesis
         env:
           RUST_LOG: "safenode,safe=trace"
