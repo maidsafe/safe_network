@@ -103,7 +103,7 @@ function run_node() {
   
     node_cmd=$(printf '%s' \
       "heaptrack ./safenode " \
-      "--peer $peers" \
+      # "--peer $peers" \
       "--root-dir ~/node_data " \
       "--log-dir ~/logs " \
       "$log_level" \

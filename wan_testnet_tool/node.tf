@@ -1,4 +1,4 @@
-resource "digitalocean_droplet" "testnet_node" {
+resource "digitalocean_droplet" "node" {
   count    = var.number_of_nodes
   image    = "ubuntu-22-04-x64"
   name     = "${terraform.workspace}-safe-node-${count.index + 1}" // 1 because 0 index
@@ -24,7 +24,7 @@ resource "digitalocean_droplet" "testnet_node" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x /tmp/init-node.sh",
-      "/tmp/init-node.sh \"${var.node_url}\" \"${var.port}\" \"${terraform.workspace}-safe-node-${count.index + 1}\" \"${digitalocean_droplet.testnet_node[0].ipv4_address}\"",
+      "/tmp/init-node.sh \"${var.node_url}\" \"${var.port}\" \"${terraform.workspace}-safe-node-${count.index + 1}\" \"${digitalocean_droplet.node[0].ipv4_address}\"",
     ]
   }
 
@@ -36,4 +36,56 @@ resource "digitalocean_droplet" "testnet_node" {
       ssh-keyscan -H ${self.ipv4_address} >> ~/.ssh/known_hosts
     EOH
   }
+}
+
+
+# Use null_resource and remote-exec to execute the command on the first droplet
+# and store the output in a file
+resource "null_resource" "get_first_peer_id" {
+  depends_on = [digitalocean_droplet.node]
+
+  provisioner "remote-exec" {
+    inline = [
+      "rg \"listening on\" ~/logs | rg \"/\\d\\d\\d\\d\\d -o\" > /tmp/output.txt"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "root"
+      private_key = file(var.private_key_path)
+      host        = digitalocean_droplet.node.0.ipv4_address
+    }
+  }
+}
+
+# Use terraform_remote_state to extract the contents of the file
+data "terraform_remote_state" "node" {
+  backend = "remote"
+
+  config = {
+    organization = "madisafe"
+    workspaces = {
+      name = "droplets"
+    }
+  }
+
+  # Extract the contents of the output file
+  # as a variable
+  outputs = [
+    "file(\"/tmp/output.txt\")",
+  ]
+}
+
+# Use the contents of the file as a variable
+resource "digitalocean_droplet" "node" {
+  count = var.count
+
+  name   = "droplet-${count.index}"
+  region = var.region
+  size   = var.size
+  image  = var.image
+
+  user_data = data.terraform_remote_state.node.outputs[0]
+  
+  # ... other resource configurations ...
 }
