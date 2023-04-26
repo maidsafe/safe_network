@@ -17,31 +17,37 @@ use crate::{
     protocol::messages::{Query, QueryResponse, Request, Response, SpendQuery},
 };
 
+use futures::future::join_all;
 use sn_dbc::{Dbc, DbcId, SignedSpend};
 
 #[async_trait::async_trait]
 impl VerifyingClient for Client {
     async fn verify(&self, dbc: &Dbc) -> Result<()> {
-        let mut received_spends = std::collections::BTreeSet::new();
-
+        // We need to get all the spends in the dbc from the network,
+        // and compare them to the spends in the dbc, to know if the
+        // transfer is considered valid in the network.
+        let mut tasks = Vec::new();
         for spend in &dbc.signed_spends {
-            let network_valid_spend = get_network_valid_spend(spend.dbc_id(), self).await?;
-            let _ = received_spends.insert(network_valid_spend);
+            tasks.push(get_network_valid_spend(spend.dbc_id(), self.clone()));
+        }
+
+        let mut received_spends = std::collections::BTreeSet::new();
+        for network_valid_spend in join_all(tasks).await {
+            let _ = received_spends.insert(network_valid_spend?);
         }
 
         // If all the spends in the dbc are the same as the ones in the network,
         // we have successfully verified that the dbc is globally recognised and therefor valid.
         if received_spends == dbc.signed_spends {
-            Ok(())
-        } else {
-            Err(Error::CouldNotVerifyTransfer(
-                "The spends in network were not the same as the ones in the DBC.".into(),
-            ))
+            return Ok(());
         }
+        Err(Error::CouldNotVerifyTransfer(
+            "The spends in network were not the same as the ones in the DBC.".into(),
+        ))
     }
 }
 
-async fn get_network_valid_spend(dbc_id: &DbcId, client: &Client) -> Result<SignedSpend> {
+async fn get_network_valid_spend(dbc_id: &DbcId, client: Client) -> Result<SignedSpend> {
     let address = dbc_address(dbc_id);
     let query = Query::Spend(SpendQuery::GetDbcSpend(address));
 
