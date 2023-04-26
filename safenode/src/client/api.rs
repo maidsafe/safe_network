@@ -22,14 +22,14 @@ use crate::{
 
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
-use libp2p::{kad::RecordKey, PeerId};
+use libp2p::{kad::RecordKey, Multiaddr, PeerId};
 use std::time::Duration;
 use tokio::task::spawn;
 use xor_name::XorName;
 
 impl Client {
     /// Instantiate a new client.
-    pub fn new(signer: SecretKey) -> Result<Self> {
+    pub fn new(signer: SecretKey, _peers: Option<Vec<(PeerId, Multiaddr)>>) -> Result<Self> {
         info!("Starting Kad swarm in client mode...");
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client()?;
         info!("Client constructed network and swarm_driver");
