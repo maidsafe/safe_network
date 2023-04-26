@@ -14,7 +14,10 @@ use super::{
 
 use crate::{
     domain::storage::Chunk,
-    protocol::messages::{QueryResponse, Request, Response},
+    protocol::{
+        error::Error as ProtocolError,
+        messages::{QueryResponse, Request, Response},
+    },
 };
 use libp2p::{
     kad::{store::MemoryStore, GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
@@ -143,6 +146,14 @@ impl SwarmDriver {
                         }
                     } else {
                         warn!("Query {id:?} failed to get record with result {result:?}");
+                        if step.last {
+                            // To avoid the caller wait forever on a non-existring entry
+                            if let Some(sender) = self.pending_query.remove(id) {
+                                sender
+                                    .send(QueryResponse::GetChunk(Err(ProtocolError::RecordNotFound)))
+                                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                            }
+                        }
                         // TODO: send an error response back?
                     }
                 }
