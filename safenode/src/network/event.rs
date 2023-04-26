@@ -25,7 +25,7 @@ use libp2p::{
     mdns,
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
-    swarm::{NetworkBehaviour, SwarmEvent},
+    swarm::{behaviour::toggle::Toggle, NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
 use std::collections::{hash_map, HashSet};
@@ -37,9 +37,9 @@ use tracing::{info, warn};
 pub(super) struct NodeBehaviour {
     pub(super) request_response: request_response::Behaviour<MsgCodec>,
     pub(super) kademlia: Kademlia<DiskBackedRecordStore>,
-    pub(super) mdns: mdns::tokio::Behaviour,
+    pub(super) mdns: Toggle<mdns::tokio::Behaviour>,
     pub(super) identify: libp2p::identify::Behaviour,
-    pub(super) autonat: autonat::Behaviour,
+    pub(super) autonat: Toggle<autonat::Behaviour>,
 }
 
 #[derive(Debug)]

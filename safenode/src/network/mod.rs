@@ -32,7 +32,7 @@ use libp2p::{
     mdns,
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
-    swarm::{Swarm, SwarmBuilder},
+    swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
 use std::{
@@ -104,6 +104,8 @@ impl SwarmDriver {
     pub fn new(
         addr: SocketAddr,
         root_dir: &Path,
+        local: bool,
+        external_address: Option<SocketAddr>,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut kad_cfg = KademliaConfig::default();
         let _ = kad_cfg
@@ -125,7 +127,7 @@ impl SwarmDriver {
             .set_record_ttl(None);
 
         let (network, events_receiver, mut swarm_driver) =
-            Self::with(kad_cfg, false, Some(root_dir.join("record_store")))?;
+            Self::with(kad_cfg, local, false, Some(root_dir.join("record_store")))?;
 
         // Listen on the provided address
         let addr = Multiaddr::from(addr.ip()).with(Protocol::Tcp(addr.port()));
@@ -134,11 +136,19 @@ impl SwarmDriver {
             .listen_on(addr)
             .expect("Failed to listen on the provided address");
 
+        // Add external address if provided, which should get us discovered and reachable quicker.
+        if let Some(addr) = external_address {
+            let addr = Multiaddr::from(addr.ip()).with(Protocol::Tcp(addr.port()));
+            let _ = swarm_driver
+                .swarm
+                .add_external_address(addr, libp2p::swarm::AddressScore::Infinite);
+        }
+
         Ok((network, events_receiver, swarm_driver))
     }
 
     /// Same as `new` API but creates the network components in client mode
-    pub fn new_client() -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    pub fn new_client(local: bool) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let mut kad_cfg = KademliaConfig::default(); // default query timeout is 60 secs
@@ -153,12 +163,13 @@ impl SwarmDriver {
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
             );
 
-        Self::with(kad_cfg, true, None)
+        Self::with(kad_cfg, local, true, None)
     }
 
     // Private helper to create the network components with the provided config and req/res behaviour
     fn with(
         kad_cfg: KademliaConfig,
+        local: bool,
         is_client: bool,
         disk_store_path: Option<PathBuf>,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
@@ -218,7 +229,12 @@ impl SwarmDriver {
                 query_interval: Duration::from_secs(5),
                 ..Default::default()
             };
-            mdns::tokio::Behaviour::new(cfg, peer_id)?
+            // Only enable mDNS if we are in local mode
+            let mdns = match local {
+                true => Some(mdns::tokio::Behaviour::new(cfg, peer_id)?),
+                false => None,
+            };
+            Toggle::from(mdns)
         };
 
         // Identify Behaviour
@@ -244,7 +260,15 @@ impl SwarmDriver {
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
 
-        let autonat = libp2p::autonat::Behaviour::new(peer_id, libp2p::autonat::Config::default());
+        // Disable AutoNAT if we are in local mode.
+        let autonat = match local {
+            false => Some(libp2p::autonat::Behaviour::new(
+                peer_id,
+                libp2p::autonat::Config::default(),
+            )),
+            true => None,
+        };
+        let autonat = Toggle::from(autonat);
 
         let behaviour = NodeBehaviour {
             request_response,
@@ -574,7 +598,9 @@ mod tests {
                 "0.0.0.0:0"
                     .parse::<SocketAddr>()
                     .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
-                Path::new(""),
+                    Path::new(""),
+                    true,
+                    None,
             )?;
             let _handle = tokio::spawn(driver.run());
 
@@ -640,6 +666,8 @@ mod tests {
                 .parse::<SocketAddr>()
                 .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
             Path::new(""),
+            true,
+            None,
         )?;
         let _driver_handle = tokio::spawn(driver.run());
 

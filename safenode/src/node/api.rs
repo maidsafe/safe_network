@@ -86,8 +86,10 @@ impl Node {
         addr: SocketAddr,
         initial_peers: Vec<(PeerId, Multiaddr)>,
         root_dir: &Path,
+        local: bool,
+        external_address: Option<SocketAddr>,
     ) -> Result<RunningNode> {
-        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr, root_dir)?;
+        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr, root_dir, local, external_address)?;
         let node_events_channel = NodeEventsChannel::default();
 
         let (transfer_action_sender, mut transfer_action_receiver) = mpsc::channel(100);

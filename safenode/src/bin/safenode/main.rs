@@ -81,6 +81,15 @@ struct Opt {
     /// Enable the admin/ctrl RPC service by providing an IP and port for it to listen on.
     #[clap(long)]
     rpc: Option<SocketAddr>,
+
+    /// Assume we are running on a local network and enable mDNS peer discovery.
+    /// Defaults to false, which means we will only connect to peers specified by `--peer`.
+    #[clap(long)]
+    local: bool,
+
+    /// Specify external address, to advertise on the network.
+    #[clap(long)]
+    external_address: Option<SocketAddr>,
 }
 
 #[derive(Debug)]
@@ -132,6 +141,8 @@ fn main() -> Result<()> {
             node_socket_addr,
             peers.clone(),
             opt.rpc,
+            opt.local,
+            opt.external_address,
             &log_dir,
             &root_dir,
         ))?;
@@ -145,13 +156,16 @@ async fn start_node(
     node_socket_addr: SocketAddr,
     peers: Vec<(PeerId, Multiaddr)>,
     rpc: Option<SocketAddr>,
+    local: bool,
+    external_address: Option<SocketAddr>,
     log_dir: &str,
     root_dir: &Path,
 ) -> Result<()> {
     let started_instant = std::time::Instant::now();
 
     info!("Starting node ...");
-    let running_node = Node::run(node_socket_addr, peers, root_dir).await?;
+    let running_node =
+        Node::run(node_socket_addr, peers, root_dir, local, external_address).await?;
 
     // Channel to receive node ctrl cmds from RPC service (if enabled), and events monitoring task
     let (ctrl_tx, mut ctrl_rx) = mpsc::channel::<NodeCtrl>(5);

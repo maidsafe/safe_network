@@ -34,7 +34,8 @@ impl Client {
     /// Instantiate a new client.
     pub async fn new(signer: SecretKey, peers: Option<Vec<(PeerId, Multiaddr)>>) -> Result<Self> {
         info!("Starting Kad swarm in client mode...");
-        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client()?;
+        let (network, mut network_event_receiver, swarm_driver) =
+            SwarmDriver::new_client(peers.is_none())?;
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
         let client = Self {
