@@ -87,7 +87,7 @@ async fn get_network_valid_spend(dbc_id: &DbcId, client: &Client) -> Result<Sign
         }
     }
 
-    // The parent is not recognised by all peers in its close group.
+    // The parent is not recognised by majority of peers in its close group.
     // Thus, the parent is not valid.
     info!("The spend could not be verified as valid: {address:?}. Not enough close group nodes accepted the spend. Got {ok_responses}, required: {}.", close_group_majority());
 
