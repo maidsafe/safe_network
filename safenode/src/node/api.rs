@@ -221,6 +221,7 @@ impl Node {
                             .get(address)
                             .await
                             .map_err(ProtocolError::Transfers);
+                        trace!("Sending response back on query DbcSpend {address:?}");
                         QueryResponse::GetDbcSpend(res)
                     }
                 }

@@ -81,13 +81,13 @@ pub(super) async fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
     {
         if entry.file_type().is_file() {
             let file_name = entry.file_name();
-            println!("Reading deposited tokens from {file_name:?}.");
+            trace!("Reading deposited tokens from {file_name:?}.");
 
             let dbc_data = fs::read_to_string(entry.path()).await?;
             let dbc = match Dbc::from_hex(dbc_data.trim()) {
                 Ok(dbc) => dbc,
                 Err(_) => {
-                    println!(
+                    trace!(
                         "This file does not appear to have valid hex-encoded DBC data. \
                         Skipping it."
                     );
@@ -100,7 +100,7 @@ pub(super) async fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
     }
 
     if deposits.is_empty() {
-        println!("No deposits found.");
+        trace!("No deposits found.");
     }
 
     Ok(deposits)

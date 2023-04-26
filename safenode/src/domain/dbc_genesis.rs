@@ -107,13 +107,13 @@ pub(crate) async fn send(
 pub async fn load_faucet_wallet(client: &Client) -> LocalWallet {
     let genesis_wallet = load_genesis_wallet().await;
 
-    println!("Loading faucet...");
+    trace!("Loading faucet...");
     let mut faucet_wallet = create_faucet_wallet().await;
 
     use super::wallet::{DepositWallet, Wallet};
     let faucet_balance = faucet_wallet.balance();
     if faucet_balance.as_nano() > 0 {
-        println!("Faucet wallet balance: {faucet_balance}");
+        trace!("Faucet wallet balance: {faucet_balance}");
         return faucet_wallet;
     }
 
@@ -122,7 +122,7 @@ pub async fn load_faucet_wallet(client: &Client) -> LocalWallet {
 
     let initial_fee_margin = 500_000;
     let faucet_balance = Token::from_nano(genesis_wallet.balance().as_nano() - initial_fee_margin);
-    println!("Sending {faucet_balance} from genesis to faucet wallet..");
+    trace!("Sending {faucet_balance} from genesis to faucet wallet..");
     let tokens = send(
         genesis_wallet,
         faucet_balance,
@@ -131,7 +131,7 @@ pub async fn load_faucet_wallet(client: &Client) -> LocalWallet {
     )
     .await;
 
-    println!("Verifying the transfer from genesis...");
+    trace!("Verifying the transfer from genesis...");
     use crate::domain::wallet::VerifyingClient;
     client
         .verify(&tokens)
@@ -143,17 +143,17 @@ pub async fn load_faucet_wallet(client: &Client) -> LocalWallet {
         .store()
         .await
         .expect("Faucet wallet shall be stored successfully.");
-    println!("Faucet wallet balance: {}", faucet_wallet.balance());
+    trace!("Faucet wallet balance: {}", faucet_wallet.balance());
 
     faucet_wallet
 }
 
 async fn load_genesis_wallet() -> LocalWallet {
-    println!("Loading genesis...");
+    trace!("Loading genesis...");
     let mut genesis_wallet = create_genesis_wallet().await;
     let genesis_balance = genesis_wallet.balance();
     if genesis_balance.as_nano() > 0 {
-        println!("Genesis wallet balance: {genesis_balance}");
+        trace!("Genesis wallet balance: {genesis_balance}");
         return genesis_wallet;
     }
 
@@ -165,7 +165,7 @@ async fn load_genesis_wallet() -> LocalWallet {
         .expect("Genesis wallet shall be stored successfully.");
 
     let genesis_balance = genesis_wallet.balance();
-    println!("Genesis wallet balance: {genesis_balance}");
+    trace!("Genesis wallet balance: {genesis_balance}");
 
     genesis_wallet
 }

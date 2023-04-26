@@ -16,6 +16,7 @@ use sn_dbc::Token;
 use clap::Parser;
 use eyre::Result;
 use std::path::Path;
+use tracing::trace;
 
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
@@ -77,12 +78,12 @@ async fn deposit(root_dir: &Path) -> Result<()> {
 
     if deposited > 0 {
         if let Err(err) = wallet.store().await {
-            println!("Failed to store deposited amount: {:?}", err);
+            trace!("Failed to store deposited amount: {:?}", err);
         } else {
-            println!("Deposited {:?}.", sn_dbc::Token::from_nano(deposited));
+            trace!("Deposited {:?}.", sn_dbc::Token::from_nano(deposited));
         }
     } else {
-        println!("Nothing deposited.");
+        trace!("Nothing deposited.");
     }
 
     Ok(())
@@ -94,7 +95,7 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
     use std::str::FromStr;
     let amount = Token::from_str(&amount)?;
     if amount.as_nano() == 0 {
-        println!("Invalid format or zero amount passed in. Nothing sent.");
+        trace!("Invalid format or zero amount passed in. Nothing sent.");
         return Ok(());
     }
 
@@ -103,21 +104,21 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
 
     match wallet_client.send(amount, address).await {
         Ok(new_dbc) => {
-            println!("Sent {amount:?} to {address:?}");
+            trace!("Sent {amount:?} to {address:?}");
             let mut wallet = wallet_client.into_wallet();
             let new_balance = wallet.balance();
 
             if let Err(err) = wallet.store().await {
-                println!("Failed to store wallet: {err:?}");
+                trace!("Failed to store wallet: {err:?}");
             } else {
-                println!("Successfully stored wallet with new balance {new_balance:?}.");
+                trace!("Successfully stored wallet with new balance {new_balance:?}.");
             }
 
             wallet.store_created_dbc(new_dbc).await?;
-            println!("Successfully stored new dbc to wallet dir. It can now be sent to the recipient, using any channel of choice.");
+            trace!("Successfully stored new dbc to wallet dir. It can now be sent to the recipient, using any channel of choice.");
         }
         Err(err) => {
-            println!("Failed to send {amount:?} to {address:?} due to {err:?}.");
+            trace!("Failed to send {amount:?} to {address:?} due to {err:?}.");
         }
     }
 

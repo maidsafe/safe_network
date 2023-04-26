@@ -53,8 +53,8 @@ impl SpendStorage {
 
     // Read Spend from local store.
     pub(crate) async fn get(&self, address: &DbcAddress) -> Result<SignedSpend> {
-        trace!("Getting Spend: {address:?}");
         let file_path = self.address_to_filepath(address, &self.valid_spends_path)?;
+        trace!("Getting Spend: {address:?} from {:?}", file_path);
         match read(file_path).await {
             Ok(bytes) => {
                 let spend: SignedSpend = deserialize(&bytes)?;

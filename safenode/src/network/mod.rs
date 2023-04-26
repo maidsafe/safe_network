@@ -94,6 +94,8 @@ impl SwarmDriver {
         // TODO: (make this dynamic?)
         // repub every 5s as topology changes
         let _ = cfg.set_replication_interval(Some(Duration::from_secs(5)));
+        // Shall never re-publish as replication ensure enough copy holders already.
+        let _ = cfg.set_publication_interval(None);
 
         // 1mb packet size
         let _ = cfg.set_max_packet_size(1024 * 1024);
