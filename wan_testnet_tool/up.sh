@@ -72,14 +72,14 @@ function run_terraform_apply() {
     archive_path="/tmp/$archive_name"
     node_url="${SAFENODE_URL_PREFIX}/$archive_name"
 
-    if test -f "$client_data_exists_file"; then
-        echo "Using preexisting bin from AWS for $testnet_channel."
-    else 
-      echo "Creating $archive_path..."
-      tar -C $path -zcvf $archive_path safenode
-      echo "Uploading $archive_path to S3..."
-      aws s3 cp $archive_path s3://sn-node --acl public-read
-    fi
+    # if test -f "$client_data_exists_file"; then
+    #     echo "Using preexisting bin from AWS for $testnet_channel."
+    # else 
+    #   echo "Creating $archive_path..."
+    #   tar -C $path -zcvf $archive_path safenode
+    #   echo "Uploading $archive_path to S3..."
+    #   aws s3 cp $archive_path s3://sn-node --acl public-read
+    # fi
   fi
 
   terraform apply \

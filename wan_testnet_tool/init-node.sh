@@ -125,5 +125,5 @@ function run_node() {
 
 install_heaptrack
 install_node
-setup_network_contacts
+# setup_network_contacts
 run_node
