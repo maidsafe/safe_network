@@ -150,7 +150,9 @@ impl SwarmDriver {
                             // To avoid the caller wait forever on a non-existring entry
                             if let Some(sender) = self.pending_query.remove(id) {
                                 sender
-                                    .send(QueryResponse::GetChunk(Err(ProtocolError::RecordNotFound)))
+                                    .send(QueryResponse::GetChunk(Err(
+                                        ProtocolError::RecordNotFound,
+                                    )))
                                     .map_err(|_| Error::InternalMsgChannelDropped)?;
                             }
                         }
