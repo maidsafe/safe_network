@@ -20,7 +20,7 @@ resource "digitalocean_droplet" "node1" {
 
   provisioner "file" {
     source       = "workspace/${terraform.workspace}/node-1"
-    destination  = "/node-1-peer-id"
+    destination  = "/contact-node-peer-id"
   }
 
 
@@ -48,11 +48,13 @@ resource "digitalocean_droplet" "node1" {
 
           # rg for non local ip, and then grab teh whole line, but remove the last character
   provisioner "local-exec" {
-         command = "rsync -z root@${self.ipv4_address}:/tmp/output.txt ./workspace/${terraform.workspace}/node-1"
+         command = "rsync -z root@${self.ipv4_address}:/tmp/output.txt ./workspace/${terraform.workspace}/node-1-listeners"
        
     }
+
+    # this file is missing /ip4/ at the beginning of the multiaddr line, so we add it later
   provisioner "local-exec" {
-         command = "rg --pcre2 -i '\\b((?!10\\.|172\\.(1[6-9]|2\\d|3[01])\\.|192\\.168\\.|169\\.254\\.|127\\.0\\.0\\.1)[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+).+' workspace/${terraform.workspace}/node-1 -o | sed 's/.$//' > ./workspace/${terraform.workspace}/node-1-1"
+         command = "rg --pcre2 -i '\\b((?!10\\.|172\\.(1[6-9]|2\\d|3[01])\\.|192\\.168\\.|169\\.254\\.|127\\.0\\.0\\.1)[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+).+' workspace/${terraform.workspace}/node-1-listeners -o | sed 's/.$//' > ./workspace/${terraform.workspace}/contact-node"
     }
 }
 
@@ -79,8 +81,8 @@ resource "digitalocean_droplet" "node" {
   }
 
   provisioner "file" {
-    source       = "workspace/${terraform.workspace}/node-1-1"
-    destination  = "/node-1-peer-id"
+    source       = "workspace/${terraform.workspace}/contact-node"
+    destination  = "/contact-node-peer-id"
   }
 
 
@@ -101,7 +103,7 @@ resource "digitalocean_droplet" "node" {
     inline = [
       "sudo DEBIAN_FRONTEND=noninteractive apt install ripgrep -y > /dev/null 2>&1",
       "chmod +x /tmp/init-node.sh",
-      "/tmp/init-node.sh \"${var.node_url}\" \"${var.port}\" \"${terraform.workspace}-safe-node-${count.index + 2}\" \"/ip4/$(cat /node-1-peer-id)\"",
+      "/tmp/init-node.sh \"${var.node_url}\" \"${var.port}\" \"${terraform.workspace}-safe-node-${count.index + 2}\" \"/ip4/$(cat /contact-node-peer-id)\"",
       "rg \"listening on \".+\"\" > /tmp/output.txt",
     ]
   }
