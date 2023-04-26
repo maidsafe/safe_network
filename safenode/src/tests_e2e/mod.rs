@@ -38,7 +38,7 @@ async fn spend_is_stored_in_network() -> Result<()> {
     assert_eq!(first_wallet.balance(), first_wallet_balance);
     println!("Tokens deposited to first wallet: {first_wallet_balance}.");
 
-    let second_wallet_balance = Token::from_nano(first_wallet_balance.as_nano() / 10_000);
+    let second_wallet_balance = Token::from_nano(first_wallet_balance.as_nano() / 2);
     println!("Transferring from first wallet to second wallet: {second_wallet_balance}.");
     let second_wallet_dir = TempDir::new()?;
     let mut second_wallet = get_wallet(second_wallet_dir.path()).await;
