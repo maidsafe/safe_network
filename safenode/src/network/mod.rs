@@ -97,7 +97,6 @@ impl SwarmDriver {
 
         // 1mb packet size
         let _ = cfg.set_max_packet_size(1024 * 1024);
-        let _ = cfg.set_max_packet_size(1024 * 1024);
 
         // How many nodes _should_ store data.
         let _ = cfg.set_replication_factor(
@@ -135,7 +134,17 @@ impl SwarmDriver {
     pub fn new_client() -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
-        let cfg = KademliaConfig::default(); // default query timeout is 60 secs
+        let mut cfg = KademliaConfig::default(); // default query timeout is 60 secs
+
+        // 1mb packet size
+        let _ = cfg.set_max_packet_size(1024 * 1024);
+        // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
+        let _ = cfg.disjoint_query_paths(true);
+        // How many nodes _should_ store data.
+        let _ = cfg.set_replication_factor(
+            NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
+        );
+
         let request_response = request_response::Behaviour::new(
             MsgCodec(),
             iter::once((MsgProtocol(), ProtocolSupport::Outbound)),
@@ -167,9 +176,7 @@ impl SwarmDriver {
         // records than by default
         let memory_store_cfg = MemoryStoreConfig {
             max_value_bytes: 1024 * 1024,
-            // What is the difference between these two?
-            max_provided_keys: 1000,
-            max_records: 1000,
+            max_providers_per_key: CLOSE_GROUP_SIZE,
             ..Default::default()
         };
 
@@ -348,7 +355,11 @@ impl Network {
 
     /// Put data to KAD network as record
     pub async fn put_data_as_record(&self, record: Record) -> Result<()> {
-        debug!("Putting data as record, for '{:?}'", record.key);
+        debug!(
+            "Putting data as record, for {:?} - length {:?}",
+            record.key,
+            record.value.len()
+        );
         self.send_swarm_cmd(SwarmCmd::PutProvidedDataAsRecord { record })
             .await
     }
