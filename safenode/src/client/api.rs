@@ -29,6 +29,7 @@ use libp2p::{kad::RecordKey, PeerId};
 use sn_dbc::{DbcId, SignedSpend};
 use std::time::Duration;
 use tokio::task::spawn;
+use tracing::trace;
 use xor_name::XorName;
 
 impl Client {
@@ -173,19 +174,19 @@ impl Client {
         match self.network.client_get_closest_peers(dst).await {
             Ok(peers) => peers,
             Err(err) => {
-                println!("Failed to get_closest of {dst:?} with error {err:?}");
+                warn!("Failed to get_closest of {dst:?} with error {err:?}");
                 vec![]
             }
         }
     }
 
     pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
-        println!("Getting the closest peers to {:?}.", request.dst());
+        trace!("Getting the closest peers to {:?}.", request.dst());
         let closest_peers = self
             .network
             .client_get_closest_peers(*request.dst().name())
             .await?;
-        println!("Sending {:?} to the closest peers.", request);
+        trace!("Sending {:?} to the closest peers.", request);
         Ok(self
             .send_and_get_responses(closest_peers, &request, true)
             .await)
@@ -193,7 +194,7 @@ impl Client {
 
     pub(crate) async fn expect_closest_majority_ok(&self, spend: SpendRequest) -> Result<()> {
         let dbc_id = spend.signed_spend.dbc_id();
-        println!("Getting the closest peers to {dbc_id:?}.");
+        trace!("Getting the closest peers to {dbc_id:?}.");
         let closest_peers = self
             .network
             .client_get_closest_peers(dbc_name(dbc_id))
@@ -205,7 +206,7 @@ impl Client {
             fee_ciphers: spend.fee_ciphers,
         };
 
-        println!("Sending {:?} to the closest peers.", cmd);
+        trace!("Sending {:?} to the closest peers.", cmd);
 
         let mut list_of_futures = vec![];
         for peer in closest_peers {
@@ -219,7 +220,7 @@ impl Client {
         while !list_of_futures.is_empty() {
             match select_all(list_of_futures).await {
                 (Ok(Response::Cmd(CmdResponse::Spend(Ok(())))), _, remaining_futures) => {
-                    println!("Spend Ok response got.");
+                    trace!("Spend Ok response got.");
                     ok_responses += 1;
 
                     // Return once we got required number of expected responses.
@@ -230,11 +231,11 @@ impl Client {
                     list_of_futures = remaining_futures;
                 }
                 (Ok(other), _, remaining_futures) => {
-                    println!("Unexpected response got: {other}.");
+                    trace!("Unexpected response got: {other}.");
                     list_of_futures = remaining_futures;
                 }
                 (Err(err), _, remaining_futures) => {
-                    println!("Network error: {err:?}.");
+                    trace!("Network error: {err:?}.");
                     list_of_futures = remaining_futures;
                 }
             }
@@ -248,7 +249,7 @@ impl Client {
     }
 
     pub(crate) async fn expect_closest_majority_same(&self, dbc_id: &DbcId) -> Result<SignedSpend> {
-        println!("Getting the closest peers to {dbc_id:?}.");
+        trace!("Getting the closest peers to {dbc_id:?}.");
         let address = dbc_address(dbc_id);
         let closest_peers = self
             .network
@@ -256,7 +257,7 @@ impl Client {
             .await?;
 
         let query = Query::Spend(SpendQuery::GetDbcSpend(address));
-        println!("Sending {:?} to the closest peers.", query);
+        trace!("Sending {:?} to the closest peers.", query);
 
         let mut list_of_futures = vec![];
         for peer in closest_peers {
@@ -275,7 +276,7 @@ impl Client {
                     remaining_futures,
                 ) => {
                     if dbc_id == received_spend.dbc_id() {
-                        println!("Signed spend got from network.");
+                        trace!("Signed spend got from network.");
                         ok_responses.push(received_spend);
                     }
 
@@ -302,11 +303,11 @@ impl Client {
                     list_of_futures = remaining_futures;
                 }
                 (Ok(other), _, remaining_futures) => {
-                    println!("Unexpected response got: {other}.");
+                    trace!("Unexpected response got: {other}.");
                     list_of_futures = remaining_futures;
                 }
                 (Err(err), _, remaining_futures) => {
-                    println!("Network error: {err:?}.");
+                    trace!("Network error: {err:?}.");
                     list_of_futures = remaining_futures;
                 }
             }
@@ -347,7 +348,7 @@ impl Client {
                         Ok(res) => format!("{res}"),
                         Err(err) => format!("{err:?}"),
                     };
-                    println!("Got response for the req: {req:?}, res: {res_string}");
+                    trace!("Got response for the req: {req:?}, res: {res_string}");
 
                     // return the first successful response
                     if !get_all_responses && res.is_ok() {
