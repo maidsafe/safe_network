@@ -422,13 +422,20 @@ impl RegisterStorage {
                     stored_reg.op_log.push(reg_cmd.clone());
 
                     if let RegisterCmd::Create(cmd) = reg_cmd {
-                        // TODO: if we already have read a RegisterCreate op, check if there
-                        // is any difference with this other one,...if so perhaps log a warning?
                         let SignedRegisterCreate { op, .. } = cmd;
-                        if stored_reg.state.is_none() {
-                            let register =
-                                RegisterReplica::new(op.policy.owner, op.name, op.tag, op.policy);
-                            stored_reg.state = Some(register);
+                        let register =
+                            RegisterReplica::new(op.policy.owner, op.name, op.tag, op.policy);
+                        match &stored_reg.state {
+                            Some(s) => {
+                                if s != &register {
+                                    warn!("Unexpectedly found multiple different RegisterCmd::Create for {addr:?}: {s:?} and {register:?}");
+                                } else {
+                                    warn!("Unexpectedly found multiple identical RegisterCmd::Create for {addr:?}: {s:?}");
+                                }
+                            }
+                            None => {
+                                stored_reg.state = Some(register);
+                            }
                         }
                     }
                 }
