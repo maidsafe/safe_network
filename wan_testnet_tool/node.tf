@@ -101,33 +101,8 @@ resource "digitalocean_droplet" "node" {
     inline = [
       "sudo DEBIAN_FRONTEND=noninteractive apt install ripgrep -y > /dev/null 2>&1",
       "chmod +x /tmp/init-node.sh",
-      "/tmp/init-node.sh \"${var.node_url}\" \"${var.port}\" \"${terraform.workspace}-safe-node-${count.index + 1}\" \"/ip4/$(cat /node-1-peer-id)\"",
+      "/tmp/init-node.sh \"${var.node_url}\" \"${var.port}\" \"${terraform.workspace}-safe-node-${count.index + 2}\" \"/ip4/$(cat /node-1-peer-id)\"",
       "rg \"listening on \".+\"\" > /tmp/output.txt",
     ]
   }
 }
-
-
-# # Use null_resource and remote-exec to execute the command on the first droplet
-# # and store the output in a file
-# resource "null_resource" "get_first_peer_id" {
-#   depends_on = [digitalocean_droplet.node]
-
-#   provisioner "remote-exec" {
-#     inline = [
-#       "sudo DEBIAN_FRONTEND=noninteractive apt install ripgrep -y > /dev/null 2>&1",
-#       "rg \"listening on \".+\"\" > /tmp/output.txt"
-#     ]
-  
-#     connection {
-#       type        = "ssh"
-#       user        = "root"
-#       private_key = file(var.pvt_key)
-#       host        = digitalocean_droplet.node.0.ipv4_address
-#     }
-#   }
-
-#    provisioner "local-exec" {
-#         command = "rsync -z root@${digitalocean_droplet.node.0.ipv4_address}:/tmp/output.txt ./workspace/${terraform.workspace}/node-1"
-#     }
-# }
