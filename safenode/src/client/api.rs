@@ -12,8 +12,11 @@ use super::{
 };
 
 use crate::{
-    domain::storage::{Chunk, ChunkAddress},
-    network::{NetworkEvent, SwarmDriver},
+    domain::{
+        client_transfers::SpendRequestParams,
+        storage::{dbc_name, Chunk, ChunkAddress},
+    },
+    network::{close_group_majority, NetworkEvent, SwarmDriver},
     protocol::{
         error::Error as ProtocolError,
         messages::{Cmd, CmdResponse, QueryResponse, Request, Response},
@@ -164,6 +167,17 @@ impl Client {
         }
     }
 
+    /// This is for network testing only
+    pub async fn get_closest(&self, dst: XorName) -> Vec<PeerId> {
+        match self.network.client_get_closest_peers(dst).await {
+            Ok(peers) => peers,
+            Err(err) => {
+                println!("Failed to get_closest of {dst:?} with error {err:?}");
+                vec![]
+            }
+        }
+    }
+
     pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
         println!("Getting the closest peers to {:?}.", request.dst());
         let closest_peers = self
@@ -176,15 +190,63 @@ impl Client {
             .await)
     }
 
-    /// This is for network testing only
-    pub async fn get_closest(&self, dst: XorName) -> Vec<PeerId> {
-        match self.network.client_get_closest_peers(dst).await {
-            Ok(peers) => peers,
-            Err(err) => {
-                println!("Failed to get_closest of {dst:?} with error {err:?}");
-                vec![]
+    pub(crate) async fn expect_closest_majority_response(
+        &self,
+        spend: SpendRequestParams,
+    ) -> Result<()> {
+        let dbc_id = spend.signed_spend.dbc_id();
+        println!("Getting the closest peers to {dbc_id:?}.");
+        let closest_peers = self
+            .network
+            .client_get_closest_peers(dbc_name(dbc_id))
+            .await?;
+
+        let cmd = Cmd::SpendDbc {
+            signed_spend: Box::new(spend.signed_spend),
+            parent_tx: Box::new(spend.parent_tx),
+            fee_ciphers: spend.fee_ciphers,
+        };
+
+        println!("Sending {:?} to the closest peers.", cmd);
+
+        let mut list_of_futures = vec![];
+        for peer in closest_peers {
+            let request = Request::Cmd(cmd.clone());
+            let future = Box::pin(self.network.send_request(request, peer));
+            list_of_futures.push(future);
+        }
+
+        let mut ok_responses = 0;
+
+        while !list_of_futures.is_empty() {
+            match select_all(list_of_futures).await {
+                (Ok(Response::Cmd(CmdResponse::Spend(Ok(())))), _, remaining_futures) => {
+                    println!("Spend Ok response got.");
+                    ok_responses += 1;
+
+                    // Return once we got required number of expected responses.
+                    if ok_responses >= close_group_majority() {
+                        return Ok(());
+                    }
+
+                    list_of_futures = remaining_futures;
+                }
+                (Ok(other), _, remaining_futures) => {
+                    println!("Unexpected response got: {other}.");
+                    list_of_futures = remaining_futures;
+                }
+                (Err(err), _, remaining_futures) => {
+                    println!("Network error: {err:?}.");
+                    list_of_futures = remaining_futures;
+                }
             }
         }
+
+        Err(Error::CouldNotVerifyTransfer(format!(
+            "Not enough close group nodes accepted the spend. Got {}, required: {}.",
+            ok_responses,
+            close_group_majority()
+        )))
     }
 
     // Send a `Request` to the provided set of nodes and wait for their responses concurrently.
