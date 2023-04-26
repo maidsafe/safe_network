@@ -29,6 +29,10 @@ pub enum Error {
     #[error("ResponseTimeout.")]
     ResponseTimeout(#[from] tokio::time::error::Elapsed),
 
+    /// A general error when verifying a transfer validity in the network.
+    #[error("Failed to verify transfer validity in the network {0}")]
+    CouldNotVerifyTransfer(String),
+
     #[error("Chunks error {0}.")]
     Chunks(#[from] super::chunks::Error),
 
