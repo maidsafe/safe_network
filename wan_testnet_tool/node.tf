@@ -52,7 +52,7 @@ resource "digitalocean_droplet" "node1" {
        
     }
   provisioner "local-exec" {
-         command = "rg --pcre2 -i '\\b((?!10\\.|172\\.(1[6-9]|2\\d|3[01])\\.|192\\.168\\.|169\\.254\\.|127\\.0\\.0\\.1)[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+).+' workspace/${terraform.workspace}/node-1 -o | sed 's/.$//' > ./workspace/${terraform.workspace}/node-1"
+         command = "rg --pcre2 -i '\\b((?!10\\.|172\\.(1[6-9]|2\\d|3[01])\\.|192\\.168\\.|169\\.254\\.|127\\.0\\.0\\.1)[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+).+' workspace/${terraform.workspace}/node-1 -o | sed 's/.$//' > ./workspace/${terraform.workspace}/node-1-1"
     }
 }
 
@@ -79,7 +79,7 @@ resource "digitalocean_droplet" "node" {
   }
 
   provisioner "file" {
-    source       = "workspace/${terraform.workspace}/node-1"
+    source       = "workspace/${terraform.workspace}/node-1-1"
     destination  = "/node-1-peer-id"
   }
 
