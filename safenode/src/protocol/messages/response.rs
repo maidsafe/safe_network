@@ -28,7 +28,7 @@ use std::{collections::BTreeSet, fmt::Debug};
 
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 pub enum QueryResponse {
     //
     // ===== DBC Data =====
@@ -46,6 +46,7 @@ pub enum QueryResponse {
     /// Response to [`GetDbcSpend`]
     ///
     /// [`GetDbcSpend`]: crate::protocol::messages::SpendQuery::GetDbcSpend
+    #[debug(skip)]
     GetDbcSpend(Result<SignedSpend>),
     //
     // ===== Chunk =====
