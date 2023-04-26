@@ -59,6 +59,7 @@ resource "null_resource" "get_first_peer_id" {
 
   provisioner "remote-exec" {
     inline = [
+      "sudo DEBIAN_FRONTEND=noninteractive apt install ripgrep -y > /dev/null 2>&1",
       "rg \"listening on \".+\"\" | rg \"\".+\"\" -o > /tmp/output.txt"
     ]
   
@@ -71,7 +72,7 @@ resource "null_resource" "get_first_peer_id" {
   }
 
    provisioner "local-exec" {
-        command = "rsync -z root@${digitalocean_droplet.node.0.ipv4_address}:/tmp/output.txt ./workspace/node-1"
+        command = "rsync -z root@${digitalocean_droplet.node.0.ipv4_address}:/tmp/output.txt ./workspace/${terraform.workspace}/node-1"
     }
 }
 

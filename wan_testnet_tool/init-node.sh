@@ -104,7 +104,7 @@ function run_node() {
     echo "supplied peers var is $peers"
 
      node_cmd=$(printf '%s' \
-      "heaptrack ./safenode " \
+      "./safenode " \
       "--peer $peers" \
       "--root-dir ~/node_data " \
       "--log-dir ~/logs " \
@@ -112,7 +112,7 @@ function run_node() {
     )
   else
     node_cmd=$(printf '%s' \
-      "heaptrack ./safenode " \
+      "./safenode " \
       "--root-dir ~/node_data " \
       "--log-dir ~/logs " \
       "$log_level" \
@@ -124,7 +124,7 @@ function run_node() {
   
 }
 
-install_heaptrack
+# install_heaptrack
 install_node
 # setup_network_contacts
 run_node
