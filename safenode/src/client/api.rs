@@ -190,7 +190,7 @@ impl Client {
             .await)
     }
 
-    pub(crate) async fn expect_closest_majority_response(&self, spend: SpendRequest) -> Result<()> {
+    pub(crate) async fn expect_closest_majority_ok(&self, spend: SpendRequest) -> Result<()> {
         let dbc_id = spend.signed_spend.dbc_id();
         println!("Getting the closest peers to {dbc_id:?}.");
         let closest_peers = self
