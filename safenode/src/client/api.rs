@@ -13,7 +13,7 @@ use super::{
 
 use crate::{
     domain::{
-        client_transfers::SpendRequestParams,
+        client_transfers::SpendRequest,
         storage::{dbc_name, Chunk, ChunkAddress},
     },
     network::{close_group_majority, NetworkEvent, SwarmDriver},
@@ -190,10 +190,7 @@ impl Client {
             .await)
     }
 
-    pub(crate) async fn expect_closest_majority_response(
-        &self,
-        spend: SpendRequestParams,
-    ) -> Result<()> {
+    pub(crate) async fn expect_closest_majority_response(&self, spend: SpendRequest) -> Result<()> {
         let dbc_id = spend.signed_spend.dbc_id();
         println!("Getting the closest peers to {dbc_id:?}.");
         let closest_peers = self

@@ -25,7 +25,7 @@ impl SendClient for Client {
     ) -> Result<TransferDetails> {
         let transfer = create_online_transfer(dbcs, to, change_to, self).await?;
 
-        for spend_request_param in transfer.all_spend_request_params.clone() {
+        for spend_request_param in transfer.all_spend_requests.clone() {
             self.expect_closest_majority_response(spend_request_param)
                 .await
                 .map_err(|err| Error::CouldNotSendTokens(err.to_string()))?;

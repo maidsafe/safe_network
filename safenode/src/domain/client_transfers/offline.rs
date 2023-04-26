@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{CreatedDbc, Error, Inputs, Outputs, Result, SpendRequestParams};
+use super::{CreatedDbc, Error, Inputs, Outputs, Result, SpendRequest};
 
 use sn_dbc::{
     rng, Dbc, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedInput, Token,
@@ -184,19 +184,19 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
         ));
     }
 
-    let mut all_spend_request_params = vec![];
+    let mut all_spend_requests = vec![];
     for (dbc_id, signed_spend) in signed_spends.into_iter() {
         let parent_tx = src_txs.get(dbc_id).ok_or(Error::DbcReissueFailed(format!(
             "Missing source dbc tx of {dbc_id:?}!"
         )))?;
 
-        let spend_request_params = SpendRequestParams {
+        let spend_requests = SpendRequest {
             signed_spend: signed_spend.clone(),
             parent_tx: parent_tx.clone(),
             fee_ciphers: BTreeMap::new(),
         };
 
-        all_spend_request_params.push(spend_request_params);
+        all_spend_requests.push(spend_requests);
     }
 
     // Perform validations of input tx and signed spends,
@@ -221,6 +221,6 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     Ok(Outputs {
         created_dbcs,
         change_dbc,
-        all_spend_request_params,
+        all_spend_requests,
     })
 }

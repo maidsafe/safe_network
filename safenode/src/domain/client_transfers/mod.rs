@@ -81,12 +81,12 @@ pub struct Outputs {
     /// spending the necessary input dbcs.
     pub change_dbc: Option<Dbc>,
     /// The parameters necessary to send all spend requests to the network.
-    pub all_spend_request_params: Vec<SpendRequestParams>,
+    pub all_spend_requests: Vec<SpendRequest>,
 }
 
 /// The parameters necessary to send a spend request to the network.
 #[derive(Debug, Clone)]
-pub struct SpendRequestParams {
+pub struct SpendRequest {
     /// The dbc to register in the network as spent.
     pub signed_spend: SignedSpend,
     /// The dbc transaction that the spent dbc was created in.
