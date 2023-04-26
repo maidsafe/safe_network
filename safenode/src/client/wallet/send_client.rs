@@ -15,6 +15,8 @@ use crate::domain::{
 
 use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
 
+use futures::future::join_all;
+
 #[async_trait::async_trait]
 impl SendClient for Client {
     async fn send(
@@ -25,10 +27,13 @@ impl SendClient for Client {
     ) -> Result<TransferDetails> {
         let transfer = create_online_transfer(dbcs, to, change_to, self).await?;
 
-        for spend_request_param in transfer.all_spend_requests.clone() {
-            self.expect_closest_majority_response(spend_request_param)
-                .await
-                .map_err(|err| Error::CouldNotSendTokens(err.to_string()))?;
+        let mut tasks = Vec::new();
+        for spend_request in &transfer.all_spend_requests {
+            tasks.push(self.expect_closest_majority_response(spend_request.clone()));
+        }
+
+        for spend_attempt_result in join_all(tasks).await {
+            spend_attempt_result.map_err(|err| Error::CouldNotSendTokens(err.to_string()))?;
         }
 
         Ok(transfer)
