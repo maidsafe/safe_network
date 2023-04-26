@@ -37,14 +37,14 @@ pub(super) struct NodeBehaviour {
 
 #[derive(Debug)]
 pub(super) enum NodeEvent {
-    RequestResponse(request_response::Event<Request, Response>),
+    MsgReceived(request_response::Event<Request, Response>),
     Kademlia(KademliaEvent),
     Mdns(Box<mdns::Event>),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
     fn from(event: request_response::Event<Request, Response>) -> Self {
-        NodeEvent::RequestResponse(event)
+        NodeEvent::MsgReceived(event)
     }
 }
 
@@ -83,13 +83,11 @@ impl SwarmDriver {
         event: SwarmEvent<NodeEvent, EventError>,
     ) -> Result<()> {
         match event {
-            // handle RequestResponse events
-            SwarmEvent::Behaviour(NodeEvent::RequestResponse(event)) => {
+            SwarmEvent::Behaviour(NodeEvent::MsgReceived(event)) => {
                 if let Err(e) = self.handle_msg(event).await {
-                    warn!("RequestResponseError: {e:?}");
+                    warn!("MsgReceivedError: {e:?}");
                 }
             }
-            // handle Kademlia events
             SwarmEvent::Behaviour(NodeEvent::Kademlia(ref event)) => match event {
                 KademliaEvent::OutboundQueryProgressed {
                     id,
