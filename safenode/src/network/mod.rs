@@ -30,7 +30,9 @@ use libp2p::{
     },
     mdns,
     multiaddr::Protocol,
-    request_response::{self, ProtocolSupport, RequestId, ResponseChannel},
+    request_response::{
+        self, Config as RequestResponseConfig, ProtocolSupport, RequestId, ResponseChannel,
+    },
     swarm::{Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
@@ -49,6 +51,11 @@ use xor_name::XorName;
 /// This is the group size used in safe network protocol to be responsible for
 /// an item in the network.
 pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
+
+// Timeout for requests sent/received through the request_response behaviour.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
+// Sets the keep-alive timeout of idle connections.
+const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -75,7 +82,7 @@ impl SwarmDriver {
     /// Creates a new `SwarmDriver` instance, along with a `Network` handle
     /// for sending commands and an `mpsc::Receiver<NetworkEvent>` for receiving
     /// network events. It initializes the swarm, sets up the transport, and
-    /// configures the Kademlia and mDNS behaviors for peer discovery.
+    /// configures the Kademlia and mDNS behaviours for peer discovery.
     ///
     /// # Returns
     ///
@@ -84,10 +91,10 @@ impl SwarmDriver {
     ///
     /// # Errors
     ///
-    /// Returns an error if there is a problem initializing the mDNS behavior.
+    /// Returns an error if there is a problem initializing the mDNS behaviour.
     pub fn new(addr: SocketAddr) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
-        let mut cfg = KademliaConfig::default();
-        let _ = cfg
+        let mut kad_cfg = KademliaConfig::default();
+        let _ = kad_cfg
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
             // this is a heavier operation than publication, so it is done less frequently
             .set_replication_interval(Some(Duration::from_secs(20)))
@@ -107,13 +114,8 @@ impl SwarmDriver {
             // Records never expire
             .set_record_ttl(None);
 
-        let request_response = request_response::Behaviour::new(
-            MsgCodec(),
-            iter::once((MsgProtocol(), ProtocolSupport::Full)),
-            Default::default(),
-        );
-
-        let (network, events_receiver, mut swarm_driver) = Self::with(cfg, request_response)?;
+        let (network, events_receiver, mut swarm_driver) =
+            Self::with(kad_cfg, ProtocolSupport::Full)?;
 
         // Listen on the provided address
         let addr = Multiaddr::from(addr.ip())
@@ -142,25 +144,30 @@ impl SwarmDriver {
             NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
         );
 
-        let request_response = request_response::Behaviour::new(
-            MsgCodec(),
-            iter::once((MsgProtocol(), ProtocolSupport::Outbound)),
-            Default::default(),
-        );
-
-        Self::with(cfg, request_response)
+        Self::with(cfg, ProtocolSupport::Outbound)
     }
 
     // Private helper to create the network components with the provided config and req/res behaviour
     fn with(
-        cfg: KademliaConfig,
-        request_response: request_response::Behaviour<MsgCodec>,
+        kad_cfg: KademliaConfig,
+        req_res_protocol: ProtocolSupport,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a random key for ourself.
         let keypair = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(keypair.public());
 
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
+
+        // RequestResponse configuration
+        let mut req_res_config = RequestResponseConfig::default();
+        let _ = req_res_config.set_request_timeout(REQUEST_TIMEOUT);
+        let _ = req_res_config.set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
+
+        let request_response = request_response::Behaviour::new(
+            MsgCodec(),
+            iter::once((MsgProtocol(), req_res_protocol)),
+            req_res_config,
+        );
 
         // QUIC configuration
         let quic_config = libp2p_quic::Config::new(&keypair);
@@ -182,7 +189,7 @@ impl SwarmDriver {
         let kademlia = Kademlia::with_config(
             peer_id,
             MemoryStore::with_config(peer_id, memory_store_cfg),
-            cfg,
+            kad_cfg,
         );
 
         let mdns_config = mdns::Config {
