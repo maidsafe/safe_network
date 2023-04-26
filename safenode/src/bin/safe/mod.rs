@@ -12,7 +12,10 @@ use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt};
 
 use crate::cli::SubCmd;
 
-use safenode::client::{Client, ClientEvent};
+use safenode::{
+    client::{Client, ClientEvent},
+    log::init_node_logging,
+};
 
 use clap::Parser;
 use eyre::Result;
@@ -22,6 +25,8 @@ use tracing::info;
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
+    // For client, default to log to std::out
+    let _log_appender_guard = init_node_logging(&None)?;
 
     info!("Instantiating a SAFE client...");
 

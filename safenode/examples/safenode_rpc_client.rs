@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use safenode::log::init_node_logging;
 use safenode_proto::safe_node_client::SafeNodeClient;
 use safenode_proto::{
     NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RestartRequest, StopRequest,
@@ -72,6 +73,9 @@ enum Cmd {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // For client, default to log to std::out
+    let _log_appender_guard = init_node_logging(&None)?;
+
     let opt = Opt::parse();
     let addr = opt.addr;
 
