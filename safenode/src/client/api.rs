@@ -14,18 +14,19 @@ use super::{
 use crate::{
     domain::{
         client_transfers::SpendRequest,
-        storage::{dbc_name, Chunk, ChunkAddress},
+        storage::{dbc_address, dbc_name, Chunk, ChunkAddress},
     },
     network::{close_group_majority, NetworkEvent, SwarmDriver},
     protocol::{
         error::Error as ProtocolError,
-        messages::{Cmd, CmdResponse, QueryResponse, Request, Response},
+        messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
     },
 };
 
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use libp2p::{kad::RecordKey, PeerId};
+use sn_dbc::{DbcId, SignedSpend};
 use std::time::Duration;
 use tokio::task::spawn;
 use xor_name::XorName;
@@ -242,6 +243,78 @@ impl Client {
         Err(Error::CouldNotVerifyTransfer(format!(
             "Not enough close group nodes accepted the spend. Got {}, required: {}.",
             ok_responses,
+            close_group_majority()
+        )))
+    }
+
+    pub(crate) async fn expect_closest_majority_same(&self, dbc_id: &DbcId) -> Result<SignedSpend> {
+        println!("Getting the closest peers to {dbc_id:?}.");
+        let address = dbc_address(dbc_id);
+        let closest_peers = self
+            .network
+            .client_get_closest_peers(*address.name())
+            .await?;
+
+        let query = Query::Spend(SpendQuery::GetDbcSpend(address));
+        println!("Sending {:?} to the closest peers.", query);
+
+        let mut list_of_futures = vec![];
+        for peer in closest_peers {
+            let request = Request::Query(query.clone());
+            let future = Box::pin(self.network.send_request(request, peer));
+            list_of_futures.push(future);
+        }
+
+        let mut ok_responses = vec![];
+
+        while !list_of_futures.is_empty() {
+            match select_all(list_of_futures).await {
+                (
+                    Ok(Response::Query(QueryResponse::GetDbcSpend(Ok(received_spend)))),
+                    _,
+                    remaining_futures,
+                ) => {
+                    if dbc_id == received_spend.dbc_id() {
+                        println!("Signed spend got from network.");
+                        ok_responses.push(received_spend);
+                    }
+
+                    // Return once we got required number of expected responses.
+                    if ok_responses.len() >= close_group_majority() {
+                        use itertools::*;
+                        let majority_agreement = ok_responses
+                            .clone()
+                            .into_iter()
+                            .map(|x| (x, 1))
+                            .into_group_map()
+                            .into_iter()
+                            .filter(|(_, v)| v.len() >= close_group_majority())
+                            .max_by_key(|(_, v)| v.len())
+                            .map(|(k, _)| k);
+
+                        if let Some(agreed_spend) = majority_agreement {
+                            // Majority of nodes in the close group returned the same spend of the requested id.
+                            // We return the spend, so that it can be compared to the spends we have in the DBC.
+                            return Ok(agreed_spend);
+                        }
+                    }
+
+                    list_of_futures = remaining_futures;
+                }
+                (Ok(other), _, remaining_futures) => {
+                    println!("Unexpected response got: {other}.");
+                    list_of_futures = remaining_futures;
+                }
+                (Err(err), _, remaining_futures) => {
+                    println!("Network error: {err:?}.");
+                    list_of_futures = remaining_futures;
+                }
+            }
+        }
+
+        Err(Error::CouldNotVerifyTransfer(format!(
+            "Not enough close group nodes returned the requested spend. Got {}, required: {}.",
+            ok_responses.len(),
             close_group_majority()
         )))
     }
