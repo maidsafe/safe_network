@@ -383,7 +383,7 @@ impl Node {
             }
         }
 
-        // The parent is not recognised by all peers in its close group.
+        // The parent is not recognised by majority of peers in its close group.
         // Thus, the parent is not valid.
         info!("The spend could not be verified as valid: {address:?}");
 
