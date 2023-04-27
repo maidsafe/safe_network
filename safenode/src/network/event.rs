@@ -200,10 +200,24 @@ impl SwarmDriver {
                 peer_id, endpoint, ..
             } => {
                 if endpoint.is_dialer() {
-                    info!("Connected with {peer_id:?}");
+                    info!("Connected with {peer_id:?}, we are the: dialer");
                     if let Some(sender) = self.pending_dial.remove(&peer_id) {
                         let _ = sender.send(Ok(()));
                     }
+                } else if endpoint.is_listener() {
+                    info!("Connected with {peer_id:?}, we are the: listener");
+                    // If the connection was opened by someone else, add them
+                    // to the routing table.
+                    let _routing_update = self
+                        .swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .add_address(&peer_id, endpoint.get_remote_address().clone());
+
+                    self.event_sender.send(NetworkEvent::PeerAdded).await?;
+                } else if endpoint.is_relayed() {
+                    info!("Connected with {peer_id:?} and the connection was relayed to us");
+                    //todo: try a dial back, and if the dial succeeded, we then can add peer into RT.
                 }
             }
             SwarmEvent::ConnectionClosed {
