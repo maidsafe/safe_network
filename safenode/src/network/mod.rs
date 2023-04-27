@@ -11,7 +11,11 @@ mod error;
 mod event;
 mod msg;
 
-pub use self::{cmd::SwarmLocalState, error::Error, event::NetworkEvent};
+pub use self::{
+    cmd::SwarmLocalState,
+    error::Error,
+    event::{MsgResponder, NetworkEvent},
+};
 
 use self::{
     cmd::SwarmCmd,
@@ -30,9 +34,7 @@ use libp2p::{
     },
     mdns,
     multiaddr::Protocol,
-    request_response::{
-        self, Config as RequestResponseConfig, ProtocolSupport, RequestId, ResponseChannel,
-    },
+    request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
@@ -249,7 +251,7 @@ impl SwarmDriver {
                 },
                 some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
-                        if let Err(err) = self.handle_cmd(cmd) {
+                        if let Err(err) = self.handle_cmd(cmd).await {
                             warn!("Error while handling cmd: {err}");
                         }
                     },
@@ -300,13 +302,15 @@ impl Network {
         self.get_closest_peers(xor_name, false).await
     }
 
-    /// Send `Request` to the closest peers. `Self` might be present among the recipients.
+    /// Send `Request` to the closest peers. If `self` is among the closest_peers, the `Request` is
+    /// forwarded to itself and handled. Then a corresponding `Response` is created and is
+    /// forwarded to iself. Hence the flow remains the same and there is no branching at the upper
+    /// layers.
     pub async fn node_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
         info!(
             "Sending {request:?} with dst {:?} to the closest peers.",
             request.dst().name()
         );
-        // todo: if `self` is present among the closest peers, the request should be routed to self?
         let closest_peers = self.node_get_closest_peers(*request.dst().name()).await?;
 
         Ok(self
@@ -349,7 +353,10 @@ impl Network {
             .await
     }
 
-    /// Send `Request` to the the given `PeerId`
+    /// Send `Request` to the the given `PeerId` and await for the response.If `self` is the recepiant,
+    /// then the `Request` is forwarded to itself and handled. Then a corresponding `Response` is created
+    /// and forwarded to iself. Hence the flow remains the same and there is no branching at the upper
+    /// layers.
     pub async fn send_request(&self, req: Request, peer: PeerId) -> Result<Response> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::SendRequest { req, peer, sender })
@@ -358,11 +365,7 @@ impl Network {
     }
 
     /// Send a `Response` through the channel opened by the requester.
-    pub async fn send_response(
-        &self,
-        resp: Response,
-        channel: ResponseChannel<Response>,
-    ) -> Result<()> {
+    pub async fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
             .await
     }
@@ -453,7 +456,14 @@ impl Network {
 #[cfg(test)]
 mod tests {
     use super::SwarmDriver;
-    use crate::log::init_node_logging;
+    use crate::{
+        domain::storage::Chunk,
+        log::init_node_logging,
+        network::{MsgResponder, NetworkEvent},
+        protocol::messages::{Cmd, CmdResponse, Request, Response},
+    };
+    use assert_matches::assert_matches;
+    use bytes::Bytes;
     use eyre::{eyre, Result};
     use libp2p::{
         kad::{
@@ -462,7 +472,7 @@ mod tests {
         },
         PeerId,
     };
-    use rand::thread_rng;
+    use rand::{thread_rng, Rng};
     use std::{
         collections::{BTreeMap, HashMap},
         fmt,
@@ -538,8 +548,48 @@ mod tests {
         Ok(())
     }
 
-    /// Test utility
+    #[tokio::test]
+    async fn msg_to_self_should_not_error_out() -> Result<()> {
+        let _ = init_node_logging(&None)?;
+        let (net, mut event_rx, driver) = SwarmDriver::new(
+            "0.0.0.0:0"
+                .parse::<SocketAddr>()
+                .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
+        )?;
+        let _driver_handle = tokio::spawn(driver.run());
 
+        // spawn a task to handle the the Request that we recieve.
+        // This handles the request and sends a response back
+        let _event_handler = tokio::spawn(async move {
+            if let Some(NetworkEvent::RequestReceived {
+                channel: MsgResponder::FromSelf(channel),
+                ..
+            }) = event_rx.recv().await
+            {
+                let res = Response::Cmd(CmdResponse::StoreChunk(Ok(())));
+                assert!(channel.send(Ok(res)).is_ok());
+            }
+        });
+
+        // Send a request to store a random chunk to `self`
+        let mut random_data = [0u8; 128];
+        thread_rng().fill(&mut random_data);
+        let req = Request::Cmd(Cmd::StoreChunk(Chunk::new(Bytes::copy_from_slice(
+            &random_data,
+        ))));
+        // send the request to `self` and wait for a response
+        let res = net
+            .send_and_get_responses(vec![net.peer_id], &req, true)
+            .await
+            .remove(0)
+            .expect("Expected atleast one response");
+        info!("Got response {:?}", res);
+        assert_matches!(res, Response::Cmd(CmdResponse::StoreChunk(Ok(()))));
+
+        Ok(())
+    }
+
+    /// Test utility
     fn assert_lists<I, J, K>(a: I, b: J)
     where
         K: fmt::Debug + Eq,
