@@ -90,27 +90,25 @@ impl SwarmDriver {
     /// Returns an error if there is a problem initializing the mDNS behavior.
     pub fn new(addr: SocketAddr) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut cfg = KademliaConfig::default();
-
-        // TODO: (make this dynamic?)
-        // repub every 5s as topology changes
-        let _ = cfg.set_replication_interval(Some(Duration::from_secs(5)));
-        // Shall never re-publish as replication ensure enough copy holders already.
-        let _ = cfg.set_publication_interval(None);
-
-        // 1mb packet size
-        let _ = cfg.set_max_packet_size(1024 * 1024);
-
-        // How many nodes _should_ store data.
-        let _ = cfg.set_replication_factor(
-            NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
-        );
-        let _ = cfg.set_query_timeout(Duration::from_secs(5 * 60));
-
-        // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
-        let _ = cfg.disjoint_query_paths(true);
-
-        // Records never expire
-        let _ = cfg.set_record_ttl(None);
+        let _ = cfg
+            // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
+            // this is a heavier operation than publication, so it is done less frequently
+            .set_replication_interval(Some(Duration::from_secs(20)))
+            // how often a node will announce that it is providing a value for a specific key
+            .set_provider_publication_interval(Some(Duration::from_secs(10)))
+            // how often a node will publish a record key, aka telling the others it exists
+            .set_publication_interval(Some(Duration::from_secs(5)))
+            // 1mb packet size
+            .set_max_packet_size(1024 * 1024)
+            // How many nodes _should_ store data.
+            .set_replication_factor(
+                NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
+            )
+            .set_query_timeout(Duration::from_secs(5 * 60))
+            // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
+            .disjoint_query_paths(true)
+            // Records never expire
+            .set_record_ttl(None);
 
         let request_response = request_response::Behaviour::new(
             MsgCodec(),
