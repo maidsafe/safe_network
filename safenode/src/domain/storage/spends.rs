@@ -101,7 +101,7 @@ impl SpendStorage {
         if let Ok(existing) = self.get(&address).await {
             let tamper_attempted = signed_spend.spend.hash() != existing.spend.hash();
             if tamper_attempted {
-                trace!("Tamper attempt detected, jsut rejecting the request.");
+                trace!("Tamper attempt detected, just rejecting the request.");
                 return Err(Error::AlreadyExists(address));
                 // // We don't error if the double spend failed, as we rather want to
                 // // announce the double spend attempt to close group. TODO: how to handle the error then?
