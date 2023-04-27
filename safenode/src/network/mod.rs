@@ -561,17 +561,15 @@ mod tests {
         // spawn a task to handle the the Request that we recieve.
         // This handles the request and sends a response back
         let _event_handler = tokio::spawn(async move {
-            if let Some(NetworkEvent::RequestReceived {
-                channel: MsgResponder::FromSelf(channel),
-                ..
-            }) = event_rx.recv().await
-            {
-                let res = Response::Cmd(CmdResponse::StoreChunk(Ok(())));
-                assert!(channel.send(Ok(res)).is_ok());
-            }
-            // keep the task running
             loop {
-                tokio::time::sleep(Duration::from_millis(1)).await;
+                if let Some(NetworkEvent::RequestReceived {
+                    channel: MsgResponder::FromSelf(channel),
+                    ..
+                }) = event_rx.recv().await
+                {
+                    let res = Response::Cmd(CmdResponse::StoreChunk(Ok(())));
+                    assert!(channel.send(Ok(res)).is_ok());
+                }
             }
         });
 
@@ -582,15 +580,25 @@ mod tests {
             &random_data,
         ))));
         // send the request to `self` and wait for a response
-        let res = net
-            .send_and_get_responses(vec![net.peer_id], &req, true)
-            .await
-            .remove(0)
-            .expect("Expected atleast one response");
-        info!("Got response {:?}", res);
-        assert_matches!(res, Response::Cmd(CmdResponse::StoreChunk(Ok(()))));
-
-        Ok(())
+        let now = tokio::time::Instant::now();
+        loop {
+            let mut res = net
+                .send_and_get_responses(vec![net.peer_id], &req, true)
+                .await;
+            if res.is_empty() || res[0].is_err() {
+                tokio::time::sleep(Duration::from_secs(1)).await;
+                if now.elapsed() > Duration::from_secs(10) {
+                    return Err(eyre!("Timed out waiting for response."));
+                }
+            } else {
+                let res = res
+                    .remove(0)
+                    .expect("There should be at least one response!");
+                info!("Got response {:?}", res);
+                assert_matches!(res, Response::Cmd(CmdResponse::StoreChunk(Ok(()))));
+                return Ok(());
+            }
+        }
     }
 
     /// Test utility
