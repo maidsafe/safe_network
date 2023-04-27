@@ -458,7 +458,7 @@ mod tests {
     use super::SwarmDriver;
     use crate::{
         domain::storage::Chunk,
-        log::init_node_logging,
+        log::init_test_logger,
         network::{MsgResponder, NetworkEvent},
         protocol::messages::{Cmd, CmdResponse, Request, Response},
     };
@@ -483,7 +483,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn closest() -> Result<()> {
-        let _ = init_node_logging(&None)?;
+        init_test_logger();
         let mut networks_list = Vec::new();
         let mut network_events_recievers = BTreeMap::new();
         for _ in 1..25 {
@@ -550,7 +550,7 @@ mod tests {
 
     #[tokio::test]
     async fn msg_to_self_should_not_error_out() -> Result<()> {
-        let _ = init_node_logging(&None)?;
+        init_test_logger();
         let (net, mut event_rx, driver) = SwarmDriver::new(
             "0.0.0.0:0"
                 .parse::<SocketAddr>()
