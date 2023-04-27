@@ -183,7 +183,7 @@ pub(super) struct KeyLessWallet {
     /// We maintain the order they were added in, as to republish
     /// them in the correct order, in case any later spend was
     /// dependent on an earlier spend.
-    unconfirmed_txs: Vec<(sn_dbc::Hash, TransferDetails)>,
+    unconfirmed_txs: Vec<TransferDetails>,
     /// These are the dbcs we own that are not yet spent.
     available_dbcs: BTreeMap<DbcId, Dbc>,
     /// These are the dbcs we've created by
