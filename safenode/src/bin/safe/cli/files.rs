@@ -18,7 +18,6 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
-use tracing::trace;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -60,15 +59,15 @@ async fn upload_files(files_path: PathBuf, file_api: &Files, root_dir: &Path) ->
                 continue;
             };
 
-            trace!("Storing file {file_name:?} of {} bytes..", bytes.len());
+            print!("Storing file {file_name:?} of {} bytes..", bytes.len());
 
             match file_api.upload(bytes).await {
                 Ok(address) => {
-                    trace!("Successfully stored file to {address:?}");
+                    print!("Successfully stored file to {address:?}");
                     chunks_to_fetch.push((*address.name(), file_name));
                 }
                 Err(error) => {
-                    trace!(
+                    print!(
                         "Did not store file {file_name:?} to all nodes in the close group! {error}"
                     )
                 }
@@ -80,7 +79,7 @@ async fn upload_files(files_path: PathBuf, file_api: &Files, root_dir: &Path) ->
     tokio::fs::create_dir_all(file_names_path.as_path()).await?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
-    trace!("Writing {} bytes to {file_names_path:?}", content.len());
+    print!("Writing {} bytes to {file_names_path:?}", content.len());
     fs::write(file_names_path, content)?;
 
     Ok(())
@@ -99,23 +98,23 @@ async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
             let index_doc_bytes = Bytes::from(fs::read(entry.path())?);
             let index_doc_name = entry.file_name();
 
-            trace!("Loading file names from index doc {index_doc_name:?}");
+            print!("Loading file names from index doc {index_doc_name:?}");
             let files_to_fetch: Vec<(XorName, String)> = bincode::deserialize(&index_doc_bytes)?;
 
             if files_to_fetch.is_empty() {
-                trace!("No files to download!");
+                print!("No files to download!");
             }
             for (xorname, file_name) in files_to_fetch.iter() {
-                trace!("Downloading file {file_name:?}");
+                print!("Downloading file {file_name:?}");
                 match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
                     Ok(bytes) => {
-                        trace!("Successfully got file {file_name}!");
+                        print!("Successfully got file {file_name}!");
                         let file_name_path = download_path.join(file_name);
-                        trace!("Writing {} bytes to {file_name_path:?}", bytes.len());
+                        print!("Writing {} bytes to {file_name_path:?}", bytes.len());
                         fs::write(file_name_path, bytes)?;
                     }
                     Err(error) => {
-                        trace!("Did not get file {file_name:?} from the network! {error}")
+                        print!("Did not get file {file_name:?} from the network! {error}")
                     }
                 };
             }
