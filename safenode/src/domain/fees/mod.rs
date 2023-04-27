@@ -46,13 +46,15 @@ mod required_fee_content;
 mod spend_queue;
 
 pub use self::{
-    error::{Error, Result},
+    error::Result,
     fee_ciphers::FeeCiphers,
     priority::SpendPriority,
     required_fee::RequiredFee,
     required_fee_content::RequiredFeeContent,
     spend_queue::{SpendQ, SpendQSnapshot, SpendQStats},
 };
+
+use crate::protocol::error::FeeError as Error;
 
 #[cfg(test)]
 mod tests {

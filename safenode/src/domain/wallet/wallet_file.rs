@@ -8,7 +8,7 @@
 
 use super::{error::Result, public_address_name, KeyLessWallet};
 
-use crate::domain::storage::dbc_name;
+use crate::protocol::storage::dbc_name;
 
 use sn_dbc::Dbc;
 use std::path::Path;

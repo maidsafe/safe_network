@@ -6,7 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Action, Error, Result};
+use crate::protocol::error::StorageError;
+
+use super::Action;
 
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, hash::Hash};
@@ -57,10 +59,11 @@ pub struct Policy {
     pub permissions: BTreeMap<User, Permissions>,
 }
 
+// FIXME: this impl shouldn't be part of the protocol but part of the implementation of Register storage.
 impl Policy {
     /// Returns `Ok(())` if `action` is allowed for the provided user and `Err(AccessDenied)` if
     /// this action is not permitted.
-    pub fn is_action_allowed(&self, requester: User, action: Action) -> Result<()> {
+    pub fn is_action_allowed(&self, requester: User, action: Action) -> Result<(), StorageError> {
         // First checks if the requester is the owner.
         if action == Action::Read || requester == self.owner {
             Ok(())
@@ -70,8 +73,8 @@ impl Policy {
                 .or_else(|| self.is_action_allowed_by_user(&User::Anyone, action))
             {
                 Some(true) => Ok(()),
-                Some(false) => Err(Error::AccessDenied(requester)),
-                None => Err(Error::AccessDenied(requester)),
+                Some(false) => Err(StorageError::AccessDenied(requester)),
+                None => Err(StorageError::AccessDenied(requester)),
             }
         }
     }

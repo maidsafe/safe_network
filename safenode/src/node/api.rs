@@ -14,20 +14,17 @@ use super::{
 
 use crate::{
     domain::{
-        dbc_genesis::is_genesis_parent_tx,
-        node_transfers::{Error as TransferError, Transfers},
-        storage::{
-            dbc_address, register::User, DbcAddress, Error as StorageError, RegisterStorage,
-        },
+        dbc_genesis::is_genesis_parent_tx, node_transfers::Transfers, storage::RegisterStorage,
         wallet::LocalWallet,
     },
     network::{close_group_majority, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState},
     protocol::{
-        error::Error as ProtocolError,
+        error::{Error as ProtocolError, StorageError, TransferError},
         messages::{
             Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
             SpendQuery,
         },
+        storage::{dbc_address, registers::User, DbcAddress},
     },
 };
 

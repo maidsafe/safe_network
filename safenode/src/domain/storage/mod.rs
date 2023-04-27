@@ -6,18 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod address;
-mod chunks;
 mod error;
 mod registers;
 mod spends;
 
-pub use self::{
-    address::{dbc_address, dbc_name, ChunkAddress, DataAddress, DbcAddress, RegisterAddress},
-    chunks::Chunk,
-    error::{Error, Result},
-    registers::register,
-};
+pub use self::{error::Result, registers::register};
 
 pub(crate) use self::{registers::RegisterStorage, spends::SpendStorage};
 
