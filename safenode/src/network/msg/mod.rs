@@ -40,7 +40,7 @@ impl SwarmDriver {
                     request_id,
                     response,
                 } => {
-                    trace!("Got response for id: {request_id:?}, res: {response:?} ");
+                    trace!("Got response for id: {request_id:?}, res: {response}.");
                     self.pending_requests
                         .remove(&request_id)
                         .ok_or(Error::ReceivedResponseDropped(request_id))?

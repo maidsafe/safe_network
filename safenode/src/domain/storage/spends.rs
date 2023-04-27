@@ -153,10 +153,10 @@ impl SpendStorage {
             // it isn't a double spend attempt either!
             // A node could erroneously send a notification of a double spend attempt,
             // so, we need to validate that.
-            return Err(Error::NotADoubleSpendAttempt(
-                Box::new(a_spend.clone()),
-                Box::new(b_spend.clone()),
-            ));
+            return Err(Error::NotADoubleSpendAttempt {
+                one: Box::new(a_spend.clone()),
+                other: Box::new(b_spend.clone()),
+            });
         }
 
         if self.is_unspendable(a_spend.dbc_id()).await {
