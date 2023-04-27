@@ -19,14 +19,16 @@ use futures::future::join_all;
 
 #[async_trait::async_trait]
 impl SendClient for Client {
-    async fn send(
+    async fn create_transfer(
         &self,
         dbcs: Vec<(Dbc, DerivedKey)>,
         to: Vec<(Token, DbcIdSource)>,
         change_to: PublicAddress,
     ) -> Result<TransferDetails> {
-        let transfer = create_online_transfer(dbcs, to, change_to, self).await?;
+        Ok(create_online_transfer(dbcs, to, change_to, self).await?)
+    }
 
+    async fn send(&self, transfer: TransferDetails) -> Result<()> {
         let mut tasks = Vec::new();
         for spend_request in &transfer.all_spend_requests {
             tasks.push(self.expect_closest_majority_ok(spend_request.clone()));
@@ -36,6 +38,6 @@ impl SendClient for Client {
             spend_attempt_result.map_err(|err| Error::CouldNotSendTokens(err.to_string()))?;
         }
 
-        Ok(transfer)
+        Ok(())
     }
 }
