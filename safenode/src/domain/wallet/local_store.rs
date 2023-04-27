@@ -232,7 +232,15 @@ impl SendWallet for LocalWallet {
             .extend(created_dbcs.clone());
 
         // Last of all, register the spend in the network.
-        let _result = client.send(transfer).await;
+        let result = client.send(transfer.clone()).await;
+
+        if result.is_err() {
+            println!("The transfer was not successfully registered in the network. It will be retried later.");
+            let _ = self
+                .wallet
+                .unconfirmed_txs
+                .push((transfer.tx_hash, transfer));
+        }
 
         Ok(created_dbcs)
     }
