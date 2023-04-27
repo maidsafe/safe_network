@@ -72,7 +72,7 @@ async fn spend_is_stored_in_network() -> Result<()> {
 
 fn get_client() -> Client {
     let secret_key = bls::SecretKey::random();
-    Client::new(secret_key).expect("Client shall be successfully created.")
+    Client::new(secret_key, None).expect("Client shall be successfully created.")
 }
 
 async fn get_wallet(root_dir: &Path) -> LocalWallet {

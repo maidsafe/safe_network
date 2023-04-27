@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
     let signer = SecretKey::random();
 
     println!("Starting SAFE client...");
-    let client = Client::new(signer)?;
+    let client = Client::new(signer, None)?;
     println!("SAFE client signer public key: {:?}", client.signer_pk());
 
     // Let's wait till we are connected to the network before proceeding further

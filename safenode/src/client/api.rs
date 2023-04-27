@@ -28,23 +28,26 @@ use sn_dbc::{DbcId, SignedSpend};
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use itertools::Itertools;
-use libp2p::{kad::RecordKey, PeerId};
+use libp2p::{kad::RecordKey, Multiaddr, PeerId};
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
 
 impl Client {
     /// Instantiate a new client.
-    pub fn new(signer: SecretKey) -> Result<Self> {
+    pub fn new(signer: SecretKey, peers: Option<Vec<(PeerId, Multiaddr)>>) -> Result<Self> {
         info!("Starting Kad swarm in client mode...");
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client()?;
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
         let client = Self {
-            network,
+            network: network.clone(),
             events_channel,
             signer,
         };
+
+        let mut must_dial_network = true;
+
         let mut client_clone = client.clone();
 
         let _swarm_driver = spawn({
@@ -53,6 +56,23 @@ impl Client {
         });
         let _event_handler = spawn(async move {
             loop {
+                if let Some(peers) = peers.clone() {
+                    if must_dial_network {
+                        let network = network.clone();
+                        let _handle = spawn(async move {
+                            trace!("Client dialing network");
+                            for (peer_id, addr) in peers {
+                                if let Err(err) = network.clone().dial(peer_id, addr.clone()).await
+                                {
+                                    tracing::error!("Failed to dial {peer_id}: {err:?}");
+                                };
+                            }
+                        });
+
+                        must_dial_network = false;
+                    }
+                }
+
                 info!("Client waiting for a network event");
                 let event = match network_event_receiver.recv().await {
                     Some(event) => event,
