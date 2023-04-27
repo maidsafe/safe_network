@@ -311,7 +311,11 @@ impl Node {
                             fee_ciphers,
                             parent_spends,
                         };
-                        match self.send_to_closest(&Request::Event(event)).await {
+                        match self
+                            .network
+                            .node_send_to_closest(&Request::Event(event))
+                            .await
+                        {
                             Ok(_) => {}
                             Err(err) => {
                                 warn!(
