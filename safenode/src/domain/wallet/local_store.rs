@@ -180,6 +180,18 @@ impl SendWallet for LocalWallet {
     ) -> Result<Vec<CreatedDbc>> {
         // First resend any pending txs.
         // This is not guaranteed to succeed.
+        // If the spend was invalid to start with
+        // then it will always fail here.
+        // It can disrupt the use of the wallet, if
+        // we got change from that invalid tx, that
+        // we try to spend later.
+        // So either we need to make sure that the
+        // failing transfers are not failing due to being invalid,
+        // or we need a way to check that later and clear those out
+        // from the pending txs list. Since they could become "invalid"
+        // while being in the pending txs list (the DBCs they spend, became
+        // spent in other txs in the meanwhile), the latter solution
+        // of being able to check and clean out the list later seems to be necessary.
         resend_pending_txs(self, client).await;
 
         // do not make a pointless send to ourselves
