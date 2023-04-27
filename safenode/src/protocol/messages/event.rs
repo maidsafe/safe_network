@@ -22,36 +22,49 @@ use serde::{Deserialize, Serialize};
 ///
 /// [`protocol`]: crate::protocol
 #[allow(clippy::large_enum_variant)]
-#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
+#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
 pub enum Event {
     /// A peer detected a double spend attempt for a [`SignedSpend`].
     /// Contains the first two spends of same id that were detected as being different.
     ///
     /// [`SignedSpend`]: sn_dbc::SignedSpend
-    DoubleSpendAttempted(Box<SignedSpend>, Box<SignedSpend>),
+    #[debug(skip)]
+    DoubleSpendAttempted {
+        /// New spend that we received.
+        #[debug(skip)]
+        new: Box<SignedSpend>,
+        /// Existing spend of same id that we already have.
+        #[debug(skip)]
+        existing: Box<SignedSpend>,
+    },
 }
 
 impl Event {
     /// Used to send a cmd to the close group of the address.
     pub fn dst(&self) -> DataAddress {
         match self {
-            Event::DoubleSpendAttempted(a, _) => DataAddress::Spend(dbc_address(a.dbc_id())),
+            Event::DoubleSpendAttempted { new, .. } => {
+                DataAddress::Spend(dbc_address(new.dbc_id()))
+            }
         }
     }
 
     /// Create a new [`Event::DoubleSpendAttempted`] event.
     /// It is validated so that only two spends with same id
     /// can be used to create this event.
-    pub fn double_spend_attempt(a: Box<SignedSpend>, b: Box<SignedSpend>) -> Result<Self> {
-        if a.dbc_id() == b.dbc_id() {
-            Ok(Event::DoubleSpendAttempted(a, b))
+    pub fn double_spend_attempt(new: Box<SignedSpend>, existing: Box<SignedSpend>) -> Result<Self> {
+        if new.dbc_id() == existing.dbc_id() {
+            Ok(Event::DoubleSpendAttempted { new, existing })
         } else {
             // If the ids are different, then this is not a double spend attempt.
             // A double spend attempt is when the contents (the tx) of two spends
             // with same id are detected as being different.
             // A node could erroneously send a notification of a double spend attempt,
             // so, we need to validate that.
-            Err(Error::Storage(StorageError::NotADoubleSpendAttempt(a, b)))
+            Err(Error::Storage(StorageError::NotADoubleSpendAttempt {
+                one: new,
+                other: existing,
+            }))
         }
     }
 }

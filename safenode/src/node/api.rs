@@ -172,9 +172,9 @@ impl Node {
             Request::Query(query) => Response::Query(self.handle_query(query).await),
             Request::Event(event) => {
                 match event {
-                    Event::DoubleSpendAttempted(a_spend, b_spend) => {
+                    Event::DoubleSpendAttempted { new, existing } => {
                         self.transfers
-                            .try_add_double(a_spend.as_ref(), b_spend.as_ref())
+                            .try_add_double(new.as_ref(), existing.as_ref())
                             .await
                             .map_err(ProtocolError::Transfers)?;
                         return Ok(());

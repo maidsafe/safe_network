@@ -344,11 +344,7 @@ impl Client {
             match select_all(list_of_futures).await {
                 (Ok(res), _, remaining_futures) => {
                     let res = res.map_err(Error::Network);
-                    let res_string = match &res {
-                        Ok(res) => format!("{res}"),
-                        Err(err) => format!("{err:?}"),
-                    };
-                    trace!("Got response for the req: {req:?}, res: {res_string}");
+                    println!("Got response for the req: {req:?}, res: {res:?}");
 
                     // return the first successful response
                     if !get_all_responses && res.is_ok() {

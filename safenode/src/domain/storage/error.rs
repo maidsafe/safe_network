@@ -14,14 +14,14 @@ use super::{
 use sn_dbc::{Error as DbcError, SignedSpend};
 
 use serde::{Deserialize, Serialize};
-use std::{fmt::Debug, path::PathBuf, result};
+use std::{path::PathBuf, result};
 use thiserror::Error;
 
 /// A specialised `Result` type for protocol crate.
 pub type Result<T> = result::Result<T, Error>;
 
 /// Main error type for the crate.
-#[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Error, Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 #[non_exhaustive]
 pub enum Error {
     /// Chunk not found.
@@ -80,13 +80,23 @@ pub enum Error {
     #[error("A double spend attempt was detected. Incoming and existing spend are not the same: {new:?}. Existing: {existing:?}")]
     DoubleSpendAttempt {
         /// New spend that we received.
+        #[debug(skip)]
         new: Box<SignedSpend>,
         /// Existing spend of same id that we already have.
+        #[debug(skip)]
         existing: Box<SignedSpend>,
     },
     /// We were notified about a double spend attempt, but they were for different dbcs.
-    #[error("We were notified about a double spend attempt, but they were for different dbcs: {0:?}. Existing: {1:?}")]
-    NotADoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
+    #[debug(skip)]
+    #[error("We were notified about a double spend attempt, but they were for different dbcs. One: {one:?}, another: {other:?}")]
+    NotADoubleSpendAttempt {
+        /// One of the spends provided.
+        #[debug(skip)]
+        one: Box<SignedSpend>,
+        /// The other spend provided.
+        #[debug(skip)]
+        other: Box<SignedSpend>,
+    },
     /// A spend that was attempted to be added was already marked as double spend.
     #[error("A spend that was attempted to be added was already marked as double spend: {0:?}")]
     AlreadyMarkedAsDoubleSpend(DbcAddress),

@@ -56,7 +56,7 @@ pub enum Response {
 
 /// Messages to replicated data among nodes on the network
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(custom_debug::Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum ReplicatedData {
     /// A chunk of data.
     Chunk(Chunk),
@@ -65,8 +65,10 @@ pub enum ReplicatedData {
     /// An entire op log of a register.
     RegisterLog(ReplicatedRegisterLog),
     /// A valid spend.
+    #[debug(skip)]
     ValidSpend(SignedSpend),
     /// A dbc marked as having attempted double spend.
+    #[debug(skip)]
     DoubleSpend((DbcAddress, BTreeSet<SignedSpend>)),
 }
 

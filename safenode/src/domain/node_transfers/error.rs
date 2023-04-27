@@ -21,7 +21,7 @@ use thiserror::Error;
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Transfer errors.
-#[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Error, custom_debug::Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Error {
     #[error("The transfer fee is missing.")]
     MissingFee((NodeId, DbcId)),
@@ -72,6 +72,7 @@ pub enum Error {
     },
     /// One or more parent spends of a requested spend could not be confirmed as valid.
     /// The full set of parents checked are contained in this error.
+    #[debug(skip)]
     #[error(
         "A parent tx of a requested spend could not be confirmed as valid. All parent signed spends of that tx {0:?}"
     )]
