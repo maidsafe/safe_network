@@ -100,6 +100,10 @@ pub enum Error {
     /// A spend that was attempted to be added was already marked as double spend.
     #[error("A spend that was attempted to be added was already marked as double spend: {0:?}")]
     AlreadyMarkedAsDoubleSpend(DbcAddress),
+    /// NB: This is a temporary error, which circumvents double spend detection for now.
+    /// A spend that was attempted to be added already existed.
+    #[error("A spend that was attempted to be added already existed: {0:?}")]
+    AlreadyExists(DbcAddress),
     /// An error from the `sn_dbc` crate.
     #[error("Dbc error: {0}")]
     Dbcs(String),
