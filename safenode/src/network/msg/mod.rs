@@ -7,11 +7,14 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod codec;
+
 pub(crate) use codec::{MsgCodec, MsgProtocol};
 
-use crate::network::MsgResponder;
-use crate::network::{error::Error, NetworkEvent, SwarmDriver};
-use crate::protocol::messages::{Request, Response};
+use crate::{
+    network::{error::Error, MsgResponder, NetworkEvent, SwarmDriver},
+    protocol::messages::{Request, Response},
+};
+
 use libp2p::request_response::{self, Message};
 use tracing::{trace, warn};
 

@@ -11,6 +11,7 @@ use super::{
     event::NodeEventsChannel,
     Network, Node, NodeEvent, NodeId,
 };
+
 use crate::{
     domain::{
         dbc_genesis::is_genesis_parent_tx,
@@ -29,11 +30,13 @@ use crate::{
         },
     },
 };
+
+use sn_dbc::{DbcTransaction, SignedSpend};
+
 use libp2p::{
     kad::{Record, RecordKey},
     Multiaddr, PeerId,
 };
-use sn_dbc::{DbcTransaction, SignedSpend};
 use std::{collections::BTreeSet, net::SocketAddr, path::Path};
 use tokio::task::spawn;
 use xor_name::XorName;
