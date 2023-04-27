@@ -483,10 +483,12 @@ mod tests {
     use super::SwarmDriver;
 
     use crate::{
-        domain::storage::Chunk,
         log::init_test_logger,
         network::{MsgResponder, NetworkEvent},
-        protocol::messages::{Cmd, CmdResponse, Request, Response},
+        protocol::{
+            messages::{Cmd, CmdResponse, Request, Response},
+            storage::Chunk,
+        },
     };
 
     use assert_matches::assert_matches;

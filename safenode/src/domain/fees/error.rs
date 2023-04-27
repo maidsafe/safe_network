@@ -6,14 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_dbc::Error as DbcError;
+use crate::protocol::error::FeeError;
 
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
+//use sn_dbc::Error as DbcError;
+
+//use serde::{Deserialize, Serialize};
+//use thiserror::Error;
 
 /// Specialisation of `std::Result`.
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub type Result<T, E = FeeError> = std::result::Result<T, E>;
 
+/*
 /// Fee errors.
 #[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Error {
@@ -33,3 +36,4 @@ impl From<DbcError> for Error {
         Error::Dbcs(error.to_string())
     }
 }
+*/

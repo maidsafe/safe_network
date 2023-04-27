@@ -270,11 +270,15 @@ async fn resend_pending_txs<C: SendClient>(local: &mut LocalWallet, client: &C) 
 mod tests {
     use super::{get_wallet, store_wallet, LocalWallet};
 
-    use crate::domain::{
-        client_transfers::{create_offline_transfer, Outputs as TransferDetails},
-        dbc_genesis::{create_first_dbc_from_key, GENESIS_DBC_AMOUNT},
-        storage::dbc_name,
-        wallet::{local_store::WALLET_DIR_NAME, public_address_name, KeyLessWallet, SendClient},
+    use crate::{
+        domain::{
+            client_transfers::{create_offline_transfer, Outputs as TransferDetails},
+            dbc_genesis::{create_first_dbc_from_key, GENESIS_DBC_AMOUNT},
+            wallet::{
+                local_store::WALLET_DIR_NAME, public_address_name, KeyLessWallet, SendClient,
+            },
+        },
+        protocol::storage::dbc_name,
     };
 
     use sn_dbc::{Dbc, DbcIdSource, DerivedKey, MainKey, PublicAddress, Token};

@@ -12,24 +12,25 @@ use super::{
 };
 
 use crate::{
-    domain::storage::{
-        register::{
-            Action, DataAuthority, Entry, EntryHash, Permissions, Policy,
-            Register as RegisterReplica, User,
-        },
-        RegisterAddress,
-    },
+    domain::storage::register::RegisterReplica,
     protocol::{
         error::Error as ProtocolError,
         messages::{
             Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
             RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
         },
+        storage::{
+            registers::{Action, DataAuthority, Entry, EntryHash, Permissions, Policy, User},
+            RegisterAddress,
+        },
     },
 };
 
 use bincode::serialize;
-use std::collections::{BTreeSet, LinkedList};
+use std::{
+    collections::{BTreeSet, LinkedList},
+    convert::From,
+};
 use xor_name::XorName;
 
 /// Ops made to an offline Register instance are applied locally only,
@@ -304,7 +305,7 @@ impl RegisterOffline {
         // We will return the first register we get.
         for resp in responses.iter().flatten() {
             if let Response::Query(QueryResponse::GetRegister(Ok(register))) = resp {
-                return Ok(register.clone());
+                return Ok(register.clone().into());
             };
         }
 

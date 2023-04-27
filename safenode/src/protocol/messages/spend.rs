@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::domain::{
-    fees::SpendPriority,
-    storage::{dbc_address, DbcAddress},
+use crate::{
+    domain::fees::SpendPriority,
+    protocol::storage::{dbc_address, DbcAddress},
 };
 
 use sn_dbc::DbcId;

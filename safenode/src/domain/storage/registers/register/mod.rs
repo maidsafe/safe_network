@@ -6,21 +6,19 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod authority;
-mod metadata;
-mod policy;
 mod reg_crdt;
 
-pub use self::{
-    authority::DataAuthority,
-    metadata::{Action, Entry},
-    policy::{Permissions, Policy, User},
-    reg_crdt::EntryHash,
+use crate::protocol::{
+    error::StorageError as Error,
+    storage::{
+        registers::{Action, Entry, EntryHash, Permissions, Policy, Register, RegisterOp, User},
+        RegisterAddress,
+    },
 };
 
-pub(crate) use reg_crdt::{CrdtOperation, RegisterCrdt};
+use super::Result;
 
-use super::{Error, RegisterAddress, Result};
+use self::reg_crdt::RegisterCrdtImpl;
 
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use serde::{Deserialize, Serialize};
@@ -36,24 +34,43 @@ const MAX_REG_ENTRY_SIZE: usize = MIN_ENCRYPTABLE_BYTES / 3; // 1024 bytes
 /// Maximum number of entries of a register.
 const MAX_REG_NUM_ENTRIES: u16 = 1024;
 
-/// Register mutation operation to apply to Register.
-pub type RegisterOp<T> = CrdtOperation<T>;
-
-/// Object storing the Register
+/// Object storing the data of a Register, implementing the functions for CRDT operations
 #[derive(Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize, Debug)]
-pub struct Register {
+pub struct RegisterReplica {
     authority: User,
-    crdt: RegisterCrdt,
+    crdt: RegisterCrdtImpl,
     policy: Policy,
 }
 
-impl Register {
+impl From<Register> for RegisterReplica {
+    fn from(reg: Register) -> Self {
+        Self {
+            authority: reg.authority,
+            crdt: reg.crdt.into(),
+            policy: reg.policy,
+        }
+    }
+}
+
+// We allow from_over_into since the `RegisterReplica` is not parrt of this crate or implementation.
+#[allow(clippy::from_over_into)]
+impl Into<Register> for RegisterReplica {
+    fn into(self) -> Register {
+        Register {
+            authority: self.authority,
+            crdt: self.crdt.into(),
+            policy: self.policy,
+        }
+    }
+}
+
+impl RegisterReplica {
     ///
     pub fn new(authority: User, name: XorName, tag: u64, policy: Policy) -> Self {
         let address = RegisterAddress { name, tag };
         Self {
             authority,
-            crdt: RegisterCrdt::new(address),
+            crdt: RegisterCrdtImpl::new(address),
             policy,
         }
     }
@@ -144,6 +161,17 @@ impl Register {
         self.crdt.merge(other.crdt);
     }
 
+    /// Helper to check permissions for given `action`
+    /// for the given requester's public key.
+    ///
+    /// Returns:
+    /// `Ok(())` if the permissions are valid,
+    /// `Err::AccessDenied` if the action is not allowed.
+    pub fn check_permissions(&self, action: Action, requester: Option<User>) -> Result<()> {
+        let requester = requester.unwrap_or(self.authority);
+        self.policy.is_action_allowed(requester, action)
+    }
+
     // Private helper to check the given Entry's size is within define limit,
     // as well as check the Register hasn't already reached the maximum number of entries.
     fn check_entry_and_reg_sizes(&self, entry: &Entry) -> Result<()> {
@@ -162,23 +190,12 @@ impl Register {
 
         Ok(())
     }
-
-    /// Helper to check permissions for given `action`
-    /// for the given requester's public key.
-    ///
-    /// Returns:
-    /// `Ok(())` if the permissions are valid,
-    /// `Err::AccessDenied` if the action is not allowed.
-    pub fn check_permissions(&self, action: Action, requester: Option<User>) -> Result<()> {
-        let requester = requester.unwrap_or(self.authority);
-        self.policy.is_action_allowed(requester, action)
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        Entry, EntryHash, Error, Permissions, Policy, Register, RegisterAddress, RegisterOp,
+        Entry, EntryHash, Error, Permissions, Policy, RegisterAddress, RegisterOp, RegisterReplica,
         Result, User, MAX_REG_NUM_ENTRIES,
     };
 
@@ -217,7 +234,7 @@ mod tests {
         let name: XorName = xor_name::rand::random();
         let tag = 43_000u64;
 
-        let mut replica1 = Register::new(
+        let mut replica1 = RegisterReplica::new(
             authority,
             name,
             tag,
@@ -226,7 +243,7 @@ mod tests {
                 permissions: BTreeMap::default(),
             },
         );
-        let mut replica2 = Register::new(
+        let mut replica2 = RegisterReplica::new(
             authority,
             name,
             tag,
@@ -276,7 +293,7 @@ mod tests {
         let _prev = perms.insert(authority2, user_perms);
 
         // Instantiate the same Register on two replicas with the two diff authorities
-        let mut replica1 = Register::new(
+        let mut replica1 = RegisterReplica::new(
             authority1,
             name,
             tag,
@@ -285,7 +302,7 @@ mod tests {
                 permissions: perms.clone(),
             },
         );
-        let mut replica2 = Register::new(
+        let mut replica2 = RegisterReplica::new(
             authority2,
             name,
             tag,
@@ -475,8 +492,8 @@ mod tests {
         tag: u64,
         policy: Option<Policy>,
         count: usize,
-    ) -> Vec<(SecretKey, Register)> {
-        let replicas: Vec<(SecretKey, Register)> = (0..count)
+    ) -> Vec<(SecretKey, RegisterReplica)> {
+        let replicas: Vec<(SecretKey, RegisterReplica)> = (0..count)
             .map(|_| {
                 let authority_sk = authority_sk.clone().unwrap_or_else(SecretKey::random);
                 let authority = User::Key(authority_sk.public_key());
@@ -484,7 +501,7 @@ mod tests {
                     owner: authority,
                     permissions: BTreeMap::new(),
                 });
-                let register = Register::new(authority, name, tag, policy);
+                let register = RegisterReplica::new(authority, name, tag, policy);
                 (authority_sk, register)
             })
             .collect();
@@ -493,7 +510,7 @@ mod tests {
         replicas
     }
 
-    fn create_reg_replicas(count: usize) -> Vec<(SecretKey, Register)> {
+    fn create_reg_replicas(count: usize) -> Vec<(SecretKey, RegisterReplica)> {
         let name = xor_name::rand::random();
         let tag = 43_000;
 
@@ -505,13 +522,13 @@ mod tests {
         tag: u64,
         authority_sk: Option<SecretKey>,
         policy: Option<Policy>,
-    ) -> Register {
+    ) -> RegisterReplica {
         let replicas = gen_reg_replicas(authority_sk, name, tag, policy, 1);
         replicas[0].1.clone()
     }
 
     // verify data convergence on a set of replicas and with the expected length
-    fn verify_data_convergence(replicas: Vec<Register>, expected_size: u64) -> Result<()> {
+    fn verify_data_convergence(replicas: Vec<RegisterReplica>, expected_size: u64) -> Result<()> {
         // verify all replicas have the same and expected size
         for r in &replicas {
             assert_eq!(r.size(), expected_size);
@@ -529,7 +546,7 @@ mod tests {
     // Generate a vec of Register replicas of some length, with corresponding vec of keypairs for signing, and the overall owner of the register
     fn generate_replicas(
         max_quantity: usize,
-    ) -> impl Strategy<Value = Result<(Vec<Register>, Arc<SecretKey>)>> {
+    ) -> impl Strategy<Value = Result<(Vec<RegisterReplica>, Arc<SecretKey>)>> {
         let xorname = xor_name::rand::random();
         let tag = 45_000u64;
 
@@ -543,7 +560,7 @@ mod tests {
         (1..max_quantity + 1).prop_map(move |quantity| {
             let mut replicas = Vec::with_capacity(quantity);
             for _ in 0..quantity {
-                let replica = Register::new(owner, xorname, tag, policy.clone());
+                let replica = RegisterReplica::new(owner, xorname, tag, policy.clone());
 
                 replicas.push(replica);
             }
@@ -909,7 +926,7 @@ mod tests {
             let xorname = xor_name::rand::random();
             let tag = 45_000u64;
             let random_owner_sk = SecretKey::random();
-            let mut bogus_replica = Register::new_owned(User::Key(random_owner_sk.public_key()), xorname, tag);
+            let mut bogus_replica = RegisterReplica::new_owned(User::Key(random_owner_sk.public_key()), xorname, tag);
 
             // add bogus ops from bogus replica + bogus data
             let mut children = BTreeSet::new();

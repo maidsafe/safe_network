@@ -7,15 +7,15 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    domain::{
-        fees::RequiredFee,
+    domain::fees::RequiredFee,
+    node::NodeId,
+    protocol::{
+        error::Result,
         storage::{
-            register::{Entry, EntryHash, Permissions, Policy, Register, User},
+            registers::{Entry, EntryHash, Permissions, Policy, Register, User},
             Chunk,
         },
     },
-    node::NodeId,
-    protocol::error::Result,
 };
 
 #[allow(unused_imports)] // needed by rustdocs links

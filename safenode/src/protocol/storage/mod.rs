@@ -6,9 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-/// Errors.
-pub mod error;
-/// Messages types
-pub mod messages;
-/// Storage types for spends, chunks and registers.
-pub mod storage;
+/// Registers related types
+pub mod registers;
+
+mod address;
+mod chunks;
+
+pub use self::{
+    address::{dbc_address, dbc_name, ChunkAddress, DataAddress, DbcAddress, RegisterAddress},
+    chunks::Chunk,
+    registers::*,
+};

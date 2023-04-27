@@ -9,12 +9,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    domain::{
-        fees::FeeCiphers,
-        node_transfers::{Error, Result},
-        storage::{dbc_address, DataAddress, Error as StorageError},
-    },
+    domain::fees::FeeCiphers,
     node::NodeId,
+    protocol::{
+        error::{Error, Result, StorageError},
+        storage::{dbc_address, DataAddress},
+    },
 };
 
 use sn_dbc::{DbcTransaction, SignedSpend};

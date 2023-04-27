@@ -12,14 +12,12 @@ use super::{
 };
 
 use crate::{
-    domain::{
-        client_transfers::SpendRequest,
-        storage::{dbc_address, dbc_name, Chunk, ChunkAddress},
-    },
+    domain::client_transfers::SpendRequest,
     network::{close_group_majority, NetworkEvent, SwarmDriver},
     protocol::{
         error::Error as ProtocolError,
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
+        storage::{dbc_address, dbc_name, Chunk, ChunkAddress},
     },
 };
 

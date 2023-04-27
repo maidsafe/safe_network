@@ -12,9 +12,12 @@
 //! A peer will move a spend from `valid_spends` to `double_spends` if it receives another tx id for the same dbc id.
 //! A peer will never again store such a spend to `valid_spends`.
 
-use crate::domain::storage::dbc_address;
+use crate::protocol::{
+    error::StorageError as Error,
+    storage::{dbc_address, DbcAddress},
+};
 
-use super::{prefix_tree_path, DbcAddress, Error, Result};
+use super::{prefix_tree_path, Result};
 
 use sn_dbc::{DbcId, SignedSpend};
 

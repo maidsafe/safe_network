@@ -6,20 +6,24 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{
-    register::{EntryHash, User},
-    ChunkAddress, DbcAddress, RegisterAddress,
-};
+use crate::protocol::error::StorageError;
 
-use sn_dbc::{Error as DbcError, SignedSpend};
+//use super::{
+//    register::{EntryHash, User},
+//    ChunkAddress, DbcAddress, RegisterAddress,
+//};
 
-use serde::{Deserialize, Serialize};
-use std::{path::PathBuf, result};
-use thiserror::Error;
+//use sn_dbc::{Error as DbcError, SignedSpend};
+
+//use serde::{Deserialize, Serialize};
+//use std::{path::PathBuf, result};
+use std::result;
+//use thiserror::Error;
 
 /// A specialised `Result` type for protocol crate.
-pub type Result<T> = result::Result<T, Error>;
+pub type Result<T> = result::Result<T, StorageError>;
 
+/*
 /// Main error type for the crate.
 #[derive(Error, Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 #[non_exhaustive]
@@ -141,3 +145,4 @@ impl From<hex::FromHexError> for Error {
         Self::HexDecoding(error.to_string())
     }
 }
+*/

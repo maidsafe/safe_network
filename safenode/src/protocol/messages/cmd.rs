@@ -9,11 +9,9 @@
 use super::RegisterCmd;
 
 use crate::{
-    domain::{
-        fees::FeeCiphers,
-        storage::{dbc_address, Chunk, ChunkAddress, DataAddress},
-    },
+    domain::fees::FeeCiphers,
     node::NodeId,
+    protocol::storage::{dbc_address, Chunk, ChunkAddress, DataAddress},
 };
 
 use sn_dbc::{DbcTransaction, SignedSpend};

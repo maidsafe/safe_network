@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Error, Result};
+use crate::protocol::error::StorageError;
 
 use serde::{Deserialize, Serialize};
 
@@ -19,13 +19,14 @@ pub struct DataAuthority {
     pub signature: bls::Signature,
 }
 
+// FIXME: this impl shouldn't be part of the protocol but part of the implementation of Register storage.
 impl DataAuthority {
     /// Verify the authority over the provided `payload`.
-    pub fn verify_authority(&self, payload: impl AsRef<[u8]>) -> Result<()> {
+    pub fn verify_authority(&self, payload: impl AsRef<[u8]>) -> Result<(), StorageError> {
         if self.public_key.verify(&self.signature, payload) {
             Ok(())
         } else {
-            Err(Error::InvalidSignature(self.public_key))
+            Err(StorageError::InvalidSignature(self.public_key))
         }
     }
 }

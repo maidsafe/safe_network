@@ -6,20 +6,19 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    domain::{fees::Error as FeeError, storage::Error as StorageError},
-    node::NodeId,
-};
+//use crate::{domain::fees::Error as FeeError, node::NodeId};
+use crate::protocol::error::TransferError;
 
-use sn_dbc::{DbcId, Error as DbcError, Hash, SignedSpend, Token};
+//use sn_dbc::{DbcId, Error as DbcError, Hash, SignedSpend, Token};
 
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
-use thiserror::Error;
+//use serde::{Deserialize, Serialize};
+//use std::collections::BTreeSet;
+//use thiserror::Error;
 
 /// Errors related to node handling of transfers.
-pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
+pub(crate) type Result<T, E = TransferError> = std::result::Result<T, E>;
 
+/*
 /// Transfer errors.
 #[derive(Error, custom_debug::Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Error {
@@ -87,3 +86,4 @@ impl From<DbcError> for Error {
         Error::Dbcs(error.to_string())
     }
 }
+*/
