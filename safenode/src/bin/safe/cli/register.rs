@@ -10,7 +10,6 @@ use safenode::client::{Client, Error as ClientError};
 
 use clap::Subcommand;
 use eyre::Result;
-use tracing::trace;
 use xor_name::XorName;
 
 #[derive(Subcommand, Debug)]
@@ -48,30 +47,30 @@ pub(crate) async fn register_cmds(cmds: RegisterCmds, client: &Client) -> Result
 async fn create_register(name: String, client: &Client) -> Result<()> {
     let tag = 3006;
     let xorname = XorName::from_content(name.as_bytes());
-    trace!("Creating Register with '{name}' at xorname: {xorname:x} and tag {tag}");
+    println!("Creating Register with '{name}' at xorname: {xorname:x} and tag {tag}");
 
     let _register = client.create_register(xorname, tag).await?;
-    trace!("Successfully created register '{name}' at {xorname:?}, {tag}!");
+    println!("Successfully created register '{name}' at {xorname:?}, {tag}!");
     Ok(())
 }
 
 async fn edit_register(name: String, entry: String, client: &Client) -> Result<()> {
     let tag = 3006;
     let xorname = XorName::from_content(name.as_bytes());
-    trace!("Trying to retrieve Register from {xorname:?}, {tag}");
+    println!("Trying to retrieve Register from {xorname:?}, {tag}");
 
     match client.get_register(xorname, tag).await {
         Ok(mut register) => {
-            trace!(
+            println!(
                 "Successfully retrieved Register '{name}' from {}, {}!",
                 register.name(),
                 register.tag()
             );
-            trace!("Editing Register '{name}' with: {entry}");
+            println!("Editing Register '{name}' with: {entry}");
             match register.write(entry.as_bytes()).await {
                 Ok(()) => {}
                 Err(ref err @ ClientError::ContentBranchDetected(ref branches)) => {
-                    trace!(
+                    println!(
                         "We need to merge {} branches in Register entries: {err}",
                         branches.len()
                     );
@@ -81,7 +80,9 @@ async fn edit_register(name: String, entry: String, client: &Client) -> Result<(
             }
         }
         Err(error) => {
-            trace!("Did not retrieve Register '{name}' from all nodes in the close group! {error}")
+            println!(
+                "Did not retrieve Register '{name}' from all nodes in the close group! {error}"
+            )
         }
     }
 
@@ -91,19 +92,19 @@ async fn edit_register(name: String, entry: String, client: &Client) -> Result<(
 async fn get_registers(names: Vec<String>, client: &Client) -> Result<()> {
     let tag = 3006;
     for name in names {
-        trace!("Register name passed in via `register get` is '{name}'...");
+        println!("Register name passed in via `register get` is '{name}'...");
         let xorname = XorName::from_content(name.as_bytes());
 
-        trace!("Trying to retrieve Register from {xorname:?}, {tag}");
+        println!("Trying to retrieve Register from {xorname:?}, {tag}");
 
         match client.get_register(xorname, tag).await {
-            Ok(register) => trace!(
+            Ok(register) => println!(
                 "Successfully retrieved Register '{name}' from {}, {}!",
                 register.name(),
                 register.tag()
             ),
             Err(error) => {
-                trace!(
+                println!(
                     "Did not retrieve Register '{name}' from all nodes in the close group! {error}"
                 )
             }
