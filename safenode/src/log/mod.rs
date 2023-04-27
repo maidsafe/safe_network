@@ -122,6 +122,23 @@ pub fn init_node_logging(log_dir: &Option<PathBuf>) -> Result<Option<WorkerGuard
     Ok(layers.guard)
 }
 
+/// Initialise logger for tests, this is run only once, even if called multiple times.
+#[cfg(test)]
+static TEST_INIT_LOGGER: std::sync::Once = std::sync::Once::new();
+#[cfg(test)]
+pub fn init_test_logger() {
+    TEST_INIT_LOGGER.call_once(|| {
+        tracing_subscriber::fmt::fmt()
+            // NOTE: uncomment this line for pretty printed log output.
+            //.pretty()
+            .with_ansi(false)
+            .with_target(false)
+            .event_format(crate::log::LogFormatter::default())
+            .try_init()
+            .unwrap_or_else(|_| println!("Error initializing logger"));
+    });
+}
+
 /// Get current root module name (e.g. "safenode")
 fn current_crate_str() -> &'static str {
     // Grab root from module path ("safenode::log::etc" -> "safenode")
