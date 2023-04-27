@@ -178,6 +178,10 @@ impl SendWallet for LocalWallet {
         to: Vec<(Token, PublicAddress)>,
         client: &C,
     ) -> Result<Vec<CreatedDbc>> {
+        // First resend any pending txs.
+        // This is not guaranteed to succeed.
+        resend_pending_txs(self, client).await;
+
         // do not make a pointless send to ourselves
 
         let to: Vec<_> = to
@@ -243,6 +247,21 @@ impl SendWallet for LocalWallet {
         }
 
         Ok(created_dbcs)
+    }
+}
+
+async fn resend_pending_txs<C: SendClient>(local: &mut LocalWallet, client: &C) {
+    for (index, (tx_hash, transfer)) in local.wallet.unconfirmed_txs.clone().into_iter().enumerate()
+    {
+        println!("Trying to republish pending tx: {tx_hash:?}..");
+        if client.send(transfer.clone()).await.is_ok() {
+            println!("Tx {tx_hash:?} was successfully republished!");
+            let _ = local.wallet.unconfirmed_txs.remove(index);
+            // We might want to be _really_ sure and do the below
+            // as well, but it's not necessary.
+            // use crate::domain::wallet::VerifyingClient;
+            // client.verify(tx_hash).await.ok();
+        }
     }
 }
 
