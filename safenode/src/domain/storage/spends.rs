@@ -347,6 +347,7 @@ mod tests {
             .expect("The exact same spend should be added.");
     }
 
+    #[ignore = "We have temporarily disabled the punishment of double spends. NB it is still detected and hindered, just not punished."]
     #[tokio::test]
     async fn double_spend_attempt_is_detected() {
         let mut storage = init_file_store();
