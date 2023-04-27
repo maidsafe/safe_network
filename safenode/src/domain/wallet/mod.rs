@@ -30,6 +30,33 @@
 //!
 //! We will already now pave for that, by mimicing that flow for the local storage of a Wallet.
 //! First though, a simpler local storage will be used. But after that a local register store can be implemented.
+//!
+//! ************************************************************************************************************
+//!
+//! When the client spends a dbc, ie signs the tx, the dbc must be marked locally as spent (ie pending).
+//! Only then should the client broadcast it.
+//!
+//! The client stores the tx as pending until either
+//!     a) all nodes respond with spent so the client locally changes it from pending to spent or
+//!     b) no nodes respond with spent so the client locally changes it to unspent.
+//!
+//! The best heuristic here is clients are in charge of their state, and the network is the source
+//! of truth for the state.
+//! If there’s ever a conflict in those states, the client can update their local state.
+//! Clients create events (are in charge), nodes store events (are source of truth).
+//!
+//! The bitcoin flow here is very useful: unspent, unconfirmed (in mempool), confirmed.
+//! These three states are held by both the client and the node, and is easy for the client to check and resolve.
+//!
+//! The most difficult situation for a client to resolve is a low-fee tx in mempool for a long time,
+//! which eventually clears from the mempool and becomes spendable again (which for us is a tx with too few nodes
+//! storing it, and eventually is not stored anywhere, which should be extremely rare, I would expect never happens).
+//!
+//! However, we also have a "mempool", our priority queue. The great difference there though, is that a client _can_
+//! update the fee on such a queued spend, and thus can always avoid a spend getting stuck in the queue!
+//! Removing it though is not allowed, but we could allow that. If some nodes have already processed it, then
+//! the client can't change that fact. But in the case that no node actually had processed it, then the client
+//! can successfully remove it from the queue, and then re-add it with a completely different transaction.
 
 mod error;
 mod keys;
