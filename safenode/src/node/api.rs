@@ -170,6 +170,18 @@ impl Node {
             Request::Query(query) => Response::Query(self.handle_query(query).await),
             Request::Event(event) => {
                 match event {
+                    Event::ValidSpendReceived {
+                        spend,
+                        parent_tx,
+                        fee_ciphers,
+                        parent_spends,
+                    } => {
+                        self.transfers
+                            .try_add(spend, parent_tx, fee_ciphers, parent_spends)
+                            .await
+                            .map_err(ProtocolError::Transfers)?;
+                        return Ok(());
+                    }
                     Event::DoubleSpendAttempted { new, existing } => {
                         self.transfers
                             .try_add_double(new.as_ref(), existing.as_ref())
@@ -283,9 +295,32 @@ impl Node {
                 // This will validate all the necessary components of the spend.
                 let res = match self
                     .transfers
-                    .try_add(signed_spend, parent_tx, fee_ciphers, parent_spends)
+                    .try_add(
+                        signed_spend.clone(),
+                        parent_tx.clone(),
+                        fee_ciphers.clone(),
+                        parent_spends.clone(),
+                    )
                     .await
                 {
+                    Ok(()) => {
+                        warn!("Broadcasting valid spend: {:?}", signed_spend.dbc_id());
+                        let event = Event::ValidSpendReceived {
+                            spend: signed_spend,
+                            parent_tx,
+                            fee_ciphers,
+                            parent_spends,
+                        };
+                        match self.send_to_closest(&Request::Event(event)).await {
+                            Ok(_) => {}
+                            Err(err) => {
+                                warn!(
+                                    "Failed to send double spend event to closest peers: {err:?}"
+                                );
+                            }
+                        }
+                        Ok(())
+                    }
                     Err(TransferError::Storage(StorageError::DoubleSpendAttempt {
                         new,
                         existing,
