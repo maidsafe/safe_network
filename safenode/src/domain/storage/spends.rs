@@ -101,20 +101,22 @@ impl SpendStorage {
         if let Ok(existing) = self.get(&address).await {
             let tamper_attempted = signed_spend.spend.hash() != existing.spend.hash();
             if tamper_attempted {
-                // We don't error if the double spend failed, as we rather want to
-                // announce the double spend attempt to close group. TODO: how to handle the error then?
-                self.try_store_double_spend(&existing, signed_spend).await?;
+                trace!("Tamper attempt detected, jsut rejecting the request.");
+                return Err(Error::AlreadyExists(address));
+                // // We don't error if the double spend failed, as we rather want to
+                // // announce the double spend attempt to close group. TODO: how to handle the error then?
+                // self.try_store_double_spend(&existing, signed_spend).await?;
 
-                // The spend is now permanently removed from the valid spends.
-                // We don't error if the remove failed, as we rather want to
-                // announce the double spend attempt to close group.
-                // The double spend will still be detected by querying for the spend.
-                self.remove(&address, &self.valid_spends_path).await?;
+                // // The spend is now permanently removed from the valid spends.
+                // // We don't error if the remove failed, as we rather want to
+                // // announce the double spend attempt to close group.
+                // // The double spend will still be detected by querying for the spend.
+                // self.remove(&address, &self.valid_spends_path).await?;
 
-                return Err(Error::DoubleSpendAttempt {
-                    new: Box::new(signed_spend.clone()),
-                    existing: Box::new(existing),
-                });
+                // return Err(Error::DoubleSpendAttempt {
+                //     new: Box::new(signed_spend.clone()),
+                //     existing: Box::new(existing),
+                // });
             }
         }
 
