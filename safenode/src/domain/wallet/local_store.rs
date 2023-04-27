@@ -101,6 +101,7 @@ impl KeyLessWallet {
             spent_dbcs: BTreeMap::new(),
             available_dbcs: BTreeMap::new(),
             dbcs_created_for_others: vec![],
+            unconfirmed_spends: BTreeMap::new(),
         }
     }
 
@@ -202,12 +203,17 @@ impl SendWallet for LocalWallet {
             }
         }
 
+        let transfer = client
+            .create_transfer(available_dbcs, to, self.address())
+            .await?;
+
         let TransferDetails {
             change_dbc,
             created_dbcs,
             ..
-        } = client.send(available_dbcs, to, self.address()).await?;
+        } = transfer.clone();
 
+        // First of all, update client local state.
         let spent_dbc_ids: BTreeSet<_> = created_dbcs
             .iter()
             .flat_map(|created| &created.dbc.signed_spends)
@@ -224,6 +230,9 @@ impl SendWallet for LocalWallet {
         self.wallet
             .dbcs_created_for_others
             .extend(created_dbcs.clone());
+
+        // Last of all, register the spend in the network.
+        let _result = client.send(transfer).await;
 
         Ok(created_dbcs)
     }
@@ -635,7 +644,7 @@ mod tests {
 
     #[async_trait::async_trait]
     impl SendClient for MockSendClient {
-        async fn send(
+        async fn create_transfer(
             &self,
             dbcs: Vec<(Dbc, DerivedKey)>,
             to: Vec<(Token, DbcIdSource)>,
@@ -647,6 +656,11 @@ mod tests {
                 .expect("There should be no issues creating this transfer.");
 
             Ok(transfer)
+        }
+        async fn send(&self, _transfer: TransferDetails) -> super::Result<()> {
+            // Here we just return Ok(()), without network calls,
+            // and without sending it to the network.
+            Ok(())
         }
     }
 

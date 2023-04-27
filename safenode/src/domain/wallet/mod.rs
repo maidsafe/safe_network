@@ -49,7 +49,9 @@ use super::{
     fees::FeeCiphers,
 };
 
-use sn_dbc::{Dbc, DbcId, DbcIdSource, DerivedKey, PublicAddress, RevealedAmount, Token};
+use sn_dbc::{
+    Dbc, DbcId, DbcIdSource, DerivedKey, PublicAddress, RevealedAmount, SignedSpend, Token,
+};
 
 use async_trait::async_trait;
 use std::collections::BTreeMap;
@@ -66,20 +68,26 @@ use std::collections::BTreeMap;
 /// and just return the transfer to the caller.
 #[async_trait]
 pub trait SendClient: Send + Sync + Clone {
-    /// Sends the given tokens to the given addresses,
+    /// Creates a transfer to send the given tokens to the given addresses,
     /// using the given dbcs as inputs, from which to collect
     /// the necessary number of dbcs, to cover the amounts to send.
+    /// This also adds the necessary fee payments to the transfer.
     /// It will return the new dbcs that were created, and the change.
     /// Within the newly created dbcs, there will be the signed spends,
     /// which represent each input dbc that was spent. By that the caller
     /// also knows which of the inputs were spent, and which were not.
     /// The caller can then use this information to update its own state.
-    async fn send(
+    ///
+    /// NB: Nothing is registered in the network before sending this transfer to it,
+    /// using the `send` api of this trait.
+    async fn create_transfer(
         &self,
         dbcs: Vec<(Dbc, DerivedKey)>,
         to: Vec<(Token, DbcIdSource)>,
         change_to: PublicAddress,
     ) -> Result<TransferDetails>;
+    /// Registers a created transfer in the network.
+    async fn send(&self, transfer: TransferDetails) -> Result<()>;
 }
 
 /// A VerifyingClient is used to verify the validity of dbcs on the network.
@@ -145,6 +153,9 @@ pub(super) struct KeyLessWallet {
     /// These are dbcs we've owned, that have been
     /// spent when sending tokens to other addresses.
     spent_dbcs: BTreeMap<DbcId, Dbc>,
+    /// These have not yet been successfully confirmed in
+    /// the network and need to be republished, to reach network validity.
+    unconfirmed_spends: BTreeMap<DbcId, SignedSpend>,
     /// These are the dbcs we own that are not yet spent.
     available_dbcs: BTreeMap<DbcId, Dbc>,
     /// These are the dbcs we've created by

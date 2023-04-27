@@ -72,7 +72,7 @@ pub struct Inputs {
 
 /// The created dbcs and change dbc from a transfer
 /// of tokens from one or more dbcs, into one or more new dbcs.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Outputs {
     /// The dbcs that were created containing
     /// the tokens sent to respective recipient.
