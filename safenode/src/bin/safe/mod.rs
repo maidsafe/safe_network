@@ -8,27 +8,22 @@
 
 mod cli;
 
-use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt};
+use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt, SubCmd};
 
-use crate::cli::SubCmd;
-
-use safenode::{
-    client::{Client, ClientEvent},
-    log::init_node_logging,
-};
+use safenode::client::{Client, ClientEvent};
 
 use clap::Parser;
 use eyre::Result;
 use std::path::PathBuf;
-use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
     // For client, default to log to std::out
-    let _log_appender_guard = init_node_logging(&None)?;
+    // This is ruining the log output for the CLI. Needs to be fixed.
+    // let _log_appender_guard = init_node_logging(&None)?;
 
-    info!("Instantiating a SAFE client...");
+    println!("Instantiating a SAFE client...");
 
     let secret_key = bls::SecretKey::random();
     let client = Client::new(secret_key)?;
@@ -37,7 +32,7 @@ async fn main() -> Result<()> {
     if let Ok(event) = client_events_rx.recv().await {
         match event {
             ClientEvent::ConnectedToNetwork => {
-                info!("Client connected to the Network");
+                println!("Client connected to the Network");
             }
         }
     }
