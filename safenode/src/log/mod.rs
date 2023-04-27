@@ -122,7 +122,7 @@ pub fn init_node_logging(log_dir: &Option<PathBuf>) -> Result<Option<WorkerGuard
     Ok(layers.guard)
 }
 
-/// Initialise logger for tests, this is run only once, even if called multiple times.
+/// Initialize logger for tests, this is run only once, even if called multiple times.
 #[cfg(test)]
 static TEST_INIT_LOGGER: std::sync::Once = std::sync::Once::new();
 #[cfg(test)]

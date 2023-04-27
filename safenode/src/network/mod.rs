@@ -23,7 +23,9 @@ use self::{
     event::NodeBehaviour,
     msg::{MsgCodec, MsgProtocol},
 };
+
 use crate::protocol::messages::{QueryResponse, Request, Response};
+
 use futures::{future::select_all, StreamExt};
 use libp2p::{
     core::muxing::StreamMuxerBox,
@@ -353,7 +355,7 @@ impl Network {
             .await
     }
 
-    /// Send `Request` to the the given `PeerId` and await for the response.If `self` is the recepiant,
+    /// Send `Request` to the the given `PeerId` and await for the response. If `self` is the recepiant,
     /// then the `Request` is forwarded to itself and handled. Then a corresponding `Response` is created
     /// and forwarded to iself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
@@ -456,12 +458,14 @@ impl Network {
 #[cfg(test)]
 mod tests {
     use super::SwarmDriver;
+
     use crate::{
         domain::storage::Chunk,
         log::init_test_logger,
         network::{MsgResponder, NetworkEvent},
         protocol::messages::{Cmd, CmdResponse, Request, Response},
     };
+
     use assert_matches::assert_matches;
     use bytes::Bytes;
     use eyre::{eyre, Result};
@@ -558,8 +562,8 @@ mod tests {
         )?;
         let _driver_handle = tokio::spawn(driver.run());
 
-        // spawn a task to handle the the Request that we recieve.
-        // This handles the request and sends a response back
+        // Spawn a task to handle the the Request that we recieve.
+        // This handles the request and sends a response back.
         let _event_handler = tokio::spawn(async move {
             loop {
                 if let Some(NetworkEvent::RequestReceived {
@@ -573,13 +577,13 @@ mod tests {
             }
         });
 
-        // Send a request to store a random chunk to `self`
+        // Send a request to store a random chunk to `self`.
         let mut random_data = [0u8; 128];
         thread_rng().fill(&mut random_data);
         let req = Request::Cmd(Cmd::StoreChunk(Chunk::new(Bytes::copy_from_slice(
             &random_data,
         ))));
-        // send the request to `self` and wait for a response
+        // Send the request to `self` and wait for a response.
         let now = tokio::time::Instant::now();
         loop {
             let mut res = net

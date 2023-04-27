@@ -10,6 +10,7 @@ use super::{
     error::{Error, Result},
     Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, Register, RegisterOffline,
 };
+
 use crate::{
     domain::{
         client_transfers::SpendRequest,
@@ -21,11 +22,13 @@ use crate::{
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
     },
 };
+
+use sn_dbc::{DbcId, SignedSpend};
+
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{kad::RecordKey, PeerId};
-use sn_dbc::{DbcId, SignedSpend};
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;

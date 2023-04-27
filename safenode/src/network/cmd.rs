@@ -7,10 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
+
 use crate::{
     network::error::Result,
     protocol::messages::{QueryResponse, Request, Response},
 };
+
 use libp2p::{
     kad::{Record, RecordKey},
     multiaddr::Protocol,
