@@ -244,7 +244,7 @@ impl SendWallet for LocalWallet {
 
         // Last of all, register the spend in the network.
         if let Err(error) = client.send(transfer.clone()).await {
-            println!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
+            trace!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
             let _ = self
                 .wallet
                 .unconfirmed_txs
@@ -258,9 +258,9 @@ impl SendWallet for LocalWallet {
 async fn resend_pending_txs<C: SendClient>(local: &mut LocalWallet, client: &C) {
     for (index, (tx_hash, transfer)) in local.wallet.unconfirmed_txs.clone().into_iter().enumerate()
     {
-        println!("Trying to republish pending tx: {tx_hash:?}..");
+        trace!("Trying to republish pending tx: {tx_hash:?}..");
         if client.send(transfer.clone()).await.is_ok() {
-            println!("Tx {tx_hash:?} was successfully republished!");
+            trace!("Tx {tx_hash:?} was successfully republished!");
             let _ = local.wallet.unconfirmed_txs.remove(index);
             // We might want to be _really_ sure and do the below
             // as well, but it's not necessary.
