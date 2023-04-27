@@ -207,7 +207,7 @@ impl SendWallet for LocalWallet {
             if let Ok(derived_key) = dbc.derived_key(&self.key) {
                 available_dbcs.push((dbc.clone(), derived_key));
             } else {
-                warn!(
+                println!(
                     "Skipping DBC {:?} because we don't have the key to spend it",
                     dbc.id()
                 );
@@ -244,7 +244,7 @@ impl SendWallet for LocalWallet {
 
         // Last of all, register the spend in the network.
         if let Err(error) = client.send(transfer.clone()).await {
-            trace!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
+            println!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
             let _ = self.wallet.unconfirmed_txs.push(transfer);
         }
 
@@ -254,9 +254,9 @@ impl SendWallet for LocalWallet {
 
 async fn resend_pending_txs<C: SendClient>(local: &mut LocalWallet, client: &C) {
     for (index, transfer) in local.wallet.unconfirmed_txs.clone().into_iter().enumerate() {
-        trace!("Trying to republish pending tx: {:?}..", transfer.tx_hash);
+        println!("Trying to republish pending tx: {:?}..", transfer.tx_hash);
         if client.send(transfer.clone()).await.is_ok() {
-            trace!("Tx {:?} was successfully republished!", transfer.tx_hash);
+            println!("Tx {:?} was successfully republished!", transfer.tx_hash);
             let _ = local.wallet.unconfirmed_txs.remove(index);
             // We might want to be _really_ sure and do the below
             // as well, but it's not necessary.
