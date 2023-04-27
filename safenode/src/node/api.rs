@@ -20,7 +20,7 @@ use crate::{
         },
         wallet::LocalWallet,
     },
-    network::{close_group_majority, NetworkEvent, SwarmDriver, SwarmLocalState},
+    network::{close_group_majority, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState},
     protocol::{
         error::Error as ProtocolError,
         messages::{
@@ -31,7 +31,6 @@ use crate::{
 };
 use libp2p::{
     kad::{Record, RecordKey},
-    request_response::ResponseChannel,
     Multiaddr, PeerId,
 };
 use sn_dbc::{DbcTransaction, SignedSpend};
@@ -160,7 +159,7 @@ impl Node {
     async fn handle_request(
         &mut self,
         request: Request,
-        response_channel: ResponseChannel<Response>,
+        response_channel: MsgResponder,
     ) -> Result<()> {
         trace!("Handling request: {request:?}");
         let response = match request {
@@ -404,7 +403,7 @@ impl Node {
         Err(super::Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    async fn send_response(&self, resp: Response, response_channel: ResponseChannel<Response>) {
+    async fn send_response(&self, resp: Response, response_channel: MsgResponder) {
         if let Err(err) = self.network.send_response(resp, response_channel).await {
             warn!("Error while sending response: {err:?}");
         }

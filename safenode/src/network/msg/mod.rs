@@ -9,6 +9,7 @@
 mod codec;
 pub(crate) use codec::{MsgCodec, MsgProtocol};
 
+use crate::network::MsgResponder;
 use crate::network::{error::Error, NetworkEvent, SwarmDriver};
 use crate::protocol::messages::{Request, Response};
 use libp2p::request_response::{self, Message};
@@ -32,7 +33,7 @@ impl SwarmDriver {
                     self.event_sender
                         .send(NetworkEvent::RequestReceived {
                             req: request,
-                            channel,
+                            channel: MsgResponder::FromPeer(channel),
                         })
                         .await?
                 }

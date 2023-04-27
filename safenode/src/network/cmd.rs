@@ -6,22 +6,21 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 use crate::{
     network::error::Result,
     protocol::messages::{QueryResponse, Request, Response},
 };
-
-use super::{error::Error, SwarmDriver};
 use libp2p::{
     kad::{Record, RecordKey},
     multiaddr::Protocol,
-    request_response::ResponseChannel,
     Multiaddr, PeerId,
 };
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
 use tracing::warn;
 use xor_name::XorName;
+
 /// Commands to send to the Swarm
 #[derive(Debug)]
 pub enum SwarmCmd {
@@ -45,7 +44,7 @@ pub enum SwarmCmd {
     },
     SendResponse {
         resp: Response,
-        channel: ResponseChannel<Response>,
+        channel: MsgResponder,
     },
     GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
     /// Put data to the Kad network as record
@@ -69,7 +68,7 @@ pub struct SwarmLocalState {
 }
 
 impl SwarmDriver {
-    pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
+    pub(crate) async fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
             SwarmCmd::GetData { key, sender } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
@@ -124,20 +123,43 @@ impl SwarmDriver {
                     .insert(query_id, (sender, Default::default()));
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
-                let request_id = self
-                    .swarm
-                    .behaviour_mut()
-                    .request_response
-                    .send_request(&peer, req);
-                let _ = self.pending_requests.insert(request_id, sender);
+                // If `self` is the recipient, forward the request directly to our upper layer to
+                // be handled.
+                // `self` then handles the request and sends a response back again to itself.
+                if peer == *self.swarm.local_peer_id() {
+                    trace!("Sending request to self");
+                    self.event_sender
+                        .send(NetworkEvent::RequestReceived {
+                            req,
+                            channel: MsgResponder::FromSelf(sender),
+                        })
+                        .await?;
+                } else {
+                    trace!("Sending request to peer {peer:?}");
+                    let request_id = self
+                        .swarm
+                        .behaviour_mut()
+                        .request_response
+                        .send_request(&peer, req);
+                    let _ = self.pending_requests.insert(request_id, sender);
+                }
             }
-            SwarmCmd::SendResponse { resp, channel } => {
-                self.swarm
-                    .behaviour_mut()
-                    .request_response
-                    .send_response(channel, resp)
-                    .map_err(Error::OutgoingResponseDropped)?;
-            }
+            SwarmCmd::SendResponse { resp, channel } => match channel {
+                // If the response is for `self`, send it directly through the oneshot channel.
+                MsgResponder::FromSelf(channel) => {
+                    trace!("Sending response to self");
+                    channel
+                        .send(Ok(resp))
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                }
+                MsgResponder::FromPeer(channel) => {
+                    self.swarm
+                        .behaviour_mut()
+                        .request_response
+                        .send_response(channel, resp)
+                        .map_err(Error::OutgoingResponseDropped)?;
+                }
+            },
             SwarmCmd::GetSwarmLocalState(sender) => {
                 let current_state = SwarmLocalState {
                     connected_peers: self.swarm.connected_peers().cloned().collect(),

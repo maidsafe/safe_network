@@ -11,7 +11,6 @@ use super::{
     msg::MsgCodec,
     SwarmDriver,
 };
-
 use crate::{
     domain::storage::Chunk,
     protocol::{
@@ -23,11 +22,12 @@ use libp2p::{
     kad::{store::MemoryStore, GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     mdns,
     multiaddr::Protocol,
-    request_response::{self, ResponseChannel},
+    request_response::{self, ResponseChannel as PeerResponseChannel},
     swarm::{NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
 use std::collections::HashSet;
+use tokio::sync::oneshot;
 use tracing::{info, warn};
 
 #[derive(NetworkBehaviour)]
@@ -64,6 +64,15 @@ impl From<mdns::Event> for NodeEvent {
 }
 
 #[derive(Debug)]
+/// Channel to send the `Response` through.
+pub enum MsgResponder {
+    /// Respond to a request from `self` through a simple one-shot channel.
+    FromSelf(oneshot::Sender<Result<Response>>),
+    /// Respond to a request from a peer in the network.
+    FromPeer(PeerResponseChannel<Response>),
+}
+
+#[derive(Debug)]
 /// Events forwarded by the underlying Network; to be used by the upper layers
 pub enum NetworkEvent {
     /// Incoming `Request` from a peer
@@ -71,7 +80,7 @@ pub enum NetworkEvent {
         /// Request
         req: Request,
         /// The channel to send the `Response` through
-        channel: ResponseChannel<Response>,
+        channel: MsgResponder,
     },
     /// Emitted when the DHT is updated
     PeerAdded,
