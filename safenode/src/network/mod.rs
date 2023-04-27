@@ -569,6 +569,10 @@ mod tests {
                 let res = Response::Cmd(CmdResponse::StoreChunk(Ok(())));
                 assert!(channel.send(Ok(res)).is_ok());
             }
+            // keep the task running
+            loop {
+                tokio::time::sleep(Duration::from_millis(1)).await;
+            }
         });
 
         // Send a request to store a random chunk to `self`
