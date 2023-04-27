@@ -6,12 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::domain::{
-    node_transfers::{Error, Result},
-    storage::{dbc_address, DataAddress, Error as StorageError},
+use std::collections::{BTreeMap, BTreeSet};
+
+use crate::{
+    domain::{
+        fees::FeeCiphers,
+        node_transfers::{Error, Result},
+        storage::{dbc_address, DataAddress, Error as StorageError},
+    },
+    node::NodeId,
 };
 
-use sn_dbc::SignedSpend;
+use sn_dbc::{DbcTransaction, SignedSpend};
 
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +30,25 @@ use serde::{Deserialize, Serialize};
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
 pub enum Event {
+    /// We temporarily(perhaps.. maybe it will stay) broadcast
+    /// a valid spend to other nodes, as to ensure that it is stored by all.
+    ValidSpendReceived {
+        /// The spend to be recorded.
+        /// It contains the transaction it is being spent in.
+        #[debug(skip)]
+        spend: Box<SignedSpend>,
+        /// The transaction that this spend was created in.
+        #[debug(skip)]
+        parent_tx: Box<DbcTransaction>,
+        /// As to avoid impl separate cmd flow, we send
+        /// all fee ciphers to all Nodes for now.
+        #[debug(skip)]
+        fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
+        /// The parent spends as attained by the node that sent this event,
+        /// as it has already validated the spend.
+        #[debug(skip)]
+        parent_spends: BTreeSet<SignedSpend>,
+    },
     /// A peer detected a double spend attempt for a [`SignedSpend`].
     /// Contains the first two spends of same id that were detected as being different.
     ///
@@ -43,6 +68,9 @@ impl Event {
     /// Used to send a cmd to the close group of the address.
     pub fn dst(&self) -> DataAddress {
         match self {
+            Event::ValidSpendReceived { spend, .. } => {
+                DataAddress::Spend(dbc_address(spend.dbc_id()))
+            }
             Event::DoubleSpendAttempted { new, .. } => {
                 DataAddress::Spend(dbc_address(new.dbc_id()))
             }
