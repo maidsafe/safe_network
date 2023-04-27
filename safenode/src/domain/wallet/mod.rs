@@ -48,15 +48,19 @@
 //! The bitcoin flow here is very useful: unspent, unconfirmed (in mempool), confirmed.
 //! These three states are held by both the client and the node, and is easy for the client to check and resolve.
 //!
-//! The most difficult situation for a client to resolve is a low-fee tx in mempool for a long time,
+//! The most difficult situation for a bitcoin client to resolve is a low-fee tx in mempool for a long time,
 //! which eventually clears from the mempool and becomes spendable again (which for us is a tx with too few nodes
-//! storing it, and eventually is not stored anywhere, which should be extremely rare, I would expect never happens).
+//! storing it, and eventually is not stored anywhere, which should be extremely rare and not expected ever happen).
 //!
 //! However, we also have a "mempool", our priority queue. The great difference there though, is that a client _can_
 //! update the fee on such a queued spend, and thus can always avoid a spend getting stuck in the queue!
 //! Removing it though is not allowed, but we could allow that. If some nodes have already processed it, then
 //! the client can't change that fact. But in the case that no node actually had processed it, then the client
 //! can successfully remove it from the queue, and then re-add it with a completely different transaction.
+//!
+//! Note: We do not represent at client the spend being in the priority queue, which we might want to do.
+//! In that case, before resending a transfer, we could just check if it has already been stored to the nodes.
+//! TBD.
 
 mod error;
 mod keys;
