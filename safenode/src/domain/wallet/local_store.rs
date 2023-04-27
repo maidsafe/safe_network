@@ -101,7 +101,7 @@ impl KeyLessWallet {
             spent_dbcs: BTreeMap::new(),
             available_dbcs: BTreeMap::new(),
             dbcs_created_for_others: vec![],
-            unconfirmed_spends: BTreeMap::new(),
+            unconfirmed_txs: vec![],
         }
     }
 
