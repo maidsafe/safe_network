@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
-    let client = Client::new(secret_key)?;
+    let client = Client::new(secret_key, None)?;
 
     let mut client_events_rx = client.events_channel();
     if let Ok(event) = client_events_rx.recv().await {
