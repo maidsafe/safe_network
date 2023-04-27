@@ -9,17 +9,21 @@
 /// Register type.
 pub mod register;
 
-use self::register::{Action, EntryHash, Register, User};
+use self::register::RegisterReplica;
 
-use super::{prefix_tree_path, Error, RegisterAddress, Result};
+use super::{prefix_tree_path, Result};
 
 use crate::{
     domain::storage::list_files_in,
     protocol::{
-        error::Error as ProtocolError,
+        error::{Error as ProtocolError, StorageError as Error},
         messages::{
             EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
             SignedRegisterCreate, SignedRegisterEdit,
+        },
+        storage::{
+            registers::{Action, EntryHash, User},
+            RegisterAddress,
         },
     },
 };
@@ -38,12 +42,12 @@ const REGISTERS_STORE_DIR_NAME: &str = "registers";
 
 #[derive(Clone, Debug)]
 struct StoredRegister {
-    state: Option<Register>,
+    state: Option<RegisterReplica>,
     op_log: RegisterLog,
     op_log_path: PathBuf,
 }
 
-/// Operations over the Register data type and its storage.
+/// Operations over the RegisterReplica data type and its storage.
 #[derive(Clone)]
 pub(crate) struct RegisterStorage {
     file_store_path: PathBuf,
@@ -56,7 +60,7 @@ impl RegisterStorage {
         }
     }
 
-    /// Read from the Register's log based on provided RegisterQuery.
+    /// Read from the RegisterReplica's log based on provided RegisterQuery.
     pub(crate) async fn read(&self, read: &RegisterQuery, requester: User) -> QueryResponse {
         trace!("Reading register: {:?}", read.dst());
         use RegisterQuery::*;
@@ -64,6 +68,7 @@ impl RegisterStorage {
             Get(address) => QueryResponse::GetRegister(
                 self.get_register(address, Action::Read, requester)
                     .await
+                    .map(|reg_replica| reg_replica.into())
                     .map_err(ProtocolError::Storage),
             ),
             Read(address) => self.read_register(*address, requester).await,
@@ -76,7 +81,7 @@ impl RegisterStorage {
         }
     }
 
-    /// Write a RegisterCmd to the Register's log.
+    /// Write a RegisterCmd to the RegisterReplica's log.
     pub(crate) async fn write(&self, cmd: &RegisterCmd) -> Result<()> {
         info!("Writing register cmd: {cmd:?}");
         let addr = cmd.dst();
@@ -100,7 +105,7 @@ impl RegisterStorage {
         Ok(())
     }
 
-    /// Update our Register's replica on receiving data from other nodes.
+    /// Update our RegisterReplica's replica on receiving data from other nodes.
     #[allow(dead_code)]
     pub(super) async fn update(&self, data: &ReplicatedRegisterLog) -> Result<()> {
         let addr = data.address;
@@ -209,13 +214,13 @@ impl RegisterStorage {
         Ok(())
     }
 
-    /// Get `Register` from the store and check permissions.
+    /// Get `RegisterReplica` from the store and check permissions.
     async fn get_register(
         &self,
         address: &RegisterAddress,
         action: Action,
         requester: User,
-    ) -> Result<Register> {
+    ) -> Result<RegisterReplica> {
         let stored_reg = self.try_load_stored_register(address).await?;
         if let Some(register) = stored_reg.state {
             register.check_permissions(action, Some(requester))?;
@@ -324,7 +329,7 @@ impl RegisterStorage {
                 // let's do a final check, let's try to apply all cmds to it,
                 // those which are new cmds were not validated yet, so let's do it now.
                 let mut register =
-                    Register::new(*op.policy.owner(), op.name, op.tag, op.policy.clone());
+                    RegisterReplica::new(*op.policy.owner(), op.name, op.tag, op.policy.clone());
 
                 for cmd in &stored_reg.op_log {
                     self.apply(cmd, &mut register)?;
@@ -340,7 +345,7 @@ impl RegisterStorage {
     }
 
     // Try to apply the provided cmd to the register state, performing all op validations
-    fn apply(&self, cmd: &RegisterCmd, register: &mut Register) -> Result<()> {
+    fn apply(&self, cmd: &RegisterCmd, register: &mut RegisterReplica) -> Result<()> {
         let addr = cmd.dst();
         if &addr != register.address() {
             return Err(Error::RegisterAddrMismatch {
@@ -423,8 +428,12 @@ impl RegisterStorage {
                         // is any difference with this other one,...if so perhaps log a warning?
                         let SignedRegisterCreate { op, .. } = cmd;
                         if stored_reg.state.is_none() {
-                            let register =
-                                Register::new(*op.policy.owner(), op.name, op.tag, op.policy);
+                            let register = RegisterReplica::new(
+                                *op.policy.owner(),
+                                op.name,
+                                op.tag,
+                                op.policy,
+                            );
                             stored_reg.state = Some(register);
                         }
                     }
@@ -502,10 +511,7 @@ fn register_op_id(cmd: &RegisterCmd) -> Result<String> {
 
 #[cfg(test)]
 mod test {
-    use super::{
-        register::{DataAuthority, EntryHash, Policy, Register, User},
-        Error, RegisterStorage,
-    };
+    use super::{register::RegisterReplica, Error, RegisterStorage};
 
     use crate::protocol::{
         error::Error as ProtocolError,
@@ -513,6 +519,7 @@ mod test {
             CreateRegister, EditRegister, QueryResponse, RegisterCmd, RegisterQuery,
             SignedRegisterCreate, SignedRegisterEdit,
         },
+        storage::registers::{DataAuthority, EntryHash, Policy, User},
     };
 
     use bincode::serialize;
@@ -529,7 +536,7 @@ mod test {
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
         let log_path = store.address_to_filepath(&addr)?;
-        let mut register = Register::new(*policy.owner(), name, 0, policy);
+        let mut register = RegisterReplica::new(*policy.owner(), name, 0, policy);
 
         let stored_reg = store.try_load_stored_register(&addr).await?;
         // It should *not* contain the create cmd.
@@ -573,7 +580,7 @@ mod test {
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
         let log_path = store.address_to_filepath(&addr)?;
-        let mut register = Register::new(*policy.owner(), name, 0, policy);
+        let mut register = RegisterReplica::new(*policy.owner(), name, 0, policy);
 
         // Store an edit cmd for the register.
         let cmd_edit = edit_register(&mut register, &sk)?;
@@ -612,7 +619,7 @@ mod test {
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
         let log_path = store.address_to_filepath(&addr)?;
-        let mut register = Register::new(*policy.owner(), name, 0, policy);
+        let mut register = RegisterReplica::new(*policy.owner(), name, 0, policy);
         let mut stored_reg = store.try_load_stored_register(&addr).await?;
 
         store.try_to_apply_cmd_against_register_state(&cmd_create, &mut stored_reg)?;
@@ -673,7 +680,7 @@ mod test {
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
         let log_path = store.address_to_filepath(&addr)?;
-        let mut register = Register::new(*policy.owner(), name, 0, policy);
+        let mut register = RegisterReplica::new(*policy.owner(), name, 0, policy);
         let mut stored_reg = store.try_load_stored_register(&addr).await?;
 
         // Apply an edit cmd first.
@@ -733,8 +740,8 @@ mod test {
         let addr = cmd.dst();
         match store.read(&RegisterQuery::Get(addr), authority).await {
             QueryResponse::GetRegister(Ok(reg)) => {
-                assert_eq!(reg.address(), &addr, "Should have same address!");
-                assert_eq!(reg.owner(), authority, "Should have same owner!");
+                assert_eq!(reg.crdt.address, addr, "Should have same address!");
+                assert_eq!(reg.policy.owner, authority, "Should have same owner!");
             }
             e => bail!("Could not read register! {:?}", e),
         }
@@ -755,7 +762,7 @@ mod test {
 
         let (cmd_create, authority, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
-        let mut register = Register::new(*policy.owner(), name, 0, policy);
+        let mut register = RegisterReplica::new(*policy.owner(), name, 0, policy);
 
         // Store the register and a few edit ops.
         store.write(&cmd_create).await?;
@@ -798,8 +805,8 @@ mod test {
 
         match res {
             QueryResponse::GetRegister(Ok(reg)) => {
-                assert_eq!(reg.address(), &addr, "Should have same address!");
-                assert_eq!(reg.owner(), authority, "Should have same owner!");
+                assert_eq!(reg.crdt.address, addr, "Should have same address!");
+                assert_eq!(reg.policy.owner, authority, "Should have same owner!");
             }
             e => panic!("Could not read! {e:?}"),
         }
@@ -882,7 +889,7 @@ mod test {
         Ok((cmd, authority, sk, xorname, policy))
     }
 
-    fn edit_register(register: &mut Register, sk: &SecretKey) -> Result<RegisterCmd> {
+    fn edit_register(register: &mut RegisterReplica, sk: &SecretKey) -> Result<RegisterCmd> {
         let data = rand::thread_rng()
             .sample_iter(&Alphanumeric)
             .take(15)

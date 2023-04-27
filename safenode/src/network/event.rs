@@ -12,12 +12,10 @@ use super::{
     SwarmDriver,
 };
 
-use crate::{
-    domain::storage::Chunk,
-    protocol::{
-        error::Error as ProtocolError,
-        messages::{QueryResponse, Request, Response},
-    },
+use crate::protocol::{
+    error::Error as ProtocolError,
+    messages::{QueryResponse, Request, Response},
+    storage::Chunk,
 };
 
 use libp2p::{

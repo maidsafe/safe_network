@@ -6,62 +6,54 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Entry, Error, RegisterAddress, Result, User};
-
-use crdts::{
-    merkle_reg::{MerkleReg, Node},
-    CmRDT, CvRDT,
+use crate::protocol::{
+    error::StorageError as Error,
+    storage::{
+        registers::{CrdtOperation, Entry, EntryHash, RegisterCrdt, User},
+        RegisterAddress,
+    },
 };
+
+use super::Result;
+
+use crdts::{merkle_reg::MerkleReg, CmRDT, CvRDT};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeSet,
-    fmt::{self, Debug, Display, Formatter, Result as FmtResult},
+    fmt::{self, Debug, Display, Formatter},
     hash::Hash,
 };
 
-/// Hash of the register entry. Logging as the same format of `XorName`.
-#[derive(Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct EntryHash(pub crdts::merkle_reg::Hash);
-
-impl Debug for EntryHash {
-    fn fmt(&self, formatter: &mut Formatter) -> FmtResult {
-        write!(formatter, "{self}")
-    }
-}
-
-impl Display for EntryHash {
-    fn fmt(&self, formatter: &mut Formatter) -> FmtResult {
-        write!(
-            formatter,
-            "{:02x}{:02x}{:02x}..",
-            self.0[0], self.0[1], self.0[2]
-        )
-    }
-}
-
-/// CRDT Data operation applicable to other Register replica.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct CrdtOperation<T> {
-    /// Address of a Register object on the network.
-    pub address: RegisterAddress,
-    /// The data operation to apply.
-    pub crdt_op: Node<T>,
-    /// The PublicKey of the entity that generated the operation
-    pub source: User,
-    /// The signature of source on the crdt_top, required to apply the op
-    pub signature: Option<bls::Signature>,
-}
-
 /// Register data type as a CRDT with Access Control
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd)]
-pub(crate) struct RegisterCrdt {
+pub(crate) struct RegisterCrdtImpl {
     /// Address on the network of this piece of data
     address: RegisterAddress,
     /// CRDT to store the actual data, i.e. the items of the Register.
     data: MerkleReg<Entry>,
 }
 
-impl Display for RegisterCrdt {
+impl From<RegisterCrdt> for RegisterCrdtImpl {
+    fn from(crdt: RegisterCrdt) -> Self {
+        Self {
+            address: crdt.address,
+            data: crdt.data,
+        }
+    }
+}
+
+// We allow from_over_into since the `RegisterCrdt` is not parrt of this crate or implementation.
+#[allow(clippy::from_over_into)]
+impl Into<RegisterCrdt> for RegisterCrdtImpl {
+    fn into(self) -> RegisterCrdt {
+        RegisterCrdt {
+            address: self.address,
+            data: self.data,
+        }
+    }
+}
+
+impl Display for RegisterCrdtImpl {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "(")?;
         for (i, entry) in self.data.read().values().enumerate() {
@@ -74,8 +66,8 @@ impl Display for RegisterCrdt {
     }
 }
 
-impl RegisterCrdt {
-    /// Constructs a new '`RegisterCrdt`'.
+impl RegisterCrdtImpl {
+    /// Constructs a new '`RegisterCrdtImpl`'.
     pub(crate) fn new(address: RegisterAddress) -> Self {
         Self {
             address,
@@ -124,7 +116,7 @@ impl RegisterCrdt {
         Ok((EntryHash(hash), op))
     }
 
-    /// Apply a remote data CRDT operation to this replica of the `RegisterCrdt`.
+    /// Apply a remote data CRDT operation to this replica of the `RegisterCrdtImpl`.
     pub(crate) fn apply_op(&mut self, op: CrdtOperation<Entry>) -> Result<()> {
         // Let's first check the op is validly signed.
         // Note: Perms and valid sig for the op are checked at the upper Register layer.
@@ -173,23 +165,23 @@ mod tests {
             tag: 0,
         };
 
-        let mut crdt_1 = RegisterCrdt::new(address_1);
-        let mut crdt_2 = RegisterCrdt::new(address_2);
+        let mut crdt_1 = RegisterCrdtImpl::new(address_1);
+        let mut crdt_2 = RegisterCrdtImpl::new(address_2);
         let mut parents = BTreeSet::new();
 
         let entry_1 = vec![0x1, 0x1];
-        // Different RegisterCrdt shall create same hashes for the same entry from root
+        // Different RegisterCrdtImpl shall create same hashes for the same entry from root
         let (entry_hash_1, _) = crdt_1.write(entry_1.clone(), parents.clone(), User::Anyone)?;
         let (entry_hash_2, _) = crdt_2.write(entry_1, parents.clone(), User::Anyone)?;
         assert!(entry_hash_1 == entry_hash_2);
 
         let entry_2 = vec![0x2, 0x2];
-        // RegisterCrdt shall create differnt hashes for different entries from root
+        // RegisterCrdtImpl shall create differnt hashes for different entries from root
         let (entry_hash_1_2, _) = crdt_1.write(entry_2, parents.clone(), User::Anyone)?;
         assert!(entry_hash_1 != entry_hash_1_2);
 
         let entry_3 = vec![0x3, 0x3];
-        // Different RegisterCrdt shall create same hashes for the same entry from same parents
+        // Different RegisterCrdtImpl shall create same hashes for the same entry from same parents
         let _ = parents.insert(entry_hash_1);
         let (entry_hash_1_3, _) = crdt_1.write(entry_3.clone(), parents.clone(), User::Anyone)?;
         let (entry_hash_2_3, _) = crdt_1.write(entry_3, parents, User::Anyone)?;

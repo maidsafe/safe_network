@@ -10,7 +10,7 @@
 
 mod error;
 
-pub(crate) use self::error::{Error, Result};
+pub(crate) use self::error::Result;
 
 use super::dbc_genesis::GENESIS_DBC;
 
@@ -18,10 +18,11 @@ use crate::{
     domain::{
         dbc_genesis::is_genesis_parent_tx,
         fees::{FeeCiphers, RequiredFee, RequiredFeeContent, SpendPriority, SpendQ},
-        storage::{DbcAddress, SpendStorage},
+        storage::SpendStorage,
         wallet::LocalWallet,
     },
     node::NodeId,
+    protocol::{error::TransferError as Error, storage::DbcAddress},
 };
 
 use sn_dbc::{DbcId, DbcTransaction, SignedSpend, Token};
