@@ -167,6 +167,8 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
         .build(Hash::default(), &mut rng)
         .map_err(Error::Dbcs)?;
 
+    let tx_hash = dbc_builder.dst_tx.hash();
+
     let signed_spends: BTreeMap<_, _> = dbc_builder
         .signed_spends()
         .into_iter()
@@ -219,6 +221,7 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     });
 
     Ok(Outputs {
+        tx_hash,
         created_dbcs,
         change_dbc,
         all_spend_requests,

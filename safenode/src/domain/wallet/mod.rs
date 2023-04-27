@@ -76,9 +76,7 @@ use super::{
     fees::FeeCiphers,
 };
 
-use sn_dbc::{
-    Dbc, DbcId, DbcIdSource, DerivedKey, PublicAddress, RevealedAmount, SignedSpend, Token,
-};
+use sn_dbc::{Dbc, DbcId, DbcIdSource, DerivedKey, PublicAddress, RevealedAmount, Token};
 
 use async_trait::async_trait;
 use std::collections::BTreeMap;
@@ -182,7 +180,10 @@ pub(super) struct KeyLessWallet {
     spent_dbcs: BTreeMap<DbcId, Dbc>,
     /// These have not yet been successfully confirmed in
     /// the network and need to be republished, to reach network validity.
-    unconfirmed_spends: BTreeMap<DbcId, SignedSpend>,
+    /// We maintain the order they were added in, as to republish
+    /// them in the correct order, in case any later spend was
+    /// dependent on an earlier spend.
+    unconfirmed_txs: Vec<(sn_dbc::Hash, TransferDetails)>,
     /// These are the dbcs we own that are not yet spent.
     available_dbcs: BTreeMap<DbcId, Dbc>,
     /// These are the dbcs we've created by
