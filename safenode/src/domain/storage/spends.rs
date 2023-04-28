@@ -182,7 +182,6 @@ impl SpendStorage {
         let filepath = self.address_to_filepath(&addr, &self.valid_spends_path)?;
 
         if filepath.exists() {
-            self.validate(signed_spend).await?;
             return Ok(());
         }
 
