@@ -30,6 +30,10 @@ use std::collections::BTreeMap;
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
 pub enum Cmd {
+    /// A ping sent from a node to close group nodes of the given xorname.
+    NodePing(xor_name::XorName),
+    /// A ping sent from a client to close group nodes of the given xorname.
+    ClientPing(xor_name::XorName),
     /// [`Chunk`] write operation.
     ///
     /// [`Chunk`]: crate::domain::storage::Chunk
@@ -60,6 +64,8 @@ impl Cmd {
     /// Used to send a cmd to the close group of the address.
     pub fn dst(&self) -> DataAddress {
         match self {
+            Cmd::NodePing(name) => DataAddress::PingPong(*name),
+            Cmd::ClientPing(name) => DataAddress::PingPong(*name),
             Cmd::StoreChunk(chunk) => DataAddress::Chunk(ChunkAddress::new(*chunk.name())),
             Cmd::Register(cmd) => DataAddress::Register(cmd.dst()),
             Cmd::SpendDbc { signed_spend, .. } => {
@@ -72,6 +78,12 @@ impl Cmd {
 impl std::fmt::Display for Cmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Cmd::NodePing(name) => {
+                write!(f, "Cmd::NodePing({name:?})")
+            }
+            Cmd::ClientPing(name) => {
+                write!(f, "Cmd::ClientPing({name:?})")
+            }
             Cmd::StoreChunk(chunk) => {
                 write!(f, "Cmd::StoreChunk({:?})", chunk.name())
             }

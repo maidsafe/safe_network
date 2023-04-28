@@ -241,6 +241,59 @@ impl Node {
 
     async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
         match cmd {
+            Cmd::NodePing(cmd) => {
+                let result = match self.network.node_get_closest_peers(cmd).await {
+                    Ok(close_group_peers) => {
+                        if close_group_peers
+                            .iter()
+                            .any(|peer| peer == &self.network.peer_id)
+                        {
+                            Ok(())
+                        } else {
+                            Err(ProtocolError::InternalProcessing(
+                                "Received ping is not for us.".to_string(),
+                            ))
+                        }
+                    }
+                    Err(err) => Err(ProtocolError::InternalProcessing(err.to_string())),
+                };
+                CmdResponse::NodePong(result)
+            }
+            Cmd::ClientPing(name) => {
+                let hash_of_name = XorName::from_content(&name.0);
+                match self
+                    .network
+                    .node_send_to_closest(&Request::Cmd(Cmd::NodePing(hash_of_name)))
+                    .await
+                {
+                    Ok(results) => {
+                        let ok_results: Vec<_> = results
+                            .into_iter()
+                            .filter_map(|res| match res {
+                                Ok(Response::Cmd(CmdResponse::NodePong(Ok(())))) => Some(()),
+                                _ => None,
+                            })
+                            .collect();
+
+                        let result = if ok_results.len() >= close_group_majority() {
+                            Ok(())
+                        } else {
+                            Err(ProtocolError::InternalProcessing(
+                                "Less than majority of close group peers returned an OK response."
+                                    .to_string(),
+                            ))
+                        };
+
+                        CmdResponse::NodePong(result)
+                    }
+                    Err(err) => {
+                        warn!("Failed to send ping closest peers: {err:?}");
+                        CmdResponse::NodePong(Err(ProtocolError::InternalProcessing(
+                            err.to_string(),
+                        )))
+                    }
+                }
+            }
             Cmd::StoreChunk(chunk) => {
                 debug!("That's a store chunk in for :{:?}", chunk.address().name());
 

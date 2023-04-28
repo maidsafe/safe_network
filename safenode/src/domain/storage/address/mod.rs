@@ -24,6 +24,8 @@ use xor_name::XorName;
 /// An address of data on the network.
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub enum DataAddress {
+    /// For ping-pong msgs.
+    PingPong(XorName),
     ///
     Chunk(ChunkAddress),
     ///
@@ -36,10 +38,16 @@ impl DataAddress {
     /// The xorname.
     pub fn name(&self) -> &XorName {
         match self {
+            Self::PingPong(name) => name,
             Self::Chunk(address) => address.name(),
             Self::Register(address) => address.name(),
             Self::Spend(address) => address.name(),
         }
+    }
+
+    ///
+    pub fn pingpong(name: XorName) -> Self {
+        Self::PingPong(name)
     }
 
     ///
@@ -61,6 +69,7 @@ impl DataAddress {
 impl std::fmt::Display for DataAddress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            DataAddress::PingPong(name) => write!(f, "PingPong({name:?})"),
             DataAddress::Chunk(addr) => write!(f, "{addr:?}"),
             DataAddress::Register(addr) => write!(f, "{addr:?}"),
             DataAddress::Spend(addr) => write!(f, "{addr:?}"),

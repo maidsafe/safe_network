@@ -75,6 +75,8 @@ pub enum QueryResponse {
 /// The response to a Cmd, containing the query result.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CmdResponse {
+    /// Response to Cmd::NodePing _and_ Cmd::ClientPing,
+    NodePong(Result<()>),
     //
     // ===== Dbc Spends =====
     //

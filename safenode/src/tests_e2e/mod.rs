@@ -21,6 +21,41 @@ use sn_dbc::Token;
 use assert_fs::TempDir;
 use eyre::Result;
 
+#[tokio::test(flavor = "multi_thread")]
+async fn node_many_to_many_ping_pong_succeeds() -> Result<()> {
+    use crate::{
+        network::close_group_majority,
+        protocol::messages::{Cmd, CmdResponse, Request, Response},
+    };
+
+    let client = get_client();
+    let random_dst = rand::random();
+
+    let results = match client
+        .send_to_closest(Request::Cmd(Cmd::ClientPing(random_dst)))
+        .await
+    {
+        Ok(results) => results,
+        Err(error) => {
+            panic!("Send to closest error: {error:?}");
+        }
+    };
+
+    let ok_results: Vec<_> = results
+        .into_iter()
+        .filter_map(|res| match res {
+            Ok(Response::Cmd(CmdResponse::NodePong(Ok(())))) => Some(()),
+            _ => None,
+        })
+        .collect();
+
+    if ok_results.len() >= close_group_majority() {
+        Ok(())
+    } else {
+        panic!("Less than majority of close group peers returned an OK response.");
+    }
+}
+
 #[ignore = "Not yet finished."]
 #[tokio::test(flavor = "multi_thread")]
 async fn spend_is_stored_in_network() -> Result<()> {
