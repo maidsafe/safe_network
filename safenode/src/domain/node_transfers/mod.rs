@@ -144,8 +144,11 @@ impl Transfers {
         if let Some((signed_spend, _)) = self.spend_queue.pop() {
             trace!("Popped spend from queue. Trying to add to storage..");
             match self.storage.try_add(&signed_spend).await {
-                Ok(()) => {
+                Ok(true) => {
                     trace!("Added popped spend to storage.");
+                }
+                Ok(false) => {
+                    trace!("Spend already existed in storage. Nothing added.");
                 }
                 Err(e) => {
                     trace!("Could not add popped spend to storage. Dropping it. Error: {e}.");

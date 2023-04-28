@@ -51,6 +51,13 @@ impl SpendStorage {
         }
     }
 
+    /// Returns if the spend already exists.
+    pub(crate) fn exists(&mut self, dbc_id: &DbcId) -> Result<bool> {
+        let address = dbc_address(dbc_id);
+        let filepath = self.address_to_filepath(&address, &self.valid_spends_path)?;
+        Ok(filepath.exists())
+    }
+
     // Read Spend from local store.
     pub(crate) async fn get(&self, address: &DbcAddress) -> Result<SignedSpend> {
         let file_path = self.address_to_filepath(address, &self.valid_spends_path)?;
@@ -81,7 +88,7 @@ impl SpendStorage {
     /// NOTE: The `&mut self` signature is necessary to prevent race conditions
     /// and double spent attempts to be missed (as the validation and adding
     /// could otherwise happen in parallel in different threads.)
-    pub(crate) async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
+    pub(crate) async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<bool> {
         self.validate(signed_spend).await?;
         self.add(signed_spend).await
     }
@@ -177,13 +184,14 @@ impl SpendStorage {
         Ok(())
     }
 
-    async fn add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
+    /// Returns true if it was stored, and false if it already existed.
+    async fn add(&mut self, signed_spend: &SignedSpend) -> Result<bool> {
+        if self.exists(signed_spend.dbc_id())? {
+            return Ok(false);
+        }
+
         let addr = dbc_address(signed_spend.dbc_id());
         let filepath = self.address_to_filepath(&addr, &self.valid_spends_path)?;
-
-        if filepath.exists() {
-            return Ok(());
-        }
 
         // Store the spend to local file system.
         trace!("Storing spend {addr:?}.");
@@ -201,7 +209,7 @@ impl SpendStorage {
 
         trace!("Stored new spend {addr:?}.");
 
-        Ok(())
+        Ok(true)
     }
 
     /// Checks if the given DbcId is unspendable.
@@ -312,7 +320,7 @@ mod tests {
         assert_eq!(spends.len(), number_of_spends);
 
         for spend in spends {
-            storage
+            let _ = storage
                 .try_add(&spend)
                 .await
                 .expect("Failed to write spend.");
@@ -336,11 +344,11 @@ mod tests {
         let spend = dbc.signed_spends.last().expect("Should contain a spend.");
 
         // Adding the exact same spend is idempotent.
-        storage
+        let _ = storage
             .try_add(spend)
             .await
             .expect("First spend should be added.");
-        storage
+        let _ = storage
             .try_add(spend)
             .await
             .expect("The exact same spend should be added.");
@@ -357,7 +365,7 @@ mod tests {
         let (dbc, _) = &dbc[0];
         let spend = dbc.signed_spends.last().expect("Should contain a spend.");
 
-        storage
+        let _ = storage
             .try_add(spend)
             .await
             .expect("First spend should be added.");
