@@ -320,6 +320,22 @@ impl Network {
             .await)
     }
 
+    /// Send `Request` to the closest peers. If `self` is among the closest_peers, the `Request` is
+    /// forwarded to itself and handled. Then a corresponding `Response` is created and is
+    /// forwarded to iself. Hence the flow remains the same and there is no branching at the upper
+    /// layers.
+    pub async fn fire_and_forget_to_closest(&self, request: &Request) -> Result<()> {
+        info!(
+            "Sending {request:?} with dst {:?} to the closest peers.",
+            request.dst().name()
+        );
+        let closest_peers = self.node_get_closest_peers(*request.dst().name()).await?;
+        for peer in closest_peers {
+            self.fire_and_forget(request.clone(), peer).await?;
+        }
+        Ok(())
+    }
+
     /// Send `Request` to the closest peers. `Self` is not present among the recipients.
     pub async fn client_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
         info!(
@@ -370,6 +386,13 @@ impl Network {
     pub async fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
             .await
+    }
+
+    /// Send `Request` to the the given `PeerId` and do _not_ await a response.
+    pub async fn fire_and_forget(&self, req: Request, peer: PeerId) -> Result<()> {
+        let (sender, _) = oneshot::channel();
+        let swarm_cmd = SwarmCmd::SendRequest { req, peer, sender };
+        self.send_swarm_cmd(swarm_cmd).await
     }
 
     /// Return a `SwarmLocalState` with some information obtained from swarm's local state.
