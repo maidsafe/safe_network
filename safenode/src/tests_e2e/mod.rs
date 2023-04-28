@@ -31,7 +31,7 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
 
     let mut first_wallet = get_wallet(first_wallet_dir.path()).await;
     let client = get_client();
-    println!("Getting tokens from the faucet...");
+    println!("Getting {first_wallet_balance} tokens from the faucet...");
     let tokens =
         get_tokens_from_faucet(first_wallet_balance, first_wallet.address(), &client).await;
     println!("Verifying the transfer from faucet...");
