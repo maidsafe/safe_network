@@ -81,7 +81,7 @@ impl SpendStorage {
     /// NOTE: The `&mut self` signature is necessary to prevent race conditions
     /// and double spent attempts to be missed (as the validation and adding
     /// could otherwise happen in parallel in different threads.)
-    pub(crate) async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
+    pub(crate) async fn try_add(&self, signed_spend: &SignedSpend) -> Result<()> {
         self.validate(signed_spend).await?;
         self.add(signed_spend).await
     }
@@ -92,7 +92,7 @@ impl SpendStorage {
     /// NOTE: The `&mut self` signature is necessary to prevent race conditions
     /// and double spent attempts to be missed (as the validation and adding
     /// could otherwise happen in parallel in different threads.)
-    pub(crate) async fn validate(&mut self, signed_spend: &SignedSpend) -> Result<()> {
+    pub(crate) async fn validate(&self, signed_spend: &SignedSpend) -> Result<()> {
         let address = dbc_address(signed_spend.dbc_id());
         if self.try_get_double_spend(&address).await.is_ok() {
             return Err(Error::AlreadyMarkedAsDoubleSpend(address));
@@ -138,7 +138,7 @@ impl SpendStorage {
     /// and double spent attempts to be missed (as the validation and adding
     /// could otherwise happen in parallel in different threads.)
     pub(crate) async fn try_add_double(
-        &mut self,
+        &self,
         a_spend: &SignedSpend,
         b_spend: &SignedSpend,
     ) -> Result<()> {
@@ -177,7 +177,7 @@ impl SpendStorage {
         Ok(())
     }
 
-    async fn add(&mut self, signed_spend: &SignedSpend) -> Result<()> {
+    async fn add(&self, signed_spend: &SignedSpend) -> Result<()> {
         let addr = dbc_address(signed_spend.dbc_id());
         let filepath = self.address_to_filepath(&addr, &self.valid_spends_path)?;
 
@@ -250,7 +250,7 @@ impl SpendStorage {
     }
 
     async fn try_store_double_spend(
-        &mut self,
+        &self,
         a_spend: &SignedSpend,
         b_spend: &SignedSpend,
     ) -> Result<()> {
@@ -300,7 +300,7 @@ mod tests {
     async fn write_and_read_100_spends() {
         // Test that a range of different spends can be stored and read as expected.
         let number_of_spends = 100;
-        let mut storage = init_file_store();
+        let storage = init_file_store();
 
         let key = MainKey::random();
         let dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
@@ -328,7 +328,7 @@ mod tests {
 
     #[tokio::test]
     async fn try_add_is_idempotent() {
-        let mut storage = init_file_store();
+        let storage = init_file_store();
         let key = MainKey::random();
         let src_dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
 
@@ -350,7 +350,7 @@ mod tests {
     #[ignore = "We have temporarily disabled the punishment of double spends. NB it is still detected and hindered, just not punished."]
     #[tokio::test]
     async fn double_spend_attempt_is_detected() {
-        let mut storage = init_file_store();
+        let storage = init_file_store();
         let key = MainKey::random();
         let src_dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
 
@@ -402,7 +402,7 @@ mod tests {
 
     #[tokio::test]
     async fn try_add_double_is_idempotent() {
-        let mut storage = init_file_store();
+        let storage = init_file_store();
         let key = MainKey::random();
         let src_dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
 
@@ -440,7 +440,7 @@ mod tests {
 
     #[tokio::test]
     async fn try_add_fails_after_added_double_spend() {
-        let mut storage = init_file_store();
+        let storage = init_file_store();
         let key = MainKey::random();
         let src_dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
 
