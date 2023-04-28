@@ -330,7 +330,7 @@ impl Node {
                         };
                         match self
                             .network
-                            .node_send_to_closest(&Request::Event(event))
+                            .fire_and_forget_to_closest(&Request::Event(event))
                             .await
                         {
                             Ok(_) => {}
