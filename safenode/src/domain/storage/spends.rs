@@ -22,10 +22,12 @@ use bincode::{deserialize, serialize};
 use std::{
     fmt::{self, Display, Formatter},
     path::{Path, PathBuf},
+    sync::Arc,
 };
 use tokio::{
     fs::{create_dir_all, read, remove_file, File},
     io::AsyncWriteExt,
+    sync::RwLock,
 };
 use tracing::trace;
 
@@ -40,6 +42,7 @@ const DOUBLE_SPENDS_STORE_DIR_NAME: &str = "double_spends";
 pub(crate) struct SpendStorage {
     valid_spends_path: PathBuf,
     double_spends_path: PathBuf,
+    sync: Arc<RwLock<()>>,
 }
 
 impl SpendStorage {
@@ -48,6 +51,7 @@ impl SpendStorage {
         Self {
             valid_spends_path: path.join(VALID_SPENDS_STORE_DIR_NAME),
             double_spends_path: path.join(DOUBLE_SPENDS_STORE_DIR_NAME),
+            sync: Arc::new(RwLock::new(())),
         }
     }
 
@@ -100,6 +104,7 @@ impl SpendStorage {
     /// and double spent attempts to be missed (as the validation and adding
     /// could otherwise happen in parallel in different threads.)
     pub(crate) async fn validate(&self, signed_spend: &SignedSpend) -> Result<()> {
+        let _ = self.sync.write().await;
         let address = dbc_address(signed_spend.dbc_id());
         if self.try_get_double_spend(&address).await.is_ok() {
             return Err(Error::AlreadyMarkedAsDoubleSpend(address));
@@ -186,6 +191,7 @@ impl SpendStorage {
 
     /// Returns true if it was stored, and false if it already existed.
     async fn add(&self, signed_spend: &SignedSpend) -> Result<bool> {
+        let _ = self.sync.write().await;
         if self.exists(signed_spend.dbc_id())? {
             return Ok(false);
         }
