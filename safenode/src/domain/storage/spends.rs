@@ -229,7 +229,7 @@ impl SpendStorage {
         &self,
         address: &DbcAddress,
     ) -> Result<(SignedSpend, SignedSpend)> {
-        trace!("Getting double spend: {address:?}");
+        trace!("Looking for double spend: {address:?}");
         let file_path = self.address_to_filepath(address, &self.double_spends_path)?;
         match read(file_path).await {
             Ok(bytes) => {
