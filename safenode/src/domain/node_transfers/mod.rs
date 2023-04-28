@@ -130,8 +130,10 @@ impl Transfers {
         // This also ensures that all parent's dst tx's are the same as the src tx of this spend.
         validate_parent_spends(signed_spend.as_ref(), parent_tx.as_ref(), parent_spends)?;
 
-        // This spend is valid and goes into the queue.
-        self.spend_queue.push(*signed_spend, paid_fee.as_nano());
+        // 5. This spend is valid and goes into the queue (if not already in storage).
+        if !self.storage.exists(signed_spend.dbc_id())? {
+            self.spend_queue.push(*signed_spend, paid_fee.as_nano());
+        }
 
         // NB: Temporarily disabling transfer rate limit!
         // This will be enabled again when transfers feat have stabilized.
