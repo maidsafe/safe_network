@@ -26,8 +26,8 @@
 use super::SpendPriority;
 
 use priority_queue::PriorityQueue;
-use std::{hash::Hash, time::Duration};
-use tokio::time::Instant;
+use std::{hash::Hash, sync::Arc, time::Duration};
+use tokio::{sync::RwLock, time::Instant};
 
 /// The queue of pending spends, sorted by
 /// the fee paid.
@@ -38,10 +38,10 @@ use tokio::time::Instant;
 #[derive(custom_debug::Debug)]
 pub struct SpendQ<T: Eq + Hash> {
     #[debug(skip)]
-    queue: PriorityQueue<T, u64>,
+    queue: Arc<RwLock<PriorityQueue<T, u64>>>,
     #[debug(skip)]
-    snapshot: SpendQSnapshot,
-    last_pop: Instant,
+    snapshot: Arc<RwLock<SpendQSnapshot>>,
+    last_pop: Arc<RwLock<Instant>>,
 }
 
 /// A snapshot of the sorted fees in the spend queue.
@@ -181,9 +181,13 @@ impl<T: Eq + Hash> SpendQ<T> {
         debug!("Starting fee: current_fee {current_fee}.");
         let default_val = u64::max(4, current_fee);
         Self {
-            queue: PriorityQueue::new(),
-            snapshot: SpendQSnapshot::new(vec![2 * default_val, default_val, default_val / 2]),
-            last_pop: Instant::now(),
+            queue: Arc::new(RwLock::new(PriorityQueue::new())),
+            snapshot: Arc::new(RwLock::new(SpendQSnapshot::new(vec![
+                2 * default_val,
+                default_val,
+                default_val / 2,
+            ]))),
+            last_pop: Arc::new(RwLock::new(Instant::now())),
         }
     }
 
@@ -199,34 +203,34 @@ impl<T: Eq + Hash> SpendQ<T> {
     /// -> 12800 tps with 102400 nodes
     /// -> 38400 tps with 307200 nodes
     /// -> etc..
-    pub fn elapsed(&self) -> bool {
-        Instant::now() - self.last_pop > Duration::from_secs(1)
+    pub async fn elapsed(&self) -> bool {
+        Instant::now() - *self.last_pop.read().await > Duration::from_secs(1)
     }
 
     /// Return a snapshot of the fees in the queue, with preserved order.
-    pub fn snapshot(&self) -> SpendQSnapshot {
-        self.snapshot.clone()
+    pub async fn snapshot(&self) -> SpendQSnapshot {
+        self.snapshot.read().await.clone()
     }
 
     /// This requires all validation of the fee to have already been made.
     /// There is no validation here!
-    pub fn push(&mut self, item: T, priority: u64) {
-        let _ = self.queue.push(item, priority);
+    pub async fn push(&self, item: T, priority: u64) {
+        let _ = self.queue.write().await.push(item, priority);
         // We update our snapshot after every change to the queue.
-        self.set_snapshot();
+        self.set_snapshot().await;
     }
 
     /// Pop the highest priority item from the queue.
-    pub fn pop(&mut self) -> Option<(T, u64)> {
-        let item = self.queue.pop();
+    pub async fn pop(&self) -> Option<(T, u64)> {
+        let item = self.queue.write().await.pop();
 
         // Preserve last 3 items in snapshot, as to preserve the current fee.
-        if self.queue.len() > 3 {
+        if self.queue.read().await.len() > 3 {
             // We update our snapshot after every change to the queue, except when only 3 left.
-            self.set_snapshot();
+            self.set_snapshot().await;
         }
         // To achieve our desired tsp, we set the `last_pop` time to now.
-        self.last_pop = Instant::now();
+        *self.last_pop.write().await = Instant::now();
 
         item
     }
@@ -234,37 +238,43 @@ impl<T: Eq + Hash> SpendQ<T> {
     // Populate the snapshot with the fees only, and
     // sort them, so that stats are properly calculated over them.
     // Makes sure at least 3 items are in the snapshot.
-    fn set_snapshot(&mut self) {
-        let mut queue: Vec<_> = self.queue.iter().map(|(_, fee)| *fee).collect();
+    async fn set_snapshot(&self) {
+        let mut queue: Vec<_> = self
+            .queue
+            .read()
+            .await
+            .iter()
+            .map(|(_, fee)| *fee)
+            .collect();
 
         queue.sort();
         queue.reverse(); // highest first
 
-        let queue = if self.queue.is_empty() {
+        let queue = if queue.is_empty() {
             // this should be unreachable
             let default_val = 4;
             vec![2 * default_val, default_val, default_val / 2]
         } else if queue.len() == 1 {
             // with one value, the spread is large
             vec![2 * queue[0], queue[0], queue[0] / 2]
-        } else if self.queue.len() == 2 {
+        } else if queue.len() == 2 {
             // with two values, the spread is lower
             vec![queue[0], (queue[0] + queue[1]) / 2, queue[1]]
         } else {
             queue
         };
 
-        self.snapshot = SpendQSnapshot::new(queue);
+        *self.snapshot.write().await = SpendQSnapshot::new(queue);
     }
 
     #[cfg(test)]
-    fn is_empty(&self) -> bool {
-        self.queue.is_empty()
+    async fn is_empty(&self) -> bool {
+        self.queue.read().await.is_empty()
     }
 
     #[cfg(test)]
-    fn len(&self) -> usize {
-        self.queue.len()
+    async fn len(&self) -> usize {
+        self.queue.read().await.len()
     }
 }
 
@@ -306,18 +316,24 @@ mod tests {
     use super::super::Result;
     use super::*;
 
-    #[test]
-    fn spendq_snapshot_is_sorted_highest_first() -> Result<()> {
-        let mut spendq = SpendQ::<usize>::with_fee(0);
+    #[tokio::test]
+    async fn spendq_snapshot_is_sorted_highest_first() -> Result<()> {
+        let spendq = SpendQ::<usize>::with_fee(0);
 
         for i in 1..11 {
             let rand_item: usize = rand::random();
-            spendq.push(rand_item, i);
+            spendq.push(rand_item, i).await;
         }
 
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
 
-        let non_sorted_vec: Vec<_> = spendq.queue.iter().map(|(_, fee)| *fee).collect();
+        let non_sorted_vec: Vec<_> = spendq
+            .queue
+            .read()
+            .await
+            .iter()
+            .map(|(_, fee)| *fee)
+            .collect();
         let sorted_vec = snapshot.queue;
 
         // This shall show that we are required to sort the vec,
@@ -332,11 +348,11 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn zero_init_spendq_default_stats_values() -> Result<()> {
+    #[tokio::test]
+    async fn zero_init_spendq_default_stats_values() -> Result<()> {
         let spendq = SpendQ::<usize>::with_fee(0);
 
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
         let stats = snapshot.stats();
 
         assert_eq!(stats.high, 8);
@@ -345,19 +361,19 @@ mod tests {
         assert_eq!(stats.std_dev, 3);
 
         assert_eq!(snapshot.queue.len(), 3);
-        assert!(spendq.is_empty());
+        assert!(spendq.is_empty().await);
 
         Ok(())
     }
 
-    #[test]
-    fn spendq_instantiated_with_fee_gives_initial_value_in_stats() -> Result<()> {
+    #[tokio::test]
+    async fn spendq_instantiated_with_fee_gives_initial_value_in_stats() -> Result<()> {
         // We can pass in an initial value to spend queue, which will reflect in stats
         // while we haven't had any values pushed onto the spend queue.
         let initial_value = 42;
         let spendq = SpendQ::<usize>::with_fee(initial_value);
 
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
         let stats = snapshot.stats();
 
         assert_eq!(stats.high, 2 * initial_value);
@@ -366,17 +382,17 @@ mod tests {
         assert_eq!(stats.std_dev, 26);
 
         assert_eq!(snapshot.queue.len(), 3);
-        assert!(spendq.is_empty());
+        assert!(spendq.is_empty().await);
 
         Ok(())
     }
 
-    #[test]
-    fn pushing_an_item_sets_stats() -> Result<()> {
+    #[tokio::test]
+    async fn pushing_an_item_sets_stats() -> Result<()> {
         // We use an initial value.
         let initial_value = 42;
-        let mut spendq = SpendQ::<usize>::with_fee(initial_value);
-        let snapshot = spendq.snapshot();
+        let spendq = SpendQ::<usize>::with_fee(initial_value);
+        let snapshot = spendq.snapshot().await;
 
         let stats = snapshot.stats();
 
@@ -388,14 +404,14 @@ mod tests {
 
         // The initial value will be what we have in the snapshot queue.
         assert_eq!(snapshot.queue.len(), 3);
-        assert!(spendq.queue.is_empty());
+        assert!(spendq.queue.read().await.is_empty());
 
         // We push an item, and take a new snapshot..
         let rand_item: usize = rand::random();
         let actual_value = 24;
-        spendq.push(rand_item, actual_value);
+        spendq.push(rand_item, actual_value).await;
 
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
 
         let stats = snapshot.stats();
 
@@ -406,35 +422,35 @@ mod tests {
         assert_eq!(stats.std_dev, 15);
 
         assert_eq!(snapshot.queue.len(), 3);
-        assert!(!spendq.is_empty());
+        assert!(!spendq.is_empty().await);
 
         Ok(())
     }
 
-    #[test]
-    fn when_pushed_to_empty_popped_item_is_preserved_in_stats_until_new_item_is_pushed(
+    #[tokio::test]
+    async fn when_pushed_to_empty_popped_item_is_preserved_in_stats_until_new_item_is_pushed(
     ) -> Result<()> {
-        let mut spendq = SpendQ::<usize>::with_fee(0);
+        let spendq = SpendQ::<usize>::with_fee(0);
 
         // We push an item
         let rand_item: usize = rand::random();
         let value_42 = 42;
-        spendq.push(rand_item, value_42);
+        spendq.push(rand_item, value_42).await;
 
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
         let stats_value_42 = snapshot.stats();
 
-        let popped_item_42 = spendq.pop();
+        let popped_item_42 = spendq.pop().await;
 
         assert_eq!(popped_item_42, Some((rand_item, value_42)));
 
         // Take a new snapshot..
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
 
         // Last item is still in the snapshot queue, to preserve the value (the last price)
         // for stats queries. But the actual spend queue is empty.
         assert_eq!(snapshot.queue.len(), 3);
-        assert!(spendq.is_empty());
+        assert!(spendq.is_empty().await);
 
         assert_eq!(snapshot.queue, vec![2 * value_42, value_42, value_42 / 2]);
 
@@ -450,13 +466,13 @@ mod tests {
         // We push a new item.
         let other_rand_item: usize = rand::random();
         let value_66 = 66;
-        spendq.push(other_rand_item, value_66);
+        spendq.push(other_rand_item, value_66).await;
 
         // Take a new snapshot..
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
 
         assert_eq!(snapshot.queue.len(), 3);
-        assert_eq!(spendq.len(), 1);
+        assert_eq!(spendq.len().await, 1);
 
         let stats_value_66 = snapshot.stats();
 
@@ -467,17 +483,17 @@ mod tests {
         // The previously preserved value has been replaced.
         assert_eq!(snapshot.queue, vec![2 * value_66, value_66, value_66 / 2]);
 
-        let popped_item_66 = spendq.pop();
+        let popped_item_66 = spendq.pop().await;
         // The last item in the queue now, is the `value_66`.
         assert_eq!(popped_item_66, Some((other_rand_item, value_66)));
 
         // And same as the previous time, when we take a new snapshot..
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
 
         // ..last item is still in the snapshot queue.
         // But the actual spend queue is empty.
         assert_eq!(snapshot.queue.len(), 3);
-        assert!(spendq.is_empty());
+        assert!(spendq.is_empty().await);
 
         assert_eq!(snapshot.queue, vec![2 * value_66, value_66, value_66 / 2]);
 
@@ -489,9 +505,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn last_three_item_are_preserved_in_stats_until_new_item_is_pushed() -> Result<()> {
-        let mut spendq = SpendQ::<usize>::with_fee(0);
+    #[tokio::test]
+    async fn last_three_item_are_preserved_in_stats_until_new_item_is_pushed() -> Result<()> {
+        let spendq = SpendQ::<usize>::with_fee(0);
 
         // We push three items
         let item_1 = rand::random();
@@ -500,24 +516,24 @@ mod tests {
         let value_41 = 41;
         let value_42 = 42;
         let value_43 = 43;
-        spendq.push(item_1, value_41);
-        spendq.push(item_2, value_42);
-        spendq.push(item_3, value_43);
+        spendq.push(item_1, value_41).await;
+        spendq.push(item_2, value_42).await;
+        spendq.push(item_3, value_43).await;
 
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
         let stats_3_values = snapshot.stats();
 
-        let popped_item_43 = spendq.pop();
+        let popped_item_43 = spendq.pop().await;
 
         assert_eq!(popped_item_43, Some((item_3, value_43)));
 
         // Take a new snapshot..
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
 
         // Last three items are still in the snapshot queue, to preserve the value (the last price)
         // for stats queries. But the actual spend queue has one item less.
         assert_eq!(snapshot.queue, vec![43, 42, 41]);
-        assert_eq!(spendq.len(), 2);
+        assert_eq!(spendq.len().await, 2);
 
         let stats_2_values = snapshot.stats();
 
@@ -528,18 +544,18 @@ mod tests {
         // Pop the last two items as well.
         // ------------------------------------------------
 
-        let popped_item_42 = spendq.pop();
+        let popped_item_42 = spendq.pop().await;
         assert_eq!(popped_item_42, Some((item_2, value_42)));
-        let popped_item_41 = spendq.pop();
+        let popped_item_41 = spendq.pop().await;
         assert_eq!(popped_item_41, Some((item_1, value_41)));
 
         // Take a new snapshot..
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
 
         // Last three items are still in the snapshot queue, to preserve the value (the last price)
         // for stats queries. But the actual spend queue is empty.
         assert_eq!(snapshot.queue, vec![43, 42, 41]);
-        assert!(spendq.is_empty());
+        assert!(spendq.is_empty().await);
 
         let stats_0_values = snapshot.stats();
 
@@ -553,14 +569,14 @@ mod tests {
         // We push a new item.
         let other_rand_item: usize = rand::random();
         let value_66 = 66;
-        spendq.push(other_rand_item, value_66);
+        spendq.push(other_rand_item, value_66).await;
 
         // Take a new snapshot..
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
 
         // The old values are evicted from snapshot.
         assert_eq!(snapshot.queue.len(), 3);
-        assert_eq!(spendq.len(), 1);
+        assert_eq!(spendq.len().await, 1);
 
         let stats_value_66 = snapshot.stats();
 
@@ -571,17 +587,17 @@ mod tests {
         // The previously preserved value has been replaced.
         assert_eq!(snapshot.queue, vec![2 * value_66, value_66, value_66 / 2]);
 
-        let popped_item_66 = spendq.pop();
+        let popped_item_66 = spendq.pop().await;
         // The last item in the queue now, is the `value_66`.
         assert_eq!(popped_item_66, Some((other_rand_item, value_66)));
 
         // And same as the previous time, when we take a new snapshot..
-        let snapshot = spendq.snapshot();
+        let snapshot = spendq.snapshot().await;
 
         // ..last item is still in the snapshot queue.
         // But the actual spend queue is empty.
         assert_eq!(snapshot.queue.len(), 3);
-        assert!(spendq.is_empty());
+        assert!(spendq.is_empty().await);
 
         assert_eq!(snapshot.queue, vec![2 * value_66, value_66, value_66 / 2]);
 

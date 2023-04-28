@@ -45,7 +45,7 @@ impl Client {
             events_channel,
             signer,
         };
-        let mut client_clone = client.clone();
+        let client_clone = client.clone();
 
         let _swarm_driver = spawn({
             trace!("Starting up client swarm_driver");
@@ -71,7 +71,7 @@ impl Client {
         Ok(client)
     }
 
-    fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
+    fn handle_network_event(&self, event: NetworkEvent) -> Result<()> {
         match event {
             // Clients do not handle requests.
             NetworkEvent::RequestReceived { .. } => {}
