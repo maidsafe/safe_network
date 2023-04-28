@@ -133,15 +133,18 @@ impl Transfers {
         // This spend is valid and goes into the queue.
         self.spend_queue.push(*signed_spend, paid_fee.as_nano());
 
-        // If the rate limit has elapsed..
-        if self.spend_queue.elapsed() {
-            // .. we process one from the queue.
-            // NB: This works for now. We can look at
-            // a timeout backstop in coming iterations.
-            if let Some((signed_spend, _)) = self.spend_queue.pop() {
-                return Ok(self.storage.try_add(&signed_spend).await?);
-            }
+        // NB: Temporarily disabling transfer rate limit!
+        // This will be enabled again when transfers feat have stabilized.
+
+        // // If the rate limit has elapsed..
+        // (NB: This works for now. We can look at
+        // a timeout backstop in coming iterations.)
+        // if self.spend_queue.elapsed() {
+        // .. we process one from the queue.
+        if let Some((signed_spend, _)) = self.spend_queue.pop() {
+            return Ok(self.storage.try_add(&signed_spend).await?);
         }
+        // }
 
         Ok(())
     }
