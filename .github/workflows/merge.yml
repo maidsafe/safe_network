@@ -108,6 +108,12 @@ jobs:
         run: cargo test --no-run --release
         timeout-minutes: 30
 
+      - name: Run many-to-many issue repro
+        # Only run on PRs w/ ubuntu
+        if: github.event_name != 'pull_request' || matrix.os == 'ubuntu-latest'
+        timeout-minutes: 25
+        run: cargo test --release -p safenode -- node_many_to_many
+
       - name: Run network tests
         # Only run on PRs w/ ubuntu
         if: github.event_name != 'pull_request' || matrix.os == 'ubuntu-latest'
