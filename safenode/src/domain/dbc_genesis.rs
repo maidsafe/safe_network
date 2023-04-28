@@ -138,10 +138,7 @@ pub async fn load_faucet_wallet(client: &Client) -> LocalWallet {
         .expect("Faucet wallet shall be stored successfully.");
     println!("Faucet wallet balance: {}", faucet_wallet.balance());
 
-    println!("Waiting a short moment before verifying the transfer from genesis...");
-    tokio::time::sleep(std::time::Duration::from_secs(15)).await;
     println!("Verifying the transfer from genesis...");
-
     use crate::domain::wallet::VerifyingClient;
     if let Err(error) = client.verify(&tokens).await {
         println!("Could not verify the transfer from genesis: {error:?}");
