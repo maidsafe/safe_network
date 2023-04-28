@@ -23,6 +23,7 @@ use eyre::Result;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn node_many_to_many_ping_pong_succeeds() -> Result<()> {
+    let _log_appender_guard = crate::log::init_node_logging(&None)?;
     use crate::{
         network::close_group_majority,
         protocol::messages::{Cmd, CmdResponse, Request, Response},
@@ -30,6 +31,11 @@ async fn node_many_to_many_ping_pong_succeeds() -> Result<()> {
 
     let client = get_client();
     let random_dst = rand::random();
+
+    trace!("Adding a small delay to allow the client to find enough nodes.");
+    // Some sleep is required to allow the client to find enough nodes.
+    tokio::time::sleep(std::time::Duration::from_secs(15)).await;
+    trace!("Sending ping to closest nodes...");
 
     let results = match client
         .send_to_closest(Request::Cmd(Cmd::ClientPing(random_dst)))
