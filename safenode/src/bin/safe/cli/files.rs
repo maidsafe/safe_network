@@ -52,22 +52,22 @@ async fn upload_files(files_path: PathBuf, file_api: &Files, root_dir: &Path) ->
             let file_name = if let Some(file_name) = entry.file_name().to_str() {
                 file_name.to_string()
             } else {
-                print!(
+                println!(
                     "Skipping file {:?} as it is not valid UTF-8.",
                     entry.file_name()
                 );
                 continue;
             };
 
-            print!("Storing file {file_name:?} of {} bytes..", bytes.len());
+            println!("Storing file {file_name:?} of {} bytes..", bytes.len());
 
             match file_api.upload(bytes).await {
                 Ok(address) => {
-                    print!("Successfully stored file to {address:?}");
+                    println!("Successfully stored file to {address:?}");
                     chunks_to_fetch.push((*address.name(), file_name));
                 }
                 Err(error) => {
-                    print!(
+                    println!(
                         "Did not store file {file_name:?} to all nodes in the close group! {error}"
                     )
                 }
@@ -79,7 +79,7 @@ async fn upload_files(files_path: PathBuf, file_api: &Files, root_dir: &Path) ->
     tokio::fs::create_dir_all(file_names_path.as_path()).await?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
-    print!("Writing {} bytes to {file_names_path:?}", content.len());
+    println!("Writing {} bytes to {file_names_path:?}", content.len());
     fs::write(file_names_path, content)?;
 
     Ok(())
@@ -98,23 +98,23 @@ async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
             let index_doc_bytes = Bytes::from(fs::read(entry.path())?);
             let index_doc_name = entry.file_name();
 
-            print!("Loading file names from index doc {index_doc_name:?}");
+            println!("Loading file names from index doc {index_doc_name:?}");
             let files_to_fetch: Vec<(XorName, String)> = bincode::deserialize(&index_doc_bytes)?;
 
             if files_to_fetch.is_empty() {
-                print!("No files to download!");
+                println!("No files to download!");
             }
             for (xorname, file_name) in files_to_fetch.iter() {
-                print!("Downloading file {file_name:?}");
+                println!("Downloading file {file_name:?}");
                 match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
                     Ok(bytes) => {
-                        print!("Successfully got file {file_name}!");
+                        println!("Successfully got file {file_name}!");
                         let file_name_path = download_path.join(file_name);
-                        print!("Writing {} bytes to {file_name_path:?}", bytes.len());
+                        println!("Writing {} bytes to {file_name_path:?}", bytes.len());
                         fs::write(file_name_path, bytes)?;
                     }
                     Err(error) => {
-                        print!("Did not get file {file_name:?} from the network! {error}")
+                        println!("Did not get file {file_name:?} from the network! {error}")
                     }
                 };
             }
