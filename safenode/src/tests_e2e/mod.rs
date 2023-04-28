@@ -23,7 +23,7 @@ use eyre::Result;
 
 #[ignore = "Not yet finished."]
 #[tokio::test(flavor = "multi_thread")]
-async fn spend_is_stored_in_network() -> Result<()> {
+async fn multiple_sequential_transfers_succeed() -> Result<()> {
     // let _log_appender_guard = crate::log::init_node_logging(&None)?;
 
     let first_wallet_dir = TempDir::new()?;
