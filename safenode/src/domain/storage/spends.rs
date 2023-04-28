@@ -310,7 +310,7 @@ mod tests {
     use sn_dbc::MainKey;
 
     #[tokio::test]
-    async fn write_and_read_100_spends() {
+    async fn write_and_read_300_spends() {
         // Test that a range of different spends can be stored and read as expected.
         let number_of_spends = 100;
         let storage = init_file_store();
@@ -337,6 +337,42 @@ mod tests {
 
             assert_eq!(spend.to_bytes(), read_spend.to_bytes());
         }
+    }
+
+    #[tokio::test]
+    async fn concurrently_write_and_read_300_spends() {
+        // Test that a range of different spends can be stored and read as expected.
+        let number_of_spends = 300;
+        let storage = init_file_store();
+
+        let key = MainKey::random();
+        let dbc = create_first_dbc_from_key(&key).expect("First dbc creation to succeed.");
+        println!("Splitting into {number_of_spends} spends...");
+        let dbcs = split(&dbc, &key, number_of_spends).expect("Split to succeed.");
+        println!("Split finished.");
+        let spends: Vec<_> = dbcs
+            .into_iter()
+            .flat_map(|(dbc, _)| dbc.signed_spends)
+            .collect();
+
+        assert_eq!(spends.len(), number_of_spends);
+
+        let tasks = spends.into_iter().map(|spend| {
+            let store = storage.clone();
+            tokio::task::spawn(async move {
+                store.try_add(&spend).await.expect("Failed to write spend.");
+                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                let read_spend = store
+                    .get(&dbc_address(spend.dbc_id()))
+                    .await
+                    .expect("Failed to read spend.");
+
+                assert_eq!(spend.to_bytes(), read_spend.to_bytes());
+            })
+        });
+        let res = futures::future::join_all(tasks).await;
+
+        assert!(res.into_iter().all(|res| res.is_ok()))
     }
 
     #[tokio::test]
