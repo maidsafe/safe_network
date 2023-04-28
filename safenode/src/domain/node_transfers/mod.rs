@@ -192,6 +192,7 @@ fn validate_parent_spends(
     parent_tx: &DbcTransaction,
     parent_spends: BTreeSet<SignedSpend>,
 ) -> Result<()> {
+    trace!("Validating parent spends..");
     // The parent_spends will be different spends,
     // one for each input that went into creating the signed_spend.
     for parent_spend in &parent_spends {
@@ -224,7 +225,8 @@ fn validate_parent_spends(
         });
     }
 
-    // All parents check out.
+    trace!("All parents check out.");
+
     Ok(())
 }
 
