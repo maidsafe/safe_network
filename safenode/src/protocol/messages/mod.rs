@@ -34,7 +34,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, fmt::Debug};
 use xor_name::XorName;
 
-/// Send a request to other peers in the network
+/// A request to peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Request {
     /// A cmd sent to peers. Cmds are writes, i.e. can cause mutation.
@@ -45,7 +45,7 @@ pub enum Request {
     Event(Event),
 }
 
-/// Respond to other peers in the network
+/// A response to peers in the network.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Response {
     /// The response to a cmd.
