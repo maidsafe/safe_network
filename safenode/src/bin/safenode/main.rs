@@ -167,6 +167,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
         loop {
             match node_events_rx.recv().await {
                 Ok(NodeEvent::ConnectedToNetwork) => info!("Connected to the Network"),
+                Ok(_) => { /* we ignore other evvents */ }
                 Err(RecvError::Closed) => {
                     if let Err(err) = ctrl_tx
                         .send(NodeCtrl::Stop {

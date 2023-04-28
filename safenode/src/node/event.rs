@@ -6,6 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::domain::storage::{ChunkAddress, RegisterAddress};
+
+use sn_dbc::DbcId;
 use tokio::sync::broadcast;
 
 /// Channel where users of the public API can listen to events broadcasted by the node.
@@ -41,4 +44,12 @@ impl NodeEventsChannel {
 pub enum NodeEvent {
     /// The node has been connected to the network
     ConnectedToNetwork,
+    /// A Chunk has been stored in local storage
+    ChunkStored(ChunkAddress),
+    /// A Register has been created in local storage
+    RegisterCreated(RegisterAddress),
+    /// A Register edit operation has been applied in local storage
+    RegisterEdited(RegisterAddress),
+    /// A DBC Spend has been stored in local storage
+    SpendStored(DbcId),
 }
