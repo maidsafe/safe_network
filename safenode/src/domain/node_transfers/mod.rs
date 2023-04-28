@@ -142,7 +142,15 @@ impl Transfers {
         // if self.spend_queue.elapsed() {
         // .. we process one from the queue.
         if let Some((signed_spend, _)) = self.spend_queue.pop() {
-            return Ok(self.storage.try_add(&signed_spend).await?);
+            trace!("Popped spend from queue. Trying to add to storage..");
+            match self.storage.try_add(&signed_spend).await {
+                Ok(()) => {
+                    trace!("Added popped spend to storage.");
+                }
+                Err(e) => {
+                    trace!("Could not add popped spend to storage. Dropping it. Error: {e}.");
+                }
+            }
         }
         // }
 
