@@ -242,23 +242,25 @@ impl Node {
     async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
         match cmd {
             Cmd::StoreChunk(chunk) => {
-                debug!("That's a store chunk in for :{:?}", chunk.address().name());
+                let addr = *chunk.address();
+                debug!("That's a store chunk in for :{:?}", addr.name());
 
                 // Create a Kademlia record for storage
                 let record = Record {
-                    key: RecordKey::new(chunk.address().name()),
+                    key: RecordKey::new(addr.name()),
                     value: chunk.value().to_vec(),
                     publisher: None,
                     expires: None,
                 };
 
                 match self.network.put_data_as_record(record).await {
-                    Ok(()) => CmdResponse::StoreChunk(Ok(())),
+                    Ok(()) => {
+                        self.events_channel.broadcast(NodeEvent::ChunkStored(addr));
+                        CmdResponse::StoreChunk(Ok(()))
+                    }
                     Err(err) => {
                         error!("Failed to register node as chunk provider: {err:?}");
-                        CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(
-                            *chunk.address().name(),
-                        )))
+                        CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(*addr.name())))
                     }
                 }
             }
@@ -268,9 +270,19 @@ impl Node {
                     .write(&cmd)
                     .await
                     .map_err(ProtocolError::Storage);
+
+                let xorname = cmd.dst();
                 match cmd {
-                    RegisterCmd::Create(_) => CmdResponse::CreateRegister(result),
-                    RegisterCmd::Edit(_) => CmdResponse::EditRegister(result),
+                    RegisterCmd::Create(_) => {
+                        self.events_channel
+                            .broadcast(NodeEvent::RegisterCreated(xorname));
+                        CmdResponse::CreateRegister(result)
+                    }
+                    RegisterCmd::Edit(_) => {
+                        self.events_channel
+                            .broadcast(NodeEvent::RegisterEdited(xorname));
+                        CmdResponse::EditRegister(result)
+                    }
                 }
             }
             Cmd::SpendDbc {
@@ -304,7 +316,12 @@ impl Node {
                     .await
                 {
                     Ok(()) => {
-                        warn!("Broadcasting valid spend: {:?}", signed_spend.dbc_id());
+                        let dbc_id = *signed_spend.dbc_id();
+                        warn!("Broadcasting valid spend: {dbc_id:?}");
+
+                        self.events_channel
+                            .broadcast(NodeEvent::SpendStored(dbc_id));
+
                         let event = Event::ValidSpendReceived {
                             spend: signed_spend,
                             parent_tx,
