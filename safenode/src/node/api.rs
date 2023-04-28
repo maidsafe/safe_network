@@ -317,7 +317,7 @@ impl Node {
                 {
                     Ok(()) => {
                         let dbc_id = *signed_spend.dbc_id();
-                        warn!("Broadcasting valid spend: {dbc_id:?}");
+                        trace!("Broadcasting valid spend: {dbc_id:?}");
 
                         self.events_channel
                             .broadcast(NodeEvent::SpendStored(dbc_id));
@@ -335,11 +335,10 @@ impl Node {
                         {
                             Ok(_) => {}
                             Err(err) => {
-                                warn!(
-                                    "Failed to send double spend event to closest peers: {err:?}"
-                                );
+                                warn!("Failed to send valid spend event to closest peers: {err:?}");
                             }
                         }
+
                         Ok(())
                     }
                     Err(TransferError::Storage(StorageError::DoubleSpendAttempt {
