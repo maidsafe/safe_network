@@ -24,7 +24,7 @@ use eyre::Result;
 #[ignore = "Not yet finished."]
 #[tokio::test(flavor = "multi_thread")]
 async fn spend_is_stored_in_network() -> Result<()> {
-    let _log_appender_guard = crate::log::init_node_logging(&None)?;
+    // let _log_appender_guard = crate::log::init_node_logging(&None)?;
 
     let first_wallet_dir = TempDir::new()?;
     let first_wallet_balance = Token::from_nano(1_000_000_000);
