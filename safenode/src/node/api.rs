@@ -222,7 +222,7 @@ impl Node {
                         // The client is asking for the fee to spend a specific dbc, and including the id of that dbc.
                         // The required fee content is encrypted to that dbc id, and so only the holder of the dbc secret
                         // key can unlock the contents.
-                        let required_fee = self.transfers.get_required_fee(dbc_id, priority);
+                        let required_fee = self.transfers.get_required_fee(dbc_id, priority).await;
                         QueryResponse::GetFees(Ok(required_fee))
                     }
                     SpendQuery::GetDbcSpend(address) => {
@@ -239,7 +239,7 @@ impl Node {
         }
     }
 
-    async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
+    async fn handle_cmd(&self, cmd: Cmd) -> CmdResponse {
         match cmd {
             Cmd::StoreChunk(chunk) => {
                 let addr = *chunk.address();

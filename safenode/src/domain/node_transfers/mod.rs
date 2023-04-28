@@ -62,12 +62,12 @@ impl Transfers {
     }
 
     /// Get the required fee for the specified spend priority.
-    pub(crate) fn get_required_fee(
+    pub(crate) async fn get_required_fee(
         &self,
         dbc_id: DbcId,
         priority: SpendPriority,
     ) -> (NodeId, RequiredFee) {
-        let amount = Token::from_nano(self.current_fee(priority));
+        let amount = Token::from_nano(self.current_fee(priority).await);
 
         debug!("Returned amount for priority {priority:?}: {amount}");
 
@@ -81,15 +81,15 @@ impl Transfers {
     }
 
     /// Get the current fee for the specified spend priority.
-    fn current_fee(&self, priority: SpendPriority) -> u64 {
-        let spend_q_snapshot = self.spend_queue.snapshot();
+    async fn current_fee(&self, priority: SpendPriority) -> u64 {
+        let spend_q_snapshot = self.spend_queue.snapshot().await;
         let spend_q_stats = spend_q_snapshot.stats();
         spend_q_stats.map_to_fee(priority)
     }
 
     /// Tries to add a double spend that was detected by the network.
     pub(crate) async fn try_add_double(
-        &mut self,
+        &self,
         a_spend: &SignedSpend,
         b_spend: &SignedSpend,
     ) -> Result<()> {
@@ -101,7 +101,7 @@ impl Transfers {
     /// All the provided data will be validated, and
     /// if it is valid, the spend will be pushed onto the queue.
     pub(crate) async fn try_add(
-        &mut self,
+        &self,
         signed_spend: Box<SignedSpend>,
         parent_tx: Box<DbcTransaction>,
         fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
@@ -121,7 +121,9 @@ impl Transfers {
         }
 
         // 2. Try extract the fee paid for this spend, and validate it.
-        let paid_fee = self.validate_fee(&signed_spend.spend.dst_tx, fee_ciphers)?;
+        let paid_fee = self
+            .validate_fee(&signed_spend.spend.dst_tx, fee_ciphers)
+            .await?;
 
         // 3. Validate the spend itself.
         self.storage.validate(signed_spend.as_ref()).await?;
@@ -132,7 +134,9 @@ impl Transfers {
 
         // 5. This spend is valid and goes into the queue (if not already in storage).
         if !self.storage.exists(signed_spend.dbc_id())? {
-            self.spend_queue.push(*signed_spend, paid_fee.as_nano());
+            self.spend_queue
+                .push(*signed_spend, paid_fee.as_nano())
+                .await;
         }
 
         // NB: Temporarily disabling transfer rate limit!
@@ -141,9 +145,9 @@ impl Transfers {
         // // If the rate limit has elapsed..
         // (NB: This works for now. We can look at
         // a timeout backstop in coming iterations.)
-        // if self.spend_queue.elapsed() {
+        // if self.spend_queue.elapsed().await {
         // .. we process one from the queue.
-        if let Some((signed_spend, _)) = self.spend_queue.pop() {
+        if let Some((signed_spend, _)) = self.spend_queue.pop().await {
             trace!("Popped spend from queue. Trying to add to storage..");
             match self.storage.try_add(&signed_spend).await {
                 Ok(true) => {
@@ -162,14 +166,14 @@ impl Transfers {
         Ok(())
     }
 
-    fn validate_fee(
+    async fn validate_fee(
         &self,
         dst_tx: &DbcTransaction,
         fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
     ) -> Result<Token> {
         let fee_paid = decipher_fee(&self.node_wallet, dst_tx, self.node_id, fee_ciphers)?;
 
-        let spend_q_snapshot = self.spend_queue.snapshot();
+        let spend_q_snapshot = self.spend_queue.snapshot().await;
         let spend_q_stats = spend_q_snapshot.stats();
 
         let (valid, lowest) = spend_q_stats.validate_fee(fee_paid.as_nano());
