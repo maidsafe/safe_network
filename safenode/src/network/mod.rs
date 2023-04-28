@@ -371,9 +371,9 @@ impl Network {
             .await
     }
 
-    /// Send `Request` to the the given `PeerId` and await for the response. If `self` is the recepiant,
-    /// then the `Request` is forwarded to itself and handled. Then a corresponding `Response` is created
-    /// and forwarded to iself. Hence the flow remains the same and there is no branching at the upper
+    /// Send `Request` to the the given `PeerId` and await for the response. If `self` is the recipient,
+    /// then the `Request` is forwarded to itself and handled, and a corresponding `Response` is created
+    /// and returned to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
     pub async fn send_request(&self, req: Request, peer: PeerId) -> Result<Response> {
         let (sender, receiver) = oneshot::channel();
