@@ -92,7 +92,7 @@ impl Node {
             .await
             .map_err(|e| Error::CouldNotLoadWallet(e.to_string()))?;
 
-        let mut node = Self {
+        let node = Self {
             network: network.clone(),
             registers: RegisterStorage::new(root_dir),
             transfers: Transfers::new(root_dir, node_id, node_wallet),
@@ -122,9 +122,7 @@ impl Node {
         })
     }
 
-    // **** Private helpers *****
-
-    async fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
+    async fn handle_network_event(&self, event: NetworkEvent) -> Result<()> {
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
                 self.handle_request(req, channel).await?
@@ -159,11 +157,7 @@ impl Node {
         Ok(())
     }
 
-    async fn handle_request(
-        &mut self,
-        request: Request,
-        response_channel: MsgResponder,
-    ) -> Result<()> {
+    async fn handle_request(&self, request: Request, response_channel: MsgResponder) -> Result<()> {
         trace!("Handling request: {request:?}");
         let response = match request {
             Request::Cmd(cmd) => Response::Cmd(self.handle_cmd(cmd).await),
@@ -198,7 +192,7 @@ impl Node {
         Ok(())
     }
 
-    async fn handle_query(&mut self, query: Query) -> QueryResponse {
+    async fn handle_query(&self, query: Query) -> QueryResponse {
         match query {
             Query::Register(query) => self.registers.read(&query, User::Anyone).await,
             Query::GetChunk(address) => {

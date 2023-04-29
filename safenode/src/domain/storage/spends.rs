@@ -360,7 +360,7 @@ mod tests {
         let tasks = spends.into_iter().map(|spend| {
             let store = storage.clone();
             tokio::task::spawn(async move {
-                store.try_add(&spend).await.expect("Failed to write spend.");
+                let _ = store.try_add(&spend).await.expect("Failed to write spend.");
                 tokio::time::sleep(std::time::Duration::from_millis(10)).await;
                 let read_spend = store
                     .get(&dbc_address(spend.dbc_id()))
