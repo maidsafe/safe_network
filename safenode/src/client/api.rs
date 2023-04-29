@@ -81,6 +81,7 @@ impl Client {
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork);
             }
+            NetworkEvent::ClosePeerDied(_) => {}
         }
 
         Ok(())

@@ -12,7 +12,10 @@ use super::{
     SwarmDriver,
 };
 
-use crate::protocol::messages::{Request, Response};
+use crate::protocol::{
+    messages::{Request, Response},
+    NetworkKey,
+};
 use libp2p::{
     kad::{store::MemoryStore, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     mdns,
@@ -83,6 +86,8 @@ pub enum NetworkEvent {
     PeersAdded(Vec<PeerId>),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
+    /// A close peer died.
+    ClosePeerDied(PeerId),
 }
 
 impl SwarmDriver {
@@ -192,6 +197,18 @@ impl SwarmDriver {
                 info!("Connection closed to Peer {peer_id} - {endpoint:?}");
                 if endpoint.is_dialer() {
                     info!("Dead Peer {peer_id:?}");
+
+                    let key = NetworkKey::from_peer(*self.swarm.local_peer_id());
+                    let closest_peers: HashSet<PeerId> = self
+                        .swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .get_closest_local_peers(&key.as_kbucket_key())
+                        .map(|k| *k.preimage())
+                        .collect();
+
+                    let was_close = closest_peers.contains(&peer_id);
+
                     if self
                         .swarm
                         .behaviour_mut()
@@ -200,9 +217,16 @@ impl SwarmDriver {
                         .is_some()
                     {
                         info!("Removed dead peer {peer_id:?} from RT");
+                    }
 
-                        // Ask for local closest, do a SendAnyMissingData call to them.
-                        // Although, why would they have data that we don't have? Well, then nothing much will happen..
+                    // Would `was_close` be true if the peer was not in the RT?
+                    // I think not, so we can perfectly well send the event here.
+                    if was_close {
+                        info!("Close peer died: {peer_id:?}");
+                        let _ = self
+                            .event_sender
+                            .send(NetworkEvent::ClosePeerDied(peer_id))
+                            .await;
                     }
                 }
             }

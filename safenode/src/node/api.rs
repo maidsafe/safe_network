@@ -35,6 +35,8 @@ use crate::{
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 
+use async_recursion::async_recursion;
+use futures::future::join_all;
 use libp2p::{Multiaddr, PeerId};
 use std::{collections::BTreeSet, net::SocketAddr, path::Path};
 use tokio::task::spawn;
@@ -129,6 +131,31 @@ impl Node {
 
     async fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
         match event {
+            NetworkEvent::ClosePeerDied(_peer) => {
+                let key = NetworkKey::from_peer(self.network.peer_id);
+
+                let closest_peers = match self.network.node_get_closest_peers(&key).await {
+                    Ok(result) => result,
+                    Err(err) => {
+                        warn!(
+                            "Could not replicate data due to failure to get closest peers: {err}"
+                        );
+                        return Ok(());
+                    }
+                };
+
+                let tasks = closest_peers.into_iter().map(|peer| {
+                    let network = self.network.clone();
+                    let chunks = self.chunks.clone();
+                    async move { Self::ask_for_missing_data(peer, network, chunks).await }
+                });
+
+                for result in join_all(tasks).await {
+                    if let Err(err) = result {
+                        warn!("Error occurred in replication process: {err}. We may be temporarily missing data.");
+                    }
+                }
+            }
             NetworkEvent::RequestReceived { req, channel } => {
                 self.handle_request(req, channel).await?
             }
@@ -414,6 +441,48 @@ impl Node {
                 CmdResponse::Spend(res)
             }
         }
+    }
+
+    #[async_recursion]
+    async fn ask_for_missing_data(
+        peer: PeerId,
+        network: Network,
+        chunks: ChunkStorage,
+    ) -> Result<()> {
+        let existing_data = chunks.addrs().into_iter().collect();
+        let request = Request::Query(Query::GetMissingData {
+            sender: NetworkKey::from_peer(network.peer_id),
+            existing_data,
+        });
+        let response = network.send_request(request, peer).await?;
+
+        let missing_data = match response {
+            Response::Query(QueryResponse::GetMissingData(Ok(missing_data))) => missing_data,
+            resp => {
+                warn!("Unexpected response: {resp:?}");
+                return Err(Error::Protocol(ProtocolError::UnexpectedResponses));
+            }
+        };
+
+        for chunk in &missing_data {
+            match chunks.store(chunk).await {
+                Ok(_) => {} // There are logs in the store method, no need to log here.
+                Err(err) => {
+                    // Don't fail the whole loop, just log the error.
+                    warn!("Failed to store chunk: {err:?}");
+                }
+            }
+        }
+
+        // As long as the data batch is not empty, we send back a query again
+        // to continue the replication process (like pageing).
+        // This means there that there will be a number of repeated `give-me-data -> here_you_go` msg
+        // exchanges, until there is no more data missing on this node.
+        if !missing_data.is_empty() {
+            return Self::ask_for_missing_data(peer, network, chunks).await;
+        }
+
+        Ok(())
     }
 
     // This call makes sure we get the same spend from all in the close group.
