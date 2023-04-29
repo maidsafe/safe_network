@@ -6,27 +6,34 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::{Error, Result};
+
+use crate::protocol::error::Error as ProtocolError;
+
 use libp2p::PeerId;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
-use xor_name::XorName;
 
 /// A unique identifier for a node in the network,
 /// by which we can know their location in the xor space.
-#[derive(
-    Copy, Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
-)]
-pub struct NodeId(XorName);
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct NodeId(Vec<u8>);
 
 impl NodeId {
-    /// Returns a `NodeId` representation of the `PeerId` by hashing its bytes.
+    /// Returns a `NodeId` representation of the `PeerId` by encapsulating its bytes.
     pub fn from(peer_id: PeerId) -> Self {
-        Self(XorName::from_content(&peer_id.to_bytes()))
+        Self(peer_id.to_bytes())
     }
 
     /// Returns this NodeId as bytes
     pub fn as_bytes(&self) -> Vec<u8> {
         self.0.to_vec()
+    }
+
+    /// Returns this NodeId as PeerId
+    pub fn as_peer_id(&self) -> Result<PeerId> {
+        PeerId::from_bytes(&self.0)
+            .map_err(|err| Error::Protocol(ProtocolError::InternalProcessing(err.to_string())))
     }
 }
 

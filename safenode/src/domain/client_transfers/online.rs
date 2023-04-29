@@ -150,7 +150,7 @@ async fn select_inputs(
                         .reward_address
                         .random_dbc_id_src(&mut rand::thread_rng());
                     recipients.push((*fee, dbc_id_src));
-                    let _ = node_fees.insert(*node_id, (required_fee.clone(), dbc_id_src));
+                    let _ = node_fees.insert(node_id.clone(), (required_fee.clone(), dbc_id_src));
                 });
 
             let _ = node_fees_per_input.insert(dbc_id, node_fees);
@@ -424,7 +424,7 @@ fn fee_ciphers(
         // Encrypt the amount to the _derived key_ (i.e. new dbc id).
         let amount_cipher = revealed_amount.encrypt(&dbc_id);
         let _ = input_fee_ciphers.insert(
-            *node_id,
+            node_id.clone(),
             FeeCiphers::new(amount_cipher, derivation_index_cipher),
         );
     }

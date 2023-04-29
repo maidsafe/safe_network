@@ -77,7 +77,7 @@ impl Transfers {
         let reward_address_sig = self.node_wallet.sign(&content.to_bytes());
         let required_fee = RequiredFee::new(content, reward_address_sig);
 
-        (self.node_id, required_fee)
+        (self.node_id.clone(), required_fee)
     }
 
     /// Get the current fee for the specified spend priority.
@@ -167,7 +167,7 @@ impl Transfers {
         dst_tx: &DbcTransaction,
         fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
     ) -> Result<Token> {
-        let fee_paid = decipher_fee(&self.node_wallet, dst_tx, self.node_id, fee_ciphers)?;
+        let fee_paid = decipher_fee(&self.node_wallet, dst_tx, &self.node_id, fee_ciphers)?;
 
         let spend_q_snapshot = self.spend_queue.snapshot();
         let spend_q_stats = spend_q_snapshot.stats();
@@ -234,13 +234,13 @@ fn validate_parent_spends(
 fn decipher_fee(
     node_wallet: &LocalWallet,
     dst_tx: &DbcTransaction,
-    node_id: NodeId,
+    node_id: &NodeId,
     fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
 ) -> Result<Token> {
     use super::wallet::SigningWallet;
     let fee_ciphers = fee_ciphers
-        .get(&node_id)
-        .ok_or(Error::MissingFeeCiphers(node_id))?;
+        .get(node_id)
+        .ok_or(Error::MissingFeeCiphers(node_id.clone()))?;
     let (dbc_id, revealed_amount) = node_wallet
         .decrypt(fee_ciphers)
         .map_err(|e| Error::FeeCipherDecryptionFailed(e.to_string()))?;
@@ -250,7 +250,7 @@ fn decipher_fee(
         .find(|proof| proof.dbc_id() == &dbc_id)
     {
         Some(proof) => proof,
-        None => return Err(Error::MissingFee((node_id, dbc_id))),
+        None => return Err(Error::MissingFee((node_id.clone(), dbc_id))),
     };
 
     let blinded_amount = revealed_amount.blinded_amount(&sn_dbc::PedersenGens::default());

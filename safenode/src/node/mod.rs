@@ -17,7 +17,7 @@ pub use self::{
     node_id::NodeId,
 };
 
-use self::error::Error;
+use self::error::{Error, Result};
 
 use crate::{
     domain::{
