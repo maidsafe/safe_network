@@ -207,7 +207,9 @@ fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
                 }
             });
 
-            let _ = nodes.insert(node_info.pid, node_info);
+            if node_info.pid > 0 {
+                let _ = nodes.insert(node_info.pid, node_info);
+            }
         }
     }
 
