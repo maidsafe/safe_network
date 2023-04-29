@@ -280,25 +280,57 @@ impl Network {
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// Excludes the client's `PeerId` while calculating the closest peers.
     pub async fn client_get_closest_peers(&self, key: &NetworkKey) -> Result<Vec<PeerId>> {
-        self.get_closest_peers(key, true).await
+        self.query_for_closest_peers(key, true).await
     }
 
-    /// Returns the closest peers to the given `NetworkKey`, sorted by their distance to the key.
+    /// Query the network and return the closest peers to the given `NetworkKey`, sorted by their distance to the key.
     /// Includes our node's `PeerId` while calculating the closest peers.
-    pub async fn node_get_closest_peers(&self, key: &NetworkKey) -> Result<Vec<PeerId>> {
-        self.get_closest_peers(key, false).await
+    pub async fn node_query_for_closest_peers(&self, key: &NetworkKey) -> Result<Vec<PeerId>> {
+        self.query_for_closest_peers(key, false).await
+    }
+
+    /// Return the closest locally known peers to the given `NetworkKey`, sorted by their distance to the key.
+    /// Includes our node's `PeerId` while calculating the closest peers.
+    pub async fn node_get_closest_local_peers(&self, key: &NetworkKey) -> Result<Vec<PeerId>> {
+        self.get_closest_local_peers(key, false).await
     }
 
     /// Send `Request` to the closest peers. If `self` is among the closest_peers, the `Request` is
     /// forwarded to itself and handled. Then a corresponding `Response` is created and is
     /// forwarded to iself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
-    pub async fn node_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
+    pub async fn node_send_to_queried_closest(
+        &self,
+        request: &Request,
+    ) -> Result<Vec<Result<Response>>> {
         info!(
             "Sending {request:?} with dst {:?} to the closest peers.",
             request.dst().key()
         );
-        let closest_peers = self.node_get_closest_peers(&request.dst().key()).await?;
+        let closest_peers = self
+            .node_query_for_closest_peers(&request.dst().key())
+            .await?;
+
+        Ok(self
+            .send_and_get_responses(closest_peers, request, true)
+            .await)
+    }
+
+    /// Send `Request` to the locally closest peers. If `self` is among the closest_peers, the `Request` is
+    /// forwarded to itself and handled. Then a corresponding `Response` is created and is
+    /// forwarded to iself. Hence the flow remains the same and there is no branching at the upper
+    /// layers.
+    pub async fn node_send_to_local_closest(
+        &self,
+        request: &Request,
+    ) -> Result<Vec<Result<Response>>> {
+        info!(
+            "Sending {request:?} with dst {:?} to the closest peers.",
+            request.dst().key()
+        );
+        let closest_peers = self
+            .node_get_closest_local_peers(&request.dst().key())
+            .await?;
 
         Ok(self
             .send_and_get_responses(closest_peers, request, true)
@@ -309,12 +341,14 @@ impl Network {
     /// forwarded to itself and handled. Then a corresponding `Response` is created and is
     /// forwarded to iself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
-    pub async fn fire_and_forget_to_closest(&self, request: &Request) -> Result<()> {
+    pub async fn fire_and_forget_to_local_closest(&self, request: &Request) -> Result<()> {
         info!(
             "Sending {request:?} with dst {:?} to the closest peers.",
             request.dst().key()
         );
-        let closest_peers = self.node_get_closest_peers(&request.dst().key()).await?;
+        let closest_peers = self
+            .node_get_closest_local_peers(&request.dst().key())
+            .await?;
         for peer in closest_peers {
             self.fire_and_forget(request.clone(), peer).await?;
         }
@@ -374,10 +408,30 @@ impl Network {
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// If `client` is false, then include `self` among the `closest_peers`
-    async fn get_closest_peers(&self, key: &NetworkKey, client: bool) -> Result<Vec<PeerId>> {
+    async fn query_for_closest_peers(&self, key: &NetworkKey, client: bool) -> Result<Vec<PeerId>> {
         debug!("Getting the closest peers to {key:?}");
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
+        self.send_swarm_cmd(SwarmCmd::QueryForClosestPeers {
+            key: key.clone(),
+            sender,
+        })
+        .await?;
+        let k_bucket_peers = receiver.await?;
+
+        // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
+        let mut closest_peers: Vec<_> = k_bucket_peers.into_iter().collect();
+        if !client {
+            closest_peers.push(self.peer_id);
+        }
+        self.sort_peers_by_key(closest_peers, key)
+    }
+
+    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
+    /// If `client` is false, then include `self` among the `closest_peers`
+    async fn get_closest_local_peers(&self, key: &NetworkKey, client: bool) -> Result<Vec<PeerId>> {
+        debug!("Getting the closest local peers to {key:?}");
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetClosestLocalPeers {
             key: key.clone(),
             sender,
         })
@@ -535,7 +589,7 @@ mod tests {
         info!("Got Closest from table {:?}", expected_from_table.len());
 
         // Ask the other nodes for the closest_peers.
-        let closest = our_net.get_closest_peers(&random_data, false).await?;
+        let closest = our_net.query_for_closest_peers(&random_data, false).await?;
 
         assert_lists(closest, expected_from_table);
         Ok(())

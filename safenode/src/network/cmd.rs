@@ -33,7 +33,11 @@ pub enum SwarmCmd {
         peer_addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
     },
-    GetClosestPeers {
+    QueryForClosestPeers {
+        key: NetworkKey,
+        sender: oneshot::Sender<HashSet<PeerId>>,
+    },
+    GetClosestLocalPeers {
         key: NetworkKey,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
@@ -93,8 +97,7 @@ impl SwarmDriver {
                     warn!("Already dialing peer.");
                 }
             }
-
-            SwarmCmd::GetClosestPeers { key, sender } => {
+            SwarmCmd::QueryForClosestPeers { key, sender } => {
                 let query_id = self
                     .swarm
                     .behaviour_mut()
@@ -103,6 +106,16 @@ impl SwarmDriver {
                 let _ = self
                     .pending_get_closest_peers
                     .insert(query_id, (sender, Default::default()));
+            }
+            SwarmCmd::GetClosestLocalPeers { key, sender } => {
+                let closest_peer: HashSet<PeerId> = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .get_closest_local_peers(&key.as_kbucket_key())
+                    .map(|k| *k.preimage())
+                    .collect();
+                let _ = sender.send(closest_peer);
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 // If `self` is the recipient, forward the request directly to our upper layer to

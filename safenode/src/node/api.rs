@@ -134,7 +134,7 @@ impl Node {
             NetworkEvent::ClosePeerDied(_peer) => {
                 let key = NetworkKey::from_peer(self.network.peer_id);
 
-                let closest_peers = match self.network.node_get_closest_peers(&key).await {
+                let closest_peers = match self.network.node_get_closest_local_peers(&key).await {
                     Ok(result) => result,
                     Err(err) => {
                         warn!(
@@ -166,7 +166,7 @@ impl Node {
                 let network = self.network.clone();
                 let _handle = spawn(async move {
                     trace!("Getting closest peers for target {key:?}...");
-                    let result = network.node_get_closest_peers(&key).await;
+                    let result = network.node_query_for_closest_peers(&key).await;
                     trace!("Closest peers to {key:?} got: {result:?}.");
                 });
             }
@@ -178,7 +178,7 @@ impl Node {
                     let network = self.network.clone();
                     let _handle = spawn(async move {
                         trace!("Getting closest peers for target {key:?}...");
-                        let result = network.node_get_closest_peers(&key).await;
+                        let result = network.node_query_for_closest_peers(&key).await;
                         trace!("Closest peers to {key:?} got: {result:?}.");
                     });
                 }
@@ -244,7 +244,7 @@ impl Node {
                 existing_data,
                 sender,
             } => {
-                if let Ok(peers) = self.network.node_get_closest_peers(&sender).await {
+                if let Ok(peers) = self.network.node_get_closest_local_peers(&sender).await {
                     if !peers.contains(&self.network.peer_id) {
                         return QueryResponse::GetMissingData(Err(
                             ProtocolError::InternalProcessing(format!(
@@ -403,7 +403,7 @@ impl Node {
                         };
                         match self
                             .network
-                            .fire_and_forget_to_closest(&Request::Event(event))
+                            .fire_and_forget_to_local_closest(&Request::Event(event))
                             .await
                         {
                             Ok(_) => {}
@@ -424,7 +424,7 @@ impl Node {
                         {
                             match self
                                 .network
-                                .node_send_to_closest(&Request::Event(event))
+                                .fire_and_forget_to_local_closest(&Request::Event(event))
                                 .await
                             {
                                 Ok(_) => {}
@@ -518,7 +518,8 @@ impl Node {
     /// Retrieve a `Spend` from the closest peers
     async fn get_spend(&self, address: DbcAddress) -> Result<SignedSpend> {
         let request = Request::Query(Query::Spend(SpendQuery::GetDbcSpend(address)));
-        let responses = self.network.node_send_to_closest(&request).await?;
+        // NB: for discovery, might need query for the closest instead of local.
+        let responses = self.network.node_send_to_queried_closest(&request).await?;
 
         // Get all Ok results of the expected response type `GetDbcSpend`.
         let spends: Vec<_> = responses
