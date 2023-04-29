@@ -29,4 +29,7 @@ pub enum Error {
     /// Errors in node transfer handling.
     #[error("Transfer error: {0:?}")]
     Transfers(#[from] TransferError),
+    /// Error when converting a NodeId back to a PeerId.
+    #[error("The network key could not be cast to a peer id: {0:?}")]
+    NotAPeerId(Vec<u8>),
 }
