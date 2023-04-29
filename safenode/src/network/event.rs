@@ -12,16 +12,9 @@ use super::{
     SwarmDriver,
 };
 
-use crate::{
-    domain::storage::Chunk,
-    protocol::{
-        error::Error as ProtocolError,
-        messages::{QueryResponse, Request, Response},
-    },
-};
-
+use crate::protocol::messages::{Request, Response};
 use libp2p::{
-    kad::{store::MemoryStore, GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
+    kad::{store::MemoryStore, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     mdns,
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
@@ -132,41 +125,6 @@ impl SwarmDriver {
                         let _ = self
                             .pending_get_closest_peers
                             .insert(*id, (sender, current_closest));
-                    }
-                }
-                KademliaEvent::OutboundQueryProgressed {
-                    id,
-                    result: QueryResult::GetRecord(result),
-                    stats,
-                    step,
-                } => {
-                    trace!("Record query task {id:?} returned with result, {stats:?} - {step:?}");
-                    if let Ok(GetRecordOk::FoundRecord(peer_record)) = result {
-                        trace!(
-                            "Query {id:?} returned with record {:?} from peer {:?}",
-                            peer_record.record.key,
-                            peer_record.peer
-                        );
-                        if let Some(sender) = self.pending_query.remove(id) {
-                            sender
-                                .send(QueryResponse::GetChunk(Ok(Chunk::new(
-                                    peer_record.record.value.clone().into(),
-                                ))))
-                                .map_err(|_| Error::InternalMsgChannelDropped)?;
-                        }
-                    } else {
-                        warn!("Query {id:?} failed to get record with result {result:?}");
-                        if step.last {
-                            // To avoid the caller wait forever on a non-existring entry
-                            if let Some(sender) = self.pending_query.remove(id) {
-                                sender
-                                    .send(QueryResponse::GetChunk(Err(
-                                        ProtocolError::RecordNotFound,
-                                    )))
-                                    .map_err(|_| Error::InternalMsgChannelDropped)?;
-                            }
-                        }
-                        // TODO: send an error response back?
                     }
                 }
                 KademliaEvent::RoutingUpdated { is_new_peer, .. } => {

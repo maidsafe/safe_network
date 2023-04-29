@@ -11,7 +11,6 @@ use crate::domain::{node_transfers::Error as TransferError, storage::Error as St
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};
 use thiserror::Error;
-use xor_name::XorName;
 
 /// A specialised `Result` type for protocol crate.
 pub type Result<T> = result::Result<T, Error>;
@@ -20,15 +19,6 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Error {
-    /// There was an internal error while processing the request.
-    #[error("There was an internal error while processing the request")]
-    InternalProcessing(String),
-    /// We failed to store chunk as Record
-    #[error("Chunk was not stored as Record w/ xorname {0:?}")]
-    ChunkNotStored(XorName),
-    /// We failed to retrieve data from our local record storage
-    #[error("Provider record was not found locally")]
-    RecordNotFound,
     /// Storage error.
     #[error("Storage error {0:?}")]
     Storage(#[from] StorageError),

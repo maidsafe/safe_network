@@ -17,7 +17,8 @@ use crate::{
         dbc_genesis::is_genesis_parent_tx,
         node_transfers::{Error as TransferError, Transfers},
         storage::{
-            dbc_address, register::User, DbcAddress, Error as StorageError, RegisterStorage,
+            dbc_address, register::User, ChunkStorage, DbcAddress, Error as StorageError,
+            RegisterStorage,
         },
         wallet::LocalWallet,
     },
@@ -33,10 +34,7 @@ use crate::{
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 
-use libp2p::{
-    kad::{Record, RecordKey},
-    Multiaddr, PeerId,
-};
+use libp2p::{Multiaddr, PeerId};
 use std::{collections::BTreeSet, net::SocketAddr, path::Path};
 use tokio::task::spawn;
 use xor_name::XorName;
@@ -94,6 +92,7 @@ impl Node {
 
         let mut node = Self {
             network: network.clone(),
+            chunks: ChunkStorage::new(root_dir),
             registers: RegisterStorage::new(root_dir),
             transfers: Transfers::new(root_dir, node_id, node_wallet),
             events_channel: node_events_channel.clone(),
@@ -202,19 +201,12 @@ impl Node {
         match query {
             Query::Register(query) => self.registers.read(&query, User::Anyone).await,
             Query::GetChunk(address) => {
-                match self
-                    .network
-                    .get_provided_data(RecordKey::new(address.name()))
+                let resp = self
+                    .chunks
+                    .get(&address)
                     .await
-                {
-                    Ok(response) => response,
-                    Err(err) => {
-                        error!("Error getting chunk from network: {err}");
-                        QueryResponse::GetChunk(Err(ProtocolError::InternalProcessing(
-                            err.to_string(),
-                        )))
-                    }
-                }
+                    .map_err(ProtocolError::Storage);
+                QueryResponse::GetChunk(resp)
             }
             Query::Spend(query) => {
                 match query {
@@ -242,27 +234,12 @@ impl Node {
     async fn handle_cmd(&mut self, cmd: Cmd) -> CmdResponse {
         match cmd {
             Cmd::StoreChunk(chunk) => {
-                let addr = *chunk.address();
-                debug!("That's a store chunk in for :{:?}", addr.name());
-
-                // Create a Kademlia record for storage
-                let record = Record {
-                    key: RecordKey::new(addr.name()),
-                    value: chunk.value().to_vec(),
-                    publisher: None,
-                    expires: None,
-                };
-
-                match self.network.put_data_as_record(record).await {
-                    Ok(()) => {
-                        self.events_channel.broadcast(NodeEvent::ChunkStored(addr));
-                        CmdResponse::StoreChunk(Ok(()))
-                    }
-                    Err(err) => {
-                        error!("Failed to register node as chunk provider: {err:?}");
-                        CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(*addr.name())))
-                    }
-                }
+                let resp = self
+                    .chunks
+                    .store(&chunk)
+                    .await
+                    .map_err(ProtocolError::Storage);
+                CmdResponse::StoreChunk(resp)
             }
             Cmd::Register(cmd) => {
                 let result = self

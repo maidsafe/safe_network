@@ -6,18 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
+use super::{error::Error, NetworkEvent, SwarmDriver};
 
 use crate::{
-    network::error::Result,
-    protocol::messages::{QueryResponse, Request, Response},
+    network::{error::Result, event::MsgResponder},
+    protocol::messages::{Request, Response},
 };
 
-use libp2p::{
-    kad::{Record, RecordKey},
-    multiaddr::Protocol,
-    Multiaddr, PeerId,
-};
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
 use tracing::warn;
@@ -49,15 +45,6 @@ pub enum SwarmCmd {
         channel: MsgResponder,
     },
     GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
-    /// Put data to the Kad network as record
-    PutProvidedDataAsRecord {
-        record: Record,
-    },
-    /// Get data from the kademlia store
-    GetData {
-        key: RecordKey,
-        sender: oneshot::Sender<QueryResponse>,
-    },
 }
 
 /// Snapshot of information kept in the Swarm's local state
@@ -72,18 +59,6 @@ pub struct SwarmLocalState {
 impl SwarmDriver {
     pub(crate) async fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
-            SwarmCmd::GetData { key, sender } => {
-                let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
-                let _ = self.pending_query.insert(query_id, sender);
-            }
-            SwarmCmd::PutProvidedDataAsRecord { record } => {
-                // TODO: when do we remove records. Do we need to?
-                let _ = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .put_record(record, libp2p::kad::Quorum::All)?;
-            }
             SwarmCmd::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {
                     Ok(_) => sender.send(Ok(())),

@@ -24,16 +24,13 @@ use self::{
     msg::{MsgCodec, MsgProtocol},
 };
 
-use crate::protocol::messages::{QueryResponse, Request, Response};
+use crate::protocol::messages::{Request, Response};
 
 use futures::{future::select_all, StreamExt};
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
-    kad::{
-        record::store::MemoryStore, store::MemoryStoreConfig, KBucketKey, Kademlia, KademliaConfig,
-        QueryId, Record, RecordKey,
-    },
+    kad::{record::store::MemoryStore, KBucketKey, Kademlia, KademliaConfig, QueryId},
     mdns,
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
@@ -79,7 +76,6 @@ pub struct SwarmDriver {
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
-    pending_query: HashMap<QueryId, oneshot::Sender<QueryResponse>>,
 }
 
 impl SwarmDriver {
@@ -180,21 +176,9 @@ impl SwarmDriver {
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
 
-        // Configures the memory store to be able to hold larger
-        // records than by default
-        let memory_store_cfg = MemoryStoreConfig {
-            max_value_bytes: 1024 * 1024,
-            max_providers_per_key: CLOSE_GROUP_SIZE,
-            ..Default::default()
-        };
-
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
-        let kademlia = Kademlia::with_config(
-            peer_id,
-            MemoryStore::with_config(peer_id, memory_store_cfg),
-            kad_cfg,
-        );
+        let kademlia = Kademlia::with_config(peer_id, MemoryStore::new(peer_id), kad_cfg);
 
         let mdns_config = mdns::Config {
             // lower query interval to speed up peer discovery
@@ -222,7 +206,6 @@ impl SwarmDriver {
             pending_dial: Default::default(),
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
-            pending_query: Default::default(),
         };
 
         Ok((
@@ -246,7 +229,7 @@ impl SwarmDriver {
         loop {
             tokio::select! {
                 some_event = self.swarm.next() => {
-                    trace!("received a swarm event {some_event:?}");
+                    trace!("Received a swarm event {some_event:?}.");
                     if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {
                         warn!("Error while handling event: {err}");
                     }
@@ -348,29 +331,6 @@ impl Network {
             .send_and_get_responses(closest_peers, request, true)
             .await)
     }
-
-    /// Get `Key` from our Storage
-    pub async fn get_provided_data(&self, key: RecordKey) -> Result<QueryResponse> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetData { key, sender })
-            .await?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
-    }
-
-    /// Put data to KAD network as record
-    pub async fn put_data_as_record(&self, record: Record) -> Result<()> {
-        debug!(
-            "Putting data as record, for {:?} - length {:?}",
-            record.key,
-            record.value.len()
-        );
-        self.send_swarm_cmd(SwarmCmd::PutProvidedDataAsRecord { record })
-            .await
-    }
-
     /// Send `Request` to the the given `PeerId` and await for the response. If `self` is the recipient,
     /// then the `Request` is forwarded to itself and handled, and a corresponding `Response` is created
     /// and returned to itself. Hence the flow remains the same and there is no branching at the upper

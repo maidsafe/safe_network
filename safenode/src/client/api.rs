@@ -28,7 +28,7 @@ use sn_dbc::{DbcId, SignedSpend};
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use itertools::Itertools;
-use libp2p::{kad::RecordKey, PeerId};
+use libp2p::PeerId;
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
@@ -153,21 +153,32 @@ impl Client {
 
     /// Retrieve a `Chunk` from the kad network.
     pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
-        info!("Getting chunk: {address:?}");
-        match self
-            .network
-            .get_provided_data(RecordKey::new(address.name()))
-            .await?
-        {
-            QueryResponse::GetChunk(result) => Ok(result?),
-            other => {
-                warn!(
-                    "On querying chunk {:?} received unexpected response {other:?}",
-                    address.name()
-                );
-                Err(Error::Protocol(ProtocolError::UnexpectedResponses))
-            }
+        info!("Get chunk: {address:?}");
+        let request = Request::Query(Query::GetChunk(address));
+        let responses = self.send_to_closest(request).await?;
+
+        // We will return the first chunk we get.
+        for resp in responses.iter().flatten() {
+            if let Response::Query(QueryResponse::GetChunk(Ok(chunk))) = resp {
+                return Ok(chunk.clone());
+            };
         }
+
+        // If no chunk was found, we will return the first error sent to us.
+        for resp in responses.iter().flatten() {
+            if let Response::Query(QueryResponse::GetChunk(result)) = resp {
+                let _ = result.clone()?;
+            };
+        }
+
+        // If there were no success or fail to the expected query,
+        // we check if there were any send errors.
+        for resp in responses {
+            let _ = resp?;
+        }
+
+        // If there was none of the above, then we had unexpected responses.
+        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
     /// This is for network testing only
