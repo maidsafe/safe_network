@@ -34,7 +34,7 @@ async fn node_many_to_many_ping_pong_succeeds() -> Result<()> {
 
     trace!("Adding a small delay to allow the client to find enough nodes.");
     // Some sleep is required to allow the client to find enough nodes.
-    tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(20)).await;
     trace!("Sending ping to closest nodes...");
 
     let results = match client

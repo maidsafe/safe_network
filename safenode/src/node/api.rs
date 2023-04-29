@@ -272,16 +272,17 @@ impl Node {
                         let result = if ok_results.len() >= close_group_majority() {
                             Ok(())
                         } else {
-                            Err(ProtocolError::InternalProcessing(
-                                "Less than majority of close group peers returned an OK response."
-                                    .to_string(),
-                            ))
+                            Err(ProtocolError::InternalProcessing(format!(
+                                "Only {} out of required {} peers returned an OK response.",
+                                ok_results.len(),
+                                close_group_majority()
+                            )))
                         };
 
                         CmdResponse::NodePong(result)
                     }
                     Err(err) => {
-                        warn!("Failed to send ping closest peers: {err:?}");
+                        warn!("Failed to send ping to closest peers: {err:?}");
                         CmdResponse::NodePong(Err(ProtocolError::InternalProcessing(
                             err.to_string(),
                         )))
