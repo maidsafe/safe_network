@@ -160,6 +160,7 @@ impl Node {
                 self.handle_request(req, channel).await?
             }
             NetworkEvent::PeerAdded(peer) => {
+                trace!("Peer {peer:?} added.");
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
                 let key = NetworkKey::from_peer(peer);
                 let network = self.network.clone();
@@ -170,6 +171,7 @@ impl Node {
                 });
             }
             NetworkEvent::PeersAdded(peers) => {
+                trace!("{} peers added.", peers.len());
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
                 for peer in peers {
                     let key = NetworkKey::from_peer(peer);
@@ -299,6 +301,7 @@ impl Node {
                     .get(&address)
                     .await
                     .map_err(ProtocolError::Storage);
+                trace!("Sending response back on query GetChunk({address:?}): {resp:?}");
                 QueryResponse::GetChunk(resp)
             }
             Query::Spend(query) => {

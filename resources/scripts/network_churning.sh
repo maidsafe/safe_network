@@ -21,7 +21,7 @@ do
     target_port=$((12000 + $count))
 
     echo Iteration $count
-    echo Restarting node on port $target_port
+    echo Stopping node on port $target_port
     cargo run --release --example safenode_rpc_client -- "127.0.0.1:$target_port" stop 1
     cargo run --release --bin testnet -- --join --node-count 1
 	sleep 5
