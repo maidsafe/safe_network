@@ -38,7 +38,7 @@ async fn node_many_to_many_ping_pong_succeeds() -> Result<()> {
     trace!("Sending ping to closest nodes...");
 
     let results = match client
-        .send_to_closest(Request::Cmd(Cmd::ClientPing(random_dst)))
+        .send_to_local_closest(Request::Cmd(Cmd::ClientPing(random_dst)))
         .await
     {
         Ok(results) => results,

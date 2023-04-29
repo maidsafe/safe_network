@@ -238,7 +238,7 @@ impl RegisterOffline {
     async fn publish_register_create(&self, cmd: RegisterCmd) -> Result<()> {
         debug!("Publishing Register create cmd: {:?}", cmd.dst());
         let request = Request::Cmd(Cmd::Register(cmd));
-        let responses = self.client.send_to_closest(request).await?;
+        let responses = self.client.send_to_queried_closest(request).await?;
 
         let all_ok = responses
             .iter()
@@ -268,7 +268,7 @@ impl RegisterOffline {
     async fn publish_register_edit(&self, cmd: RegisterCmd) -> Result<()> {
         debug!("Publishing Register edit cmd: {:?}", cmd.dst());
         let request = Request::Cmd(Cmd::Register(cmd));
-        let responses = self.client.send_to_closest(request).await?;
+        let responses = self.client.send_to_queried_closest(request).await?;
 
         let all_ok = responses
             .iter()
@@ -299,7 +299,7 @@ impl RegisterOffline {
         let address = RegisterAddress { name, tag };
         debug!("Retrieving Register from: {address:?}");
         let request = Request::Query(Query::Register(RegisterQuery::Get(address)));
-        let responses = client.send_to_closest(request).await?;
+        let responses = client.send_to_queried_closest(request).await?;
 
         // We will return the first register we get.
         for resp in responses.iter().flatten() {

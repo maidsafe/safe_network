@@ -28,7 +28,7 @@ use sn_dbc::{DbcId, SignedSpend};
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use itertools::Itertools;
-use libp2p::{kad::RecordKey, PeerId};
+use libp2p::kad::RecordKey;
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
@@ -125,7 +125,7 @@ impl Client {
     pub(super) async fn store_chunk(&self, chunk: Chunk) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let request = Request::Cmd(Cmd::StoreChunk(chunk));
-        let responses = self.send_to_closest(request).await?;
+        let responses = self.send_to_queried_closest(request).await?;
 
         let all_ok = responses
             .iter()
@@ -170,21 +170,27 @@ impl Client {
         }
     }
 
-    /// This is for network testing only
-    pub async fn get_closest(&self, dst: XorName) -> Vec<PeerId> {
-        match self.network.client_get_closest_peers(dst).await {
-            Ok(peers) => peers,
-            Err(err) => {
-                warn!("Failed to get_closest of {dst:?} with error {err:?}");
-                vec![]
-            }
-        }
-    }
-
-    pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
+    pub(crate) async fn send_to_queried_closest(
+        &self,
+        request: Request,
+    ) -> Result<Vec<Result<Response>>> {
         let responses = self
             .network
-            .client_send_to_closest(&request)
+            .client_send_to_queried_closest(&request)
+            .await?
+            .into_iter()
+            .map(|res| res.map_err(Error::Network))
+            .collect_vec();
+        Ok(responses)
+    }
+
+    pub(crate) async fn send_to_local_closest(
+        &self,
+        request: Request,
+    ) -> Result<Vec<Result<Response>>> {
+        let responses = self
+            .network
+            .client_send_to_local_closest(&request)
             .await?
             .into_iter()
             .map(|res| res.map_err(Error::Network))
@@ -197,7 +203,7 @@ impl Client {
         trace!("Getting the closest peers to {dbc_id:?}.");
         let closest_peers = self
             .network
-            .client_get_closest_peers(dbc_name(dbc_id))
+            .client_get_closest_local_peers(dbc_name(dbc_id))
             .await?;
 
         let cmd = Cmd::SpendDbc {
@@ -253,7 +259,7 @@ impl Client {
         let address = dbc_address(dbc_id);
         let closest_peers = self
             .network
-            .client_get_closest_peers(*address.name())
+            .client_get_closest_local_peers(*address.name())
             .await?;
 
         let query = Query::Spend(SpendQuery::GetDbcSpend(address));
