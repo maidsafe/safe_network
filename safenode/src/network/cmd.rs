@@ -35,7 +35,11 @@ pub enum SwarmCmd {
         peer_addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
     },
-    GetClosestPeers {
+    QueryForClosestPeers {
+        xor_name: XorName,
+        sender: oneshot::Sender<HashSet<PeerId>>,
+    },
+    GetClosestLocalPeers {
         xor_name: XorName,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
@@ -116,13 +120,24 @@ impl SwarmDriver {
                     warn!("Already dialing peer.");
                 }
             }
-
-            SwarmCmd::GetClosestPeers { xor_name, sender } => {
+            SwarmCmd::QueryForClosestPeers { xor_name, sender } => {
                 let key = xor_name.0.to_vec();
                 let query_id = self.swarm.behaviour_mut().kademlia.get_closest_peers(key);
                 let _ = self
                     .pending_get_closest_peers
                     .insert(query_id, (sender, Default::default()));
+            }
+            SwarmCmd::GetClosestLocalPeers { xor_name, sender } => {
+                let key = xor_name.0.to_vec();
+                let key = libp2p::kad::KBucketKey::new(key);
+                let closest_peer: HashSet<PeerId> = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .get_closest_local_peers(&key)
+                    .map(|k| *k.preimage())
+                    .collect();
+                let _ = sender.send(closest_peer);
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 // If `self` is the recipient, forward the request directly to our upper layer to

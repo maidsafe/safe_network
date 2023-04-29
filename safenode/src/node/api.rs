@@ -137,7 +137,7 @@ impl Node {
                 let network = self.network.clone();
                 let _handle = spawn(async move {
                     trace!("Getting closest peers for target {target:?}");
-                    let result = network.node_get_closest_peers(target).await;
+                    let result = network.node_query_for_closest_peers(target).await;
                     trace!("For target {target:?}, get closest peers {result:?}");
                 });
             }
@@ -157,11 +157,7 @@ impl Node {
         Ok(())
     }
 
-    async fn handle_request(
-        &self,
-        request: Request,
-        response_channel: MsgResponder,
-    ) -> Result<()> {
+    async fn handle_request(&self, request: Request, response_channel: MsgResponder) -> Result<()> {
         trace!("Handling request: {request:?}");
         let response = match request {
             Request::Cmd(cmd) => Response::Cmd(self.handle_cmd(cmd).await),
@@ -240,7 +236,7 @@ impl Node {
     async fn handle_cmd(&self, cmd: Cmd) -> CmdResponse {
         match cmd {
             Cmd::NodePing(cmd) => {
-                let result = match self.network.node_get_closest_peers(cmd).await {
+                let result = match self.network.node_get_closest_local_peers(cmd).await {
                     Ok(close_group_peers) => {
                         if close_group_peers
                             .iter()
@@ -261,7 +257,7 @@ impl Node {
                 let hash_of_name = XorName::from_content(&name.0);
                 match self
                     .network
-                    .node_send_to_closest(&Request::Cmd(Cmd::NodePing(hash_of_name)))
+                    .node_send_to_local_closest(&Request::Cmd(Cmd::NodePing(hash_of_name)))
                     .await
                 {
                     Ok(results) => {
@@ -364,7 +360,7 @@ impl Node {
                         };
                         match self
                             .network
-                            .node_send_to_closest(&Request::Event(event))
+                            .node_send_to_local_closest(&Request::Event(event))
                             .await
                         {
                             Ok(_) => {}
@@ -386,7 +382,7 @@ impl Node {
                         {
                             match self
                                 .network
-                                .node_send_to_closest(&Request::Event(event))
+                                .node_send_to_local_closest(&Request::Event(event))
                                 .await
                             {
                                 Ok(_) => {}
@@ -438,7 +434,8 @@ impl Node {
     /// Retrieve a `Spend` from the closest peers
     async fn get_spend(&self, address: DbcAddress) -> Result<SignedSpend> {
         let request = Request::Query(Query::Spend(SpendQuery::GetDbcSpend(address)));
-        let responses = self.network.node_send_to_closest(&request).await?;
+        // NB: for discovery, might need query for the closest instead of local.
+        let responses = self.network.node_send_to_local_closest(&request).await?;
 
         // Get all Ok results of the expected response type `GetDbcSpend`.
         let spends: Vec<_> = responses

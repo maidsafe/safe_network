@@ -56,10 +56,18 @@ async fn node_many_to_many_ping_pong_succeeds() -> Result<()> {
         .collect();
 
     if ok_results.len() >= close_group_majority() {
-        println!("Yay! {} out of the required {} peers returned an OK response.", ok_results.len(), close_group_majority());
+        println!(
+            "Yay! {} out of the required {} peers returned an OK response.",
+            ok_results.len(),
+            close_group_majority()
+        );
         Ok(())
     } else {
-        panic!("Only {} out of required {} peers returned an OK response.", ok_results.len(), close_group_majority());
+        panic!(
+            "Only {} out of required {} peers returned an OK response.",
+            ok_results.len(),
+            close_group_majority()
+        );
     }
 }
 
