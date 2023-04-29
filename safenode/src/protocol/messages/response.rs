@@ -30,6 +30,10 @@ use std::{collections::BTreeSet, fmt::Debug};
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 pub enum QueryResponse {
+    /// Response to `GetMissingData` query.
+    /// This shall be a collection not too large in size.
+    ///
+    GetMissingData(Result<Vec<Chunk>>),
     //
     // ===== DBC Data =====
     //

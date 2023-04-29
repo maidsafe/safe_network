@@ -39,6 +39,10 @@ use libp2p::{Multiaddr, PeerId};
 use std::{collections::BTreeSet, net::SocketAddr, path::Path};
 use tokio::task::spawn;
 
+// Replicated data will all be sent in one message,
+// as such we want to keep size fairly low.
+const MAX_REPLICATION_BATCH_SIZE: usize = 25;
+
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
 pub struct RunningNode {
@@ -207,6 +211,60 @@ impl Node {
 
     async fn handle_query(&mut self, query: Query) -> QueryResponse {
         match query {
+            Query::GetMissingData {
+                existing_data,
+                sender,
+            } => {
+                if let Ok(peers) = self.network.node_get_closest_peers(&sender).await {
+                    if !peers.contains(&self.network.peer_id) {
+                        return QueryResponse::GetMissingData(Err(
+                            ProtocolError::InternalProcessing(format!(
+                                "{:?} is not among the closest peers to {sender:?}",
+                                self.network.peer_id,
+                            )),
+                        ));
+                    }
+                };
+                // If error in getting closest.. meh ok, let's assume we are one of
+                // the closest peers. Should be an exceptional case, and no harm if happens.
+
+                let mut data_i_have = self.chunks.addrs();
+
+                // To make each data storage node reply with different copies, so that the
+                // overall queries can be reduced, the data names are scrambled.
+                use rand::seq::SliceRandom;
+                data_i_have.shuffle(&mut rand::rngs::OsRng);
+
+                let mut data_for_sender = Vec::new();
+                for addr in data_i_have {
+                    if existing_data.contains(&addr) {
+                        continue;
+                    }
+
+                    let data = match self.chunks.get(&addr).await {
+                        Ok(data) => data,
+                        Err(err) => {
+                            error!("Failed to get data {addr:?}: {err}");
+                            continue;
+                        }
+                    };
+
+                    data_for_sender.push(data);
+                    debug!(
+                        "Added {:?} to data batch going to: {sender:?} ",
+                        addr.name(),
+                    );
+
+                    // To avoid too large amounts of data per msg,
+                    // we limit the number of items per query round.
+                    // This way, the flow acts like pageing.
+                    if data_for_sender.len() == MAX_REPLICATION_BATCH_SIZE {
+                        break;
+                    }
+                }
+
+                QueryResponse::GetMissingData(Ok(data_for_sender))
+            }
             Query::Register(query) => self.registers.read(&query, User::Anyone).await,
             Query::GetChunk(address) => {
                 let resp = self

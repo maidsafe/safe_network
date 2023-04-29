@@ -10,10 +10,11 @@ use super::spend::SpendQuery;
 
 use crate::{
     domain::storage::{ChunkAddress, DataAddress},
-    protocol::messages::RegisterQuery,
+    protocol::{messages::RegisterQuery, NetworkKey},
 };
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 /// Data queries - retrieving data and inspecting their structure.
 ///
@@ -24,6 +25,16 @@ use serde::{Deserialize, Serialize};
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
 pub enum Query {
+    /// Asks the receiving node to send the chunks that the sender
+    /// should have, but are not in the provided set of addresses.
+    GetMissingData {
+        /// The sender of the query.
+        /// This is the locality the sender is interested in (i.e. itself),
+        /// so the sender asks for the nodes and data around this locality.
+        sender: NetworkKey,
+        /// The set of addresses that the sender already has.
+        existing_data: BTreeSet<ChunkAddress>,
+    },
     /// Retrieve a [`Chunk`] at the given address.
     ///
     /// This should eventually lead to a [`GetChunk`] response.
@@ -48,6 +59,7 @@ impl Query {
             Query::GetChunk(address) => DataAddress::Chunk(*address),
             Query::Register(query) => DataAddress::Register(query.dst()),
             Query::Spend(query) => DataAddress::Spend(query.dst()),
+            Query::GetMissingData { sender, .. } => DataAddress::Network(sender.clone()),
         }
     }
 }
@@ -63,6 +75,9 @@ impl std::fmt::Display for Query {
             }
             Query::Spend(query) => {
                 write!(f, "Query::Spend({query:?})")
+            }
+            Query::GetMissingData { sender, .. } => {
+                write!(f, "Query::GetMissingData({sender:?})")
             }
         }
     }

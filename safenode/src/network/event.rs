@@ -200,6 +200,9 @@ impl SwarmDriver {
                         .is_some()
                     {
                         info!("Removed dead peer {peer_id:?} from RT");
+
+                        // Ask for local closest, do a SendAnyMissingData call to them.
+                        // Although, why would they have data that we don't have? Well, then nothing much will happen..
                     }
                 }
             }
