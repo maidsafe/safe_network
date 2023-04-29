@@ -78,7 +78,9 @@ pub enum NetworkEvent {
         channel: MsgResponder,
     },
     /// Emitted when the DHT is updated
-    PeerAdded,
+    PeerAdded(PeerId),
+    /// Emitted when the DHT is updated
+    PeersAdded(Vec<PeerId>),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
 }
@@ -127,9 +129,13 @@ impl SwarmDriver {
                             .insert(*id, (sender, current_closest));
                     }
                 }
-                KademliaEvent::RoutingUpdated { is_new_peer, .. } => {
+                KademliaEvent::RoutingUpdated {
+                    is_new_peer, peer, ..
+                } => {
                     if *is_new_peer {
-                        self.event_sender.send(NetworkEvent::PeerAdded).await?;
+                        self.event_sender
+                            .send(NetworkEvent::PeerAdded(*peer))
+                            .await?;
                     }
                 }
                 KademliaEvent::InboundRequest { request } => {
@@ -141,6 +147,7 @@ impl SwarmDriver {
             },
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
                 mdns::Event::Discovered(list) => {
+                    let mut peers = vec![];
                     for (peer_id, multiaddr) in list {
                         info!("Node discovered: {multiaddr:?}");
                         let _routing_update = self
@@ -148,8 +155,11 @@ impl SwarmDriver {
                             .behaviour_mut()
                             .kademlia
                             .add_address(&peer_id, multiaddr);
+                        peers.push(peer_id);
                     }
-                    self.event_sender.send(NetworkEvent::PeerAdded).await?;
+                    self.event_sender
+                        .send(NetworkEvent::PeersAdded(peers))
+                        .await?;
                 }
                 mdns::Event::Expired(peer) => {
                     info!("mdns peer {peer:?} expired");

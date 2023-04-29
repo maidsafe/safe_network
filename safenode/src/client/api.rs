@@ -20,6 +20,7 @@ use crate::{
     protocol::{
         error::Error as ProtocolError,
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
+        NetworkKey,
     },
 };
 
@@ -28,7 +29,6 @@ use sn_dbc::{DbcId, SignedSpend};
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use itertools::Itertools;
-use libp2p::PeerId;
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
@@ -77,7 +77,7 @@ impl Client {
             NetworkEvent::RequestReceived { .. } => {}
             // We do not listen on sockets.
             NetworkEvent::NewListenAddr(_) => {}
-            NetworkEvent::PeerAdded => {
+            NetworkEvent::PeerAdded(_) | NetworkEvent::PeersAdded(_) => {
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork);
             }
@@ -181,17 +181,6 @@ impl Client {
         Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    /// This is for network testing only
-    pub async fn get_closest(&self, dst: XorName) -> Vec<PeerId> {
-        match self.network.client_get_closest_peers(dst).await {
-            Ok(peers) => peers,
-            Err(err) => {
-                warn!("Failed to get_closest of {dst:?} with error {err:?}");
-                vec![]
-            }
-        }
-    }
-
     pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
         let responses = self
             .network
@@ -205,11 +194,10 @@ impl Client {
 
     pub(crate) async fn expect_closest_majority_ok(&self, spend: SpendRequest) -> Result<()> {
         let dbc_id = spend.signed_spend.dbc_id();
-        trace!("Getting the closest peers to {dbc_id:?}.");
-        let closest_peers = self
-            .network
-            .client_get_closest_peers(dbc_name(dbc_id))
-            .await?;
+        let key = NetworkKey::from_name(dbc_name(dbc_id));
+
+        trace!("Getting the closest peers to {dbc_id:?} / {key:?}.");
+        let closest_peers = self.network.client_get_closest_peers(&key).await?;
 
         let cmd = Cmd::SpendDbc {
             signed_spend: Box::new(spend.signed_spend),
@@ -260,12 +248,10 @@ impl Client {
     }
 
     pub(crate) async fn expect_closest_majority_same(&self, dbc_id: &DbcId) -> Result<SignedSpend> {
-        trace!("Getting the closest peers to {dbc_id:?}.");
+        let key = NetworkKey::from_name(dbc_name(dbc_id));
+        trace!("Getting the closest peers to {dbc_id:?} / {key:?}.");
         let address = dbc_address(dbc_id);
-        let closest_peers = self
-            .network
-            .client_get_closest_peers(*address.name())
-            .await?;
+        let closest_peers = self.network.client_get_closest_peers(&key).await?;
 
         let query = Query::Spend(SpendQuery::GetDbcSpend(address));
         trace!("Sending {:?} to the closest peers.", query);

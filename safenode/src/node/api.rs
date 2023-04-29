@@ -29,6 +29,7 @@ use crate::{
             Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
             SpendQuery,
         },
+        NetworkKey,
     },
 };
 
@@ -37,7 +38,6 @@ use sn_dbc::{DbcTransaction, SignedSpend};
 use libp2p::{Multiaddr, PeerId};
 use std::{collections::BTreeSet, net::SocketAddr, path::Path};
 use tokio::task::spawn;
-use xor_name::XorName;
 
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
@@ -128,19 +128,27 @@ impl Node {
             NetworkEvent::RequestReceived { req, channel } => {
                 self.handle_request(req, channel).await?
             }
-            NetworkEvent::PeerAdded => {
+            NetworkEvent::PeerAdded(peer) => {
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
-                let target = {
-                    let mut rng = rand::thread_rng();
-                    XorName::random(&mut rng)
-                };
-
+                let key = NetworkKey::from_peer(peer);
                 let network = self.network.clone();
                 let _handle = spawn(async move {
-                    trace!("Getting closest peers for target {target:?}");
-                    let result = network.node_get_closest_peers(target).await;
-                    trace!("For target {target:?}, get closest peers {result:?}");
+                    trace!("Getting closest peers for target {key:?}...");
+                    let result = network.node_get_closest_peers(&key).await;
+                    trace!("Closest peers to {key:?} got: {result:?}.");
                 });
+            }
+            NetworkEvent::PeersAdded(peers) => {
+                self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
+                for peer in peers {
+                    let key = NetworkKey::from_peer(peer);
+                    let network = self.network.clone();
+                    let _handle = spawn(async move {
+                        trace!("Getting closest peers for target {key:?}...");
+                        let result = network.node_get_closest_peers(&key).await;
+                        trace!("Closest peers to {key:?} got: {result:?}.");
+                    });
+                }
             }
             NetworkEvent::NewListenAddr(_) => {
                 let network = self.network.clone();

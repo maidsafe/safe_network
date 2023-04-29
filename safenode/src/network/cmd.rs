@@ -10,14 +10,16 @@ use super::{error::Error, NetworkEvent, SwarmDriver};
 
 use crate::{
     network::{error::Result, event::MsgResponder},
-    protocol::messages::{Request, Response},
+    protocol::{
+        messages::{Request, Response},
+        NetworkKey,
+    },
 };
 
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
 use tracing::warn;
-use xor_name::XorName;
 
 /// Commands to send to the Swarm
 #[derive(Debug)]
@@ -32,7 +34,7 @@ pub enum SwarmCmd {
         sender: oneshot::Sender<Result<()>>,
     },
     GetClosestPeers {
-        xor_name: XorName,
+        key: NetworkKey,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
     SendRequest {
@@ -92,9 +94,12 @@ impl SwarmDriver {
                 }
             }
 
-            SwarmCmd::GetClosestPeers { xor_name, sender } => {
-                let key = xor_name.0.to_vec();
-                let query_id = self.swarm.behaviour_mut().kademlia.get_closest_peers(key);
+            SwarmCmd::GetClosestPeers { key, sender } => {
+                let query_id = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .get_closest_peers(key.as_bytes());
                 let _ = self
                     .pending_get_closest_peers
                     .insert(query_id, (sender, Default::default()));

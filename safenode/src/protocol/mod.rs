@@ -11,36 +11,43 @@ pub mod error;
 /// Messages types
 pub mod messages;
 
+use self::error::{Error, Result};
+
 use libp2p::{
     kad::{kbucket::Distance, KBucketKey as Key},
     PeerId,
 };
-use xor_name::XorName;
+use serde::{Deserialize, Serialize};
+use xor_name::{XorName, XOR_NAME_LEN};
 
 /// This is the key in the network by which proximity/distance
 /// to other items (wether nodes or data chunks) are calculated.
 ///
 /// This is the mapping from the XOR name used
-/// by for example self encryption, or the libp2p PeerId,
+/// by for example self encryption, or the libp2p `PeerId`,
 /// to the key used in the Kademlia DHT.
-/// All our xorname calculations shall be replaced with the KBucketKey calculations,
-/// for getting proximity/distance to other items (wether nodes or data chunks).
+/// All our xorname calculations shall be replaced with the `KBucketKey` calculations,
+/// for getting proximity/distance to other items (wether nodes or data).
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub enum NetworkKey {
+    /// The `PeerId` of a node.
     PeerId(Vec<u8>),
+    /// The `XorName` of some data.
     XorName(Vec<u8>),
 }
 
 impl NetworkKey {
-    /// Returns a `NetworkKey` representation of the `XorName` by encapsulating its bytes.
+    /// Return a `NetworkKey` representation of the `XorName` by encapsulating its bytes.
     pub fn from_name(name: XorName) -> Self {
         NetworkKey::XorName(name.0.to_vec())
     }
 
-    /// Returns a `NetworkKey` representation of the `PeerId` by encapsulating its bytes.
-    pub fn from_peer_id(peer_id: PeerId) -> Self {
+    /// Return a `NetworkKey` representation of the `PeerId` by encapsulating its bytes.
+    pub fn from_peer(peer_id: PeerId) -> Self {
         NetworkKey::PeerId(peer_id.to_bytes())
     }
 
+    /// Return the encapsulated bytes of this `NetworkKey`.
     pub fn as_bytes(&self) -> Vec<u8> {
         match self {
             NetworkKey::PeerId(bytes) => bytes.to_vec(),
@@ -48,17 +55,56 @@ impl NetworkKey {
         }
     }
 
+    /// Try to convert this `NetworkKey` to an `XorName`.
+    pub fn as_name(&self) -> Result<XorName> {
+        let bytes = match self {
+            NetworkKey::PeerId(bytes) => {
+                return Err(Error::InternalProcessing(format!(
+                    "Not an xorname: {bytes:?}"
+                )))
+            }
+            NetworkKey::XorName(bytes) => bytes,
+        };
+        let mut xor = [0u8; XOR_NAME_LEN];
+        xor.copy_from_slice(&bytes[..XOR_NAME_LEN]);
+        Ok(XorName(xor))
+    }
+
+    /// Try to convert this `NetworkKey` to a `PeerId`.
+    pub fn as_peer(&self) -> Result<PeerId> {
+        let bytes = match self {
+            NetworkKey::PeerId(bytes) => bytes.to_vec(),
+            NetworkKey::XorName(bytes) => {
+                return Err(Error::InternalProcessing(format!(
+                    "Not a peer id: {bytes:?}"
+                )))
+            }
+        };
+        match PeerId::from_bytes(&bytes) {
+            Ok(peer_id) => Ok(peer_id),
+            Err(err) => Err(Error::InternalProcessing(format!(
+                "Invalid peer id bytes: {err}"
+            ))),
+        }
+    }
+
+    /// Return the `KBucketKey` representation of this `NetworkKey`.
+    ///
+    /// The `KBucketKey` is used for calculating proximity/distance to other items (wether nodes or data).
+    /// Important to note is that it will always SHA256 hash any bytes it receives.
+    /// Therefore, the canonical use of distance/proximity calculations in the network
+    /// is via the `KBucketKey`, or the convenience methods of `NetworkKey`.
     pub fn as_kbucket_key(&self) -> Key<Vec<u8>> {
         Key::new(self.as_bytes())
     }
 
-    /// Computes the distance of the keys according to the XOR metric.
-    pub fn distance<U>(&self, other: &NetworkKey) -> Distance {
+    /// Compute the distance of the keys according to the XOR metric.
+    pub fn distance(&self, other: &NetworkKey) -> Distance {
         self.as_kbucket_key().distance(&other.as_kbucket_key())
     }
 
     // NB: Leaving this here as to demonstrate what we can do with this.
-    // /// Returns the uniquely determined key with the given distance to `self`.
+    // /// Return the uniquely determined key with the given distance to `self`.
     // ///
     // /// This implements the following equivalence:
     // ///
