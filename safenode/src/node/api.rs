@@ -23,6 +23,7 @@ use crate::{
             SpendQuery,
         },
         storage::{dbc_address, registers::User, DbcAddress},
+        NetworkKey,
     },
 };
 
@@ -34,7 +35,6 @@ use libp2p::{
 };
 use std::{collections::BTreeSet, net::SocketAddr, path::Path};
 use tokio::{sync::mpsc, task::spawn};
-use xor_name::XorName;
 
 #[derive(Debug)]
 pub(super) struct TransferAction {
@@ -136,16 +136,12 @@ impl Node {
             }
             NetworkEvent::PeerAdded(peer) => {
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
-                let target = {
-                    let mut rng = rand::thread_rng();
-                    XorName::random(&mut rng)
-                };
-
+                let key = NetworkKey::from_peer(peer);
                 let network = self.network.clone();
                 let _handle = spawn(async move {
-                    trace!("On PeerAdded({peer:?}) Getting closest peers for target {target:?}");
-                    let result = network.node_get_closest_peers(target).await;
-                    trace!("For target {target:?}, get closest peers {result:?}");
+                    trace!("On PeerAdded({peer:?}) Getting closest peers for target {key:?}...");
+                    let result = network.node_get_closest_peers(&key).await;
+                    trace!("Closest peers to {key:?} got: {result:?}.");
                 });
             }
             NetworkEvent::NewListenAddr(_) => {
