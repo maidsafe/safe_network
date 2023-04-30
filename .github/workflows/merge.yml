@@ -327,7 +327,6 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-   
       - name: Start a client to upload chunks
         # if: github.event_name != 'pull_request'
         if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'

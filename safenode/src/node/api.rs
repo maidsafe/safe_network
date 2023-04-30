@@ -131,31 +131,6 @@ impl Node {
 
     async fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
         match event {
-            NetworkEvent::ClosePeerDied(_peer) => {
-                let key = NetworkKey::from_peer(self.network.peer_id);
-
-                let closest_peers = match self.network.node_get_closest_local_peers(&key).await {
-                    Ok(result) => result,
-                    Err(err) => {
-                        warn!(
-                            "Could not replicate data due to failure to get closest peers: {err}"
-                        );
-                        return Ok(());
-                    }
-                };
-
-                let tasks = closest_peers.into_iter().map(|peer| {
-                    let network = self.network.clone();
-                    let chunks = self.chunks.clone();
-                    async move { Self::ask_for_missing_data(peer, network, chunks).await }
-                });
-
-                for result in join_all(tasks).await {
-                    if let Err(err) = result {
-                        warn!("Error occurred in replication process: {err}. We may be temporarily missing data.");
-                    }
-                }
-            }
             NetworkEvent::RequestReceived { req, channel } => {
                 self.handle_request(req, channel).await?
             }
@@ -193,6 +168,31 @@ impl Node {
                         };
                     }
                 });
+            }
+            NetworkEvent::ClosePeerDied(_peer) => {
+                let key = NetworkKey::from_peer(self.network.peer_id);
+
+                let closest_peers = match self.network.node_get_closest_local_peers(&key).await {
+                    Ok(result) => result,
+                    Err(err) => {
+                        warn!(
+                            "Could not replicate data due to failure to get closest peers: {err}"
+                        );
+                        return Ok(());
+                    }
+                };
+
+                let tasks = closest_peers.into_iter().map(|peer| {
+                    let network = self.network.clone();
+                    let chunks = self.chunks.clone();
+                    async move { Self::ask_for_missing_data(peer, network, chunks).await }
+                });
+
+                for result in join_all(tasks).await {
+                    if let Err(err) = result {
+                        warn!("Error occurred in replication process: {err}. We may be temporarily missing data.");
+                    }
+                }
             }
         }
 
@@ -240,6 +240,36 @@ impl Node {
 
     async fn handle_query(&mut self, query: Query) -> QueryResponse {
         match query {
+            Query::Register(query) => self.registers.read(&query, User::Anyone).await,
+            Query::GetChunk(address) => {
+                let resp = self
+                    .chunks
+                    .get(&address)
+                    .await
+                    .map_err(ProtocolError::Storage);
+                trace!("Sending response back on query GetChunk({address:?}): {resp:?}");
+                QueryResponse::GetChunk(resp)
+            }
+            Query::Spend(query) => {
+                match query {
+                    SpendQuery::GetFees { dbc_id, priority } => {
+                        // The client is asking for the fee to spend a specific dbc, and including the id of that dbc.
+                        // The required fee content is encrypted to that dbc id, and so only the holder of the dbc secret
+                        // key can unlock the contents.
+                        let required_fee = self.transfers.get_required_fee(dbc_id, priority);
+                        QueryResponse::GetFees(Ok(required_fee))
+                    }
+                    SpendQuery::GetDbcSpend(address) => {
+                        let res = self
+                            .transfers
+                            .get(address)
+                            .await
+                            .map_err(ProtocolError::Transfers);
+                        trace!("Sending response back on query DbcSpend {address:?}");
+                        QueryResponse::GetDbcSpend(res)
+                    }
+                }
+            }
             Query::GetMissingData {
                 existing_data,
                 sender,
@@ -262,7 +292,7 @@ impl Node {
                 // To make each data storage node reply with different copies, so that the
                 // overall queries can be reduced, the data names are scrambled.
                 use rand::seq::SliceRandom;
-                data_i_have.shuffle(&mut rand::rngs::OsRng);
+                data_i_have.shuffle(&mut rand::thread_rng());
 
                 let mut data_for_sender = Vec::new();
                 for addr in data_i_have {
@@ -293,36 +323,6 @@ impl Node {
                 }
 
                 QueryResponse::GetMissingData(Ok(data_for_sender))
-            }
-            Query::Register(query) => self.registers.read(&query, User::Anyone).await,
-            Query::GetChunk(address) => {
-                let resp = self
-                    .chunks
-                    .get(&address)
-                    .await
-                    .map_err(ProtocolError::Storage);
-                trace!("Sending response back on query GetChunk({address:?}): {resp:?}");
-                QueryResponse::GetChunk(resp)
-            }
-            Query::Spend(query) => {
-                match query {
-                    SpendQuery::GetFees { dbc_id, priority } => {
-                        // The client is asking for the fee to spend a specific dbc, and including the id of that dbc.
-                        // The required fee content is encrypted to that dbc id, and so only the holder of the dbc secret
-                        // key can unlock the contents.
-                        let required_fee = self.transfers.get_required_fee(dbc_id, priority);
-                        QueryResponse::GetFees(Ok(required_fee))
-                    }
-                    SpendQuery::GetDbcSpend(address) => {
-                        let res = self
-                            .transfers
-                            .get(address)
-                            .await
-                            .map_err(ProtocolError::Transfers);
-                        trace!("Sending response back on query DbcSpend {address:?}");
-                        QueryResponse::GetDbcSpend(res)
-                    }
-                }
             }
         }
     }
