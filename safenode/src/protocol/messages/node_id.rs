@@ -30,7 +30,7 @@ impl NodeId {
 
     /// Returns this NodeId as PeerId
     pub fn as_peer_id(&self) -> Result<PeerId> {
-        PeerId::from_bytes(&self.0).map_err(|_| Error::NotAPeerId(self.0.clone()))
+        PeerId::from_bytes(&self.0).map_err(|err| Error::NotAPeerId(err.to_string()))
     }
 }
 
