@@ -213,7 +213,7 @@ impl SwarmDriver {
                         .swarm
                         .behaviour_mut()
                         .kademlia
-                        .remove_peer(&peer_id)
+                        .remove_address(&peer_id, endpoint.get_remote_address())
                         .is_some()
                     {
                         info!("Removed dead peer {peer_id:?} from RT");
