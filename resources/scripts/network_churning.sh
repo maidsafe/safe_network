@@ -23,6 +23,6 @@ do
     echo Iteration $count
     echo Stopping node on port $target_port
     cargo run --release --example safenode_rpc_client -- "127.0.0.1:$target_port" stop 1
-    cargo run --release --bin testnet -- --join --node-count 1
+    cargo run --release --bin testnet -- --join --node-count 1 --node-path ./target/release/safenode
 	sleep 5
 done
