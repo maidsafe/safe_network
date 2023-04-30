@@ -360,7 +360,7 @@ async fn get_fees(dbc_id: DbcId, client: &Client) -> Result<BTreeMap<NodeId, Req
         priority: SpendPriority::Normal,
     }));
     let responses = client
-        .send_to_closest(request)
+        .send_to_queried_closest(request)
         .await
         .map_err(|e| Error::CouldNotGetFees(e.to_string()))?;
 

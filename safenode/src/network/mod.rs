@@ -279,7 +279,7 @@ impl Network {
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// Excludes the client's `PeerId` while calculating the closest peers.
-    pub async fn client_get_closest_peers(&self, key: &NetworkKey) -> Result<Vec<PeerId>> {
+    pub async fn client_query_for_closest_peers(&self, key: &NetworkKey) -> Result<Vec<PeerId>> {
         self.query_for_closest_peers(key, true).await
     }
 
@@ -356,17 +356,23 @@ impl Network {
     }
 
     /// Send `Request` to the closest peers. `Self` is not present among the recipients.
-    pub async fn client_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
+    pub async fn client_send_to_queried_closest(
+        &self,
+        request: &Request,
+    ) -> Result<Vec<Result<Response>>> {
         info!(
             "Sending {request:?} with dst {:?} to the closest peers.",
             request.dst().key()
         );
-        let closest_peers = self.client_get_closest_peers(&request.dst().key()).await?;
+        let closest_peers = self
+            .client_query_for_closest_peers(&request.dst().key())
+            .await?;
 
         Ok(self
             .send_and_get_responses(closest_peers, request, true)
             .await)
     }
+
     /// Send `Request` to the the given `PeerId` and await for the response. If `self` is the recipient,
     /// then the `Request` is forwarded to itself and handled, and a corresponding `Response` is created
     /// and returned to itself. Hence the flow remains the same and there is no branching at the upper

@@ -126,7 +126,7 @@ impl Client {
     pub(super) async fn store_chunk(&self, chunk: Chunk) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let request = Request::Cmd(Cmd::StoreChunk(chunk));
-        let responses = self.send_to_closest(request).await?;
+        let responses = self.send_to_queried_closest(request).await?;
 
         let all_ok = responses
             .iter()
@@ -156,7 +156,7 @@ impl Client {
     pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Get chunk: {address:?}");
         let request = Request::Query(Query::GetChunk(address));
-        let responses = self.send_to_closest(request).await?;
+        let responses = self.send_to_queried_closest(request).await?;
 
         // We will return the first chunk we get.
         for resp in responses.iter().flatten() {
@@ -182,10 +182,13 @@ impl Client {
         Err(Error::Protocol(ProtocolError::UnexpectedResponses))
     }
 
-    pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
+    pub(crate) async fn send_to_queried_closest(
+        &self,
+        request: Request,
+    ) -> Result<Vec<Result<Response>>> {
         let responses = self
             .network
-            .client_send_to_closest(&request)
+            .client_send_to_queried_closest(&request)
             .await?
             .into_iter()
             .map(|res| res.map_err(Error::Network))
@@ -198,7 +201,7 @@ impl Client {
         let key = NetworkKey::from_name(dbc_name(dbc_id));
 
         trace!("Getting the closest peers to {dbc_id:?} / {key:?}.");
-        let closest_peers = self.network.client_get_closest_peers(&key).await?;
+        let closest_peers = self.network.client_query_for_closest_peers(&key).await?;
 
         let cmd = Cmd::SpendDbc {
             signed_spend: Box::new(spend.signed_spend),
@@ -252,7 +255,7 @@ impl Client {
         let key = NetworkKey::from_name(dbc_name(dbc_id));
         trace!("Getting the closest peers to {dbc_id:?} / {key:?}.");
         let address = dbc_address(dbc_id);
-        let closest_peers = self.network.client_get_closest_peers(&key).await?;
+        let closest_peers = self.network.client_query_for_closest_peers(&key).await?;
 
         let query = Query::Spend(SpendQuery::GetDbcSpend(address));
         trace!("Sending {:?} to the closest peers.", query);
