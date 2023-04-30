@@ -10,6 +10,8 @@ mod chunk;
 mod dbc;
 mod register;
 
+use crate::protocol::NetworkKey;
+
 pub use self::{
     chunk::ChunkAddress,
     dbc::{dbc_address, dbc_name, DbcAddress},
@@ -22,7 +24,7 @@ use serde::{Deserialize, Serialize};
 use xor_name::XorName;
 
 /// An address of data on the network.
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub enum DataAddress {
     ///
     Chunk(ChunkAddress),
@@ -30,15 +32,18 @@ pub enum DataAddress {
     Register(RegisterAddress),
     ///
     Spend(DbcAddress),
+    /// The new general identifier for a items in the network.
+    Network(NetworkKey),
 }
 
 impl DataAddress {
     /// The xorname.
-    pub fn name(&self) -> &XorName {
+    pub fn key(&self) -> NetworkKey {
         match self {
-            Self::Chunk(address) => address.name(),
-            Self::Register(address) => address.name(),
-            Self::Spend(address) => address.name(),
+            Self::Chunk(address) => NetworkKey::from_name(*address.name()),
+            Self::Register(address) => NetworkKey::from_name(*address.name()),
+            Self::Spend(address) => NetworkKey::from_name(*address.name()),
+            Self::Network(key) => key.clone(),
         }
     }
 
@@ -64,6 +69,7 @@ impl std::fmt::Display for DataAddress {
             DataAddress::Chunk(addr) => write!(f, "{addr:?}"),
             DataAddress::Register(addr) => write!(f, "{addr:?}"),
             DataAddress::Spend(addr) => write!(f, "{addr:?}"),
+            DataAddress::Network(key) => write!(f, "Network({key:?})"),
         }
     }
 }
