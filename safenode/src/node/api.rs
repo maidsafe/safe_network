@@ -36,7 +36,6 @@ use crate::{
 use sn_dbc::{DbcTransaction, SignedSpend};
 
 use async_recursion::async_recursion;
-use futures::future::join_all;
 use libp2p::{Multiaddr, PeerId};
 use std::{collections::BTreeSet, net::SocketAddr, path::Path};
 use tokio::task::spawn;
@@ -180,16 +179,13 @@ impl Node {
                     }
                 };
 
-                let tasks = closest_peers.into_iter().map(|peer| {
+                for peer in closest_peers {
                     let network = self.network.clone();
                     let chunks = self.chunks.clone();
-                    async move { Self::ask_for_missing_data(peer, network, chunks).await }
-                });
-
-                for result in join_all(tasks).await {
-                    if let Err(err) = result {
-                        warn!("Error occurred in replication process: {err}. We may be temporarily missing data.");
-                    }
+                    let _handle =
+                        spawn(
+                            async move { Self::ask_for_missing_data(peer, network, chunks).await },
+                        );
                 }
             }
         }
