@@ -21,6 +21,45 @@ use sn_dbc::Token;
 use assert_fs::TempDir;
 use eyre::Result;
 
+#[ignore = "Manual use only."]
+#[tokio::test(flavor = "multi_thread")]
+async fn start_network() {}
+
+#[ignore = "Manual use only."]
+#[tokio::test(flavor = "multi_thread")]
+async fn churn() {
+    use std::process::{Command, Stdio};
+    let base_port = 12000;
+    let rpc_path = Path::new("../target/release/examples/safenode_rpc_client");
+    for i in 1..25 {
+        let address = format!("127.0.0.1:{}", base_port + i);
+        let args = vec![address.as_str(), "stop", "1"];
+        let _ = Command::new(rpc_path)
+            .args(args)
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .expect("safenode_rpc_client cmd should run successfully.");
+
+        let node_bin_path = Path::new("../target/release/testnet");
+        let args = vec![
+            "--join",
+            "--node-count",
+            "1",
+            "--node-path",
+            "../target/release/safenode",
+        ];
+        let _ = Command::new(node_bin_path)
+            .args(args)
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .expect("Cmd should run successfully.");
+
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+    }
+}
+
 #[ignore = "Not yet finished."]
 #[tokio::test(flavor = "multi_thread")]
 async fn multiple_sequential_transfers_succeed() -> Result<()> {
