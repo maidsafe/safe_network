@@ -342,7 +342,7 @@ jobs:
         # if: github.event_name != 'pull_request'
         if: github.event_name == 'pull_request'
         shell: bash
-        run: ./resources/scripts/network_kill_churn.sh
+        run: ./resources/scripts/network_churning.sh
         timeout-minutes: 20
 
       - name: Start a client to confirm chunk still retained
