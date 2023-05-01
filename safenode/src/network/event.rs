@@ -17,9 +17,11 @@ use crate::protocol::{
     storage::Chunk,
 };
 
+#[cfg(feature = "local_discovery")]
+use libp2p::mdns;
+
 use libp2p::{
     kad::{store::MemoryStore, GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
-    mdns,
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
     swarm::{NetworkBehaviour, SwarmEvent},
@@ -34,6 +36,7 @@ use tracing::{info, warn};
 pub(super) struct NodeBehaviour {
     pub(super) request_response: request_response::Behaviour<MsgCodec>,
     pub(super) kademlia: Kademlia<MemoryStore>,
+    #[cfg(feature = "local_discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
 }
 
@@ -41,6 +44,7 @@ pub(super) struct NodeBehaviour {
 pub(super) enum NodeEvent {
     MsgReceived(request_response::Event<Request, Response>),
     Kademlia(KademliaEvent),
+    #[cfg(feature = "local_discovery")]
     Mdns(Box<mdns::Event>),
 }
 
@@ -56,6 +60,7 @@ impl From<KademliaEvent> for NodeEvent {
     }
 }
 
+#[cfg(feature = "local_discovery")]
 impl From<mdns::Event> for NodeEvent {
     fn from(event: mdns::Event) -> Self {
         NodeEvent::Mdns(Box::new(event))
@@ -176,6 +181,7 @@ impl SwarmDriver {
                     error!("KademliaEvent has not been implemented: {todo:?}");
                 }
             },
+            #[cfg(feature = "local_discovery")]
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
                 mdns::Event::Discovered(list) => {
                     for (peer_id, multiaddr) in list {

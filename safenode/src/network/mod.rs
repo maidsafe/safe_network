@@ -27,6 +27,10 @@ use self::{
 use crate::protocol::messages::{QueryResponse, Request, Response};
 
 use futures::{future::select_all, StreamExt};
+
+#[cfg(feature = "local_discovery")]
+use libp2p::mdns;
+
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
@@ -34,7 +38,6 @@ use libp2p::{
         record::store::MemoryStore, store::MemoryStoreConfig, KBucketKey, Kademlia, KademliaConfig,
         QueryId, Record, RecordKey,
     },
-    mdns,
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{Swarm, SwarmBuilder},
@@ -196,6 +199,7 @@ impl SwarmDriver {
             kad_cfg,
         );
 
+        #[cfg(feature = "local_discovery")]
         let mdns_config = mdns::Config {
             // lower query interval to speed up peer discovery
             // this increases traffic, but means we no longer have clients unable to connect
@@ -204,10 +208,13 @@ impl SwarmDriver {
             ..Default::default()
         };
 
+        #[cfg(feature = "local_discovery")]
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
+
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
+            #[cfg(feature = "local_discovery")]
             mdns,
         };
 
