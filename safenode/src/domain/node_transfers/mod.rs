@@ -134,7 +134,9 @@ impl Transfers {
 
         // 5. This spend is valid and goes into the queue (if not already in storage).
         if !self.storage.exists(signed_spend.dbc_id())? {
-            self.spend_queue.push(*signed_spend, paid_fee.as_nano()).await;
+            self.spend_queue
+                .push(*signed_spend, paid_fee.as_nano())
+                .await;
         }
 
         // NB: Temporarily disabling transfer rate limit!

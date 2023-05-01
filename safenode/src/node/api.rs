@@ -159,9 +159,9 @@ impl Node {
 
     async fn handle_request(&self, request: Request, response_channel: MsgResponder) -> Result<()> {
         trace!("Handling request: {request:?}");
-        let response = match request {
-            Request::Cmd(cmd) => Response::Cmd(self.handle_cmd(cmd).await),
-            Request::Query(query) => Response::Query(self.handle_query(query).await),
+        match request {
+            Request::Cmd(cmd) => self.handle_cmd(cmd, response_channel).await,
+            Request::Query(query) => self.handle_query(query, response_channel).await,
             Request::Event(event) => {
                 match event {
                     Event::ValidSpendReceived {
@@ -174,26 +174,22 @@ impl Node {
                             .try_add(spend, parent_tx, fee_ciphers, parent_spends)
                             .await
                             .map_err(ProtocolError::Transfers)?;
-                        return Ok(());
                     }
                     Event::DoubleSpendAttempted { new, existing } => {
                         self.transfers
                             .try_add_double(new.as_ref(), existing.as_ref())
                             .await
                             .map_err(ProtocolError::Transfers)?;
-                        return Ok(());
                     }
                 };
             }
-        };
-
-        self.send_response(response, response_channel).await;
+        }
 
         Ok(())
     }
 
-    async fn handle_query(&self, query: Query) -> QueryResponse {
-        match query {
+    async fn handle_query(&self, query: Query, response_channel: MsgResponder) {
+        let resp = match query {
             Query::Register(query) => self.registers.read(&query, User::Anyone).await,
             Query::GetChunk(address) => {
                 match self
@@ -230,11 +226,14 @@ impl Node {
                     }
                 }
             }
-        }
+        };
+
+        self.send_response(Response::Query(resp), response_channel)
+            .await;
     }
 
-    async fn handle_cmd(&self, cmd: Cmd) -> CmdResponse {
-        match cmd {
+    async fn handle_cmd(&self, cmd: Cmd, response_channel: MsgResponder) {
+        let resp = match cmd {
             Cmd::NodePing(cmd) => {
                 let result = match self.network.node_get_closest_local_peers(cmd).await {
                     Ok(close_group_peers) => {
@@ -255,39 +254,49 @@ impl Node {
             }
             Cmd::ClientPing(name) => {
                 let hash_of_name = XorName::from_content(&name.0);
-                match self
-                    .network
-                    .node_send_to_local_closest(&Request::Cmd(Cmd::NodePing(hash_of_name)))
-                    .await
-                {
-                    Ok(results) => {
-                        let ok_results: Vec<_> = results
-                            .into_iter()
-                            .filter_map(|res| match res {
-                                Ok(Response::Cmd(CmdResponse::NodePong(Ok(())))) => Some(()),
-                                _ => None,
-                            })
-                            .collect();
+                let network = self.network.clone();
+                let _handle = spawn(async move {
+                    let resp = match network
+                        .node_send_to_local_closest(&Request::Cmd(Cmd::NodePing(hash_of_name)))
+                        .await
+                    {
+                        Ok(results) => {
+                            let ok_results: Vec<_> = results
+                                .into_iter()
+                                .filter_map(|res| match res {
+                                    Ok(Response::Cmd(CmdResponse::NodePong(Ok(())))) => Some(()),
+                                    _ => None,
+                                })
+                                .collect();
 
-                        let result = if ok_results.len() >= close_group_majority() {
-                            Ok(())
-                        } else {
-                            Err(ProtocolError::InternalProcessing(format!(
-                                "Only {} out of required {} peers returned an OK response.",
-                                ok_results.len(),
-                                close_group_majority()
+                            let result = if ok_results.len() >= close_group_majority() {
+                                Ok(())
+                            } else {
+                                Err(ProtocolError::InternalProcessing(format!(
+                                    "Only {} out of required {} peers returned an OK response.",
+                                    ok_results.len(),
+                                    close_group_majority()
+                                )))
+                            };
+
+                            CmdResponse::NodePong(result)
+                        }
+                        Err(err) => {
+                            warn!("Failed to send ping to closest peers: {err:?}");
+                            CmdResponse::NodePong(Err(ProtocolError::InternalProcessing(
+                                err.to_string(),
                             )))
-                        };
+                        }
+                    };
+                    if let Err(err) = network
+                        .send_response(Response::Cmd(resp), response_channel)
+                        .await
+                    {
+                        warn!("Error while sending response: {err:?}");
+                    }
+                });
 
-                        CmdResponse::NodePong(result)
-                    }
-                    Err(err) => {
-                        warn!("Failed to send ping to closest peers: {err:?}");
-                        CmdResponse::NodePong(Err(ProtocolError::InternalProcessing(
-                            err.to_string(),
-                        )))
-                    }
-                }
+                return;
             }
             Cmd::StoreChunk(chunk) => {
                 let addr = *chunk.address();
@@ -341,84 +350,87 @@ impl Node {
                 // First we fetch all parent spends from the network.
                 // They shall naturally all exist as valid spends for this current
                 // spend attempt to be valid.
-                let parent_spends = match self.get_parent_spends(parent_tx.as_ref()).await {
-                    Ok(parent_spends) => parent_spends,
-                    Err(Error::Protocol(err)) => return CmdResponse::Spend(Err(err)),
-                    Err(error) => {
-                        return CmdResponse::Spend(Err(ProtocolError::Transfers(
-                            TransferError::SpendParentCloseGroupIssue(error.to_string()),
-                        )))
-                    }
-                };
-
-                // Then we try to add the spend to the transfers.
-                // This will validate all the necessary components of the spend.
-                let res = match self
-                    .transfers
-                    .try_add(
-                        signed_spend.clone(),
-                        parent_tx.clone(),
-                        fee_ciphers.clone(),
-                        parent_spends.clone(),
-                    )
-                    .await
-                {
-                    Ok(()) => {
-                        let dbc_id = *signed_spend.dbc_id();
-                        trace!("Broadcasting valid spend: {dbc_id:?}");
-
-                        self.events_channel
-                            .broadcast(NodeEvent::SpendStored(dbc_id));
-
-                        let event = Event::ValidSpendReceived {
-                            spend: signed_spend,
-                            parent_tx,
-                            fee_ciphers,
-                            parent_spends,
-                        };
-                        match self
-                            .network
-                            .fire_and_forget_to_closest(&Request::Event(event))
+                match self.get_parent_spends(parent_tx.as_ref()).await {
+                    Ok(parent_spends) => {
+                        // Then we try to add the spend to the transfers.
+                        // This will validate all the necessary components of the spend.
+                        let res = match self
+                            .transfers
+                            .try_add(
+                                signed_spend.clone(),
+                                parent_tx.clone(),
+                                fee_ciphers.clone(),
+                                parent_spends.clone(),
+                            )
                             .await
                         {
-                            Ok(_) => {}
-                            Err(err) => {
-                                warn!("Failed to send valid spend event to closest peers: {err:?}");
-                            }
-                        }
+                            Ok(()) => {
+                                let dbc_id = *signed_spend.dbc_id();
+                                trace!("Broadcasting valid spend: {dbc_id:?}");
 
-                        Ok(())
-                    }
-                    Err(TransferError::Storage(StorageError::DoubleSpendAttempt {
-                        new,
-                        existing,
-                    })) => {
-                        warn!("Double spend attempted! New: {new:?}. Existing:  {existing:?}");
-                        if let Ok(event) =
-                            Event::double_spend_attempt(new.clone(), existing.clone())
-                        {
-                            match self
-                                .network
-                                .node_send_to_local_closest(&Request::Event(event))
-                                .await
-                            {
-                                Ok(_) => {}
-                                Err(err) => {
-                                    warn!("Failed to send double spend event to closest peers: {err:?}");
+                                self.events_channel
+                                    .broadcast(NodeEvent::SpendStored(dbc_id));
+
+                                let event = Event::ValidSpendReceived {
+                                    spend: signed_spend,
+                                    parent_tx,
+                                    fee_ciphers,
+                                    parent_spends,
+                                };
+                                match self
+                                    .network
+                                    .fire_and_forget_to_closest(&Request::Event(event))
+                                    .await
+                                {
+                                    Ok(_) => {}
+                                    Err(err) => {
+                                        warn!("Failed to send valid spend event to closest peers: {err:?}");
+                                    }
                                 }
+
+                                Ok(())
                             }
-                        }
+                            Err(TransferError::Storage(StorageError::DoubleSpendAttempt {
+                                new,
+                                existing,
+                            })) => {
+                                warn!(
+                                    "Double spend attempted! New: {new:?}. Existing:  {existing:?}"
+                                );
+                                if let Ok(event) =
+                                    Event::double_spend_attempt(new.clone(), existing.clone())
+                                {
+                                    match self
+                                        .network
+                                        .node_send_to_local_closest(&Request::Event(event))
+                                        .await
+                                    {
+                                        Ok(_) => {}
+                                        Err(err) => {
+                                            warn!("Failed to send double spend event to closest peers: {err:?}");
+                                        }
+                                    }
+                                }
 
-                        Err(ProtocolError::Transfers(TransferError::Storage(
-                            StorageError::DoubleSpendAttempt { new, existing },
-                        )))
+                                Err(ProtocolError::Transfers(TransferError::Storage(
+                                    StorageError::DoubleSpendAttempt { new, existing },
+                                )))
+                            }
+                            other => other.map_err(ProtocolError::Transfers),
+                        };
+
+                        CmdResponse::Spend(res)
                     }
-                    other => other.map_err(ProtocolError::Transfers),
-                };
-
-                CmdResponse::Spend(res)
+                    Err(Error::Protocol(err)) => CmdResponse::Spend(Err(err)),
+                    Err(error) => CmdResponse::Spend(Err(ProtocolError::Transfers(
+                        TransferError::SpendParentCloseGroupIssue(error.to_string()),
+                    ))),
+                }
             }
-        }
+        };
+
+        self.send_response(Response::Cmd(resp), response_channel)
+            .await;
     }
 
     // This call makes sure we get the same spend from all in the close group.

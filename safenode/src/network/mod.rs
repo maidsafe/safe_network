@@ -367,7 +367,9 @@ impl Network {
             "Sending {request:?} with dst {:?} to the closest peers.",
             request.dst().name()
         );
-        let closest_peers = self.node_get_closest_local_peers(*request.dst().name()).await?;
+        let closest_peers = self
+            .node_get_closest_local_peers(*request.dst().name())
+            .await?;
         for peer in closest_peers {
             self.fire_and_forget(request.clone(), peer).await?;
         }

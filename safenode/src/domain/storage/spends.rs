@@ -56,7 +56,7 @@ impl SpendStorage {
     }
 
     /// Returns if the spend already exists.
-    pub(crate) fn exists(&mut self, dbc_id: &DbcId) -> Result<bool> {
+    pub(crate) fn exists(&self, dbc_id: &DbcId) -> Result<bool> {
         let address = dbc_address(dbc_id);
         let filepath = self.address_to_filepath(&address, &self.valid_spends_path)?;
         Ok(filepath.exists())
@@ -355,7 +355,7 @@ mod tests {
         let tasks = spends.into_iter().map(|spend| {
             let store = storage.clone();
             tokio::task::spawn(async move {
-                store.try_add(&spend).await.expect("Failed to write spend.");
+                let _ = store.try_add(&spend).await.expect("Failed to write spend.");
                 tokio::time::sleep(std::time::Duration::from_millis(10)).await;
                 let read_spend = store
                     .get(&dbc_address(spend.dbc_id()))
