@@ -39,9 +39,7 @@ pub(crate) use self::{
     online::create_transfer as create_online_transfer,
 };
 
-use super::fees::{FeeCiphers, RequiredFee};
-
-use crate::node::NodeId;
+use crate::protocol::messages::{FeeCiphers, NodeId, RequiredFee};
 
 use sn_dbc::{
     Dbc, DbcId, DbcIdSource, DbcTransaction, DerivedKey, PublicAddress, RevealedAmount,

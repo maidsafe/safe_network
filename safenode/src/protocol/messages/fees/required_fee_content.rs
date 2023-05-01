@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::Result;
+use crate::protocol::error::FeeError;
 
 use sn_dbc::{Ciphertext, DbcId, DerivedKey, Hash, PublicAddress, RevealedAmount, Token};
 
@@ -56,7 +56,7 @@ impl RequiredFeeContent {
     }
 
     /// Decrypts the amount using the `DerivedKey` of the `Dbc` to spend.
-    pub fn decrypt_amount(&self, derived_key: &DerivedKey) -> Result<Token> {
+    pub fn decrypt_amount(&self, derived_key: &DerivedKey) -> Result<Token, FeeError> {
         let amount = RevealedAmount::try_from((derived_key, &self.amount_cipher))?;
         Ok(Token::from_nano(amount.value()))
     }

@@ -9,6 +9,8 @@
 //! Data messages and their possible responses.
 mod cmd;
 mod event;
+mod fees;
+mod node_id;
 mod query;
 mod register;
 mod response;
@@ -17,13 +19,15 @@ mod spend;
 pub use self::{
     cmd::Cmd,
     event::Event,
+    fees::{RequiredFee, RequiredFeeContent},
+    node_id::NodeId,
     query::Query,
     register::{
         CreateRegister, EditRegister, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
         SignedRegisterCreate, SignedRegisterEdit,
     },
     response::{CmdResponse, QueryResponse},
-    spend::SpendQuery,
+    spend::{FeeCiphers, SpendPriority, SpendQuery},
 };
 
 use super::storage::{dbc_address, dbc_name, Chunk, DataAddress, DbcAddress};

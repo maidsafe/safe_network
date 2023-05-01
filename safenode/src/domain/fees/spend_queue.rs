@@ -23,7 +23,7 @@
 //! Knock on effects are increased incentives for nodes to join
 //! the network, as high demand increases the rewards paid to Nodes.
 
-use super::SpendPriority;
+use crate::protocol::messages::SpendPriority;
 
 use priority_queue::PriorityQueue;
 use std::{hash::Hash, time::Duration};
