@@ -25,12 +25,12 @@ pub enum Query {
     ///
     /// This should eventually lead to a [`GetChunk`] response.
     ///
-    /// [`Chunk`]:  crate::domain::storage::Chunk
+    /// [`Chunk`]:  crate::protocol::storage::Chunk
     /// [`GetChunk`]: super::QueryResponse::GetChunk
     GetChunk(ChunkAddress),
     /// [`Register`] read operation.
     ///
-    /// [`Register`]: crate::domain::storage::register::Register
+    /// [`Register`]: crate::protocol::storage::Register
     Register(RegisterQuery),
     /// [`Spend`] read operation.
     ///
