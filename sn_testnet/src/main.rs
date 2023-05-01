@@ -218,7 +218,7 @@ async fn run_network(
     node_bin_path: PathBuf,
     node_launch_interval: u64,
     node_count: u32,
-    node_args: Vec<String>,
+    mut node_args: Vec<String>,
     flamegraph_mode: bool,
 ) -> Result<()> {
     let (mut testnet, network_contacts_path) = Testnet::configure()
@@ -227,7 +227,11 @@ async fn run_network(
         .clear_nodes_dir()
         .flamegraph_mode(flamegraph_mode)
         .build()?;
-    testnet.launch_genesis(None, node_args.clone())?;
+
+    let gen_multi_addr = testnet.launch_genesis(None, node_args.clone())?;
+
+    node_args.push("--peer".to_string());
+    node_args.push(gen_multi_addr);
     testnet.launch_nodes(node_count as usize, &network_contacts_path, node_args)?;
 
     // Perform a verification on the nodes launched (if requested) as a last step
