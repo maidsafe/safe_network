@@ -21,7 +21,7 @@ use crate::protocol::{
     },
     storage::{
         registers::{Action, EntryHash, User},
-        RegisterAddress,
+        DataAuthority, RegisterAddress,
     },
 };
 
@@ -321,7 +321,7 @@ impl RegisterStorage {
                 // the target Register is not in our store or we don't have the 'Register create',
                 // let's verify the create cmd we received is valid and try to apply stored cmds we may have.
                 let SignedRegisterCreate { op, auth } = cmd;
-                auth.verify_authority(serialize(op)?)?;
+                verify_authority(auth, serialize(op)?)?;
 
                 trace!("Creating new register: {:?}", cmd.dst());
                 // let's do a final check, let's try to apply all cmds to it,
@@ -344,10 +344,10 @@ impl RegisterStorage {
 
     // Try to apply the provided cmd to the register state, performing all op validations
     fn apply(&self, cmd: &RegisterCmd, register: &mut RegisterReplica) -> Result<()> {
-        let addr = cmd.dst();
-        if &addr != register.address() {
+        let dst_addr = cmd.dst();
+        if &dst_addr != register.address() {
             return Err(Error::RegisterAddrMismatch {
-                cmd_dst_addr: addr,
+                dst_addr,
                 reg_addr: *register.address(),
             });
         }
@@ -355,20 +355,20 @@ impl RegisterStorage {
         match cmd {
             RegisterCmd::Create { .. } => Ok(()),
             RegisterCmd::Edit(SignedRegisterEdit { op, auth }) => {
-                auth.verify_authority(serialize(op)?)?;
+                verify_authority(auth, serialize(op)?)?;
 
-                info!("Editing Register: {addr:?}");
+                info!("Editing Register: {dst_addr:?}");
                 let public_key = auth.public_key;
                 register.check_permissions(Action::Write, Some(User::Key(public_key)))?;
                 let result = register.apply_op(op.edit.clone());
 
                 match result {
                     Ok(()) => {
-                        trace!("Editing Register success: {addr:?}");
+                        trace!("Editing Register success: {dst_addr:?}");
                         Ok(())
                     }
                     Err(err) => {
-                        trace!("Editing Register failed {addr:?}: {err:?}");
+                        trace!("Editing Register failed {dst_addr:?}: {err:?}");
                         Err(err)
                     }
                 }
@@ -487,6 +487,15 @@ impl RegisterStorage {
         trace!("Listing all register addrs done.");
 
         addrs.into_values().collect()
+    }
+}
+
+/// Verify the authority over the provided `payload`.
+fn verify_authority(auth: &DataAuthority, payload: impl AsRef<[u8]>) -> Result<()> {
+    if auth.public_key.verify(&auth.signature, payload) {
+        Ok(())
+    } else {
+        Err(Error::InvalidSignature(auth.public_key))
     }
 }
 

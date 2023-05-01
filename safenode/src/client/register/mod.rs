@@ -10,7 +10,10 @@ mod offline_replica;
 
 pub use offline_replica::RegisterOffline;
 
-use super::{error::Result, Client};
+use super::{
+    error::{Error, Result},
+    Client,
+};
 
 use crate::protocol::storage::registers::{Entry, EntryHash, Policy};
 

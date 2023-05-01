@@ -204,12 +204,10 @@ impl Node {
                     .get_provided_data(RecordKey::new(address.name()))
                     .await
                 {
-                    Ok(response) => response,
-                    Err(err) => {
+                    Ok(Ok(response)) => response,
+                    Ok(Err(err)) | Err(err) => {
                         error!("Error getting chunk from network: {err}");
-                        QueryResponse::GetChunk(Err(ProtocolError::InternalProcessing(
-                            err.to_string(),
-                        )))
+                        QueryResponse::GetChunk(Err(StorageError::ChunkNotFound(address).into()))
                     }
                 }
             }
@@ -257,7 +255,9 @@ impl Node {
                     }
                     Err(err) => {
                         error!("Failed to register node as chunk provider: {err:?}");
-                        CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(*addr.name())))
+                        CmdResponse::StoreChunk(Err(
+                            StorageError::ChunkNotStored(*addr.name()).into()
+                        ))
                     }
                 }
             }
@@ -455,7 +455,7 @@ impl Node {
         }
 
         // If there was none of the above, then we had unexpected responses.
-        Err(super::Error::Protocol(ProtocolError::UnexpectedResponses))
+        Err(Error::UnexpectedResponses)
     }
 
     async fn send_response(&self, resp: Response, response_channel: MsgResponder) {
