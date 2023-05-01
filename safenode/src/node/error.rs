@@ -7,9 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    domain::dbc_genesis::Error as GenesisError,
-    network::Error as NetworkError,
-    protocol::error::{Error as ProtocolError, TransferError},
+    domain::dbc_genesis::Error as GenesisError, network::Error as NetworkError,
+    protocol::error::Error as ProtocolError,
 };
 
 use thiserror::Error;
@@ -26,9 +25,9 @@ pub enum Error {
     #[error("Protocol error {0}")]
     Protocol(#[from] ProtocolError),
 
-    /// Errors in node transfer handling.
-    #[error("TransferError: {0:?}")]
-    Transfers(#[from] TransferError),
+    /// Unexpected responses.
+    #[error("Unexpected responses")]
+    UnexpectedResponses,
 
     #[error("Node wallet load issue: {0}.")]
     CouldNotLoadWallet(String),

@@ -79,7 +79,7 @@ pub struct SwarmDriver {
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
-    pending_query: HashMap<QueryId, oneshot::Sender<QueryResponse>>,
+    pending_query: HashMap<QueryId, oneshot::Sender<Result<QueryResponse>>>,
 }
 
 impl SwarmDriver {
@@ -350,7 +350,7 @@ impl Network {
     }
 
     /// Get `Key` from our Storage
-    pub async fn get_provided_data(&self, key: RecordKey) -> Result<QueryResponse> {
+    pub async fn get_provided_data(&self, key: RecordKey) -> Result<Result<QueryResponse>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetData { key, sender })
             .await?;

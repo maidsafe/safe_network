@@ -15,7 +15,6 @@ use crate::{
     domain::client_transfers::SpendRequest,
     network::{close_group_majority, NetworkEvent, SwarmDriver},
     protocol::{
-        error::Error as ProtocolError,
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
         storage::{dbc_address, dbc_name, Chunk, ChunkAddress},
     },
@@ -166,24 +165,26 @@ impl Client {
         }
 
         // If there were no store chunk errors, then we had unexpected responses.
-        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
+        Err(Error::UnexpectedResponses)
     }
 
     /// Retrieve a `Chunk` from the kad network.
     pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
+        let xorname = address.name();
         match self
             .network
-            .get_provided_data(RecordKey::new(address.name()))
+            .get_provided_data(RecordKey::new(xorname))
             .await?
         {
-            QueryResponse::GetChunk(result) => Ok(result?),
-            other => {
-                warn!(
-                    "On querying chunk {:?} received unexpected response {other:?}",
-                    address.name()
-                );
-                Err(Error::Protocol(ProtocolError::UnexpectedResponses))
+            Ok(QueryResponse::GetChunk(result)) => Ok(result?),
+            Ok(other) => {
+                warn!("On querying chunk {xorname:?} received unexpected response {other:?}",);
+                Err(Error::UnexpectedResponses)
+            }
+            Err(err) => {
+                warn!("Local internal error when trying to query chunk {xorname:?}: {err:?}",);
+                Err(err.into())
             }
         }
     }

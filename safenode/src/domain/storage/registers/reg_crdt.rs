@@ -123,7 +123,10 @@ impl RegisterCrdtImpl {
 
         // Check the targetting address is correct
         if self.address != op.address {
-            return Err(Error::CrdtWrongAddress(op.address));
+            return Err(Error::RegisterAddrMismatch {
+                dst_addr: op.address,
+                reg_addr: self.address,
+            });
         }
 
         // Apply the CRDT operation to the Register

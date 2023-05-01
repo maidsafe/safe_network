@@ -13,7 +13,6 @@ use super::{
 };
 
 use crate::protocol::{
-    error::Error as ProtocolError,
     messages::{QueryResponse, Request, Response},
     storage::Chunk,
 };
@@ -147,9 +146,9 @@ impl SwarmDriver {
                         );
                         if let Some(sender) = self.pending_query.remove(id) {
                             sender
-                                .send(QueryResponse::GetChunk(Ok(Chunk::new(
+                                .send(Ok(QueryResponse::GetChunk(Ok(Chunk::new(
                                     peer_record.record.value.clone().into(),
-                                ))))
+                                )))))
                                 .map_err(|_| Error::InternalMsgChannelDropped)?;
                         }
                     } else {
@@ -158,9 +157,7 @@ impl SwarmDriver {
                             // To avoid the caller wait forever on a non-existring entry
                             if let Some(sender) = self.pending_query.remove(id) {
                                 sender
-                                    .send(QueryResponse::GetChunk(Err(
-                                        ProtocolError::RecordNotFound,
-                                    )))
+                                    .send(Err(Error::RecordNotFound))
                                     .map_err(|_| Error::InternalMsgChannelDropped)?;
                             }
                         }
