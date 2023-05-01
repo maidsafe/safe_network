@@ -6,8 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::error::StorageError;
-
 use super::Action;
 
 use serde::{Deserialize, Serialize};
@@ -57,50 +55,4 @@ pub struct Policy {
     pub owner: User,
     /// Map of users to their public permission set.
     pub permissions: BTreeMap<User, Permissions>,
-}
-
-// FIXME: this impl shouldn't be part of the protocol but part of the implementation of Register storage.
-impl Policy {
-    /// Returns `Ok(())` if `action` is allowed for the provided user and `Err(AccessDenied)` if
-    /// this action is not permitted.
-    pub fn is_action_allowed(&self, requester: User, action: Action) -> Result<(), StorageError> {
-        // First checks if the requester is the owner.
-        if action == Action::Read || requester == self.owner {
-            Ok(())
-        } else {
-            match self
-                .is_action_allowed_by_user(&requester, action)
-                .or_else(|| self.is_action_allowed_by_user(&User::Anyone, action))
-            {
-                Some(true) => Ok(()),
-                Some(false) => Err(StorageError::AccessDenied(requester)),
-                None => Err(StorageError::AccessDenied(requester)),
-            }
-        }
-    }
-
-    /// Returns `Some(true)` if `action` is allowed for the provided user and `Some(false)` if it's
-    /// not permitted. `None` means that default permissions should be applied.
-    fn is_action_allowed_by_user(&self, user: &User, action: Action) -> Option<bool> {
-        self.permissions
-            .get(user)
-            .and_then(|perms| perms.is_allowed(action))
-    }
-
-    /// Gets the permissions for a user if applicable.
-    pub fn permissions(&self, user: User) -> Option<Permissions> {
-        if user == self.owner {
-            // i.e. it won't be possible to circumvent the semantics of `owner`
-            // by setting some other permissions for the user.
-            // the permissions can still be kept in the state though, so that switching owners gives an immediate permission update as well
-            Some(Permissions::new(true))
-        } else {
-            self.permissions.get(&user).copied()
-        }
-    }
-
-    /// Returns the owner.
-    pub fn owner(&self) -> &User {
-        &self.owner
-    }
 }

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::domain::storage::{ChunkAddress, RegisterAddress};
+use crate::protocol::storage::{ChunkAddress, RegisterAddress};
 
 use sn_dbc::DbcId;
 use tokio::sync::broadcast;

@@ -71,7 +71,7 @@ async fn main() -> Result<()> {
             client.create_register(xorname, tag).await?.offline()
         }
     };
-    println!("Register owned by: {:?}", reg_replica.policy().owner());
+    println!("Register owned by: {:?}", reg_replica.policy().owner);
     println!(
         "Register permissios: {:?}",
         reg_replica.policy().permissions

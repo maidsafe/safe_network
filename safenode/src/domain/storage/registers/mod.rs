@@ -6,25 +6,22 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-/// Register type.
-pub mod register;
+mod reg_crdt;
+mod reg_replica;
 
-use self::register::RegisterReplica;
+pub(crate) use reg_replica::RegisterReplica;
 
 use super::{prefix_tree_path, Result};
 
-use crate::{
-    domain::storage::list_files_in,
-    protocol::{
-        error::{Error as ProtocolError, StorageError as Error},
-        messages::{
-            EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
-            SignedRegisterCreate, SignedRegisterEdit,
-        },
-        storage::{
-            registers::{Action, EntryHash, User},
-            RegisterAddress,
-        },
+use crate::protocol::{
+    error::{Error as ProtocolError, StorageError as Error},
+    messages::{
+        EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
+        SignedRegisterCreate, SignedRegisterEdit,
+    },
+    storage::{
+        registers::{Action, EntryHash, User},
+        RegisterAddress,
     },
 };
 
@@ -35,6 +32,7 @@ use tokio::{
     io::AsyncWriteExt,
 };
 use tracing::trace;
+use walkdir::WalkDir;
 
 pub(super) type RegisterLog = Vec<RegisterCmd>;
 
@@ -329,7 +327,7 @@ impl RegisterStorage {
                 // let's do a final check, let's try to apply all cmds to it,
                 // those which are new cmds were not validated yet, so let's do it now.
                 let mut register =
-                    RegisterReplica::new(*op.policy.owner(), op.name, op.tag, op.policy.clone());
+                    RegisterReplica::new(op.policy.owner, op.name, op.tag, op.policy.clone());
 
                 for cmd in &stored_reg.op_log {
                     self.apply(cmd, &mut register)?;
@@ -428,12 +426,8 @@ impl RegisterStorage {
                         // is any difference with this other one,...if so perhaps log a warning?
                         let SignedRegisterCreate { op, .. } = cmd;
                         if stored_reg.state.is_none() {
-                            let register = RegisterReplica::new(
-                                *op.policy.owner(),
-                                op.name,
-                                op.tag,
-                                op.policy,
-                            );
+                            let register =
+                                RegisterReplica::new(op.policy.owner, op.name, op.tag, op.policy);
                             stored_reg.state = Some(register);
                         }
                     }
@@ -509,9 +503,28 @@ fn register_op_id(cmd: &RegisterCmd) -> Result<String> {
     Ok(id)
 }
 
+fn list_files_in(path: &Path) -> Vec<PathBuf> {
+    if !path.exists() {
+        return vec![];
+    }
+
+    WalkDir::new(path)
+        .into_iter()
+        .filter_map(|e| match e {
+            Ok(direntry) => Some(direntry),
+            Err(err) => {
+                warn!("Store: failed to process filesystem entry: {}", err);
+                None
+            }
+        })
+        .filter(|entry| entry.file_type().is_file())
+        .map(|entry| entry.path().to_path_buf())
+        .collect()
+}
+
 #[cfg(test)]
 mod test {
-    use super::{register::RegisterReplica, Error, RegisterStorage};
+    use super::{Error, RegisterReplica, RegisterStorage};
 
     use crate::protocol::{
         error::Error as ProtocolError,
@@ -536,7 +549,7 @@ mod test {
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
         let log_path = store.address_to_filepath(&addr)?;
-        let mut register = RegisterReplica::new(*policy.owner(), name, 0, policy);
+        let mut register = RegisterReplica::new(policy.owner, name, 0, policy);
 
         let stored_reg = store.try_load_stored_register(&addr).await?;
         // It should *not* contain the create cmd.
@@ -580,7 +593,7 @@ mod test {
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
         let log_path = store.address_to_filepath(&addr)?;
-        let mut register = RegisterReplica::new(*policy.owner(), name, 0, policy);
+        let mut register = RegisterReplica::new(policy.owner, name, 0, policy);
 
         // Store an edit cmd for the register.
         let cmd_edit = edit_register(&mut register, &sk)?;
@@ -619,7 +632,7 @@ mod test {
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
         let log_path = store.address_to_filepath(&addr)?;
-        let mut register = RegisterReplica::new(*policy.owner(), name, 0, policy);
+        let mut register = RegisterReplica::new(policy.owner, name, 0, policy);
         let mut stored_reg = store.try_load_stored_register(&addr).await?;
 
         store.try_to_apply_cmd_against_register_state(&cmd_create, &mut stored_reg)?;
@@ -680,7 +693,7 @@ mod test {
         let (cmd_create, _, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
         let log_path = store.address_to_filepath(&addr)?;
-        let mut register = RegisterReplica::new(*policy.owner(), name, 0, policy);
+        let mut register = RegisterReplica::new(policy.owner, name, 0, policy);
         let mut stored_reg = store.try_load_stored_register(&addr).await?;
 
         // Apply an edit cmd first.
@@ -762,7 +775,7 @@ mod test {
 
         let (cmd_create, authority, sk, name, policy) = create_register()?;
         let addr = cmd_create.dst();
-        let mut register = RegisterReplica::new(*policy.owner(), name, 0, policy);
+        let mut register = RegisterReplica::new(policy.owner, name, 0, policy);
 
         // Store the register and a few edit ops.
         store.write(&cmd_create).await?;
