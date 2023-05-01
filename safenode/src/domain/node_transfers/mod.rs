@@ -8,21 +8,19 @@
 
 //! Transfer fees, fee priority queue, validation and storage of spends.
 
-mod error;
-
-pub(crate) use self::error::Result;
+use crate::protocol::error::TransferError;
 
 use super::dbc_genesis::GENESIS_DBC;
 
 use crate::{
     domain::{
-        dbc_genesis::is_genesis_parent_tx,
-        fees::{FeeCiphers, RequiredFee, RequiredFeeContent, SpendPriority, SpendQ},
-        storage::SpendStorage,
-        wallet::LocalWallet,
+        dbc_genesis::is_genesis_parent_tx, fees::SpendQ, storage::SpendStorage, wallet::LocalWallet,
     },
-    node::NodeId,
-    protocol::{error::TransferError as Error, storage::DbcAddress},
+    protocol::{
+        error::TransferError as Error,
+        messages::{FeeCiphers, NodeId, RequiredFee, RequiredFeeContent, SpendPriority},
+        storage::DbcAddress,
+    },
 };
 
 use sn_dbc::{DbcId, DbcTransaction, SignedSpend, Token};
@@ -31,6 +29,9 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
 };
+
+// Result for all related to node handling of transfers.
+type Result<T, E = TransferError> = std::result::Result<T, E>;
 
 /// This is an arbitrary number.
 /// The supply/demand dynamics enabled by the

@@ -75,10 +75,9 @@ pub use self::{
     // network_store::NetworkWallet,
 };
 
-use super::{
-    client_transfers::{CreatedDbc, Outputs as TransferDetails},
-    fees::FeeCiphers,
-};
+use super::client_transfers::{CreatedDbc, Outputs as TransferDetails};
+
+use crate::protocol::messages::FeeCiphers;
 
 use sn_dbc::{Dbc, DbcId, DbcIdSource, DerivedKey, PublicAddress, RevealedAmount, Token};
 

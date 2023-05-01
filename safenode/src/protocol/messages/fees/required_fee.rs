@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Error, RequiredFeeContent, Result};
+use crate::protocol::{error::FeeError, messages::RequiredFeeContent};
 
 use sn_dbc::{Hash, Signature};
 
@@ -34,7 +34,7 @@ impl RequiredFee {
     }
 
     /// Verifies that reward_address_sig is correct.
-    pub fn verify(&self) -> Result<()> {
+    pub fn verify(&self) -> Result<(), FeeError> {
         let valid = self
             .content
             .reward_address
@@ -42,7 +42,7 @@ impl RequiredFee {
 
         match valid {
             true => Ok(()),
-            false => Err(Error::RequiredFeeSignatureInvalid),
+            false => Err(FeeError::RequiredFeeSignatureInvalid),
         }
     }
 
