@@ -211,7 +211,7 @@ impl SpendStorage {
         file.write_all(&bytes).await?;
         // Sync up OS data to disk to reduce the chances of
         // concurrent reading failing by reading an empty/incomplete file.
-        file.sync_data().await?;
+        file.sync_all().await?;
 
         trace!("Stored new spend {addr:?}.");
 
