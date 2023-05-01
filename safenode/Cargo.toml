@@ -18,7 +18,14 @@ name = "faucet"
 path = "src/bin/faucet.rs"
 
 [features]
-otlp = ["opentelemetry", "opentelemetry-otlp", "opentelemetry-semantic-conventions", "tracing-opentelemetry"]
+default=[]
+local_discovery=["libp2p/mdns"]
+otlp = [
+    "opentelemetry",
+    "opentelemetry-otlp",
+    "opentelemetry-semantic-conventions",
+    "tracing-opentelemetry",
+]
 
 [dependencies]
 async-trait = "0.1"
@@ -36,7 +43,7 @@ futures = "~0.3.13"
 hex = "~0.4.3"
 itertools = "~0.10.1"
 lazy_static = "~1.4.0"
-libp2p = { version="0.51", features = ["tokio", "dns", "kad", "macros", "mdns", "quic", "request-response", "identify"] }
+libp2p = { version="0.51", features = ["tokio", "dns", "kad", "macros", "request-response", "identify"] }
 libp2p-quic = { version = "0.7.0-alpha.3", features = ["tokio"] }
 opentelemetry = { version = "0.17", features = ["rt-tokio"], optional = true }
 opentelemetry-otlp = { version = "0.10", optional = true }
