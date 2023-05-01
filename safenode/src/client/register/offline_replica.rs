@@ -6,10 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{
-    super::error::{Error, Result},
-    Client, Register,
-};
+use super::{Client, Error, Register, Result};
 
 use crate::{
     domain::storage::RegisterReplica,
@@ -262,7 +259,7 @@ impl RegisterOffline {
         }
 
         // If there were no register errors, then we had unexpected responses.
-        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
+        Err(Error::UnexpectedResponses)
     }
 
     // Publish a `Register` edit command in the network.
@@ -292,7 +289,7 @@ impl RegisterOffline {
         }
 
         // If there were no register errors, then we had unexpected responses.
-        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
+        Err(Error::UnexpectedResponses)
     }
 
     // Retrieve a `Register` from the closest peers.
@@ -323,6 +320,6 @@ impl RegisterOffline {
         }
 
         // If there was none of the above, then we had unexpected responses.
-        Err(Error::Protocol(ProtocolError::UnexpectedResponses))
+        Err(Error::UnexpectedResponses)
     }
 }

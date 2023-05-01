@@ -134,7 +134,9 @@ impl SpendStorage {
         // the same hash in the verify fn.
         // It does however verify that the derived key corresponding to
         // the dbc id signed this spend.
-        signed_spend.verify(signed_spend.dst_tx_hash())?;
+        signed_spend
+            .verify(signed_spend.dst_tx_hash())
+            .map_err(|err| Error::InvalidSpendSignature(err.to_string()))?;
         // TODO: We want to verify the transaction somehow as well..
         // signed_spend.spend.tx.verify(blinded_amounts)
 

@@ -15,8 +15,6 @@ pub use self::{
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
 };
 
-use self::error::Error;
-
 use crate::{
     domain::{node_transfers::Transfers, storage::RegisterStorage},
     network::Network,
