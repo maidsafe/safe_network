@@ -115,7 +115,7 @@ fn start_network() {
 // Upload files.
 fn upload_files() {
     let node_bin_path = Path::new("../target/release/safe");
-    let args = vec!["files", "upload", "--", "./resources"];
+    let args = vec!["files", "upload", "--", "../resources"];
     let _ = Command::new(node_bin_path)
         .args(args)
         .stdout(Stdio::inherit())
