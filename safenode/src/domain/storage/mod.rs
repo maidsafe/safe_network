@@ -6,17 +6,24 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod error;
 mod registers;
 mod spends;
 
-pub use self::{error::Result, registers::register};
+pub(crate) use self::{
+    registers::{RegisterReplica, RegisterStorage},
+    spends::SpendStorage,
+};
 
-pub(crate) use self::{registers::RegisterStorage, spends::SpendStorage};
+use crate::protocol::error::StorageError;
 
-use std::path::{Path, PathBuf};
-use walkdir::WalkDir;
+use std::{
+    path::{Path, PathBuf},
+    result,
+};
 use xor_name::XorName;
+
+// A specialised `Result` type used within this storage implementation.
+type Result<T> = result::Result<T, StorageError>;
 
 const BIT_TREE_DEPTH: usize = 20;
 
@@ -29,23 +36,4 @@ fn prefix_tree_path(root: &Path, xorname: XorName) -> PathBuf {
     let bin = format!("{xorname:b}");
     let prefix_dir_path: PathBuf = bin.chars().take(BIT_TREE_DEPTH).map(String::from).collect();
     root.join(prefix_dir_path)
-}
-
-fn list_files_in(path: &Path) -> Vec<PathBuf> {
-    if !path.exists() {
-        return vec![];
-    }
-
-    WalkDir::new(path)
-        .into_iter()
-        .filter_map(|e| match e {
-            Ok(direntry) => Some(direntry),
-            Err(err) => {
-                warn!("Store: failed to process filesystem entry: {}", err);
-                None
-            }
-        })
-        .filter(|entry| entry.file_type().is_file())
-        .map(|entry| entry.path().to_path_buf())
-        .collect()
 }
