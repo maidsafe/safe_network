@@ -310,7 +310,7 @@ mod tests {
     use sn_dbc::MainKey;
 
     #[tokio::test]
-    async fn write_and_read_300_spends() {
+    async fn write_and_read_100_spends() {
         // Test that a range of different spends can be stored and read as expected.
         let number_of_spends = 100;
         let storage = init_file_store();
@@ -330,6 +330,7 @@ mod tests {
                 .try_add(&spend)
                 .await
                 .expect("Failed to write spend.");
+
             let read_spend = storage
                 .get(&dbc_address(spend.dbc_id()))
                 .await
@@ -340,9 +341,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn concurrently_write_and_read_300_spends() {
+    async fn concurrently_write_and_read_30_spends() {
         // Test that a range of different spends can be stored and read as expected.
-        let number_of_spends = 300;
+        // Testing 30 concurrent writes and reads is with a _large_ margin, as the
+        // spend queue logic is rate limited to pop one for storage per second.
+
+        let number_of_spends = 30;
         let storage = init_file_store();
 
         let key = MainKey::random();
@@ -361,18 +365,33 @@ mod tests {
             let store = storage.clone();
             tokio::task::spawn(async move {
                 let _ = store.try_add(&spend).await.expect("Failed to write spend.");
-                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
                 let read_spend = store
                     .get(&dbc_address(spend.dbc_id()))
                     .await
                     .expect("Failed to read spend.");
 
                 assert_eq!(spend.to_bytes(), read_spend.to_bytes());
+                spend
             })
         });
-        let res = futures::future::join_all(tasks).await;
 
-        assert!(res.into_iter().all(|res| res.is_ok()))
+        // Check that every spend was written and read correctly within
+        // the concurrent access. But also checks that we can still get
+        // each of those spends after all concurrent writes have finished.
+        for result in futures::future::join_all(tasks).await {
+            match result {
+                Ok(spend) => {
+                    let read_spend = storage
+                        .get(&dbc_address(spend.dbc_id()))
+                        .await
+                        .expect("Failed to read spend.");
+
+                    assert_eq!(spend.to_bytes(), read_spend.to_bytes());
+                }
+                Err(e) => panic!("Failed to spawn task: {}", e),
+            }
+        }
     }
 
     #[tokio::test]
