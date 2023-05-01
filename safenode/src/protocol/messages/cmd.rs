@@ -6,13 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::RegisterCmd;
+use crate::protocol::storage::{dbc_address, Chunk, ChunkAddress, DataAddress};
 
-use crate::{
-    domain::fees::FeeCiphers,
-    node::NodeId,
-    protocol::storage::{dbc_address, Chunk, ChunkAddress, DataAddress},
-};
+use super::{FeeCiphers, NodeId, RegisterCmd};
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 

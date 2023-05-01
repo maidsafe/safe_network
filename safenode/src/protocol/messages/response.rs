@@ -6,20 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    domain::fees::RequiredFee,
-    node::NodeId,
-    protocol::{
-        error::Result,
-        storage::{
-            registers::{Entry, EntryHash, Permissions, Policy, Register, User},
-            Chunk,
-        },
+use crate::protocol::{
+    error::Result,
+    storage::{
+        registers::{Entry, EntryHash, Permissions, Policy, Register, User},
+        Chunk,
     },
 };
 
+use super::{NodeId, RequiredFee};
+
 #[allow(unused_imports)] // needed by rustdocs links
-use crate::protocol::messages::RegisterQuery;
+use super::RegisterQuery;
 
 use sn_dbc::SignedSpend;
 

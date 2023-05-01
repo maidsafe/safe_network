@@ -10,10 +10,11 @@ use super::{CreatedDbc, Error, Inputs, Outputs, Result, SpendRequest};
 
 use crate::{
     client::Client,
-    domain::fees::{FeeCiphers, RequiredFee, SpendPriority},
     network::close_group_majority,
-    node::NodeId,
-    protocol::messages::{Query, QueryResponse, Request, Response, SpendQuery},
+    protocol::messages::{
+        FeeCiphers, NodeId, Query, QueryResponse, Request, RequiredFee, Response, SpendPriority,
+        SpendQuery,
+    },
 };
 
 use sn_dbc::{

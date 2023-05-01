@@ -9,12 +9,10 @@
 mod api;
 mod error;
 mod event;
-mod node_id;
 
 pub use self::{
     api::RunningNode,
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
-    node_id::NodeId,
 };
 
 use self::error::Error;

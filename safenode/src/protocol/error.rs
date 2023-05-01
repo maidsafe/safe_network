@@ -50,8 +50,7 @@ pub enum Error {
 //******************************************
 //**** domain/node_transfers/TransferErrors
 
-// FIMXE: this should be defined within the protocol rather than from another crate.
-use crate::node::NodeId;
+use crate::protocol::messages::NodeId;
 
 // FIMXE: these should be defined within the protocol rather than from another crate.
 use sn_dbc::{DbcId, Error as DbcError, Hash, SignedSpend, Token};

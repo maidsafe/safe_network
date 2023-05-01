@@ -153,7 +153,7 @@ impl SigningWallet for LocalWallet {
 
     fn decrypt(
         &self,
-        fee_ciphers: &crate::domain::fees::FeeCiphers,
+        fee_ciphers: &crate::protocol::messages::FeeCiphers,
     ) -> Result<(sn_dbc::DbcId, sn_dbc::RevealedAmount)> {
         fee_ciphers
             .decrypt(&self.key)

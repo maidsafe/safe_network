@@ -9,7 +9,7 @@
 use super::{
     error::{Error, Result},
     event::NodeEventsChannel,
-    Network, Node, NodeEvent, NodeId,
+    Network, Node, NodeEvent,
 };
 
 use crate::{
@@ -21,7 +21,7 @@ use crate::{
     protocol::{
         error::{Error as ProtocolError, StorageError, TransferError},
         messages::{
-            Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
+            Cmd, CmdResponse, Event, NodeId, Query, QueryResponse, RegisterCmd, Request, Response,
             SpendQuery,
         },
         storage::{dbc_address, registers::User, DbcAddress},

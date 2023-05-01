@@ -38,27 +38,18 @@
 ///         A directly accessible reward design has been discussed, where the reward payments have a unique tag that
 ///         identifies them and lets them be merged into a single DBC without paying fees. This is not yet implemented,
 ///         and it is not yet decided if it is even needed.
-mod error;
-mod fee_ciphers;
-mod priority;
-mod required_fee;
-mod required_fee_content;
 mod spend_queue;
 
-pub use self::{
-    error::Result,
-    fee_ciphers::FeeCiphers,
-    priority::SpendPriority,
-    required_fee::RequiredFee,
-    required_fee_content::RequiredFeeContent,
-    spend_queue::{SpendQ, SpendQSnapshot, SpendQStats},
-};
+pub use self::spend_queue::{SpendQ, SpendQSnapshot, SpendQStats};
 
-use crate::protocol::error::FeeError as Error;
+// Result for all related to managing fees.
+#[cfg(test)]
+type Result<T, E = crate::protocol::error::FeeError> = std::result::Result<T, E>;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::protocol::messages::{RequiredFee, RequiredFeeContent};
     use assert_matches::assert_matches;
     use sn_dbc::{MainKey, Token};
 
