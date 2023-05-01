@@ -276,6 +276,7 @@ jobs:
       - name: Install Rust
         # # Only run on non-PR events
         # if: github.event_name != 'pull_request'
+        if: github.event_name == 'pull_request'
         id: toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -286,6 +287,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
         # # Only run on non-PR events
         # if: github.event_name != 'pull_request'
+        if: github.event_name == 'pull_request'
         continue-on-error: true
         with:
           cache-on-failure: true
@@ -306,21 +308,21 @@ jobs:
       - name: Build sn bins
         # # Only run on non-PR events
         # if: github.event_name != 'pull_request'
-        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'
+        if: github.event_name == 'pull_request'
         run: cargo build --release --bins
         timeout-minutes: 30
 
       - name: Build rpc client
         # # Only run on non-PR events
         # if: github.event_name != 'pull_request'
-        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'
+        if: github.event_name == 'pull_request'
         run: cargo build --release --example safenode_rpc_client
         timeout-minutes: 30
 
       - name: Start a local network
         # # Only run on non-PR events
         # if: github.event_name != 'pull_request'
-        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'
+        if: github.event_name == 'pull_request'
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         id: section-startup
         env:
@@ -329,7 +331,7 @@ jobs:
 
       - name: Start a client to upload chunks
         # if: github.event_name != 'pull_request'
-        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'
+        if: github.event_name == 'pull_request'
         run: cargo run --bin safe --release -- files upload -- "./resources"
         id: client-file-upload
         env:
@@ -338,14 +340,14 @@ jobs:
 
       - name: Start network churning
         # if: github.event_name != 'pull_request'
-        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'
+        if: github.event_name == 'pull_request'
         shell: bash
         run: ./resources/scripts/network_kill_churn.sh
         timeout-minutes: 20
 
       - name: Start a client to confirm chunk still retained
         # if: github.event_name != 'pull_request'
-        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'
+        if: github.event_name == 'pull_request'
         run: cargo run --bin safe --release -- files download
         id: client-file-download
         env:
@@ -364,7 +366,7 @@ jobs:
       
       - name: Verify restart of nodes using rg
         # if: github.event_name != 'pull_request'
-        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'
+        if: github.event_name == 'pull_request'
         shell: bash
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only
