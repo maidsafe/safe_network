@@ -12,7 +12,6 @@ extern crate tracing;
 mod cli;
 
 use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt, SubCmd};
-
 use clap::Parser;
 use eyre::{eyre, Result};
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
@@ -29,15 +28,13 @@ async fn main() -> Result<()> {
     let _log_appender_guard = init_node_logging(&Some(tmp_dir.join("safe-client.log")))?;
 
     info!("Full client logs will be written to {:?}", tmp_dir);
-
     println!("Instantiating a SAFE client...");
 
     let secret_key = bls::SecretKey::random();
     let peers = parse_peer_multiaddresses(&opt.peers)?;
+    let root_dir = get_client_dir().await?;
 
     let client = Client::new(secret_key, Some(peers)).await?;
-
-    let root_dir = get_client_dir().await?;
 
     match opt.cmd {
         SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client, &root_dir).await?,
