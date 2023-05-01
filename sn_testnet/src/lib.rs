@@ -190,6 +190,8 @@ impl Testnet {
 
     /// Launches a genesis node at the specified address.
     ///
+    /// Returns the multiaddress of the genesis node.
+    ///
     /// # Arguments
     ///
     /// * `address` - Optional address for where the genesis node will listen for connections. If
@@ -206,7 +208,7 @@ impl Testnet {
         &self,
         _address: Option<SocketAddr>,
         node_args: Vec<String>,
-    ) -> Result<()> {
+    ) -> Result<String> {
         if self.node_count != 0 {
             return Err(eyre!(
                 "A genesis node cannot be launched for an existing network"
@@ -216,19 +218,55 @@ impl Testnet {
         // info!("Launching genesis node using address {address}...");
 
         let rpc_address = "127.0.0.1:12001".parse()?;
-        let launch_args =
+        let mut launch_args =
             self.get_launch_args("safenode-1".to_string(), Some(rpc_address), None, node_args)?;
+
+        let genesis_port: u16 = 11101;
+        // Let's start gen on a different port
+        launch_args.push("--port".to_string());
+        launch_args.push(genesis_port.to_string());
+
         let node_data_dir_path = self.nodes_dir_path.join("safenode-1");
         std::fs::create_dir_all(node_data_dir_path)?;
 
         let launch_bin = self.get_launch_bin();
+
         self.launcher.launch(&launch_bin, launch_args)?;
         info!(
             "Delaying for {} seconds before launching other nodes",
             self.node_launch_interval / 1000
         );
         std::thread::sleep(std::time::Duration::from_millis(self.node_launch_interval));
-        Ok(())
+
+        // Now lets grab the genesis peer id.
+        let gen_id_query_args = vec![
+            "run",
+            "--release",
+            "--example",
+            "safenode_rpc_client",
+            "--",
+            "127.0.0.1:12001",
+            "info",
+        ];
+
+        let result = Command::new("cargo").args(gen_id_query_args).output()?;
+
+        use regex::Regex;
+        let re = Regex::new(r"Peer Id: ([^\n]+)").unwrap();
+        let stdout = String::from_utf8(result.stdout).unwrap();
+        if let Some(captures) = re.captures(&stdout) {
+            let peer_id = captures.get(1).unwrap().as_str();
+            info!("Peer Id: {}", peer_id);
+
+            let genesis_multi_addr = format!(
+                "/ip4/127.0.0.1/udp/{:?}/quic-v1/p2p/{}",
+                genesis_port, peer_id
+            );
+
+            Ok(genesis_multi_addr)
+        } else {
+            Err(eyre!("Genesis node PeerId could not be determined"))
+        }
     }
 
     /// Launches a number of new nodes, either for a new network or an existing network.
@@ -675,7 +713,7 @@ mod test {
         );
 
         match result {
-            Ok(()) => Err(eyre!("This test should return an error")),
+            Ok(_) => Err(eyre!("This test should return an error")),
             Err(e) => {
                 assert_eq!(
                     e.to_string(),
