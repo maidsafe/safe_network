@@ -12,7 +12,7 @@ use super::{
 };
 
 use crate::{
-    domain::storage::register::RegisterReplica,
+    domain::storage::RegisterReplica,
     protocol::{
         error::Error as ProtocolError,
         messages::{

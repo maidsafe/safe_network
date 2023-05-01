@@ -102,7 +102,7 @@ pub struct CreateRegister {
 impl CreateRegister {
     /// Returns the owner of the register.
     pub fn owner(&self) -> User {
-        *self.policy.owner()
+        self.policy.owner
     }
 
     /// Returns the address of the register.

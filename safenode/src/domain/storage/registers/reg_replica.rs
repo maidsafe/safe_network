@@ -6,8 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod reg_crdt;
-
 use crate::protocol::{
     error::StorageError as Error,
     storage::{
@@ -16,16 +14,12 @@ use crate::protocol::{
     },
 };
 
-use super::Result;
-
-use self::reg_crdt::RegisterCrdtImpl;
+use super::{reg_crdt::RegisterCrdtImpl, Result};
 
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    hash::Hash,
-};
+use std::{collections::BTreeSet, hash::Hash};
+
 use xor_name::XorName;
 
 /// Arbitrary maximum size of a register entry.
@@ -36,7 +30,7 @@ const MAX_REG_NUM_ENTRIES: u16 = 1024;
 
 /// Object storing the data of a Register, implementing the functions for CRDT operations
 #[derive(Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize, Debug)]
-pub struct RegisterReplica {
+pub(crate) struct RegisterReplica {
     authority: User,
     crdt: RegisterCrdtImpl,
     policy: Policy,
@@ -66,7 +60,7 @@ impl Into<Register> for RegisterReplica {
 
 impl RegisterReplica {
     ///
-    pub fn new(authority: User, name: XorName, tag: u64, policy: Policy) -> Self {
+    pub(crate) fn new(authority: User, name: XorName, tag: u64, policy: Policy) -> Self {
         let address = RegisterAddress { name, tag };
         Self {
             authority,
@@ -75,73 +69,85 @@ impl RegisterReplica {
         }
     }
 
-    ///
-    pub fn new_owned(authority: User, name: XorName, tag: u64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn new_owned(authority: User, name: XorName, tag: u64) -> Self {
         Self::new(
             authority,
             name,
             tag,
             Policy {
                 owner: authority,
-                permissions: BTreeMap::new(),
+                permissions: Default::default(),
             },
         )
     }
 
     /// Return the address.
-    pub fn address(&self) -> &RegisterAddress {
+    pub(crate) fn address(&self) -> &RegisterAddress {
         self.crdt.address()
     }
 
     /// Return the name.
-    pub fn name(&self) -> &XorName {
+    pub(crate) fn name(&self) -> &XorName {
         self.address().name()
     }
 
     /// Return the tag.
-    pub fn tag(&self) -> u64 {
+    pub(crate) fn tag(&self) -> u64 {
         self.address().tag()
     }
 
     /// Return the owner of the data.
-    pub fn owner(&self) -> User {
-        *self.policy.owner()
+    pub(crate) fn owner(&self) -> User {
+        self.policy.owner
     }
 
     /// Return the PK which the messages are expected to be signed with by this replica.
-    pub fn replica_authority(&self) -> User {
+    #[cfg(test)]
+    pub(crate) fn replica_authority(&self) -> User {
         self.authority
     }
 
     /// Return the number of items held in the register
-    pub fn size(&self) -> u64 {
+    pub(crate) fn size(&self) -> u64 {
         self.crdt.size()
     }
 
     /// Return a value corresponding to the provided 'hash', if present.
-    pub fn get(&self, hash: EntryHash) -> Result<&Entry> {
+    pub(crate) fn get(&self, hash: EntryHash) -> Result<&Entry> {
         self.crdt.get(hash).ok_or(Error::NoSuchEntry(hash))
     }
 
     /// Read the last entry, or entries when there are branches, if the register is not empty.
-    pub fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
+    pub(crate) fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
         self.crdt.read()
     }
 
     /// Return user permissions, if applicable.
-    pub fn permissions(&self, user: User) -> Result<Permissions> {
-        self.policy.permissions(user).ok_or(Error::NoSuchUser(user))
+    pub(crate) fn permissions(&self, user: User) -> Result<Permissions> {
+        if user == self.policy.owner {
+            // i.e. it won't be possible to circumvent the semantics of `owner`
+            // by setting some other permissions for the user.
+            // the permissions can still be kept in the state though, so that switching owners gives an immediate permission update as well
+            Ok(Permissions::new(true))
+        } else {
+            self.policy
+                .permissions
+                .get(&user)
+                .copied()
+                .ok_or(Error::NoSuchUser(user))
+        }
     }
 
     /// Return the policy.
-    pub fn policy(&self) -> &Policy {
+    pub(crate) fn policy(&self) -> &Policy {
         &self.policy
     }
 
     /// Write an entry to the Register, returning the generated unsigned
     /// CRDT operation so the caller can sign and broadcast it to other replicas,
     /// along with the hash of the entry just written.
-    pub fn write(
+    pub(crate) fn write(
         &mut self,
         entry: Entry,
         children: BTreeSet<EntryHash>,
@@ -151,13 +157,13 @@ impl RegisterReplica {
     }
 
     /// Apply a signed data CRDT operation.
-    pub fn apply_op(&mut self, op: RegisterOp<Entry>) -> Result<()> {
+    pub(crate) fn apply_op(&mut self, op: RegisterOp<Entry>) -> Result<()> {
         self.check_entry_and_reg_sizes(&op.crdt_op.value)?;
         self.crdt.apply_op(op)
     }
 
     /// Merge another Register into this one.
-    pub fn merge(&mut self, other: Self) {
+    pub(crate) fn merge(&mut self, other: Self) {
         self.crdt.merge(other.crdt);
     }
 
@@ -167,9 +173,21 @@ impl RegisterReplica {
     /// Returns:
     /// `Ok(())` if the permissions are valid,
     /// `Err::AccessDenied` if the action is not allowed.
-    pub fn check_permissions(&self, action: Action, requester: Option<User>) -> Result<()> {
+    pub(crate) fn check_permissions(&self, action: Action, requester: Option<User>) -> Result<()> {
         let requester = requester.unwrap_or(self.authority);
-        self.policy.is_action_allowed(requester, action)
+        // First checks if the requester is the owner.
+        if action == Action::Read || requester == self.policy.owner {
+            Ok(())
+        } else {
+            match self
+                .is_action_allowed_by_user(&requester, action)
+                .or_else(|| self.is_action_allowed_by_user(&User::Anyone, action))
+            {
+                Some(true) => Ok(()),
+                Some(false) => Err(Error::AccessDenied(requester)),
+                None => Err(Error::AccessDenied(requester)),
+            }
+        }
     }
 
     // Private helper to check the given Entry's size is within define limit,
@@ -189,6 +207,15 @@ impl RegisterReplica {
         }
 
         Ok(())
+    }
+
+    // Returns `Some(true)` if `action` is allowed for the provided user and `Some(false)` if it's
+    // not permitted. `None` means that default permissions should be applied.
+    fn is_action_allowed_by_user(&self, user: &User, action: Action) -> Option<bool> {
+        self.policy
+            .permissions
+            .get(user)
+            .and_then(|perms| perms.is_allowed(action))
     }
 }
 
@@ -234,24 +261,8 @@ mod tests {
         let name: XorName = xor_name::rand::random();
         let tag = 43_000u64;
 
-        let mut replica1 = RegisterReplica::new(
-            authority,
-            name,
-            tag,
-            Policy {
-                owner: authority,
-                permissions: BTreeMap::default(),
-            },
-        );
-        let mut replica2 = RegisterReplica::new(
-            authority,
-            name,
-            tag,
-            Policy {
-                owner: authority,
-                permissions: BTreeMap::default(),
-            },
-        );
+        let mut replica1 = RegisterReplica::new_owned(authority, name, tag);
+        let mut replica2 = RegisterReplica::new_owned(authority, name, tag);
 
         // Different item from same replica's root shall having different entry_hash
         let item1 = random_register_entry();
@@ -414,17 +425,14 @@ mod tests {
         assert_eq!(replica1.owner(), owner1);
         assert_eq!(replica1.replica_authority(), owner1);
         assert_eq!(
-            replica1.policy().permissions(User::Anyone),
-            Some(Permissions::new(true)),
+            replica1.permissions(User::Anyone),
+            Ok(Permissions::new(true)),
         );
         assert_eq!(replica1.permissions(User::Anyone)?, Permissions::new(true),);
 
         assert_eq!(replica2.owner(), authority2);
         assert_eq!(replica2.replica_authority(), authority2);
-        assert_eq!(
-            replica2.policy().permissions(owner1),
-            Some(Permissions::new(true)),
-        );
+        assert_eq!(replica2.permissions(owner1), Ok(Permissions::new(true)),);
         assert_eq!(replica2.permissions(owner1)?, Permissions::new(true),);
 
         let random_sk = SecretKey::random();
