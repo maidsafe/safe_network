@@ -20,7 +20,6 @@ use libp2p::{
 };
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
-use tracing::warn;
 use xor_name::XorName;
 
 /// Commands to send to the Swarm
@@ -113,7 +112,7 @@ impl SwarmDriver {
                         }
                     }
                 } else {
-                    warn!("Already dialing peer.");
+                    let _ = sender.send(Err(Error::AlreadyDialingPeer(peer_id)));
                 }
             }
 
