@@ -15,12 +15,15 @@ pub use self::{
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
 };
 
+use self::api::TransferAction;
+
 use crate::{
     domain::{node_transfers::Transfers, storage::RegisterStorage},
     network::Network,
 };
 
 use libp2p::{Multiaddr, PeerId};
+use tokio::sync::mpsc;
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
@@ -32,4 +35,5 @@ pub struct Node {
     events_channel: NodeEventsChannel,
     /// Peers that are dialed at startup of node.
     initial_peers: Vec<(PeerId, Multiaddr)>,
+    transfer_actor: mpsc::Sender<TransferAction>,
 }

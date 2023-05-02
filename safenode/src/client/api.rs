@@ -94,7 +94,7 @@ impl Client {
             NetworkEvent::RequestReceived { .. } => {}
             // We do not listen on sockets.
             NetworkEvent::NewListenAddr(_) => {}
-            NetworkEvent::PeerAdded => {
+            NetworkEvent::PeerAdded(_) => {
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork);
             }
