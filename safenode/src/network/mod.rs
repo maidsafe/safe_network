@@ -85,6 +85,7 @@ pub struct SwarmDriver {
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
     pending_query: HashMap<QueryId, oneshot::Sender<Result<QueryResponse>>>,
+    local: bool,
 }
 
 impl SwarmDriver {
@@ -289,6 +290,7 @@ impl SwarmDriver {
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
             pending_query: Default::default(),
+            local,
         };
 
         Ok((
@@ -554,6 +556,34 @@ impl Network {
         responses
     }
 }
+
+
+// Verifies if `Multiaddr` contains IPv4 address that is not global.
+// This is used to filter out unroutable addresses from the Kademlia routing table.
+pub(crate) fn multiaddr_is_global(multiaddr: &Multiaddr) -> bool {
+    !multiaddr.iter().any(|addr| match addr {
+        Protocol::Ip4(ip) => {
+            // Based on the nightly `is_global` method (`Ipv4Addrs::is_global`), only using what is available in stable.
+            // Missing `is_shared`, `is_benchmarking` and `is_reserved`.
+            ip.is_unspecified()
+                | ip.is_private()
+                | ip.is_loopback()
+                | ip.is_link_local()
+                | ip.is_documentation()
+                | ip.is_broadcast()
+        }
+        _ => false,
+    })
+}
+
+// Strip out the p2p protocol from a multiaddr.
+pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
+    multiaddr
+        .iter()
+        .filter(|p| !matches!(p, Protocol::P2p(_)))
+        .collect()
+}
+
 
 #[cfg(test)]
 mod tests {

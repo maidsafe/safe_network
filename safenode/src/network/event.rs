@@ -13,12 +13,13 @@ use super::{
 };
 use crate::{
     domain::storage::DiskBackedRecordStore,
-    network::IDENTIFY_AGENT_STR,
+    network::{IDENTIFY_AGENT_STR, multiaddr_strip_p2p, multiaddr_is_global},
     protocol::{
         messages::{QueryResponse, Request, Response},
         storage::Chunk,
     },
 };
+use itertools::Itertools;
 use libp2p::{
     autonat,
     kad::{GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
@@ -202,12 +203,30 @@ impl SwarmDriver {
                 }
             },
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
-                info!("IdentifyEvent: {iden:?}");
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
-                        info!("Adding peer to routing table, based on received identify info from {peer_id:?}: {info:?}");
+                        info!(%peer_id, ?info, "identify: received info");
                         if info.agent_version.starts_with(IDENTIFY_AGENT_STR) {
-                            for multiaddr in info.listen_addrs {
+                            let addrs = match self.local {
+                                true => info.listen_addrs,
+                                // If we're not in local mode, only add globally reachable addresses
+                                false => info
+                                    .listen_addrs
+                                    .into_iter()
+                                    .filter(multiaddr_is_global)
+                                    .collect()
+                                ,
+                            };
+                            // Strip the `/p2p/...` part of the multiaddresses
+                            let addrs: Vec<_> = addrs
+                                .into_iter()
+                                .map(|addr| multiaddr_strip_p2p(&addr))
+                                // And deduplicate the list
+                                .unique()
+                                    .collect();
+
+                            info!(%peer_id, ?addrs, "identify: adding addresses");
+                            for multiaddr in addrs {
                                 let _routing_update = self
                                     .swarm
                                     .behaviour_mut()
@@ -216,9 +235,9 @@ impl SwarmDriver {
                             }
                         }
                     }
-                    libp2p::identify::Event::Sent { .. } => {}
-                    libp2p::identify::Event::Pushed { .. } => {}
-                    libp2p::identify::Event::Error { .. } => {}
+                    libp2p::identify::Event::Sent { .. } => info!("identify: {iden:?}"),
+                    libp2p::identify::Event::Pushed { .. } => info!("identify: {iden:?}"),
+                    libp2p::identify::Event::Error { .. } => info!("identify: {iden:?}"),
                 }
             }
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {

@@ -14,6 +14,7 @@ use super::{
 
 use crate::{
     domain::dbc_genesis::is_genesis_parent_tx,
+    network::multiaddr_strip_p2p,
     network::{close_group_majority, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState},
     node::{RegisterStorage, Transfers},
     protocol::{
@@ -155,6 +156,8 @@ impl Node {
                 let peers = self.initial_peers.clone();
                 let _handle = spawn(async move {
                     for (peer_id, addr) in &peers {
+                        // The addresses passed might contain the peer_id, which we already pass seperately.
+                        let addr = multiaddr_strip_p2p(addr);
                         if let Err(err) = network.dial(*peer_id, addr.clone()).await {
                             tracing::error!("Failed to dial {peer_id}: {err:?}");
                         };
