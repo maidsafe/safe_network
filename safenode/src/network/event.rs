@@ -12,6 +12,7 @@ use super::{
     SwarmDriver,
 };
 
+use crate::network::IDENTIFY_AGENT_STR;
 use crate::protocol::{
     messages::{QueryResponse, Request, Response},
     storage::Chunk,
@@ -189,7 +190,7 @@ impl SwarmDriver {
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
                         info!("Adding peer to routing table, based on received identify info from {peer_id:?}: {info:?}");
-                        if info.agent_version.starts_with("safenode") {
+                        if info.agent_version.starts_with(IDENTIFY_AGENT_STR) {
                             for multiaddr in info.listen_addrs {
                                 let _routing_update = self
                                     .swarm
