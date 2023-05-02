@@ -207,15 +207,20 @@ impl SwarmDriver {
             query_interval: Duration::from_secs(5),
             ..Default::default()
         };
-
         #[cfg(feature = "local_discovery")]
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
+
+        let identify_cfg =
+            libp2p::identify::Config::new("safe/0.1.0".to_string(), keypair.public())
+                .with_agent_version("safenode/0.1.0".to_string());
+        let identify = libp2p::identify::Behaviour::new(identify_cfg);
 
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
             #[cfg(feature = "local_discovery")]
             mdns,
+            identify,
         };
 
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
