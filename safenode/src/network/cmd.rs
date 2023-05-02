@@ -167,6 +167,7 @@ impl SwarmDriver {
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
                 MsgResponder::FromPeer(channel) => {
+                    trace!("Sending response to peer");
                     self.swarm
                         .behaviour_mut()
                         .request_response
