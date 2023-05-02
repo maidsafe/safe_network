@@ -61,6 +61,12 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 // Sets the keep-alive timeout of idle connections.
 const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
 
+/// Our agent string has as a prefix that we can match against.
+pub const IDENTIFY_AGENT_STR: &str = "safe/node/";
+/// The suffix is the version of the node.
+const IDENTIFY_AGENT_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
+const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
+
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
 pub const fn close_group_majority() -> usize {
@@ -206,8 +212,8 @@ impl SwarmDriver {
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
         let identify_cfg =
-            libp2p::identify::Config::new("safe/0.1.0".to_string(), keypair.public())
-                .with_agent_version("safenode/0.1.0".to_string());
+            libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
+                .with_agent_version(IDENTIFY_AGENT_VERSION_STR.to_string());
         let identify = libp2p::identify::Behaviour::new(identify_cfg);
 
         let behaviour = NodeBehaviour {
