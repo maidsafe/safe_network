@@ -95,11 +95,6 @@ impl SwarmDriver {
                 sender,
             } => {
                 if let hash_map::Entry::Vacant(e) = self.pending_dial.entry(peer_id) {
-                    let _routing_update = self
-                        .swarm
-                        .behaviour_mut()
-                        .kademlia
-                        .add_address(&peer_id, peer_addr.clone());
                     match self
                         .swarm
                         .dial(peer_addr.with(Protocol::P2p(peer_id.into())))
