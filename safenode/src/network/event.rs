@@ -25,7 +25,7 @@ use libp2p::{
     swarm::{NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
-use std::collections::HashSet;
+use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
 use tracing::{info, warn};
 
@@ -35,6 +35,7 @@ pub(super) struct NodeBehaviour {
     pub(super) request_response: request_response::Behaviour<MsgCodec>,
     pub(super) kademlia: Kademlia<MemoryStore>,
     pub(super) mdns: mdns::tokio::Behaviour,
+    pub(super) identify: libp2p::identify::Behaviour,
 }
 
 #[derive(Debug)]
@@ -42,6 +43,7 @@ pub(super) enum NodeEvent {
     MsgReceived(request_response::Event<Request, Response>),
     Kademlia(KademliaEvent),
     Mdns(Box<mdns::Event>),
+    Identify(Box<libp2p::identify::Event>),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -59,6 +61,12 @@ impl From<KademliaEvent> for NodeEvent {
 impl From<mdns::Event> for NodeEvent {
     fn from(event: mdns::Event) -> Self {
         NodeEvent::Mdns(Box::new(event))
+    }
+}
+
+impl From<libp2p::identify::Event> for NodeEvent {
+    fn from(event: libp2p::identify::Event) -> Self {
+        NodeEvent::Identify(Box::new(event))
     }
 }
 
@@ -176,15 +184,46 @@ impl SwarmDriver {
                     error!("KademliaEvent has not been implemented: {todo:?}");
                 }
             },
+            SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
+                info!("IdentifyEvent: {iden:?}");
+                match *iden {
+                    libp2p::identify::Event::Received { peer_id, info } => {
+                        info!("Adding peer to routing table, based on received identify info from {peer_id:?}: {info:?}");
+                        if info.agent_version.starts_with("safenode") {
+                            for multiaddr in info.listen_addrs {
+                                let _routing_update = self
+                                    .swarm
+                                    .behaviour_mut()
+                                    .kademlia
+                                    .add_address(&peer_id, multiaddr);
+                            }
+                        }
+                    }
+                    libp2p::identify::Event::Sent { .. } => {}
+                    libp2p::identify::Event::Pushed { .. } => {}
+                    libp2p::identify::Event::Error { .. } => {}
+                }
+            }
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
                 mdns::Event::Discovered(list) => {
                     for (peer_id, multiaddr) in list {
-                        info!("Node discovered: {multiaddr:?}");
-                        let _routing_update = self
-                            .swarm
-                            .behaviour_mut()
-                            .kademlia
-                            .add_address(&peer_id, multiaddr);
+                        info!("Node discovered and dialing!!!: {multiaddr:?}");
+                        // TODO: Deduplicate this functionality by calling in on SwarmCmd::Dial
+                        if let hash_map::Entry::Vacant(e) = self.pending_dial.entry(peer_id) {
+                            // TODO: Dropping the receiver immediately might get logged as error later.
+                            let (sender, _receiver) = oneshot::channel();
+                            match self
+                                .swarm
+                                .dial(multiaddr.with(Protocol::P2p(peer_id.into())))
+                            {
+                                Ok(()) => {
+                                    let _ = e.insert(sender);
+                                }
+                                Err(e) => {
+                                    let _ = sender.send(Err(e.into()));
+                                }
+                            }
+                        }
                     }
                     self.event_sender.send(NetworkEvent::PeerAdded).await?;
                 }
