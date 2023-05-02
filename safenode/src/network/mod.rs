@@ -245,9 +245,9 @@ impl SwarmDriver {
     pub async fn run(mut self) {
         loop {
             tokio::select! {
-                some_event = self.swarm.next() => {
-                    trace!("received a swarm event {some_event:?}");
-                    if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {
+                swarm_event = self.swarm.select_next_some() => {
+                    trace!("received a swarm event {swarm_event:?}");
+                    if let Err(err) = self.handle_swarm_events(swarm_event).await {
                         warn!("Error while handling event: {err}");
                     }
                 },
@@ -257,7 +257,7 @@ impl SwarmDriver {
                             warn!("Error while handling cmd: {err}");
                         }
                     },
-                    None =>  return,
+                    None => return,
                 },
             }
         }
