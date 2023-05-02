@@ -47,6 +47,9 @@ pub enum Error {
     #[error("Dial Error")]
     DialError(#[from] DialError),
 
+    #[error("This peer is already being dialed: {0}")]
+    AlreadyDialingPeer(libp2p::PeerId),
+
     #[error("Outbound Error")]
     OutboundError(#[from] OutboundFailure),
 
