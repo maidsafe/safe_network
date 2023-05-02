@@ -91,7 +91,7 @@ pub enum NetworkEvent {
         channel: MsgResponder,
     },
     /// Emitted when the DHT is updated
-    PeerAdded,
+    PeerAdded(PeerId),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
 }
@@ -173,9 +173,13 @@ impl SwarmDriver {
                         // TODO: send an error response back?
                     }
                 }
-                KademliaEvent::RoutingUpdated { is_new_peer, .. } => {
+                KademliaEvent::RoutingUpdated {
+                    peer, is_new_peer, ..
+                } => {
                     if *is_new_peer {
-                        self.event_sender.send(NetworkEvent::PeerAdded).await?;
+                        self.event_sender
+                            .send(NetworkEvent::PeerAdded(*peer))
+                            .await?;
                     }
                 }
                 KademliaEvent::InboundRequest { request } => {

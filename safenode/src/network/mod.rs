@@ -256,20 +256,27 @@ impl SwarmDriver {
     /// asynchronous tasks.
     pub async fn run(mut self) {
         loop {
+            trace!("Swarm on selection");
             tokio::select! {
+                some_cmd = self.cmd_receiver.recv() => {
+                    trace!("received a swarm cmd {some_cmd:?}");
+                    match some_cmd {
+                        Some(cmd) => {
+                            if let Err(err) = self.handle_cmd(cmd).await {
+                                warn!("Error while handling cmd: {err}");
+                            }
+                        },
+                        None => continue,
+                    }
+                    trace!("Handled swarm cmd");
+                },
                 some_event = self.swarm.next() => {
                     if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {
                         warn!("Error while handling event: {err}");
                     }
+                    trace!("Handled swarm event");
                 },
-                some_cmd = self.cmd_receiver.recv() => match some_cmd {
-                    Some(cmd) => {
-                        if let Err(err) = self.handle_cmd(cmd).await {
-                            warn!("Error while handling cmd: {err}");
-                        }
-                    },
-                    None =>  return,
-                },
+                else => continue,
             }
         }
     }
@@ -429,7 +436,9 @@ impl Network {
 
     // Helper to send SwarmCmd
     async fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
+        trace!("Sending cmd to swarm {cmd:?}");
         self.swarm_cmd_sender.send(cmd).await?;
+        trace!("Sent cmd to swarm");
         Ok(())
     }
 
