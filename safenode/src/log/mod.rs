@@ -7,8 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod appender;
+mod error;
+
+use self::error::Result;
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::{Event, Subscriber};
 use tracing_subscriber::{
@@ -68,9 +72,15 @@ pub struct TracingLayers {
 impl TracingLayers {
     fn fmt_layer(&mut self, optional_log_dir: &Option<PathBuf>) {
         // Filter by log level of this crate only
-        let target_filters: Box<dyn Filter<Registry> + Send + Sync> =
-            Box::new(Targets::new().with_target(current_crate_str(), tracing::Level::TRACE));
-        let fmt_layer = tracing_fmt::layer().with_ansi(false);
+        let target_filters: Arc<dyn Filter<Registry> + Send + Sync> =
+            Arc::new(Targets::new().with_target(current_crate_str(), tracing::Level::TRACE));
+        let stdout_layer = tracing_fmt::layer()
+            .with_ansi(false)
+            .with_target(false)
+            .event_format(LogFormatter::default())
+            .with_filter(Arc::clone(&target_filters))
+            .boxed();
+        self.layers.push(stdout_layer);
 
         if let Some(log_dir) = optional_log_dir {
             println!("Starting logging to directory: {log_dir:?}");
@@ -89,23 +99,59 @@ impl TracingLayers {
             );
             self.guard = Some(worker_guard);
 
-            let fmt_layer = fmt_layer.with_writer(non_blocking);
-
+            let fmt_layer = tracing_fmt::layer()
+                .with_ansi(false)
+                .with_writer(non_blocking);
             let layer = fmt_layer
                 .event_format(LogFormatter::default())
                 .with_filter(target_filters)
                 .boxed();
             self.layers.push(layer);
-        } else {
-            println!("Starting logging to stdout");
+        }
+    }
 
-            let layer = fmt_layer
-                .with_target(false)
-                .event_format(LogFormatter::default())
-                .with_filter(target_filters)
-                .boxed();
-            self.layers.push(layer);
+    #[cfg(feature = "otlp")]
+    fn otlp_layer(&mut self) -> Result<()> {
+        use opentelemetry::{
+            sdk::{trace, Resource},
+            KeyValue,
         };
+        use opentelemetry_otlp::WithExportConfig;
+        use opentelemetry_semantic_conventions::resource::{SERVICE_INSTANCE_ID, SERVICE_NAME};
+        use rand::{distributions::Alphanumeric, thread_rng, Rng};
+        use tracing_subscriber::filter::LevelFilter;
+        use tracing_subscriber::EnvFilter;
+
+        let service_name = std::env::var("OTLP_SERVICE_NAME").unwrap_or_else(|_| {
+            let random_node_name: String = thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(10)
+                .map(char::from)
+                .collect();
+            format!("{}_{}", current_crate_str(), random_node_name)
+        });
+        println!("The opentelemetry traces are logged under the name: {service_name}");
+
+        let tracer = opentelemetry_otlp::new_pipeline()
+            .tracing()
+            .with_exporter(opentelemetry_otlp::new_exporter().tonic().with_env())
+            .with_trace_config(trace::config().with_resource(Resource::new(vec![
+                KeyValue::new(SERVICE_NAME, service_name),
+                KeyValue::new(SERVICE_INSTANCE_ID, std::process::id().to_string()),
+            ])))
+            .install_batch(opentelemetry::runtime::Tokio)?;
+
+        let env_filter = EnvFilter::builder()
+            .with_default_directive(LevelFilter::INFO.into())
+            .with_env_var("RUST_LOG_OTLP")
+            .from_env_lossy();
+
+        let otlp_layer = tracing_opentelemetry::layer()
+            .with_tracer(tracer)
+            .with_filter(env_filter)
+            .boxed();
+        self.layers.push(otlp_layer);
+        Ok(())
     }
 }
 
@@ -113,9 +159,20 @@ impl TracingLayers {
 /// This guard should be held for the life of the program.
 ///
 /// Logging should be instantiated only once.
-pub fn init_node_logging(log_dir: &Option<PathBuf>) -> Result<Option<WorkerGuard>, std::io::Error> {
+pub fn init_node_logging(log_dir: &Option<PathBuf>) -> Result<Option<WorkerGuard>> {
     let mut layers = TracingLayers::default();
     layers.fmt_layer(log_dir);
+
+    #[cfg(feature = "otlp")]
+    {
+        match std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+            Ok(_) => layers.otlp_layer()?,
+            Err(_) => info!(
+                "The OTLP feature is enabled but the OTEL_EXPORTER_OTLP_ENDPOINT variable is not \
+                set, so traces will not be submitted."
+            ),
+        }
+    }
 
     tracing_subscriber::registry().with(layers.layers).init();
 
