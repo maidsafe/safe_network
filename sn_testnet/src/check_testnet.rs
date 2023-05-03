@@ -175,7 +175,7 @@ pub async fn run(logs_path: &Path, node_count: u32) -> Result<()> {
 
 // Parse node logs files and extract info for each of them
 fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
-    let mut nodes = BTreeMap::<u32, NodeInfo>::new();
+    let mut nodes = BTreeMap::<PathBuf, NodeInfo>::new();
     let re = Regex::new(r"Node \(PID: (\d+)\) with PeerId: (.*)")?;
 
     let re_listener = Regex::new("Local node is listening on \"(.+)\"")?;
@@ -201,21 +201,18 @@ fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
         if file_name.starts_with(LOG_FILENAME_PREFIX) {
             let file = File::open(&file_path)?;
             let lines = BufReader::new(file).lines();
-            let mut node_info = NodeInfo {
-                pid: 0,
-                peer_id: PeerId::random(),
-                listeners: vec![],
-                log_path: file_path
-                    .parent()
-                    .expect("Failed to get parent dir")
-                    .to_path_buf(),
-            };
+            let log_path = file_path
+                .parent()
+                .expect("Failed to get parent dir")
+                .to_path_buf();
 
             lines.filter_map(|item| item.ok()).for_each(|line| {
                 if let Some(cap) = re.captures_iter(&line).next() {
-                    node_info.pid = cap[1].parse().expect("Failed to parse PID from node log");
-                    node_info.peer_id =
+                    let pid = cap[1].parse().expect("Failed to parse PID from node log");
+                    let peer_id =
                         PeerId::from_str(&cap[2]).expect("Failed to parse PeerId from node log");
+
+                    update_node_info(&mut nodes, &log_path, Some((pid, peer_id)), None);
                 }
 
                 if let Some(cap) = re_listener.captures_iter(&line).next() {
@@ -224,15 +221,39 @@ fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
                         .expect("Failed to parse multiaddr from node log");
                     let multiaddr = Multiaddr::from_str(&multiaddr_str)
                         .expect("Failed to deserialise Multiaddr from node log");
-                    node_info.listeners.push(multiaddr);
+
+                    update_node_info(&mut nodes, &log_path, None, Some(multiaddr));
                 }
             });
-
-            let _ = nodes.insert(node_info.pid, node_info);
         }
     }
 
-    Ok(nodes)
+    Ok(nodes
+        .into_values()
+        .map(|node_info| (node_info.pid, node_info))
+        .collect())
+}
+
+// Helper to update parts of a NodeInfo when parsing logs
+fn update_node_info(
+    nodes: &mut BTreeMap<PathBuf, NodeInfo>,
+    log_path: &Path,
+    peer_info: Option<(u32, PeerId)>,
+    listener: Option<Multiaddr>,
+) {
+    let node_info = nodes.entry(log_path.to_path_buf()).or_insert(NodeInfo {
+        pid: 0,
+        peer_id: PeerId::random(),
+        listeners: vec![],
+        log_path: log_path.to_path_buf(),
+    });
+
+    if let Some((pid, peer_id)) = peer_info {
+        node_info.pid = pid;
+        node_info.peer_id = peer_id;
+    }
+
+    node_info.listeners.extend(listener);
 }
 
 // Send RPC requests to the node at the provided address,
