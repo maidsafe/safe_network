@@ -12,6 +12,7 @@ extern crate tracing;
 mod cli;
 
 use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt, SubCmd};
+
 use clap::Parser;
 use eyre::{eyre, Result};
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
@@ -24,7 +25,6 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     // For client, default to log to std::out
     // This is ruining the log output for the CLI. Needs to be fixed.
-
     let tmp_dir = std::env::temp_dir();
     let _log_appender_guard = init_node_logging(&Some(tmp_dir.join("safe-client.log")))?;
 
