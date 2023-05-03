@@ -59,8 +59,8 @@ impl Client {
                         let _handle = spawn(async move {
                             trace!("Client dialing network");
                             for (peer_id, addr) in peers {
-                                if let Err(err) = network.clone().dial(peer_id, addr.clone()).await
-                                {
+                                let _ = network.add_to_routing_table(peer_id, addr.clone()).await;
+                                if let Err(err) = network.dial(peer_id, addr.clone()).await {
                                     tracing::error!("Failed to dial {peer_id}: {err:?}");
                                 };
                             }
