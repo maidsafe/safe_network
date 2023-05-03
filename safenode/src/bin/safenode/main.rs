@@ -69,7 +69,15 @@ enum NodeCtrl {
 
 fn main() -> Result<()> {
     let opt = Opt::parse();
+    #[cfg(not(feature = "otlp"))]
     let _log_appender_guard = init_node_logging(&opt.log_dir)?;
+    #[cfg(feature = "otlp")]
+    let (_rt, _guard) = {
+        // init logging in a separate runtime if we are sending traces to an opentelemetry server
+        let rt = Runtime::new()?;
+        let guard = rt.block_on(async { init_node_logging(&opt.log_dir) })?;
+        (rt, guard)
+    };
 
     let root_dir = opt
         .root_dir

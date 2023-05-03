@@ -96,6 +96,8 @@ impl SwarmDriver {
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
     ) -> Result<()> {
+        let span = info_span!("Handling a swarm event");
+        let _ = span.enter();
         match event {
             SwarmEvent::Behaviour(NodeEvent::MsgReceived(event)) => {
                 if let Err(e) = self.handle_msg(event).await {
