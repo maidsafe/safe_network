@@ -430,7 +430,7 @@ async fn handle_spend_dbc(
     // First we fetch all parent spends from the network.
     // They shall naturally all exist as valid spends for this current
     // spend attempt to be valid.
-    trace!("handle_spend_dbc");
+    trace!("Handle spend dbc bearing parent_tx {:?}", parent_tx.hash());
     let parent_spends = match get_parent_spends(network.clone(), &parent_tx).await {
         Ok(parent_spends) => parent_spends,
         Err(error) => {
@@ -452,7 +452,7 @@ async fn handle_spend_dbc(
         }
     };
 
-    trace!("got parent_spends for handle_spend_dbc");
+    trace!("Got parent_spends for {:?}", parent_tx.hash());
 
     let transfer_action = TransferAction {
         signed_spend,
