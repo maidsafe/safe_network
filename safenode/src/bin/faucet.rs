@@ -7,11 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use safenode::{
-    client::{Client, ClientEvent},
+    client::Client,
     domain::{
         dbc_genesis::{get_tokens_from_faucet, load_faucet_wallet},
         wallet::parse_public_address,
     },
+    log::init_node_logging,
 };
 
 use clap::{Parser, Subcommand};
@@ -21,21 +22,14 @@ use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let _log_appender_guard = init_node_logging(&None)?;
+
     let opt = Opt::parse();
 
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
-    let client = Client::new(secret_key, None)?;
-
-    let mut client_events_rx = client.events_channel();
-    if let Ok(event) = client_events_rx.recv().await {
-        match event {
-            ClientEvent::ConnectedToNetwork => {
-                info!("Faucet connected to the Network");
-            }
-        }
-    }
+    let client = Client::new(secret_key, None).await?;
 
     faucet_cmds(opt.cmd, &client).await?;
 
