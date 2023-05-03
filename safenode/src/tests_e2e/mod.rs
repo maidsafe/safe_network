@@ -33,6 +33,7 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
     println!("Getting {first_wallet_balance} tokens from the faucet...");
     let tokens =
         get_tokens_from_faucet(first_wallet_balance, first_wallet.address(), &client).await;
+    std::thread::sleep(std::time::Duration::from_secs(2));
     println!("Verifying the transfer from faucet...");
     client.verify(&tokens).await?;
     first_wallet.deposit(vec![tokens]);
@@ -53,6 +54,7 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
         &client,
     )
     .await;
+    std::thread::sleep(std::time::Duration::from_secs(5));
     println!("Verifying the transfer from first wallet...");
     client.verify(&tokens).await?;
     second_wallet.deposit(vec![tokens]);
