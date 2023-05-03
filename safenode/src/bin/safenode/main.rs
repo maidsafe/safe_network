@@ -27,30 +27,58 @@ use tokio::{
 };
 use tracing::{error, info, warn};
 
+// Please do not remove the blank lines in these doc comments.
+// They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser, Debug)]
 #[clap(name = "safenode cli")]
 struct Opt {
+    /// Specify the node's logging output directory.
+    ///
+    /// If not provided, logging will go to stdout.
     #[clap(long)]
     log_dir: Option<PathBuf>,
 
+    /// Specify the node's data directory.
+    ///
+    /// If not provided, the default location is platform specific:
+    ///
+    /// * Linux: $HOME/.local/share/safe/node
+    ///
+    /// * macOS: $HOME/Library/Application Support/safe/node
+    ///
+    /// * Windows: C:\Users\{username}\AppData\Roaming\safe\node
     #[clap(long)]
     root_dir: Option<PathBuf>,
 
-    /// Specify specific port to listen on.
+    /// Specify the port to listen on.
+    ///
     /// Defaults to 0, which means any available port.
     #[clap(long, default_value_t = 0)]
     port: u16,
 
-    /// Specify specific IP to listen on.
+    /// Specify the IP to listen on.
+    ///
     /// Defaults to 0.0.0.0, which will bind to all network interfaces.
     #[clap(long, default_value_t = IpAddr::V4(Ipv4Addr::UNSPECIFIED))]
     ip: IpAddr,
 
-    /// Nodes we dial at start to help us get connected to the network. Can be specified multiple times.
-    #[clap(long = "peer")]
+    /// Provide a peer to connect to a public network, using the MultiAddr format.
+    ///
+    /// The MultiAddr format looks like so:
+    ///
+    /// /ip4/13.40.152.226/udp/12000/quic-v1/p2p/12D3KooWRi6wF7yxWLuPSNskXc6kQ5cJ6eaymeMbCRdTnMesPgFx
+    ///
+    /// Noteworthy are the second, fourth, and last parts.
+    ///
+    /// Those are the IP address and UDP port the peer is listening on, and its peer ID, respectively.
+    ///
+    /// Many peers can be provided by using the argument multiple times.
+    ///
+    /// If none are provided, a connection will be attempted to a local network.
+    #[clap(long = "peer", value_name = "MultiAddr")]
     peers: Vec<Multiaddr>,
 
-    /// Enable admin/ctrl RPC service providing the IP and port to listen on.
+    /// Enable the admin/ctrl RPC service by providing an IP and port for it to listen on.
     #[clap(long)]
     rpc: Option<SocketAddr>,
 }
@@ -79,10 +107,7 @@ fn main() -> Result<()> {
         (rt, guard)
     };
 
-    let root_dir = opt
-        .root_dir
-        .expect("We need a root dir for the node, so it must be set.");
-
+    let root_dir = get_root_dir_path(opt.root_dir)?;
     let log_dir = if let Some(path) = opt.log_dir {
         format!("{}", path.display())
     } else {
@@ -221,4 +246,17 @@ fn parse_peer_multiaddreses(multiaddrs: &[Multiaddr]) -> Result<Vec<(PeerId, Mul
         })
         // Short circuit on the first error. See rust docs `Result::from_iter`.
         .collect::<Result<Vec<(PeerId, Multiaddr)>>>()
+}
+
+fn get_root_dir_path(root_dir_path: Option<PathBuf>) -> Result<PathBuf> {
+    let path = if let Some(path) = root_dir_path {
+        path
+    } else {
+        dirs_next::data_dir()
+            .ok_or_else(|| eyre!("Could not obtain data directory"))?
+            .join("safe")
+            .join("node")
+    };
+    std::fs::create_dir_all(path.clone())?;
+    Ok(path)
 }
