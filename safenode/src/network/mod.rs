@@ -262,14 +262,12 @@ impl SwarmDriver {
         loop {
             tokio::select! {
                 swarm_event = self.swarm.select_next_some() => {
-                    trace!("received a swarm event {swarm_event:?}");
                     if let Err(err) = self.handle_swarm_events(swarm_event).await {
                         warn!("Error while handling event: {err}");
                     }
                 },
                 some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
-                        trace!("received a swarm cmd {cmd:?}");
                         if let Err(err) = self.handle_cmd(cmd).await {
                             warn!("Error while handling cmd: {err}");
                         }

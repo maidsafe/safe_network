@@ -16,7 +16,7 @@ use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt, SubCmd};
 use clap::Parser;
 use eyre::{eyre, Result};
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
-use safenode::client::{Client, ClientEvent};
+use safenode::client::Client;
 use safenode::log::init_node_logging;
 use std::path::PathBuf;
 
@@ -35,16 +35,7 @@ async fn main() -> Result<()> {
     let secret_key = bls::SecretKey::random();
     let peers = parse_peer_multiaddresses(&opt.peers)?;
 
-    let client = Client::new(secret_key, Some(peers))?;
-
-    let mut client_events_rx = client.events_channel();
-    if let Ok(event) = client_events_rx.recv().await {
-        match event {
-            ClientEvent::ConnectedToNetwork => {
-                println!("Client connected to the Network");
-            }
-        }
-    }
+    let client = Client::new(secret_key, Some(peers)).await?;
 
     let root_dir = get_client_dir().await?;
 
