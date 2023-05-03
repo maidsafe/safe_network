@@ -713,7 +713,7 @@ mod test {
         );
 
         match result {
-            Ok(()) => Err(eyre!("This test should return an error")),
+            Ok(_) => Err(eyre!("This test should return an error")),
             Err(e) => {
                 assert_eq!(
                     e.to_string(),

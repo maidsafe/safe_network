@@ -27,6 +27,10 @@ use libp2p::{
     swarm::{NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
+
+#[cfg(feature = "local_discovery")]
+use std::collections::hash_map;
+
 use std::collections::HashSet;
 use tokio::sync::oneshot;
 use tracing::{info, warn};
