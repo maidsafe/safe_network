@@ -10,7 +10,10 @@ mod cli;
 
 use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt, SubCmd};
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
-use safenode::client::{Client, ClientEvent};
+use safenode::{
+    client::{Client, ClientEvent},
+    log::init_node_logging,
+};
 
 use clap::Parser;
 use eyre::{eyre, Result};
@@ -21,7 +24,7 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     // For client, default to log to std::out
     // This is ruining the log output for the CLI. Needs to be fixed.
-    // let _log_appender_guard = init_node_logging(&None)?;
+    let _log_appender_guard = init_node_logging(&None)?;
 
     println!("Instantiating a SAFE client...");
 
