@@ -20,7 +20,7 @@ pub use self::{
 use self::{
     cmd::SwarmCmd,
     error::Result,
-    event::NodeBehaviour,
+    event::{NodeBehaviour, NodeEvent},
     msg::{MsgCodec, MsgProtocol},
 };
 
@@ -37,7 +37,7 @@ use libp2p::{
     mdns,
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
-    swarm::{Swarm, SwarmBuilder},
+    swarm::{Swarm, SwarmBuilder, SwarmEvent},
     Multiaddr, PeerId, Transport,
 };
 use std::{
@@ -167,6 +167,10 @@ impl SwarmDriver {
         let peer_id = PeerId::from(keypair.public());
 
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
+        info!(
+            "PeerId converted to XorName: {peer_id} - {:?}",
+            XorName::from_content(&peer_id.to_bytes())
+        );
 
         // RequestResponse configuration
         let mut req_res_config = RequestResponseConfig::default();
@@ -256,30 +260,63 @@ impl SwarmDriver {
     /// asynchronous tasks.
     pub async fn run(mut self) {
         loop {
-            trace!("Swarm on selection");
-            tokio::select! {
-                some_cmd = self.cmd_receiver.recv() => {
-                    trace!("received a swarm cmd {some_cmd:?}");
-                    match some_cmd {
-                        Some(cmd) => {
-                            if let Err(err) = self.handle_cmd(cmd).await {
-                                warn!("Error while handling cmd: {err}");
-                            }
-                        },
-                        None => continue,
+            let received_swarm = {
+                if let Ok(cmd) = self.cmd_receiver.try_recv() {
+                    Some(NetworkPollResult::SwarmCmd(cmd))
+                } else if let Ok(Some(event)) =
+                    tokio::time::timeout(Duration::from_millis(10), self.swarm.next()).await
+                {
+                    Some(NetworkPollResult::SwarmEvent(event))
+                } else {
+                    None
+                }
+            };
+
+            match received_swarm {
+                Some(NetworkPollResult::SwarmCmd(cmd)) => {
+                    if let Err(err) = self.handle_cmd(cmd).await {
+                        warn!("Error while handling cmd: {err}");
                     }
                     trace!("Handled swarm cmd");
-                },
-                some_event = self.swarm.next() => {
-                    if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {
+                }
+                Some(NetworkPollResult::SwarmEvent(event)) => {
+                    if let Err(err) = self.handle_swarm_events(event).await {
                         warn!("Error while handling event: {err}");
                     }
                     trace!("Handled swarm event");
-                },
-                else => continue,
+                }
+                _ => continue,
             }
+
+            // tokio::select! {
+            //     some_cmd = self.cmd_receiver.recv() => {
+            //         trace!("received a swarm cmd {some_cmd:?}");
+            //         match some_cmd {
+            //             Some(cmd) => {
+            //                 if let Err(err) = self.handle_cmd(cmd).await {
+            //                     warn!("Error while handling cmd: {err}");
+            //                 }
+            //             },
+            //             None => continue,
+            //         }
+            //         trace!("Handled swarm cmd");
+            //     },
+            //     some_event = self.swarm.next() => {
+            //         trace!("received a swarm event {some_event:?}");
+            //         if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {
+            //             warn!("Error while handling event: {err}");
+            //         }
+            //         trace!("Handled swarm event");
+            //     },
+            //     else => continue,
+            // }
         }
     }
+}
+
+enum NetworkPollResult<EventError: std::error::Error> {
+    SwarmCmd(SwarmCmd),
+    SwarmEvent(SwarmEvent<NodeEvent, EventError>),
 }
 
 #[derive(Clone)]
