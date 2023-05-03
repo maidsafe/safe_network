@@ -135,7 +135,7 @@ impl Node {
                     }
                     Err(_) => {}
                 };
-                std::thread::sleep(std::time::Duration::from_millis(1));
+                std::thread::sleep(std::time::Duration::from_millis(3));
             }
         });
 
@@ -430,6 +430,7 @@ async fn handle_spend_dbc(
     // First we fetch all parent spends from the network.
     // They shall naturally all exist as valid spends for this current
     // spend attempt to be valid.
+    trace!("handle_spend_dbc");
     let parent_spends = match get_parent_spends(network.clone(), &parent_tx).await {
         Ok(parent_spends) => parent_spends,
         Err(error) => {
@@ -450,6 +451,8 @@ async fn handle_spend_dbc(
             return;
         }
     };
+
+    trace!("got parent_spends for handle_spend_dbc");
 
     let transfer_action = TransferAction {
         signed_spend,
@@ -478,6 +481,7 @@ async fn get_parent_spends(
     let mut all_parent_spends = BTreeSet::new();
 
     if is_genesis_parent_tx(parent_tx) {
+        trace!("Return with empty parent_spends for genesis");
         return Ok(all_parent_spends);
     }
 
@@ -489,7 +493,9 @@ async fn get_parent_spends(
         // This call makes sure we get the same spend from all in the close group.
         // If we receive a spend here, it is assumed to be valid. But we will verify
         // that anyway, in the code right after this for loop.
+        trace!("getting parent_spend for {:?}", parent_address.name());
         let parent_spend = get_spend(network.clone(), parent_address).await?;
+        trace!("got parent_spend for {:?}", parent_address.name());
         let _ = all_parent_spends.insert(parent_spend);
     }
 
