@@ -226,7 +226,6 @@ impl SwarmDriver {
                             }
                         }
                     }
-                    self.event_sender.send(NetworkEvent::PeerAdded).await?;
                 }
                 mdns::Event::Expired(peer) => {
                     info!("mdns peer {peer:?} expired");

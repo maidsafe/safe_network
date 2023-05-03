@@ -293,6 +293,18 @@ impl Network {
     }
 
     /// Dial the given peer at the given address.
+    pub async fn add_to_routing_table(&self, peer_id: PeerId, peer_addr: Multiaddr) -> Result<()> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::AddToRoutingTable {
+            peer_id,
+            peer_addr,
+            sender,
+        })
+        .await?;
+        receiver.await?
+    }
+
+    /// Dial the given peer at the given address.
     pub async fn dial(&self, peer_id: PeerId, peer_addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::Dial {
