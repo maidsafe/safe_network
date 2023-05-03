@@ -37,10 +37,7 @@ use std::{
     net::SocketAddr,
     path::Path,
 };
-use tokio::{
-    sync::mpsc::{self, error::TryRecvError},
-    task::spawn,
-};
+use tokio::{sync::mpsc, task::spawn};
 use xor_name::XorName;
 
 #[derive(Debug)]
@@ -117,25 +114,28 @@ impl Node {
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
             loop {
-                match network_event_receiver.try_recv() {
-                    Ok(event) => {
-                        if let Err(err) = node.handle_network_event(event).await {
-                            warn!("Error handling network event: {err}");
+                tokio::select! {
+                    net_event = network_event_receiver.recv() => {
+                        match net_event {
+                            Some(event) => {
+                                if let Err(err) = node.handle_network_event(event).await {
+                                    warn!("Error handling network event: {err}");
+                                }
+                            }
+                            None => {
+                                error!("The `NetworkEvent` channel is closed")
+                            }
                         }
                     }
-                    Err(TryRecvError::Disconnected) => {
-                        error!("The `NetworkEvent` channel is closed")
+                    transfer_action = transfer_action_receiver.recv() => {
+                        match transfer_action {
+                            Some(action) => node.handle_transfer_action(action).await,
+                            None => {
+                                error!("The `TransferAction` channel is closed")
+                            }
+                        }
                     }
-                    Err(_) => {}
-                };
-                match transfer_action_receiver.try_recv() {
-                    Ok(action) => node.handle_transfer_action(action).await,
-                    Err(TryRecvError::Disconnected) => {
-                        error!("The `TransferAction` channel is closed")
-                    }
-                    Err(_) => {}
-                };
-                std::thread::sleep(std::time::Duration::from_millis(3));
+                }
             }
         });
 
