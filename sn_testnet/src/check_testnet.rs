@@ -56,7 +56,7 @@ impl Display for NodeInfo {
 }
 
 pub async fn run(logs_path: &Path, node_count: u32) -> Result<()> {
-    let mut delay_secs = 10;
+    let mut delay_secs = 180;
     while delay_secs > 0 {
         println!("We'll be verifying testnet nodes info in {delay_secs}secs ...");
         sleep(Duration::from_secs(1)).await;
