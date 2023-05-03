@@ -13,7 +13,7 @@ use super::{
 
 use crate::{
     domain::client_transfers::SpendRequest,
-    network::{close_group_majority, NetworkEvent, SwarmDriver},
+    network::{close_group_majority, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
     protocol::{
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
         storage::{dbc_address, dbc_name, Chunk, ChunkAddress},
@@ -32,7 +32,7 @@ use xor_name::XorName;
 
 impl Client {
     /// Instantiate a new client.
-    pub fn new(signer: SecretKey, peers: Option<Vec<(PeerId, Multiaddr)>>) -> Result<Self> {
+    pub async fn new(signer: SecretKey, peers: Option<Vec<(PeerId, Multiaddr)>>) -> Result<Self> {
         info!("Starting Kad swarm in client mode...");
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client()?;
         info!("Client constructed network and swarm_driver");
@@ -85,6 +85,20 @@ impl Client {
             }
         });
 
+        // Wait till client confirmed with connected to enough nodes.
+        let mut client_events_rx = client.events_channel();
+        let mut added_node = 0;
+        while added_node <= CLOSE_GROUP_SIZE {
+            if let Ok(event) = client_events_rx.recv().await {
+                match event {
+                    ClientEvent::ConnectedToNetwork => {
+                        added_node += 1;
+                        info!("Client connected to the Network with {added_node:?} nodes added");
+                    }
+                }
+            }
+        }
+
         Ok(client)
     }
 
@@ -94,9 +108,20 @@ impl Client {
             NetworkEvent::RequestReceived { .. } => {}
             // We do not listen on sockets.
             NetworkEvent::NewListenAddr(_) => {}
-            NetworkEvent::PeerAdded(_) => {
+            NetworkEvent::PeerAdded(peer_id) => {
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork);
+                let target = {
+                    let mut rng = rand::thread_rng();
+                    XorName::random(&mut rng)
+                };
+
+                let network = self.network.clone();
+                let _handle = spawn(async move {
+                    trace!("On PeerAdded({peer_id:?}) Getting closest peers for target {target:?}");
+                    let result = network.client_get_closest_peers(target).await;
+                    trace!("For target {target:?}, get closest peers {result:?}");
+                });
             }
         }
 

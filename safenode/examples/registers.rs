@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use safenode::client::{Client, ClientEvent, Error};
+use safenode::client::{Client, Error};
 
 use bls::SecretKey;
 use clap::Parser;
@@ -39,18 +39,8 @@ async fn main() -> Result<()> {
     let signer = SecretKey::random();
 
     println!("Starting SAFE client...");
-    let client = Client::new(signer, None)?;
+    let client = Client::new(signer, None).await?;
     println!("SAFE client signer public key: {:?}", client.signer_pk());
-
-    // Let's wait till we are connected to the network before proceeding further
-    let mut client_events_rx = client.events_channel();
-    loop {
-        if let Ok(ClientEvent::ConnectedToNetwork) = client_events_rx.recv().await {
-            println!("Connected to the Network!");
-            println!();
-            break;
-        }
-    }
 
     // we'll retrieve (or create if not found) a Register, and write on it
     // in offline mode, syncing with the network periodically.

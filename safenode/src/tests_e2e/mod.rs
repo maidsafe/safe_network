@@ -29,7 +29,7 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
     let first_wallet_balance = Token::from_nano(1_000_000_000);
 
     let mut first_wallet = get_wallet(first_wallet_dir.path()).await;
-    let client = get_client();
+    let client = get_client().await;
     println!("Getting {first_wallet_balance} tokens from the faucet...");
     let tokens =
         get_tokens_from_faucet(first_wallet_balance, first_wallet.address(), &client).await;
@@ -71,9 +71,11 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
     Ok(())
 }
 
-fn get_client() -> Client {
+async fn get_client() -> Client {
     let secret_key = bls::SecretKey::random();
-    Client::new(secret_key, None).expect("Client shall be successfully created.")
+    Client::new(secret_key, None)
+        .await
+        .expect("Client shall be successfully created.")
 }
 
 async fn get_wallet(root_dir: &Path) -> LocalWallet {

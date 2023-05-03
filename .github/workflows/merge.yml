@@ -259,6 +259,7 @@ jobs:
         continue-on-error: true
 
   spend_test:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
     name: dbc spend tests against network
     runs-on: ${{ matrix.os }}
     strategy:
