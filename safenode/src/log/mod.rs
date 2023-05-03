@@ -12,7 +12,6 @@ mod error;
 use self::error::Result;
 
 use std::path::PathBuf;
-use std::sync::Arc;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::{Event, Subscriber};
 use tracing_subscriber::{
@@ -72,15 +71,9 @@ pub struct TracingLayers {
 impl TracingLayers {
     fn fmt_layer(&mut self, optional_log_dir: &Option<PathBuf>) {
         // Filter by log level of this crate only
-        let target_filters: Arc<dyn Filter<Registry> + Send + Sync> =
-            Arc::new(Targets::new().with_target(current_crate_str(), tracing::Level::TRACE));
-        let stdout_layer = tracing_fmt::layer()
-            .with_ansi(false)
-            .with_target(false)
-            .event_format(LogFormatter::default())
-            .with_filter(Arc::clone(&target_filters))
-            .boxed();
-        self.layers.push(stdout_layer);
+        let target_filters: Box<dyn Filter<Registry> + Send + Sync> =
+            Box::new(Targets::new().with_target(current_crate_str(), tracing::Level::TRACE));
+        let fmt_layer = tracing_fmt::layer().with_ansi(false);
 
         if let Some(log_dir) = optional_log_dir {
             println!("Starting logging to directory: {log_dir:?}");
@@ -99,15 +92,23 @@ impl TracingLayers {
             );
             self.guard = Some(worker_guard);
 
-            let fmt_layer = tracing_fmt::layer()
-                .with_ansi(false)
-                .with_writer(non_blocking);
+            let fmt_layer = fmt_layer.with_writer(non_blocking);
+
             let layer = fmt_layer
                 .event_format(LogFormatter::default())
                 .with_filter(target_filters)
                 .boxed();
             self.layers.push(layer);
-        }
+        } else {
+            println!("Starting logging to stdout");
+
+            let layer = fmt_layer
+                .with_target(false)
+                .event_format(LogFormatter::default())
+                .with_filter(target_filters)
+                .boxed();
+            self.layers.push(layer);
+        };
     }
 
     #[cfg(feature = "otlp")]
