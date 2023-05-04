@@ -1,0 +1,276 @@
+name: release
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
+
+jobs:
+  build:
+    if: |
+      github.repository_owner == 'maidsafe' &&
+      startsWith(github.event.head_commit.message, 'chore(release):')
+    name: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-latest
+            target: arm-unknown-linux-musleabi
+          - os: ubuntu-latest
+            target: armv7-unknown-linux-musleabihf
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        id: toolchain
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - shell: bash
+        run: make gha-build-${{ matrix.target }}
+      - uses: actions/upload-artifact@main
+        with:
+          name: safe_network-${{ matrix.target }}
+          path: |
+            artifacts
+            !artifacts/.cargo-lock
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Release Failed"
+
+  gh_release:
+    if: |
+      github.repository_owner == 'maidsafe' &&
+      startsWith(github.event.head_commit.message, 'chore(release):')
+    name: create github release
+    runs-on: ubuntu-latest
+    needs: [build]
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-x86_64-pc-windows-msvc
+          path: artifacts/prod/x86_64-pc-windows-msvc/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-x86_64-unknown-linux-musl
+          path: artifacts/prod/x86_64-unknown-linux-musl/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-x86_64-apple-darwin
+          path: artifacts/prod/x86_64-apple-darwin/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-arm-unknown-linux-musleabi
+          path: artifacts/prod/arm-unknown-linux-musleabi/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-armv7-unknown-linux-musleabihf
+          path: artifacts/prod/armv7-unknown-linux-musleabihf/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-aarch64-unknown-linux-musl
+          path: artifacts/prod/aarch64-unknown-linux-musl/release
+
+      - shell: bash
+        name: package artifacts for release
+        run: |
+          make prepare-deploy
+          make safe_network-package-version-artifacts-for-release
+          make sn_cli-package-version-artifacts-for-release
+
+      - shell: bash
+        id: versioning
+        run: |
+          ./resources/scripts/output_versioning_info.sh
+
+      - name: generate release description first pass
+        shell: bash
+        run: |
+          ./resources/scripts/get_release_description.sh > release_description.md
+
+      # The second pass uses Python to extract the changelog entries for this version.
+      # Python can easily do a string replace and avoid all the pain with newlines you get in Bash.
+      # The script operates on the release_description.md that was generated in the previous step.
+      - name: generate release description second pass
+        shell: bash
+        run: |
+          pip install toml
+          ./resources/scripts/insert_changelog_entry.py
+
+      - name: create github release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.versioning.outputs.gh_release_tag_name }}
+          release_name: ${{ steps.versioning.outputs.gh_release_name }}
+          draft: false
+          prerelease: false
+          body_path: release_description.md
+
+      # There's an action you can use for uploading an asset to a release, but because there are so
+      # many assets, using the 'gh' CLI is much more concise. The 'gh' tool should be on an Actions
+      # build agent by default.
+      - name: upload artifacts as assets
+        shell: bash
+        run: |
+          (
+            cd deploy/prod/sn_node
+            ls | xargs gh release upload ${{ steps.versioning.outputs.gh_release_tag_name }}
+          )
+          (
+            cd deploy/prod/safe
+            ls | xargs gh release upload ${{ steps.versioning.outputs.gh_release_tag_name }}
+          )
+
+      - uses: shallwefootball/s3-upload-action@master
+        name: upload sn_node artifacts to s3
+        with:
+          aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
+          aws_bucket: sn-node
+          source_dir: deploy/prod/sn_node
+          destination_dir: ""
+
+      - uses: shallwefootball/s3-upload-action@master
+        name: upload safe artifacts to s3
+        with:
+          aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
+          aws_bucket: sn-cli
+          source_dir: deploy/prod/safe
+          destination_dir: ""
+
+      # Now repackage and upload the artifacts using 'latest' for the version.
+      - shell: bash
+        name: package artifacts for release
+        run: |
+          make prepare-deploy
+          make safe_network-package-version-artifacts-for-release \
+            SN_NODE_VERSION=latest DEPLOY_PATH=deploy
+          make sn_cli-package-version-artifacts-for-release SN_CLI_VERSION=latest DEPLOY_PATH=deploy
+
+      - uses: shallwefootball/s3-upload-action@master
+        name: upload sn_node artifacts to s3
+        with:
+          aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
+          aws_bucket: sn-node
+          source_dir: deploy/prod/sn_node
+          destination_dir: ""
+
+      - uses: shallwefootball/s3-upload-action@master
+        name: upload safe artifacts to s3
+        with:
+          aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
+          aws_bucket: sn-cli
+          source_dir: deploy/prod/safe
+          destination_dir: ""
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Release Failed"
+
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    needs: [gh_release]
+    if: |
+      github.repository_owner == 'maidsafe' &&
+      startsWith(github.event.head_commit.message, 'chore(release):')
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: "0"
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - shell: bash
+        id: versioning
+        run: |
+          ./resources/scripts/output_versioning_info.sh
+      - name: cargo login
+        run: cargo login ${{ secrets.CRATES_IO_TOKEN }}
+      - name: publish sn_updater
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ $commit_message == *"sn_updater"* ]]; then
+            # The sn_updater crate doesn't have any dependencies so we can go ahead and publish.
+            cd sn_updater && cargo publish --allow-dirty
+          fi
+      - name: publish sn_interface
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ $commit_message == *"sn_interface"* ]]; then
+            # The sn_interface crate doesn't have any dependencies so we can go ahead and publish.
+            cd sn_interface && cargo publish --allow-dirty
+          fi
+      - name: publish sn_fault_detection
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ $commit_message == *"sn_fault_detection"* ]]; then
+            ./resources/scripts/publish_crate_with_retries.sh "sn_fault_detection"
+          fi
+      - name: publish sn_comms
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ $commit_message == *"sn_comms"* ]]; then
+            ./resources/scripts/publish_crate_with_retries.sh "sn_comms"
+          fi
+      - name: publish sn_node
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ $commit_message == *"sn_node"* ]]; then
+            ./resources/scripts/publish_crate_with_retries.sh "sn_node"
+          fi
+      - name: publish sn_client
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ $commit_message == *"sn_client-"* ]]; then
+            ./resources/scripts/publish_crate_with_retries.sh "sn_client"
+          fi
+      - name: publish sn_api
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ $commit_message == *"sn_api"* ]]; then
+            ./resources/scripts/publish_crate_with_retries.sh "sn_api"
+          fi
+      - name: publish sn_cli
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ $commit_message == *"sn_cli-"* ]]; then
+            ./resources/scripts/publish_crate_with_retries.sh "sn_cli"
+          fi
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Release Failed"
