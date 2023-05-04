@@ -26,7 +26,6 @@ use std::collections::BTreeMap;
 /// Once enough peers have accepted all the spends of the transaction, and serve
 /// them upon request, the transaction will be completed.
 ///
-/// (Disabled for now: Transfer fees will be added if not in data-network.)
 /// (Disabled for now: DbcReason, can be added later.)
 #[allow(unused)]
 pub(crate) fn create_transfer(
@@ -35,7 +34,6 @@ pub(crate) fn create_transfer(
     change_to: PublicAddress,
 ) -> Result<Outputs> {
     // We need to select the necessary number of dbcs from those that we were passed.
-    // This will also account for any fees.
     let selected_inputs = select_inputs(available_dbcs, recipients, change_to)?;
     create_transfer_with(selected_inputs)
 }
@@ -106,7 +104,6 @@ fn select_inputs(
         dbcs_to_spend,
         recipients,
         change: (change_amount, change_to),
-        node_fees_per_input: BTreeMap::new(),
     })
 }
 
@@ -195,7 +192,6 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
         let spend_requests = SpendRequest {
             signed_spend: signed_spend.clone(),
             parent_tx: parent_tx.clone(),
-            fee_ciphers: BTreeMap::new(),
         };
 
         all_spend_requests.push(spend_requests);

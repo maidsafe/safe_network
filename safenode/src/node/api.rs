@@ -13,14 +13,14 @@ use super::{
 };
 
 use crate::{
-    domain::{dbc_genesis::is_genesis_parent_tx, wallet::LocalWallet},
+    domain::dbc_genesis::is_genesis_parent_tx,
     network::{close_group_majority, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState},
     node::{RegisterStorage, Transfers},
     protocol::{
         error::{Error as ProtocolError, StorageError, TransferError},
         messages::{
-            Cmd, CmdResponse, Event, FeeCiphers, NodeId, Query, QueryResponse, RegisterCmd,
-            Request, Response, SpendQuery,
+            Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
+            SpendQuery,
         },
         storage::{dbc_address, registers::User, DbcAddress},
     },
@@ -32,11 +32,7 @@ use libp2p::{
     kad::{Record, RecordKey},
     Multiaddr, PeerId,
 };
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    net::SocketAddr,
-    path::Path,
-};
+use std::{collections::BTreeSet, net::SocketAddr, path::Path};
 use tokio::{sync::mpsc, task::spawn};
 use xor_name::XorName;
 
@@ -44,7 +40,6 @@ use xor_name::XorName;
 pub(super) struct TransferAction {
     signed_spend: Box<SignedSpend>,
     parent_tx: Box<DbcTransaction>,
-    fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
     parent_spends: BTreeSet<SignedSpend>,
     response_channel: MsgResponder,
 }
@@ -95,17 +90,12 @@ impl Node {
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
         let node_events_channel = NodeEventsChannel::default();
 
-        let node_id = NodeId::from(network.peer_id);
-        let node_wallet = LocalWallet::load_from(root_dir)
-            .await
-            .map_err(|e| Error::CouldNotLoadWallet(e.to_string()))?;
-
         let (transfer_action_sender, mut transfer_action_receiver) = mpsc::channel(100);
 
         let mut node = Self {
             network: network.clone(),
             registers: RegisterStorage::new(root_dir),
-            transfers: Transfers::new(root_dir, node_id, node_wallet),
+            transfers: Transfers::new(root_dir),
             events_channel: node_events_channel.clone(),
             initial_peers,
             transfer_actor: transfer_action_sender,
@@ -196,11 +186,10 @@ impl Node {
                     Event::ValidSpendReceived {
                         spend,
                         parent_tx,
-                        fee_ciphers,
                         parent_spends,
                     } => {
                         self.transfers
-                            .try_add(spend, parent_tx, fee_ciphers, parent_spends)
+                            .try_add(spend, parent_tx, parent_spends)
                             .await
                             .map_err(ProtocolError::Transfers)?;
                     }
@@ -233,27 +222,17 @@ impl Node {
                     }
                 }
             }
-            Query::Spend(query) => {
-                match query {
-                    SpendQuery::GetFees { dbc_id, priority } => {
-                        // The client is asking for the fee to spend a specific dbc, and including the id of that dbc.
-                        // The required fee content is encrypted to that dbc id, and so only the holder of the dbc secret
-                        // key can unlock the contents.
-                        let required_fee = self.transfers.get_required_fee(dbc_id, priority);
-                        trace!("Sending response back on query GetFees {dbc_id:?}");
-                        QueryResponse::GetFees(Ok(required_fee))
-                    }
-                    SpendQuery::GetDbcSpend(address) => {
-                        let res = self
-                            .transfers
-                            .get(address)
-                            .await
-                            .map_err(ProtocolError::Transfers);
-                        trace!("Sending response back on query DbcSpend {address:?}");
-                        QueryResponse::GetDbcSpend(res)
-                    }
+            Query::Spend(query) => match query {
+                SpendQuery::GetDbcSpend(address) => {
+                    let res = self
+                        .transfers
+                        .get(address)
+                        .await
+                        .map_err(ProtocolError::Transfers);
+                    trace!("Sending response back on query DbcSpend {address:?}");
+                    QueryResponse::GetDbcSpend(res)
                 }
-            }
+            },
         };
         self.send_response(Response::Query(resp), response_channel)
             .await;
@@ -314,7 +293,6 @@ impl Node {
             Cmd::SpendDbc {
                 signed_spend,
                 parent_tx,
-                fee_ciphers,
             } => {
                 let network = self.network.clone();
                 let transfer_actor = self.transfer_actor.clone();
@@ -326,7 +304,6 @@ impl Node {
                         response_channel,
                         signed_spend,
                         parent_tx,
-                        fee_ciphers,
                     )
                     .await
                 });
@@ -338,7 +315,6 @@ impl Node {
         let TransferAction {
             signed_spend,
             parent_tx,
-            fee_ciphers,
             parent_spends,
             response_channel,
         } = action;
@@ -348,7 +324,6 @@ impl Node {
             .try_add(
                 signed_spend.clone(),
                 parent_tx.clone(),
-                fee_ciphers.clone(),
                 parent_spends.clone(),
             )
             .await;
@@ -367,7 +342,6 @@ impl Node {
                     let event = Event::ValidSpendReceived {
                         spend: signed_spend,
                         parent_tx,
-                        fee_ciphers,
                         parent_spends,
                     };
                     match network
@@ -425,7 +399,6 @@ async fn handle_spend_dbc(
     response_channel: MsgResponder,
     signed_spend: Box<SignedSpend>,
     parent_tx: Box<DbcTransaction>,
-    fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
 ) {
     // First we fetch all parent spends from the network.
     // They shall naturally all exist as valid spends for this current
@@ -457,7 +430,6 @@ async fn handle_spend_dbc(
     let transfer_action = TransferAction {
         signed_spend,
         parent_tx,
-        fee_ciphers,
         parent_spends,
         response_channel,
     };

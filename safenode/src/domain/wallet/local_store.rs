@@ -14,7 +14,7 @@ use super::{
     DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, SigningWallet, Wallet,
 };
 
-use crate::domain::client_transfers::{CreatedDbc, Outputs as TransferDetails};
+use crate::domain::client_transfers::{create_transfer, CreatedDbc, Outputs as TransferDetails};
 
 use sn_dbc::{Dbc, DbcIdSource, MainKey, PublicAddress, Token};
 
@@ -150,15 +150,6 @@ impl SigningWallet for LocalWallet {
     fn sign(&self, msg: &[u8]) -> bls::Signature {
         self.key.sign(msg)
     }
-
-    fn decrypt(
-        &self,
-        fee_ciphers: &crate::protocol::messages::FeeCiphers,
-    ) -> Result<(sn_dbc::DbcId, sn_dbc::RevealedAmount)> {
-        fee_ciphers
-            .decrypt(&self.key)
-            .map_err(|e| super::Error::FailedToDecryptFeeCipher(e.to_string()))
-    }
 }
 
 impl DepositWallet for LocalWallet {
@@ -214,9 +205,7 @@ impl SendWallet for LocalWallet {
             }
         }
 
-        let transfer = client
-            .create_transfer(available_dbcs, to, self.address())
-            .await?;
+        let transfer = create_transfer(available_dbcs, to, self.address())?;
 
         let TransferDetails {
             change_dbc,
@@ -272,7 +261,7 @@ mod tests {
 
     use crate::{
         domain::{
-            client_transfers::{create_offline_transfer, Outputs as TransferDetails},
+            client_transfers::Outputs as TransferDetails,
             dbc_genesis::{create_first_dbc_from_key, GENESIS_DBC_AMOUNT},
             wallet::{
                 local_store::WALLET_DIR_NAME, public_address_name, KeyLessWallet, SendClient,
@@ -281,7 +270,7 @@ mod tests {
         protocol::storage::dbc_name,
     };
 
-    use sn_dbc::{Dbc, DbcIdSource, DerivedKey, MainKey, PublicAddress, Token};
+    use sn_dbc::{MainKey, Token};
 
     use assert_fs::TempDir;
     use eyre::Result;
@@ -676,19 +665,6 @@ mod tests {
 
     #[async_trait::async_trait]
     impl SendClient for MockSendClient {
-        async fn create_transfer(
-            &self,
-            dbcs: Vec<(Dbc, DerivedKey)>,
-            to: Vec<(Token, DbcIdSource)>,
-            change_to: PublicAddress,
-        ) -> super::Result<TransferDetails> {
-            // Here we just create a transfer, without network calls,
-            // and without sending it to the network.
-            let transfer = create_offline_transfer(dbcs, to, change_to)
-                .expect("There should be no issues creating this transfer.");
-
-            Ok(transfer)
-        }
         async fn send(&self, _transfer: TransferDetails) -> super::Result<()> {
             // Here we just return Ok(()), without network calls,
             // and without sending it to the network.

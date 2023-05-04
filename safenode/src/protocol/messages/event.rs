@@ -6,14 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use crate::protocol::{
     error::{Error, Result, StorageError},
     storage::{dbc_address, DataAddress},
 };
-
-use super::{FeeCiphers, NodeId};
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 
@@ -38,10 +36,6 @@ pub enum Event {
         /// The transaction that this spend was created in.
         #[debug(skip)]
         parent_tx: Box<DbcTransaction>,
-        /// As to avoid impl separate cmd flow, we send
-        /// all fee ciphers to all Nodes for now.
-        #[debug(skip)]
-        fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
         /// The parent spends as attained by the node that sent this event,
         /// as it has already validated the spend.
         #[debug(skip)]

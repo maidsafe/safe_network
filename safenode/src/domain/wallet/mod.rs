@@ -49,18 +49,8 @@
 //! These three states are held by both the client and the node, and is easy for the client to check and resolve.
 //!
 //! The most difficult situation for a bitcoin client to resolve is a low-fee tx in mempool for a long time,
-//! which eventually clears from the mempool and becomes spendable again (which for us is a tx with too few nodes
-//! storing it, and eventually is not stored anywhere, which should be extremely rare and not expected ever happen).
+//! which eventually clears from the mempool and becomes spendable again.
 //!
-//! However, we also have a "mempool", our priority queue. The great difference there though, is that a client _can_
-//! update the fee on such a queued spend, and thus can always avoid a spend getting stuck in the queue!
-//! Removing it though is not allowed, but we could allow that. If some nodes have already processed it, then
-//! the client can't change that fact. But in the case that no node actually had processed it, then the client
-//! can successfully remove it from the queue, and then re-add it with a completely different transaction.
-//!
-//! Note: We do not represent at client the spend being in the priority queue, which we might want to do.
-//! In that case, before resending a transfer, we could just check if it has already been stored to the nodes.
-//! TBD.
 
 mod error;
 mod keys;
@@ -77,9 +67,7 @@ pub use self::{
 
 use super::client_transfers::{CreatedDbc, Outputs as TransferDetails};
 
-use crate::protocol::messages::FeeCiphers;
-
-use sn_dbc::{Dbc, DbcId, DbcIdSource, DerivedKey, PublicAddress, RevealedAmount, Token};
+use sn_dbc::{Dbc, DbcId, DbcIdSource, PublicAddress, Token};
 
 use async_trait::async_trait;
 use std::collections::BTreeMap;
@@ -96,24 +84,6 @@ use std::collections::BTreeMap;
 /// and just return the transfer to the caller.
 #[async_trait]
 pub trait SendClient: Send + Sync + Clone {
-    /// Creates a transfer to send the given tokens to the given addresses,
-    /// using the given dbcs as inputs, from which to collect
-    /// the necessary number of dbcs, to cover the amounts to send.
-    /// This also adds the necessary fee payments to the transfer.
-    /// It will return the new dbcs that were created, and the change.
-    /// Within the newly created dbcs, there will be the signed spends,
-    /// which represent each input dbc that was spent. By that the caller
-    /// also knows which of the inputs were spent, and which were not.
-    /// The caller can then use this information to update its own state.
-    ///
-    /// NB: Nothing is registered in the network before sending this transfer to it,
-    /// using the `send` api of this trait.
-    async fn create_transfer(
-        &self,
-        dbcs: Vec<(Dbc, DerivedKey)>,
-        to: Vec<(Token, DbcIdSource)>,
-        change_to: PublicAddress,
-    ) -> Result<TransferDetails>;
     /// Registers a created transfer in the network.
     async fn send(&self, transfer: TransferDetails) -> Result<()>;
 }
@@ -145,9 +115,6 @@ pub trait Wallet {
 pub trait SigningWallet {
     /// Signs the given msg.
     fn sign(&self, msg: &[u8]) -> bls::Signature;
-    /// Decrypts the given fee ciphers.
-    /// TODO: Referencing fee ciphers, dbc id and revealed amount here is not ideal.
-    fn decrypt(&self, fee_ciphers: &FeeCiphers) -> Result<(DbcId, RevealedAmount)>;
 }
 
 /// A send wallet is a wallet that, in addition to the capabilities
