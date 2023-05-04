@@ -6,14 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[macro_use]
+extern crate tracing;
+
 mod cli;
 
 use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt, SubCmd};
-use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
-use safenode::client::{Client, ClientEvent};
-
 use clap::Parser;
 use eyre::{eyre, Result};
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
+use safenode::client::{Client, ClientEvent};
+use safenode::log::init_node_logging;
 use std::path::PathBuf;
 
 #[tokio::main]
@@ -21,7 +24,11 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     // For client, default to log to std::out
     // This is ruining the log output for the CLI. Needs to be fixed.
-    // let _log_appender_guard = init_node_logging(&None)?;
+
+    let tmp_dir = std::env::temp_dir();
+    let _log_appender_guard = init_node_logging(&Some(tmp_dir.join("safe-client.log")))?;
+
+    info!("Full client logs will be written to {:?}", tmp_dir);
 
     println!("Instantiating a SAFE client...");
 
