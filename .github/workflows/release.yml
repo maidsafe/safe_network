@@ -215,8 +215,8 @@ jobs:
         id: versioning
         run: |
           ./resources/scripts/output_versioning_info.sh
-      - name: cargo login
-        run: cargo login ${{ secrets.CRATES_IO_TOKEN }}
+      # - name: cargo login
+      #   run: cargo login ${{ secrets.CRATES_IO_TOKEN }}
       ## We will probably need this one later
       # - name: publish sn_updater
       #   run: |
