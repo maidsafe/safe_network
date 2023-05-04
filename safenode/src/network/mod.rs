@@ -574,6 +574,8 @@ mod tests {
     use xor_name::XorName;
 
     #[tokio::test(flavor = "multi_thread")]
+    // Enable mDNS for peer discovery here
+    #[cfg(feature = "local_discovery")]
     async fn closest() -> Result<()> {
         init_test_logger();
         let mut networks_list = Vec::new();

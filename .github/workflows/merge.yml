@@ -110,6 +110,11 @@ jobs:
         timeout-minutes: 25
         run: cargo test --release -p safenode -- network
 
+      - name: Run network tests with local discovery enabled
+        # Only run on PRs w/ ubuntu
+        timeout-minutes: 25
+        run: cargo test --release -p safenode --features="local_discovery" -- network
+
       - name: Run protocol tests
         # Only run on PRs w/ ubuntu
         timeout-minutes: 25
