@@ -63,8 +63,11 @@ const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Our agent string has as a prefix that we can match against.
 pub const IDENTIFY_AGENT_STR: &str = "safe/node/";
+
 /// The suffix is the version of the node.
 const IDENTIFY_AGENT_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
+/// The suffix is the version of the client.
+const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PKG_VERSION"));
 const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
 /// Majority of a given group (i.e. > 1/2).
@@ -125,7 +128,7 @@ impl SwarmDriver {
             .set_record_ttl(None);
 
         let (network, events_receiver, mut swarm_driver) =
-            Self::with(kad_cfg, ProtocolSupport::Full)?;
+            Self::with(kad_cfg, ProtocolSupport::Full, false)?;
 
         // Listen on the provided address
         let addr = Multiaddr::from(addr.ip())
@@ -154,13 +157,14 @@ impl SwarmDriver {
             NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
         );
 
-        Self::with(cfg, ProtocolSupport::Outbound)
+        Self::with(cfg, ProtocolSupport::Outbound, true)
     }
 
     // Private helper to create the network components with the provided config and req/res behaviour
     fn with(
         kad_cfg: KademliaConfig,
         req_res_protocol: ProtocolSupport,
+        is_client: bool,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a random key for ourself.
         let keypair = identity::Keypair::generate_ed25519();
@@ -215,9 +219,13 @@ impl SwarmDriver {
         };
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
-        let identify_cfg =
+        let identify_cfg = if is_client {
             libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                .with_agent_version(IDENTIFY_AGENT_VERSION_STR.to_string());
+                .with_agent_version(IDENTIFY_CLIENT_VERSION_STR.to_string())
+        } else {
+            libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
+                .with_agent_version(IDENTIFY_AGENT_VERSION_STR.to_string())
+        };
         let identify = libp2p::identify::Behaviour::new(identify_cfg);
 
         let behaviour = NodeBehaviour {
