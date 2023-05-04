@@ -1,0 +1,52 @@
+name: Version Bump
+
+# this should prevent concurrent version bumps
+concurrency:
+  group: "version-bumping"
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
+
+jobs:
+  bump_version:
+    if: |
+      github.repository_owner == 'maidsafe' &&
+      !startsWith(github.event.head_commit.message, 'chore(release):')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: "0"
+          token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+      - uses: actions-rs/toolchain@v1
+        id: toolchain
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - shell: bash
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+      - shell: bash
+        run: cargo install cargo-smart-release
+      - shell: bash
+        run: ./resources/scripts/bump_version.sh
+      - name: push version bump commit and tags
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+          branch: main
+          tags: true
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Version Bumping Failed"
