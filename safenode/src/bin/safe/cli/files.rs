@@ -28,14 +28,43 @@ pub enum FilesCmds {
         #[clap(name = "path", value_name = "DIRECTORY")]
         path: PathBuf,
     },
-    Download,
+    Download {
+        /// Name of the file to download.
+        #[clap(name = "file_name")]
+        file_name: Option<String>,
+        /// Address of the file to download, in hex string.
+        #[clap(name = "file_addr")]
+        file_addr: Option<String>,
+    },
 }
 
 pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path) -> Result<()> {
     let file_api: Files = Files::new(client);
     match cmds {
         FilesCmds::Upload { path } => upload_files(path, &file_api, root_dir).await?,
-        FilesCmds::Download => download_files(&file_api, root_dir).await?,
+        FilesCmds::Download {
+            file_name,
+            file_addr,
+        } => match (file_name, file_addr) {
+            (Some(name), Some(address)) => {
+                let bytes = hex::decode(address).expect("Input address is not a hex string");
+                download_file(
+                    &file_api,
+                    &XorName(
+                        bytes
+                            .try_into()
+                            .expect("Failed to parse XorName from hex string"),
+                    ),
+                    &name,
+                    root_dir,
+                )
+                .await
+            }
+            _ => {
+                println!("Trying to download files recorded in uploaded_files folder");
+                download_files(&file_api, root_dir).await?
+            }
+        },
     };
     Ok(())
 }
@@ -63,7 +92,12 @@ async fn upload_files(files_path: PathBuf, file_api: &Files, root_dir: &Path) ->
 
             match file_api.upload(bytes).await {
                 Ok(address) => {
-                    println!("Successfully stored file to {address:?}");
+                    // Output address in hex string.
+                    println!(
+                        "Successfully stored file {:?} to {:64x}",
+                        entry.file_name(),
+                        address.name()
+                    );
                     chunks_to_fetch.push((*address.name(), file_name));
                 }
                 Err(error) => {
@@ -105,21 +139,35 @@ async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
                 println!("No files to download!");
             }
             for (xorname, file_name) in files_to_fetch.iter() {
-                println!("Downloading file {file_name:?}");
-                match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
-                    Ok(bytes) => {
-                        println!("Successfully got file {file_name}!");
-                        let file_name_path = download_path.join(file_name);
-                        println!("Writing {} bytes to {file_name_path:?}", bytes.len());
-                        fs::write(file_name_path, bytes)?;
-                    }
-                    Err(error) => {
-                        println!("Did not get file {file_name:?} from the network! {error}")
-                    }
-                };
+                download_file(file_api, xorname, file_name, &download_path).await;
             }
         }
     }
 
     Ok(())
+}
+
+async fn download_file(
+    file_api: &Files,
+    xorname: &XorName,
+    file_name: &String,
+    download_path: &Path,
+) {
+    println!(
+        "Downloading file {file_name:?} with address {:64x}",
+        xorname
+    );
+    match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
+        Ok(bytes) => {
+            println!("Successfully got file {file_name}!");
+            let file_name_path = download_path.join(file_name);
+            println!("Writing {} bytes to {file_name_path:?}", bytes.len());
+            if let Err(err) = fs::write(file_name_path, bytes) {
+                println!("Failed to create file {file_name:?} with error {err:?}");
+            }
+        }
+        Err(error) => {
+            println!("Did not get file {file_name:?} from the network! {error}")
+        }
+    }
 }
