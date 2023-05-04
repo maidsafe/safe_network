@@ -94,8 +94,8 @@ jobs:
         name: package artifacts for release
         run: |
           make prepare-deploy
-          make safe_network-package-version-artifacts-for-release
-          make sn_cli-package-version-artifacts-for-release
+          make safenode-package-version-artifacts-for-release
+          make safe-package-version-artifacts-for-release
 
       - shell: bash
         id: versioning
@@ -135,7 +135,7 @@ jobs:
         shell: bash
         run: |
           (
-            cd deploy/prod/sn_node
+            cd deploy/prod/safenode
             ls | xargs gh release upload ${{ steps.versioning.outputs.gh_release_tag_name }}
           )
           (
@@ -144,12 +144,12 @@ jobs:
           )
 
       - uses: shallwefootball/s3-upload-action@master
-        name: upload sn_node artifacts to s3
+        name: upload safenode artifacts to s3
         with:
           aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          aws_bucket: sn-node
-          source_dir: deploy/prod/sn_node
+          aws_bucket: safenode
+          source_dir: deploy/prod/safenode
           destination_dir: ""
 
       - uses: shallwefootball/s3-upload-action@master
@@ -157,7 +157,7 @@ jobs:
         with:
           aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          aws_bucket: sn-cli
+          aws_bucket: safe
           source_dir: deploy/prod/safe
           destination_dir: ""
 
@@ -166,17 +166,17 @@ jobs:
         name: package artifacts for release
         run: |
           make prepare-deploy
-          make safe_network-package-version-artifacts-for-release \
-            SN_NODE_VERSION=latest DEPLOY_PATH=deploy
-          make sn_cli-package-version-artifacts-for-release SN_CLI_VERSION=latest DEPLOY_PATH=deploy
+          make safenode-package-version-artifacts-for-release \
+            SAFENODE_VERSION=latest DEPLOY_PATH=deploy
+          make safe-package-version-artifacts-for-release SAFE_VERSION=latest DEPLOY_PATH=deploy
 
       - uses: shallwefootball/s3-upload-action@master
-        name: upload sn_node artifacts to s3
+        name: upload safenode artifacts to s3
         with:
           aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          aws_bucket: sn-node
-          source_dir: deploy/prod/sn_node
+          aws_bucket: safenode
+          source_dir: deploy/prod/safenode
           destination_dir: ""
 
       - uses: shallwefootball/s3-upload-action@master
@@ -184,7 +184,7 @@ jobs:
         with:
           aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          aws_bucket: sn-cli
+          aws_bucket: safe
           source_dir: deploy/prod/safe
           destination_dir: ""
       - name: post notification to slack on failure
@@ -217,55 +217,25 @@ jobs:
           ./resources/scripts/output_versioning_info.sh
       - name: cargo login
         run: cargo login ${{ secrets.CRATES_IO_TOKEN }}
-      - name: publish sn_updater
+      ## We will probably need this one later
+      # - name: publish sn_updater
+      #   run: |
+      #     commit_message="${{ github.event.head_commit.message }}"
+      #     if [[ $commit_message == *"sn_updater"* ]]; then
+      #       # The sn_updater crate doesn't have any dependencies so we can go ahead and publish.
+      #       cd sn_updater && cargo publish --allow-dirty
+      #     fi
+      - name: publish safenode
         run: |
           commit_message="${{ github.event.head_commit.message }}"
-          if [[ $commit_message == *"sn_updater"* ]]; then
-            # The sn_updater crate doesn't have any dependencies so we can go ahead and publish.
-            cd sn_updater && cargo publish --allow-dirty
+          if [[ $commit_message == *"safenode"* ]]; then
+            ./resources/scripts/publish_crate_with_retries.sh "safenode"
           fi
-      - name: publish sn_interface
+      - name: publish safe
         run: |
           commit_message="${{ github.event.head_commit.message }}"
-          if [[ $commit_message == *"sn_interface"* ]]; then
-            # The sn_interface crate doesn't have any dependencies so we can go ahead and publish.
-            cd sn_interface && cargo publish --allow-dirty
-          fi
-      - name: publish sn_fault_detection
-        run: |
-          commit_message="${{ github.event.head_commit.message }}"
-          if [[ $commit_message == *"sn_fault_detection"* ]]; then
-            ./resources/scripts/publish_crate_with_retries.sh "sn_fault_detection"
-          fi
-      - name: publish sn_comms
-        run: |
-          commit_message="${{ github.event.head_commit.message }}"
-          if [[ $commit_message == *"sn_comms"* ]]; then
-            ./resources/scripts/publish_crate_with_retries.sh "sn_comms"
-          fi
-      - name: publish sn_node
-        run: |
-          commit_message="${{ github.event.head_commit.message }}"
-          if [[ $commit_message == *"sn_node"* ]]; then
-            ./resources/scripts/publish_crate_with_retries.sh "sn_node"
-          fi
-      - name: publish sn_client
-        run: |
-          commit_message="${{ github.event.head_commit.message }}"
-          if [[ $commit_message == *"sn_client-"* ]]; then
-            ./resources/scripts/publish_crate_with_retries.sh "sn_client"
-          fi
-      - name: publish sn_api
-        run: |
-          commit_message="${{ github.event.head_commit.message }}"
-          if [[ $commit_message == *"sn_api"* ]]; then
-            ./resources/scripts/publish_crate_with_retries.sh "sn_api"
-          fi
-      - name: publish sn_cli
-        run: |
-          commit_message="${{ github.event.head_commit.message }}"
-          if [[ $commit_message == *"sn_cli-"* ]]; then
-            ./resources/scripts/publish_crate_with_retries.sh "sn_cli"
+          if [[ $commit_message == *"safe-"* ]]; then
+            ./resources/scripts/publish_crate_with_retries.sh "safe"
           fi
       - name: post notification to slack on failure
         if: ${{ failure() }}
