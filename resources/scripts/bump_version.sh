@@ -47,7 +47,7 @@ function determine_which_crates_have_changes() {
   fi
 
   if [[ $sn_testnet_has_changes == "false" ]] && \
-     [[ $safenode_has_changes == "false" ]] then
+     [[ $safenode_has_changes == "false" ]]; then
        echo "smart-release detected no changes in any crates. Exiting."
        exit 0
   fi
