@@ -258,7 +258,6 @@ impl SwarmDriver {
         loop {
             tokio::select! {
                 some_event = self.swarm.next() => {
-                    trace!("received a swarm event {some_event:?}");
                     if let Err(err) = self.handle_swarm_events(some_event.expect("Swarm stream to be infinite!")).await {
                         warn!("Error while handling event: {err}");
                     }
