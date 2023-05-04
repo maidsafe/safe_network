@@ -247,7 +247,6 @@ impl Client {
         let cmd = Cmd::SpendDbc {
             signed_spend: Box::new(spend.signed_spend),
             parent_tx: Box::new(spend.parent_tx),
-            fee_ciphers: spend.fee_ciphers,
         };
 
         trace!("Sending {:?} to the closest peers.", cmd);
