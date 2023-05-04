@@ -9,7 +9,6 @@
 //! Data messages and their possible responses.
 mod cmd;
 mod event;
-mod fees;
 mod node_id;
 mod query;
 mod register;
@@ -19,7 +18,6 @@ mod spend;
 pub use self::{
     cmd::Cmd,
     event::Event,
-    fees::{RequiredFee, RequiredFeeContent},
     node_id::NodeId,
     query::Query,
     register::{
@@ -27,7 +25,7 @@ pub use self::{
         SignedRegisterCreate, SignedRegisterEdit,
     },
     response::{CmdResponse, QueryResponse},
-    spend::{FeeCiphers, SpendPriority, SpendQuery},
+    spend::SpendQuery,
 };
 
 use super::storage::{dbc_address, dbc_name, Chunk, DataAddress, DbcAddress};
@@ -116,9 +114,6 @@ impl std::fmt::Display for Response {
         match self {
             Response::Query(QueryResponse::GetDbcSpend(Ok(spend))) => {
                 write!(f, "GetDbcSpend(Ok({:?}))", spend.dbc_id())
-            }
-            Response::Query(QueryResponse::GetFees(Ok((node_id, _)))) => {
-                write!(f, "GetFees(Ok({node_id:?}))")
             }
             _ => write!(f, "{:?}", self),
         }

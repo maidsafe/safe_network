@@ -9,25 +9,14 @@
 use super::Client;
 
 use crate::domain::{
-    client_transfers::{create_online_transfer, Outputs as TransferDetails},
+    client_transfers::Outputs as TransferDetails,
     wallet::{Error, Result, SendClient},
 };
-
-use sn_dbc::{Dbc, DbcIdSource, DerivedKey, PublicAddress, Token};
 
 use futures::future::join_all;
 
 #[async_trait::async_trait]
 impl SendClient for Client {
-    async fn create_transfer(
-        &self,
-        dbcs: Vec<(Dbc, DerivedKey)>,
-        to: Vec<(Token, DbcIdSource)>,
-        change_to: PublicAddress,
-    ) -> Result<TransferDetails> {
-        Ok(create_online_transfer(dbcs, to, change_to, self).await?)
-    }
-
     async fn send(&self, transfer: TransferDetails) -> Result<()> {
         let mut tasks = Vec::new();
         for spend_request in &transfer.all_spend_requests {

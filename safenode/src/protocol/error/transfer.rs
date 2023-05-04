@@ -6,46 +6,21 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::messages::NodeId;
-
 use super::StorageError;
 
 // FIMXE: these should be defined within the protocol rather than pulled another crate.
-use sn_dbc::{DbcId, Error as DbcError, Hash, SignedSpend, Token};
+use sn_dbc::{Error as DbcError, Hash, SignedSpend};
 
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeSet, fmt::Debug};
+use std::collections::BTreeSet;
 use thiserror::Error;
 
 /// Transfer errors.
 #[derive(Error, custom_debug::Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransferError {
     ///
-    #[error("The transfer fee is missing.")]
-    MissingFee((NodeId, DbcId)),
-    ///
-    #[error("The transfer feeciphers are missing.")]
-    MissingFeeCiphers(NodeId),
-    ///
-    #[error("Invalid fee blinded amount.")]
-    InvalidFeeBlindedAmount,
-    ///
-    #[error("Too low amount for the transfer fee: {paid}. Min required: {required}.")]
-    FeeTooLow {
-        ///
-        paid: Token,
-        ///
-        required: Token,
-    },
-    ///
-    #[error(transparent)]
-    Fees(#[from] FeeError),
-    ///
     #[error("Contacting close group of parent spends failed: {0}.")]
     SpendParentCloseGroupIssue(String),
-    ///
-    #[error("Fee cipher cecryption failed {0}.")]
-    FeeCipherDecryptionFailed(String),
     /// An error from the `sn_dbc` crate.
     #[error("Dbc error: {0}")]
     Dbcs(String),
@@ -92,26 +67,6 @@ pub enum TransferError {
 }
 
 impl From<DbcError> for TransferError {
-    fn from(error: DbcError) -> Self {
-        Self::Dbcs(error.to_string())
-    }
-}
-
-/// Fee errors.
-#[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum FeeError {
-    /// The Node signature over the `RequiredFee` is invalid.
-    #[error("Node signature is invalid.")]
-    RequiredFeeSignatureInvalid,
-    /// Decryption of the amount failed. Wrong key used.
-    #[error("Decryption of the amount failed. Wrong key used.")]
-    AmountDecryptionFailed,
-    /// An error from the `sn_dbc` crate.
-    #[error("Dbc error: {0}")]
-    Dbcs(String),
-}
-
-impl From<DbcError> for FeeError {
     fn from(error: DbcError) -> Self {
         Self::Dbcs(error.to_string())
     }

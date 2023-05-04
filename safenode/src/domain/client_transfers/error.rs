@@ -26,7 +26,4 @@ pub enum Error {
     /// DbcReissueFailed
     #[error("DbcReissueFailed: {0}")]
     DbcReissueFailed(String),
-    /// CouldNotGetFees
-    #[error("CouldNotGetFees: {0}")]
-    CouldNotGetFees(String),
 }

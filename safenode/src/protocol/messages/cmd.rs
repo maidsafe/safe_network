@@ -8,12 +8,11 @@
 
 use crate::protocol::storage::{dbc_address, Chunk, ChunkAddress, DataAddress};
 
-use super::{FeeCiphers, NodeId, RegisterCmd};
+use super::RegisterCmd;
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 
 /// Data and Dbc cmds - recording spends or creating, updating, and removing data.
 ///
@@ -43,10 +42,6 @@ pub enum Cmd {
         /// The transaction that this spend was created in.
         #[debug(skip)]
         parent_tx: Box<DbcTransaction>,
-        /// As to avoid impl separate cmd flow, we send
-        /// all fee ciphers to all Nodes for now.
-        #[debug(skip)]
-        fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
     },
 }
 
