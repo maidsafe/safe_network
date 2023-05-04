@@ -221,7 +221,6 @@ async fn select_inputs(
         dbcs_to_spend,
         recipients,
         change: (change_amount, change_to),
-        node_fees_per_input,
     })
 }
 
@@ -244,7 +243,6 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
         dbcs_to_spend,
         recipients,
         change: (change, change_to),
-        node_fees_per_input,
     } = selected_inputs;
 
     let mut inputs = vec![];
@@ -313,16 +311,13 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
             "Missing source dbc tx of {dbc_id:?}!"
         )))?;
 
-        let node_fees = node_fees_per_input
-            .get(dbc_id)
-            .ok_or(Error::DbcReissueFailed(format!(
-                "Missing source dbc tx of {dbc_id:?}!"
-            )))?;
+        // NB TODO no fees for now, but we might add some later
+        let node_fees = BTreeMap::new();
 
         let spend_requests = SpendRequest {
             signed_spend: signed_spend.clone(),
             parent_tx: parent_tx.clone(),
-            fee_ciphers: fee_ciphers(&outputs, node_fees)?,
+            fee_ciphers: fee_ciphers(&outputs, &node_fees)?,
         };
 
         all_spend_requests.push(spend_requests);

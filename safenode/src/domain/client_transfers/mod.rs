@@ -39,16 +39,13 @@ pub(crate) use self::{
     online::create_transfer as create_online_transfer,
 };
 
-use crate::protocol::messages::{FeeCiphers, NodeId, RequiredFee};
+use crate::protocol::messages::{FeeCiphers, NodeId};
 
 use sn_dbc::{
-    Dbc, DbcId, DbcIdSource, DbcTransaction, DerivedKey, PublicAddress, RevealedAmount,
-    SignedSpend, Token,
+    Dbc, DbcIdSource, DbcTransaction, DerivedKey, PublicAddress, RevealedAmount, SignedSpend, Token,
 };
 
 use std::collections::BTreeMap;
-
-type NodeFeesPerInput = BTreeMap<DbcId, BTreeMap<NodeId, (RequiredFee, DbcIdSource)>>;
 
 /// The input details necessary to
 /// carry out a transfer of tokens.
@@ -61,11 +58,6 @@ pub struct Inputs {
     pub recipients: Vec<(Token, DbcIdSource)>,
     /// Any surplus amount after spending the necessary input dbcs.
     pub change: (Token, PublicAddress),
-    /// This is the set of input dbc keys, each having a set of
-    /// node ids and their respective fees to be paid, and the
-    /// dbc id source to generate the dbc the fees shall be paid to.
-    /// Used to produce the fee ciphers for the spends.
-    pub node_fees_per_input: NodeFeesPerInput,
 }
 
 /// The created dbcs and change dbc from a transfer

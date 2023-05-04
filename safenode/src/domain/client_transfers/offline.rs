@@ -106,7 +106,6 @@ fn select_inputs(
         dbcs_to_spend,
         recipients,
         change: (change_amount, change_to),
-        node_fees_per_input: BTreeMap::new(),
     })
 }
 
