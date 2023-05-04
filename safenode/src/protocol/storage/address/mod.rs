@@ -32,7 +32,7 @@ pub enum DataAddress {
     Register(RegisterAddress),
     ///
     Spend(DbcAddress),
-    /// The new general identifier for a items in the network.
+    /// The new general identifier for items in the network.
     Network(NetworkKey),
 }
 
