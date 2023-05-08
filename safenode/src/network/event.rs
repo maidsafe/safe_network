@@ -18,8 +18,10 @@ use crate::protocol::{
     storage::Chunk,
 };
 
+use crate::domain::storage::DiskBackedRecordStore;
+
 use libp2p::{
-    kad::{store::MemoryStore, GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
+    kad::{GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     mdns,
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
@@ -34,7 +36,7 @@ use tracing::{info, warn};
 #[behaviour(out_event = "NodeEvent")]
 pub(super) struct NodeBehaviour {
     pub(super) request_response: request_response::Behaviour<MsgCodec>,
-    pub(super) kademlia: Kademlia<MemoryStore>,
+    pub(super) kademlia: Kademlia<DiskBackedRecordStore>,
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
 }

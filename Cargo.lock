@@ -4075,6 +4075,7 @@ dependencies = [
  "rmp-serde",
  "self_encryption",
  "serde",
+ "smallvec",
  "sn_dbc",
  "thiserror",
  "tiny-keccak",

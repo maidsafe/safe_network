@@ -18,12 +18,7 @@ name = "faucet"
 path = "src/bin/faucet.rs"
 
 [features]
-otlp = [
-    "opentelemetry",
-    "opentelemetry-otlp",
-    "opentelemetry-semantic-conventions",
-    "tracing-opentelemetry",
-]
+otlp = ["opentelemetry", "opentelemetry-otlp", "opentelemetry-semantic-conventions", "tracing-opentelemetry"]
 
 [dependencies]
 async-trait = "0.1"
@@ -65,6 +60,7 @@ tracing-opentelemetry = { version = "0.17", optional = true }
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 walkdir = "2.3.1"
 xor_name = "5.0.0"
+smallvec = "1.10.0"
 
 [dev-dependencies]
 assert_fs = "1.0.0"

@@ -24,16 +24,13 @@ use self::{
     msg::{MsgCodec, MsgProtocol},
 };
 
+use crate::domain::storage::{DiskBackedRecordStore, DiskBackedRecordStoreConfig};
 use crate::protocol::messages::{QueryResponse, Request, Response};
-
 use futures::{future::select_all, StreamExt};
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
-    kad::{
-        record::store::MemoryStore, store::MemoryStoreConfig, KBucketKey, Kademlia, KademliaConfig,
-        QueryId, Record, RecordKey,
-    },
+    kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     mdns,
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
@@ -196,7 +193,7 @@ impl SwarmDriver {
 
         // Configures the memory store to be able to hold larger
         // records than by default
-        let memory_store_cfg = MemoryStoreConfig {
+        let memory_store_cfg = DiskBackedRecordStoreConfig {
             max_value_bytes: 1024 * 1024,
             max_providers_per_key: CLOSE_GROUP_SIZE,
             ..Default::default()
@@ -206,7 +203,7 @@ impl SwarmDriver {
         // to outbound-only mode and don't listen on any address
         let kademlia = Kademlia::with_config(
             peer_id,
-            MemoryStore::with_config(peer_id, memory_store_cfg),
+            DiskBackedRecordStore::with_config(peer_id, memory_store_cfg),
             kad_cfg,
         );
 
