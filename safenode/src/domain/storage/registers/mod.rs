@@ -90,7 +90,7 @@ impl RegisterStorage {
         self.try_to_apply_cmd_against_register_state(cmd, &mut stored_reg)?;
 
         // Everything went fine, write the new cmd to disk.
-        self.write_log_to_disk(&vec![cmd.clone()], &stored_reg.op_log_path)
+        self.write_log_to_disk(&vec![cmd.clone()], &stored_reg.op_log_path, addr)
             .await
     }
 
@@ -99,7 +99,9 @@ impl RegisterStorage {
     pub(super) async fn remove(&self, address: &RegisterAddress) -> Result<()> {
         trace!("Removing Register: {address:?}");
         let filepath = self.address_to_filepath(address)?;
-        remove_file(filepath).await?;
+        if let Err(err) = remove_file(filepath).await {
+            warn!("We couldn't remove Register from disk: {err:?}");
+        }
         Ok(())
     }
 
@@ -122,7 +124,7 @@ impl RegisterStorage {
         }
 
         // Write the new cmds all to disk
-        self.write_log_to_disk(&log_to_write, &stored_reg.op_log_path)
+        self.write_log_to_disk(&log_to_write, &stored_reg.op_log_path, addr)
             .await
     }
 
@@ -131,7 +133,12 @@ impl RegisterStorage {
     /// ---------------------------------------------------
 
     /// Persists a RegisterLog to disk
-    async fn write_log_to_disk(&self, log: &RegisterLog, path: &Path) -> Result<()> {
+    async fn write_log_to_disk(
+        &self,
+        log: &RegisterLog,
+        path: &Path,
+        addr: RegisterAddress,
+    ) -> Result<()> {
         trace!(
             "Writing to register log with {} cmd/s at {}",
             log.len(),
@@ -141,7 +148,10 @@ impl RegisterStorage {
             return Ok(());
         }
 
-        create_dir_all(path).await?;
+        create_dir_all(path).await.map_err(|err| {
+            warn!("We couldn't create dir structure to write Register cmd to disk: {err:?}");
+            Error::RegisterCmdNotStored(addr)
+        })?;
 
         let mut last_err = None;
 
@@ -196,16 +206,25 @@ impl RegisterStorage {
             return Ok(());
         }
 
-        let mut file = File::create(&path).await?;
+        let mut file = File::create(&path).await.map_err(|err| {
+            warn!("We couldn't create file to write Register cmd to disk: {err:?}");
+            Error::RegisterCmdNotStored(addr)
+        })?;
 
         let serialized_data = serialize(cmd).map_err(|err| {
             warn!("We couldn't serialise the Register cmd to write it to disk: {err:?}");
             Error::RegisterCmdNotStored(addr)
         })?;
-        file.write_all(&serialized_data).await?;
+        file.write_all(&serialized_data).await.map_err(|err| {
+            warn!("We couldn't write the serialises Register cmd to disk: {err:?}");
+            Error::RegisterCmdNotStored(addr)
+        })?;
+
         // Sync OS data to disk to reduce the chances of
         // concurrent reading failing by reading an empty/incomplete file.
-        file.sync_data().await?;
+        if let Err(err) = file.sync_data().await {
+            warn!("We couldn't sync Register file to disk: {err:?}");
+        }
 
         trace!(
             "RegisterCmd writing successful for {addr:?}, id {reg_cmd_id}, at {}, entry hash: {entry_hash:?}",
