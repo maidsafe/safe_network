@@ -142,8 +142,6 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Rust
-        # Only run on non-PR events
-        
         id: toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -152,8 +150,6 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v1
-        # Only run on non-PR events
-        
         continue-on-error: true
         with:
           cache-on-failure: true
@@ -172,69 +168,63 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Build sn bins
-        # Only run on non-PR events
-        
         run: cargo build --release --bins
         timeout-minutes: 30
 
       - name: Start a local network
-        # Only run on non-PR events
-        
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         id: section-startup
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
+      - name: Find a contact node.
+        shell: bash
+        # get all nodes listen ports
+        run: echo "CONTACT_PEER=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o)" >> $GITHB_ENV
+
+      - name: Check contact peer
+        shell: bash
+        run: echo "Peer is $CONTACT_PEER"
+      
+      
       - name: Start a client to upload files
-        # Only run on non-PR events
-        
-        run: cargo run --bin safe --release -- files upload -- "./resources"
+        run: cargo run --bin safe --peer $CONTACT_PEER --release -- files upload -- "./resources"
         id: client-file-upload
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a client to download files
-        # Only run on non-PR events
-        
-        run: cargo run --bin safe --release -- files download
+        run: cargo run --bin safe --peer $CONTACT_PEER --release -- files download
         id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a client to create a register
-        # Only run on non-PR events
-        
-        run: cargo run --bin safe --release -- register create baobao
+        run: cargo run --bin safe --peer $CONTACT_PEER --release -- register create baobao
         id: client-register-create
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a client to get a register
-        # Only run on non-PR events
-        
-        run: cargo run --bin safe --release -- register get baobao
+        run: cargo run --bin safe --peer $CONTACT_PEER --release -- register get baobao
         id: client-register-get
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a client to edit a register
-        # Only run on non-PR events
-        
-        run: cargo run --bin safe --release -- register edit baobao wood
+        run: cargo run --bin safe --peer $CONTACT_PEER --release -- register edit baobao wood
         id: client-register-edit
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a faucet client to claim genesis
-        # Only run on non-PR events
-        
-        run: cargo run --bin faucet --release -- claim-genesis
+        run: cargo run --bin faucet --peer $CONTACT_PEER --release -- claim-genesis
         id: faucet-claim-genesis
         env:
           RUST_LOG: "safenode,safe=trace"
@@ -355,8 +345,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust
-        # Only run on non-PR events
-        
         id: toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -365,8 +353,6 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v1
-        # Only run on non-PR events
-        
         continue-on-error: true
         with:
           cache-on-failure: true
@@ -385,20 +371,14 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Build sn bins
-        # Only run on non-PR events
-        
         run: cargo build --release --bins
         timeout-minutes: 30
 
       - name: Build rpc client
-        # Only run on non-PR events
-        
         run: cargo build --release --example safenode_rpc_client
         timeout-minutes: 30
 
       - name: Start a local network
-        # Only run on non-PR events
-        
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         id: section-startup
         env:
