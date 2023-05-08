@@ -17,7 +17,7 @@ use xor_name::XorName;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// Errors relaated to storage operation on the network.
+/// Errors related to storage operation on the network.
 #[derive(Error, Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 #[non_exhaustive]
 pub enum StorageError {
@@ -93,14 +93,4 @@ pub enum StorageError {
     /// Cannot verify a Spend signature.
     #[error("Spend signature is invalid: {0}")]
     InvalidSpendSignature(String),
-    /// I/O error.
-    // FIXME: remove this variant as it doesn't belong to the protocol
-    #[error("I/O error: {0}")]
-    Io(String),
-}
-
-impl From<std::io::Error> for StorageError {
-    fn from(error: std::io::Error) -> Self {
-        Self::Io(error.to_string())
-    }
 }

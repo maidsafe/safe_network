@@ -107,22 +107,14 @@ impl Node {
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
-                            Some(event) => {
-                                if let Err(err) = node.handle_network_event(event).await {
-                                    warn!("Error handling network event: {err}");
-                                }
-                            }
-                            None => {
-                                error!("The `NetworkEvent` channel is closed")
-                            }
+                            Some(event) => node.handle_network_event(event).await,
+                            None => error!("The `NetworkEvent` channel is closed")
                         }
                     }
                     transfer_action = transfer_action_receiver.recv() => {
                         match transfer_action {
                             Some(action) => node.handle_transfer_action(action).await,
-                            None => {
-                                error!("The `TransferAction` channel is closed")
-                            }
+                            None => error!("The `TransferAction` channel is closed")
                         }
                     }
                 }
@@ -137,10 +129,10 @@ impl Node {
 
     // **** Private helpers *****
 
-    async fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
+    async fn handle_network_event(&mut self, event: NetworkEvent) {
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
-                self.handle_request(req, channel).await?
+                self.handle_request(req, channel).await
             }
             NetworkEvent::PeerAdded(peer) => {
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
@@ -168,21 +160,15 @@ impl Node {
                 });
             }
         }
-
-        Ok(())
     }
 
-    async fn handle_request(
-        &mut self,
-        request: Request,
-        response_channel: MsgResponder,
-    ) -> Result<()> {
+    async fn handle_request(&mut self, request: Request, response_channel: MsgResponder) {
         trace!("Handling request: {request:?}");
         match request {
             Request::Cmd(cmd) => self.handle_cmd(cmd, response_channel).await,
             Request::Query(query) => self.handle_query(query, response_channel).await,
             Request::Event(event) => {
-                match event {
+                let result = match event {
                     Event::ValidSpendReceived {
                         spend,
                         parent_tx,
@@ -191,19 +177,19 @@ impl Node {
                         self.transfers
                             .try_add(spend, parent_tx, parent_spends)
                             .await
-                            .map_err(ProtocolError::Transfers)?;
                     }
                     Event::DoubleSpendAttempted { new, existing } => {
                         self.transfers
                             .try_add_double(new.as_ref(), existing.as_ref())
                             .await
-                            .map_err(ProtocolError::Transfers)?;
                     }
                 };
+
+                if let Err(err) = result {
+                    warn!("Error handling network request event: {err}");
+                }
             }
         }
-
-        Ok(())
     }
 
     async fn handle_query(&mut self, query: Query, response_channel: MsgResponder) {
