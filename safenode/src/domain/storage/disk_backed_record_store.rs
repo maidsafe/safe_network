@@ -9,6 +9,7 @@
 // This was forked from the
 // use super::*;
 
+use itertools::Itertools;
 use libp2p::identity::PeerId;
 use libp2p::kad::{kbucket, K_VALUE};
 use smallvec::SmallVec;
@@ -20,6 +21,9 @@ use libp2p::kad::{
 use std::borrow::Cow;
 use std::collections::{hash_map, hash_set, HashMap, HashSet};
 use std::iter;
+use std::path::PathBuf;
+
+use std::fs;
 
 /// In-memory implementation of a `RecordStore`.
 pub(crate) struct DiskBackedRecordStore {
@@ -27,8 +31,8 @@ pub(crate) struct DiskBackedRecordStore {
     local_key: kbucket::Key<PeerId>,
     /// The configuration of the store.
     config: DiskBackedRecordStoreConfig,
-    /// The stored (regular) records.
-    records: HashMap<Key, Record>,
+    /// The stored keys
+    records: HashSet<Key>,
     /// The stored provider records.
     providers: HashMap<Key, SmallVec<[ProviderRecord; K_VALUE.get()]>>,
     /// The set of all provider records for the node identified by `local_key`.
@@ -51,6 +55,8 @@ pub(crate) struct DiskBackedRecordStoreConfig {
     /// The maximum number of provider records for which the
     /// local node is the provider.
     pub(crate) max_provided_keys: usize,
+    /// The directory where the records are stored.
+    pub(crate) storage_dir: PathBuf,
 }
 
 impl Default for DiskBackedRecordStoreConfig {
@@ -60,6 +66,7 @@ impl Default for DiskBackedRecordStoreConfig {
             max_value_bytes: 65 * 1024,
             max_provided_keys: 1024,
             max_providers_per_key: K_VALUE.get(),
+            storage_dir: std::env::temp_dir(),
         }
     }
 }
@@ -75,7 +82,7 @@ impl DiskBackedRecordStore {
         DiskBackedRecordStore {
             local_key: kbucket::Key::from(local_id),
             config,
-            records: HashMap::default(),
+            records: HashSet::default(),
             provided: HashSet::default(),
             providers: HashMap::default(),
         }
@@ -84,15 +91,21 @@ impl DiskBackedRecordStore {
     /// Retains the records satisfying a predicate.
     pub(crate) fn retain<F>(&mut self, f: F)
     where
-        F: FnMut(&Key, &mut Record) -> bool,
+        F: FnMut(&Key) -> bool,
     {
+        // TODO: Remove on disk also.
         self.records.retain(f);
     }
 }
 
 impl RecordStore for DiskBackedRecordStore {
-    type RecordsIter<'a> =
-        iter::Map<hash_map::Values<'a, Key, Record>, fn(&'a Record) -> Cow<'a, Record>>;
+    // type RecordsIter<'a> = 
+    //     iter::FilterMap<Cow<'a, Record>, Fn(&Cow<'a, Record>) -> bool>
+
+    type RecordsIter<'a> = impl Iterator<Item = Cow<'a, Record>>;
+
+        // type RecordsIter<'a> = 
+        // iter::Iterator< Item=Cow<'a, Record>>;
 
     type ProvidedIter<'a> = iter::Map<
         hash_set::Iter<'a, ProviderRecord>,
@@ -100,7 +113,27 @@ impl RecordStore for DiskBackedRecordStore {
     >;
 
     fn get(&self, k: &Key) -> Option<Cow<'_, Record>> {
-        self.records.get(k).map(Cow::Borrowed)
+        // TODO: is to string enough here?
+        // let filename = self.config.storage_dir.join(k.to_string());
+
+        let key_string = String::from_utf8_lossy(&k.to_vec()).into_owned();
+        let filename = self.config.storage_dir.join(key_string);
+
+        match fs::read(filename) {
+            Ok(contents) => {
+                let record = Record {
+                    key: k.clone(),
+                    value: contents,
+                    publisher: None,
+                    expires: None,
+                };
+                Some(Cow::Owned(record))
+            }
+            Err(e) => {
+                println!("Error reading file: {}", e);
+                None
+            }
+        }
     }
 
     fn put(&mut self, r: Record) -> Result<()> {
@@ -110,27 +143,73 @@ impl RecordStore for DiskBackedRecordStore {
 
         let num_records = self.records.len();
 
-        match self.records.entry(r.key.clone()) {
-            hash_map::Entry::Occupied(mut e) => {
-                e.insert(r);
-            }
-            hash_map::Entry::Vacant(e) => {
-                if num_records >= self.config.max_records {
-                    return Err(Error::MaxRecords);
-                }
-                e.insert(r);
+        // TODO: How strictly will these map?
+        // Ensure they remain in sync!
+        // match self.records.get(r.key.clone()) {
+        //     Some(record) => {
+        //        // We already hold it...
+        //     }
+
+        //     // hash_map::Entry::Occupied(mut e) => {
+        //     //     e.insert(r);
+        //     // }
+        //     // hash_map::Entry::Vacant(e) => {
+        if num_records >= self.config.max_records {
+            return Err(Error::MaxRecords);
+        }
+        //     //     e.insert(r);
+        //     // }
+        // }
+
+        // let serializable_record = SerializableRecord {
+        //     key: r.key.to_string(),
+        //     value: r.value.clone(),
+        // };
+        let key_string = String::from_utf8_lossy(&r.key.to_vec()).into_owned();
+
+        let filename = self.config.storage_dir.join(key_string);
+        // let serialied_rcord = bincode::serialize(&serializable_record)?;
+        match fs::write(filename, r.value) {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Error writing file: {}", error);
+
+                // TODO: Extend error struct if we can
+                Ok(())
             }
         }
-
-        Ok(())
     }
 
     fn remove(&mut self, k: &Key) {
         self.records.remove(k);
+        let key_string = String::from_utf8_lossy(&k.to_vec()).into_owned();
+
+        let filename = self.config.storage_dir.join(key_string);
+        fs::remove_file(filename);
     }
 
     fn records(&self) -> Self::RecordsIter<'_> {
-        self.records.values().map(Cow::Borrowed)
+        // self
+        //     .records
+        //     .iter()
+        //     .filter_map(|k| {
+        //         self.get(k)
+        //         //.map(|r| (k, r))
+        //     })
+
+        // self.records_iter(self.records.iter())
+
+        let records_iter: impl Iterator<Item = Cow<Record>> = self.records_iter(self.records.iter());
+
+        records_iter
+    }
+
+    
+    fn records_iter<'a, I>(self, iter: I) -> impl Iterator<Item = Cow<'a, Record>>
+    where
+        I: Iterator<Item = &'a String>,
+    {
+        iter.filter_map(move |k| self.get(k))
     }
 
     fn add_provider(&mut self, record: ProviderRecord) -> Result<()> {
