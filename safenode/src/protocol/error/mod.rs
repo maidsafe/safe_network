@@ -10,7 +10,7 @@ mod storage;
 mod transfer;
 
 pub use storage::StorageError;
-pub use transfer::{FeeError, TransferError};
+pub use transfer::TransferError;
 
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, result};

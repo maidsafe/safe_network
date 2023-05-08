@@ -14,8 +14,6 @@ use crate::protocol::{
     },
 };
 
-use super::{NodeId, RequiredFee};
-
 #[allow(unused_imports)] // needed by rustdocs links
 use super::RegisterQuery;
 
@@ -28,13 +26,6 @@ use std::{collections::BTreeSet, fmt::Debug};
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 pub enum QueryResponse {
-    //
-    // ===== DBC Data =====
-    //
-    /// Response to [`GetFees`].
-    ///
-    /// [`GetFees`]: crate::protocol::messages::SpendQuery::GetFees
-    GetFees(Result<(NodeId, RequiredFee)>),
     /// If the queried node has validated a corresponding spend
     /// request, it will return the SignedSpend.
     /// It is up to the Client to get this SignedSpend from enough

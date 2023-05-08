@@ -61,12 +61,8 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
     assert_eq!(second_wallet.balance(), second_wallet_balance);
     println!("Tokens deposited to second wallet: {second_wallet_balance}.");
 
-    // The first wallet will have paid fees for the transfer,
-    // so it will have less than half the amount left, but we can't
-    // know how much exactly, so we just check that it has less than
-    // the original amount.
     let first_wallet = get_wallet(first_wallet_dir.path()).await;
-    assert!(second_wallet_balance.as_nano() > first_wallet.balance().as_nano());
+    assert!(second_wallet_balance.as_nano() == first_wallet.balance().as_nano());
 
     Ok(())
 }

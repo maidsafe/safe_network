@@ -28,27 +28,16 @@
 //! A dbc transaction is the lower layer concept where the blinded inputs and outputs are specified.
 
 mod error;
-mod offline;
-mod online;
-
-#[cfg(test)]
-pub(crate) use self::offline::create_transfer as create_offline_transfer;
+mod transfer;
 
 pub(crate) use self::{
     error::{Error, Result},
-    online::create_transfer as create_online_transfer,
+    transfer::create_transfer,
 };
-
-use crate::protocol::messages::{FeeCiphers, NodeId, RequiredFee};
 
 use sn_dbc::{
-    Dbc, DbcId, DbcIdSource, DbcTransaction, DerivedKey, PublicAddress, RevealedAmount,
-    SignedSpend, Token,
+    Dbc, DbcIdSource, DbcTransaction, DerivedKey, PublicAddress, RevealedAmount, SignedSpend, Token,
 };
-
-use std::collections::BTreeMap;
-
-type NodeFeesPerInput = BTreeMap<DbcId, BTreeMap<NodeId, (RequiredFee, DbcIdSource)>>;
 
 /// The input details necessary to
 /// carry out a transfer of tokens.
@@ -61,11 +50,6 @@ pub struct Inputs {
     pub recipients: Vec<(Token, DbcIdSource)>,
     /// Any surplus amount after spending the necessary input dbcs.
     pub change: (Token, PublicAddress),
-    /// This is the set of input dbc keys, each having a set of
-    /// node ids and their respective fees to be paid, and the
-    /// dbc id source to generate the dbc the fees shall be paid to.
-    /// Used to produce the fee ciphers for the spends.
-    pub node_fees_per_input: NodeFeesPerInput,
 }
 
 /// The created dbcs and change dbc from a transfer
@@ -93,9 +77,6 @@ pub struct SpendRequest {
     pub signed_spend: SignedSpend,
     /// The dbc transaction that the spent dbc was created in.
     pub parent_tx: DbcTransaction,
-    /// This is the set of node ids and their respective fee ciphers.
-    /// Sent together with spends, so that nodes can verify their fee payments.
-    pub fee_ciphers: BTreeMap<NodeId, FeeCiphers>,
 }
 
 /// A resulting dbc from a token transfer.
