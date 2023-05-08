@@ -83,17 +83,6 @@ pub enum StorageError {
         #[debug(skip)]
         existing: Box<SignedSpend>,
     },
-    /// We were notified about a double spend attempt, but they were for different dbcs.
-    #[debug(skip)]
-    #[error("We were notified about a double spend attempt, but they were for different dbcs. One: {one:?}, another: {other:?}")]
-    NotADoubleSpendAttempt {
-        /// One of the spends provided.
-        #[debug(skip)]
-        one: Box<SignedSpend>,
-        /// The other spend provided.
-        #[debug(skip)]
-        other: Box<SignedSpend>,
-    },
     /// A spend that was attempted to be added was already marked as double spend.
     #[error("A spend that was attempted to be added was already marked as double spend: {0:?}")]
     AlreadyMarkedAsDoubleSpend(DbcAddress),
