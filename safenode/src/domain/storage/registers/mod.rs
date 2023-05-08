@@ -216,7 +216,7 @@ impl RegisterStorage {
             Error::RegisterCmdNotStored(addr)
         })?;
         file.write_all(&serialized_data).await.map_err(|err| {
-            warn!("We couldn't write the serialises Register cmd to disk: {err:?}");
+            warn!("We couldn't write the serialised Register cmd to disk: {err:?}");
             Error::RegisterCmdNotStored(addr)
         })?;
 
