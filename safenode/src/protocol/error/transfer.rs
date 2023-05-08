@@ -8,11 +8,9 @@
 
 use super::StorageError;
 
-// FIMXE: these should be defined within the protocol rather than pulled another crate.
-use sn_dbc::{Error as DbcError, Hash, SignedSpend};
+use sn_dbc::Hash;
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 use thiserror::Error;
 
 /// Transfer errors.
@@ -21,9 +19,6 @@ pub enum TransferError {
     ///
     #[error("Contacting close group of parent spends failed: {0}.")]
     SpendParentCloseGroupIssue(String),
-    /// An error from the `sn_dbc` crate.
-    #[error("Dbc error: {0}")]
-    Dbcs(String),
     /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
     #[error(
         "The signed spend src tx ({signed_src_tx_hash:?}) did not match the provided source tx's hash: {provided_src_tx_hash:?}"
@@ -54,20 +49,7 @@ pub enum TransferError {
         /// The hash of the provided source tx.
         provided_src_tx_hash: Hash,
     },
-    /// One or more parent spends of a requested spend could not be confirmed as valid.
-    /// The full set of parents checked are contained in this error.
-    #[debug(skip)]
-    #[error(
-        "A parent tx of a requested spend could not be confirmed as valid. All parent signed spends of that tx {0:?}"
-    )]
-    InvalidSpendParent(BTreeSet<Box<SignedSpend>>),
     /// Storage error.
     #[error("Storage error {0:?}")]
     Storage(#[from] StorageError),
-}
-
-impl From<DbcError> for TransferError {
-    fn from(error: DbcError) -> Self {
-        Self::Dbcs(error.to_string())
-    }
 }

@@ -485,6 +485,7 @@ mod tests {
             }
         }
     }
+
     // Helpers for tests
 
     fn sign_register_op(mut op: RegisterOp<Entry>, sk: &SecretKey) -> Result<RegisterOp<Entry>> {

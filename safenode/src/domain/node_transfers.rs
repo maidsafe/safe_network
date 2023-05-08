@@ -6,13 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::error::TransferError;
-
 use super::dbc_genesis::GENESIS_DBC;
 
 use crate::{
     domain::{dbc_genesis::is_genesis_parent_tx, storage::SpendStorage},
-    protocol::{error::TransferError as Error, storage::DbcAddress},
+    protocol::{error::TransferError, storage::DbcAddress},
 };
 
 use sn_dbc::{DbcTransaction, SignedSpend};
@@ -20,7 +18,7 @@ use sn_dbc::{DbcTransaction, SignedSpend};
 use std::{collections::BTreeSet, path::Path};
 
 // Result for all related to node handling of transfers.
-type Result<T, E = TransferError> = std::result::Result<T, E>;
+type Result<T> = std::result::Result<T, TransferError>;
 
 pub(crate) struct Transfers {
     storage: SpendStorage,
@@ -65,7 +63,7 @@ impl Transfers {
         let signed_src_tx_hash = signed_spend.src_tx_hash();
 
         if provided_src_tx_hash != signed_src_tx_hash {
-            return Err(Error::TxSourceMismatch {
+            return Err(TransferError::TxSourceMismatch {
                 signed_src_tx_hash,
                 provided_src_tx_hash,
             });
@@ -107,7 +105,7 @@ fn validate_parent_spends(
     for parent_spend in &parent_spends {
         // The dst tx of the parent must be the src tx of the spend.
         if signed_spend.src_tx_hash() != parent_spend.dst_tx_hash() {
-            return Err(Error::TxTrailMismatch {
+            return Err(TransferError::TxTrailMismatch {
                 signed_src_tx_hash: signed_spend.src_tx_hash(),
                 parent_dst_tx_hash: parent_spend.dst_tx_hash(),
             });
@@ -128,7 +126,7 @@ fn validate_parent_spends(
     // Here we check that the spend that is attempted, was created in a valid tx.
     let src_tx_validity = parent_tx.verify(&known_parent_blinded_amounts);
     if src_tx_validity.is_err() {
-        return Err(Error::InvalidSourceTxProvided {
+        return Err(TransferError::InvalidSourceTxProvided {
             signed_src_tx_hash: signed_spend.src_tx_hash(),
             provided_src_tx_hash: parent_tx.hash(),
         });

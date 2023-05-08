@@ -13,7 +13,7 @@
 //! A peer will never again store such a spend to `valid_spends`.
 
 use crate::protocol::{
-    error::StorageError as Error,
+    error::StorageError,
     storage::{dbc_address, DbcAddress},
 };
 
@@ -69,7 +69,7 @@ impl SpendStorage {
             Ok(bytes) => {
                 let spend: SignedSpend = deserialize(&bytes).map_err(|err| {
                     warn!("We couldn't deserialise the SignedSpend read from disk: {err:?}");
-                    Error::SpendNotFound(*address)
+                    StorageError::SpendNotFound(*address)
                 })?;
                 if address == &dbc_address(spend.dbc_id()) {
                     Ok(spend)
@@ -77,10 +77,10 @@ impl SpendStorage {
                     // This can happen if the content read is empty, or incomplete,
                     // possibly due to an issue with the OS synchronising to disk,
                     // resulting in a mismatch with recreated address of the Spend.
-                    Err(Error::SpendNotFound(*address))
+                    Err(StorageError::SpendNotFound(*address))
                 }
             }
-            Err(_) => Err(Error::SpendNotFound(*address)),
+            Err(_) => Err(StorageError::SpendNotFound(*address)),
         }
     }
 
@@ -108,14 +108,14 @@ impl SpendStorage {
     pub(crate) async fn validate(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         let address = dbc_address(signed_spend.dbc_id());
         if self.try_get_double_spend(&address).await {
-            return Err(Error::AlreadyMarkedAsDoubleSpend(address));
+            return Err(StorageError::AlreadyMarkedAsDoubleSpend(address));
         }
 
         if let Ok(existing) = self.get(&address).await {
             let tamper_attempted = signed_spend.spend.hash() != existing.spend.hash();
             if tamper_attempted {
                 trace!("Tamper attempt detected, just rejecting the request.");
-                return Err(Error::AlreadyExists(address));
+                return Err(StorageError::AlreadyExists(address));
                 // // We don't error if the double spend failed, as we rather want to
                 // // announce the double spend attempt to close group. TODO: how to handle the error then?
                 // self.try_store_double_spend(&existing, signed_spend).await?;
@@ -126,7 +126,7 @@ impl SpendStorage {
                 // // The double spend will still be detected by querying for the spend.
                 // self.remove(&address, &self.valid_spends_path).await?;
 
-                // return Err(Error::DoubleSpendAttempt {
+                // return Err(StorageError::DoubleSpendAttempt {
                 //     new: Box::new(signed_spend.clone()),
                 //     existing: Box::new(existing),
                 // });
@@ -139,7 +139,7 @@ impl SpendStorage {
         // the dbc id signed this spend.
         signed_spend
             .verify(signed_spend.dst_tx_hash())
-            .map_err(|err| Error::InvalidSpendSignature(err.to_string()))?;
+            .map_err(|err| StorageError::InvalidSpendSignature(err.to_string()))?;
         // TODO: We want to verify the transaction somehow as well..
         // signed_spend.spend.tx.verify(blinded_amounts)
 
@@ -205,22 +205,33 @@ impl SpendStorage {
         // Store the spend to local file system.
         trace!("Storing spend {address:?}.");
         if let Some(dirs) = filepath.parent() {
-            create_dir_all(dirs).await?;
+            create_dir_all(dirs).await.map_err(|err| {
+                warn!("We couldn't create dir structure to write spend to disk: {err:?}");
+                StorageError::SpendNotStored(address)
+            })?;
         }
 
-        let mut file = File::create(filepath).await?;
+        let mut file = File::create(filepath).await.map_err(|err| {
+            warn!("We couldn't create file to write spend to disk: {err:?}");
+            StorageError::SpendNotStored(address)
+        })?;
 
         let bytes = serialize(signed_spend).map_err(|err| {
-            warn!("We couldn't serialise the SignedSpend to it to disk: {err:?}");
-            Error::SpendNotStored(address)
+            warn!("We couldn't serialise the spend to write it to disk: {err:?}");
+            StorageError::SpendNotStored(address)
         })?;
-        file.write_all(&bytes).await?;
+        file.write_all(&bytes).await.map_err(|err| {
+            warn!("We couldn't write the serialised spend to disk: {err:?}");
+            StorageError::SpendNotStored(address)
+        })?;
+
         // Sync up OS data to disk to reduce the chances of
         // concurrent reading failing by reading an empty/incomplete file.
-        file.sync_data().await?;
+        if let Err(err) = file.sync_data().await {
+            warn!("We couldn't sync spend file to disk: {err:?}");
+        }
 
         trace!("Stored new spend {address:?}.");
-
         Ok(true)
     }
 
@@ -240,7 +251,9 @@ impl SpendStorage {
     async fn remove(&self, address: &DbcAddress, root: &Path) -> Result<()> {
         debug!("Removing spend, {:?}", address);
         let file_path = self.address_to_filepath(address, root)?;
-        remove_file(file_path).await?;
+        if let Err(err) = remove_file(file_path).await {
+            warn!("We couldn't remove DBC from disk: {err:?}");
+        }
         Ok(())
     }
 
@@ -291,19 +304,31 @@ impl SpendStorage {
         // Store the double spend to local file system.
         trace!("Storing double spend {address:?}.");
         if let Some(dirs) = filepath.parent() {
-            create_dir_all(dirs).await?;
+            create_dir_all(dirs).await.map_err(|err| {
+                warn!("We couldn't create dir structure to write double spend to disk: {err:?}");
+                StorageError::SpendNotStored(address)
+            })?;
         }
 
-        let mut file = File::create(filepath).await?;
+        let mut file = File::create(filepath).await.map_err(|err| {
+            warn!("We couldn't create file to write double spend to disk: {err:?}");
+            StorageError::SpendNotStored(address)
+        })?;
 
         let bytes = serialize(&(a_spend, b_spend)).map_err(|err| {
-            warn!("We couldn't serialise the double SignedSpend to write them to disk: {err:?}");
-            Error::SpendNotStored(address)
+            warn!("We couldn't serialise the double spend to write them to disk: {err:?}");
+            StorageError::SpendNotStored(address)
         })?;
-        file.write_all(&bytes).await?;
+        file.write_all(&bytes).await.map_err(|err| {
+            warn!("We couldn't write the serialised double spend to disk: {err:?}");
+            StorageError::SpendNotStored(address)
+        })?;
+
         // Sync up OS data to disk to reduce the chances of
         // concurrent reading failing by reading an empty/incomplete file.
-        file.sync_data().await?;
+        if let Err(err) = file.sync_data().await {
+            warn!("We couldn't sync double spend file to disk: {err:?}");
+        }
 
         trace!("Stored double spend {address:?}.");
 
@@ -403,7 +428,7 @@ mod tests {
 
         match storage.try_add(&tampered_spend).await {
             Ok(_) => panic!("Double spend should not be allowed."),
-            Err(super::Error::DoubleSpendAttempt { new, existing }) => {
+            Err(super::StorageError::DoubleSpendAttempt { new, existing }) => {
                 assert_eq!(new.to_bytes(), tampered_spend.to_bytes());
                 assert_eq!(existing.to_bytes(), spend.to_bytes());
             }
@@ -414,14 +439,14 @@ mod tests {
         // as double spend, when trying to add them again.
         match storage.try_add(spend).await {
             Ok(_) => panic!("Double spend should not be allowed."),
-            Err(super::Error::AlreadyMarkedAsDoubleSpend(address)) => {
+            Err(super::StorageError::AlreadyMarkedAsDoubleSpend(address)) => {
                 assert_eq!(dbc_address(spend.dbc_id()), address);
             }
             Err(other) => panic!("Unexpected error: {:?}", other),
         }
         match storage.try_add(&tampered_spend).await {
             Ok(_) => panic!("Double spend should not be allowed."),
-            Err(super::Error::AlreadyMarkedAsDoubleSpend(address)) => {
+            Err(super::StorageError::AlreadyMarkedAsDoubleSpend(address)) => {
                 assert_eq!(dbc_address(spend.dbc_id()), address);
             }
             Err(other) => panic!("Unexpected error: {:?}", other),
@@ -492,14 +517,14 @@ mod tests {
         // as double spend, when trying to add them again.
         match storage.try_add(a_spend).await {
             Ok(_) => panic!("Double spend should not be allowed."),
-            Err(super::Error::AlreadyMarkedAsDoubleSpend(address)) => {
+            Err(super::StorageError::AlreadyMarkedAsDoubleSpend(address)) => {
                 assert_eq!(dbc_address(a_spend.dbc_id()), address);
             }
             Err(other) => panic!("Unexpected error: {:?}", other),
         }
         match storage.try_add(&b_spend).await {
             Ok(_) => panic!("Double spend should not be allowed."),
-            Err(super::Error::AlreadyMarkedAsDoubleSpend(address)) => {
+            Err(super::StorageError::AlreadyMarkedAsDoubleSpend(address)) => {
                 assert_eq!(dbc_address(b_spend.dbc_id()), address);
             }
             Err(other) => panic!("Unexpected error: {:?}", other),
