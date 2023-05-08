@@ -488,7 +488,10 @@ mod tests {
     // Helpers for tests
 
     fn sign_register_op(mut op: RegisterOp<Entry>, sk: &SecretKey) -> Result<RegisterOp<Entry>> {
-        let bytes = bincode::serialize(&op.crdt_op)?;
+        let bytes = bincode::serialize(&op.crdt_op).map_err(|err| {
+            warn!("We couldn't serialise the Register cmd: {err:?}");
+            Error::RegisterCmdNotStored(op.address)
+        })?;
         let signature = sk.sign(bytes);
         op.signature = Some(signature);
         Ok(op)
