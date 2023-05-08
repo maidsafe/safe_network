@@ -30,6 +30,9 @@ pub enum StorageError {
     /// Register not found.
     #[error("Register not found: {0:?}")]
     RegisterNotFound(RegisterAddress),
+    /// Register operation was not stored.
+    #[error("Register operation was not stored: {0:?}")]
+    RegisterCmdNotStored(RegisterAddress),
     /// Register operation destination address mistmatch
     #[error(
         "The CRDT operation cannot be applied since the Register operation destination address ({dst_addr:?}) \
@@ -67,6 +70,9 @@ pub enum StorageError {
     /// Spend not found.
     #[error("Spend not found: {0:?}")]
     SpendNotFound(DbcAddress),
+    /// We failed to store spend
+    #[error("Spend was not stored: {0:?}")]
+    SpendNotStored(DbcAddress),
     /// A double spend attempt was detected.
     #[error("A double spend attempt was detected. Incoming and existing spend are not the same: {new:?}. Existing: {existing:?}")]
     DoubleSpendAttempt {
@@ -98,20 +104,10 @@ pub enum StorageError {
     /// Cannot verify a Spend signature.
     #[error("Spend signature is invalid: {0}")]
     InvalidSpendSignature(String),
-    /// Bincode error.
-    // FIXME: remove this variant as it doesn't belong to the protocol
-    #[error("Bincode error:: {0}")]
-    Bincode(String),
     /// I/O error.
     // FIXME: remove this variant as it doesn't belong to the protocol
     #[error("I/O error: {0}")]
     Io(String),
-}
-
-impl From<bincode::Error> for StorageError {
-    fn from(error: bincode::Error) -> Self {
-        Self::Bincode(error.to_string())
-    }
 }
 
 impl From<std::io::Error> for StorageError {

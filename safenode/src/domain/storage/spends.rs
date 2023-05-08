@@ -67,7 +67,10 @@ impl SpendStorage {
         trace!("Getting Spend: {address:?} from {:?}", file_path);
         match read(file_path).await {
             Ok(bytes) => {
-                let spend: SignedSpend = deserialize(&bytes)?;
+                let spend: SignedSpend = deserialize(&bytes).map_err(|err| {
+                    warn!("We couldn't deserialise the SignedSpend read from disk: {err:?}");
+                    Error::SpendNotFound(*address)
+                })?;
                 if address == &dbc_address(spend.dbc_id()) {
                     Ok(spend)
                 } else {
@@ -195,24 +198,27 @@ impl SpendStorage {
             return Ok(false);
         }
 
-        let addr = dbc_address(signed_spend.dbc_id());
-        let filepath = self.address_to_filepath(&addr, &self.valid_spends_path)?;
+        let address = dbc_address(signed_spend.dbc_id());
+        let filepath = self.address_to_filepath(&address, &self.valid_spends_path)?;
 
         // Store the spend to local file system.
-        trace!("Storing spend {addr:?}.");
+        trace!("Storing spend {address:?}.");
         if let Some(dirs) = filepath.parent() {
             create_dir_all(dirs).await?;
         }
 
         let mut file = File::create(filepath).await?;
 
-        let bytes = serialize(signed_spend)?;
+        let bytes = serialize(signed_spend).map_err(|err| {
+            warn!("We couldn't serialise the SignedSpend to it to disk: {err:?}");
+            Error::SpendNotStored(address)
+        })?;
         file.write_all(&bytes).await?;
         // Sync up OS data to disk to reduce the chances of
         // concurrent reading failing by reading an empty/incomplete file.
         file.sync_data().await?;
 
-        trace!("Stored new spend {addr:?}.");
+        trace!("Stored new spend {address:?}.");
 
         Ok(true)
     }
@@ -245,7 +251,10 @@ impl SpendStorage {
         let file_path = self.address_to_filepath(address, &self.double_spends_path)?;
         match read(file_path).await {
             Ok(bytes) => {
-                let (a_spend, b_spend): (SignedSpend, SignedSpend) = deserialize(&bytes)?;
+                let (a_spend, b_spend): (SignedSpend, SignedSpend) = deserialize(&bytes).map_err(|err| {
+                    warn!("We couldn't deserialise the double SignedSpend read from disk: {err:?}");
+                    Error::SpendNotFound(*address)
+                })?;
                 if a_spend.dbc_id() != b_spend.dbc_id() {
                     return Err(Error::NotADoubleSpendAttempt {
                         one: Box::new(a_spend),
@@ -271,29 +280,32 @@ impl SpendStorage {
         b_spend: &SignedSpend,
     ) -> Result<()> {
         // They have the same dbc id, so we can use either.
-        let addr = dbc_address(a_spend.dbc_id());
+        let address = dbc_address(a_spend.dbc_id());
 
-        let filepath = self.address_to_filepath(&addr, &self.double_spends_path)?;
+        let filepath = self.address_to_filepath(&address, &self.double_spends_path)?;
 
         if filepath.exists() {
             return Ok(());
         }
 
         // Store the double spend to local file system.
-        trace!("Storing double spend {addr:?}.");
+        trace!("Storing double spend {address:?}.");
         if let Some(dirs) = filepath.parent() {
             create_dir_all(dirs).await?;
         }
 
         let mut file = File::create(filepath).await?;
 
-        let bytes = serialize(&(a_spend, b_spend))?;
+        let bytes = serialize(&(a_spend, b_spend)).map_err(|err| {
+            warn!("We couldn't serialise the double SignedSpend to write them to disk: {err:?}");
+            Error::SpendNotStored(address)
+        })?;
         file.write_all(&bytes).await?;
         // Sync up OS data to disk to reduce the chances of
         // concurrent reading failing by reading an empty/incomplete file.
         file.sync_data().await?;
 
-        trace!("Stored double spend {addr:?}.");
+        trace!("Stored double spend {address:?}.");
 
         Ok(())
     }

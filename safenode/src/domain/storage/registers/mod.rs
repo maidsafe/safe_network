@@ -198,7 +198,10 @@ impl RegisterStorage {
 
         let mut file = File::create(&path).await?;
 
-        let serialized_data = serialize(cmd)?;
+        let serialized_data = serialize(cmd).map_err(|err| {
+            warn!("We couldn't serialise the Register cmd to write it to disk: {err:?}");
+            Error::RegisterCmdNotStored(addr)
+        })?;
         file.write_all(&serialized_data).await?;
         // Sync OS data to disk to reduce the chances of
         // concurrent reading failing by reading an empty/incomplete file.
@@ -321,7 +324,11 @@ impl RegisterStorage {
                 // the target Register is not in our store or we don't have the 'Register create',
                 // let's verify the create cmd we received is valid and try to apply stored cmds we may have.
                 let SignedRegisterCreate { op, auth } = cmd;
-                verify_authority(auth, serialize(op)?)?;
+                let serialised_op = serialize(op).map_err(|err| {
+                    warn!("We couldn't serialise the Register cmd to write it to disk: {err:?}");
+                    Error::RegisterCmdNotStored(op.dst())
+                })?;
+                verify_authority(auth, serialised_op)?;
 
                 trace!("Creating new register: {:?}", cmd.dst());
                 // let's do a final check, let's try to apply all cmds to it,
@@ -355,7 +362,11 @@ impl RegisterStorage {
         match cmd {
             RegisterCmd::Create { .. } => Ok(()),
             RegisterCmd::Edit(SignedRegisterEdit { op, auth }) => {
-                verify_authority(auth, serialize(op)?)?;
+                let serialised_op = serialize(op).map_err(|err| {
+                    warn!("We couldn't serialise the Register cmd to write it to disk: {err:?}");
+                    Error::RegisterCmdNotStored(dst_addr)
+                })?;
+                verify_authority(auth, serialised_op)?;
 
                 info!("Editing Register: {dst_addr:?}");
                 let public_key = auth.public_key;
@@ -511,7 +522,10 @@ fn verify_authority(auth: &DataAuthority, payload: impl AsRef<[u8]>) -> Result<(
 fn register_op_id(cmd: &RegisterCmd) -> Result<String> {
     use tiny_keccak::Hasher;
     let mut hasher = tiny_keccak::Sha3::v256();
-    let bytes = serialize(cmd)?;
+    let bytes = serialize(cmd).map_err(|err| {
+        warn!("We couldn't serialise the Register cmd to write it to disk: {err:?}");
+        Error::RegisterCmdNotStored(cmd.dst())
+    })?;
     let mut output = [0; 64];
     hasher.update(&bytes);
     hasher.finalize(&mut output);
