@@ -6,10 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod disk_backed_record_store;
 mod registers;
 mod spends;
 
 pub(crate) use self::{
+    disk_backed_record_store::{DiskBackedRecordStore, DiskBackedRecordStoreConfig},
     registers::{RegisterReplica, RegisterStorage},
     spends::SpendStorage,
 };
