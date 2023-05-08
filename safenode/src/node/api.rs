@@ -358,7 +358,7 @@ impl Node {
                 }
                 Err(TransferError::Storage(StorageError::DoubleSpendAttempt { new, existing })) => {
                     warn!("Double spend attempted! New: {new:?}. Existing:  {existing:?}");
-                    if let Ok(event) = Event::double_spend_attempt(new.clone(), existing.clone()) {
+                    if let Some(event) = double_spend_attempt(new.clone(), existing.clone()) {
                         match network.node_send_to_closest(&Request::Event(event)).await {
                             Ok(_) => {}
                             Err(err) => {
@@ -389,6 +389,26 @@ impl Node {
         if let Err(err) = self.network.send_response(resp, response_channel).await {
             warn!("Error while sending response: {err:?}");
         }
+    }
+}
+
+// Create a new [`Event::DoubleSpendAttempted`] event.
+// It is validated so that only two spends with same id
+// can be used to create this event.
+fn double_spend_attempt(new: Box<SignedSpend>, existing: Box<SignedSpend>) -> Option<Event> {
+    if new.dbc_id() == existing.dbc_id() {
+        Some(Event::DoubleSpendAttempted { new, existing })
+    } else {
+        // If the ids are different, then this is not a double spend attempt.
+        // A double spend attempt is when the contents (the tx) of two spends
+        // with same id are detected as being different.
+        // A node could erroneously send a notification of a double spend attempt,
+        // so, we need to validate that.
+        warn!(
+            "We were notified about a double spend attempt, \
+            but they were for different DBC's. New: {new:?}, existing: {existing:?}"
+        );
+        None
     }
 }
 

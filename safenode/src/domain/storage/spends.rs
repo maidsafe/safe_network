@@ -107,7 +107,7 @@ impl SpendStorage {
     /// could otherwise happen in parallel in different threads.)
     pub(crate) async fn validate(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         let address = dbc_address(signed_spend.dbc_id());
-        if self.try_get_double_spend(&address).await.is_ok() {
+        if self.try_get_double_spend(&address).await {
             return Err(Error::AlreadyMarkedAsDoubleSpend(address));
         }
 
@@ -162,18 +162,19 @@ impl SpendStorage {
         let b_hash = sn_dbc::Hash::hash(&b_spend.to_bytes());
         let same_hash = a_hash == b_hash;
 
+        // A node could erroneously send a notification of a double spend attempt,
+        // so, we need to validate that.
         if different_id || same_hash {
             // If the ids are different, then this is not a double spend attempt.
             // A double spend attempt is when the contents (the tx) of two spends
             // with same id are detected as being different.
             // That means that if the ids are the same, and the hashes the same, then
             // it isn't a double spend attempt either!
-            // A node could erroneously send a notification of a double spend attempt,
-            // so, we need to validate that.
-            return Err(Error::NotADoubleSpendAttempt {
-                one: Box::new(a_spend.clone()),
-                other: Box::new(b_spend.clone()),
-            });
+            warn!(
+                "We were notified about a double spend attempt, but they were \
+                for different dbcs. One: {a_spend:?}, another: {b_spend:?}"
+            );
+            return Ok(());
         }
 
         if self.is_unspendable(a_spend.dbc_id()).await {
@@ -226,7 +227,7 @@ impl SpendStorage {
     /// Checks if the given DbcId is unspendable.
     async fn is_unspendable(&self, dbc_id: &DbcId) -> bool {
         let address = dbc_address(dbc_id);
-        self.try_get_double_spend(&address).await.is_ok()
+        self.try_get_double_spend(&address).await
     }
 
     fn address_to_filepath(&self, addr: &DbcAddress, root: &Path) -> Result<PathBuf> {
@@ -243,34 +244,33 @@ impl SpendStorage {
         Ok(())
     }
 
-    async fn try_get_double_spend(
-        &self,
-        address: &DbcAddress,
-    ) -> Result<(SignedSpend, SignedSpend)> {
+    async fn try_get_double_spend(&self, address: &DbcAddress) -> bool {
         trace!("Looking for double spend: {address:?}");
-        let file_path = self.address_to_filepath(address, &self.double_spends_path)?;
+        let file_path =
+            if let Ok(path) = self.address_to_filepath(address, &self.double_spends_path) {
+                path
+            } else {
+                return false;
+            };
+
         match read(file_path).await {
-            Ok(bytes) => {
-                let (a_spend, b_spend): (SignedSpend, SignedSpend) = deserialize(&bytes).map_err(|err| {
+            Err(_) => false,
+            Ok(bytes) => match deserialize::<(SignedSpend, SignedSpend)>(&bytes) {
+                Err(err) => {
                     warn!("We couldn't deserialise the double SignedSpend read from disk: {err:?}");
-                    Error::SpendNotFound(*address)
-                })?;
-                if a_spend.dbc_id() != b_spend.dbc_id() {
-                    return Err(Error::NotADoubleSpendAttempt {
-                        one: Box::new(a_spend),
-                        other: Box::new(b_spend),
-                    });
+                    false
                 }
-                if address == &dbc_address(a_spend.dbc_id()) {
-                    Ok((a_spend, b_spend))
-                } else {
-                    // This can happen if the content read is empty, or incomplete,
+                Ok((a_spend, b_spend)) => {
+                    if a_spend.dbc_id() != b_spend.dbc_id() {
+                        return false;
+                    }
+
+                    // If the content read is empty, or incomplete,
                     // possibly due to an issue with the OS synchronising to disk,
-                    // resulting in a mismatch with recreated address of the Spend.
-                    Err(Error::SpendNotFound(*address))
+                    // it can result in a mismatch with recreated address of the Spend.
+                    address == &dbc_address(a_spend.dbc_id())
                 }
-            }
-            Err(_) => Err(Error::SpendNotFound(*address)),
+            },
         }
     }
 

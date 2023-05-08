@@ -8,10 +8,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::protocol::{
-    error::{Error, Result, StorageError},
-    storage::{dbc_address, DataAddress},
-};
+use crate::protocol::storage::{dbc_address, DataAddress};
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 
@@ -66,25 +63,6 @@ impl Event {
             Event::DoubleSpendAttempted { new, .. } => {
                 DataAddress::Spend(dbc_address(new.dbc_id()))
             }
-        }
-    }
-
-    /// Create a new [`Event::DoubleSpendAttempted`] event.
-    /// It is validated so that only two spends with same id
-    /// can be used to create this event.
-    pub fn double_spend_attempt(new: Box<SignedSpend>, existing: Box<SignedSpend>) -> Result<Self> {
-        if new.dbc_id() == existing.dbc_id() {
-            Ok(Event::DoubleSpendAttempted { new, existing })
-        } else {
-            // If the ids are different, then this is not a double spend attempt.
-            // A double spend attempt is when the contents (the tx) of two spends
-            // with same id are detected as being different.
-            // A node could erroneously send a notification of a double spend attempt,
-            // so, we need to validate that.
-            Err(Error::Storage(StorageError::NotADoubleSpendAttempt {
-                one: new,
-                other: existing,
-            }))
         }
     }
 }
