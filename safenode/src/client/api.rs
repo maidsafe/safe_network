@@ -169,14 +169,15 @@ impl Client {
         let request = Request::Cmd(Cmd::StoreChunk(chunk));
         let responses = self.send_to_closest(request).await?;
 
-        let all_ok = responses
+        let all_oks = responses
             .iter()
-            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::StoreChunk(Ok(()))))));
-        if all_ok {
+            .filter(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::StoreChunk(Ok(()))))))
+            .count();
+        if all_oks >= close_group_majority() {
             return Ok(());
         }
 
-        // If not all were Ok, we will return the first error sent to us.
+        // If there no majority OK, we will return the first error sent to us.
         for resp in responses.iter().flatten() {
             if let Response::Cmd(CmdResponse::StoreChunk(result)) = resp {
                 result.clone()?;
