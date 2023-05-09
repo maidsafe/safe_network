@@ -6,35 +6,38 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-// This was forked from the
-// use super::*;
-
-use itertools::Itertools;
-use libp2p::identity::PeerId;
-use libp2p::kad::{kbucket, K_VALUE};
-use smallvec::SmallVec;
-
-use libp2p::kad::{
+use crate::network::CLOSE_GROUP_SIZE;
+use libp2p::{
+    identity::PeerId,
+    kad::{
+        kbucket::Key as KBucketKey,
     record::{Key, ProviderRecord, Record},
     store::{Error, RecordStore, Result},
+    },
 };
-use std::borrow::Cow;
-use std::collections::{hash_map, hash_set, HashMap, HashSet};
-use std::iter;
-use std::path::PathBuf;
+use smallvec::SmallVec;
+use std::{
+    borrow::Cow,
+    collections::{hash_map, HashMap, HashSet},
+    fs,
+    path::PathBuf,
+    vec,
+};
 
-use std::fs;
+// The maximum number of providers stored for a key. This value should be equal to our chosen
+// CLOSE_GROUP_SIZE (kad::replication_factor).
+const MAX_PROVIDERS_PER_KEY: usize = CLOSE_GROUP_SIZE;
 
-/// In-memory implementation of a `RecordStore`.
+/// A `RecordStore` that stores records on disk.
 pub(crate) struct DiskBackedRecordStore {
     /// The identity of the peer owning the store.
-    local_key: kbucket::Key<PeerId>,
+    local_key: KBucketKey<PeerId>,
     /// The configuration of the store.
     config: DiskBackedRecordStoreConfig,
-    /// The stored keys
-    records: HashSet<Key>,
+    /// A set of keys, each corresponding to a data `Record` stored on disk.
+    disk_backed_records: HashSet<Key>,
     /// The stored provider records.
-    providers: HashMap<Key, SmallVec<[ProviderRecord; K_VALUE.get()]>>,
+    providers: HashMap<Key, SmallVec<[ProviderRecord; MAX_PROVIDERS_PER_KEY]>>,
     /// The set of all provider records for the node identified by `local_key`.
     ///
     /// Must be kept in sync with `providers`.
@@ -44,19 +47,15 @@ pub(crate) struct DiskBackedRecordStore {
 /// Configuration for a `DiskBackedRecordStore`.
 #[derive(Debug, Clone)]
 pub(crate) struct DiskBackedRecordStoreConfig {
+    /// The directory where the records are stored.
+    pub(crate) storage_dir: PathBuf,
     /// The maximum number of records.
     pub(crate) max_records: usize,
     /// The maximum size of record values, in bytes.
     pub(crate) max_value_bytes: usize,
-    /// The maximum number of providers stored for a key.
-    ///
-    /// This should match up with the chosen replication factor.
-    pub(crate) max_providers_per_key: usize,
     /// The maximum number of provider records for which the
     /// local node is the provider.
     pub(crate) max_provided_keys: usize,
-    /// The directory where the records are stored.
-    pub(crate) storage_dir: PathBuf,
 }
 
 impl Default for DiskBackedRecordStoreConfig {
@@ -65,7 +64,6 @@ impl Default for DiskBackedRecordStoreConfig {
             max_records: 1024,
             max_value_bytes: 65 * 1024,
             max_provided_keys: 1024,
-            max_providers_per_key: K_VALUE.get(),
             storage_dir: std::env::temp_dir(),
         }
     }
@@ -73,6 +71,7 @@ impl Default for DiskBackedRecordStoreConfig {
 
 impl DiskBackedRecordStore {
     /// Creates a new `DiskBackedStore` with a default configuration.
+    #[allow(dead_code)]
     pub(crate) fn new(local_id: PeerId) -> Self {
         Self::with_config(local_id, Default::default())
     }
@@ -80,46 +79,65 @@ impl DiskBackedRecordStore {
     /// Creates a new `DiskBackedStore` with the given configuration.
     pub(crate) fn with_config(local_id: PeerId, config: DiskBackedRecordStoreConfig) -> Self {
         DiskBackedRecordStore {
-            local_key: kbucket::Key::from(local_id),
+            local_key: KBucketKey::from(local_id),
             config,
-            records: HashSet::default(),
+            disk_backed_records: HashSet::default(),
             provided: HashSet::default(),
             providers: HashMap::default(),
         }
     }
 
     /// Retains the records satisfying a predicate.
-    pub(crate) fn retain<F>(&mut self, f: F)
+    #[allow(dead_code)]
+    pub(crate) fn retain<F>(&mut self, predicate: F)
     where
-        F: FnMut(&Key) -> bool,
+        F: Fn(&Key) -> bool,
     {
-        // TODO: Remove on disk also.
-        self.records.retain(f);
+        let to_be_removed = self
+            .disk_backed_records
+            .iter()
+            .filter(|k| !predicate(k))
+            .cloned()
+            .collect::<Vec<_>>();
+
+        to_be_removed.iter().for_each(|key| self.remove(key));
+    }
+
+    // Converts a Key into a Hex string.
+    fn key_to_hex(key: &Key) -> String {
+        let key_bytes = key.as_ref();
+        let mut hex_string = String::with_capacity(key_bytes.len() * 2);
+        for byte in key_bytes {
+            hex_string.push_str(&format!("{:02x}", byte));
+        }
+        hex_string
     }
 }
 
 impl RecordStore for DiskBackedRecordStore {
-    // type RecordsIter<'a> = 
-    //     iter::FilterMap<Cow<'a, Record>, Fn(&Cow<'a, Record>) -> bool>
-
-    type RecordsIter<'a> = impl Iterator<Item = Cow<'a, Record>>;
-
-        // type RecordsIter<'a> = 
-        // iter::Iterator< Item=Cow<'a, Record>>;
-
-    type ProvidedIter<'a> = iter::Map<
-        hash_set::Iter<'a, ProviderRecord>,
-        fn(&'a ProviderRecord) -> Cow<'a, ProviderRecord>,
-    >;
+    type RecordsIter<'a> = vec::IntoIter<Cow<'a, Record>>;
+    type ProvidedIter<'a> = vec::IntoIter<Cow<'a, ProviderRecord>>;
 
     fn get(&self, k: &Key) -> Option<Cow<'_, Record>> {
-        // TODO: is to string enough here?
-        // let filename = self.config.storage_dir.join(k.to_string());
+        // When a client calls GET, the request is forwarded to the nodes until one node returns
+        // with the record. Thus a node can be bombarded with GET reqs for random keys. These can be safely
+        // ignored if we don't have the record locally.
+        if !self.disk_backed_records.contains(k) {
+            return None;
+        }
 
-        let key_string = String::from_utf8_lossy(&k.to_vec()).into_owned();
-        let filename = self.config.storage_dir.join(key_string);
+        let filename = Self::key_to_hex(k);
+        let file_path = self.config.storage_dir.join(filename.clone());
 
-        match fs::read(filename) {
+        if !file_path.exists() {
+            // we went out of sync with the filesystem
+            error!(
+                "Data not found for the provided key, filename: {filename} should exist locally"
+            );
+            return None;
+        }
+
+        match fs::read(file_path) {
             Ok(contents) => {
                 let record = Record {
                     key: k.clone(),
@@ -129,8 +147,8 @@ impl RecordStore for DiskBackedRecordStore {
                 };
                 Some(Cow::Owned(record))
             }
-            Err(e) => {
-                println!("Error reading file: {}", e);
+            Err(err) => {
+                error!("Error reading file: {err:?}");
                 None
             }
         }
@@ -141,75 +159,51 @@ impl RecordStore for DiskBackedRecordStore {
             return Err(Error::ValueTooLarge);
         }
 
-        let num_records = self.records.len();
+        // todo: the key is not tied to the value it contains, hence the value can be overwritten
+        // (incase of dbc double spends etc), hence need to deal with those.
+        // Maybe implement a RecordHeader to store the type of data we're storing?
+        if self.disk_backed_records.contains(&r.key) {
+            return Ok(());
+        }
 
-        // TODO: How strictly will these map?
-        // Ensure they remain in sync!
-        // match self.records.get(r.key.clone()) {
-        //     Some(record) => {
-        //        // We already hold it...
-        //     }
-
-        //     // hash_map::Entry::Occupied(mut e) => {
-        //     //     e.insert(r);
-        //     // }
-        //     // hash_map::Entry::Vacant(e) => {
+        let num_records = self.disk_backed_records.len();
         if num_records >= self.config.max_records {
             return Err(Error::MaxRecords);
         }
-        //     //     e.insert(r);
-        //     // }
-        // }
 
-        // let serializable_record = SerializableRecord {
-        //     key: r.key.to_string(),
-        //     value: r.value.clone(),
-        // };
-        let key_string = String::from_utf8_lossy(&r.key.to_vec()).into_owned();
-
-        let filename = self.config.storage_dir.join(key_string);
-        // let serialied_rcord = bincode::serialize(&serializable_record)?;
-        match fs::write(filename, r.value) {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                error!("Error writing file: {}", error);
-
-                // TODO: Extend error struct if we can
+        let file_path = self.config.storage_dir.join(Self::key_to_hex(&r.key));
+        match fs::write(file_path, r.value) {
+            Ok(_) => {
+                let _ = !self.disk_backed_records.insert(r.key);
+                Ok(())
+            }
+            Err(err) => {
+                error!("Error writing file: {err:?}");
                 Ok(())
             }
         }
     }
 
     fn remove(&mut self, k: &Key) {
-        self.records.remove(k);
-        let key_string = String::from_utf8_lossy(&k.to_vec()).into_owned();
-
-        let filename = self.config.storage_dir.join(key_string);
-        fs::remove_file(filename);
+        let file_path = self.config.storage_dir.join(Self::key_to_hex(k));
+        match fs::remove_file(file_path) {
+            Ok(_) => {
+                let _ = self.disk_backed_records.remove(k);
+            }
+            Err(err) => {
+                error!("Error while removing file: {err:?}");
+            }
+        }
     }
 
     fn records(&self) -> Self::RecordsIter<'_> {
-        // self
-        //     .records
-        //     .iter()
-        //     .filter_map(|k| {
-        //         self.get(k)
-        //         //.map(|r| (k, r))
-        //     })
-
-        // self.records_iter(self.records.iter())
-
-        let records_iter: impl Iterator<Item = Cow<Record>> = self.records_iter(self.records.iter());
-
-        records_iter
+        let mut records = Vec::new();
+        for key in self.disk_backed_records.iter() {
+            if let Some(record) = self.get(key) {
+                records.push(record);
+            }
     }
-
-    
-    fn records_iter<'a, I>(self, iter: I) -> impl Iterator<Item = Cow<'a, Record>>
-    where
-        I: Iterator<Item = &'a String>,
-    {
-        iter.filter_map(move |k| self.get(k))
+        records.into_iter()
     }
 
     fn add_provider(&mut self, record: ProviderRecord) -> Result<()> {
@@ -233,28 +227,28 @@ impl RecordStore for DiskBackedRecordStore {
         } else {
             // It is a new provider record for that key.
             let local_key = self.local_key.clone();
-            let key = kbucket::Key::new(record.key.clone());
-            let provider = kbucket::Key::from(record.provider);
+            let key = KBucketKey::new(record.key.clone());
+            let provider = KBucketKey::from(record.provider);
             if let Some(i) = providers.iter().position(|p| {
-                let pk = kbucket::Key::from(p.provider);
+                let pk = KBucketKey::from(p.provider);
                 provider.distance(&key) < pk.distance(&key)
             }) {
                 // Insert the new provider.
                 if local_key.preimage() == &record.provider {
-                    self.provided.insert(record.clone());
+                    let _ = self.provided.insert(record.clone());
                 }
                 providers.insert(i, record);
                 // Remove the excess provider, if any.
-                if providers.len() > self.config.max_providers_per_key {
+                if providers.len() > MAX_PROVIDERS_PER_KEY {
                     if let Some(p) = providers.pop() {
-                        self.provided.remove(&p);
+                        let _ = self.provided.remove(&p);
                     }
                 }
-            } else if providers.len() < self.config.max_providers_per_key {
+            } else if providers.len() < MAX_PROVIDERS_PER_KEY {
                 // The distance of the new provider to the key is larger than
                 // the distance of any existing provider, but there is still room.
                 if local_key.preimage() == &record.provider {
-                    self.provided.insert(record.clone());
+                    let _ = self.provided.insert(record.clone());
                 }
                 providers.push(record);
             }
@@ -269,7 +263,11 @@ impl RecordStore for DiskBackedRecordStore {
     }
 
     fn provided(&self) -> Self::ProvidedIter<'_> {
-        self.provided.iter().map(Cow::Borrowed)
+        self.provided
+            .iter()
+            .map(Cow::Borrowed)
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 
     fn remove_provider(&mut self, key: &Key, provider: &PeerId) {
@@ -277,10 +275,10 @@ impl RecordStore for DiskBackedRecordStore {
             let providers = e.get_mut();
             if let Some(i) = providers.iter().position(|p| &p.provider == provider) {
                 let p = providers.remove(i);
-                self.provided.remove(&p);
+                let _ = self.provided.remove(&p);
             }
             if providers.is_empty() {
-                e.remove();
+                let _ = e.remove();
             }
         }
     }
