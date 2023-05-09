@@ -265,7 +265,10 @@ impl Testnet {
 
             Ok(genesis_multi_addr)
         } else {
-            Err(eyre!("Genesis node PeerId could not be determined"))
+            let err = String::from_utf8(result.stderr)?;
+            Err(eyre!(
+                "Genesis node PeerId could not be determined: {err:?}"
+            ))
         }
     }
 
