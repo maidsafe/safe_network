@@ -113,7 +113,7 @@ jobs:
       - name: Run network tests with local discovery enabled
         # Only run on PRs w/ ubuntu
         timeout-minutes: 25
-        run: cargo test --release -p safenode --features="local_discovery" -- network
+        run: cargo test --release -p safenode --features="local-discovery" -- network
 
       - name: Run protocol tests
         # Only run on PRs w/ ubuntu
@@ -168,7 +168,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Build sn bins
-        run: cargo build --release --bins
+        run: cargo build --release --bins 
         timeout-minutes: 30
 
       - name: Start a local network
@@ -291,7 +291,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Build sn bins
-        run: cargo build --release --bins
+        run: cargo build --release --bins --features local-discovery
         timeout-minutes: 30
 
       - name: Build testing executable
@@ -305,13 +305,8 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-      - name: Set contact env var node.
-        shell: bash
-        # get all nodes listen ports
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
-
       - name: execute the dbc spend test
-        run: cargo test --release multiple_sequential_transfers_succeed  -- --nocapture
+        run: cargo test --release --features="local-discovery" multiple_sequential_transfers_succeed  -- --nocapture
         id: client-spend-dbc
         env:
           RUST_LOG: "safenode,safe=trace"
@@ -376,7 +371,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Build sn bins
-        run: cargo build --release --bins
+        run: cargo build --release --bins --features local-discovery
         timeout-minutes: 30
 
       - name: Build rpc client
@@ -390,14 +385,9 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-      - name: Set contact env var node.
-        shell: bash
-        # get all nodes listen ports
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
-
       - name: Start a client to upload chunks
         
-        run: cargo run --bin safe --release -- files upload -- "./resources"
+        run: cargo run --bin safe --release --features="local-discovery" -- files upload -- "./resources"
         id: client-file-upload
         env:
           RUST_LOG: "safenode,safe=trace"
@@ -409,9 +399,10 @@ jobs:
         run: ./resources/scripts/network_churning.sh
         timeout-minutes: 20
 
+        
       - name: Start a client to confirm chunk still retained
         
-        run: cargo run --bin safe --release -- files download
+        run: cargo run --bin safe --features local-discovery --release -- files download
         id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"

@@ -19,7 +19,7 @@ path = "src/bin/faucet.rs"
 
 [features]
 default=[]
-local_discovery=["libp2p/mdns"]
+local-discovery=["libp2p/mdns"]
 otlp = [
     "opentelemetry",
     "opentelemetry-otlp",
