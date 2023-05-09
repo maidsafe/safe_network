@@ -11,6 +11,7 @@ mod error;
 
 use self::error::Result;
 
+use std::fs;
 use std::path::PathBuf;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::{Event, Subscriber};
@@ -78,6 +79,11 @@ impl TracingLayers {
         let fmt_layer = tracing_fmt::layer().with_ansi(false);
 
         if let Some(log_dir) = optional_log_dir {
+            // first remove old logs
+            if fs::remove_dir_all(log_dir).is_ok() {
+                println!("Removed old logs from directory: {log_dir:?}");
+            }
+
             println!("Starting logging to directory: {log_dir:?}");
 
             let logs_retained = 0;
