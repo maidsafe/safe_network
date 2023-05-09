@@ -181,50 +181,52 @@ jobs:
       - name: Find a contact node.
         shell: bash
         # get all nodes listen ports
-        run: echo "CONTACT_PEER=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o)" >> $GITHB_ENV
+        run: |
+          export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg "\"" -r "")"
+          echo "::set-env name=SAFE_PEERS::$SAFE_PEERS"
 
       - name: Check contact peer
         shell: bash
-        run: echo "Peer is $CONTACT_PEER"
+        run: echo "Peer is $SAFE_PEERS"
       
       
       - name: Start a client to upload files
-        run: cargo run --bin safe --peer $CONTACT_PEER --release -- files upload -- "./resources"
+        run: cargo run --bin safe --release -- files upload -- "./resources"
         id: client-file-upload
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a client to download files
-        run: cargo run --bin safe --peer $CONTACT_PEER --release -- files download
+        run: cargo run --bin safe --release -- files download
         id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a client to create a register
-        run: cargo run --bin safe --peer $CONTACT_PEER --release -- register create baobao
+        run: cargo run --bin safe --release -- register create baobao
         id: client-register-create
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a client to get a register
-        run: cargo run --bin safe --peer $CONTACT_PEER --release -- register get baobao
+        run: cargo run --bin safe --release -- register get baobao
         id: client-register-get
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a client to edit a register
-        run: cargo run --bin safe --peer $CONTACT_PEER --release -- register edit baobao wood
+        run: cargo run --bin safe --release -- register edit baobao wood
         id: client-register-edit
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
       - name: Start a faucet client to claim genesis
-        run: cargo run --bin faucet --peer $CONTACT_PEER --release -- claim-genesis
+        run: cargo run --bin faucet --release -- claim-genesis
         id: faucet-claim-genesis
         env:
           RUST_LOG: "safenode,safe=trace"
@@ -304,6 +306,13 @@ jobs:
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
+
+      - name: Find a contact node.
+        shell: bash
+        # get all nodes listen ports
+        run: |
+          export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg "\"" -r "")"
+          echo "::set-env name=SAFE_PEERS::$SAFE_PEERS"
 
       - name: execute the dbc spend test
         run: cargo test --release multiple_sequential_transfers_succeed  -- --nocapture
@@ -385,7 +394,13 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-   
+      - name: Find a contact node.
+        shell: bash
+        # get all nodes listen ports
+        run: |
+          export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg "\"" -r "")"
+          echo "::set-env name=SAFE_PEERS::$SAFE_PEERS"
+
       - name: Start a client to upload chunks
         
         run: cargo run --bin safe --release -- files upload -- "./resources"
