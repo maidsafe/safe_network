@@ -554,30 +554,26 @@ mod tests {
             },
         },
     };
-    use libp2p::kad::{
-        kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus},
-        KBucketKey,
-    };
-    use libp2p::PeerId;
-    use std::collections::{BTreeMap, HashMap};
-    use xor_name::XorName;
-
     use assert_matches::assert_matches;
     use bytes::Bytes;
     use eyre::{eyre, Result};
-    use libp2p::{
-        kad::kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus},
-        PeerId,
-    };
     use rand::{thread_rng, Rng};
-    use std::{
-        collections::{BTreeMap, HashMap},
-        fmt,
-        net::SocketAddr,
-        path::Path,
-        time::Duration,
+    use std::{net::SocketAddr, time::Duration};
+
+    #[cfg(feature = "local_discovery")]
+    use libp2p::kad::{
+        kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus},
     };
+    #[cfg(feature = "local_discovery")]
+    use libp2p::PeerId;
+    #[cfg(feature = "local_discovery")]
+    use std::collections::{BTreeMap, HashMap};
+    #[cfg(feature = "local_discovery")]
+    use std::fmt;
+    #[cfg(feature = "local_discovery")]
     use xor_name::XorName;
+
+    use std::path::Path;
 
     #[tokio::test(flavor = "multi_thread")]
     // Enable mDNS for peer discovery here

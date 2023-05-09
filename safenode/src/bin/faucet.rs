@@ -13,6 +13,7 @@ use safenode::{
         wallet::parse_public_address,
     },
     log::init_node_logging,
+    peers_acquisition::peers_from_opts_or_env,
 };
 
 use clap::{Parser, Subcommand};
@@ -29,7 +30,8 @@ async fn main() -> Result<()> {
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
-    let client = Client::new(secret_key, None).await?;
+    let peers = peers_from_opts_or_env(&[])?;
+    let client = Client::new(secret_key, Some(peers)).await?;
 
     faucet_cmds(opt.cmd, &client).await?;
 
