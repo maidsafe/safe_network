@@ -22,8 +22,8 @@ use crate::{
             Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
             SpendQuery,
         },
-        storage::{dbc_address, registers::User, DbcAddress},
-        NetworkKey,
+        storage::{registers::User, DbcAddress},
+        NetworkAddress,
     },
 };
 
@@ -136,7 +136,7 @@ impl Node {
             }
             NetworkEvent::PeerAdded(peer) => {
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
-                let key = NetworkKey::from_peer(peer);
+                let key = NetworkAddress::from_peer(peer);
                 let network = self.network.clone();
                 let _handle = spawn(async move {
                     trace!("On PeerAdded({peer:?}) Getting closest peers for target {key:?}...");
@@ -463,7 +463,7 @@ async fn get_parent_spends(
     // They shall naturally all exist as valid spends for this current
     // spend attempt to be valid.
     for parent_input in &parent_tx.inputs {
-        let parent_address = dbc_address(&parent_input.dbc_id());
+        let parent_address = DbcAddress::from_dbc_id(&parent_input.dbc_id());
         // This call makes sure we get the same spend from all in the close group.
         // If we receive a spend here, it is assumed to be valid. But we will verify
         // that anyway, in the code right after this for loop.

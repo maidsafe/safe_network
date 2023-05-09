@@ -6,8 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::error::{Error, Result};
-
 use libp2p::PeerId;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
@@ -26,11 +24,6 @@ impl NodeId {
     /// Returns this NodeId as bytes
     pub fn as_bytes(&self) -> Vec<u8> {
         self.0.to_vec()
-    }
-
-    /// Returns this NodeId as PeerId
-    pub fn as_peer_id(&self) -> Result<PeerId> {
-        PeerId::from_bytes(&self.0).map_err(|err| Error::NotAPeerId(err.to_string()))
     }
 }
 

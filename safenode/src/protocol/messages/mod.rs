@@ -28,7 +28,10 @@ pub use self::{
     spend::SpendQuery,
 };
 
-use super::storage::{dbc_address, dbc_name, Chunk, DataAddress, DbcAddress};
+use super::{
+    storage::{Chunk, DbcAddress},
+    NetworkAddress,
+};
 
 use sn_dbc::SignedSpend;
 
@@ -76,7 +79,7 @@ pub enum ReplicatedData {
 
 impl Request {
     /// Used to send a request to the close group of the address.
-    pub fn dst(&self) -> DataAddress {
+    pub fn dst(&self) -> NetworkAddress {
         match self {
             Request::Cmd(cmd) => cmd.dst(),
             Request::Query(query) => query.dst(),
@@ -92,19 +95,21 @@ impl ReplicatedData {
             Self::Chunk(chunk) => *chunk.name(),
             Self::RegisterLog(log) => *log.address.name(),
             Self::RegisterWrite(cmd) => *cmd.dst().name(),
-            Self::ValidSpend(spend) => dbc_name(spend.dbc_id()),
+            Self::ValidSpend(spend) => *DbcAddress::from_dbc_id(spend.dbc_id()).name(),
             Self::DoubleSpend((address, _)) => *address.name(),
         }
     }
 
     /// Return the dst.
-    pub fn dst(&self) -> DataAddress {
+    pub fn dst(&self) -> NetworkAddress {
         match self {
-            Self::Chunk(chunk) => DataAddress::Chunk(*chunk.address()),
-            Self::RegisterLog(log) => DataAddress::Register(log.address),
-            Self::RegisterWrite(cmd) => DataAddress::Register(cmd.dst()),
-            Self::ValidSpend(spend) => DataAddress::Spend(dbc_address(spend.dbc_id())),
-            Self::DoubleSpend((address, _)) => DataAddress::Spend(*address),
+            Self::Chunk(chunk) => NetworkAddress::from_chunk_address(*chunk.address()),
+            Self::RegisterLog(log) => NetworkAddress::from_register_address(log.address),
+            Self::RegisterWrite(cmd) => NetworkAddress::from_register_address(cmd.dst()),
+            Self::ValidSpend(spend) => {
+                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(spend.dbc_id()))
+            }
+            Self::DoubleSpend((address, _)) => NetworkAddress::from_dbc_address(*address),
         }
     }
 }

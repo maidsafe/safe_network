@@ -18,23 +18,18 @@ use xor_name::XorName;
 pub struct DbcAddress(XorName);
 
 impl DbcAddress {
-    /// Construct a `DbcAddress` given the name of a `DbcId`.
+    /// Construct a `DbcAddress` given an `XorName`.
     pub fn new(name: XorName) -> Self {
         Self(name)
     }
 
-    /// Return the name, which is the `DbcId` XorName.
+    /// Construct a `DbcAddress` from a `DbcId`.
+    pub fn from_dbc_id(dbc_id: &DbcId) -> Self {
+        Self::new(XorName::from_content(&dbc_id.to_bytes()))
+    }
+
+    /// Return the name, which is the hash of `DbcId`.
     pub fn name(&self) -> &XorName {
         &self.0
     }
-}
-
-/// Return the address of a Dbc with the given id.
-pub fn dbc_address(dbc_id: &DbcId) -> DbcAddress {
-    DbcAddress::new(dbc_name(dbc_id))
-}
-
-/// Return the name of a Dbc with the given id.
-pub fn dbc_name(dbc_id: &DbcId) -> XorName {
-    XorName::from_content(&dbc_id.to_bytes())
 }

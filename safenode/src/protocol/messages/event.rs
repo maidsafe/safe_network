@@ -8,7 +8,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::protocol::storage::{dbc_address, DataAddress};
+use crate::protocol::{storage::DbcAddress, NetworkAddress};
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 
@@ -55,13 +55,13 @@ pub enum Event {
 
 impl Event {
     /// Used to send a cmd to the close group of the address.
-    pub fn dst(&self) -> DataAddress {
+    pub fn dst(&self) -> NetworkAddress {
         match self {
             Event::ValidSpendReceived { spend, .. } => {
-                DataAddress::Spend(dbc_address(spend.dbc_id()))
+                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(spend.dbc_id()))
             }
             Event::DoubleSpendAttempted { new, .. } => {
-                DataAddress::Spend(dbc_address(new.dbc_id()))
+                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(new.dbc_id()))
             }
         }
     }
