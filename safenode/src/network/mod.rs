@@ -699,6 +699,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "local_discovery")]
     /// Test utility
     fn assert_lists<I, J, K>(a: I, b: J)
     where
