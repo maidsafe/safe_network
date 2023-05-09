@@ -522,7 +522,6 @@ impl Network {
 #[cfg(test)]
 mod tests {
     use super::SwarmDriver;
-
     use crate::{
         log::init_test_logger,
         network::{MsgResponder, NetworkEvent},
@@ -531,6 +530,13 @@ mod tests {
             storage::Chunk,
         },
     };
+    use libp2p::kad::{
+        kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus},
+        KBucketKey,
+    };
+    use libp2p::PeerId;
+    use std::collections::{BTreeMap, HashMap};
+    use xor_name::XorName;
 
     use assert_matches::assert_matches;
     use bytes::Bytes;
