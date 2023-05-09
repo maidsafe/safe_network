@@ -8,7 +8,7 @@
 
 use super::{error::Result, public_address_name, KeyLessWallet};
 
-use crate::protocol::storage::dbc_name;
+use crate::protocol::storage::DbcAddress;
 
 use sn_dbc::Dbc;
 use std::path::Path;
@@ -55,7 +55,7 @@ pub(super) async fn store_created_dbcs(created_dbcs: Vec<Dbc>, wallet_dir: &Path
         // One dir per recipient public address.
         let public_address_name = public_address_name(dbc.public_address());
         let public_address_dir = format!("public_address_{}", hex::encode(public_address_name));
-        let dbc_id_name = dbc_name(&dbc.id());
+        let dbc_id_name = *DbcAddress::from_dbc_id(&dbc.id()).name();
         let dbc_id_file_name = format!("{}.dbc", hex::encode(dbc_id_name));
 
         let public_address_dir_path = created_dbcs_path.join(&public_address_dir);

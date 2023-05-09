@@ -29,10 +29,4 @@ pub enum Error {
     /// Errors in node transfer handling.
     #[error("Transfer error: {0:?}")]
     Transfers(#[from] TransferError),
-    /// Error when converting to a PeerId.
-    #[error("Could not convert to a PeerId: {0:?}")]
-    NotAPeerId(String),
-    /// Error when converting to an XorName.
-    #[error("Could not convert to an XorName: {0:?}")]
-    NotAnXorName(String),
 }

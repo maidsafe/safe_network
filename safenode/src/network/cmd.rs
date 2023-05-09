@@ -12,7 +12,7 @@ use crate::{
     network::error::Result,
     protocol::{
         messages::{QueryResponse, Request, Response},
-        NetworkKey,
+        NetworkAddress,
     },
 };
 
@@ -42,7 +42,7 @@ pub enum SwarmCmd {
         sender: oneshot::Sender<Result<()>>,
     },
     GetClosestPeers {
-        key: NetworkKey,
+        key: NetworkAddress,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
     SendRequest {

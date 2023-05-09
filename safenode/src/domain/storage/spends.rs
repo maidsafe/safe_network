@@ -12,10 +12,7 @@
 //! A peer will move a spend from `valid_spends` to `double_spends` if it receives another tx id for the same dbc id.
 //! A peer will never again store such a spend to `valid_spends`.
 
-use crate::protocol::{
-    error::StorageError,
-    storage::{dbc_address, DbcAddress},
-};
+use crate::protocol::{error::StorageError, storage::DbcAddress};
 
 use super::{prefix_tree_path, Result};
 
@@ -56,7 +53,7 @@ impl SpendStorage {
 
     /// Returns if the spend already exists.
     pub(crate) fn exists(&mut self, dbc_id: &DbcId) -> Result<bool> {
-        let address = dbc_address(dbc_id);
+        let address = DbcAddress::from_dbc_id(dbc_id);
         let filepath = self.address_to_filepath(&address, &self.valid_spends_path)?;
         Ok(filepath.exists())
     }
@@ -71,7 +68,7 @@ impl SpendStorage {
                     warn!("We couldn't deserialise the SignedSpend read from disk: {err:?}");
                     StorageError::SpendNotFound(*address)
                 })?;
-                if address == &dbc_address(spend.dbc_id()) {
+                if address == &DbcAddress::from_dbc_id(spend.dbc_id()) {
                     Ok(spend)
                 } else {
                     // This can happen if the content read is empty, or incomplete,
@@ -106,7 +103,7 @@ impl SpendStorage {
     /// and double spent attempts to be missed (as the validation and adding
     /// could otherwise happen in parallel in different threads.)
     pub(crate) async fn validate(&mut self, signed_spend: &SignedSpend) -> Result<()> {
-        let address = dbc_address(signed_spend.dbc_id());
+        let address = DbcAddress::from_dbc_id(signed_spend.dbc_id());
         if self.try_get_double_spend(&address).await {
             return Err(StorageError::AlreadyMarkedAsDoubleSpend(address));
         }
@@ -181,7 +178,7 @@ impl SpendStorage {
             return Ok(());
         }
 
-        let address = dbc_address(a_spend.dbc_id());
+        let address = DbcAddress::from_dbc_id(a_spend.dbc_id());
 
         self.try_store_double_spend(a_spend, b_spend).await?;
 
@@ -199,7 +196,7 @@ impl SpendStorage {
             return Ok(false);
         }
 
-        let address = dbc_address(signed_spend.dbc_id());
+        let address = DbcAddress::from_dbc_id(signed_spend.dbc_id());
         let filepath = self.address_to_filepath(&address, &self.valid_spends_path)?;
 
         // Store the spend to local file system.
@@ -237,7 +234,7 @@ impl SpendStorage {
 
     /// Checks if the given DbcId is unspendable.
     async fn is_unspendable(&self, dbc_id: &DbcId) -> bool {
-        let address = dbc_address(dbc_id);
+        let address = DbcAddress::from_dbc_id(dbc_id);
         self.try_get_double_spend(&address).await
     }
 
@@ -281,7 +278,7 @@ impl SpendStorage {
                     // If the content read is empty, or incomplete,
                     // possibly due to an issue with the OS synchronising to disk,
                     // it can result in a mismatch with recreated address of the Spend.
-                    address == &dbc_address(a_spend.dbc_id())
+                    address == &DbcAddress::from_dbc_id(a_spend.dbc_id())
                 }
             },
         }
@@ -293,7 +290,7 @@ impl SpendStorage {
         b_spend: &SignedSpend,
     ) -> Result<()> {
         // They have the same dbc id, so we can use either.
-        let address = dbc_address(a_spend.dbc_id());
+        let address = DbcAddress::from_dbc_id(a_spend.dbc_id());
 
         let filepath = self.address_to_filepath(&address, &self.double_spends_path)?;
 
@@ -371,7 +368,7 @@ mod tests {
                 .await
                 .expect("Failed to write spend.");
             let read_spend = storage
-                .get(&dbc_address(spend.dbc_id()))
+                .get(&DbcAddress::from_dbc_id(spend.dbc_id()))
                 .await
                 .expect("Failed to read spend.");
 
@@ -440,14 +437,14 @@ mod tests {
         match storage.try_add(spend).await {
             Ok(_) => panic!("Double spend should not be allowed."),
             Err(super::StorageError::AlreadyMarkedAsDoubleSpend(address)) => {
-                assert_eq!(dbc_address(spend.dbc_id()), address);
+                assert_eq!(DbcAddress::from_dbc_id(spend.dbc_id()), address);
             }
             Err(other) => panic!("Unexpected error: {:?}", other),
         }
         match storage.try_add(&tampered_spend).await {
             Ok(_) => panic!("Double spend should not be allowed."),
             Err(super::StorageError::AlreadyMarkedAsDoubleSpend(address)) => {
-                assert_eq!(dbc_address(spend.dbc_id()), address);
+                assert_eq!(DbcAddress::from_dbc_id(spend.dbc_id()), address);
             }
             Err(other) => panic!("Unexpected error: {:?}", other),
         }
@@ -518,14 +515,14 @@ mod tests {
         match storage.try_add(a_spend).await {
             Ok(_) => panic!("Double spend should not be allowed."),
             Err(super::StorageError::AlreadyMarkedAsDoubleSpend(address)) => {
-                assert_eq!(dbc_address(a_spend.dbc_id()), address);
+                assert_eq!(DbcAddress::from_dbc_id(a_spend.dbc_id()), address);
             }
             Err(other) => panic!("Unexpected error: {:?}", other),
         }
         match storage.try_add(&b_spend).await {
             Ok(_) => panic!("Double spend should not be allowed."),
             Err(super::StorageError::AlreadyMarkedAsDoubleSpend(address)) => {
-                assert_eq!(dbc_address(b_spend.dbc_id()), address);
+                assert_eq!(DbcAddress::from_dbc_id(b_spend.dbc_id()), address);
             }
             Err(other) => panic!("Unexpected error: {:?}", other),
         }

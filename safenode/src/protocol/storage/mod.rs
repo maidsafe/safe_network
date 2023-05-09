@@ -13,7 +13,7 @@ mod address;
 mod chunks;
 
 pub use self::{
-    address::{dbc_address, dbc_name, ChunkAddress, DataAddress, DbcAddress, RegisterAddress},
+    address::{ChunkAddress, DbcAddress, RegisterAddress},
     chunks::Chunk,
     registers::*,
 };
