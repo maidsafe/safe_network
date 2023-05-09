@@ -244,7 +244,7 @@ impl Node {
                         CmdResponse::StoreChunk(Ok(()))
                     }
                     Err(err) => {
-                        error!("Failed to register node as chunk provider: {err:?}");
+                        error!("Failed to StoreChunk: {err:?}");
                         CmdResponse::StoreChunk(Err(
                             StorageError::ChunkNotStored(*addr.name()).into()
                         ))

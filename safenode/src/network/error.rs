@@ -71,7 +71,6 @@ pub enum Error {
     #[error("Could not get CLOSE_GROUP_SIZE number of peers.")]
     NotEnoughPeers,
 
-    /// We failed to retrieve data from our local record storage
-    #[error("Provider record was not found locally")]
+    #[error("Record was not found locally")]
     RecordNotFound,
 }

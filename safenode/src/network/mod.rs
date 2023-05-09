@@ -111,8 +111,6 @@ impl SwarmDriver {
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
             // this is a heavier operation than publication, so it is done less frequently
             .set_replication_interval(Some(Duration::from_secs(20)))
-            // how often a node will announce that it is providing a value for a specific key
-            .set_provider_publication_interval(Some(Duration::from_secs(10)))
             // how often a node will publish a record key, aka telling the others it exists
             .set_publication_interval(Some(Duration::from_secs(5)))
             // 1mb packet size
