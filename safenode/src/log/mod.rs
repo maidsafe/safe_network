@@ -72,10 +72,8 @@ impl TracingLayers {
     fn fmt_layer(&mut self, optional_log_dir: &Option<PathBuf>) {
         // Filter by log level of this crate only
         let target_filters: Box<dyn Filter<Registry> + Send + Sync> = Box::new(
-            Targets::new()
-                .with_target(current_crate_str(), tracing::Level::TRACE)
-                // enable below for libp2p logs
-                // .with_target("libp2p", tracing::Level::TRACE),
+            Targets::new().with_target(current_crate_str(), tracing::Level::TRACE), // enable below for libp2p logs
+                                                                                    // .with_target("libp2p", tracing::Level::TRACE),
         );
         let fmt_layer = tracing_fmt::layer().with_ansi(false);
 

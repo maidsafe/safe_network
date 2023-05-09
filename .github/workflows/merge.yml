@@ -178,12 +178,10 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-      - name: Find a contact node.
+      - name: Set contact env var node.
         shell: bash
         # get all nodes listen ports
-        run: |
-          export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg "\"" -r "")"
-          echo "::set-env name=SAFE_PEERS::$SAFE_PEERS"
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
 
       - name: Check contact peer
         shell: bash
@@ -307,12 +305,10 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-      - name: Find a contact node.
+      - name: Set contact env var node.
         shell: bash
         # get all nodes listen ports
-        run: |
-          export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg "\"" -r "")"
-          echo "::set-env name=SAFE_PEERS::$SAFE_PEERS"
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
 
       - name: execute the dbc spend test
         run: cargo test --release multiple_sequential_transfers_succeed  -- --nocapture
@@ -394,12 +390,10 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-      - name: Find a contact node.
+      - name: Set contact env var node.
         shell: bash
         # get all nodes listen ports
-        run: |
-          export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg "\"" -r "")"
-          echo "::set-env name=SAFE_PEERS::$SAFE_PEERS"
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
 
       - name: Start a client to upload chunks
         
