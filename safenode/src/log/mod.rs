@@ -74,7 +74,8 @@ impl TracingLayers {
         let target_filters: Box<dyn Filter<Registry> + Send + Sync> = Box::new(
             Targets::new()
                 .with_target(current_crate_str(), tracing::Level::TRACE)
-                .with_target("libp2p", tracing::Level::TRACE),
+                // enable below for libp2p logs
+                // .with_target("libp2p", tracing::Level::TRACE),
         );
         let fmt_layer = tracing_fmt::layer().with_ansi(false);
 
