@@ -8,6 +8,7 @@
 
 use eyre::{eyre, Result};
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
+use std::env::current_exe;
 
 const SAFE_PEERS: &str = "SAFE_PEERS";
 
@@ -62,6 +63,19 @@ pub fn peers_from_opts_or_env(opt_peers: &[Multiaddr]) -> Result<Vec<(PeerId, Mu
         return parse_peer_multiaddresses(&peers);
     } else if !cfg!(feature = "local_discovery") {
         warn!("No {SAFE_PEERS} env var found. As `local_discovery` feature is disabled, we will not be able to connect to the network. ");
+
+        // get the current bin name
+        let current_crate_path = current_exe()?;
+
+        let current_crate = current_crate_path.file_name().and_then(|s| s.to_str());
+
+        // if we're a client let's bail early here
+        // node impls won't bail as it could be a first node eg, and otheres will contact this node
+        if let Some(crate_name) = current_crate {
+            if crate_name == "safe" {
+                return Err(eyre!("No {SAFE_PEERS} env var found. As `local_discovery` feature is disabled, we will not be able to connect to the network. "));
+            }
+        }
     } else {
         info!("No {SAFE_PEERS} env var found. As `local_discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
     }
