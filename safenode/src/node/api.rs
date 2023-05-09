@@ -87,7 +87,7 @@ impl Node {
         initial_peers: Vec<(PeerId, Multiaddr)>,
         root_dir: &Path,
     ) -> Result<RunningNode> {
-        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr)?;
+        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr, root_dir)?;
         let node_events_channel = NodeEventsChannel::default();
 
         let (transfer_action_sender, mut transfer_action_receiver) = mpsc::channel(100);

@@ -11,15 +11,14 @@ use super::{
     msg::MsgCodec,
     SwarmDriver,
 };
-
-use crate::network::IDENTIFY_AGENT_STR;
-use crate::protocol::{
-    messages::{QueryResponse, Request, Response},
-    storage::Chunk,
+use crate::{
+    domain::storage::DiskBackedRecordStore,
+    network::IDENTIFY_AGENT_STR,
+    protocol::{
+        messages::{QueryResponse, Request, Response},
+        storage::Chunk,
+    },
 };
-
-use crate::domain::storage::DiskBackedRecordStore;
-
 use libp2p::{
     kad::{GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     mdns,

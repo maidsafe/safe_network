@@ -23,7 +23,6 @@ use self::{
     event::NodeBehaviour,
     msg::{MsgCodec, MsgProtocol},
 };
-
 use crate::domain::storage::{DiskBackedRecordStore, DiskBackedRecordStoreConfig};
 use crate::protocol::messages::{QueryResponse, Request, Response};
 use futures::{future::select_all, StreamExt};
@@ -42,6 +41,7 @@ use std::{
     iter,
     net::SocketAddr,
     num::NonZeroUsize,
+    path::{Path, PathBuf},
     time::Duration,
 };
 use tokio::sync::{mpsc, oneshot};
@@ -102,7 +102,10 @@ impl SwarmDriver {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
-    pub fn new(addr: SocketAddr) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    pub fn new(
+        addr: SocketAddr,
+        root_dir: &Path,
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut kad_cfg = KademliaConfig::default();
         let _ = kad_cfg
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
@@ -125,7 +128,7 @@ impl SwarmDriver {
             .set_record_ttl(None);
 
         let (network, events_receiver, mut swarm_driver) =
-            Self::with(kad_cfg, ProtocolSupport::Full, false)?;
+            Self::with(kad_cfg, false, Some(root_dir.join("record_store")))?;
 
         // Listen on the provided address
         let addr = Multiaddr::from(addr.ip())
@@ -143,25 +146,26 @@ impl SwarmDriver {
     pub fn new_client() -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
-        let mut cfg = KademliaConfig::default(); // default query timeout is 60 secs
+        let mut kad_cfg = KademliaConfig::default(); // default query timeout is 60 secs
 
         // 1mb packet size
-        let _ = cfg.set_max_packet_size(1024 * 1024);
-        // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
-        let _ = cfg.disjoint_query_paths(true);
-        // How many nodes _should_ store data.
-        let _ = cfg.set_replication_factor(
-            NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
-        );
+        let _ = kad_cfg
+            .set_max_packet_size(1024 * 1024)
+            // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
+            .disjoint_query_paths(true)
+            // How many nodes _should_ store data.
+            .set_replication_factor(
+                NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
+            );
 
-        Self::with(cfg, ProtocolSupport::Outbound, true)
+        Self::with(kad_cfg, true, None)
     }
 
     // Private helper to create the network components with the provided config and req/res behaviour
     fn with(
         kad_cfg: KademliaConfig,
-        req_res_protocol: ProtocolSupport,
         is_client: bool,
+        disk_store_path: Option<PathBuf>,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a random key for ourself.
         let keypair = identity::Keypair::generate_ed25519();
@@ -173,57 +177,76 @@ impl SwarmDriver {
             XorName::from_content(&peer_id.to_bytes())
         );
 
-        // RequestResponse configuration
-        let mut req_res_config = RequestResponseConfig::default();
-        let _ = req_res_config.set_request_timeout(REQUEST_TIMEOUT);
-        let _ = req_res_config.set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
+        // RequestResponse Behaviour
+        let request_response = {
+            let mut cfg = RequestResponseConfig::default();
+            let _ = cfg
+                .set_request_timeout(REQUEST_TIMEOUT)
+                .set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
-        let request_response = request_response::Behaviour::new(
-            MsgCodec(),
-            iter::once((MsgProtocol(), req_res_protocol)),
-            req_res_config,
-        );
-
-        // QUIC configuration
-        let quic_config = libp2p_quic::Config::new(&keypair);
-        let transport = libp2p_quic::tokio::Transport::new(quic_config);
-        let transport = transport
-            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
-            .boxed();
-
-        // Configures the memory store to be able to hold larger
-        // records than by default
-        let memory_store_cfg = DiskBackedRecordStoreConfig {
-            max_value_bytes: 1024 * 1024,
-            max_providers_per_key: CLOSE_GROUP_SIZE,
-            ..Default::default()
+            let req_res_protocol = if is_client {
+                ProtocolSupport::Outbound
+            } else {
+                ProtocolSupport::Full
+            };
+            request_response::Behaviour::new(
+                MsgCodec(),
+                iter::once((MsgProtocol(), req_res_protocol)),
+                cfg,
+            )
         };
 
-        // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
-        // to outbound-only mode and don't listen on any address
-        let kademlia = Kademlia::with_config(
-            peer_id,
-            DiskBackedRecordStore::with_config(peer_id, memory_store_cfg),
-            kad_cfg,
-        );
+        // Kademlia Behaviour
+        let kademlia = {
+            // Configures the disk_store to store records under the provided path and increase the max record size
+            let storage_dir = disk_store_path.unwrap_or(std::env::temp_dir());
+            std::fs::create_dir_all(&storage_dir)?;
+            let store_cfg = DiskBackedRecordStoreConfig {
+                max_value_bytes: 1024 * 1024,
+                storage_dir,
+                ..Default::default()
+            };
 
-        let mdns_config = mdns::Config {
-            // lower query interval to speed up peer discovery
-            // this increases traffic, but means we no longer have clients unable to connect
-            // after a few minutes
-            query_interval: Duration::from_secs(5),
-            ..Default::default()
+            Kademlia::with_config(
+                peer_id,
+                DiskBackedRecordStore::with_config(peer_id, store_cfg),
+                kad_cfg,
+            )
         };
-        let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
-        let identify_cfg = if is_client {
-            libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                .with_agent_version(IDENTIFY_CLIENT_VERSION_STR.to_string())
-        } else {
-            libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                .with_agent_version(IDENTIFY_AGENT_VERSION_STR.to_string())
+        // mDNS Behaviour
+        let mdns = {
+            let cfg = mdns::Config {
+                // lower query interval to speed up peer discovery
+                // this increases traffic, but means we no longer have clients unable to connect
+                // after a few minutes
+                query_interval: Duration::from_secs(5),
+                ..Default::default()
+            };
+            mdns::tokio::Behaviour::new(cfg, peer_id)?
         };
-        let identify = libp2p::identify::Behaviour::new(identify_cfg);
+
+        // Identify Behaviour
+        let identify = {
+            let cfg = if is_client {
+                libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
+                    .with_agent_version(IDENTIFY_CLIENT_VERSION_STR.to_string())
+            } else {
+                libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
+                    .with_agent_version(IDENTIFY_AGENT_VERSION_STR.to_string())
+            };
+            libp2p::identify::Behaviour::new(cfg)
+        };
+
+        // Transport
+        let transport = {
+            // use the QUIC Protocol for transport
+            let quic_config = libp2p_quic::Config::new(&keypair);
+            let transport = libp2p_quic::tokio::Transport::new(quic_config);
+            transport
+                .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+                .boxed()
+        };
 
         let behaviour = NodeBehaviour {
             request_response,
@@ -231,7 +254,6 @@ impl SwarmDriver {
             mdns,
             identify,
         };
-
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
         let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(100);
@@ -538,6 +560,7 @@ mod tests {
         collections::{BTreeMap, HashMap},
         fmt,
         net::SocketAddr,
+        path::Path,
         time::Duration,
     };
     use xor_name::XorName;
@@ -552,6 +575,7 @@ mod tests {
                 "0.0.0.0:0"
                     .parse::<SocketAddr>()
                     .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
+                Path::new(""),
             )?;
             let _handle = tokio::spawn(driver.run());
 
@@ -616,6 +640,7 @@ mod tests {
             "0.0.0.0:0"
                 .parse::<SocketAddr>()
                 .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
+            Path::new(""),
         )?;
         let _driver_handle = tokio::spawn(driver.run());
 
