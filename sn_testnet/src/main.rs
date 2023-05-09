@@ -169,13 +169,16 @@ async fn check_flamegraph_prerequisites() -> Result<()> {
         );
     }
 
-    let output = Command::new("which").arg("perf").output()?;
-    if !output.status.success() {
-        return Err(eyre!(
-            "You do not appear to have the 'perf' tool installed, which is required for \
-                using flamegraph"
-        )
-        .suggestion("Please install 'perf' on your OS"));
+    #[cfg(not(target_os = "macos"))]
+    {
+        let output = Command::new("which").arg("perf").output()?;
+        if !output.status.success() {
+            return Err(eyre!(
+                "You do not appear to have the 'perf' tool installed, which is required for \
+                    using flamegraph"
+            )
+            .suggestion("Please install 'perf' on your OS"));
+        }
     }
 
     Ok(())
