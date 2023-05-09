@@ -10,11 +10,12 @@ mod rpc;
 use safenode::{
     log::init_node_logging,
     node::{Node, NodeEvent, NodeEventsReceiver},
+    peers_acquisition::peers_from_opts_or_env,
 };
 
 use clap::Parser;
 use eyre::{eyre, Error, Result};
-use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
+use libp2p::{Multiaddr, PeerId};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
@@ -115,7 +116,7 @@ fn main() -> Result<()> {
     };
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
-    let peers = parse_peer_multiaddreses(&opt.peers)?;
+    let peers = peers_from_opts_or_env(&opt.peers)?;
 
     loop {
         let msg = format!(
@@ -222,30 +223,6 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
             }
         }
     });
-}
-
-/// Parse multiaddresses containing the P2p protocol (`/p2p/<PeerId>`).
-/// Returns an error for the first invalid multiaddress.
-fn parse_peer_multiaddreses(multiaddrs: &[Multiaddr]) -> Result<Vec<(PeerId, Multiaddr)>> {
-    multiaddrs
-        .iter()
-        .map(|multiaddr| {
-            // Take hash from the `/p2p/<hash>` component.
-            let p2p_multihash = multiaddr
-                .iter()
-                .find_map(|p| match p {
-                    Protocol::P2p(hash) => Some(hash),
-                    _ => None,
-                })
-                .ok_or_else(|| eyre!("address does not contain `/p2p/<PeerId>`"))?;
-            // Parse the multihash into the `PeerId`.
-            let peer_id =
-                PeerId::from_multihash(p2p_multihash).map_err(|_| eyre!("invalid p2p PeerId"))?;
-
-            Ok((peer_id, multiaddr.clone()))
-        })
-        // Short circuit on the first error. See rust docs `Result::from_iter`.
-        .collect::<Result<Vec<(PeerId, Multiaddr)>>>()
 }
 
 fn get_root_dir_path(root_dir_path: Option<PathBuf>) -> Result<PathBuf> {
