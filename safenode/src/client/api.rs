@@ -16,8 +16,8 @@ use crate::{
     network::{close_group_majority, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
     protocol::{
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
-        storage::{dbc_address, dbc_name, Chunk, ChunkAddress},
-        NetworkKey,
+        storage::{Chunk, ChunkAddress, DbcAddress},
+        NetworkAddress,
     },
 };
 
@@ -113,7 +113,7 @@ impl Client {
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork);
 
-                let key = NetworkKey::from_peer(peer_id);
+                let key = NetworkAddress::from_peer(peer_id);
                 let network = self.network.clone();
                 let _handle = spawn(async move {
                     trace!("On PeerAdded({peer_id:?}) Getting closest peers for target {key:?}");
@@ -226,10 +226,13 @@ impl Client {
 
     pub(crate) async fn expect_closest_majority_ok(&self, spend: SpendRequest) -> Result<()> {
         let dbc_id = spend.signed_spend.dbc_id();
-        let key = NetworkKey::from_name(dbc_name(dbc_id));
+        let network_address = NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(dbc_id));
 
-        trace!("Getting the closest peers to {dbc_id:?} / {key:?}.");
-        let closest_peers = self.network.client_get_closest_peers(&key).await?;
+        trace!("Getting the closest peers to {dbc_id:?} / {network_address:?}.");
+        let closest_peers = self
+            .network
+            .client_get_closest_peers(&network_address)
+            .await?;
 
         let cmd = Cmd::SpendDbc {
             signed_spend: Box::new(spend.signed_spend),
@@ -279,10 +282,13 @@ impl Client {
     }
 
     pub(crate) async fn expect_closest_majority_same(&self, dbc_id: &DbcId) -> Result<SignedSpend> {
-        let key = NetworkKey::from_name(dbc_name(dbc_id));
-        trace!("Getting the closest peers to {dbc_id:?} / {key:?}.");
-        let address = dbc_address(dbc_id);
-        let closest_peers = self.network.client_get_closest_peers(&key).await?;
+        let address = DbcAddress::from_dbc_id(dbc_id);
+        let network_address = NetworkAddress::from_dbc_address(address);
+        trace!("Getting the closest peers to {dbc_id:?} / {network_address:?}.");
+        let closest_peers = self
+            .network
+            .client_get_closest_peers(&network_address)
+            .await?;
 
         let query = Query::Spend(SpendQuery::GetDbcSpend(address));
         trace!("Sending {:?} to the closest peers.", query);

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::storage::{ChunkAddress, DataAddress};
+use crate::protocol::{storage::ChunkAddress, NetworkAddress};
 
 use super::{RegisterQuery, SpendQuery};
 
@@ -40,11 +40,11 @@ pub enum Query {
 
 impl Query {
     /// Used to send a query to the close group of the address.
-    pub fn dst(&self) -> DataAddress {
+    pub fn dst(&self) -> NetworkAddress {
         match self {
-            Query::GetChunk(address) => DataAddress::Chunk(*address),
-            Query::Register(query) => DataAddress::Register(query.dst()),
-            Query::Spend(query) => DataAddress::Spend(query.dst()),
+            Query::GetChunk(address) => NetworkAddress::from_chunk_address(*address),
+            Query::Register(query) => NetworkAddress::from_register_address(query.dst()),
+            Query::Spend(query) => NetworkAddress::from_dbc_address(query.dst()),
         }
     }
 }

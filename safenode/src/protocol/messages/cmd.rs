@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::storage::{dbc_address, Chunk, ChunkAddress, DataAddress};
+use crate::protocol::{
+    storage::{Chunk, ChunkAddress, DbcAddress},
+    NetworkAddress,
+};
 
 use super::RegisterCmd;
 
@@ -47,12 +50,14 @@ pub enum Cmd {
 
 impl Cmd {
     /// Used to send a cmd to the close group of the address.
-    pub fn dst(&self) -> DataAddress {
+    pub fn dst(&self) -> NetworkAddress {
         match self {
-            Cmd::StoreChunk(chunk) => DataAddress::Chunk(ChunkAddress::new(*chunk.name())),
-            Cmd::Register(cmd) => DataAddress::Register(cmd.dst()),
+            Cmd::StoreChunk(chunk) => {
+                NetworkAddress::from_chunk_address(ChunkAddress::new(*chunk.name()))
+            }
+            Cmd::Register(cmd) => NetworkAddress::from_register_address(cmd.dst()),
             Cmd::SpendDbc { signed_spend, .. } => {
-                DataAddress::Spend(dbc_address(signed_spend.dbc_id()))
+                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
             }
         }
     }

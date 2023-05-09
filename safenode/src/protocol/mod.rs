@@ -10,90 +10,80 @@
 pub mod error;
 /// Messages types
 pub mod messages;
+/// Storage types for spends, chunks and registers.
+pub mod storage;
 
-use self::error::{Error, Result};
+use self::storage::{ChunkAddress, DbcAddress, RegisterAddress};
 
 use libp2p::{
     kad::{kbucket::Distance, KBucketKey as Key},
     PeerId,
 };
 use serde::{Deserialize, Serialize};
-use xor_name::{XorName, XOR_NAME_LEN};
 
-/// This is the key in the network by which proximity/distance
-/// to other items (wether nodes or data chunks) are calculated.
+/// This is the address in the network by which proximity/distance
+/// to other items (whether nodes or data chunks) are calculated.
 ///
 /// This is the mapping from the XOR name used
 /// by for example self encryption, or the libp2p `PeerId`,
 /// to the key used in the Kademlia DHT.
 /// All our xorname calculations shall be replaced with the `KBucketKey` calculations,
-/// for getting proximity/distance to other items (wether nodes or data).
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
-pub enum NetworkKey {
-    /// The NetworkKey is representing a PeerId.
+/// for getting proximity/distance to other items (whether nodes or data).
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub enum NetworkAddress {
+    /// The NetworkAddress is representing a PeerId.
     PeerId(Vec<u8>),
-    /// The NetworkKey is representing an XorName of some data.
-    XorName(Vec<u8>),
+    /// The NetworkAddress is representing a ChunkAddress.
+    ChunkAddress(ChunkAddress),
+    /// The NetworkAddress is representing a DbcAddress.
+    DbcAddress(DbcAddress),
+    /// The NetworkAddress is representing a ChunkAddress.
+    RegisterAddress(RegisterAddress),
 }
 
-impl NetworkKey {
-    /// Return a `NetworkKey` representation of the `XorName` by encapsulating its bytes.
-    pub fn from_name(name: XorName) -> Self {
-        NetworkKey::XorName(name.0.to_vec())
+impl NetworkAddress {
+    /// Return a `NetworkAddress` representation of the `ChunkAddress`.
+    pub fn from_chunk_address(chunk_address: ChunkAddress) -> Self {
+        NetworkAddress::ChunkAddress(chunk_address)
     }
 
-    /// Return a `NetworkKey` representation of the `PeerId` by encapsulating its bytes.
+    /// Return a `NetworkAddress` representation of the `DbcAddress`.
+    pub fn from_dbc_address(dbc_address: DbcAddress) -> Self {
+        NetworkAddress::DbcAddress(dbc_address)
+    }
+
+    /// Return a `NetworkAddress` representation of the `RegisterAddress`.
+    pub fn from_register_address(register_address: RegisterAddress) -> Self {
+        NetworkAddress::RegisterAddress(register_address)
+    }
+
+    /// Return a `NetworkAddress` representation of the `PeerId` by encapsulating its bytes.
     pub fn from_peer(peer_id: PeerId) -> Self {
-        NetworkKey::PeerId(peer_id.to_bytes())
+        NetworkAddress::PeerId(peer_id.to_bytes())
     }
 
-    /// Return the encapsulated bytes of this `NetworkKey`.
+    /// Return the encapsulated bytes of this `NetworkAddress`.
     pub fn as_bytes(&self) -> Vec<u8> {
         match self {
-            NetworkKey::PeerId(bytes) => bytes.to_vec(),
-            NetworkKey::XorName(bytes) => bytes.to_vec(),
+            NetworkAddress::PeerId(bytes) => bytes.to_vec(),
+            NetworkAddress::ChunkAddress(chunk_address) => chunk_address.name().0.to_vec(),
+            NetworkAddress::DbcAddress(dbc_address) => dbc_address.name().0.to_vec(),
+            NetworkAddress::RegisterAddress(register_address) => register_address.id().0.to_vec(),
         }
     }
 
-    /// Try to convert this `NetworkKey` to an `XorName`.
-    pub fn as_name(&self) -> Result<XorName> {
-        let bytes = match self {
-            NetworkKey::PeerId(bytes) => {
-                return Err(Error::NotAnXorName(format!("Not an xorname: {bytes:?}")))
-            }
-            NetworkKey::XorName(bytes) => bytes,
-        };
-        let mut xor = [0u8; XOR_NAME_LEN];
-        xor.copy_from_slice(&bytes[..XOR_NAME_LEN]);
-        Ok(XorName(xor))
-    }
-
-    /// Try to convert this `NetworkKey` to a `PeerId`.
-    pub fn as_peer(&self) -> Result<PeerId> {
-        let bytes = match self {
-            NetworkKey::PeerId(bytes) => bytes.to_vec(),
-            NetworkKey::XorName(bytes) => {
-                return Err(Error::NotAPeerId(format!("Not a peer id: {bytes:?}")))
-            }
-        };
-        match PeerId::from_bytes(&bytes) {
-            Ok(peer_id) => Ok(peer_id),
-            Err(err) => Err(Error::NotAPeerId(format!("Invalid peer id bytes: {err}"))),
-        }
-    }
-
-    /// Return the `KBucketKey` representation of this `NetworkKey`.
+    /// Return the `KBucketKey` representation of this `NetworkAddress`.
     ///
-    /// The `KBucketKey` is used for calculating proximity/distance to other items (wether nodes or data).
+    /// The `KBucketKey` is used for calculating proximity/distance to other items (whether nodes or data).
     /// Important to note is that it will always SHA256 hash any bytes it receives.
     /// Therefore, the canonical use of distance/proximity calculations in the network
-    /// is via the `KBucketKey`, or the convenience methods of `NetworkKey`.
+    /// is via the `KBucketKey`, or the convenience methods of `NetworkAddress`.
     pub fn as_kbucket_key(&self) -> Key<Vec<u8>> {
         Key::new(self.as_bytes())
     }
 
     /// Compute the distance of the keys according to the XOR metric.
-    pub fn distance(&self, other: &NetworkKey) -> Distance {
+    pub fn distance(&self, other: &NetworkAddress) -> Distance {
         self.as_kbucket_key().distance(&other.as_kbucket_key())
     }
 
@@ -107,5 +97,15 @@ impl NetworkKey {
     //     self.as_kbucket_key().for_distance(d)
     // }
 }
-/// Storage types for spends, chunks and registers.
-pub mod storage;
+
+impl std::fmt::Debug for NetworkAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name_str = match self {
+            NetworkAddress::PeerId(_) => "NetworkAddress::PeerId(",
+            NetworkAddress::ChunkAddress(_) => "NetworkAddress::ChunkAddress(",
+            NetworkAddress::DbcAddress(_) => "NetworkAddress::DbcAddress(",
+            NetworkAddress::RegisterAddress(_) => "NetworkAddress::RegisterAddress(",
+        };
+        write!(f, "{name_str}{:?})", self.as_bytes())
+    }
+}
