@@ -61,8 +61,8 @@ pub fn peers_from_opts_or_env(opt_peers: &[Multiaddr]) -> Result<Vec<(PeerId, Mu
         );
 
         return parse_peer_multiaddresses(&peers);
-    } else if !cfg!(feature = "local_discovery") {
-        warn!("No {SAFE_PEERS} env var found. As `local_discovery` feature is disabled, we will not be able to connect to the network. ");
+    } else if !cfg!(feature = "local-discovery") {
+        warn!("No {SAFE_PEERS} env var found. As `local-discovery` feature is disabled, we will not be able to connect to the network. ");
 
         // get the current bin name
         let current_crate_path = current_exe()?;
@@ -73,11 +73,11 @@ pub fn peers_from_opts_or_env(opt_peers: &[Multiaddr]) -> Result<Vec<(PeerId, Mu
         // node impls won't bail as it could be a first node eg, and otheres will contact this node
         if let Some(crate_name) = current_crate {
             if crate_name == "safe" {
-                return Err(eyre!("No {SAFE_PEERS} env var found. As `local_discovery` feature is disabled, we will not be able to connect to the network. "));
+                return Err(eyre!("No {SAFE_PEERS} env var found. As `local-discovery` feature is disabled, we will not be able to connect to the network. "));
             }
         }
     } else {
-        info!("No {SAFE_PEERS} env var found. As `local_discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
+        info!("No {SAFE_PEERS} env var found. As `local-discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
     }
 
     Ok(vec![])
