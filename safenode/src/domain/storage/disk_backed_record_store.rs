@@ -11,8 +11,8 @@ use libp2p::{
     identity::PeerId,
     kad::{
         kbucket::Key as KBucketKey,
-    record::{Key, ProviderRecord, Record},
-    store::{Error, RecordStore, Result},
+        record::{Key, ProviderRecord, Record},
+        store::{Error, RecordStore, Result},
     },
 };
 use smallvec::SmallVec;
@@ -202,7 +202,7 @@ impl RecordStore for DiskBackedRecordStore {
             if let Some(record) = self.get(key) {
                 records.push(record);
             }
-    }
+        }
         records.into_iter()
     }
 
@@ -284,24 +284,94 @@ impl RecordStore for DiskBackedRecordStore {
     }
 }
 
+#[allow(trivial_casts)]
 #[cfg(test)]
 mod tests {
     use super::*;
-    use libp2p_core::multihash::{Code, Multihash};
+    use libp2p::{
+        core::multihash::Multihash,
+        kad::kbucket::{Distance, Key as KBucketKey},
+    };
     use quickcheck::*;
     use rand::Rng;
+    use std::time::Instant;
 
-    fn random_multihash() -> Multihash {
-        Multihash::wrap(Code::Sha2_256.into(), &rand::thread_rng().gen::<[u8; 32]>()).unwrap()
+    const SHA_256_MH: u64 = 0x12;
+
+    #[derive(Clone, Debug)]
+    struct ArbitraryKey(Key);
+    #[derive(Clone, Debug)]
+    struct ArbitraryPeerId(PeerId);
+    #[derive(Clone, Debug)]
+    struct ArbitraryKBucketKey(KBucketKey<PeerId>);
+    #[derive(Clone, Debug)]
+    struct ArbitraryRecord(Record);
+    #[derive(Clone, Debug)]
+    struct ArbitraryProviderRecord(ProviderRecord);
+
+    impl Arbitrary for ArbitraryPeerId {
+        fn arbitrary(g: &mut Gen) -> ArbitraryPeerId {
+            let hash: [u8; 32] = core::array::from_fn(|_| u8::arbitrary(g));
+            let peer_id = PeerId::from_multihash(
+                Multihash::wrap(SHA_256_MH, &hash).expect("Failed to gen Multihash"),
+            )
+            .expect("Failed to create PeerId");
+            ArbitraryPeerId(peer_id)
+        }
     }
 
-    fn distance(r: &ProviderRecord) -> kbucket::Distance {
-        kbucket::Key::new(r.key.clone()).distance(&kbucket::Key::from(r.provider))
+    impl Arbitrary for ArbitraryKBucketKey {
+        fn arbitrary(_: &mut Gen) -> ArbitraryKBucketKey {
+            ArbitraryKBucketKey(KBucketKey::from(PeerId::random()))
+        }
+    }
+
+    impl Arbitrary for ArbitraryKey {
+        fn arbitrary(g: &mut Gen) -> ArbitraryKey {
+            let hash: [u8; 32] = core::array::from_fn(|_| u8::arbitrary(g));
+            ArbitraryKey(Key::from(
+                Multihash::wrap(SHA_256_MH, &hash).expect("Failed to gen MultiHash"),
+            ))
+        }
+    }
+
+    impl Arbitrary for ArbitraryRecord {
+        fn arbitrary(g: &mut Gen) -> ArbitraryRecord {
+            let record = Record {
+                key: ArbitraryKey::arbitrary(g).0,
+                value: Vec::arbitrary(g),
+                publisher: None,
+                expires: None,
+            };
+            ArbitraryRecord(record)
+        }
+    }
+
+    impl Arbitrary for ArbitraryProviderRecord {
+        fn arbitrary(g: &mut Gen) -> ArbitraryProviderRecord {
+            let record = ProviderRecord {
+                key: ArbitraryKey::arbitrary(g).0,
+                provider: PeerId::random(),
+                expires: None,
+                addresses: vec![],
+            };
+            ArbitraryProviderRecord(record)
+        }
+    }
+
+    fn random_multihash() -> Multihash {
+        Multihash::wrap(SHA_256_MH, &rand::thread_rng().gen::<[u8; 32]>())
+            .expect("Failed to gen random_multihash")
+    }
+
+    fn distance(r: &ProviderRecord) -> Distance {
+        KBucketKey::new(r.key.clone()).distance(&KBucketKey::from(r.provider))
     }
 
     #[test]
     fn put_get_remove_record() {
-        fn prop(r: Record) {
+        fn prop(r: ArbitraryRecord) {
+            let r = r.0;
             let mut store = DiskBackedRecordStore::new(PeerId::random());
             assert!(store.put(r.clone()).is_ok());
             assert_eq!(Some(Cow::Borrowed(&r)), store.get(&r.key));
@@ -313,7 +383,8 @@ mod tests {
 
     #[test]
     fn add_get_remove_provider() {
-        fn prop(r: ProviderRecord) {
+        fn prop(r: ArbitraryProviderRecord) {
+            let r = r.0;
             let mut store = DiskBackedRecordStore::new(PeerId::random());
             assert!(store.add_provider(r.clone()).is_ok());
             assert!(store.providers(&r.key).contains(&r));
@@ -325,13 +396,13 @@ mod tests {
 
     #[test]
     fn providers_ordered_by_distance_to_key() {
-        fn prop(providers: Vec<kbucket::Key<PeerId>>) -> bool {
+        fn prop(providers: Vec<ArbitraryKBucketKey>) -> bool {
             let mut store = DiskBackedRecordStore::new(PeerId::random());
             let key = Key::from(random_multihash());
 
             let mut records = providers
                 .into_iter()
-                .map(|p| ProviderRecord::new(key.clone(), p.into_preimage(), Vec::new()))
+                .map(|p| ProviderRecord::new(key.clone(), p.0.into_preimage(), Vec::new()))
                 .collect::<Vec<_>>();
 
             for r in &records {
@@ -339,7 +410,7 @@ mod tests {
             }
 
             records.sort_by_key(distance);
-            records.truncate(store.config.max_providers_per_key);
+            records.truncate(MAX_PROVIDERS_PER_KEY);
 
             records == store.providers(&key).to_vec()
         }
