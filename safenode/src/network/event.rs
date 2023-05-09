@@ -20,7 +20,7 @@ use crate::{
     },
 };
 
-#[cfg(feature = "local_discovery")]
+#[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 
 use libp2p::{
@@ -30,7 +30,7 @@ use libp2p::{
     swarm::{NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
-#[cfg(feature = "local_discovery")]
+#[cfg(feature = "local-discovery")]
 use std::collections::hash_map;
 use std::collections::HashSet;
 use tokio::sync::oneshot;
@@ -50,7 +50,7 @@ pub(super) struct NodeBehaviour {
 pub(super) enum NodeEvent {
     MsgReceived(request_response::Event<Request, Response>),
     Kademlia(KademliaEvent),
-    #[cfg(feature = "local_discovery")]
+    #[cfg(feature = "local-discovery")]
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
 }
@@ -67,7 +67,7 @@ impl From<KademliaEvent> for NodeEvent {
     }
 }
 
-#[cfg(feature = "local_discovery")]
+#[cfg(feature = "local-discovery")]
 impl From<mdns::Event> for NodeEvent {
     fn from(event: mdns::Event) -> Self {
         NodeEvent::Mdns(Box::new(event))
@@ -220,7 +220,7 @@ impl SwarmDriver {
                     libp2p::identify::Event::Error { .. } => {}
                 }
             }
-            #[cfg(feature = "local_discovery")]
+            #[cfg(feature = "local-discovery")]
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
                 mdns::Event::Discovered(list) => {
                     for (peer_id, multiaddr) in list {

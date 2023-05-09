@@ -32,7 +32,7 @@ use crate::protocol::{
 
 use futures::{future::select_all, StreamExt};
 
-#[cfg(feature = "local_discovery")]
+#[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 
 use libp2p::{
@@ -215,7 +215,7 @@ impl SwarmDriver {
             )
         };
 
-        #[cfg(feature = "local_discovery")]
+        #[cfg(feature = "local-discovery")]
         let mdns_config = mdns::Config {
             // lower query interval to speed up peer discovery
             // this increases traffic, but means we no longer have clients unable to connect
@@ -252,7 +252,7 @@ impl SwarmDriver {
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
-            #[cfg(feature = "local_discovery")]
+            #[cfg(feature = "local-discovery")]
             mdns,
             identify,
         };
@@ -560,24 +560,24 @@ mod tests {
     use rand::{thread_rng, Rng};
     use std::{net::SocketAddr, time::Duration};
 
-    #[cfg(feature = "local_discovery")]
+    #[cfg(feature = "local-discovery")]
     use libp2p::kad::{
         kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus},
     };
-    #[cfg(feature = "local_discovery")]
+    #[cfg(feature = "local-discovery")]
     use libp2p::PeerId;
-    #[cfg(feature = "local_discovery")]
+    #[cfg(feature = "local-discovery")]
     use std::collections::{BTreeMap, HashMap};
-    #[cfg(feature = "local_discovery")]
+    #[cfg(feature = "local-discovery")]
     use std::fmt;
-    #[cfg(feature = "local_discovery")]
+    #[cfg(feature = "local-discovery")]
     use xor_name::XorName;
 
     use std::path::Path;
 
     #[tokio::test(flavor = "multi_thread")]
     // Enable mDNS for peer discovery here
-    #[cfg(feature = "local_discovery")]
+    #[cfg(feature = "local-discovery")]
     async fn closest() -> Result<()> {
         init_test_logger();
         let mut networks_list = Vec::new();
@@ -701,7 +701,7 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "local_discovery")]
+    #[cfg(feature = "local-discovery")]
     /// Test utility
     fn assert_lists<I, J, K>(a: I, b: J)
     where
