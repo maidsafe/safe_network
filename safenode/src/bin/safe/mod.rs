@@ -13,10 +13,10 @@ mod cli;
 
 use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt, SubCmd};
 use clap::Parser;
-use eyre::{eyre, Result};
-use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
+use eyre::Result;
+
 use safenode::client::Client;
-use safenode::log::init_node_logging;
+use safenode::{log::init_node_logging, peers_acquisition::peers_from_opts_or_env};
 use std::path::PathBuf;
 
 #[tokio::main]
@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
     println!("Instantiating a SAFE client...");
 
     let secret_key = bls::SecretKey::random();
-    let peers = parse_peer_multiaddresses(&opt.peers)?;
+    let peers = peers_from_opts_or_env(&opt.peers)?;
     let root_dir = get_client_dir().await?;
 
     let client = Client::new(secret_key, Some(peers)).await?;
@@ -51,29 +51,4 @@ async fn get_client_dir() -> Result<PathBuf> {
     home_dirs.push("client");
     tokio::fs::create_dir_all(home_dirs.as_path()).await?;
     Ok(home_dirs)
-}
-
-// TODO: dedupe
-/// Parse multiaddresses containing the P2p protocol (`/p2p/<PeerId>`).
-/// Returns an error for the first invalid multiaddress.
-fn parse_peer_multiaddresses(multiaddrs: &[Multiaddr]) -> Result<Vec<(PeerId, Multiaddr)>> {
-    multiaddrs
-        .iter()
-        .map(|multiaddr| {
-            // Take hash from the `/p2p/<hash>` component.
-            let p2p_multihash = multiaddr
-                .iter()
-                .find_map(|p| match p {
-                    Protocol::P2p(hash) => Some(hash),
-                    _ => None,
-                })
-                .ok_or_else(|| eyre!("address does not contain `/p2p/<PeerId>`"))?;
-            // Parse the multihash into the `PeerId`.
-            let peer_id =
-                PeerId::from_multihash(p2p_multihash).map_err(|_| eyre!("invalid p2p PeerId"))?;
-
-            Ok((peer_id, multiaddr.clone()))
-        })
-        // Short circuit on the first error. See rust docs `Result::from_iter`.
-        .collect::<Result<Vec<(PeerId, Multiaddr)>>>()
 }

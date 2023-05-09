@@ -535,21 +535,9 @@ mod tests {
     use assert_matches::assert_matches;
     use bytes::Bytes;
     use eyre::{eyre, Result};
-    use libp2p::{
-        kad::{
-            kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus},
-            KBucketKey,
-        },
-        PeerId,
-    };
+
     use rand::{thread_rng, Rng};
-    use std::{
-        collections::{BTreeMap, HashMap},
-        fmt,
-        net::SocketAddr,
-        time::Duration,
-    };
-    use xor_name::XorName;
+    use std::{fmt, net::SocketAddr, time::Duration};
 
     #[tokio::test(flavor = "multi_thread")]
     // Enable mDNS for peer discovery here
@@ -673,6 +661,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "local_discovery")]
     /// Test utility
     fn assert_lists<I, J, K>(a: I, b: J)
     where
