@@ -122,12 +122,14 @@ impl RecordStore for DiskBackedRecordStore {
         // When a client calls GET, the request is forwarded to the nodes until one node returns
         // with the record. Thus a node can be bombarded with GET reqs for random keys. These can be safely
         // ignored if we don't have the record locally.
+        trace!("GET request for Record key: {k:?}");
         if !self.disk_backed_records.contains(k) {
+            trace!("Record not found locally");
             return None;
         }
 
         let filename = Self::key_to_hex(k);
-        let file_path = self.config.storage_dir.join(filename.clone());
+        let file_path = self.config.storage_dir.join(&filename);
 
         if !file_path.exists() {
             // we went out of sync with the filesystem
@@ -139,6 +141,7 @@ impl RecordStore for DiskBackedRecordStore {
 
         match fs::read(file_path) {
             Ok(contents) => {
+                trace!("Retrieved record from disk! filename: {filename}");
                 let record = Record {
                     key: k.clone(),
                     value: contents,
@@ -148,14 +151,19 @@ impl RecordStore for DiskBackedRecordStore {
                 Some(Cow::Owned(record))
             }
             Err(err) => {
-                error!("Error reading file: {err:?}");
+                error!("Error while reading file. filename: {filename}, error: {err:?}");
                 None
             }
         }
     }
 
     fn put(&mut self, r: Record) -> Result<()> {
+        trace!("PUT request for Record key: {:?}", r.key);
         if r.value.len() >= self.config.max_value_bytes {
+            warn!(
+                "Record not stored. Value too large: {} bytes",
+                r.value.len()
+            );
             return Err(Error::ValueTooLarge);
         }
 
@@ -163,35 +171,44 @@ impl RecordStore for DiskBackedRecordStore {
         // (incase of dbc double spends etc), hence need to deal with those.
         // Maybe implement a RecordHeader to store the type of data we're storing?
         if self.disk_backed_records.contains(&r.key) {
+            debug!(
+                "Record with key {:?} already exists, not overwriting.",
+                r.key
+            );
             return Ok(());
         }
 
         let num_records = self.disk_backed_records.len();
         if num_records >= self.config.max_records {
+            warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
             return Err(Error::MaxRecords);
         }
 
-        let file_path = self.config.storage_dir.join(Self::key_to_hex(&r.key));
+        let filename = Self::key_to_hex(&r.key);
+        let file_path = self.config.storage_dir.join(&filename);
         match fs::write(file_path, r.value) {
             Ok(_) => {
+                trace!("Wrote record to disk! filename: {filename}");
                 let _ = !self.disk_backed_records.insert(r.key);
                 Ok(())
             }
             Err(err) => {
-                error!("Error writing file: {err:?}");
+                error!("Error writing file. filename: {filename}, error: {err:?}");
                 Ok(())
             }
         }
     }
 
     fn remove(&mut self, k: &Key) {
-        let file_path = self.config.storage_dir.join(Self::key_to_hex(k));
+        let filename = Self::key_to_hex(k);
+        let file_path = self.config.storage_dir.join(&filename);
         match fs::remove_file(file_path) {
             Ok(_) => {
+                trace!("Removed record from disk! filename: {filename}");
                 let _ = self.disk_backed_records.remove(k);
             }
             Err(err) => {
-                error!("Error while removing file: {err:?}");
+                error!("Error while removing file. filename: {filename}, error: {err:?}");
             }
         }
     }
@@ -296,7 +313,7 @@ mod tests {
     use rand::Rng;
     use std::time::Instant;
 
-    const SHA_256_MH: u64 = 0x12;
+    const MULITHASH_CODE: u64 = 0x12;
 
     #[derive(Clone, Debug)]
     struct ArbitraryKey(Key);
@@ -313,7 +330,7 @@ mod tests {
         fn arbitrary(g: &mut Gen) -> ArbitraryPeerId {
             let hash: [u8; 32] = core::array::from_fn(|_| u8::arbitrary(g));
             let peer_id = PeerId::from_multihash(
-                Multihash::wrap(SHA_256_MH, &hash).expect("Failed to gen Multihash"),
+                Multihash::wrap(MULITHASH_CODE, &hash).expect("Failed to gen Multihash"),
             )
             .expect("Failed to create PeerId");
             ArbitraryPeerId(peer_id)
@@ -330,7 +347,7 @@ mod tests {
         fn arbitrary(g: &mut Gen) -> ArbitraryKey {
             let hash: [u8; 32] = core::array::from_fn(|_| u8::arbitrary(g));
             ArbitraryKey(Key::from(
-                Multihash::wrap(SHA_256_MH, &hash).expect("Failed to gen MultiHash"),
+                Multihash::wrap(MULITHASH_CODE, &hash).expect("Failed to gen MultiHash"),
             ))
         }
     }
@@ -360,7 +377,7 @@ mod tests {
     }
 
     fn random_multihash() -> Multihash {
-        Multihash::wrap(SHA_256_MH, &rand::thread_rng().gen::<[u8; 32]>())
+        Multihash::wrap(MULITHASH_CODE, &rand::thread_rng().gen::<[u8; 32]>())
             .expect("Failed to gen random_multihash")
     }
 
