@@ -42,7 +42,7 @@ use libp2p::{
     kad::{Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
-    swarm::{Swarm, SwarmBuilder},
+    swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
 use lru_time_cache::LruCache;
@@ -119,6 +119,7 @@ pub struct SwarmDriver {
     //        Even with larger network, it still gain something.
     //     2, it ensures a corrected partially targeted replication .
     potential_dead_peers: LruCache<PeerId, usize>,
+    local: bool,
 }
 
 impl SwarmDriver {
@@ -137,6 +138,7 @@ impl SwarmDriver {
     /// Returns an error if there is a problem initializing the mDNS behaviour.
     pub fn new(
         addr: SocketAddr,
+        local: bool,
         root_dir: &Path,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         let mut kad_cfg = KademliaConfig::default();
@@ -162,6 +164,8 @@ impl SwarmDriver {
 
         let (network, events_receiver, mut swarm_driver) = Self::with(
             kad_cfg,
+            local,
+            false,
             Some(root_dir.join("record_store")),
             ProtocolSupport::Full,
             IDENTIFY_AGENT_VERSION_STR.to_string(),
@@ -178,7 +182,7 @@ impl SwarmDriver {
     }
 
     /// Same as `new` API but creates the network components in client mode
-    pub fn new_client() -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
+    pub fn new_client(local: bool) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let mut kad_cfg = KademliaConfig::default(); // default query timeout is 60 secs
@@ -195,6 +199,8 @@ impl SwarmDriver {
 
         Self::with(
             kad_cfg,
+            local,
+            true,
             None,
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
@@ -204,6 +210,8 @@ impl SwarmDriver {
     // Private helper to create the network components with the provided config and req/res behaviour
     fn with(
         kad_cfg: KademliaConfig,
+        local: bool,
+        is_client: bool,
         disk_store_path: Option<PathBuf>,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
@@ -300,6 +308,7 @@ impl SwarmDriver {
                 DEAD_PEER_DETECTION_PERIOD,
                 DEAD_PEER_DETECTION_CAPACITY,
             ),
+            local,
         };
 
         Ok((
@@ -578,6 +587,32 @@ impl Network {
     }
 }
 
+/// Verifies if `Multiaddr` contains IPv4 address that is not global.
+/// This is used to filter out unroutable addresses from the Kademlia routing table.
+pub fn multiaddr_is_global(multiaddr: &Multiaddr) -> bool {
+    !multiaddr.iter().any(|addr| match addr {
+        Protocol::Ip4(ip) => {
+            // Based on the nightly `is_global` method (`Ipv4Addrs::is_global`), only using what is available in stable.
+            // Missing `is_shared`, `is_benchmarking` and `is_reserved`.
+            ip.is_unspecified()
+                | ip.is_private()
+                | ip.is_loopback()
+                | ip.is_link_local()
+                | ip.is_documentation()
+                | ip.is_broadcast()
+        }
+        _ => false,
+    })
+}
+
+// Strip out the p2p protocol from a multiaddr.
+pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
+    multiaddr
+        .iter()
+        .filter(|p| !matches!(p, Protocol::P2p(_)))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::SwarmDriver;
@@ -604,6 +639,7 @@ mod tests {
             "0.0.0.0:0"
                 .parse::<SocketAddr>()
                 .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
+            true,
             Path::new(""),
         )?;
         let _driver_handle = tokio::spawn(driver.run());

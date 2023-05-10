@@ -13,6 +13,7 @@ use super::{
 };
 use crate::{
     domain::dbc_genesis::is_genesis_parent_tx,
+    network::multiaddr_strip_p2p,
     network::{close_group_majority, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState},
     node::{RegisterStorage, Transfers},
     protocol::{
@@ -83,9 +84,11 @@ impl Node {
     pub async fn run(
         addr: SocketAddr,
         initial_peers: Vec<(PeerId, Multiaddr)>,
+        local: bool,
         root_dir: &Path,
     ) -> Result<RunningNode> {
-        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(addr, root_dir)?;
+        let (network, mut network_event_receiver, swarm_driver) =
+            SwarmDriver::new(addr, local, root_dir)?;
         let node_events_channel = NodeEventsChannel::default();
 
         let (transfer_action_sender, mut transfer_action_receiver) = mpsc::channel(100);
@@ -185,6 +188,8 @@ impl Node {
                 let peers = self.initial_peers.clone();
                 let _handle = spawn(async move {
                     for (peer_id, addr) in &peers {
+                        // The addresses passed might contain the peer_id, which we already pass seperately.
+                        let addr = multiaddr_strip_p2p(addr);
                         if let Err(err) = network.dial(*peer_id, addr.clone()).await {
                             tracing::error!("Failed to dial {peer_id}: {err:?}");
                         };
