@@ -112,20 +112,29 @@ impl SwarmDriver {
                 peer_addr,
                 sender,
             } => {
-                if let hash_map::Entry::Vacant(e) = self.pending_dial.entry(peer_id) {
+                let mut dial_error = None;
+                if let hash_map::Entry::Vacant(dial_entry) = self.pending_dial.entry(peer_id) {
+                    // immediately write to the pending dial hashmap, as dials can take time,
+                    // if we wait until its done more may be in flight
+                    let _ = dial_entry.insert(sender);
                     match self
                         .swarm
                         .dial(peer_addr.with(Protocol::P2p(peer_id.into())))
                     {
-                        Ok(()) => {
-                            let _ = e.insert(sender);
-                        }
+                        Ok(()) => {}
                         Err(e) => {
-                            let _ = sender.send(Err(e.into()));
+                            dial_error = Some(e);
                         }
                     }
                 } else {
                     let _ = sender.send(Err(Error::AlreadyDialingPeer(peer_id)));
+                }
+
+                // let's inform of our error if we have one
+                if let Some(error) = dial_error {
+                    if let Some(sender) = self.pending_dial.remove(&peer_id) {
+                        let _ = sender.send(Err(error.into()));
+                    }
                 }
             }
 
