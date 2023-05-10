@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::network::CLOSE_GROUP_SIZE;
+
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -15,6 +17,9 @@ use libp2p::{
     },
 };
 use std::{borrow::Cow, collections::HashSet, fs, path::PathBuf, vec};
+
+// Control the random replication factor, which means `one in x` copies got replicated each time.
+const RANDOM_REPLICATION_FACTOR: usize = CLOSE_GROUP_SIZE / 2;
 
 /// A `RecordStore` that stores records on disk.
 pub(crate) struct DiskBackedRecordStore {
@@ -192,11 +197,20 @@ impl RecordStore for DiskBackedRecordStore {
     }
 
     fn records(&self) -> Self::RecordsIter<'_> {
+        use rand::Rng;
+        let mut index: usize = {
+            let mut rng = rand::thread_rng();
+            rng.gen_range(0..RANDOM_REPLICATION_FACTOR)
+        };
+
         let mut records = Vec::new();
         for key in self.records.iter() {
-            if let Some(record) = self.get(key) {
-                records.push(record);
+            if index % RANDOM_REPLICATION_FACTOR == 0 {
+                if let Some(record) = self.get(key) {
+                    records.push(record);
+                }
             }
+            index += 1;
         }
         records.into_iter()
     }
