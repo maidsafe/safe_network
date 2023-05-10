@@ -13,6 +13,7 @@ use super::{
 
 use crate::{
     domain::client_transfers::SpendRequest,
+    network::multiaddr_is_global,
     network::{close_group_majority, NetworkEvent, SwarmDriver},
     protocol::{
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
@@ -33,8 +34,15 @@ use xor_name::XorName;
 impl Client {
     /// Instantiate a new client.
     pub async fn new(signer: SecretKey, peers: Option<Vec<(PeerId, Multiaddr)>>) -> Result<Self> {
+        // If any of our contact peers has a global address, we'll assume we're in a global network.
+        let local = !peers
+            .clone()
+            .unwrap_or(vec![])
+            .iter()
+            .any(|(_, multiaddr)| multiaddr_is_global(multiaddr));
+
         info!("Starting Kad swarm in client mode...");
-        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client()?;
+        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client(local)?;
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
         let client = Self {
