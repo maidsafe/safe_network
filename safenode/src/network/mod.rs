@@ -542,7 +542,7 @@ mod tests {
 
     use crate::{
         log::init_test_logger,
-        network::{MsgResponder, NetworkEvent},
+        network::{MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE},
         protocol::{
             NetworkAddress,
             {
@@ -556,10 +556,7 @@ mod tests {
     use bytes::Bytes;
     use eyre::{eyre, Result};
     use libp2p::{
-        kad::{
-            kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus},
-            KBucketKey,
-        },
+        kad::kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus},
         PeerId,
     };
     use rand::{thread_rng, Rng};
@@ -605,11 +602,13 @@ mod tests {
         // The `KBucketsTable::local_key` is considered to be random since the `local_key` will not
         // be part of the `closest_peers`. Since our implementation of `get_closest_peers` returns
         // `self`, we'd want to insert `our_net` into the table as well.
-        let mut table =
-            KBucketsTable::<_, ()>::new(KBucketKey::from(PeerId::random()), Duration::from_secs(5));
+        let mut table = KBucketsTable::<_, ()>::new(
+            NetworkAddress::from_peer(PeerId::random()).as_kbucket_key(),
+            Duration::from_secs(5),
+        );
         let mut key_to_peer_id = HashMap::new();
         for net in networks_list.iter() {
-            let key = KBucketKey::from(net.peer_id);
+            let key = NetworkAddress::from_peer(net.peer_id).as_kbucket_key();
             let _ = key_to_peer_id.insert(key.clone(), net.peer_id);
 
             if let Entry::Absent(e) = table.entry(&key) {
@@ -629,7 +628,7 @@ mod tests {
                     .cloned()
                     .ok_or_else(|| eyre::eyre!("Key should be present"))
             })
-            .take(8)
+            .take(CLOSE_GROUP_SIZE)
             .collect::<Result<Vec<_>>>()?;
         info!("Got Closest from table {:?}", expected_from_table.len());
 
