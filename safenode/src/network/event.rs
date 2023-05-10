@@ -215,21 +215,28 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
                 mdns::Event::Discovered(list) => {
                     for (peer_id, multiaddr) in list {
-                        info!("Node discovered and dialing!!!: {multiaddr:?}");
+                        info!("Node discovered and dialing: {multiaddr:?}");
+
+                        let mut dial_failed = None;
                         // TODO: Deduplicate this functionality by calling in on SwarmCmd::Dial
-                        if let hash_map::Entry::Vacant(e) = self.pending_dial.entry(peer_id) {
-                            // TODO: Dropping the receiver immediately might get logged as error later.
+                        if let hash_map::Entry::Vacant(dial_entry) =
+                            self.pending_dial.entry(peer_id)
+                        {
                             let (sender, _receiver) = oneshot::channel();
-                            match self
+                            let _ = dial_entry.insert(sender);
+                            // TODO: Dropping the receiver immediately might get logged as error later.
+                            if let Err(error) = self
                                 .swarm
                                 .dial(multiaddr.with(Protocol::P2p(peer_id.into())))
                             {
-                                Ok(()) => {
-                                    let _ = e.insert(sender);
-                                }
-                                Err(e) => {
-                                    let _ = sender.send(Err(e.into()));
-                                }
+                                dial_failed = Some(error);
+                            }
+                        }
+
+                        // if we error'd out, send the error back
+                        if let Some(error) = dial_failed {
+                            if let Some(sender) = self.pending_dial.remove(&peer_id) {
+                                let _ = sender.send(Err(error.into()));
                             }
                         }
                     }
