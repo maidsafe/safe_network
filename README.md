@@ -4,9 +4,20 @@ This is the Safe Network as it was supposed to be, on a kademlia network, enable
 
 ## Running the network
 
-`killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- -b --interval 100`
+You'll need to set teh `SAFE_PEERS` env variable to the multiaddress of a node when you set up a testnet.
+You can do this automatically at network startup using the following command (if you have ripgrep installed)
+```bash
+killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- -b --interval 100  && export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')
+```
+
+This will set the env var for you and so you can run the client without needing to manually pass in `--peer` args.
+
+Or alternatively run with local discovery enabled (mDNS)
+`killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet --features local-discovery -- -b --interval 100`
 
 ## Actions undertaken by a client accessing the network
+
+Assuming you have `SAFE_PEERS` set as above:
 
 - Create Register with name 'myregister':
 `cargo run --release --bin safe -- register create myregister`
@@ -27,6 +38,10 @@ Note that the names of the uploaded files will be inserted into a new text docum
 name of `file_names_%Y-%m-%d_%H-%M-%S.txt` (i.e. unique by date and time of upload) which is placed in `$HOME/.safe/client/uploaded_files`. 
 When calling `files download`, the `uploaded_files` dir will be searched for documents containing the names of uploaded files.
 If you don't wish to download the same files multiple times, remove the text documents after the first download.
+
+If you don't have `SAFE_PEERS` set, you can pass in a `--peer` argument to commands like this:
+`cargo run --release --bin safe -- --peer <multiaddress> files upload ~/dir/with/files`
+
 
 ## Token transfers
 
