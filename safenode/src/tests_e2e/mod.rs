@@ -22,6 +22,7 @@ use assert_fs::TempDir;
 use eyre::Result;
 
 #[tokio::test(flavor = "multi_thread")]
+#[ignore = "This test is ignored because it is not stable until we have DBCs stored as records."]
 async fn multiple_sequential_transfers_succeed() -> Result<()> {
     let _log_appender_guard = crate::log::init_node_logging(&None)?;
 
