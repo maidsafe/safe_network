@@ -224,7 +224,7 @@ impl SwarmDriver {
             ..Default::default()
         };
 
-        #[cfg(feature = "local_discovery")]
+        #[cfg(feature = "local-discovery")]
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
         // Identify Behaviour
@@ -252,9 +252,9 @@ impl SwarmDriver {
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
+            identify,
             #[cfg(feature = "local-discovery")]
             mdns,
-            identify,
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
