@@ -41,7 +41,7 @@ use tracing::{info, warn};
 pub(super) struct NodeBehaviour {
     pub(super) request_response: request_response::Behaviour<MsgCodec>,
     pub(super) kademlia: Kademlia<DiskBackedRecordStore>,
-    #[cfg(feature = "local_discovery")]
+    #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
 }
