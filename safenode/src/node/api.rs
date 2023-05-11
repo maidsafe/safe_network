@@ -23,7 +23,6 @@ use crate::{
             SpendQuery,
         },
         storage::{registers::User, DbcAddress},
-        NetworkAddress,
     },
 };
 
@@ -134,15 +133,10 @@ impl Node {
             NetworkEvent::RequestReceived { req, channel } => {
                 self.handle_request(req, channel).await
             }
-            NetworkEvent::PeerAdded(peer) => {
+            NetworkEvent::PeerAdded(peer_id) => {
+                debug!("PeerAdded: {peer_id}");
+
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
-                let key = NetworkAddress::from_peer(peer);
-                let network = self.network.clone();
-                let _handle = spawn(async move {
-                    trace!("On PeerAdded({peer:?}) Getting closest peers for target {key:?}...");
-                    let result = network.node_get_closest_peers(&key).await;
-                    trace!("Closest peers to {key:?} got: {result:?}.");
-                });
             }
             NetworkEvent::NewListenAddr(_) => {
                 let network = self.network.clone();
