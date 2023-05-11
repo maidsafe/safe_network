@@ -6,10 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use safenode::{
-    client::{Client, Files},
-    protocol::storage::ChunkAddress,
-};
+use crate::{get_client, Multiaddr};
+use safenode::{client::Files, protocol::storage::ChunkAddress};
 
 use bytes::Bytes;
 use clap::Parser;
@@ -38,7 +36,12 @@ pub enum FilesCmds {
     },
 }
 
-pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path) -> Result<()> {
+pub(crate) async fn files_cmds(
+    cmds: FilesCmds,
+    peers: Vec<Multiaddr>,
+    root_dir: &Path,
+) -> Result<()> {
+    let client = get_client(peers).await?;
     let file_api: Files = Files::new(client);
     match cmds {
         FilesCmds::Upload { path } => upload_files(path, &file_api, root_dir).await?,

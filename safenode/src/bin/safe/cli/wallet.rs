@@ -6,8 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::{get_client, Multiaddr};
 use safenode::{
-    client::{Client, WalletClient},
+    client::WalletClient,
     domain::wallet::{parse_public_address, LocalWallet, Wallet},
 };
 
@@ -41,12 +42,16 @@ pub enum WalletCmds {
     },
 }
 
-pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Path) -> Result<()> {
+pub(crate) async fn wallet_cmds(
+    cmds: WalletCmds,
+    peers: Vec<Multiaddr>,
+    root_dir: &Path,
+) -> Result<()> {
     match cmds {
         WalletCmds::Address => address(root_dir).await?,
         WalletCmds::Balance => balance(root_dir).await?,
         WalletCmds::Deposit => deposit(root_dir).await?,
-        WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
+        WalletCmds::Send { amount, to } => send(amount, to, peers, root_dir).await?,
     }
     Ok(())
 }
@@ -88,7 +93,8 @@ async fn deposit(root_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> Result<()> {
+async fn send(amount: String, to: String, peers: Vec<Multiaddr>, root_dir: &Path) -> Result<()> {
+    let client = get_client(peers).await?;
     let address = parse_public_address(to)?;
 
     use std::str::FromStr;
@@ -99,7 +105,7 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
     }
 
     let wallet = LocalWallet::load_from(root_dir).await?;
-    let mut wallet_client = WalletClient::new(client.clone(), wallet);
+    let mut wallet_client = WalletClient::new(client, wallet);
 
     match wallet_client.send(amount, address).await {
         Ok(new_dbc) => {

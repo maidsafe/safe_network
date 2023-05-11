@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::{get_client, Multiaddr};
 use safenode::client::{Client, Error as ClientError};
 
 use clap::Subcommand;
@@ -35,11 +36,12 @@ pub enum RegisterCmds {
     },
 }
 
-pub(crate) async fn register_cmds(cmds: RegisterCmds, client: &Client) -> Result<()> {
+pub(crate) async fn register_cmds(cmds: RegisterCmds, peers: Vec<Multiaddr>) -> Result<()> {
+    let client = get_client(peers).await?;
     match cmds {
-        RegisterCmds::Create { name } => create_register(name, client).await?,
-        RegisterCmds::Edit { name, entry } => edit_register(name, entry, client).await?,
-        RegisterCmds::Get { names } => get_registers(names, client).await?,
+        RegisterCmds::Create { name } => create_register(name, &client).await?,
+        RegisterCmds::Edit { name, entry } => edit_register(name, entry, &client).await?,
+        RegisterCmds::Get { names } => get_registers(names, &client).await?,
     }
     Ok(())
 }

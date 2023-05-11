@@ -14,6 +14,7 @@ mod cli;
 use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt, SubCmd};
 use clap::Parser;
 use eyre::Result;
+use libp2p::Multiaddr;
 
 use safenode::client::Client;
 use safenode::git_hash;
@@ -29,23 +30,26 @@ async fn main() -> Result<()> {
     let log_appender_guard = init_node_logging(&Some(tmp_dir.join("safe-client")))?;
 
     info!("Full client logs will be written to {:?}", tmp_dir);
-    println!("Instantiating a SAFE client...");
     println!("Current build's git commit hash: {}", git_hash::git_hash());
 
-    let secret_key = bls::SecretKey::random();
-    let peers = peers_from_opts_or_env(&opt.peers)?;
+    let peers = opt.peers;
     let root_dir = get_client_dir().await?;
 
-    let client = Client::new(secret_key, Some(peers)).await?;
-
     match opt.cmd {
-        SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client, &root_dir).await?,
-        SubCmd::Files(cmds) => files_cmds(cmds, client.clone(), &root_dir).await?,
-        SubCmd::Register(cmds) => register_cmds(cmds, &client).await?,
+        SubCmd::Wallet(cmds) => wallet_cmds(cmds, peers, &root_dir).await?,
+        SubCmd::Files(cmds) => files_cmds(cmds, peers, &root_dir).await?,
+        SubCmd::Register(cmds) => register_cmds(cmds, peers).await?,
     };
 
     drop(log_appender_guard);
     Ok(())
+}
+
+async fn get_client(peers: Vec<Multiaddr>) -> Result<Client> {
+    println!("Connecting to network...");
+    let peers = peers_from_opts_or_env(&peers)?;
+    let secret_key = bls::SecretKey::random();
+    Ok(Client::new(secret_key, Some(peers)).await?)
 }
 
 async fn get_client_dir() -> Result<PathBuf> {
