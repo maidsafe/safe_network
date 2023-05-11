@@ -282,9 +282,22 @@ impl SwarmDriver {
                 info!("Connection closed to Peer {peer_id} - {endpoint:?} - {cause:?}");
             }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
+                info!("Having OutgoingConnectionError {peer_id:?} - {error:?}");
                 if let Some(peer_id) = peer_id {
                     if let Some(sender) = self.pending_dial.remove(&peer_id) {
+                        info!("OutgoingConnectionError is due to a pending_dial to {peer_id}");
                         let _ = sender.send(Err(error.into()));
+                    }
+                    // A dead peer will cause a bunch of `OutgoingConnectionError`s
+                    // to be received within a short period.
+                    if let Some(value) = self.potential_dead_peers.get_mut(&peer_id) {
+                        *value += 1;
+                        if *value > 3 {
+                            trace!("Detected dead peer {peer_id:?}");
+                            let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
+                        }
+                    } else {
+                        let _ = self.potential_dead_peers.insert(peer_id, 1);
                     }
                 }
             }
