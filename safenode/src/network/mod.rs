@@ -497,7 +497,10 @@ impl Network {
 
         if CLOSE_GROUP_SIZE > peers.len() {
             warn!("Not enough peers in the k-bucket to satisfy the request");
-            return Err(Error::NotEnoughPeers);
+            return Err(Error::NotEnoughPeers {
+                found: peers.len(),
+                required: CLOSE_GROUP_SIZE,
+            });
         }
         Ok(peers)
     }
