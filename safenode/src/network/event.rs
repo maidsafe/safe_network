@@ -17,6 +17,7 @@ use crate::{
     protocol::{
         messages::{QueryResponse, Request, Response},
         storage::Chunk,
+        NetworkAddress,
     },
 };
 
@@ -191,6 +192,26 @@ impl SwarmDriver {
                         self.event_sender
                             .send(NetworkEvent::PeerAdded(*peer))
                             .await?;
+
+                        // Replication is triggered when the newly peer is among our closest.
+                        // As the record retaining is undertaken by libp2p directly,
+                        // all holding records are supposed to be replicated once triggered.
+                        let our_address = NetworkAddress::from_peer(self.self_peer_id);
+                        // Fetch from local shall be enough.
+                        let closest_peers: Vec<_> = self
+                            .swarm
+                            .behaviour_mut()
+                            .kademlia
+                            .get_closest_local_peers(&our_address.as_kbucket_key())
+                            .collect();
+                        let target = NetworkAddress::from_peer(*peer).as_kbucket_key();
+                        if closest_peers.iter().any(|key| *key == target) {
+                            self.swarm
+                                .behaviour_mut()
+                                .kademlia
+                                .store_mut()
+                                .trigger_replication();
+                        }
                     }
                 }
                 KademliaEvent::InboundRequest { request } => {
@@ -280,6 +301,14 @@ impl SwarmDriver {
                 ..
             } => {
                 info!("Connection closed to Peer {peer_id} - {endpoint:?} - {cause:?}");
+
+                // This is most periodically called due to connection time out.
+                // Hence using it as a point to cleanup the replication cache.
+                self.swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .try_clean_replication_cache();
             }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 info!("Having OutgoingConnectionError {peer_id:?} - {error:?}");

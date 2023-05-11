@@ -24,7 +24,9 @@ use self::{
     msg::{MsgCodec, MsgProtocol},
 };
 
-use crate::domain::storage::{DiskBackedRecordStore, DiskBackedRecordStoreConfig};
+use crate::domain::storage::{
+    DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL,
+};
 use crate::protocol::{
     messages::{QueryResponse, Request, Response},
     NetworkAddress,
@@ -87,6 +89,7 @@ type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, Has
 /// swarm events, processing commands, and maintaining the state of pending
 /// tasks. It serves as the core component for the network functionality.
 pub struct SwarmDriver {
+    self_peer_id: PeerId,
     swarm: Swarm<NodeBehaviour>,
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>,
@@ -129,12 +132,12 @@ impl SwarmDriver {
     pub fn new(
         addr: SocketAddr,
         root_dir: &Path,
-    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         let mut kad_cfg = KademliaConfig::default();
         let _ = kad_cfg
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
             // this is a heavier operation than publication, so it is done less frequently
-            .set_replication_interval(Some(Duration::from_secs(20)))
+            .set_replication_interval(Some(REPLICATION_INTERVAL))
             // how often a node will publish a record key, aka telling the others it exists
             .set_publication_interval(Some(Duration::from_secs(5)))
             // 1mb packet size
@@ -165,7 +168,7 @@ impl SwarmDriver {
     }
 
     /// Same as `new` API but creates the network components in client mode
-    pub fn new_client() -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    pub fn new_client() -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let mut kad_cfg = KademliaConfig::default(); // default query timeout is 60 secs
@@ -188,7 +191,7 @@ impl SwarmDriver {
         kad_cfg: KademliaConfig,
         is_client: bool,
         disk_store_path: Option<PathBuf>,
-    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // Create a random key for ourself.
         let keypair = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(keypair.public());
@@ -278,6 +281,7 @@ impl SwarmDriver {
         let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(100);
         let (network_event_sender, network_event_receiver) = mpsc::channel(100);
         let swarm_driver = Self {
+            self_peer_id: peer_id,
             swarm,
             cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,
