@@ -11,7 +11,9 @@ mod registers;
 mod spends;
 
 pub(crate) use self::{
-    disk_backed_record_store::{DiskBackedRecordStore, DiskBackedRecordStoreConfig},
+    disk_backed_record_store::{
+        DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL,
+    },
     registers::{RegisterReplica, RegisterStorage},
     spends::SpendStorage,
 };
