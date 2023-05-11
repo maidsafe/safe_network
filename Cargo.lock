@@ -2763,6 +2763,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lru_time_cache"
+version = "0.11.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9106e1d747ffd48e6be5bb2d97fa706ed25b144fbee4d5c02eae110cd8d6badd"
+
+[[package]]
 name = "match_cfg"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4108,6 +4114,7 @@ dependencies = [
  "lazy_static",
  "libp2p",
  "libp2p-quic",
+ "lru_time_cache",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry-semantic-conventions",
