@@ -308,7 +308,7 @@ impl RegisterOffline {
 
         // If no register was gotten, we will return the first error sent to us.
         for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetChunk(result)) = resp {
+            if let Response::Query(QueryResponse::GetRegister(result)) = resp {
                 let _ = result.clone()?;
             };
         }
