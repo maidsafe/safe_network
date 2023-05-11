@@ -68,7 +68,7 @@ pub enum Error {
     #[error("The oneshot::sender has been dropped")]
     SenderDropped(#[from] oneshot::error::RecvError),
 
-    #[error("Could no get enough peers ({required}) to satisfy the request, found {found}")]
+    #[error("Could not get enough peers ({required}) to satisfy the request, found {found}")]
     NotEnoughPeers { found: usize, required: usize },
 
     #[error("Record was not found locally")]
