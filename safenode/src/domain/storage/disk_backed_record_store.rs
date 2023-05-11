@@ -16,10 +16,13 @@ use libp2p::{
         store::{Error, RecordStore, Result},
     },
 };
+use std::time::{Duration, Instant};
 use std::{borrow::Cow, collections::HashSet, fs, path::PathBuf, vec};
 
 // Control the random replication factor, which means `one in x` copies got replicated each time.
 const RANDOM_REPLICATION_FACTOR: usize = CLOSE_GROUP_SIZE / 2;
+
+pub(crate) const REPLICATION_INTERVAL: Duration = Duration::from_secs(20);
 
 /// A `RecordStore` that stores records on disk.
 pub(crate) struct DiskBackedRecordStore {
@@ -30,6 +33,10 @@ pub(crate) struct DiskBackedRecordStore {
     config: DiskBackedRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
     records: HashSet<Key>,
+    /// Records for the next replication.
+    replication_records: Vec<Key>,
+    /// Time that replication triggered.
+    replication_start: Instant,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -65,7 +72,9 @@ impl DiskBackedRecordStore {
         DiskBackedRecordStore {
             local_key: KBucketKey::from(local_id),
             config,
-            records: HashSet::default(),
+            records: Default::default(),
+            replication_records: Default::default(),
+            replication_start: Instant::now(),
         }
     }
 
@@ -83,6 +92,36 @@ impl DiskBackedRecordStore {
             .collect::<Vec<_>>();
 
         to_be_removed.iter().for_each(|key| self.remove(key));
+    }
+
+    /// Trigger a future replication
+    pub(crate) fn trigger_replication(&mut self) {
+        self.replication_start = Instant::now();
+        if !self.replication_records.is_empty() {
+            // Do nothing if replication already triggered.
+            return;
+        }
+
+        // Only need to load portion of the records.
+        use rand::Rng;
+        let mut index: usize = {
+            let mut rng = rand::thread_rng();
+            rng.gen_range(0..RANDOM_REPLICATION_FACTOR)
+        };
+
+        for key in self.records.iter() {
+            if index % RANDOM_REPLICATION_FACTOR == 0 {
+                self.replication_records.push(key.clone());
+            }
+            index += 1;
+        }
+    }
+
+    /// Cleanup the replication cache when expired, i.e. replication shall got carried out.
+    pub(crate) fn try_clean_replication_cache(&mut self) {
+        if self.replication_start + REPLICATION_INTERVAL < Instant::now() {
+            self.replication_records.clear();
+        }
     }
 
     // Converts a Key into a Hex string.
@@ -171,7 +210,7 @@ impl RecordStore for DiskBackedRecordStore {
         match fs::write(file_path, r.value) {
             Ok(_) => {
                 trace!("Wrote record to disk! filename: {filename}");
-                let _ = !self.records.insert(r.key);
+                let _ = self.records.insert(r.key);
                 Ok(())
             }
             Err(err) => {
@@ -197,20 +236,11 @@ impl RecordStore for DiskBackedRecordStore {
     }
 
     fn records(&self) -> Self::RecordsIter<'_> {
-        use rand::Rng;
-        let mut index: usize = {
-            let mut rng = rand::thread_rng();
-            rng.gen_range(0..RANDOM_REPLICATION_FACTOR)
-        };
-
-        let mut records = Vec::new();
-        for key in self.records.iter() {
-            if index % RANDOM_REPLICATION_FACTOR == 0 {
-                if let Some(record) = self.get(key) {
-                    records.push(record);
-                }
+        let mut records = vec![];
+        for key in self.replication_records.iter() {
+            if let Some(record) = self.get(key) {
+                records.push(record);
             }
-            index += 1;
         }
         records.into_iter()
     }
