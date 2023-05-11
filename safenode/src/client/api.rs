@@ -13,7 +13,7 @@ use super::{
 
 use crate::{
     domain::client_transfers::SpendRequest,
-    network::{close_group_majority, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE},
+    network::{close_group_majority, NetworkEvent, SwarmDriver},
     protocol::{
         messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
         storage::{Chunk, ChunkAddress, DbcAddress},
@@ -86,16 +86,11 @@ impl Client {
             }
         });
 
-        // Wait till client confirmed with connected to enough nodes.
         let mut client_events_rx = client.events_channel();
-        let mut added_node = 0;
-        while added_node <= CLOSE_GROUP_SIZE {
-            if let Ok(event) = client_events_rx.recv().await {
-                match event {
-                    ClientEvent::ConnectedToNetwork => {
-                        added_node += 1;
-                        info!("Client connected to the Network with {added_node:?} nodes added");
-                    }
+        if let Ok(event) = client_events_rx.recv().await {
+            match event {
+                ClientEvent::ConnectedToNetwork => {
+                    info!("Client connected to the Network.");
                 }
             }
         }
