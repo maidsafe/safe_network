@@ -561,9 +561,7 @@ mod tests {
     use std::{net::SocketAddr, time::Duration};
 
     #[cfg(feature = "local-discovery")]
-    use libp2p::kad::{
-        kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus},
-    };
+    use libp2p::kad::kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus};
     #[cfg(feature = "local-discovery")]
     use libp2p::PeerId;
     #[cfg(feature = "local-discovery")]

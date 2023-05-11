@@ -110,16 +110,9 @@ impl Client {
             // We do not listen on sockets.
             NetworkEvent::NewListenAddr(_) => {}
             NetworkEvent::PeerAdded(peer_id) => {
+                debug!("PeerAdded: {peer_id}");
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork);
-
-                let key = NetworkAddress::from_peer(peer_id);
-                let network = self.network.clone();
-                let _handle = spawn(async move {
-                    trace!("On PeerAdded({peer_id:?}) Getting closest peers for target {key:?}");
-                    let result = network.client_get_closest_peers(&key).await;
-                    trace!("For target {key:?}, get closest peers {result:?}");
-                });
             }
         }
 
