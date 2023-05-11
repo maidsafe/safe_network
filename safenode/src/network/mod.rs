@@ -44,6 +44,7 @@ use libp2p::{
     swarm::{Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
+use lru_time_cache::LruCache;
 use std::{
     collections::{HashMap, HashSet},
     iter,
@@ -93,6 +94,22 @@ pub struct SwarmDriver {
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
     pending_query: HashMap<QueryId, oneshot::Sender<Result<QueryResponse>>>,
+    // Kademlia uses a technique called `lazy refreshing` to periodically check
+    // the responsiveness of nodes in its routing table, and attempts to
+    // replace it with a new node from its list of known nodes.
+    // However the incommunicable node will prolong the get_closest process a lot.
+    // Although the incommunicable node will be replaced by a new entry, it has a flaw that:
+    //     the dropout peer in close-range will be replaced by a far-range replaced in peer,
+    //     which the latter may not trigger a replication.
+    // That is because the replication range is defined by CLOSE_GROUP_SIZE (8)
+    // meanwhile replace range is defined by K-VALUE (20).
+    // If leave the replication only triggered by newly added peer,
+    // this leaves a risk that data copies may not get replicated out in time.
+    // Hence, a connection based dead peer detection gives at least following benefits:
+    //     1, make get_closest_peers faster with incommunicable node.
+    //        Even with larger network, it still gain something.
+    //     2, it ensures a corrected partially targeted replication .
+    potential_dead_peers: LruCache<PeerId, usize>,
 }
 
 impl SwarmDriver {
@@ -268,6 +285,10 @@ impl SwarmDriver {
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
             pending_query: Default::default(),
+            potential_dead_peers: LruCache::with_expiry_duration_and_capacity(
+                Duration::from_secs(10),
+                50,
+            ),
         };
 
         Ok((
