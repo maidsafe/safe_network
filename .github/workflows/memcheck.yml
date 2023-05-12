@@ -1,0 +1,163 @@
+name: Memory Check
+
+on:
+  # tests must run for a PR to be valid and pass merge queue muster
+  # on main, we want to know that all commits are passing at a glance, any deviation should help bisecting errors
+  # the merge run checks should show on master and enable this clear test/passing history
+  merge_group:
+    branches: [main]
+  pull_request:
+    branches: ["*"]
+
+
+jobs:
+  memory-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y heaptrack
+  
+      - name: Install Rust
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+        continue-on-error: true
+        with:
+          cache-on-failure: true
+          sharedKey: ${{github.run_id}}
+
+      - name: install ripgrep ubuntu
+        run: sudo apt-get install ripgrep
+
+      - name: Build sn bins
+        run: cargo build --release --bins 
+        timeout-minutes: 30
+
+      - name: Start a local network
+        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
+        id: section-startup
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 10
+
+      - name: Set contact env var node.
+        shell: bash
+        # get all nodes listen ports
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+
+      - name: Check contact peer
+        shell: bash
+        run: echo "Peer is $SAFE_PEERS"
+
+      # Start a heaptracked node instance to compare memory usage
+      - name: Start safenode with heaptrack
+        run: |
+          mkdir -p ~/.safe/heapnode
+          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode &
+          sleep 10
+
+      # The resources file we upload may change, and with it mem consumption.
+      # Be aware!
+      - name: Start a client to upload files
+        run: cargo run --bin safe --release -- files upload -- "./resources"
+        id: client-file-upload
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+      - name: Start a client to download files
+        run: cargo run --bin safe --release -- files download
+        id: client-file-download
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+      - name: Start a client to create a register
+        run: cargo run --bin safe --release -- register create baobao
+        id: client-register-create
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+      - name: Start a client to get a register
+        run: cargo run --bin safe --release -- register get baobao
+        id: client-register-get
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+      - name: Start a client to edit a register
+        run: cargo run --bin safe --release -- register edit baobao wood
+        id: client-register-edit
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+
+      - name: Kill all nodes
+        shell: bash
+        timeout-minutes: 1
+        continue-on-error: true
+        run: |
+          pkill safenode
+          echo "$(pgrep safenode | wc -l) nodes still running"
+
+      - name: Check for heaptrack file
+        run: ls -la
+
+      - name: Analyze memory usage
+        shell: bash
+        run: |
+          HEAPTRACK_FILE=$(ls -t heaptrack.safenode.*.zst | head -1)
+          heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safenode.txt
+     
+      - name: Check memory usage
+        shell: bash
+        env:
+          # The resources file we upload may change, and with it mem consumption.
+          # This is set to a value high enough to allow for some variation depending on 
+          # resources and node locatin in the network, but hopefully low enough to catch 
+          # any wild memory issues 
+          # Any changes to this value should be carefully considered and tested!
+          MEM_LIMIT_MB: "35" # mb
+
+        run: |
+          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{print $5}' | rg "M" -r "")
+          echo "Memory usage: $MEMORY_USAGE MB"
+          if (( $(echo "$MEMORY_USAGE > $MEM_LIMIT_MB" | bc -l) )); then
+            echo "Memory usage exceeded threshold: $MEMORY_USAGE MB"
+            exit 1
+          fi
+
+      - name: Tar log files
+        shell: bash
+        continue-on-error: true
+        run: find ~/.safe/node/local-test-network -iname '*.log*' -o $/tmp/*.log | tar -zcvf log_files.tar.gz --files-from -
+        if: failure()
+
+
+      - name: Upload Heaptrack
+        uses: actions/upload-artifact@main
+        with:
+          name: heaptrack_safenode
+          path: heaptrack.safenode.*
+        continue-on-error: true
+        if: always()
+
+      - name: Upload Node Logs
+        uses: actions/upload-artifact@main
+        with:
+          name: sn_node_logs_memcheck
+          path: log_files.tar.gz
+        if: failure()
+        continue-on-error: true
+
