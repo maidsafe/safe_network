@@ -15,6 +15,7 @@ version = "0.1.5"
 chaos = []
 statemap = []
 otlp = []
+local-discovery = []
 # verify-nodes: performs a last step querying and verifying net knowledge to lanched nodes
 verify-nodes = ["prost", "tonic", "tonic-build", "libp2p"]
 
