@@ -37,6 +37,11 @@ use std::collections::HashSet;
 use tokio::sync::oneshot;
 use tracing::{info, warn};
 
+// Threshold of times of `OutgoingConnectionError` detected within the period.
+// If higher than this number of times detected,
+// the peer is counted as dropped out from the network.
+const DEAD_PEER_DETECTION_THRESHOLD: usize = 3;
+
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "NodeEvent")]
 pub(super) struct NodeBehaviour {
@@ -192,26 +197,7 @@ impl SwarmDriver {
                         self.event_sender
                             .send(NetworkEvent::PeerAdded(*peer))
                             .await?;
-
-                        // Replication is triggered when the newly peer is among our closest.
-                        // As the record retaining is undertaken by libp2p directly,
-                        // all holding records are supposed to be replicated once triggered.
-                        let our_address = NetworkAddress::from_peer(self.self_peer_id);
-                        // Fetch from local shall be enough.
-                        let closest_peers: Vec<_> = self
-                            .swarm
-                            .behaviour_mut()
-                            .kademlia
-                            .get_closest_local_peers(&our_address.as_kbucket_key())
-                            .collect();
-                        let target = NetworkAddress::from_peer(*peer).as_kbucket_key();
-                        if closest_peers.iter().any(|key| *key == target) {
-                            self.swarm
-                                .behaviour_mut()
-                                .kademlia
-                                .store_mut()
-                                .trigger_replication();
-                        }
+                        self.try_trigger_replication(peer);
                     }
                 }
                 KademliaEvent::InboundRequest { request } => {
@@ -311,18 +297,20 @@ impl SwarmDriver {
                     .try_clean_replication_cache();
             }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
-                info!("Having OutgoingConnectionError {peer_id:?} - {error:?}");
+                warn!("Having OutgoingConnectionError {peer_id:?} - {error:?}");
                 if let Some(peer_id) = peer_id {
                     if let Some(sender) = self.pending_dial.remove(&peer_id) {
-                        info!("OutgoingConnectionError is due to a pending_dial to {peer_id}");
                         let _ = sender.send(Err(error.into()));
+                    } else {
+                        info!("OutgoingConnectionError is due to non pending_dial to {peer_id}");
                     }
                     // A dead peer will cause a bunch of `OutgoingConnectionError`s
                     // to be received within a short period.
                     if let Some(value) = self.potential_dead_peers.get_mut(&peer_id) {
                         *value += 1;
-                        if *value > 3 {
+                        if *value > DEAD_PEER_DETECTION_THRESHOLD {
                             trace!("Detected dead peer {peer_id:?}");
+                            self.try_trigger_replication(&peer_id);
                             let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
                         }
                     } else {
@@ -335,5 +323,28 @@ impl SwarmDriver {
             todo => error!("SwarmEvent has not been implemented: {todo:?}"),
         }
         Ok(())
+    }
+
+    fn try_trigger_replication(&mut self, peer: &PeerId) {
+        // Replication is triggered when the newly added peer is among our closest,
+        // or the dead peer was among our closest.
+        // As the record retaining is undertaken by libp2p directly,
+        // all holding records are supposed to be replicated once triggered.
+        let our_address = NetworkAddress::from_peer(self.self_peer_id);
+        // Fetch from local shall be enough.
+        let closest_peers: Vec<_> = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .get_closest_local_peers(&our_address.as_kbucket_key())
+            .collect();
+        let target = NetworkAddress::from_peer(*peer).as_kbucket_key();
+        if closest_peers.iter().any(|key| *key == target) {
+            self.swarm
+                .behaviour_mut()
+                .kademlia
+                .store_mut()
+                .trigger_replication();
+        }
     }
 }
