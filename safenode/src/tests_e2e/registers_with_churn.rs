@@ -14,7 +14,7 @@ use crate::{
     protocol::storage::RegisterAddress,
 };
 
-use safenode_proto::{safe_node_client::SafeNodeClient, RestartRequest};
+use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
 
 use eyre::{bail, Result};
 use rand::Rng;
@@ -22,10 +22,11 @@ use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::Path,
     sync::Arc,
     time::{Duration, Instant},
 };
-use tokio::{sync::RwLock, time::sleep};
+use tokio::{fs::remove_dir_all, sync::RwLock, time::sleep};
 use tonic::Request;
 use xor_name::XorName;
 
@@ -200,7 +201,7 @@ fn churn_nodes_task() {
             println!("Restarting node through its RPC service at {addr} in {delay:?}");
             sleep(delay).await;
 
-            node_restart(addr, 1000)
+            node_restart(addr)
                 .await
                 .expect("Failed to restart node with RPC endpoint {addr}");
         }
@@ -243,11 +244,22 @@ fn retry_query_registers_task(
     });
 }
 
-async fn node_restart(addr: SocketAddr, delay_millis: u64) -> Result<()> {
+async fn node_restart(addr: SocketAddr) -> Result<()> {
     let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint).await?;
+
+    let response = client.node_info(Request::new(NodeInfoRequest {})).await?;
+    let log_dir = Path::new(&response.get_ref().log_dir);
+    remove_dir_all(log_dir).await?;
+
     let _response = client
-        .restart(Request::new(RestartRequest { delay_millis }))
+        .restart(Request::new(RestartRequest { delay_millis: 0 }))
         .await?;
+
+    println!(
+        "Node restart requested to RPC service at {addr}, and removed all its files at {}",
+        log_dir.display()
+    );
+
     Ok(())
 }
