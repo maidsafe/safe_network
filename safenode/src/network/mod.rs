@@ -67,6 +67,13 @@ pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 // Sets the keep-alive timeout of idle connections.
 const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
+// Duration of the period during which counting the number of times a peer
+// emmits `OutgoingConnectionError` error.
+// This value and the correspendent `DEAD_PEER_DETECTION_THRESHOLD`,
+// will be affected by the data/requests transmission among the network.
+const DEAD_PEER_DETECTION_PERIOD: Duration = Duration::from_secs(10);
+// Number of entries to be held in the dead peer dectection LRU cache.
+const DEAD_PEER_DETECTION_CAPACITY: usize = 50;
 
 /// Our agent string has as a prefix that we can match against.
 pub const IDENTIFY_AGENT_STR: &str = "safe/node/";
@@ -290,8 +297,8 @@ impl SwarmDriver {
             pending_requests: Default::default(),
             pending_query: Default::default(),
             potential_dead_peers: LruCache::with_expiry_duration_and_capacity(
-                Duration::from_secs(10),
-                50,
+                DEAD_PEER_DETECTION_PERIOD,
+                DEAD_PEER_DETECTION_CAPACITY,
             ),
         };
 
