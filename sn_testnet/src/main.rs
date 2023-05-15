@@ -199,6 +199,9 @@ async fn build_node() -> Result<()> {
     if cfg!(feature = "otlp") {
         args.extend(["--features", "otlp"]);
     }
+    if cfg!(feature = "local-discovery") {
+        args.extend(["--features", "local-discovery"]);
+    }
 
     info!("Building safenode");
     debug!("Building safenode with args: {:?}", args);
