@@ -106,6 +106,13 @@ impl Files {
         self.upload_bytes(bytes, true).await
     }
 
+    /// Calculates a LargeFile's/SmallFile's address from self encrypted chunks,
+    /// without storing them onto the network.
+    #[instrument(skip_all, level = "debug")]
+    pub fn calculate_address(&self, bytes: Bytes) -> Result<XorName> {
+        chunk_bytes(bytes).map(|(name, _)| name)
+    }
+
     // --------------------------------------------
     // ---------- Private helpers -----------------
     // --------------------------------------------
@@ -269,13 +276,6 @@ impl Files {
             Ok(retrieved_chunks)
         }
     }
-}
-
-/// Calculates a LargeFile's/SmallFile's address from self encrypted chunks,
-/// without storing them onto the network.
-#[instrument(skip(bytes), level = "debug")]
-pub fn calculate_address(bytes: Bytes) -> Result<XorName> {
-    chunk_bytes(bytes).map(|(name, _)| name)
 }
 
 /// Tries to chunk the bytes, returning an address and chunks, without storing anything to network.

@@ -9,15 +9,18 @@
 use super::get_client;
 
 use crate::{
-    client::{Client, Error},
-    network::Error as NetworkError,
-    protocol::{storage::RegisterAddress, NetworkAddress},
+    client::{Client, Error, Files},
+    protocol::{
+        storage::{ChunkAddress, RegisterAddress},
+        NetworkAddress,
+    },
 };
 
 use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
 
+use bytes::Bytes;
 use eyre::{bail, Result};
-use rand::Rng;
+use rand::{rngs::OsRng, Rng};
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
@@ -38,7 +41,11 @@ mod safenode_proto {
 
 const NODE_COUNT: u16 = 25;
 const CHURN_PERIOD_MILLIS: u64 = 30_000;
+
 const REGISTER_CREATION_RATIO_TO_CHURN: u64 = 10;
+const CHUNK_CREATION_RATIO_TO_CHURN: u64 = 15;
+const CHUNKS_SIZE: usize = 1024;
+
 const CONTENT_QUERY_RATIO_TO_CHURN: u64 = 12;
 const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 
@@ -67,7 +74,6 @@ type ContentErredList = Arc<RwLock<BTreeMap<NetworkAddress, ContentError>>>;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn data_availability_during_churn() -> Result<()> {
-    let mut rng = rand::thread_rng();
     println!("Creating a client...");
     let client = get_client().await;
     println!("Client created with signing key: {:?}", client.signer_pk());
@@ -86,6 +92,12 @@ async fn data_availability_during_churn() -> Result<()> {
     // Shared bucket where we keep track of the content we failed to fetch for 'MAX_NUM_OF_QUERY_ATTEMPTS' times.
     let failures = ContentErredList::default();
 
+    // Spawn a task to create Registers at random locations, at a higher frequency than the churning events
+    create_registers_task(client.clone(), content.clone());
+
+    // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
+    store_chunks_task(client.clone(), content.clone());
+
     // Spawn a task to randomly query/fetch the content we create/store
     query_content_task(client.clone(), content.clone(), content_erred.clone());
 
@@ -94,37 +106,7 @@ async fn data_availability_during_churn() -> Result<()> {
     retry_query_content_task(client.clone(), content_erred.clone(), failures.clone());
 
     let start_time = Instant::now();
-
-    // Create Registers at random locations, at a higher frequency than the churning events
-    let delay = Duration::from_millis(CHURN_PERIOD_MILLIS / REGISTER_CREATION_RATIO_TO_CHURN);
     while start_time.elapsed() < TOTAL_TIME_OF_TEST {
-        let xorname = XorName::random(&mut rng);
-        let tag = rng.gen();
-
-        let addr = RegisterAddress { name: xorname, tag };
-        println!("Creating Register at {addr:?} in {delay:?}");
-        sleep(delay).await;
-
-        let net_addr = NetworkAddress::RegisterAddress(addr);
-        match client.create_register(xorname, tag).await {
-            Err(err @ Error::Network(NetworkError::OutboundError(_))) => {
-                println!("Error (recoverable) when creating Register at {addr:?}: {err:?}");
-                let _ = content_erred.write().await.insert(
-                    net_addr.clone(),
-                    ContentError {
-                        net_addr: net_addr.clone(),
-                        attempts: 0,
-                        last_err: err,
-                    },
-                );
-                content.write().await.push_back(net_addr);
-            }
-            Err(err) => {
-                println!("Discarding Register due to error when creating it {addr:?}: {err:?}")
-            }
-            Ok(_) => content.write().await.push_back(net_addr),
-        }
-
         let failed = failures.read().await;
         println!(
             "Current failures after {:?} ({}): {:?}",
@@ -132,6 +114,7 @@ async fn data_availability_during_churn() -> Result<()> {
             failed.len(),
             failed.values()
         );
+        sleep(Duration::from_millis(CHURN_PERIOD_MILLIS)).await;
     }
 
     println!();
@@ -145,6 +128,67 @@ async fn data_availability_during_churn() -> Result<()> {
 
     println!("Test passed after running for {:?}.", start_time.elapsed());
     Ok(())
+}
+
+// Spawns a task which periodically creates Registers at random locations.
+fn create_registers_task(client: Client, content: ContentList) {
+    let _handle = tokio::spawn(async move {
+        // Create Registers at a higher frequency than the churning events
+        let delay = Duration::from_millis(CHURN_PERIOD_MILLIS / REGISTER_CREATION_RATIO_TO_CHURN);
+
+        let start_time = Instant::now();
+        while start_time.elapsed() < TOTAL_TIME_OF_TEST {
+            let xorname = XorName(rand::random());
+            let tag = rand::random();
+
+            let addr = RegisterAddress { name: xorname, tag };
+            println!("Creating Register at {addr:?} in {delay:?}");
+            sleep(delay).await;
+
+            match client.create_register(xorname, tag).await {
+                Ok(_) => content
+                    .write()
+                    .await
+                    .push_back(NetworkAddress::RegisterAddress(addr)),
+                Err(err) => println!("Discarding new Register ({addr:?}) due to error: {err:?}"),
+            }
+        }
+    });
+}
+
+// Spawns a task which periodically stores Chunks at random locations.
+fn store_chunks_task(client: Client, content: ContentList) {
+    let _handle = tokio::spawn(async move {
+        // Store Chunks at a higher frequency than the churning events
+        let delay = Duration::from_millis(CHURN_PERIOD_MILLIS / CHUNK_CREATION_RATIO_TO_CHURN);
+
+        let file_api = Files::new(client);
+        let start_time = Instant::now();
+        let mut rng = OsRng;
+        while start_time.elapsed() < TOTAL_TIME_OF_TEST {
+            let random_bytes: Vec<u8> = ::std::iter::repeat(())
+                .map(|()| rng.gen::<u8>())
+                .take(CHUNKS_SIZE)
+                .collect();
+            let bytes = Bytes::copy_from_slice(&random_bytes);
+
+            let addr = ChunkAddress::new(
+                file_api
+                    .calculate_address(bytes.clone())
+                    .expect("Failed to calculate new Chunk address"),
+            );
+            println!("Storing Chunk at {addr:?} in {delay:?}");
+            sleep(delay).await;
+
+            match file_api.upload(bytes).await {
+                Ok(_) => content
+                    .write()
+                    .await
+                    .push_back(NetworkAddress::ChunkAddress(addr)),
+                Err(err) => println!("Discarding new Chunk ({addr:?}) due to error: {err:?}"),
+            }
+        }
+    });
 }
 
 // Spawns a task which periodically queries a content by randomly choosing it from the list
@@ -204,9 +248,9 @@ fn churn_nodes_task() {
             println!("Restarting node through its RPC service at {addr} in {delay:?}");
             sleep(delay).await;
 
-            node_restart(addr)
-                .await
-                .expect("Failed to restart node with RPC endpoint {addr}");
+            if let Err(err) = node_restart(addr).await {
+                println!("Failed to restart node with RPC endpoint {addr}: {err}");
+            }
         }
     });
 }
@@ -269,12 +313,16 @@ async fn node_restart(addr: SocketAddr) -> Result<()> {
 }
 
 async fn query_content(client: &Client, net_addr: &NetworkAddress) -> Result<(), Error> {
-    // TODO: support querying Chunks
     match net_addr {
         NetworkAddress::RegisterAddress(addr) => {
             let _ = client.get_register(*addr.name(), addr.tag()).await?;
             Ok(())
         }
-        _other => Ok(()),
+        NetworkAddress::ChunkAddress(addr) => {
+            let file_api = Files::new(client.clone());
+            let _ = file_api.read_bytes(*addr).await?;
+            Ok(())
+        }
+        _other => Ok(()), // we don't create/store any other type of content in this test yet
     }
 }
