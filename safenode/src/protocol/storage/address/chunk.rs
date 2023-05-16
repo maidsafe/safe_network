@@ -13,6 +13,7 @@ use xor_name::XorName;
 /// Address of a Chunk
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub struct ChunkAddress(XorName);
+
 impl ChunkAddress {
     /// Creates a new ChunkAddress.
     pub fn new(xor_name: XorName) -> Self {
