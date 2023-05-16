@@ -11,7 +11,6 @@ use super::{
     event::NodeEventsChannel,
     Network, Node, NodeEvent,
 };
-
 use crate::{
     domain::dbc_genesis::is_genesis_parent_tx,
     network::{close_group_majority, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState},
@@ -23,17 +22,18 @@ use crate::{
             SpendQuery,
         },
         storage::{registers::User, DbcAddress},
+        NetworkAddress,
     },
 };
-
-use sn_dbc::{DbcTransaction, SignedSpend};
-
 use libp2p::{
     kad::{Record, RecordKey},
     Multiaddr, PeerId,
 };
-use std::{collections::BTreeSet, net::SocketAddr, path::Path};
+use sn_dbc::{DbcTransaction, SignedSpend};
+use std::{collections::BTreeSet, net::SocketAddr, path::Path, time::Duration};
 use tokio::{sync::mpsc, task::spawn};
+
+static INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Debug)]
 pub(super) struct TransferAction {
@@ -100,6 +100,7 @@ impl Node {
             transfer_actor: transfer_action_sender,
         };
 
+        let network_clone = network.clone();
         let node_event_sender = node_events_channel.clone();
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
@@ -125,9 +126,22 @@ impl Node {
                             }
                         }
                     }
+                    _ = tokio::time::sleep(INACTIVITY_TIMEOUT) => {
+                        let random_target = NetworkAddress::from_peer(PeerId::random());
+
+                        debug!("No network activity in the past {INACTIVITY_TIMEOUT:?}, performing a random get_closest query to target: {random_target:?}");
+                        if let Ok(closest) = network_clone.node_get_closest_peers(&random_target).await {
+                            debug!("Network inactivity: get_closest returned {closest:?}");
+                        }
+                    }
                 }
             }
         });
+
+        // perform a get_closest query to self on node join. This should help populate the node's RT
+        let _ = network
+            .node_get_closest_peers(&NetworkAddress::from_peer(network.peer_id))
+            .await;
 
         Ok(RunningNode {
             network,
