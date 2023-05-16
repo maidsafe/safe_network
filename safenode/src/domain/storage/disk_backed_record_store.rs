@@ -16,8 +16,14 @@ use libp2p::{
         store::{Error, RecordStore, Result},
     },
 };
-use std::time::{Duration, Instant};
-use std::{borrow::Cow, collections::HashSet, fs, path::PathBuf, vec};
+use std::{
+    borrow::Cow,
+    collections::{hash_set, HashSet},
+    fs,
+    path::{Path, PathBuf},
+    time::{Duration, Instant},
+    vec,
+};
 
 // Control the random replication factor, which means `one in x` copies got replicated each time.
 const RANDOM_REPLICATION_FACTOR: usize = CLOSE_GROUP_SIZE / 2;
@@ -133,10 +139,32 @@ impl DiskBackedRecordStore {
         }
         hex_string
     }
+
+    fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {
+        let filename = Self::key_to_hex(key);
+        let file_path = storage_dir.join(&filename);
+
+        match fs::read(file_path) {
+            Ok(value) => {
+                trace!("Retrieved record from disk! filename: {filename}");
+                let record = Record {
+                    key: key.clone(),
+                    value,
+                    publisher: None,
+                    expires: None,
+                };
+                Some(Cow::Owned(record))
+            }
+            Err(err) => {
+                error!("Error while reading file. filename: {filename}, error: {err:?}");
+                None
+            }
+        }
+    }
 }
 
 impl RecordStore for DiskBackedRecordStore {
-    type RecordsIter<'a> = vec::IntoIter<Cow<'a, Record>>;
+    type RecordsIter<'a> = RecordsIterator<'a>;
     type ProvidedIter<'a> = vec::IntoIter<Cow<'a, ProviderRecord>>;
 
     fn get(&self, k: &Key) -> Option<Cow<'_, Record>> {
@@ -149,25 +177,7 @@ impl RecordStore for DiskBackedRecordStore {
             return None;
         }
 
-        let filename = Self::key_to_hex(k);
-        let file_path = self.config.storage_dir.join(&filename);
-
-        match fs::read(file_path) {
-            Ok(contents) => {
-                trace!("Retrieved record from disk! filename: {filename}");
-                let record = Record {
-                    key: k.clone(),
-                    value: contents,
-                    publisher: None,
-                    expires: None,
-                };
-                Some(Cow::Owned(record))
-            }
-            Err(err) => {
-                error!("Error while reading file. filename: {filename}, error: {err:?}");
-                None
-            }
-        }
+        Self::read_from_disk(k, &self.config.storage_dir)
     }
 
     fn put(&mut self, r: Record) -> Result<()> {
@@ -228,13 +238,10 @@ impl RecordStore for DiskBackedRecordStore {
     }
 
     fn records(&self) -> Self::RecordsIter<'_> {
-        let mut records = vec![];
-        for key in self.replication_records.iter() {
-            if let Some(record) = self.get(key) {
-                records.push(record);
-            }
+        RecordsIterator {
+            keys: self.records.iter(),
+            storage_dir: self.config.storage_dir.clone(),
         }
-        records.into_iter()
     }
 
     fn add_provider(&mut self, _record: ProviderRecord) -> Result<()> {
@@ -254,6 +261,28 @@ impl RecordStore for DiskBackedRecordStore {
 
     fn remove_provider(&mut self, _key: &Key, _provider: &PeerId) {
         // ProviderRecords are not used currently
+    }
+}
+
+// Since 'Record's need to be read from disk for each indiviaul 'Key', we need this iterator
+// which does that operation at the very moment the consumer/user is iterating each item.
+pub(crate) struct RecordsIterator<'a> {
+    keys: hash_set::Iter<'a, Key>,
+    storage_dir: PathBuf,
+}
+
+impl<'a> Iterator for RecordsIterator<'a> {
+    type Item = Cow<'a, Record>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        for key in self.keys.by_ref() {
+            let record = DiskBackedRecordStore::read_from_disk(key, &self.storage_dir);
+            if record.is_some() {
+                return record;
+            }
+        }
+
+        None
     }
 }
 
