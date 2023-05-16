@@ -153,28 +153,15 @@ impl Client {
     pub(super) async fn store_chunk(&self, chunk: Chunk) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let request = Request::Cmd(Cmd::StoreChunk(chunk));
-        let responses = self.send_to_closest(request).await?;
+        let response = self.send_and_wait_till_first_rsp(request).await?;
 
-        let all_oks = responses
-            .iter()
-            .filter(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::StoreChunk(Ok(()))))))
-            .count();
-        if all_oks >= close_group_majority() {
+        if matches!(response, Response::Cmd(CmdResponse::StoreChunk(Ok(())))) {
             return Ok(());
         }
 
-        // If there no majority OK, we will return the first error sent to us.
-        for resp in responses.iter().flatten() {
-            if let Response::Cmd(CmdResponse::StoreChunk(result)) = resp {
-                result.clone()?;
-            };
-        }
-
-        // If there were no success or fail to the expected query,
-        // we check if there were any send errors.
-        for resp in responses {
-            let _ = resp?;
-        }
+        if let Response::Cmd(CmdResponse::StoreChunk(result)) = response {
+            result?;
+        };
 
         // If there were no store chunk errors, then we had unexpected responses.
         Err(Error::UnexpectedResponses)
@@ -204,12 +191,29 @@ impl Client {
     pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
         let responses = self
             .network
-            .client_send_to_closest(&request)
+            .client_send_to_closest(&request, true)
             .await?
             .into_iter()
             .map(|res| res.map_err(Error::Network))
             .collect_vec();
         Ok(responses)
+    }
+
+    pub(crate) async fn send_and_wait_till_first_rsp(&self, request: Request) -> Result<Response> {
+        let mut responses = self
+            .network
+            .client_send_to_closest(&request, false)
+            .await?
+            .into_iter()
+            .map(|res| res.map_err(Error::Network))
+            .collect_vec();
+        // The responses will be just one OK response or a vector of error responses.
+        // In case of error responses, only need to return one.
+        if let Some(response) = responses.pop() {
+            response
+        } else {
+            Err(Error::UnexpectedResponses)
+        }
     }
 
     pub(crate) async fn expect_closest_majority_ok(&self, spend: SpendRequest) -> Result<()> {
