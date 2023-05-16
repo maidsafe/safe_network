@@ -160,12 +160,27 @@ impl SwarmDriver {
                                 .collect();
 
                             info!(%peer_id, ?addrs, "identify: adding addresses to routing table");
-                            for multiaddr in addrs {
+                            for multiaddr in addrs.clone() {
                                 let _routing_update = self
                                     .swarm
                                     .behaviour_mut()
                                     .kademlia
                                     .add_address(&peer_id, multiaddr);
+                            }
+
+                            // If the peer supports AutoNAT, add it as server
+                            if info
+                                .protocols
+                                .iter()
+                                .any(|protocol| protocol.starts_with("/libp2p/autonat/"))
+                            {
+                                let a = &mut self.swarm.behaviour_mut().autonat;
+                                // It could be that we are on a local network and have AutoNAT disabled.
+                                if let Some(autonat) = a.as_mut() {
+                                    for multiaddr in addrs {
+                                        autonat.add_server(peer_id, Some(multiaddr));
+                                    }
+                                }
                             }
                         }
                     }
