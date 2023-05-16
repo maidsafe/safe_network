@@ -425,15 +425,18 @@ impl Network {
     }
 
     /// Send `Request` to the closest peers. `Self` is not present among the recipients.
-    pub async fn client_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
+    pub async fn client_send_to_closest(
+        &self,
+        request: &Request,
+        expect_all_responses: bool,
+    ) -> Result<Vec<Result<Response>>> {
         info!(
             "Sending {request:?} with dst {:?} to the closest peers.",
             request.dst()
         );
         let closest_peers = self.client_get_closest_peers(&request.dst()).await?;
-
         Ok(self
-            .send_and_get_responses(closest_peers, request, true)
+            .send_and_get_responses(closest_peers, request, expect_all_responses)
             .await)
     }
 
