@@ -157,7 +157,9 @@ impl SwarmDriver {
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
             // Records never expire
-            .set_record_ttl(None);
+            .set_record_ttl(None)
+            // Disable provider records publication job
+            .set_provider_publication_interval(None);
 
         let (network, events_receiver, mut swarm_driver) = Self::with(
             kad_cfg,
