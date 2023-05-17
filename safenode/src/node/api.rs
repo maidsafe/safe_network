@@ -29,11 +29,10 @@ use libp2p::{
     kad::{Record, RecordKey},
     Multiaddr, PeerId,
 };
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_dbc::{DbcTransaction, SignedSpend};
 use std::{collections::BTreeSet, net::SocketAddr, path::Path, time::Duration};
 use tokio::{sync::mpsc, task::spawn};
-
-static INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Debug)]
 pub(super) struct TransferAction {
@@ -102,9 +101,16 @@ impl Node {
 
         let network_clone = network.clone();
         let node_event_sender = node_events_channel.clone();
+        let mut rng = StdRng::from_entropy();
+
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
             loop {
+                // use a random inactivity timeout to ensure that the nodes do not sync when messages
+                // are being transmitted.
+                let inactivity_timeout: i32 = rng.gen_range(20..40);
+                let inactivity_timeout = Duration::from_secs(inactivity_timeout as u64);
+
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
@@ -126,10 +132,10 @@ impl Node {
                             }
                         }
                     }
-                    _ = tokio::time::sleep(INACTIVITY_TIMEOUT) => {
+                    _ = tokio::time::sleep(inactivity_timeout) => {
                         let random_target = NetworkAddress::from_peer(PeerId::random());
 
-                        debug!("No network activity in the past {INACTIVITY_TIMEOUT:?}, performing a random get_closest query to target: {random_target:?}");
+                        debug!("No network activity in the past {inactivity_timeout:?}, performing a random get_closest query to target: {random_target:?}");
                         if let Ok(closest) = network_clone.node_get_closest_peers(&random_target).await {
                             debug!("Network inactivity: get_closest returned {closest:?}");
                         }
