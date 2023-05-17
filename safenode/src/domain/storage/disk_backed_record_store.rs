@@ -152,14 +152,6 @@ impl RecordStore for DiskBackedRecordStore {
         let filename = Self::key_to_hex(k);
         let file_path = self.config.storage_dir.join(&filename);
 
-        if !file_path.exists() {
-            // we went out of sync with the filesystem
-            error!(
-                "Data not found for the provided key, filename: {filename} should exist locally"
-            );
-            return None;
-        }
-
         match fs::read(file_path) {
             Ok(contents) => {
                 trace!("Retrieved record from disk! filename: {filename}");
