@@ -86,18 +86,12 @@ impl TracingLayers {
 
             println!("Starting logging to directory: {log_dir:?}");
 
-            let logs_retained = 0;
-            let logs_max_bytes = 10485760;
             let logs_max_lines = 5000;
             let logs_uncompressed = 100;
+            let logs_max_files = 1000;
 
-            let (non_blocking, worker_guard) = appender::file_rotater(
-                log_dir,
-                logs_max_bytes,
-                logs_max_lines,
-                logs_retained,
-                logs_uncompressed,
-            );
+            let (non_blocking, worker_guard) =
+                appender::file_rotater(log_dir, logs_max_lines, logs_uncompressed, logs_max_files);
             self.guard = Some(worker_guard);
 
             let fmt_layer = fmt_layer.with_writer(non_blocking);
