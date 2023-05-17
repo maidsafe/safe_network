@@ -159,8 +159,12 @@ impl SwarmDriver {
             // Records never expire
             .set_record_ttl(None);
 
-        let (network, events_receiver, mut swarm_driver) =
-            Self::with(kad_cfg, false, Some(root_dir.join("record_store")))?;
+        let (network, events_receiver, mut swarm_driver) = Self::with(
+            kad_cfg,
+            Some(root_dir.join("record_store")),
+            ProtocolSupport::Full,
+            IDENTIFY_AGENT_VERSION_STR.to_string(),
+        )?;
 
         // Listen on the provided address
         let addr = Multiaddr::from(addr.ip())
@@ -190,14 +194,20 @@ impl SwarmDriver {
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
             );
 
-        Self::with(kad_cfg, true, None)
+        Self::with(
+            kad_cfg,
+            None,
+            ProtocolSupport::Outbound,
+            IDENTIFY_CLIENT_VERSION_STR.to_string(),
+        )
     }
 
     // Private helper to create the network components with the provided config and req/res behaviour
     fn with(
         kad_cfg: KademliaConfig,
-        is_client: bool,
         disk_store_path: Option<PathBuf>,
+        req_res_protocol: ProtocolSupport,
+        identify_version: String,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // Create a random key for ourself.
         let keypair = identity::Keypair::generate_ed25519();
@@ -212,11 +222,6 @@ impl SwarmDriver {
                 .set_request_timeout(REQUEST_TIMEOUT)
                 .set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
-            let req_res_protocol = if is_client {
-                ProtocolSupport::Outbound
-            } else {
-                ProtocolSupport::Full
-            };
             request_response::Behaviour::new(
                 MsgCodec(),
                 iter::once((MsgProtocol(), req_res_protocol)),
@@ -256,13 +261,9 @@ impl SwarmDriver {
 
         // Identify Behaviour
         let identify = {
-            let cfg = if is_client {
+            let cfg =
                 libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                    .with_agent_version(IDENTIFY_CLIENT_VERSION_STR.to_string())
-            } else {
-                libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                    .with_agent_version(IDENTIFY_AGENT_VERSION_STR.to_string())
-            };
+                    .with_agent_version(identify_version);
             libp2p::identify::Behaviour::new(cfg)
         };
 
