@@ -631,15 +631,19 @@ mod tests {
             networks_list.push(net);
         }
 
-        // Check the closest nodes to the following random_data
-        let mut rng = thread_rng();
-        let random_data =
-            NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
-
         tokio::time::sleep(Duration::from_secs(5)).await;
-        let our_net = networks_list
-            .get(0)
-            .ok_or_else(|| eyre!("networks_list is not empty"))?;
+
+        // Generate some rounds of random query to allow nodes populate its RT
+        let mut rng = thread_rng();
+        for net in networks_list.iter() {
+            // Do twice to reduce the possibility of missing a node knowledge.
+            let random_data =
+                NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
+            let _ = net.get_closest_peers(&random_data, false).await?;
+            let random_data =
+                NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
+            let _ = net.get_closest_peers(&random_data, false).await?;
+        }
 
         // Get the expected list of closest peers by creating a `KBucketsTable` with all the peers
         // inserted inside it.
@@ -664,6 +668,10 @@ mod tests {
                 return Err(eyre!("Table entry should be absent"));
             }
         }
+
+        // Check the closest nodes to the following random_data
+        let random_data =
+            NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
         let expected_from_table = table
             .closest_keys(&random_data.as_kbucket_key())
             .map(|key| {
@@ -674,10 +682,14 @@ mod tests {
             })
             .take(CLOSE_GROUP_SIZE)
             .collect::<Result<Vec<_>>>()?;
-        info!("Got Closest from table {:?}", expected_from_table.len());
+        info!("Got Closest from table {:?}", expected_from_table);
 
         // Ask the other nodes for the closest_peers.
+        let our_net = networks_list
+            .get(0)
+            .ok_or_else(|| eyre!("networks_list is not empty"))?;
         let closest = our_net.get_closest_peers(&random_data, false).await?;
+        info!("Got Closest from network {:?}", closest);
 
         assert_lists(closest, expected_from_table);
         Ok(())

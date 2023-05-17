@@ -212,7 +212,7 @@ impl SwarmDriver {
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
                         if info.agent_version.starts_with(IDENTIFY_AGENT_STR) {
-                            info!("Adding peer to routing table, based on received identify info from {peer_id:?}: {info:?}");
+                            info!("{:?} Adding peer to routing table, based on received identify info from {peer_id:?}: {info:?}", self.self_peer_id);
                             for multiaddr in info.listen_addrs {
                                 let _routing_update = self
                                     .swarm
