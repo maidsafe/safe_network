@@ -100,6 +100,7 @@ impl Node {
             transfer_actor: transfer_action_sender,
         };
 
+        let node_event_sender = node_events_channel.clone();
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
             loop {
@@ -107,13 +108,21 @@ impl Node {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
                             Some(event) => node.handle_network_event(event).await,
-                            None => error!("The `NetworkEvent` channel is closed")
+                            None => {
+                                error!("The `NetworkEvent` channel is closed");
+                                node_event_sender.broadcast(NodeEvent::ChannelClosed);
+                                break;
+                            }
                         }
                     }
                     transfer_action = transfer_action_receiver.recv() => {
                         match transfer_action {
                             Some(action) => node.handle_transfer_action(action).await,
-                            None => error!("The `TransferAction` channel is closed")
+                            None => {
+                                error!("The `TransferAction` channel is closed");
+                                node_event_sender.broadcast(NodeEvent::ChannelClosed);
+                                break;
+                            }
                         }
                     }
                 }
