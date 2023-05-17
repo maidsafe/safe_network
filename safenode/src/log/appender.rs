@@ -19,30 +19,27 @@ use std::{
 };
 use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
 
+/// max_lines:
+/// - maximum number of lines per file
+///
+/// uncompressed_files:
+/// - number of files to keep uncompressed.
+/// - should be lesser than `max_files` to enable compression of excess files.
+///
+/// max_files:
+/// - maximum number of files to keep.
+/// - older files are deleted.
 pub(super) fn file_rotater(
     dir: &PathBuf,
-    max_size: usize,
     max_lines: usize,
-    files_to_retain: usize,
     uncompressed_files: usize,
+    max_files: usize,
 ) -> (NonBlocking, WorkerGuard) {
-    let mut content_limit = ContentLimit::BytesSurpassed(max_size);
-    if max_lines > 0 {
-        content_limit = ContentLimit::Lines(max_lines);
-    }
-
-    // FileRotate crate changed `0 means for all` to `0 means only original`
-    // Here set the retained value to be same as uncompressed in case of 0.
-    let logs_retained = if files_to_retain == 0 {
-        uncompressed_files
-    } else {
-        files_to_retain
-    };
     let file_appender = FileRotateAppender::make_rotate_appender(
         dir,
         "safenode.log",
-        AppendTimestamp::default(FileLimit::MaxFiles(logs_retained)),
-        content_limit,
+        AppendTimestamp::default(FileLimit::MaxFiles(max_files)),
+        ContentLimit::Lines(max_lines),
         Compression::OnRotate(uncompressed_files),
     );
 
