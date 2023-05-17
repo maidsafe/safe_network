@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::network::CLOSE_GROUP_SIZE;
-
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -16,6 +15,7 @@ use libp2p::{
         store::{Error, RecordStore, Result},
     },
 };
+use rand::Rng;
 use std::{
     borrow::Cow,
     collections::{hash_set, HashSet},
@@ -28,7 +28,10 @@ use std::{
 // Control the random replication factor, which means `one in x` copies got replicated each time.
 const RANDOM_REPLICATION_FACTOR: usize = CLOSE_GROUP_SIZE / 2;
 
-pub(crate) const REPLICATION_INTERVAL: Duration = Duration::from_secs(20);
+// Each node will have a replication interval between these bounds
+// This should serve to stagger the intense replication activity across the network
+pub(crate) const REPLICATION_INTERVAL_UPPER_BOUND: Duration = Duration::from_secs(180);
+pub(crate) const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(10);
 
 /// A `RecordStore` that stores records on disk.
 pub(crate) struct DiskBackedRecordStore {
@@ -54,14 +57,22 @@ pub(crate) struct DiskBackedRecordStoreConfig {
     pub(crate) max_records: usize,
     /// The maximum size of record values, in bytes.
     pub(crate) max_value_bytes: usize,
+    /// This node's replication interval
+    /// Which should be between REPLICATION_INTERVAL_LOWER_BOUND and REPLICATION_INTERVAL_UPPER_BOUND
+    pub(crate) replication_interval: Duration,
 }
 
 impl Default for DiskBackedRecordStoreConfig {
     fn default() -> Self {
+        // get a random integer between REPLICATION_INTERVAL_LOWER_BOUND and REPLICATION_INTERVAL_UPPER_BOUND
+        let replication_interval = rand::thread_rng()
+            .gen_range(REPLICATION_INTERVAL_LOWER_BOUND..REPLICATION_INTERVAL_UPPER_BOUND);
+
         Self {
             storage_dir: std::env::temp_dir(),
             max_records: 1024,
             max_value_bytes: 65 * 1024,
+            replication_interval,
         }
     }
 }
@@ -108,8 +119,6 @@ impl DiskBackedRecordStore {
             return;
         }
 
-        // Only need to load portion of the records.
-        use rand::Rng;
         let mut index: usize = {
             let mut rng = rand::thread_rng();
             rng.gen_range(0..RANDOM_REPLICATION_FACTOR)
@@ -125,7 +134,7 @@ impl DiskBackedRecordStore {
 
     /// Cleanup the replication cache when expired, i.e. replication shall got carried out.
     pub(crate) fn try_clean_replication_cache(&mut self) {
-        if self.replication_start + REPLICATION_INTERVAL < Instant::now() {
+        if self.replication_start + self.config.replication_interval < Instant::now() {
             self.replication_records.clear();
         }
     }
