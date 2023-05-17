@@ -168,7 +168,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Build sn bins
-        run: cargo build --release --bins 
+        run: cargo build --release --bins --features local-discovery
         timeout-minutes: 30
 
       - name: Start a local network
