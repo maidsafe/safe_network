@@ -25,7 +25,8 @@ use self::{
 };
 
 use crate::domain::storage::{
-    DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL,
+    DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
+    REPLICATION_INTERVAL_UPPER_BOUND,
 };
 use crate::protocol::{
     messages::{QueryResponse, Request, Response},
@@ -36,7 +37,6 @@ use futures::{future::select_all, StreamExt};
 
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-
 use libp2p::{
     core::muxing::StreamMuxerBox,
     identity,
@@ -47,6 +47,7 @@ use libp2p::{
     Multiaddr, PeerId, Transport,
 };
 use lru_time_cache::LruCache;
+use rand::Rng;
 use std::{
     collections::{HashMap, HashSet},
     iter,
@@ -140,11 +141,15 @@ impl SwarmDriver {
         addr: SocketAddr,
         root_dir: &Path,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
+        // get a random integer between REPLICATION_INTERVAL_LOWER_BOUND and REPLICATION_INTERVAL_UPPER_BOUND
+        let replication_interval = rand::thread_rng()
+            .gen_range(REPLICATION_INTERVAL_LOWER_BOUND..REPLICATION_INTERVAL_UPPER_BOUND);
+
         let mut kad_cfg = KademliaConfig::default();
         let _ = kad_cfg
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
             // this is a heavier operation than publication, so it is done less frequently
-            .set_replication_interval(Some(REPLICATION_INTERVAL))
+            .set_replication_interval(Some(replication_interval))
             // how often a node will publish a record key, aka telling the others it exists
             .set_publication_interval(Some(Duration::from_secs(5)))
             // 1mb packet size
@@ -163,6 +168,7 @@ impl SwarmDriver {
 
         let (network, events_receiver, mut swarm_driver) = Self::with(
             kad_cfg,
+            replication_interval,
             Some(root_dir.join("record_store")),
             ProtocolSupport::Full,
             IDENTIFY_AGENT_VERSION_STR.to_string(),
@@ -198,6 +204,8 @@ impl SwarmDriver {
 
         Self::with(
             kad_cfg,
+            // Nonsense interval for the client which never replicates
+            Duration::from_secs(1000),
             None,
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
@@ -207,6 +215,7 @@ impl SwarmDriver {
     // Private helper to create the network components with the provided config and req/res behaviour
     fn with(
         kad_cfg: KademliaConfig,
+        replication_interval: Duration,
         disk_store_path: Option<PathBuf>,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
@@ -216,6 +225,7 @@ impl SwarmDriver {
         let peer_id = PeerId::from(keypair.public());
 
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
+        info!("PeerId: {peer_id} has replication interval of {replication_interval:?}");
 
         // RequestResponse Behaviour
         let request_response = {
@@ -236,9 +246,11 @@ impl SwarmDriver {
             // Configures the disk_store to store records under the provided path and increase the max record size
             let storage_dir = disk_store_path.unwrap_or(std::env::temp_dir());
             std::fs::create_dir_all(&storage_dir)?;
+
             let store_cfg = DiskBackedRecordStoreConfig {
                 max_value_bytes: 1024 * 1024,
                 storage_dir,
+                replication_interval,
                 ..Default::default()
             };
 
