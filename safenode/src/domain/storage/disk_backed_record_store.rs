@@ -246,19 +246,22 @@ impl RecordStore for DiskBackedRecordStore {
     }
 
     fn add_provider(&mut self, _record: ProviderRecord) -> Result<()> {
-        todo!("ProviderRecords are not used currently.")
+        // ProviderRecords are not used currently
+        Ok(())
     }
 
     fn providers(&self, _key: &Key) -> Vec<ProviderRecord> {
-        todo!("ProviderRecords are not used currently.")
+        // ProviderRecords are not used currently
+        vec![]
     }
 
     fn provided(&self) -> Self::ProvidedIter<'_> {
-        todo!("ProviderRecords are not used currently.")
+        // ProviderRecords are not used currently
+        vec![].into_iter()
     }
 
     fn remove_provider(&mut self, _key: &Key, _provider: &PeerId) {
-        todo!("ProviderRecords are not used currently.")
+        // ProviderRecords are not used currently
     }
 }
 
