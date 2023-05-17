@@ -102,6 +102,7 @@ impl Node {
         let network_clone = network.clone();
         let node_event_sender = node_events_channel.clone();
         let mut rng = StdRng::from_entropy();
+        let mut fired_closest_query_on_join = false;
 
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
@@ -114,7 +115,7 @@ impl Node {
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
-                            Some(event) => node.handle_network_event(event).await,
+                            Some(event) => node.handle_network_event(event, &mut fired_closest_query_on_join).await,
                             None => {
                                 error!("The `NetworkEvent` channel is closed");
                                 node_event_sender.broadcast(NodeEvent::ChannelClosed);
@@ -144,11 +145,6 @@ impl Node {
             }
         });
 
-        // perform a get_closest query to self on node join. This should help populate the node's RT
-        let _ = network
-            .node_get_closest_peers(&NetworkAddress::from_peer(network.peer_id))
-            .await;
-
         Ok(RunningNode {
             network,
             node_events_channel,
@@ -157,13 +153,29 @@ impl Node {
 
     // **** Private helpers *****
 
-    async fn handle_network_event(&mut self, event: NetworkEvent) {
+    async fn handle_network_event(
+        &mut self,
+        event: NetworkEvent,
+        fired_closest_query_on_join: &mut bool,
+    ) {
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
                 self.handle_request(req, channel).await
             }
             NetworkEvent::PeerAdded(peer_id) => {
                 debug!("PeerAdded: {peer_id}");
+                // perform a get_closest query to self on node join. This should help populate the node's RT
+                if !*fired_closest_query_on_join {
+                    debug!("Performing a get_closest query to self on node join");
+                    if let Ok(closest) = self
+                        .network
+                        .node_get_closest_peers(&NetworkAddress::from_peer(self.network.peer_id))
+                        .await
+                    {
+                        debug!("closest to self on join returned: {closest:?}");
+                    }
+                    *fired_closest_query_on_join = true;
+                }
 
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
             }
