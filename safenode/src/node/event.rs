@@ -52,4 +52,6 @@ pub enum NodeEvent {
     RegisterEdited(RegisterAddress),
     /// A DBC Spend has been stored in local storage
     SpendStored(DbcId),
+    /// One of the sub event channel closed and unrecoverable.
+    ChannelClosed,
 }
