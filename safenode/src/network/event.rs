@@ -13,9 +13,12 @@ use super::{
 };
 use crate::{
     domain::storage::DiskBackedRecordStore,
-    network::{multiaddr_is_global, multiaddr_strip_p2p, IDENTIFY_AGENT_STR},
+    network::{
+        multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, sort_peers_by_key,
+        CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
+    },
     protocol::{
-        messages::{QueryResponse, Request, Response},
+        messages::{Cmd, QueryResponse, ReplicatedData, Request, Response},
         storage::Chunk,
         NetworkAddress,
     },
@@ -26,7 +29,7 @@ use itertools::Itertools;
 use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
-    kad::{GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
+    kad::{kbucket::Key as KBucketKey, GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
     swarm::{behaviour::toggle::Toggle, NetworkBehaviour, SwarmEvent},
@@ -42,6 +45,11 @@ use tracing::{info, warn};
 // If higher than this number of times detected,
 // the peer is counted as dropped out from the network.
 const DEAD_PEER_DETECTION_THRESHOLD: usize = 3;
+
+// Defines how close that a node will trigger repliation.
+// That is, the node has to be among the REPLICATION_RANGE closest to data,
+// to carry out the replication.
+const REPLICATION_RANGE: usize = 2;
 
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "NodeEvent")]
@@ -260,14 +268,6 @@ impl SwarmDriver {
                 ..
             } => {
                 info!("Connection closed to Peer {peer_id} - {endpoint:?} - {cause:?}");
-
-                // This is most periodically called due to connection time out.
-                // Hence using it as a point to cleanup the replication cache.
-                self.swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .try_clean_replication_cache();
             }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 warn!("Having OutgoingConnectionError {peer_id:?} - {error:?}");
@@ -283,7 +283,7 @@ impl SwarmDriver {
                         *value += 1;
                         if *value > DEAD_PEER_DETECTION_THRESHOLD {
                             trace!("Detected dead peer {peer_id:?}");
-                            self.try_trigger_replication(&peer_id);
+                            self.try_trigger_replication(&peer_id, true);
                             let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
                         }
                     } else {
@@ -400,7 +400,7 @@ impl SwarmDriver {
                     self.event_sender
                         .send(NetworkEvent::PeerAdded(peer))
                         .await?;
-                    self.try_trigger_replication(&peer);
+                    self.try_trigger_replication(&peer, false);
                 }
             }
             other => {
@@ -411,11 +411,8 @@ impl SwarmDriver {
         Ok(())
     }
 
-    fn try_trigger_replication(&mut self, peer: &PeerId) {
-        // Replication is triggered when the newly added peer is among our closest,
-        // or the dead peer was among our closest.
-        // As the record retaining is undertaken by libp2p directly,
-        // all holding records are supposed to be replicated once triggered.
+    // Replication is triggered when the newly added peer or the dead peer was among our closest.
+    fn try_trigger_replication(&mut self, peer: &PeerId, is_dead_peer: bool) {
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         // Fetch from local shall be enough.
         let closest_peers: Vec<_> = self
@@ -426,11 +423,85 @@ impl SwarmDriver {
             .collect();
         let target = NetworkAddress::from_peer(*peer).as_kbucket_key();
         if closest_peers.iter().any(|key| *key == target) {
-            self.swarm
+            let mut all_peers: Vec<PeerId> = vec![];
+            for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+                for entry in kbucket.iter() {
+                    all_peers.push(entry.node.key.clone().into_preimage());
+                }
+            }
+            all_peers.push(self.self_peer_id);
+
+            let churned_peer_address = NetworkAddress::from_peer(*peer);
+            // Only nearby peers (two times of the CLOSE_GROUP_SIZE) may affect the later on
+            // calculation of `closest peers to each entry`.
+            // Hecence to reduce the computation work, no need to take all peers.
+            // Plus 1 because the result contains self.
+            let sorted_peers: Vec<PeerId> = if let Ok(sorted_peers) =
+                sort_peers_by_address(all_peers, &churned_peer_address, 2 * CLOSE_GROUP_SIZE + 1)
+            {
+                sorted_peers
+            } else {
+                return;
+            };
+            if sorted_peers.len() <= CLOSE_GROUP_SIZE {
+                return;
+            }
+
+            let distance_bar = NetworkAddress::from_peer(sorted_peers[CLOSE_GROUP_SIZE])
+                .distance(&churned_peer_address);
+
+            // The fetched entries are records that supposed to be held by the churned_peer.
+            let entries_to_be_replicated = self
+                .swarm
                 .behaviour_mut()
                 .kademlia
                 .store_mut()
-                .trigger_replication();
+                .entries_to_be_replicated(churned_peer_address.as_kbucket_key(), distance_bar);
+            let storage_dir = self
+                .swarm
+                .behaviour_mut()
+                .kademlia
+                .store_mut()
+                .storage_dir();
+
+            for key in entries_to_be_replicated.iter() {
+                let record_key = KBucketKey::from(key.to_vec());
+                let closest_peers: Vec<_> = if let Ok(sorted_peers) =
+                    sort_peers_by_key(sorted_peers.clone(), &record_key, CLOSE_GROUP_SIZE + 1)
+                {
+                    sorted_peers
+                } else {
+                    continue;
+                };
+
+                // Only carry out replication when self within REPLICATION_RANGE
+                let replicate_range = NetworkAddress::from_peer(closest_peers[REPLICATION_RANGE]);
+                if our_address.as_kbucket_key().distance(&record_key)
+                    >= replicate_range.as_kbucket_key().distance(&record_key)
+                {
+                    continue;
+                }
+
+                let dst = if is_dead_peer {
+                    // If the churned peer is a dead peer, then the replication target
+                    // shall be: the `CLOSE_GROUP_SIZE`th closest node to each data entry.
+                    if !closest_peers.iter().any(|p| *p == *peer) {
+                        continue;
+                    }
+                    closest_peers[CLOSE_GROUP_SIZE]
+                } else {
+                    *peer
+                };
+                if let Some(record) = DiskBackedRecordStore::read_from_disk(key, &storage_dir) {
+                    let chunk = Chunk::new(record.value.clone().into());
+                    let request = Request::Cmd(Cmd::Replicate(ReplicatedData::Chunk(chunk)));
+                    let _ = self
+                        .swarm
+                        .behaviour_mut()
+                        .request_response
+                        .send_request(&dst, request);
+                }
+            }
         }
     }
 }
