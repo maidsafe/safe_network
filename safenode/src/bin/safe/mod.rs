@@ -16,6 +16,7 @@ use clap::Parser;
 use eyre::Result;
 
 use safenode::client::Client;
+use safenode::git_hash;
 use safenode::{log::init_node_logging, peers_acquisition::peers_from_opts_or_env};
 use std::path::PathBuf;
 
@@ -25,10 +26,11 @@ async fn main() -> Result<()> {
     // For client, default to log to std::out
     // This is ruining the log output for the CLI. Needs to be fixed.
     let tmp_dir = std::env::temp_dir();
-    let _log_appender_guard = init_node_logging(&Some(tmp_dir.join("safe-client.log")))?;
+    let log_appender_guard = init_node_logging(&Some(tmp_dir.join("safe-client")))?;
 
     info!("Full client logs will be written to {:?}", tmp_dir);
     println!("Instantiating a SAFE client...");
+    println!("Current build's git commit hash: {}", git_hash::GIT_HASH);
 
     let secret_key = bls::SecretKey::random();
     let peers = peers_from_opts_or_env(&opt.peers)?;
@@ -42,6 +44,7 @@ async fn main() -> Result<()> {
         SubCmd::Register(cmds) => register_cmds(cmds, &client).await?,
     };
 
+    drop(log_appender_guard);
     Ok(())
 }
 
