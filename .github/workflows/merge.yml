@@ -380,10 +380,6 @@ jobs:
         run: cargo build --release --bins --features local-discovery
         timeout-minutes: 30
 
-      - name: Build rpc client
-        run: cargo build --release --example safenode_rpc_client
-        timeout-minutes: 30
-
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         id: section-startup
@@ -391,40 +387,16 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-      - name: Start a client to upload chunks
-        
-        run: cargo run --bin safe --release --features="local-discovery" -- files upload -- "./resources"
-        id: client-file-upload
+      - name: Chunks data integrity during nodes churn (during 20min) 
+        run: cargo test --release --features="local-discovery" data_availability_during_churn -- --nocapture
+        id: data_availability_during_churn
         env:
+          CHUNKS_ONLY: true
+          TEST_DURATION_MINS: 20
           RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 10
-
-      - name: Start network churning
-        
-        shell: bash
-        run: ./resources/scripts/network_churning.sh
-        timeout-minutes: 20
-
-        
-      - name: Start a client to confirm chunk still retained
-        
-        run: cargo run --bin safe --features local-discovery --release -- files download
-        id: client-file-download
-        env:
-          RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 15
-
-      - name: Downloaded file is same as the original
-        
-        shell: bash
-        timeout-minutes: 1
-        run: |
-          old=./resources/scripts/network_churning.sh
-          new=~/.safe/client/downloaded_files/network_churning.sh
-          cmp --silent $old $new
+        timeout-minutes: 30
       
       - name: Verify restart of nodes using rg
-        
         shell: bash
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only
