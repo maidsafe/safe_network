@@ -313,14 +313,30 @@ async fn node_restart(addr: SocketAddr) -> Result<()> {
 
     let response = client.node_info(Request::new(NodeInfoRequest {})).await?;
     let log_dir = Path::new(&response.get_ref().log_dir);
-    remove_dir_all(log_dir).await?;
+
+    // remove Chunks records
+    let chunks_records = log_dir.join("record_store");
+    if let Ok(true) = chunks_records.try_exists() {
+        println!("Removing Chunks records from {}", chunks_records.display());
+        remove_dir_all(chunks_records).await?;
+    }
+
+    // remove Registers records
+    let registers_records = log_dir.join("registers");
+    if let Ok(true) = registers_records.try_exists() {
+        println!(
+            "Removing Registers records from {}",
+            registers_records.display()
+        );
+        remove_dir_all(registers_records).await?;
+    }
 
     let _response = client
         .restart(Request::new(RestartRequest { delay_millis: 0 }))
         .await?;
 
     println!(
-        "Node restart requested to RPC service at {addr}, and removed all its files at {}",
+        "Node restart requested to RPC service at {addr}, and removed all its chunks and registers records at {}",
         log_dir.display()
     );
 
