@@ -285,6 +285,16 @@ impl Node {
                 self.send_response(Response::Cmd(resp), response_channel)
                     .await;
             }
+            Cmd::Replicate(replicated_data) => {
+                debug!(
+                    "That's a replicated data in for :{:?}",
+                    replicated_data.name()
+                );
+                let _ = self
+                    .network
+                    .store_replicated_data_to_local(replicated_data)
+                    .await;
+            }
             Cmd::Register(cmd) => {
                 let result = self
                     .registers
