@@ -102,7 +102,7 @@ impl Node {
         let network_clone = network.clone();
         let node_event_sender = node_events_channel.clone();
         let mut rng = StdRng::from_entropy();
-        let mut fired_closest_query_on_join = false;
+        let mut initial_join_flows_done = false;
 
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
@@ -115,7 +115,7 @@ impl Node {
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
-                            Some(event) => node.handle_network_event(event, &mut fired_closest_query_on_join).await,
+                            Some(event) => node.handle_network_event(event, &mut initial_join_flows_done).await,
                             None => {
                                 error!("The `NetworkEvent` channel is closed");
                                 node_event_sender.broadcast(NodeEvent::ChannelClosed);
@@ -156,7 +156,7 @@ impl Node {
     async fn handle_network_event(
         &mut self,
         event: NetworkEvent,
-        fired_closest_query_on_join: &mut bool,
+        initial_join_flows_done: &mut bool,
     ) {
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
@@ -165,7 +165,7 @@ impl Node {
             NetworkEvent::PeerAdded(peer_id) => {
                 debug!("PeerAdded: {peer_id}");
                 // perform a get_closest query to self on node join. This should help populate the node's RT
-                if !*fired_closest_query_on_join {
+                if !*initial_join_flows_done {
                     debug!("Performing a get_closest query to self on node join");
                     if let Ok(closest) = self
                         .network
@@ -174,10 +174,11 @@ impl Node {
                     {
                         debug!("closest to self on join returned: {closest:?}");
                     }
-                    *fired_closest_query_on_join = true;
-                }
 
-                self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
+                    self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
+
+                    *initial_join_flows_done = true;
+                }
             }
             NetworkEvent::NewListenAddr(_) => {
                 let network = self.network.clone();
