@@ -11,7 +11,7 @@ use crate::protocol::{
     NetworkAddress,
 };
 
-use super::RegisterCmd;
+use super::{RegisterCmd, ReplicatedData};
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 
@@ -46,6 +46,10 @@ pub enum Cmd {
         #[debug(skip)]
         parent_tx: Box<DbcTransaction>,
     },
+    /// [`ReplicatedData`] write operation.
+    ///
+    /// [`ReplicatedData`]: crate::protocol::messages::ReplicatedData
+    Replicate(ReplicatedData),
 }
 
 impl Cmd {
@@ -59,6 +63,7 @@ impl Cmd {
             Cmd::SpendDbc { signed_spend, .. } => {
                 NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
             }
+            Cmd::Replicate(replicated_data) => replicated_data.dst(),
         }
     }
 }
@@ -74,6 +79,9 @@ impl std::fmt::Display for Cmd {
             }
             Cmd::SpendDbc { signed_spend, .. } => {
                 write!(f, "Cmd::SpendDbc({:?})", signed_spend.dbc_id())
+            }
+            Cmd::Replicate(replicated_data) => {
+                write!(f, "Cmd::Replicate({:?})", replicated_data.name())
             }
         }
     }
