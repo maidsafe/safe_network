@@ -53,7 +53,6 @@ impl Client {
             swarm_driver.run()
         });
         let _event_handler = spawn(async move {
-            let mut logged_connected = false;
             loop {
                 if let Some(peers) = peers.clone() {
                     if must_dial_network {
@@ -81,7 +80,7 @@ impl Client {
                     }
                 };
                 trace!("Client recevied a network event {event:?}");
-                if let Err(err) = client_clone.handle_network_event(event, &mut logged_connected) {
+                if let Err(err) = client_clone.handle_network_event(event) {
                     warn!("Error handling network event: {err}");
                 }
             }
@@ -100,22 +99,15 @@ impl Client {
         Ok(client)
     }
 
-    fn handle_network_event(
-        &mut self,
-        event: NetworkEvent,
-        logged_connected: &mut bool,
-    ) -> Result<()> {
+    fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
         match event {
             // Clients do not handle requests.
             NetworkEvent::RequestReceived { .. } => {}
             // We do not listen on sockets.
             NetworkEvent::NewListenAddr(_) => {}
             NetworkEvent::PeerAdded(peer_id) => {
-                if !*logged_connected {
-                    *logged_connected = true;
-                    self.events_channel
-                        .broadcast(ClientEvent::ConnectedToNetwork);
-                }
+                self.events_channel
+                    .broadcast(ClientEvent::ConnectedToNetwork);
                 debug!("PeerAdded: {peer_id}");
             }
         }
