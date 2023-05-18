@@ -11,7 +11,8 @@ use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 use crate::{
     network::error::Result,
     protocol::{
-        messages::{QueryResponse, Request, Response},
+        messages::{QueryResponse, ReplicatedData, Request, Response},
+        storage::Chunk,
         NetworkAddress,
     },
 };
@@ -64,6 +65,9 @@ pub enum SwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<Result<QueryResponse>>,
     },
+    StoreReplicatedData {
+        replicated_data: ReplicatedData,
+    },
 }
 
 /// Snapshot of information kept in the Swarm's local state
@@ -89,6 +93,9 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .kademlia
                     .put_record(record, libp2p::kad::Quorum::All)?;
+            }
+            SwarmCmd::StoreReplicatedData { replicated_data } => {
+                self.store_repliated_data(replicated_data);
             }
             SwarmCmd::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {
@@ -199,5 +206,32 @@ impl SwarmDriver {
             }
         }
         Ok(())
+    }
+
+    fn store_repliated_data(&mut self, replicated_data: ReplicatedData) {
+        match replicated_data {
+            ReplicatedData::Chunk(chunk) => self.replicate_chunk_to_local(chunk),
+            other => warn!("Not supporter other type of replicated data {:?}", other),
+        }
+    }
+
+    fn replicate_chunk_to_local(&mut self, chunk: Chunk) {
+        let addr = *chunk.address();
+        debug!("That's a replicate chunk in for :{:?}", addr.name());
+
+        // Create a Kademlia record for storage
+        let record = Record {
+            key: RecordKey::new(addr.name()),
+            value: chunk.value().to_vec(),
+            publisher: None,
+            expires: None,
+        };
+
+        let _ = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .write_to_local(record);
     }
 }

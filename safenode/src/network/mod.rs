@@ -31,7 +31,7 @@ use crate::domain::storage::{
     REPLICATION_INTERVAL_UPPER_BOUND,
 };
 use crate::protocol::{
-    messages::{QueryResponse, Request, Response},
+    messages::{QueryResponse, ReplicatedData, Request, Response},
     NetworkAddress,
 };
 
@@ -41,7 +41,7 @@ use futures::{future::select_all, StreamExt};
 use libp2p::mdns;
 use libp2p::{
     identity,
-    kad::{Kademlia, KademliaConfig, QueryId, Record, RecordKey},
+    kad::{kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
@@ -386,6 +386,41 @@ impl SwarmDriver {
     }
 }
 
+/// Sort the provided peers by their distance to the given `NetworkAddress`.
+/// Return with the closest expected number of entries if has.
+pub(crate) fn sort_peers_by_address(
+    peers: Vec<PeerId>,
+    address: &NetworkAddress,
+    expected_entries: usize,
+) -> Result<Vec<PeerId>> {
+    sort_peers_by_key(peers, &address.as_kbucket_key(), expected_entries)
+}
+
+/// Sort the provided peers by their distance to the given `KBucketKey`.
+/// Return with the closest expected number of entries if has.
+pub(crate) fn sort_peers_by_key<T>(
+    mut peers: Vec<PeerId>,
+    key: &KBucketKey<T>,
+    expected_entries: usize,
+) -> Result<Vec<PeerId>> {
+    peers.sort_by(|a, b| {
+        let a = NetworkAddress::from_peer(*a);
+        let b = NetworkAddress::from_peer(*b);
+        key.distance(&a.as_kbucket_key())
+            .cmp(&key.distance(&b.as_kbucket_key()))
+    });
+    let peers: Vec<PeerId> = peers.iter().take(expected_entries).cloned().collect();
+
+    if CLOSE_GROUP_SIZE > peers.len() {
+        warn!("Not enough peers in the k-bucket to satisfy the request");
+        return Err(Error::NotEnoughPeers {
+            found: peers.len(),
+            required: CLOSE_GROUP_SIZE,
+        });
+    }
+    Ok(peers)
+}
+
 #[derive(Clone)]
 /// API to interact with the underlying Swarm
 pub struct Network {
@@ -508,6 +543,17 @@ impl Network {
             .await
     }
 
+    /// Store replicated data to local
+    /// The `chunk_storage` is currently held by `swarm_driver` within `network` instance.
+    /// Hence has to carry out this notification.
+    pub async fn store_replicated_data_to_local(
+        &self,
+        replicated_data: ReplicatedData,
+    ) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::StoreReplicatedData { replicated_data })
+            .await
+    }
+
     /// Send `Request` to the the given `PeerId` and await for the response. If `self` is the recipient,
     /// then the `Request` is forwarded to itself and handled, and a corresponding `Response` is created
     /// and returned to itself. Hence the flow remains the same and there is no branching at the upper
@@ -564,30 +610,7 @@ impl Network {
         if !client {
             closest_peers.push(self.peer_id);
         }
-        self.sort_peers_by_key(closest_peers, key)
-    }
-
-    /// Sort the provided peers by their distance to the given key.
-    fn sort_peers_by_key(
-        &self,
-        mut peers: Vec<PeerId>,
-        key: &NetworkAddress,
-    ) -> Result<Vec<PeerId>> {
-        peers.sort_by(|a, b| {
-            let a = NetworkAddress::from_peer(*a);
-            let b = NetworkAddress::from_peer(*b);
-            key.distance(&a).cmp(&key.distance(&b))
-        });
-        let peers: Vec<PeerId> = peers.iter().take(CLOSE_GROUP_SIZE).cloned().collect();
-
-        if CLOSE_GROUP_SIZE > peers.len() {
-            warn!("Not enough peers in the k-bucket to satisfy the request");
-            return Err(Error::NotEnoughPeers {
-                found: peers.len(),
-                required: CLOSE_GROUP_SIZE,
-            });
-        }
-        Ok(peers)
+        sort_peers_by_address(closest_peers, key, CLOSE_GROUP_SIZE)
     }
 
     // Send a `Request` to the provided set of peers and wait for their responses concurrently.
