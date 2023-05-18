@@ -4,7 +4,7 @@ This is the Safe Network as it was supposed to be, on a kademlia network, enable
 
 ## Running the network
 
-You'll need to set teh `SAFE_PEERS` env variable to the multiaddress of a node when you set up a testnet.
+You'll need to set the `SAFE_PEERS` env variable to the multiaddress of a node when you set up a testnet.
 You can do this automatically at network startup using the following command (if you have ripgrep installed)
 ```bash
 killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- -b --interval 100  && export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')
