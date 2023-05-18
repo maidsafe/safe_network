@@ -5,9 +5,13 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-mod rpc;
 
+#[macro_use]
+extern crate tracing;
+
+mod rpc;
 use safenode::{
+    git_hash,
     log::init_node_logging,
     node::{Node, NodeEvent, NodeEventsReceiver},
     peers_acquisition::peers_from_opts_or_env,
@@ -26,7 +30,6 @@ use tokio::{
     sync::{broadcast::error::RecvError, mpsc},
     time::sleep,
 };
-use tracing::{error, info, warn};
 
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
@@ -107,6 +110,8 @@ fn main() -> Result<()> {
         let guard = rt.block_on(async { init_node_logging(&opt.log_dir) })?;
         (rt, guard)
     };
+
+    debug!("Current build's git commit hash: {}", git_hash::GIT_HASH);
 
     let root_dir = get_root_dir_path(opt.root_dir)?;
     let log_dir = if let Some(path) = opt.log_dir {

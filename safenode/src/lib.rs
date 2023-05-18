@@ -43,6 +43,9 @@
 #[macro_use]
 extern crate tracing;
 
+/// Build time git hash.
+pub mod git_hash;
+
 #[cfg(test)]
 mod tests_e2e;
 
