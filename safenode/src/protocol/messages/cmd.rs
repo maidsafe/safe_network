@@ -13,7 +13,7 @@ use crate::protocol::{
 
 use super::RegisterCmd;
 
-use sn_dbc::{DbcTransaction, SignedSpend};
+use sn_dbc::SignedSpend;
 
 use serde::{Deserialize, Serialize};
 
@@ -36,16 +36,12 @@ pub enum Cmd {
     Register(RegisterCmd),
     /// [`SignedSpend`] write operation.
     ///
-    /// [`SignedSpend`]: sn_dbc::SignedSpend
-    SpendDbc {
-        /// The spend to be recorded.
-        /// It contains the transaction it is being spent in.
+    /// The spend to be recorded.
+    /// It contains the transaction it is being spent in.
+    SpendDbc(
         #[debug(skip)]
-        signed_spend: Box<SignedSpend>,
-        /// The transaction that this spend was created in.
-        #[debug(skip)]
-        parent_tx: Box<DbcTransaction>,
-    },
+        SignedSpend
+    ),
 }
 
 impl Cmd {
@@ -56,7 +52,7 @@ impl Cmd {
                 NetworkAddress::from_chunk_address(ChunkAddress::new(*chunk.name()))
             }
             Cmd::Register(cmd) => NetworkAddress::from_register_address(cmd.dst()),
-            Cmd::SpendDbc { signed_spend, .. } => {
+            Cmd::SpendDbc(signed_spend) => {
                 NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
             }
         }
@@ -72,7 +68,7 @@ impl std::fmt::Display for Cmd {
             Cmd::Register(cmd) => {
                 write!(f, "Cmd::Register({:?})", cmd.name()) // more qualification needed
             }
-            Cmd::SpendDbc { signed_spend, .. } => {
+            Cmd::SpendDbc(signed_spend) => {
                 write!(f, "Cmd::SpendDbc({:?})", signed_spend.dbc_id())
             }
         }

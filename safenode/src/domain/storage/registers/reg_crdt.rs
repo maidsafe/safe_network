@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::protocol::{
-    error::StorageError as Error,
+    error::Error,
     storage::{
         registers::{CrdtOperation, Entry, EntryHash, RegisterCrdt, User},
         RegisterAddress,

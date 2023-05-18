@@ -4385,8 +4385,6 @@ checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
 [[package]]
 name = "sn_dbc"
 version = "17.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "786d60bc3ec3059b2de92de8be25f51bc393748e3f0dafdbf8cb7c2d95d32636"
 dependencies = [
  "bincode",
  "blsttc",

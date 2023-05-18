@@ -10,8 +10,6 @@
 pub mod client_transfers;
 /// Dbc genesis creation.
 pub mod dbc_genesis;
-/// Node handling of token transfers.
-pub mod node_transfers;
 /// Storage for spends, chunks and registers.
 pub mod storage;
 /// A wallet for network tokens.

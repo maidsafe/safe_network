@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::collections::BTreeMap;
+
 use super::{
     error::{Error, Result},
     Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, Register, RegisterOffline,
@@ -15,7 +17,7 @@ use crate::{
     domain::client_transfers::SpendRequest,
     network::{close_group_majority, NetworkEvent, SwarmDriver},
     protocol::{
-        messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
+        messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
         storage::{Chunk, ChunkAddress, DbcAddress},
         NetworkAddress,
     },
@@ -226,10 +228,7 @@ impl Client {
             .client_get_closest_peers(&network_address)
             .await?;
 
-        let cmd = Cmd::SpendDbc {
-            signed_spend: Box::new(spend.signed_spend),
-            parent_tx: Box::new(spend.parent_tx),
-        };
+        let cmd = Cmd::SpendDbc(spend.signed_spend);
 
         trace!("Sending {:?} to the closest peers.", cmd);
 
@@ -282,7 +281,7 @@ impl Client {
             .client_get_closest_peers(&network_address)
             .await?;
 
-        let query = Query::Spend(SpendQuery::GetDbcSpend(address));
+        let query = Query::GetSpend(address);
         trace!("Sending {:?} to the closest peers.", query);
 
         let mut list_of_futures = vec![];
@@ -302,21 +301,36 @@ impl Client {
                     remaining_futures,
                 ) => {
                     if dbc_id == received_spend.dbc_id() {
-                        trace!("Signed spend got from network.");
-                        ok_responses.push(received_spend);
+                        match received_spend.verify(received_spend.spent_tx_hash()) {
+                            Ok(_) => {
+                                trace!("Verified signed spend got from network.");
+                                ok_responses.push(received_spend);
+                            }
+                            Err(err) => {
+                                warn!("Invalid signed spend got from network for {dbc_id:?}: {err:?}.");
+                            }
+                        }
                     }
 
                     // Return once we got required number of expected responses.
                     if ok_responses.len() >= close_group_majority() {
                         use itertools::*;
-                        let majority_agreement = ok_responses
+                        let resp_count_by_spend:BTreeMap<SignedSpend, usize> = ok_responses
                             .clone()
                             .into_iter()
                             .map(|x| (x, 1))
                             .into_group_map()
                             .into_iter()
-                            .filter(|(_, v)| v.len() >= close_group_majority())
-                            .max_by_key(|(_, v)| v.len())
+                            .map(|(spend, vec_of_ones)| (spend, vec_of_ones.len()))
+                            .collect();
+
+                        if resp_count_by_spend.len() > 1 {
+                            return Err(Error::CouldNotVerifyTransfer(format!("Double spend detected for DBC {dbc_id:?}: {:?}", resp_count_by_spend.keys())));
+                        }
+
+                        let majority_agreement = resp_count_by_spend
+                            .into_iter()
+                            .max_by_key(|(_, count)| *count)
                             .map(|(k, _)| k);
 
                         if let Some(agreed_spend) = majority_agreement {

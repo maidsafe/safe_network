@@ -8,7 +8,7 @@
 
 use crate::protocol::{storage::ChunkAddress, NetworkAddress};
 
-use super::{RegisterQuery, SpendQuery};
+use super::RegisterQuery;
 
 use serde::{Deserialize, Serialize};
 
@@ -35,7 +35,7 @@ pub enum Query {
     /// [`Spend`] read operation.
     ///
     /// [`Spend`]: super::transfers::SpendQuery.
-    Spend(SpendQuery),
+    GetSpend(DbcAddress),
 }
 
 impl Query {
@@ -58,8 +58,8 @@ impl std::fmt::Display for Query {
             Query::Register(query) => {
                 write!(f, "Query::Register({:?})", query.dst()) // more qualification needed
             }
-            Query::Spend(query) => {
-                write!(f, "Query::Spend({query:?})")
+            Query::GetSpend(address) => {
+                write!(f, "Query::GetSpend({address:?})")
             }
         }
     }

@@ -83,7 +83,6 @@ impl SwarmDriver {
                 let _ = self.pending_query.insert(query_id, sender);
             }
             SwarmCmd::PutProvidedDataAsRecord { record } => {
-                // TODO: when do we remove records. Do we need to?
                 let _ = self
                     .swarm
                     .behaviour_mut()
