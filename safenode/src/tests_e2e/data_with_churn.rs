@@ -49,8 +49,9 @@ const CHUNKS_SIZE: usize = 1024;
 const CONTENT_QUERY_RATIO_TO_CHURN: u64 = 12;
 const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 
-// Total amount of time we run the checks for before reporting the outcome
-const TOTAL_TIME_OF_TEST: Duration = Duration::from_secs(60 * 60); // 1hr
+// Default total amount of time we run the checks for before reporting the outcome.
+// It can be overriden by setting the 'TEST_DURATION_MINS' env var.
+const TEST_DURATION: Duration = Duration::from_secs(60 * 60); // 1hr
 
 type ContentList = Arc<RwLock<VecDeque<NetworkAddress>>>;
 
@@ -74,6 +75,20 @@ type ContentErredList = Arc<RwLock<BTreeMap<NetworkAddress, ContentError>>>;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn data_availability_during_churn() -> Result<()> {
+    let test_duration = if let Ok(str) = std::env::var("TEST_DURATION_MINS") {
+        Duration::from_secs(60 * str.parse::<u64>()?)
+    } else {
+        TEST_DURATION
+    };
+
+    // Allow to disable Registers data creation/checks, storing and querying only Chunks during churn.
+    let chunks_only = std::env::var("CHUNKS_ONLY").is_ok();
+
+    println!(
+        "Running this test for {test_duration:?}{}...",
+        if chunks_only { " (Chunks only)" } else { "" }
+    );
+
     println!("Creating a client...");
     let client = get_client().await;
     println!("Client created with signing key: {:?}", client.signer_pk());
@@ -93,7 +108,9 @@ async fn data_availability_during_churn() -> Result<()> {
     let failures = ContentErredList::default();
 
     // Spawn a task to create Registers at random locations, at a higher frequency than the churning events
-    create_registers_task(client.clone(), content.clone());
+    if !chunks_only {
+        create_registers_task(client.clone(), content.clone());
+    }
 
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
     store_chunks_task(client.clone(), content.clone());
@@ -106,7 +123,7 @@ async fn data_availability_during_churn() -> Result<()> {
     retry_query_content_task(client.clone(), content_erred.clone(), failures.clone());
 
     let start_time = Instant::now();
-    while start_time.elapsed() < TOTAL_TIME_OF_TEST {
+    while start_time.elapsed() < test_duration {
         let failed = failures.read().await;
         println!(
             "Current failures after {:?} ({}): {:?}",
@@ -136,8 +153,7 @@ fn create_registers_task(client: Client, content: ContentList) {
         // Create Registers at a higher frequency than the churning events
         let delay = Duration::from_millis(CHURN_PERIOD_MILLIS / REGISTER_CREATION_RATIO_TO_CHURN);
 
-        let start_time = Instant::now();
-        while start_time.elapsed() < TOTAL_TIME_OF_TEST {
+        loop {
             let xorname = XorName(rand::random());
             let tag = rand::random();
 
@@ -163,9 +179,8 @@ fn store_chunks_task(client: Client, content: ContentList) {
         let delay = Duration::from_millis(CHURN_PERIOD_MILLIS / CHUNK_CREATION_RATIO_TO_CHURN);
 
         let file_api = Files::new(client);
-        let start_time = Instant::now();
         let mut rng = OsRng;
-        while start_time.elapsed() < TOTAL_TIME_OF_TEST {
+        loop {
             let random_bytes: Vec<u8> = ::std::iter::repeat(())
                 .map(|()| rng.gen::<u8>())
                 .take(CHUNKS_SIZE)
