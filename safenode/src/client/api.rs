@@ -178,11 +178,7 @@ impl Client {
             .get_provided_data(RecordKey::new(xorname))
             .await?
         {
-            Ok(QueryResponse::GetChunk(result)) => Ok(result?),
-            Ok(other) => {
-                warn!("On querying chunk {xorname:?} received unexpected response {other:?}",);
-                Err(Error::UnexpectedResponses)
-            }
+            Ok(chunk_bytes) => Ok(Chunk::new(chunk_bytes.into())),
             Err(err) => {
                 warn!("Local internal error when trying to query chunk {xorname:?}: {err:?}",);
                 Err(err.into())
@@ -315,7 +311,7 @@ impl Client {
                     // Return once we got required number of expected responses.
                     if ok_responses.len() >= close_group_majority() {
                         use itertools::*;
-                        let resp_count_by_spend:BTreeMap<SignedSpend, usize> = ok_responses
+                        let resp_count_by_spend: BTreeMap<SignedSpend, usize> = ok_responses
                             .clone()
                             .into_iter()
                             .map(|x| (x, 1))
@@ -325,7 +321,10 @@ impl Client {
                             .collect();
 
                         if resp_count_by_spend.len() > 1 {
-                            return Err(Error::CouldNotVerifyTransfer(format!("Double spend detected for DBC {dbc_id:?}: {:?}", resp_count_by_spend.keys())));
+                            return Err(Error::CouldNotVerifyTransfer(format!(
+                                "Double spend detected for DBC {dbc_id:?}: {:?}",
+                                resp_count_by_spend.keys()
+                            )));
                         }
 
                         let majority_agreement = resp_count_by_spend

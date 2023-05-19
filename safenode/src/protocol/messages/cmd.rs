@@ -38,10 +38,7 @@ pub enum Cmd {
     ///
     /// The spend to be recorded.
     /// It contains the transaction it is being spent in.
-    SpendDbc(
-        #[debug(skip)]
-        SignedSpend
-    ),
+    SpendDbc(#[debug(skip)] SignedSpend),
 }
 
 impl Cmd {

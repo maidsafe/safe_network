@@ -139,9 +139,7 @@ impl RegisterOffline {
         self.register
             .check_permissions(Action::Write, Some(User::Key(public_key)))?;
 
-        let (_hash, edit) = self
-            .register
-            .write(entry.into(), children)?;
+        let (_hash, edit) = self.register.write(entry.into(), children)?;
         let op = EditRegister {
             address: *self.register.address(),
             edit,

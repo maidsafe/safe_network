@@ -15,8 +15,7 @@ use crate::{
     domain::storage::DiskBackedRecordStore,
     network::IDENTIFY_AGENT_STR,
     protocol::{
-        messages::{QueryResponse, Request, Response},
-        storage::Chunk,
+        messages::{Request, Response},
         NetworkAddress,
     },
 };
@@ -171,10 +170,9 @@ impl SwarmDriver {
                             peer_record.peer
                         );
                         if let Some(sender) = self.pending_query.remove(id) {
+                            let value = peer_record.record.value.clone();
                             sender
-                                .send(Ok(QueryResponse::GetChunk(Ok(Chunk::new(
-                                    peer_record.record.value.clone().into(),
-                                )))))
+                                .send(Ok(value))
                                 .map_err(|_| Error::InternalMsgChannelDropped)?;
                         }
                     } else {

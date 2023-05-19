@@ -7,20 +7,15 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    error::Result,
-    event::NodeEventsChannel,
-    spendbook::SpendBook,
-    Network, Node, NodeEvent,
+    error::Result, event::NodeEventsChannel, spendbook::SpendBook, Network, Node, NodeEvent,
 };
 use crate::{
     network::{MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState},
     node::RegisterStorage,
     protocol::{
         error::Error as ProtocolError,
-        messages::{
-            Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, Request, Response,
-        },
-        storage::{registers::User, DbcAddress},
+        messages::{Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, Request, Response},
+        storage::{registers::User, Chunk, DbcAddress},
         NetworkAddress,
     },
 };
@@ -29,9 +24,8 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sn_dbc::{DbcTransaction, SignedSpend};
-use std::{collections::BTreeSet, net::SocketAddr, path::Path, time::Duration};
-use tokio::{sync::mpsc, task::spawn};
+use std::{net::SocketAddr, path::Path, time::Duration};
+use tokio::task::spawn;
 
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
@@ -188,21 +182,18 @@ impl Node {
                     .get_provided_data(RecordKey::new(address.name()))
                     .await
                 {
-                    Ok(Ok(response)) => response,
-                    Ok(Err(err)) | Err(err) => {
+                    Ok(Ok(data)) => QueryResponse::GetChunk(Ok(Chunk::new(data.into()))),
+                    Err(err) | Ok(Err(err)) => {
                         error!("Error getting chunk from network: {err}");
-                        QueryResponse::GetChunk(Err(ProtocolError::ChunkNotFound(address).into()))
+                        QueryResponse::GetChunk(Err(ProtocolError::ChunkNotFound(address)))
                     }
                 }
             }
             Query::GetSpend(address) => {
-                let res = self
-                    .spendbook
-                    .spend_get(&self.network, address)
-                    .await;
+                let res = self.spendbook.spend_get(&self.network, address).await;
                 trace!("Sending response back on query DbcSpend {address:?}");
                 QueryResponse::GetDbcSpend(res)
-            },
+            }
         };
         self.send_response(Response::Query(resp), response_channel)
             .await;
@@ -229,19 +220,14 @@ impl Node {
                     }
                     Err(err) => {
                         error!("Failed to StoreChunk: {err:?}");
-                        CmdResponse::StoreChunk(Err(
-                            ProtocolError::ChunkNotStored(*addr.name()).into()
-                        ))
+                        CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(*addr.name())))
                     }
                 };
                 self.send_response(Response::Cmd(resp), response_channel)
                     .await;
             }
             Cmd::Register(cmd) => {
-                let result = self
-                    .registers
-                    .write(&cmd)
-                    .await;
+                let result = self.registers.write(&cmd).await;
 
                 let xorname = cmd.dst();
                 let resp = match cmd {
@@ -260,29 +246,31 @@ impl Node {
                     .await;
             }
             Cmd::SpendDbc(signed_spend) => {
-                let dbc_id = signed_spend.dbc_id().clone();
+                let dbc_id = *signed_spend.dbc_id();
                 let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
                 let resp = match self.spendbook.spend_put(&self.network, signed_spend).await {
                     Ok(addr) => {
                         debug!("Broadcasting valid spend: {dbc_id:?} at: {addr:?}");
-                        self.events_channel.broadcast(NodeEvent::SpendStored(dbc_id));
+                        self.events_channel
+                            .broadcast(NodeEvent::SpendStored(dbc_id));
                         CmdResponse::Spend(Ok(()))
-                    },
+                    }
                     Err(err) => {
                         error!("Failed to StoreSpend: {err:?}");
                         CmdResponse::Spend(Err(ProtocolError::FailedToStoreSpend(dbc_addr)))
                     }
                 };
 
-                self.send_response(Response::Cmd(resp), response_channel).await;
+                self.send_response(Response::Cmd(resp), response_channel)
+                    .await;
             }
         }
     }
 
     async fn send_response(&self, resp: Response, response_channel: MsgResponder) {
-    if let Err(err) = self.network.send_response(resp, response_channel).await {
-        warn!("Error while sending response: {err:?}");
+        if let Err(err) = self.network.send_response(resp, response_channel).await {
+            warn!("Error while sending response: {err:?}");
+        }
     }
-}
 }

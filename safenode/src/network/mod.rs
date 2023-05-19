@@ -28,7 +28,7 @@ use crate::domain::storage::{
     DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL,
 };
 use crate::protocol::{
-    messages::{QueryResponse, Request, Response},
+    messages::{Request, Response},
     NetworkAddress,
 };
 
@@ -103,7 +103,7 @@ pub struct SwarmDriver {
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
-    pending_query: HashMap<QueryId, oneshot::Sender<Result<QueryResponse>>>,
+    pending_query: HashMap<QueryId, oneshot::Sender<Result<Vec<u8>>>>,
     // Kademlia uses a technique called `lazy refreshing` to periodically check
     // the responsiveness of nodes in its routing table, and attempts to
     // replace it with a new node from its list of known nodes.
@@ -445,7 +445,7 @@ impl Network {
     }
 
     /// Get `key` from our Storage
-    pub async fn get_provided_data(&self, key: RecordKey) -> Result<Result<QueryResponse>> {
+    pub async fn get_provided_data(&self, key: RecordKey) -> Result<Result<Vec<u8>>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetData { key, sender })
             .await?;

@@ -11,8 +11,8 @@ use crate::protocol::storage::{
     ChunkAddress, DbcAddress, RegisterAddress,
 };
 
-use sn_dbc::{Hash, SignedSpend};
 use serde::{Deserialize, Serialize};
+use sn_dbc::{Hash, SignedSpend};
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -80,9 +80,11 @@ pub enum Error {
     FailedToStoreSpend(DbcAddress),
     /// Node failed to get spend
     #[error("Failed to get spend: {0:?}")]
-    FailedToGetSpend(String),
+    FailedToGetSpend(DbcAddress),
     /// A double spend was detected.
-    #[error("A double spend was detected. Two diverging signed spends: {spend_one:?}, {spend_two:?}")]
+    #[error(
+        "A double spend was detected. Two diverging signed spends: {spend_one:?}, {spend_two:?}"
+    )]
     DoubleSpendAttempt {
         /// New spend that we received.
         #[debug(skip)]
@@ -101,7 +103,6 @@ pub enum Error {
     /// Cannot verify a Spend signature.
     #[error("Spend signature is invalid: {0}")]
     InvalidSpendSignature(String),
-
 
     ///
     #[error("Contacting close group of parent spends failed: {0}.")]

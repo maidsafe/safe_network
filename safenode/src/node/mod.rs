@@ -18,10 +18,7 @@ pub use self::{
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
 };
 
-use crate::{
-    domain::storage::RegisterStorage,
-    network::Network,
-};
+use crate::{domain::storage::RegisterStorage, network::Network};
 
 use libp2p::{Multiaddr, PeerId};
 

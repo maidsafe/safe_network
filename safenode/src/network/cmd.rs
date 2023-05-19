@@ -11,7 +11,7 @@ use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 use crate::{
     network::error::Result,
     protocol::{
-        messages::{QueryResponse, Request, Response},
+        messages::{Request, Response},
         NetworkAddress,
     },
 };
@@ -62,7 +62,7 @@ pub enum SwarmCmd {
     /// Get data from the kademlia store
     GetData {
         key: RecordKey,
-        sender: oneshot::Sender<Result<QueryResponse>>,
+        sender: oneshot::Sender<Result<Vec<u8>>>,
     },
 }
 

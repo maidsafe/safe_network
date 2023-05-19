@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::{storage::ChunkAddress, NetworkAddress};
+use crate::protocol::{
+    storage::{ChunkAddress, DbcAddress},
+    NetworkAddress,
+};
 
 use super::RegisterQuery;
 
@@ -44,7 +47,7 @@ impl Query {
         match self {
             Query::GetChunk(address) => NetworkAddress::from_chunk_address(*address),
             Query::Register(query) => NetworkAddress::from_register_address(query.dst()),
-            Query::Spend(query) => NetworkAddress::from_dbc_address(query.dst()),
+            Query::GetSpend(address) => NetworkAddress::from_dbc_address(*address),
         }
     }
 }
