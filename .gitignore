@@ -17,6 +17,3 @@ settings.json
 
 # ignore log files
 *.log
-
-# generated git hash for inclusion in the project
-safenode/src/git_hash.rs
