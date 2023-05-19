@@ -180,8 +180,9 @@ jobs:
 
       - name: Set contact env var node.
         shell: bash
-        # get all nodes listen ports
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+        # Get safenode-1 local listen addr
+        # node-1 will _not_ be churned
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/safenode-1/*.log* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
 
       - name: Check contact peer
         shell: bash
@@ -294,22 +295,29 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Build sn bins
-        run: cargo build --release --bins --features local-discovery
+        run: cargo build --release --bins
         timeout-minutes: 30
 
+        
       - name: Build testing executable
         run: cargo test --release multiple_sequential_transfers_succeed --no-run
         timeout-minutes: 30
-
+        
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         id: section-startup
         env:
           RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 10
-
+          timeout-minutes: 10
+          
+      - name: Set contact env var node.
+        shell: bash
+        # Get safenode-1 local listen addr
+        # node-1 will _not_ be churned
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/safenode-1/*.log* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+  
       - name: execute the dbc spend test
-        run: cargo test --release --features="local-discovery" multiple_sequential_transfers_succeed  -- --nocapture
+        run: cargo test --release multiple_sequential_transfers_succeed  -- --nocapture
         id: client-spend-dbc
         env:
           RUST_LOG: "safenode,safe=trace"
@@ -377,7 +385,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Build sn bins
-        run: cargo build --release --bins --features local-discovery
+        run: cargo build --release --bins
         timeout-minutes: 30
 
       - name: Build rpc client
@@ -391,31 +399,34 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
+      - name: Set contact env var node.
+        shell: bash
+        # Get safenode-1 local listen addr
+        # node-1 will _not_ be churned
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/safenode-1/*.log* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+
       - name: Start a client to upload chunks
         
-        run: cargo run --bin safe --release --features="local-discovery" -- files upload -- "./resources"
+        run: cargo run --bin safe --release -- files upload -- "./resources"
         id: client-file-upload
         env:
           RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 10
+        timeout-minutes: 5
 
       - name: Start network churning
-        
         shell: bash
         run: ./resources/scripts/network_churning.sh
-        timeout-minutes: 20
+        timeout-minutes: 5
 
         
       - name: Start a client to confirm chunk still retained
-        
-        run: cargo run --bin safe --features local-discovery --release -- files download
+        run: cargo run --bin safe --release -- files download
         id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 15
+        timeout-minutes: 5
 
-      - name: Downloaded file is same as the original
-        
+      - name: Downloaded finetwork_churnin.sh le is same as the original
         shell: bash
         timeout-minutes: 1
         run: |
@@ -424,7 +435,6 @@ jobs:
           cmp --silent $old $new
       
       - name: Verify restart of nodes using rg
-        
         shell: bash
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only

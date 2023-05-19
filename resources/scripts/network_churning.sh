@@ -14,7 +14,10 @@ echo "Number of existing nodes: $nodes_count"
 
 sleep 5
 
-count=0
+# start at 1 so we never restert node-1
+count=1
+
+echo "safenode-1 will not be restarted. This should enable continuity of SAFE_PEERS for the other nodes/clients"
 while (( $count != $nodes_count ))
 do
     ((count++))
