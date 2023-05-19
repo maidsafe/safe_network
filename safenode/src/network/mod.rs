@@ -636,18 +636,6 @@ mod tests {
 
         tokio::time::sleep(Duration::from_secs(5)).await;
 
-        // Generate some rounds of random query to allow nodes populate its RT
-        let mut rng = thread_rng();
-        for net in networks_list.iter() {
-            // Do twice to reduce the possibility of missing a node knowledge.
-            let random_data =
-                NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
-            let _ = net.get_closest_peers(&random_data, false).await?;
-            let random_data =
-                NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
-            let _ = net.get_closest_peers(&random_data, false).await?;
-        }
-
         // Get the expected list of closest peers by creating a `KBucketsTable` with all the peers
         // inserted inside it.
         // The `KBucketsTable::local_key` is considered to be random since the `local_key` will not
@@ -673,6 +661,7 @@ mod tests {
         }
 
         // Check the closest nodes to the following random_data
+        let mut rng = thread_rng();
         let random_data =
             NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
         let expected_from_table = table
