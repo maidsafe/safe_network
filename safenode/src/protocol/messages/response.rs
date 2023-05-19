@@ -34,7 +34,7 @@ pub enum QueryResponse {
     ///
     /// Response to [`GetDbcSpend`]
     ///
-    /// [`GetDbcSpend`]: crate::protocol::messages::SpendQuery::GetDbcSpend
+    /// [`GetDbcSpend`]: crate::protocol::messages::Query::GetSpend
     #[debug(skip)]
     GetDbcSpend(Result<SignedSpend>),
     //
