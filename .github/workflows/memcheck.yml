@@ -48,11 +48,12 @@ jobs:
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
-
+        
       - name: Set contact env var node.
         shell: bash
-        # get all nodes listen ports
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+        # Get safenode-1 local listen addr
+        # node-1 will _not_ be churned
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/safenode-1/*.lo* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
 
       - name: Check contact peer
         shell: bash

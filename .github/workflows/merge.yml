@@ -182,7 +182,7 @@ jobs:
         shell: bash
         # Get safenode-1 local listen addr
         # node-1 will _not_ be churned
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/safenode-1/*.log* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/safenode-1/*.lo* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
 
       - name: Check contact peer
         shell: bash
@@ -314,7 +314,7 @@ jobs:
         shell: bash
         # Get safenode-1 local listen addr
         # node-1 will _not_ be churned
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/safenode-1/*.log* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/safenode-1/*.lo* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
   
       - name: execute the dbc spend test
         run: cargo test --release multiple_sequential_transfers_succeed  -- --nocapture
@@ -403,7 +403,7 @@ jobs:
         shell: bash
         # Get safenode-1 local listen addr
         # node-1 will _not_ be churned
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/safenode-1/*.log* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/safenode-1/*.lo* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
 
       - name: Start a client to upload chunks
         
