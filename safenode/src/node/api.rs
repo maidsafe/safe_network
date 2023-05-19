@@ -11,7 +11,6 @@ use super::{
     event::NodeEventsChannel,
     Network, Node, NodeEvent,
 };
-
 use crate::{
     domain::dbc_genesis::is_genesis_parent_tx,
     network::{close_group_majority, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState},
@@ -23,16 +22,16 @@ use crate::{
             SpendQuery,
         },
         storage::{registers::User, DbcAddress},
+        NetworkAddress,
     },
 };
-
-use sn_dbc::{DbcTransaction, SignedSpend};
-
 use libp2p::{
     kad::{Record, RecordKey},
     Multiaddr, PeerId,
 };
-use std::{collections::BTreeSet, net::SocketAddr, path::Path};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use sn_dbc::{DbcTransaction, SignedSpend};
+use std::{collections::BTreeSet, net::SocketAddr, path::Path, time::Duration};
 use tokio::{sync::mpsc, task::spawn};
 
 #[derive(Debug)]
@@ -100,14 +99,23 @@ impl Node {
             transfer_actor: transfer_action_sender,
         };
 
+        let network_clone = network.clone();
         let node_event_sender = node_events_channel.clone();
+        let mut rng = StdRng::from_entropy();
+        let mut fired_closest_query_on_join = false;
+
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
             loop {
+                // use a random inactivity timeout to ensure that the nodes do not sync when messages
+                // are being transmitted.
+                let inactivity_timeout: i32 = rng.gen_range(20..40);
+                let inactivity_timeout = Duration::from_secs(inactivity_timeout as u64);
+
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
-                            Some(event) => node.handle_network_event(event).await,
+                            Some(event) => node.handle_network_event(event, &mut fired_closest_query_on_join).await,
                             None => {
                                 error!("The `NetworkEvent` channel is closed");
                                 node_event_sender.broadcast(NodeEvent::ChannelClosed);
@@ -125,6 +133,14 @@ impl Node {
                             }
                         }
                     }
+                    _ = tokio::time::sleep(inactivity_timeout) => {
+                        let random_target = NetworkAddress::from_peer(PeerId::random());
+
+                        debug!("No network activity in the past {inactivity_timeout:?}, performing a random get_closest query to target: {random_target:?}");
+                        if let Ok(closest) = network_clone.node_get_closest_peers(&random_target).await {
+                            debug!("Network inactivity: get_closest returned {closest:?}");
+                        }
+                    }
                 }
             }
         });
@@ -137,13 +153,29 @@ impl Node {
 
     // **** Private helpers *****
 
-    async fn handle_network_event(&mut self, event: NetworkEvent) {
+    async fn handle_network_event(
+        &mut self,
+        event: NetworkEvent,
+        fired_closest_query_on_join: &mut bool,
+    ) {
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
                 self.handle_request(req, channel).await
             }
             NetworkEvent::PeerAdded(peer_id) => {
                 debug!("PeerAdded: {peer_id}");
+                // perform a get_closest query to self on node join. This should help populate the node's RT
+                if !*fired_closest_query_on_join {
+                    debug!("Performing a get_closest query to self on node join");
+                    if let Ok(closest) = self
+                        .network
+                        .node_get_closest_peers(&NetworkAddress::from_peer(self.network.peer_id))
+                        .await
+                    {
+                        debug!("closest to self on join returned: {closest:?}");
+                    }
+                    *fired_closest_query_on_join = true;
+                }
 
                 self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
             }
