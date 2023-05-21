@@ -74,8 +74,8 @@ impl Client {
                     if must_dial_network {
                         let network = network.clone();
                         let _handle = spawn(async move {
-                            trace!("Client dialing network");
                             for (peer_id, addr) in peers {
+                                trace!("Client dialing network peer {peer_id} at {addr:?}");
                                 let _ = network.add_to_routing_table(peer_id, addr.clone()).await;
                                 if let Err(err) = network.dial(peer_id, addr.clone()).await {
                                     tracing::error!("Failed to dial {peer_id}: {err:?}");
@@ -88,16 +88,32 @@ impl Client {
                 }
 
                 info!("Client waiting for a network event");
-                let event = match network_event_receiver.recv().await {
-                    Some(event) => event,
-                    None => {
-                        error!("The `NetworkEvent` channel has been closed");
-                        continue;
+                let inactivity_timeout = tokio::time::Duration::from_secs(10);
+
+                tokio::select! {
+                    event = network_event_receiver.recv() => {
+                        let the_event = match event {
+                            Some(the_event) => the_event,
+                            None => {
+                                error!("The `NetworkEvent` channel has been closed");
+                                continue;
+                            }
+
+                        };
+                        trace!("Client recevied a network event {the_event:?}");
+                        if let Err(err) = client_clone.handle_network_event(the_event) {
+                            warn!("Error handling network event: {err}");
+                        }
+
+                        continue
                     }
-                };
-                trace!("Client recevied a network event {event:?}");
-                if let Err(err) = client_clone.handle_network_event(event) {
-                    warn!("Error handling network event: {err}");
+                    _ = tokio::time::sleep(inactivity_timeout) => {
+                       must_dial_network = true;
+                        info!("Inactive client, will attempt to dial the network again");
+                        println!("Inactive client, will attempt to dial the network again");
+                       continue
+
+                    }
                 }
             }
         });
