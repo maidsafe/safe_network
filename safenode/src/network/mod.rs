@@ -634,7 +634,7 @@ mod tests {
             networks_list.push(net);
         }
 
-        tokio::time::sleep(Duration::from_secs(5)).await;
+        tokio::time::sleep(Duration::from_millis(300)).await;
 
         // Get the expected list of closest peers by creating a `KBucketsTable` with all the peers
         // inserted inside it.
@@ -644,10 +644,8 @@ mod tests {
         // so we do not add it this random peer there.
         let mut table = KBucketsTable::<_, ()>::new(
             NetworkAddress::from_peer(PeerId::random()).as_kbucket_key(),
-            Duration::from_secs(1),
+            Duration::from_millis(100),
         );
-
-
 
         let mut key_to_peer_id = HashMap::new();
         for net in networks_list.iter() {
@@ -665,7 +663,7 @@ mod tests {
         }
 
         // ensure the `table` is fresh with all things inserted
-        tokio::time::sleep(Duration::from_secs(5)).await;
+        tokio::time::sleep(Duration::from_secs(10)).await;
 
         // Check the closest nodes to the following random_data
         let mut rng = thread_rng();
@@ -683,21 +681,14 @@ mod tests {
             .collect::<Result<Vec<_>>>()?;
         info!("Got Closest from table {:?}", expected_from_table);
 
-        // // Ask the other nodes for the closest_peers.
-        // let our_net = networks_list
-        //     .get(0)
-        //     .ok_or_else(|| eyre!("networks_list is not empty"))?;
-        // let closest = our_net.get_closest_peers(&random_data, false).await?;
-        // info!("Got Closest from network {:?}", closest);
-
-        // assert_lists(closest, expected_from_table);
-
         for network in networks_list.iter_mut() {
             let this_peer = network.peer_id;
             let closest = network.get_closest_peers(&random_data, false).await?;
-            info!("Got Closest from network for peer_id: {this_peer:?} {:?}", closest);
-            assert_lists( this_peer, closest, expected_from_table.clone());
-            
+            info!(
+                "Got Closest from network for peer_id: {this_peer:?} {:?}",
+                closest
+            );
+            assert_lists(this_peer, closest, expected_from_table.clone());
         }
 
         Ok(())
@@ -768,13 +759,18 @@ mod tests {
         let vec1: Vec<_> = a.into_iter().collect();
         let mut vec2: Vec<_> = b.into_iter().collect();
 
-        assert_eq!(vec1.len(), vec2.len(), "{peer:?} closest peers to data were not as expected");
+        assert_eq!(
+            vec1.len(),
+            vec2.len(),
+            "{peer:?} closest peers to data were not as expected"
+        );
 
         for item1 in &vec1 {
+            debug!("Checking item {item1:?} is in {vec2:?}");
             let idx2 = vec2
                 .iter()
                 .position(|item2| item1 == item2)
-                .expect("{peer:?} {item1:?} Item not found in second list");
+                .expect("Item not found in second list");
 
             let _ = vec2.swap_remove(idx2);
         }
