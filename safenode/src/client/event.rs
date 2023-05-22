@@ -28,10 +28,9 @@ impl ClientEventsChannel {
     }
 
     // Broadcast a new event, meant to be a helper only used by the client's internals.
-    pub(crate) fn broadcast(&self, event: ClientEvent) {
-        if let Err(err) = self.0.send(event.clone()) {
-            trace!("Error occurred when trying to broadcast a client event ({event:?}): {err}");
-        }
+    pub(crate) fn broadcast(&self, event: ClientEvent) -> Result<()> {
+        let _subscriber_count = self.0.send(event)?;
+        Ok(())
     }
 }
 
