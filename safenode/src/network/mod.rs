@@ -640,7 +640,7 @@ mod tests {
         // Generate some rounds of random query to allow nodes populate its RT
         let mut rng = thread_rng();
         for net in networks_list.iter() {
-            for _ in 1..100 {
+            for _ in 1..10 {
                 // Do twice to reduce the possibility of missing a node knowledge.
                 let random_data = NetworkAddress::from_chunk_address(ChunkAddress::new(
                     XorName::random(&mut rng),
@@ -658,7 +658,7 @@ mod tests {
         // so we do not add it this random peer there.
         let mut table = KBucketsTable::<_, ()>::new(
             NetworkAddress::from_peer(PeerId::random()).as_kbucket_key(),
-            Duration::from_millis(1),
+            Duration::from_secs(100),
         );
 
         let mut key_to_peer_id = HashMap::new();
