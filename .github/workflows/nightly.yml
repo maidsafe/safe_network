@@ -1,4 +1,4 @@
-name: Daily run. Full Network Tests
+name: Nightly. Full Network Tests
 
 on:
   schedule:
@@ -122,7 +122,7 @@ jobs:
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: sn_node_logs_daily_e2e_${{matrix.os}}
+          name: sn_node_logs_nightly_e2e_${{matrix.os}}
           path: log_files.tar.gz
         if: failure()
         continue-on-error: true
@@ -133,7 +133,7 @@ jobs:
         env:
           SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-          SLACK_TITLE: "Daily Test Run Failed"
+          SLACK_TITLE: "Nightly Test Run Failed"
 
 
   full_unit:
