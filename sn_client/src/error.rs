@@ -10,6 +10,7 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
 use sn_protocol::storage::registers::{Entry, EntryHash};
 use std::collections::BTreeSet;
+use std::time::Duration;
 use thiserror::Error;
 
 use super::ClientEvent;
@@ -40,6 +41,10 @@ pub enum Error {
     /// A general error when verifying a transfer validity in the network.
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
+
+    /// After attempting to dial, the client received no network activity for a given duration.
+    #[error("Client received no network activity for {0:?}")]
+    InactiveClient(Duration),
 
     #[error("Chunks error {0}.")]
     Chunks(#[from] super::chunks::Error),
