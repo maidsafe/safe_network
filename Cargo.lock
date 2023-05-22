@@ -4442,6 +4442,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
 
 [[package]]
+name = "sn_cli"
+version = "0.77.0"
+dependencies = [
+ "bincode",
+ "blsttc",
+ "bytes",
+ "chrono",
+ "clap 4.2.7",
+ "color-eyre",
+ "dirs-next",
+ "hex",
+ "libp2p",
+ "safenode",
+ "sn_dbc",
+ "tokio",
+ "tracing",
+ "walkdir",
+ "xor_name",
+]
+
+[[package]]
+name = "sn_client"
+version = "0.78.0"
+dependencies = [
+ "safenode",
+]
+
+[[package]]
 name = "sn_dbc"
 version = "17.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
