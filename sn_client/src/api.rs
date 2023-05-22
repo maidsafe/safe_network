@@ -30,6 +30,9 @@ use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
 
+/// The timeout duration for the client to receive any response from the network.
+const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(10);
+
 impl Client {
     /// Instantiate a new client.
     pub async fn new(signer: SecretKey, peers: Option<Vec<(PeerId, Multiaddr)>>) -> Result<Self> {
@@ -63,6 +66,7 @@ impl Client {
             trace!("Starting up client swarm_driver");
             swarm_driver.run()
         });
+
         let _event_handler = spawn(async move {
             loop {
                 if let Some(peers) = peers.clone() {
@@ -83,7 +87,6 @@ impl Client {
                 }
 
                 info!("Client waiting for a network event");
-                let inactivity_timeout = tokio::time::Duration::from_secs(10);
 
                 tokio::select! {
                     event = network_event_receiver.recv() => {
@@ -102,10 +105,15 @@ impl Client {
 
                         continue
                     }
-                    _ = tokio::time::sleep(inactivity_timeout) => {
-                       must_dial_network = true;
-                        info!("Inactive client, will attempt to dial the network again");
-                        println!("Inactive client, will attempt to dial the network again");
+                    _ = tokio::time::sleep(INACTIVITY_TIMEOUT) => {
+                        if cfg!(feature = "inactive-client-redials") {
+                            must_dial_network = true;
+                            info!("Inactive client for {INACTIVITY_TIMEOUT:?}, will attempt to dial the network again");
+                            println!("Inactive client for {INACTIVITY_TIMEOUT:?}, will attempt to dial the network again");
+                        }
+                        else {
+                            client_clone.events_channel.broadcast(ClientEvent::InactiveClient(INACTIVITY_TIMEOUT));
+                        }
                        continue
 
                     }
@@ -118,6 +126,10 @@ impl Client {
                 ClientEvent::ConnectedToNetwork => {
                     info!("Client connected to the Network.");
                     println!("Client successfully connected to the Network.");
+                }
+                ClientEvent::InactiveClient(timeout) => {
+                    error!("Inactive client for {timeout:?}, inactive-client-redial is not set, and so shutting down");
+                    return Err(Error::InactiveClient(timeout));
                 }
             }
         }
