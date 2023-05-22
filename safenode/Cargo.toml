@@ -10,10 +10,6 @@ name = "safenode"
 path = "src/bin/safenode/main.rs"
 
 [[bin]]
-name = "safe"
-path = "src/bin/safe/mod.rs"
-
-[[bin]]
 name = "faucet"
 path = "src/bin/faucet.rs"
 

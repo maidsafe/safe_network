@@ -1,5 +1,7 @@
 [workspace]
 members = [
     "safenode",
+    "sn_cli",
+    "sn_client",
     "sn_testnet"
 ]

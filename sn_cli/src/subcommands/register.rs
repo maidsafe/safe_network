@@ -9,7 +9,7 @@
 use safenode::client::{Client, Error as ClientError};
 
 use clap::Subcommand;
-use eyre::Result;
+use color_eyre::Result;
 use xor_name::XorName;
 
 #[derive(Subcommand, Debug)]

@@ -10,10 +10,12 @@
 extern crate tracing;
 
 mod cli;
+mod subcommands;
 
-use self::cli::{files_cmds, register_cmds, wallet_cmds, Opt, SubCmd};
+use crate::cli::Opt;
+use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wallet_cmds, SubCmd};
 use clap::Parser;
-use eyre::Result;
+use color_eyre::Result;
 
 use safenode::client::Client;
 use safenode::git_hash;

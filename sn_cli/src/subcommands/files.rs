@@ -13,7 +13,7 @@ use safenode::{
 
 use bytes::Bytes;
 use clap::Parser;
-use eyre::Result;
+use color_eyre::Result;
 use std::{
     fs,
     path::{Path, PathBuf},
