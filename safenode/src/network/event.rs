@@ -11,22 +11,12 @@ use super::{
     msg::MsgCodec,
     SwarmDriver,
 };
-use crate::{
-    domain::storage::DiskBackedRecordStore,
-    network::{
-        multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, sort_peers_by_key,
-        CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
-    },
-    protocol::{
-        messages::{Cmd, QueryResponse, ReplicatedData, Request, Response},
-        storage::Chunk,
-        NetworkAddress,
-    },
-};
+use crate::{domain::storage::DiskBackedRecordStore, network::IDENTIFY_AGENT_STR};
 
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
+
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{kbucket::Key as KBucketKey, GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
@@ -34,6 +24,11 @@ use libp2p::{
     request_response::{self, ResponseChannel as PeerResponseChannel},
     swarm::{behaviour::toggle::Toggle, DialError, NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
+};
+use sn_protocol::{
+    messages::{QueryResponse, Request, Response},
+    storage::Chunk,
+    NetworkAddress,
 };
 #[cfg(feature = "local-discovery")]
 use std::collections::hash_map;
@@ -225,6 +220,7 @@ impl SwarmDriver {
                                     dial_failed = Some(error);
                                 }
                             }
+                        }
 
                             // if we error'd out, send the error back
                             if let Some(error) = dial_failed {

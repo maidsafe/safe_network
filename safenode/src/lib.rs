@@ -61,5 +61,3 @@ pub mod network;
 pub mod node;
 /// Peer acquisition logic.
 pub mod peers_acquisition;
-/// SAFE Protocol
-pub mod protocol;

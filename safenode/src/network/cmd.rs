@@ -8,19 +8,16 @@
 
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 
-use crate::{
-    network::error::Result,
-    protocol::{
-        messages::{QueryResponse, ReplicatedData, Request, Response},
-        storage::Chunk,
-        NetworkAddress,
-    },
-};
+use crate::network::error::Result;
 
 use libp2p::{
     kad::{Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
+};
+use sn_protocol::{
+    messages::{QueryResponse, Request, Response},
+    NetworkAddress,
 };
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;

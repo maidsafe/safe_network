@@ -8,13 +8,10 @@
 
 use super::dbc_genesis::GENESIS_DBC;
 
-use crate::{
-    domain::{dbc_genesis::is_genesis_parent_tx, storage::SpendStorage},
-    protocol::{error::TransferError, storage::DbcAddress},
-};
+use crate::domain::{dbc_genesis::is_genesis_parent_tx, storage::SpendStorage};
 
 use sn_dbc::{DbcTransaction, SignedSpend};
-
+use sn_protocol::{error::TransferError, storage::DbcAddress};
 use std::{collections::BTreeSet, path::Path};
 
 // Result for all related to node handling of transfers.
