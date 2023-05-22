@@ -133,7 +133,7 @@ jobs:
         env:
           SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-          SLACK_TITLE: "Nightly Test Run Failed"
+          SLACK_TITLE: "Nightly E2E Test Run Failed"
 
 
   full_unit:
@@ -181,6 +181,13 @@ jobs:
         timeout-minutes: 25
         run: PROPTEST_CASES=512 cargo test --release -p safenode -- storage
 
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Nightly Unit Test Run Failed"
 
   spend_test:
     name: dbc spend tests against network
@@ -265,6 +272,15 @@ jobs:
           path: log_files.tar.gz
         if: failure()
         continue-on-error: true
+
+
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Nightly Spend Test Run Failed"
 
   churn:
     name: Network churning tests
@@ -360,3 +376,10 @@ jobs:
         if: failure()
         continue-on-error: true
       
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Nightly Churn Test Run Failed"
