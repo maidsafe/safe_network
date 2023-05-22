@@ -72,9 +72,9 @@ pub enum Error {
     /// Spend not found.
     #[error("Spend not found: {0:?}")]
     SpendNotFound(DbcAddress),
-    /// Insuficient valid spends found to make it valid, less that majority of closest peers
-    #[error("Insuficient valid spends found: {0:?}")]
-    InsuficientValidSpendsFound(DbcAddress),
+    /// Insufficient valid spends found to make it valid, less that majority of closest peers
+    #[error("Insufficient valid spends found: {0:?}")]
+    InsufficientValidSpendsFound(DbcAddress),
     /// Node failed to store spend
     #[error("Failed to store spend: {0:?}")]
     FailedToStoreSpend(DbcAddress),

@@ -269,7 +269,7 @@ async fn get_network_valid_spend(network: &Network, address: DbcAddress) -> Resu
     warn!(
         "The spend for addr: {address:?} is not recognised by majority of peers in its close group"
     );
-    Err(Error::InsuficientValidSpendsFound(address))
+    Err(Error::InsufficientValidSpendsFound(address))
 }
 
 /// Requests spends from the closest peers
