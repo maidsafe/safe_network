@@ -28,7 +28,6 @@ use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{kad::RecordKey, Multiaddr, PeerId};
 use tokio::task::spawn;
-use tracing::trace;
 use xor_name::XorName;
 
 impl Client {
@@ -43,6 +42,11 @@ impl Client {
             events_channel,
             signer,
         };
+
+        // subscribe to our events channel first, so we don't have intermittent
+        // errors if it does not exist and we cannot send to it
+        // (eg, if PeerAdded happens faster than our events channel is created)
+        let mut client_events_rx = client.events_channel();
 
         let mut must_dial_network = true;
 
@@ -86,7 +90,6 @@ impl Client {
             }
         });
 
-        let mut client_events_rx = client.events_channel();
         if let Ok(event) = client_events_rx.recv().await {
             match event {
                 ClientEvent::ConnectedToNetwork => {
