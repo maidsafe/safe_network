@@ -644,7 +644,7 @@ mod tests {
         // so we do not add it this random peer there.
         let mut table = KBucketsTable::<_, ()>::new(
             NetworkAddress::from_peer(PeerId::random()).as_kbucket_key(),
-            Duration::from_millis(100),
+            Duration::from_millis(2000),
         );
 
         let mut key_to_peer_id = HashMap::new();
@@ -663,7 +663,7 @@ mod tests {
         }
 
         // ensure the `table` is fresh with all things inserted
-        tokio::time::sleep(Duration::from_secs(10)).await;
+        tokio::time::sleep(Duration::from_millis(300)).await;
 
         // Check the closest nodes to the following random_data
         let mut rng = thread_rng();
