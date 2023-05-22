@@ -15,8 +15,7 @@ use super::{
     Client,
 };
 
-use crate::protocol::storage::registers::{Entry, EntryHash, Policy};
-
+use sn_protocol::storage::registers::{Entry, EntryHash, Policy};
 use std::collections::BTreeSet;
 use xor_name::XorName;
 

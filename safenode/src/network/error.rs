@@ -6,8 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::messages::Response;
-
 use super::{cmd::SwarmCmd, NetworkEvent};
 
 use libp2p::{
@@ -16,6 +14,7 @@ use libp2p::{
     swarm::DialError,
     TransportError,
 };
+use sn_protocol::messages::Response;
 use std::io;
 use thiserror::Error;
 use tokio::sync::{mpsc, oneshot};

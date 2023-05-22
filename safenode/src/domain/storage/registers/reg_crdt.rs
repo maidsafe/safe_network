@@ -6,18 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::{
+use super::Result;
+
+use crdts::{merkle_reg::MerkleReg, CmRDT, CvRDT};
+use serde::{Deserialize, Serialize};
+use sn_protocol::{
     error::StorageError as Error,
     storage::{
         registers::{CrdtOperation, Entry, EntryHash, RegisterCrdt, User},
         RegisterAddress,
     },
 };
-
-use super::Result;
-
-use crdts::{merkle_reg::MerkleReg, CmRDT, CvRDT};
-use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeSet,
     fmt::{self, Debug, Display, Formatter},

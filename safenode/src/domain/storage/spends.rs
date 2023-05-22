@@ -12,13 +12,11 @@
 //! A peer will move a spend from `valid_spends` to `double_spends` if it receives another tx id for the same dbc id.
 //! A peer will never again store such a spend to `valid_spends`.
 
-use crate::protocol::{error::StorageError, storage::DbcAddress};
-
 use super::{prefix_tree_path, Result};
 
-use sn_dbc::{DbcId, SignedSpend};
-
 use bincode::{deserialize, serialize};
+use sn_dbc::{DbcId, SignedSpend};
+use sn_protocol::{error::StorageError, storage::DbcAddress};
 use std::{
     fmt::{self, Display, Formatter},
     path::{Path, PathBuf},

@@ -6,7 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::protocol::messages::{Request, Response};
 use async_trait::async_trait;
 use futures::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use libp2p::{
@@ -14,6 +13,7 @@ use libp2p::{
     request_response::{self, ProtocolName},
 };
 use serde::{de::DeserializeOwned, Serialize};
+use sn_protocol::messages::{Request, Response};
 use std::io;
 
 #[derive(Debug, Clone)]

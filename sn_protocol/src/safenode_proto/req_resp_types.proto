@@ -1,0 +1,60 @@
+// Copyright 2023 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+// Version of protocol buffer used
+syntax = "proto3";
+
+// Package name
+package safenode_proto;
+
+// Basic info about the node and safenode app
+message NodeInfoRequest {}
+
+message NodeInfoResponse {
+  bytes peer_id = 1;
+  uint32 pid = 2;
+  string log_dir = 3;
+  string bin_version = 4;
+  uint64 uptime_secs = 5;
+}
+
+// Stream of node events
+message NodeEventsRequest {}
+
+message NodeEvent {
+  string event = 1;
+}
+
+// Stop the safenode app
+message StopRequest {
+  uint64 delay_millis = 1;
+}
+
+message StopResponse {}
+
+// Restart the safenode app
+message RestartRequest {
+  uint64 delay_millis = 1;
+}
+
+message RestartResponse {}
+
+// Update the safenode app
+message UpdateRequest {
+  uint64 delay_millis = 1;
+}
+
+message UpdateResponse {}
+
+// Information about how this node's connections to the network and peers
+message NetworkInfoRequest {}
+
+message NetworkInfoResponse {
+  repeated bytes connected_peers = 1;
+  repeated string listeners = 2;
+}

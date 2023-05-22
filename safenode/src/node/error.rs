@@ -6,11 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    domain::dbc_genesis::Error as GenesisError, network::Error as NetworkError,
-    protocol::error::Error as ProtocolError,
-};
+use crate::{domain::dbc_genesis::Error as GenesisError, network::Error as NetworkError};
 
+use sn_protocol::error::Error as ProtocolError;
 use thiserror::Error;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;

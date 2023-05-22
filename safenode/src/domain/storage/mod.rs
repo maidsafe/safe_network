@@ -19,8 +19,7 @@ pub(crate) use self::{
     spends::SpendStorage,
 };
 
-use crate::protocol::error::StorageError;
-
+use sn_protocol::error::StorageError;
 use std::{
     path::{Path, PathBuf},
     result,

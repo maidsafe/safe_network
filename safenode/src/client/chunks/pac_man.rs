@@ -8,14 +8,12 @@
 
 use super::{Error, Result};
 
-use crate::protocol::storage::Chunk;
-
-use self_encryption::{DataMap, EncryptedChunk, MAX_CHUNK_SIZE};
-
 use bincode::serialize;
 use bytes::Bytes;
 use rayon::prelude::*;
+use self_encryption::{DataMap, EncryptedChunk, MAX_CHUNK_SIZE};
 use serde::{Deserialize, Serialize};
+use sn_protocol::storage::Chunk;
 use std::path::Path;
 use xor_name::XorName;
 

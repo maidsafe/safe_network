@@ -16,15 +16,6 @@ use crate::{
     network::multiaddr_strip_p2p,
     network::{close_group_majority, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState},
     node::{RegisterStorage, Transfers},
-    protocol::{
-        error::{Error as ProtocolError, StorageError, TransferError},
-        messages::{
-            Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response,
-            SpendQuery,
-        },
-        storage::{registers::User, DbcAddress},
-        NetworkAddress,
-    },
 };
 use libp2p::{
     autonat::NatStatus,
@@ -33,6 +24,14 @@ use libp2p::{
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_dbc::{DbcTransaction, SignedSpend};
+use sn_protocol::{
+    error::{Error as ProtocolError, StorageError, TransferError},
+    messages::{
+        Cmd, CmdResponse, Event, Query, QueryResponse, RegisterCmd, Request, Response, SpendQuery,
+    },
+    storage::{registers::User, DbcAddress},
+    NetworkAddress,
+};
 use std::{collections::BTreeSet, net::SocketAddr, path::Path, time::Duration};
 use tokio::{sync::mpsc, task::spawn};
 

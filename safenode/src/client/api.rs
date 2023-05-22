@@ -15,14 +15,14 @@ use crate::{
     domain::client_transfers::SpendRequest,
     network::multiaddr_is_global,
     network::{close_group_majority, NetworkEvent, SwarmDriver},
-    protocol::{
-        messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
-        storage::{Chunk, ChunkAddress, DbcAddress},
-        NetworkAddress,
-    },
 };
 
 use sn_dbc::{DbcId, SignedSpend};
+use sn_protocol::{
+    messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
+    storage::{Chunk, ChunkAddress, DbcAddress},
+    NetworkAddress,
+};
 
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;

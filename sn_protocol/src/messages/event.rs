@@ -8,7 +8,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::protocol::{storage::DbcAddress, NetworkAddress};
+use crate::{storage::DbcAddress, NetworkAddress};
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 

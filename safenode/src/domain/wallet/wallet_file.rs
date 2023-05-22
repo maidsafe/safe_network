@@ -8,9 +8,8 @@
 
 use super::{error::Result, public_address_name, KeyLessWallet};
 
-use crate::protocol::storage::DbcAddress;
-
 use sn_dbc::Dbc;
+use sn_protocol::storage::DbcAddress;
 use std::path::Path;
 use tokio::fs;
 
