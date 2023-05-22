@@ -92,35 +92,36 @@ impl Client {
                 }
 
                 info!("Client waiting for a network event");
-
-                tokio::select! {
-                    event = network_event_receiver.recv() => {
+                match tokio::time::timeout(INACTIVITY_TIMEOUT, network_event_receiver.recv()).await
+                {
+                    Ok(event) => {
                         let the_event = match event {
                             Some(the_event) => the_event,
                             None => {
                                 error!("The `NetworkEvent` channel has been closed");
                                 continue;
                             }
-
                         };
                         trace!("Client recevied a network event {the_event:?}");
                         if let Err(err) = client_clone.handle_network_event(the_event) {
                             warn!("Error handling network event: {err}");
                         }
 
-                        continue
+                        continue;
                     }
-                    _ = tokio::time::sleep(INACTIVITY_TIMEOUT) => {
+                    Err(_elapse_err) => {
                         if cfg!(feature = "inactive-client-redials") {
                             must_dial_network = true;
                             info!("Inactive client for {INACTIVITY_TIMEOUT:?}, will attempt to dial the network again");
                             println!("Inactive client for {INACTIVITY_TIMEOUT:?}, will attempt to dial the network again");
+                        } else if let Err(error) = client_clone
+                            .events_channel
+                            .broadcast(ClientEvent::InactiveClient(INACTIVITY_TIMEOUT))
+                        {
+                            error!("Error broadcasting inactive client event: {error}");
                         }
-                        else {
-                            client_clone.events_channel.broadcast(ClientEvent::InactiveClient(INACTIVITY_TIMEOUT));
-                        }
-                       continue
 
+                        continue;
                     }
                 }
             }
