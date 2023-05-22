@@ -701,7 +701,7 @@ mod tests {
                 "Got Closest from network for peer_id: {this_peer:?} {:?}",
                 closest
             );
-            assert_lists(this_peer, closest, expected_from_table.clone());
+            assert_lists(closest, expected_from_table.clone());
         }
 
         Ok(())
@@ -763,7 +763,7 @@ mod tests {
 
     #[cfg(feature = "local-discovery")]
     /// Test utility
-    fn assert_lists<I, J, K>(peer: PeerId, a: I, b: J)
+    fn assert_lists<I, J, K>(a: I, b: J)
     where
         K: fmt::Debug + Eq,
         I: IntoIterator<Item = K>,
@@ -775,7 +775,7 @@ mod tests {
         assert_eq!(
             vec1.len(),
             vec2.len(),
-            "{peer:?} closest peers to data were not as expected"
+            "closest peers to data were not as expected"
         );
 
         for item1 in &vec1 {
