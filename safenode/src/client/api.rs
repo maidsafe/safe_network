@@ -107,7 +107,7 @@ impl Client {
             NetworkEvent::NewListenAddr(_) => {}
             NetworkEvent::PeerAdded(peer_id) => {
                 self.events_channel
-                    .broadcast(ClientEvent::ConnectedToNetwork);
+                    .broadcast(ClientEvent::ConnectedToNetwork)?;
                 debug!("PeerAdded: {peer_id}");
             }
         }

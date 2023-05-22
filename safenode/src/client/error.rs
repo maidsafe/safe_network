@@ -13,6 +13,8 @@ use crate::protocol::storage::registers::{Entry, EntryHash};
 use std::collections::BTreeSet;
 use thiserror::Error;
 
+use super::ClientEvent;
+
 /// Internal error.
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
@@ -25,6 +27,9 @@ pub enum Error {
 
     #[error("Events receiver error {0}.")]
     EventsReceiver(#[from] tokio::sync::broadcast::error::RecvError),
+
+    #[error("Events sender error {0}.")]
+    EventsSender(#[from] tokio::sync::broadcast::error::SendError<ClientEvent>),
 
     #[error("ResponseTimeout.")]
     ResponseTimeout(#[from] tokio::time::error::Elapsed),
