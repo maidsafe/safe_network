@@ -1,4 +1,4 @@
-name: Night ly runFull Network Tests
+name: Daily run. Full Network Tests
 
 on:
   schedule:
@@ -44,21 +44,27 @@ jobs:
         run: choco install ripgrep
         if: matrix.os == 'windows-latest'
 
-      - name: Run network unit tests
-        timeout-minutes: 25
-        run: cargo test --release -p safenode -- network
-
       - name: Build sn bins
         run: cargo build --release --bins
         timeout-minutes: 30
 
       - name: Start a local network
-        run: cargo run --release --bin testnet -- --interval 1 --node-path ./target/release/safenode
+        run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
         id: section-startup
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
+      - name: Set contact env var node.
+        shell: bash
+        # get all nodes listen ports
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+
+      - name: Check contact peer
+        shell: bash
+        run: echo "Peer is $SAFE_PEERS"
+    
+      
       - name: Start a client to carry out chunk actions
         run: cargo run --bin safe --release -- files upload -- "./resources"
         id: client-chunk-actions
@@ -66,13 +72,35 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
-      - name: Start a client to carry out register actions
-        run: cargo run --bin safe --release -- files download
-        id: client-register-actions
+      - name: Start a client to create a register
+        run: cargo run --bin safe --release -- register create baobao
+        id: client-register-create
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 2
 
+      - name: Start a client to get a register
+        run: cargo run --bin safe --release -- register get baobao
+        id: client-register-get
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+      - name: Start a client to edit a register
+        run: cargo run --bin safe --release -- register edit baobao wood
+        id: client-register-edit
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+      - name: Start a faucet client to claim genesis
+        run: cargo run --bin faucet --release -- claim-genesis
+        id: faucet-claim-genesis
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 2
+
+        
       - name: Kill all nodes
         shell: bash
         timeout-minutes: 1
@@ -81,16 +109,20 @@ jobs:
         run: |
           pkill safenode
           echo "$(pgrep safenode | wc -l) nodes still running"
+
       - name: Tar log files
         shell: bash
         continue-on-error: true
-        run: find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
+        run: |
+          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
+          find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
+          find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
         if: failure()
 
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: sn_node_logs_e2e_${{matrix.os}}
+          name: sn_node_logs_daily_e2e_${{matrix.os}}
           path: log_files.tar.gz
         if: failure()
         continue-on-error: true
@@ -101,11 +133,10 @@ jobs:
         env:
           SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-          SLACK_TITLE: "Nightly Test Run Failed"
+          SLACK_TITLE: "Daily Test Run Failed"
 
 
   full_unit:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: Full Unit Tests (including proptests)
     runs-on: ${{ matrix.os }}
     strategy:
@@ -133,8 +164,14 @@ jobs:
         timeout-minutes: 30
 
       - name: Run network tests
+        # Only run on PRs w/ ubuntu
         timeout-minutes: 25
         run: cargo test --release -p safenode -- network
+
+      - name: Run network tests with local discovery enabled
+        # Only run on PRs w/ ubuntu
+        timeout-minutes: 25
+        run: cargo test --release -p safenode --features="local-discovery" -- network
 
       - name: Run protocol tests
         timeout-minutes: 25
@@ -143,3 +180,183 @@ jobs:
       - name: Run storage tests
         timeout-minutes: 25
         run: PROPTEST_CASES=512 cargo test --release -p safenode -- storage
+
+
+  spend_test:
+    name: dbc spend tests against network
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+        continue-on-error: true
+        with:
+          cache-on-failure: true
+          sharedKey: ${{github.run_id}}
+
+      - name: install ripgrep ubuntu
+        run: sudo apt-get install ripgrep
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: install ripgrep mac
+        run: brew install ripgrep
+        if: matrix.os == 'macos-latest'
+
+      - name: install ripgrep windows
+        run: choco install ripgrep
+        if: matrix.os == 'windows-latest'
+
+      - name: Build sn bins
+        run: cargo build --release --bins --features local-discovery
+        timeout-minutes: 30
+
+      - name: Build testing executable
+        run: cargo test --release multiple_sequential_transfers_succeed --no-run
+        timeout-minutes: 30
+
+      - name: Start a local network
+        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
+        id: section-startup
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 10
+
+      - name: execute the dbc spend test
+        run: cargo test --release --features="local-discovery" multiple_sequential_transfers_succeed  -- --nocapture
+        id: client-spend-dbc
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 10
+
+      - name: Kill all nodes
+        shell: bash
+        timeout-minutes: 1
+        if: failure()
+        continue-on-error: true
+        run: |
+          pkill safenode
+          echo "$(pgrep safenode | wc -l) nodes still running"
+
+      - name: Tar log files
+        shell: bash
+        continue-on-error: true
+        run: |
+          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
+          find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
+          find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
+        if: failure()
+
+      - name: Upload Node Logs
+        uses: actions/upload-artifact@main
+        with:
+          name: sn_node_logs_dbc_${{matrix.os}}
+          path: log_files.tar.gz
+        if: failure()
+        continue-on-error: true
+
+  churn:
+    name: Network churning tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+        continue-on-error: true
+        with:
+          cache-on-failure: true
+          sharedKey: ${{github.run_id}}
+
+      - name: install ripgrep ubuntu
+        run: sudo apt-get install ripgrep
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: install ripgrep mac
+        run: brew install ripgrep
+        if: matrix.os == 'macos-latest'
+
+      - name: install ripgrep windows
+        run: choco install ripgrep
+        if: matrix.os == 'windows-latest'
+
+      - name: Build sn bins
+        run: cargo build --release --bins --features local-discovery
+        timeout-minutes: 30
+
+      - name: Start a local network
+        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
+        id: section-startup
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 10
+
+      - name: Chunks data integrity during nodes churn (during 20min) 
+        run: cargo test --release --features="local-discovery" data_availability_during_churn -- --nocapture
+        id: data_availability_during_churn
+        env:
+          CHUNKS_ONLY: true
+          TEST_DURATION_MINS: 60
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 65
+      
+      - name: Verify restart of nodes using rg
+        shell: bash
+        timeout-minutes: 1
+        # get the counts, then the specific line, and then the digit count only
+        # then check we have an expected level of restarts
+        # TODO: make this use an env var, or relate to testnet size
+        run : |
+            restart_count=$(rg "Starting node ..." ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+            node_count=$(ls $log_dir | wc -l)
+            if [ $restart_count -lt $node_count ]; then
+              echo "Restart count of: $restart_count is less than the node count of: $node_count"
+              exit 1
+            fi
+
+      - name: Kill all nodes
+        shell: bash
+        timeout-minutes: 1
+        if: failure()
+        continue-on-error: true
+        run: |
+          pkill safenode
+          echo "$(pgrep safenode | wc -l) nodes still running"
+
+      - name: Tar log files
+        shell: bash
+        continue-on-error: true
+        run: |
+          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
+          find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
+          find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
+        if: failure()
+
+      - name: Upload Node Logs
+        uses: actions/upload-artifact@main
+        with:
+          name: sn_node_logs_churn_${{matrix.os}}
+          path: log_files.tar.gz
+        if: failure()
+        continue-on-error: true
+      
