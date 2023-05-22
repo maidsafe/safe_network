@@ -30,16 +30,14 @@ use crate::domain::storage::{
     DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
     REPLICATION_INTERVAL_UPPER_BOUND,
 };
-use crate::protocol::{
-    messages::{QueryResponse, ReplicatedData, Request, Response},
-    NetworkAddress,
-};
 
 use futures::{future::select_all, StreamExt};
 
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
+
 use libp2p::{
+    core::muxing::StreamMuxerBox,
     identity,
     kad::{kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
@@ -49,6 +47,10 @@ use libp2p::{
 };
 use lru_time_cache::LruCache;
 use rand::Rng;
+use sn_protocol::{
+    messages::{QueryResponse, Request, Response},
+    NetworkAddress,
+};
 use std::{
     collections::{HashMap, HashSet},
     iter,

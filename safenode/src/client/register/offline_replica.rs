@@ -8,22 +8,20 @@
 
 use super::{Client, Error, Register, Result};
 
-use crate::{
-    domain::storage::RegisterReplica,
-    protocol::{
-        error::Error as ProtocolError,
-        messages::{
-            Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
-            RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
-        },
-        storage::{
-            registers::{Action, DataAuthority, Entry, EntryHash, Permissions, Policy, User},
-            RegisterAddress,
-        },
-    },
-};
+use crate::domain::storage::RegisterReplica;
 
 use bincode::serialize;
+use sn_protocol::{
+    error::Error as ProtocolError,
+    messages::{
+        Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
+        RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
+    },
+    storage::{
+        registers::{Action, DataAuthority, Entry, EntryHash, Permissions, Policy, User},
+        RegisterAddress,
+    },
+};
 use std::{
     collections::{BTreeSet, LinkedList},
     convert::From,

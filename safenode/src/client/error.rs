@@ -8,8 +8,7 @@
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
-use crate::protocol::storage::registers::{Entry, EntryHash};
-
+use sn_protocol::storage::registers::{Entry, EntryHash};
 use std::collections::BTreeSet;
 use thiserror::Error;
 
@@ -23,7 +22,7 @@ pub enum Error {
     Network(#[from] crate::network::Error),
 
     #[error("Protocol error {0}.")]
-    Protocol(#[from] crate::protocol::error::Error),
+    Protocol(#[from] sn_protocol::error::Error),
 
     #[error("Events receiver error {0}.")]
     EventsReceiver(#[from] tokio::sync::broadcast::error::RecvError),

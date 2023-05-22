@@ -13,7 +13,8 @@ pub(crate) use reg_replica::RegisterReplica;
 
 use super::{prefix_tree_path, Result};
 
-use crate::protocol::{
+use bincode::serialize;
+use sn_protocol::{
     error::{Error as ProtocolError, StorageError as Error},
     messages::{
         EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
@@ -24,8 +25,6 @@ use crate::protocol::{
         DataAuthority, RegisterAddress,
     },
 };
-
-use bincode::serialize;
 use std::path::{Path, PathBuf};
 use tokio::{
     fs::{create_dir_all, read, remove_file, File},
