@@ -637,7 +637,7 @@ mod tests {
 
         tokio::time::sleep(Duration::from_millis(2000)).await;
 
-        // // Generate some rounds of random query to allow nodes populate its RT
+        // Generate some rounds of random query to allow nodes populate its RT
         let mut rng = thread_rng();
         for net in networks_list.iter() {
             for _ in 1..100 {
@@ -677,6 +677,8 @@ mod tests {
         }
 
         // ensure the `table` is fresh with all things inserted
+        // 100ms here is much more than the 1 ms in the `KBucketsTable` constructor
+        // after which pending entries are inserted
         tokio::time::sleep(Duration::from_millis(100)).await;
 
         // Check the closest nodes to the following random_data
