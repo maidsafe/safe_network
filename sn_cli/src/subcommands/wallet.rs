@@ -14,7 +14,7 @@ use safenode::{
 use sn_dbc::Token;
 
 use clap::Parser;
-use eyre::Result;
+use color_eyre::Result;
 use std::path::Path;
 
 #[derive(Parser, Debug)]
