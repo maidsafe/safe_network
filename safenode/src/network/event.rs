@@ -125,88 +125,9 @@ impl SwarmDriver {
                     warn!("MsgReceivedError: {e:?}");
                 }
             }
-            SwarmEvent::Behaviour(NodeEvent::Kademlia(ref event)) => match event {
-                KademliaEvent::OutboundQueryProgressed {
-                    id,
-                    result: QueryResult::GetClosestPeers(Ok(closest_peers)),
-                    stats,
-                    step,
-                } => {
-                    trace!("Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}");
-
-                    let (sender, mut current_closest) =
-                        self.pending_get_closest_peers.remove(id).ok_or_else(|| {
-                            trace!("Can't locate query task {id:?}, shall be completed already.");
-                            Error::ReceivedKademliaEventDropped(event.clone())
-                        })?;
-
-                    // TODO: consider order the result and terminate when reach any of the
-                    //       following creterias:
-                    //   1, `stats.num_pending()` is 0
-                    //   2, `stats.duration()` is longer than a defined period
-                    let new_peers: HashSet<PeerId> =
-                        closest_peers.peers.clone().into_iter().collect();
-                    current_closest.extend(new_peers);
-                    if current_closest.len() >= usize::from(K_VALUE) || step.last {
-                        sender
-                            .send(current_closest)
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
-                    } else {
-                        let _ = self
-                            .pending_get_closest_peers
-                            .insert(*id, (sender, current_closest));
-                    }
-                }
-                KademliaEvent::OutboundQueryProgressed {
-                    id,
-                    result: QueryResult::GetRecord(result),
-                    stats,
-                    step,
-                } => {
-                    trace!("Record query task {id:?} returned with result, {stats:?} - {step:?}");
-                    if let Ok(GetRecordOk::FoundRecord(peer_record)) = result {
-                        trace!(
-                            "Query {id:?} returned with record {:?} from peer {:?}",
-                            peer_record.record.key,
-                            peer_record.peer
-                        );
-                        if let Some(sender) = self.pending_query.remove(id) {
-                            sender
-                                .send(Ok(QueryResponse::GetChunk(Ok(Chunk::new(
-                                    peer_record.record.value.clone().into(),
-                                )))))
-                                .map_err(|_| Error::InternalMsgChannelDropped)?;
-                        }
-                    } else {
-                        warn!("Query {id:?} failed to get record with result {result:?}");
-                        if step.last {
-                            // To avoid the caller wait forever on a non-existring entry
-                            if let Some(sender) = self.pending_query.remove(id) {
-                                sender
-                                    .send(Err(Error::RecordNotFound))
-                                    .map_err(|_| Error::InternalMsgChannelDropped)?;
-                            }
-                        }
-                        // TODO: send an error response back?
-                    }
-                }
-                KademliaEvent::RoutingUpdated {
-                    peer, is_new_peer, ..
-                } => {
-                    if *is_new_peer {
-                        self.event_sender
-                            .send(NetworkEvent::PeerAdded(*peer))
-                            .await?;
-                        self.try_trigger_replication(peer);
-                    }
-                }
-                KademliaEvent::InboundRequest { request } => {
-                    info!("got inbound request: {request:?}");
-                }
-                todo => {
-                    error!("KademliaEvent has not been implemented: {todo:?}");
-                }
-            },
+            SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
+                self.handle_kad_event(kad_event).await?;
+            }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 info!("IdentifyEvent: {iden:?}");
                 match *iden {
@@ -320,8 +241,96 @@ impl SwarmDriver {
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
             SwarmEvent::Dialing(peer_id) => info!("Dialing {peer_id}"),
-            todo => error!("SwarmEvent has not been implemented: {todo:?}"),
+            other => debug!("SwarmEvent has been ignored: {other:?}"),
         }
+        Ok(())
+    }
+
+    async fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
+        match kad_event {
+            ref event @ KademliaEvent::OutboundQueryProgressed {
+                id,
+                result: QueryResult::GetClosestPeers(Ok(ref closest_peers)),
+                ref stats,
+                ref step,
+            } => {
+                trace!(
+                    "Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}"
+                );
+
+                let (sender, mut current_closest) =
+                    self.pending_get_closest_peers.remove(&id).ok_or_else(|| {
+                        trace!("Can't locate query task {id:?}, shall be completed already.");
+                        Error::ReceivedKademliaEventDropped(event.clone())
+                    })?;
+
+                // TODO: consider order the result and terminate when reach any of the
+                //       following creterias:
+                //   1, `stats.num_pending()` is 0
+                //   2, `stats.duration()` is longer than a defined period
+                let new_peers: HashSet<PeerId> = closest_peers.peers.clone().into_iter().collect();
+                current_closest.extend(new_peers);
+                if current_closest.len() >= usize::from(K_VALUE) || step.last {
+                    sender
+                        .send(current_closest)
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                } else {
+                    let _ = self
+                        .pending_get_closest_peers
+                        .insert(id, (sender, current_closest));
+                }
+            }
+            KademliaEvent::OutboundQueryProgressed {
+                id,
+                result: QueryResult::GetRecord(Ok(GetRecordOk::FoundRecord(peer_record))),
+                stats,
+                step,
+            } => {
+                trace!(
+                    "Query task {id:?} returned with record {:?} from peer {:?}, {stats:?} - {step:?}",
+                    peer_record.record.key,
+                    peer_record.peer
+                );
+                if let Some(sender) = self.pending_query.remove(&id) {
+                    sender
+                        .send(Ok(QueryResponse::GetChunk(Ok(Chunk::new(
+                            peer_record.record.value.into(),
+                        )))))
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                }
+            }
+            KademliaEvent::OutboundQueryProgressed {
+                id,
+                result: QueryResult::GetRecord(Err(err)),
+                stats,
+                step,
+            } => {
+                warn!("Query task {id:?} failed to get record with error: {err:?}, {stats:?} - {step:?}");
+                if step.last {
+                    // To avoid the caller wait forever on a non-existring entry
+                    if let Some(sender) = self.pending_query.remove(&id) {
+                        sender
+                            .send(Err(Error::RecordNotFound))
+                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    }
+                }
+                // TODO: send an error response back?
+            }
+            KademliaEvent::RoutingUpdated {
+                peer, is_new_peer, ..
+            } => {
+                if is_new_peer {
+                    self.event_sender
+                        .send(NetworkEvent::PeerAdded(peer))
+                        .await?;
+                    self.try_trigger_replication(&peer);
+                }
+            }
+            other => {
+                debug!("KademliaEvent ignored: {other:?}");
+            }
+        }
+
         Ok(())
     }
 
