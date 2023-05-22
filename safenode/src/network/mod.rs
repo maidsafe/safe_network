@@ -617,7 +617,8 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     // Enable mDNS for peer discovery here
     #[cfg(feature = "local-discovery")]
-    async fn check_closest_nodes_are_reasonably_consistent_over_the_network_for_random_data() -> Result<()> {
+    async fn check_closest_nodes_are_reasonably_consistent_over_the_network_for_random_data(
+    ) -> Result<()> {
         init_test_logger();
         let mut networks_list = Vec::new();
         let mut network_events_recievers = BTreeMap::new();
@@ -636,18 +637,16 @@ mod tests {
 
         tokio::time::sleep(Duration::from_millis(2000)).await;
 
-
         // // Generate some rounds of random query to allow nodes populate its RT
         let mut rng = thread_rng();
         for net in networks_list.iter() {
-
             for _ in 1..100 {
                 // Do twice to reduce the possibility of missing a node knowledge.
-                let random_data =
-                    NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
+                let random_data = NetworkAddress::from_chunk_address(ChunkAddress::new(
+                    XorName::random(&mut rng),
+                ));
                 // Do not error out here... This is not about these being fully correct, but that we populate the table
                 let _ = net.get_closest_peers(&random_data, false).await;
-
             }
         }
 
