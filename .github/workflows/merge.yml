@@ -251,7 +251,7 @@ jobs:
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: sn_node_logs_e2e_${{matrix.os}}
+          name: safe_test_logs_e2e_${{matrix.os}}
           path: log_files.tar.gz
         if: failure()
         continue-on-error: true
@@ -336,7 +336,7 @@ jobs:
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: sn_node_logs_dbc_${{matrix.os}}
+          name: safe_test_logs_dbc_${{matrix.os}}
           path: log_files.tar.gz
         if: failure()
         continue-on-error: true
@@ -387,7 +387,7 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
-      - name: Chunks data integrity during nodes churn (during 20min) 
+      - name: Chunks data integrity during nodes churn (during 10min) 
         run: cargo test --release --features="local-discovery" data_availability_during_churn -- --nocapture
         id: data_availability_during_churn
         env:
@@ -431,7 +431,7 @@ jobs:
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: sn_node_logs_churn_${{matrix.os}}
+          name: safe_test_logs_churn_${{matrix.os}}
           path: log_files.tar.gz
         if: failure()
         continue-on-error: true
