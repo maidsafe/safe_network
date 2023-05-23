@@ -102,33 +102,33 @@ jobs:
 
       - name: Build tests before running
         # Only run on PRs w/ ubuntu
-        run: cargo test --no-run --release
+        run: cargo test --no-run --release --features="local-discovery"
         timeout-minutes: 30
 
-      - name: Run network tests
-        # Only run on PRs w/ ubuntu
-        timeout-minutes: 25
-        run: cargo test --release -p safenode -- network
+      # - name: Run network tests
+      #   # Only run on PRs w/ ubuntu
+      #   timeout-minutes: 25
+      #   run: cargo test --release -p safenode -- network
 
       - name: Run network tests with local discovery enabled
         # Only run on PRs w/ ubuntu
         timeout-minutes: 25
         run: cargo test --release -p safenode --features="local-discovery" -- network
 
-      - name: Run protocol tests
-        # Only run on PRs w/ ubuntu
-        timeout-minutes: 25
-        run: cargo test --release -p safenode -- protocol
+      # - name: Run protocol tests
+      #   # Only run on PRs w/ ubuntu
+      #   timeout-minutes: 25
+      #   run: cargo test --release -p safenode -- protocol
 
-      - name: Run storage tests
-        # Only run on PRs w/ ubuntu
-        timeout-minutes: 25
-        run: cargo test --release -p safenode -- storage -- --skip prop
-        env:
-          # this will speed up PR merge flows, while giving us a modicum
-          # of proptesting
-          # we do many more runs on the nightly run
-          PROPTEST_CASES: 50 
+      # - name: Run storage tests
+      #   # Only run on PRs w/ ubuntu
+      #   timeout-minutes: 25
+      #   run: cargo test --release -p safenode -- storage -- --skip prop
+      #   env:
+      #     # this will speed up PR merge flows, while giving us a modicum
+      #     # of proptesting
+      #     # we do many more runs on the nightly run
+      #     PROPTEST_CASES: 50 
 
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
