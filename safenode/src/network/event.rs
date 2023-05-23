@@ -11,7 +11,7 @@ use super::{
     msg::MsgCodec,
     SwarmDriver,
 };
-use crate::{domain::storage::DiskBackedRecordStore, network::IDENTIFY_AGENT_STR};
+use crate::network::IDENTIFY_AGENT_STR;
 
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
@@ -25,6 +25,7 @@ use libp2p::{
     swarm::{behaviour::toggle::Toggle, DialError, NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
+use sn_domain::storage::DiskBackedRecordStore;
 use sn_protocol::{
     messages::{QueryResponse, Request, Response},
     storage::Chunk,

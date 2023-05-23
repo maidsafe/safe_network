@@ -10,15 +10,10 @@ mod data_with_churn;
 
 use std::path::Path;
 
-use crate::{
-    client::Client,
-    domain::{
-        dbc_genesis::{get_tokens_from_faucet, send},
-        wallet::{DepositWallet, LocalWallet, VerifyingClient, Wallet},
-    },
-};
+use crate::client::{get_tokens_from_faucet, send, Client};
 
 use sn_dbc::Token;
+use sn_domain::wallet::{DepositWallet, LocalWallet, VerifyingClient, Wallet};
 
 use assert_fs::TempDir;
 use eyre::Result;

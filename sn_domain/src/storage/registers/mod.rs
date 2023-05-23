@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod reg_crdt;
-mod reg_replica;
+pub mod reg_crdt;
+pub mod reg_replica;
 
-pub(crate) use reg_replica::RegisterReplica;
+pub use reg_replica::RegisterReplica;
 
 use super::{prefix_tree_path, Result};
 
@@ -46,19 +46,19 @@ struct StoredRegister {
 
 /// Operations over the RegisterReplica data type and its storage.
 #[derive(Clone)]
-pub(crate) struct RegisterStorage {
+pub struct RegisterStorage {
     file_store_path: PathBuf,
 }
 
 impl RegisterStorage {
-    pub(crate) fn new(path: &Path) -> Self {
+    pub fn new(path: &Path) -> Self {
         Self {
             file_store_path: path.join(REGISTERS_STORE_DIR_NAME),
         }
     }
 
     /// Read from the RegisterReplica's log based on provided RegisterQuery.
-    pub(crate) async fn read(&self, read: &RegisterQuery, requester: User) -> QueryResponse {
+    pub async fn read(&self, read: &RegisterQuery, requester: User) -> QueryResponse {
         trace!("Reading register: {:?}", read.dst());
         use RegisterQuery::*;
         match read {
@@ -79,7 +79,7 @@ impl RegisterStorage {
     }
 
     /// Write a RegisterCmd to the RegisterReplica's log.
-    pub(crate) async fn write(&self, cmd: &RegisterCmd) -> Result<()> {
+    pub async fn write(&self, cmd: &RegisterCmd) -> Result<()> {
         info!("Writing register cmd: {cmd:?}");
         let addr = cmd.dst();
         // First try to load and reconstruct the replica of the register
@@ -573,8 +573,11 @@ fn list_files_in(path: &Path) -> Vec<PathBuf> {
 #[cfg(test)]
 mod test {
     use super::{Error, RegisterReplica, RegisterStorage};
-
-    use crate::protocol::{
+    use bincode::serialize;
+    use bls::SecretKey;
+    use eyre::{bail, Result};
+    use rand::{distributions::Alphanumeric, Rng};
+    use sn_protocol::{
         error::Error as ProtocolError,
         messages::{
             CreateRegister, EditRegister, QueryResponse, RegisterCmd, RegisterQuery,
@@ -582,11 +585,6 @@ mod test {
         },
         storage::registers::{DataAuthority, EntryHash, Policy, User},
     };
-
-    use bincode::serialize;
-    use bls::SecretKey;
-    use eyre::{bail, Result};
-    use rand::{distributions::Alphanumeric, Rng};
     use std::collections::BTreeSet;
     use xor_name::XorName;
 

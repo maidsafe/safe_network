@@ -26,11 +26,6 @@ use self::{
     msg::{MsgCodec, MsgProtocol},
 };
 
-use crate::domain::storage::{
-    DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
-    REPLICATION_INTERVAL_UPPER_BOUND,
-};
-
 use futures::{future::select_all, StreamExt};
 
 #[cfg(feature = "local-discovery")]
@@ -47,6 +42,10 @@ use libp2p::{
 };
 use lru_time_cache::LruCache;
 use rand::Rng;
+use sn_domain::storage::{
+    DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL,
+    REPLICATION_INTERVAL_UPPER_BOUND,
+};
 use sn_protocol::{
     messages::{QueryResponse, Request, Response},
     NetworkAddress,

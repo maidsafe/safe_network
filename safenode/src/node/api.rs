@@ -24,6 +24,7 @@ use libp2p::{
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_dbc::{DbcTransaction, SignedSpend};
+use sn_domain::{dbc_genesis::is_genesis_parent_tx, storage::RegisterStorage};
 use sn_protocol::{
     error::{Error as ProtocolError, StorageError, TransferError},
     messages::{

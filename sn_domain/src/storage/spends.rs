@@ -35,14 +35,14 @@ const DOUBLE_SPENDS_STORE_DIR_NAME: &str = "double_spends";
 /// NB: The used space measurement is just an appromixation, and is not exact.
 /// Later, when all data types have this, we can verify that it is not wildly different.
 #[derive(Clone, Debug)]
-pub(crate) struct SpendStorage {
+pub struct SpendStorage {
     valid_spends_path: PathBuf,
     double_spends_path: PathBuf,
 }
 
 impl SpendStorage {
     /// Create a new instance of `SpendStorage`.
-    pub(crate) fn new(path: &Path) -> Self {
+    pub fn new(path: &Path) -> Self {
         Self {
             valid_spends_path: path.join(VALID_SPENDS_STORE_DIR_NAME),
             double_spends_path: path.join(DOUBLE_SPENDS_STORE_DIR_NAME),
@@ -50,14 +50,14 @@ impl SpendStorage {
     }
 
     /// Returns if the spend already exists.
-    pub(crate) fn exists(&mut self, dbc_id: &DbcId) -> Result<bool> {
+    pub fn exists(&mut self, dbc_id: &DbcId) -> Result<bool> {
         let address = DbcAddress::from_dbc_id(dbc_id);
         let filepath = self.address_to_filepath(&address, &self.valid_spends_path)?;
         Ok(filepath.exists())
     }
 
     // Read Spend from local store.
-    pub(crate) async fn get(&self, address: &DbcAddress) -> Result<SignedSpend> {
+    pub async fn get(&self, address: &DbcAddress) -> Result<SignedSpend> {
         let file_path = self.address_to_filepath(address, &self.valid_spends_path)?;
         trace!("Getting Spend: {address:?} from {:?}", file_path);
         match read(file_path).await {
@@ -89,7 +89,7 @@ impl SpendStorage {
     /// NOTE: The `&mut self` signature is necessary to prevent race conditions
     /// and double spent attempts to be missed (as the validation and adding
     /// could otherwise happen in parallel in different threads.)
-    pub(crate) async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<bool> {
+    pub async fn try_add(&mut self, signed_spend: &SignedSpend) -> Result<bool> {
         self.validate(signed_spend).await?;
         self.add(signed_spend).await
     }
@@ -100,7 +100,7 @@ impl SpendStorage {
     /// NOTE: The `&mut self` signature is necessary to prevent race conditions
     /// and double spent attempts to be missed (as the validation and adding
     /// could otherwise happen in parallel in different threads.)
-    pub(crate) async fn validate(&mut self, signed_spend: &SignedSpend) -> Result<()> {
+    pub async fn validate(&mut self, signed_spend: &SignedSpend) -> Result<()> {
         let address = DbcAddress::from_dbc_id(signed_spend.dbc_id());
         if self.try_get_double_spend(&address).await {
             return Err(StorageError::AlreadyMarkedAsDoubleSpend(address));
@@ -147,7 +147,7 @@ impl SpendStorage {
     /// NOTE: The `&mut self` signature is necessary to prevent race conditions
     /// and double spent attempts to be missed (as the validation and adding
     /// could otherwise happen in parallel in different threads.)
-    pub(crate) async fn try_add_double(
+    pub async fn try_add_double(
         &mut self,
         a_spend: &SignedSpend,
         b_spend: &SignedSpend,
@@ -340,7 +340,7 @@ impl Display for SpendStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::dbc_genesis::{create_first_dbc_from_key, split};
+    use crate::dbc_genesis::{create_first_dbc_from_key, split};
     use assert_fs::TempDir;
     use sn_dbc::MainKey;
 

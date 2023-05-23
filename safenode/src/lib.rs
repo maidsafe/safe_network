@@ -51,8 +51,6 @@ mod tests_e2e;
 
 /// SAFE Client
 pub mod client;
-/// SAFE Domain Logic.
-pub mod domain;
 /// Logging.
 pub mod log;
 /// The main logic of the network.

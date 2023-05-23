@@ -44,16 +44,16 @@ pub(crate) struct DiskBackedRecordStore {
 
 /// Configuration for a `DiskBackedRecordStore`.
 #[derive(Debug, Clone)]
-pub(crate) struct DiskBackedRecordStoreConfig {
+pub struct DiskBackedRecordStoreConfig {
     /// The directory where the records are stored.
-    pub(crate) storage_dir: PathBuf,
+    pub storage_dir: PathBuf,
     /// The maximum number of records.
-    pub(crate) max_records: usize,
+    pub max_records: usize,
     /// The maximum size of record values, in bytes.
-    pub(crate) max_value_bytes: usize,
+    pub max_value_bytes: usize,
     /// This node's replication interval
     /// Which should be between REPLICATION_INTERVAL_LOWER_BOUND and REPLICATION_INTERVAL_UPPER_BOUND
-    pub(crate) replication_interval: Duration,
+    pub replication_interval: Duration,
 }
 
 impl Default for DiskBackedRecordStoreConfig {
@@ -74,12 +74,12 @@ impl Default for DiskBackedRecordStoreConfig {
 impl DiskBackedRecordStore {
     /// Creates a new `DiskBackedStore` with a default configuration.
     #[allow(dead_code)]
-    pub(crate) fn new(local_id: PeerId) -> Self {
+    pub fn new(local_id: PeerId) -> Self {
         Self::with_config(local_id, Default::default())
     }
 
     /// Creates a new `DiskBackedStore` with the given configuration.
-    pub(crate) fn with_config(local_id: PeerId, config: DiskBackedRecordStoreConfig) -> Self {
+    pub fn with_config(local_id: PeerId, config: DiskBackedRecordStoreConfig) -> Self {
         DiskBackedRecordStore {
             local_key: KBucketKey::from(local_id),
             config,
@@ -90,7 +90,7 @@ impl DiskBackedRecordStore {
 
     /// Retains the records satisfying a predicate.
     #[allow(dead_code)]
-    pub(crate) fn retain<F>(&mut self, predicate: F)
+    pub fn retain<F>(&mut self, predicate: F)
     where
         F: Fn(&Key) -> bool,
     {
@@ -105,7 +105,7 @@ impl DiskBackedRecordStore {
     }
 
     /// Returns the list of keys that within the distance to the target
-    pub(crate) fn entries_to_be_replicated(
+    pub fn entries_to_be_replicated(
         &mut self,
         target: KBucketKey<Vec<u8>>,
         distance_bar: Distance,
@@ -131,11 +131,11 @@ impl DiskBackedRecordStore {
         hex_string
     }
 
-    pub(crate) fn storage_dir(&self) -> PathBuf {
+    pub fn storage_dir(&self) -> PathBuf {
         self.config.storage_dir.clone()
     }
 
-    pub(crate) fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {
+    pub fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {
         let filename = Self::key_to_hex(key);
         let file_path = storage_dir.join(&filename);
 
@@ -157,7 +157,7 @@ impl DiskBackedRecordStore {
         }
     }
 
-    pub(crate) fn write_to_local(&mut self, record: Record) -> Result<()> {
+    pub fn write_to_local(&mut self, record: Record) -> Result<()> {
         self.put(record)
     }
 }
@@ -272,7 +272,7 @@ impl RecordStore for DiskBackedRecordStore {
 
 // Since 'Record's need to be read from disk for each indiviaul 'Key', we need this iterator
 // which does that operation at the very moment the consumer/user is iterating each item.
-pub(crate) struct RecordsIterator<'a> {
+pub struct RecordsIterator<'a> {
     keys: hash_set::Iter<'a, Key>,
     storage_dir: PathBuf,
     is_triggered: bool,
