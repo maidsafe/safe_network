@@ -238,11 +238,15 @@ impl RecordStore for DiskBackedRecordStore {
 
     // A backstop replication shall only trigger within pre-defined interval
     fn records(&self) -> Self::RecordsIter<'_> {
+        trace!(
+            "Periodic replication shall be triggered: {:?}",
+            self.replication_start + self.config.replication_interval < Instant::now()
+        );
         RecordsIterator {
             keys: self.records.iter(),
             storage_dir: self.config.storage_dir.clone(),
-            is_triggered: self.replication_start + self.config.replication_interval
-                < Instant::now(),
+            // Set to false to ensure periodic replication disabled.
+            is_triggered: false,
         }
     }
 
