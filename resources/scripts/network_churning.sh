@@ -8,7 +8,6 @@ fi
 log_dir=~/.safe/node/local-test-network
 
 nodes_count=$(ls $log_dir | wc -l)
-nodes_count=3
 
 echo
 echo "Number of existing nodes: $nodes_count"
@@ -25,5 +24,7 @@ do
     echo Restarting node on port $target_port
     rm -rf ~/.safe/node/local-test-network/safenode-$count
     cargo run --release --example safenode_rpc_client -- "127.0.0.1:$target_port" restart 1
-	sleep 25
+	sleep 30
 done
+
+export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/**/*.lo* -u | rg '/ip4.*$' -m1 -o | rg '"' -r '') && echo "SAFE_PEERS now set to: $SAFE_PEERS"

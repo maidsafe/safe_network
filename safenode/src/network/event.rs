@@ -45,7 +45,7 @@ const DEAD_PEER_DETECTION_THRESHOLD: usize = 3;
 // Defines how close that a node will trigger repliation.
 // That is, the node has to be among the REPLICATION_RANGE closest to data,
 // to carry out the replication.
-const REPLICATION_RANGE: usize = 2;
+const REPLICATION_RANGE: usize = 4;
 
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "NodeEvent")]
@@ -324,6 +324,7 @@ impl SwarmDriver {
 
     // Replication is triggered when the newly added peer or the dead peer was among our closest.
     fn try_trigger_replication(&mut self, peer: &PeerId, is_dead_peer: bool) {
+        debug!("trying to trigger replication");
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         // Fetch from local shall be enough.
         let closest_peers: Vec<_> = self
@@ -397,6 +398,8 @@ impl SwarmDriver {
                     continue;
                 }
 
+                debug!("Node died and we're within replication range");
+
                 let dst = if is_dead_peer {
                     // If the churned peer is a dead peer, then the replication target
                     // shall be: the `CLOSE_GROUP_SIZE`th closest node to each data entry.
@@ -408,6 +411,8 @@ impl SwarmDriver {
                     *peer
                 };
                 if let Some(record) = DiskBackedRecordStore::read_from_disk(key, &storage_dir) {
+
+                    debug!("We have a record to replicate: {:?} sending to: {dst:?}", record.key);
                     let chunk = Chunk::new(record.value.clone().into());
                     let request = Request::Cmd(Cmd::Replicate(ReplicatedData::Chunk(chunk)));
                     let _ = self
