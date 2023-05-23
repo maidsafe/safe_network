@@ -153,9 +153,11 @@ impl SwarmDriver {
         let _ = kad_cfg
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
             // this is a heavier operation than publication, so it is done less frequently
-            .set_replication_interval(Some(replication_interval))
+            // Set to `None` to ensure periodic replication disabled.
+            .set_replication_interval(None)
             // how often a node will publish a record key, aka telling the others it exists
-            .set_publication_interval(Some(Duration::from_secs(5)))
+            // Set to `None` to ensure periodic publish disabled.
+            .set_publication_interval(None)
             // 1mb packet size
             .set_max_packet_size(1024 * 1024)
             // How many nodes _should_ store data.
