@@ -292,8 +292,6 @@ impl SwarmDriver {
             let cfg = libp2p::autonat::Config {
                 // Defaults to 15. But we want to be a little quicker on checking for our NAT status.
                 boot_delay: Duration::from_secs(3),
-                // Defaults to 30. But a timeout should be able to be determined a little faster.
-                timeout: Duration::from_secs(15),
                 // Defaults to 90. If we get a timeout and only have one server, we want to try again with the same server.
                 throttle_server_period: Duration::from_secs(15),
                 ..Default::default()
