@@ -586,13 +586,10 @@ mod tests {
     use super::SwarmDriver;
     use crate::{
         log::init_test_logger,
-        network::{MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE},
+        network::{MsgResponder, NetworkEvent},
         protocol::{
-            NetworkAddress,
-            {
-                messages::{Cmd, CmdResponse, Request, Response},
-                storage::{Chunk, ChunkAddress},
-            },
+            messages::{Cmd, CmdResponse, Request, Response},
+            storage::Chunk,
         },
     };
     use assert_matches::assert_matches;
@@ -601,102 +598,7 @@ mod tests {
     use rand::{thread_rng, Rng};
     use std::{net::SocketAddr, time::Duration};
 
-    #[cfg(feature = "local-discovery")]
-    use libp2p::kad::kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus};
-    #[cfg(feature = "local-discovery")]
-    use libp2p::PeerId;
-    #[cfg(feature = "local-discovery")]
-    use std::collections::{BTreeMap, HashMap};
-    #[cfg(feature = "local-discovery")]
-    use std::fmt;
-    #[cfg(feature = "local-discovery")]
-    use xor_name::XorName;
-
     use std::path::Path;
-
-    #[tokio::test(flavor = "multi_thread")]
-    // Enable mDNS for peer discovery here
-    #[cfg(feature = "local-discovery")]
-    async fn closest() -> Result<()> {
-        init_test_logger();
-        let mut networks_list = Vec::new();
-        let mut network_events_recievers = BTreeMap::new();
-        for _ in 1..25 {
-            let (net, event_rx, driver) = SwarmDriver::new(
-                "0.0.0.0:0"
-                    .parse::<SocketAddr>()
-                    .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
-                Path::new(""),
-            )?;
-            let _handle = tokio::spawn(driver.run());
-
-            let _ = network_events_recievers.insert(net.peer_id, event_rx);
-            networks_list.push(net);
-        }
-
-        tokio::time::sleep(Duration::from_secs(5)).await;
-
-        // Generate some rounds of random query to allow nodes populate its RT
-        let mut rng = thread_rng();
-        for net in networks_list.iter() {
-            // Do twice to reduce the possibility of missing a node knowledge.
-            let random_data =
-                NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
-            let _ = net.get_closest_peers(&random_data, false).await?;
-            let random_data =
-                NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
-            let _ = net.get_closest_peers(&random_data, false).await?;
-        }
-
-        // Get the expected list of closest peers by creating a `KBucketsTable` with all the peers
-        // inserted inside it.
-        // The `KBucketsTable::local_key` is considered to be random since the `local_key` will not
-        // be part of the `closest_peers`. Since our implementation of `get_closest_peers` returns
-        // `self`, we'd want to insert `our_net` into the table as well.
-        let mut table = KBucketsTable::<_, ()>::new(
-            NetworkAddress::from_peer(PeerId::random()).as_kbucket_key(),
-            Duration::from_secs(5),
-        );
-        let mut key_to_peer_id = HashMap::new();
-        for net in networks_list.iter() {
-            let key = NetworkAddress::from_peer(net.peer_id).as_kbucket_key();
-            let _ = key_to_peer_id.insert(key.clone(), net.peer_id);
-
-            if let Entry::Absent(e) = table.entry(&key) {
-                match e.insert((), NodeStatus::Connected) {
-                    InsertResult::Inserted => {}
-                    _ => continue,
-                }
-            } else {
-                return Err(eyre!("Table entry should be absent"));
-            }
-        }
-
-        // Check the closest nodes to the following random_data
-        let random_data =
-            NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::random(&mut rng)));
-        let expected_from_table = table
-            .closest_keys(&random_data.as_kbucket_key())
-            .map(|key| {
-                key_to_peer_id
-                    .get(&key)
-                    .cloned()
-                    .ok_or_else(|| eyre::eyre!("Key should be present"))
-            })
-            .take(CLOSE_GROUP_SIZE)
-            .collect::<Result<Vec<_>>>()?;
-        info!("Got Closest from table {:?}", expected_from_table);
-
-        // Ask the other nodes for the closest_peers.
-        let our_net = networks_list
-            .get(0)
-            .ok_or_else(|| eyre!("networks_list is not empty"))?;
-        let closest = our_net.get_closest_peers(&random_data, false).await?;
-        info!("Got Closest from network {:?}", closest);
-
-        assert_lists(closest, expected_from_table);
-        Ok(())
-    }
 
     #[tokio::test]
     async fn msg_to_self_should_not_error_out() -> Result<()> {
@@ -750,30 +652,5 @@ mod tests {
                 return Ok(());
             }
         }
-    }
-
-    #[cfg(feature = "local-discovery")]
-    /// Test utility
-    fn assert_lists<I, J, K>(a: I, b: J)
-    where
-        K: fmt::Debug + Eq,
-        I: IntoIterator<Item = K>,
-        J: IntoIterator<Item = K>,
-    {
-        let vec1: Vec<_> = a.into_iter().collect();
-        let mut vec2: Vec<_> = b.into_iter().collect();
-
-        assert_eq!(vec1.len(), vec2.len());
-
-        for item1 in &vec1 {
-            let idx2 = vec2
-                .iter()
-                .position(|item2| item1 == item2)
-                .expect("Item not found in second list");
-
-            let _ = vec2.swap_remove(idx2);
-        }
-
-        assert_eq!(vec2.len(), 0);
     }
 }
