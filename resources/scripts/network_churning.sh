@@ -25,5 +25,5 @@ do
     echo Restarting node on port $target_port
     rm -rf ~/.safe/node/local-test-network/safenode-$count
     cargo run --release --example safenode_rpc_client -- "127.0.0.1:$target_port" restart 1
-	sleep 5
+	sleep 25
 done

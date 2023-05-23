@@ -26,8 +26,8 @@ use std::{
 
 // Each node will have a replication interval between these bounds
 // This should serve to stagger the intense replication activity across the network
-pub(crate) const REPLICATION_INTERVAL_UPPER_BOUND: Duration = Duration::from_secs(18 * 60);
-pub(crate) const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(3 * 60);
+pub(crate) const REPLICATION_INTERVAL_UPPER_BOUND: Duration = Duration::from_secs(60 * 60);
+pub(crate) const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(20 * 60);
 
 /// A `RecordStore` that stores records on disk.
 pub(crate) struct DiskBackedRecordStore {
