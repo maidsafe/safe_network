@@ -16,7 +16,7 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub enum Error {
     /// Failed to create transfer.
     #[error("Transfer error {0}")]
-    CreateTransfer(#[from] crate::domain::client_transfers::Error),
+    CreateTransfer(#[from] crate::client_transfers::Error),
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),

@@ -18,6 +18,7 @@ use crate::{
 };
 
 use sn_dbc::{DbcId, SignedSpend};
+use sn_domain::client_transfers::SpendRequest;
 use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
     storage::{Chunk, ChunkAddress, DbcAddress},

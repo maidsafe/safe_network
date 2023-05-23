@@ -4186,6 +4186,7 @@ dependencies = [
  "self_encryption",
  "serde",
  "sn_dbc",
+ "sn_domain",
  "sn_protocol",
  "thiserror",
  "tiny-keccak",
@@ -4457,6 +4458,7 @@ dependencies = [
  "libp2p",
  "safenode",
  "sn_dbc",
+ "sn_domain",
  "sn_protocol",
  "tokio",
  "tracing",
@@ -4480,6 +4482,35 @@ dependencies = [
  "serde",
  "thiserror",
  "tiny-keccak",
+]
+
+[[package]]
+name = "sn_domain"
+version = "0.1.0"
+dependencies = [
+ "assert_fs",
+ "async-trait",
+ "bincode",
+ "blsttc",
+ "crdts",
+ "dirs-next",
+ "eyre",
+ "hex",
+ "lazy_static",
+ "libp2p",
+ "proptest",
+ "quickcheck",
+ "rand 0.8.5",
+ "self_encryption",
+ "serde",
+ "sn_dbc",
+ "sn_protocol",
+ "thiserror",
+ "tiny-keccak",
+ "tokio",
+ "tracing",
+ "walkdir",
+ "xor_name",
 ]
 
 [[package]]

@@ -14,7 +14,7 @@ use super::{
     DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, SigningWallet, Wallet,
 };
 
-use crate::domain::client_transfers::{create_transfer, CreatedDbc, Outputs as TransferDetails};
+use crate::client_transfers::{create_transfer, CreatedDbc, Outputs as TransferDetails};
 
 use sn_dbc::{Dbc, DbcIdSource, MainKey, PublicAddress, Token};
 
@@ -260,17 +260,13 @@ mod tests {
     use super::{get_wallet, store_wallet, LocalWallet};
 
     use crate::{
-        domain::{
-            client_transfers::Outputs as TransferDetails,
-            dbc_genesis::{create_first_dbc_from_key, GENESIS_DBC_AMOUNT},
-            wallet::{
-                local_store::WALLET_DIR_NAME, public_address_name, KeyLessWallet, SendClient,
-            },
-        },
-        protocol::storage::DbcAddress,
+        client_transfers::Outputs as TransferDetails,
+        dbc_genesis::{create_first_dbc_from_key, GENESIS_DBC_AMOUNT},
+        wallet::{local_store::WALLET_DIR_NAME, public_address_name, KeyLessWallet, SendClient},
     };
 
     use sn_dbc::{MainKey, Token};
+    use sn_protocol::storage::DbcAddress;
 
     use assert_fs::TempDir;
     use eyre::Result;

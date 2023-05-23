@@ -10,6 +10,7 @@ mod api;
 mod chunks;
 mod error;
 mod event;
+mod faucet;
 mod file_apis;
 mod register;
 mod wallet;
@@ -17,9 +18,10 @@ mod wallet;
 pub use self::{
     error::Error,
     event::{ClientEvent, ClientEventsReceiver},
+    faucet::{get_tokens_from_faucet, load_faucet_wallet},
     file_apis::Files,
     register::{Register, RegisterOffline},
-    wallet::WalletClient,
+    wallet::{send, WalletClient},
 };
 
 use self::event::ClientEventsChannel;

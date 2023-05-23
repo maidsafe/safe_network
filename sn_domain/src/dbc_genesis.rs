@@ -8,14 +8,12 @@
 
 use super::wallet::LocalWallet;
 
-use crate::client::{Client, WalletClient};
-
 #[cfg(test)]
 use sn_dbc::{
     rng, DbcIdSource, Hash, InputHistory, RevealedAmount, RevealedInput, TransactionBuilder,
 };
 
-use sn_dbc::{Dbc, DbcTransaction, Error as DbcError, MainKey, PublicAddress, Token};
+use sn_dbc::{Dbc, DbcTransaction, Error as DbcError, MainKey};
 
 use lazy_static::lazy_static;
 use std::{fmt::Debug, path::PathBuf};
@@ -65,88 +63,11 @@ lazy_static! {
 }
 
 /// Return if provided DbcTransaction is genesis parent tx.
-pub(crate) fn is_genesis_parent_tx(parent_tx: &DbcTransaction) -> bool {
+pub fn is_genesis_parent_tx(parent_tx: &DbcTransaction) -> bool {
     parent_tx == &GENESIS_DBC.src_tx
 }
 
-/// Returns a dbc with the requested number of tokens, for use by E2E test instances.
-pub async fn get_tokens_from_faucet(amount: Token, to: PublicAddress, client: &Client) -> Dbc {
-    send(load_faucet_wallet(client).await, amount, to, client).await
-}
-
-pub(crate) async fn send(
-    from: LocalWallet,
-    amount: Token,
-    to: PublicAddress,
-    client: &Client,
-) -> Dbc {
-    if amount.as_nano() == 0 {
-        panic!("Amount must be more than zero.");
-    }
-
-    let mut wallet_client = WalletClient::new(client.clone(), from);
-    let new_dbc = wallet_client
-        .send(amount, to)
-        .await
-        .expect("Tokens shall be successfully sent.");
-
-    let mut wallet = wallet_client.into_wallet();
-    wallet
-        .store()
-        .await
-        .expect("Wallet shall be successfully stored.");
-    wallet
-        .store_created_dbc(new_dbc.clone())
-        .await
-        .expect("Created dbc shall be successfully stored.");
-
-    new_dbc
-}
-
-/// Load or create faucet wallet.
-pub async fn load_faucet_wallet(client: &Client) -> LocalWallet {
-    let genesis_wallet = load_genesis_wallet().await;
-
-    println!("Loading faucet...");
-    let mut faucet_wallet = create_faucet_wallet().await;
-
-    use super::wallet::{DepositWallet, Wallet};
-    let faucet_balance = faucet_wallet.balance();
-    if faucet_balance.as_nano() > 0 {
-        println!("Faucet wallet balance: {faucet_balance}");
-        return faucet_wallet;
-    }
-
-    // Transfer to faucet. We will transfer almost all of the genesis wallet's
-    // balance to the faucet,.
-
-    let faucet_balance = Token::from_nano(genesis_wallet.balance().as_nano());
-    println!("Sending {faucet_balance} from genesis to faucet wallet..");
-    let tokens = send(
-        genesis_wallet,
-        faucet_balance,
-        faucet_wallet.address(),
-        client,
-    )
-    .await;
-
-    faucet_wallet.deposit(vec![tokens.clone()]);
-    faucet_wallet
-        .store()
-        .await
-        .expect("Faucet wallet shall be stored successfully.");
-    println!("Faucet wallet balance: {}", faucet_wallet.balance());
-
-    println!("Verifying the transfer from genesis...");
-    use crate::domain::wallet::VerifyingClient;
-    if let Err(error) = client.verify(&tokens).await {
-        println!("Could not verify the transfer from genesis: {error:?}");
-    }
-
-    faucet_wallet
-}
-
-async fn load_genesis_wallet() -> LocalWallet {
+pub async fn load_genesis_wallet() -> LocalWallet {
     println!("Loading genesis...");
     let mut genesis_wallet = create_genesis_wallet().await;
     let genesis_balance = genesis_wallet.balance();
@@ -217,7 +138,7 @@ pub(crate) fn create_first_dbc_from_key(first_dbc_key: &MainKey) -> GenesisResul
 
     let dbc_builder = TransactionBuilder::default()
         .add_input(genesis_input)
-        .add_output(Token::from_nano(GENESIS_DBC_AMOUNT), dbc_id_src)
+        .add_output(sn_dbc::Token::from_nano(GENESIS_DBC_AMOUNT), dbc_id_src)
         .build(reason, rng::thread_rng())
         .map_err(|err| {
             Error::GenesisDbcError(format!(
@@ -263,7 +184,7 @@ pub(super) fn split(
         .map(|_| {
             let dbc_id_src = main_key.random_dbc_id_src(rng);
             let amount = revealed_amount.value() / number as u64;
-            (Token::from_nano(amount), dbc_id_src)
+            (sn_dbc::Token::from_nano(amount), dbc_id_src)
         })
         .collect();
 
@@ -287,7 +208,7 @@ pub(super) fn split(
     Ok(output_dbcs)
 }
 
-async fn create_faucet_wallet() -> LocalWallet {
+pub async fn create_faucet_wallet() -> LocalWallet {
     let root_dir = get_faucet_dir().await;
     LocalWallet::load_from(&root_dir)
         .await

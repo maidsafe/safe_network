@@ -2,6 +2,7 @@
 members = [
     "safenode",
     "sn_cli",
+    "sn_domain",
     "sn_protocol",
     "sn_testnet"
 ]

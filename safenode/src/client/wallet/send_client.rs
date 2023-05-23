@@ -8,7 +8,7 @@
 
 use super::Client;
 
-use crate::domain::{
+use sn_domain::{
     client_transfers::Outputs as TransferDetails,
     wallet::{Error, Result, SendClient},
 };

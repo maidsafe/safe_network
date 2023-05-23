@@ -8,34 +8,35 @@
 
 use super::dbc_genesis::GENESIS_DBC;
 
-use crate::domain::{dbc_genesis::is_genesis_parent_tx, storage::SpendStorage};
+use crate::{dbc_genesis::is_genesis_parent_tx, storage::SpendStorage};
 
 use sn_dbc::{DbcTransaction, SignedSpend};
 use sn_protocol::{error::TransferError, storage::DbcAddress};
+
 use std::{collections::BTreeSet, path::Path};
 
 // Result for all related to node handling of transfers.
 type Result<T> = std::result::Result<T, TransferError>;
 
-pub(crate) struct Transfers {
+pub struct Transfers {
     storage: SpendStorage,
 }
 
 impl Transfers {
     /// Create a new instance of `Transfers`.
-    pub(crate) fn new(root_dir: &Path) -> Self {
+    pub fn new(root_dir: &Path) -> Self {
         Self {
             storage: SpendStorage::new(root_dir),
         }
     }
 
     /// Get Spend from local store.
-    pub(crate) async fn get(&self, address: DbcAddress) -> Result<SignedSpend> {
+    pub async fn get(&self, address: DbcAddress) -> Result<SignedSpend> {
         Ok(self.storage.get(&address).await?)
     }
 
     /// Tries to add a double spend that was detected by the network.
-    pub(crate) async fn try_add_double(
+    pub async fn try_add_double(
         &mut self,
         a_spend: &SignedSpend,
         b_spend: &SignedSpend,
@@ -47,7 +48,7 @@ impl Transfers {
     ///
     /// All the provided data will be validated, and
     /// if it is valid, the spend will be pushed onto the queue.
-    pub(crate) async fn try_add(
+    pub async fn try_add(
         &mut self,
         signed_spend: Box<SignedSpend>,
         parent_tx: Box<DbcTransaction>,

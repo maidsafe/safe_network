@@ -8,9 +8,8 @@
 
 use super::{Client, Error, Register, Result};
 
-use crate::domain::storage::RegisterReplica;
-
 use bincode::serialize;
+use sn_domain::storage::RegisterReplica;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{

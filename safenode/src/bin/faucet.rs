@@ -7,11 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use safenode::{
-    client::Client,
-    domain::{
-        dbc_genesis::{get_tokens_from_faucet, load_faucet_wallet},
-        wallet::parse_public_address,
-    },
+    client::{get_tokens_from_faucet, load_faucet_wallet, Client},
     log::init_node_logging,
     peers_acquisition::peers_from_opts_or_env,
 };
@@ -19,6 +15,7 @@ use safenode::{
 use clap::{Parser, Subcommand};
 use eyre::Result;
 use sn_dbc::Token;
+use sn_domain::wallet::parse_public_address;
 use tracing::info;
 
 #[tokio::main]
