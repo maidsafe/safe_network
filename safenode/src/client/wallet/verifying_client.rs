@@ -8,10 +8,9 @@
 
 use super::Client;
 
-use crate::domain::wallet::{Error, Result, VerifyingClient};
-
 use futures::future::join_all;
 use sn_dbc::Dbc;
+use sn_domain::wallet::{Error, Result, VerifyingClient};
 
 #[async_trait::async_trait]
 impl VerifyingClient for Client {

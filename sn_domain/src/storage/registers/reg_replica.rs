@@ -28,7 +28,7 @@ const MAX_REG_NUM_ENTRIES: u16 = 1024;
 
 /// Object storing the data of a Register, implementing the functions for CRDT operations
 #[derive(Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize, Debug)]
-pub(crate) struct RegisterReplica {
+pub struct RegisterReplica {
     authority: User,
     crdt: RegisterCrdtImpl,
     policy: Policy,
@@ -58,7 +58,7 @@ impl Into<Register> for RegisterReplica {
 
 impl RegisterReplica {
     ///
-    pub(crate) fn new(authority: User, name: XorName, tag: u64, policy: Policy) -> Self {
+    pub fn new(authority: User, name: XorName, tag: u64, policy: Policy) -> Self {
         let address = RegisterAddress { name, tag };
         Self {
             authority,
@@ -68,7 +68,7 @@ impl RegisterReplica {
     }
 
     #[cfg(test)]
-    pub(crate) fn new_owned(authority: User, name: XorName, tag: u64) -> Self {
+    pub fn new_owned(authority: User, name: XorName, tag: u64) -> Self {
         Self::new(
             authority,
             name,
@@ -81,48 +81,48 @@ impl RegisterReplica {
     }
 
     /// Return the address.
-    pub(crate) fn address(&self) -> &RegisterAddress {
+    pub fn address(&self) -> &RegisterAddress {
         self.crdt.address()
     }
 
     /// Return the name.
-    pub(crate) fn name(&self) -> &XorName {
+    pub fn name(&self) -> &XorName {
         self.address().name()
     }
 
     /// Return the tag.
-    pub(crate) fn tag(&self) -> u64 {
+    pub fn tag(&self) -> u64 {
         self.address().tag()
     }
 
     /// Return the owner of the data.
-    pub(crate) fn owner(&self) -> User {
+    pub fn owner(&self) -> User {
         self.policy.owner
     }
 
     /// Return the PK which the messages are expected to be signed with by this replica.
     #[cfg(test)]
-    pub(crate) fn replica_authority(&self) -> User {
+    pub fn replica_authority(&self) -> User {
         self.authority
     }
 
     /// Return the number of items held in the register
-    pub(crate) fn size(&self) -> u64 {
+    pub fn size(&self) -> u64 {
         self.crdt.size()
     }
 
     /// Return a value corresponding to the provided 'hash', if present.
-    pub(crate) fn get(&self, hash: EntryHash) -> Result<&Entry> {
+    pub fn get(&self, hash: EntryHash) -> Result<&Entry> {
         self.crdt.get(hash).ok_or(Error::NoSuchEntry(hash))
     }
 
     /// Read the last entry, or entries when there are branches, if the register is not empty.
-    pub(crate) fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
+    pub fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
         self.crdt.read()
     }
 
     /// Return user permissions, if applicable.
-    pub(crate) fn permissions(&self, user: User) -> Result<Permissions> {
+    pub fn permissions(&self, user: User) -> Result<Permissions> {
         if user == self.policy.owner {
             // i.e. it won't be possible to circumvent the semantics of `owner`
             // by setting some other permissions for the user.
@@ -138,14 +138,14 @@ impl RegisterReplica {
     }
 
     /// Return the policy.
-    pub(crate) fn policy(&self) -> &Policy {
+    pub fn policy(&self) -> &Policy {
         &self.policy
     }
 
     /// Write an entry to the Register, returning the generated unsigned
     /// CRDT operation so the caller can sign and broadcast it to other replicas,
     /// along with the hash of the entry just written.
-    pub(crate) fn write(
+    pub fn write(
         &mut self,
         entry: Entry,
         children: BTreeSet<EntryHash>,
@@ -155,13 +155,13 @@ impl RegisterReplica {
     }
 
     /// Apply a signed data CRDT operation.
-    pub(crate) fn apply_op(&mut self, op: RegisterOp<Entry>) -> Result<()> {
+    pub fn apply_op(&mut self, op: RegisterOp<Entry>) -> Result<()> {
         self.check_entry_and_reg_sizes(&op.crdt_op.value)?;
         self.crdt.apply_op(op)
     }
 
     /// Merge another Register into this one.
-    pub(crate) fn merge(&mut self, other: Self) {
+    pub fn merge(&mut self, other: Self) {
         self.crdt.merge(other.crdt);
     }
 
@@ -171,7 +171,7 @@ impl RegisterReplica {
     /// Returns:
     /// `Ok(())` if the permissions are valid,
     /// `Err::AccessDenied` if the action is not allowed.
-    pub(crate) fn check_permissions(&self, action: Action, requester: Option<User>) -> Result<()> {
+    pub fn check_permissions(&self, action: Action, requester: Option<User>) -> Result<()> {
         let requester = requester.unwrap_or(self.authority);
         // First checks if the requester is the owner.
         if action == Action::Read || requester == self.policy.owner {

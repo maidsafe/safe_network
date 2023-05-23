@@ -11,9 +11,8 @@ pub(crate) mod verifying_client;
 
 use super::Client;
 
-use crate::domain::wallet::{Error, Result, SendWallet};
-
 use sn_dbc::{Dbc, PublicAddress, Token};
+use sn_domain::wallet::{Error, LocalWallet, Result, SendWallet};
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
@@ -43,4 +42,29 @@ impl<W: SendWallet> WalletClient<W> {
     pub fn into_wallet(self) -> W {
         self.wallet
     }
+}
+
+/// Use the client to send a DBC from a local wallet to an address.
+pub async fn send(from: LocalWallet, amount: Token, to: PublicAddress, client: &Client) -> Dbc {
+    if amount.as_nano() == 0 {
+        panic!("Amount must be more than zero.");
+    }
+
+    let mut wallet_client = WalletClient::new(client.clone(), from);
+    let new_dbc = wallet_client
+        .send(amount, to)
+        .await
+        .expect("Tokens shall be successfully sent.");
+
+    let mut wallet = wallet_client.into_wallet();
+    wallet
+        .store()
+        .await
+        .expect("Wallet shall be successfully stored.");
+    wallet
+        .store_created_dbc(new_dbc.clone())
+        .await
+        .expect("Created dbc shall be successfully stored.");
+
+    new_dbc
 }
