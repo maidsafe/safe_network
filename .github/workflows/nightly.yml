@@ -338,12 +338,28 @@ jobs:
         # then check we have an expected level of restarts
         # TODO: make this use an env var, or relate to testnet size
         run : |
-            restart_count=$(rg "Starting node ..." ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
-            node_count=$(ls $log_dir | wc -l)
-            if [ $restart_count -lt $node_count ]; then
-              echo "Restart count of: $restart_count is less than the node count of: $node_count"
-              exit 1
-            fi
+          restart_count=$(rg "Node is restarting in" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          node_count=$(ls $log_dir | wc -l)
+          echo "Restart $restart_count nodes"
+          if [ $restart_count -lt $node_count ]; then
+            echo "Restart count of: $restart_count is less than the node count of: $node_count"
+            exit 1
+          fi
+
+      - name: Verify data replication using rg
+        shell: bash
+        timeout-minutes: 1
+        # get the counts, then the specific line, and then the digit count only
+        # then check we have an expected level of replication
+        # TODO: make this use an env var, or relate to testnet size
+        run : |
+          replication_count=$(rg "That's a replicate chunk in for" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Replicated $replication_count copies"
+          node_count=$(ls $log_dir | wc -l)
+          if [ $replication_count -lt $node_count ]; then
+            echo "Replication count of: $replication_count is less than the node count of: $node_count"
+            exit 1
+          fi
 
       - name: Kill all nodes
         shell: bash

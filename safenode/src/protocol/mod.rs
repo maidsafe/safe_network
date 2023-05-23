@@ -101,10 +101,17 @@ impl NetworkAddress {
 impl std::fmt::Debug for NetworkAddress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name_str = match self {
-            NetworkAddress::PeerId(_) => "NetworkAddress::PeerId(",
-            NetworkAddress::ChunkAddress(_) => "NetworkAddress::ChunkAddress(",
-            NetworkAddress::DbcAddress(_) => "NetworkAddress::DbcAddress(",
-            NetworkAddress::RegisterAddress(_) => "NetworkAddress::RegisterAddress(",
+            NetworkAddress::PeerId(_) => "NetworkAddress::PeerId(".to_string(),
+            NetworkAddress::ChunkAddress(chunk_address) => {
+                format!("NetworkAddress::ChunkAddress({:?} - ", chunk_address.name())
+            }
+            NetworkAddress::DbcAddress(dbc_address) => {
+                format!("NetworkAddress::DbcAddress({:?} - ", dbc_address.name())
+            }
+            NetworkAddress::RegisterAddress(register_address) => format!(
+                "NetworkAddress::RegisterAddress({:?} - ",
+                register_address.id()
+            ),
         };
         write!(f, "{name_str}{:?})", self.as_bytes())
     }
