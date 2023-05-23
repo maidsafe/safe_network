@@ -116,6 +116,8 @@ impl Client {
             NetworkEvent::RequestReceived { .. } => {}
             // We do not listen on sockets.
             NetworkEvent::NewListenAddr(_) => {}
+            // We are not doing AutoNAT and don't care about our status.
+            NetworkEvent::NatStatusChanged(_) => {}
             NetworkEvent::PeerAdded(peer_id) => {
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork)?;

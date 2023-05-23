@@ -54,4 +54,6 @@ pub enum NodeEvent {
     SpendStored(DbcId),
     /// One of the sub event channel closed and unrecoverable.
     ChannelClosed,
+    /// AutoNAT discovered we are behind a NAT, thus private.
+    BehindNat,
 }
