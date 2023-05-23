@@ -10,6 +10,7 @@ use super::get_client;
 
 use crate::{
     client::{Client, Error, Files},
+    log::init_node_logging,
     protocol::{
         storage::{ChunkAddress, RegisterAddress},
         NetworkAddress,
@@ -89,15 +90,23 @@ async fn data_availability_during_churn() -> Result<()> {
         if chunks_only { " (Chunks only)" } else { "" }
     );
 
+    let tmp_dir = std::env::temp_dir();
+    let log_appender_guard = init_node_logging(&Some(tmp_dir.join("safe-client")))?;
+
     println!("Creating a client...");
     let client = get_client().await;
     println!("Client created with signing key: {:?}", client.signer_pk());
 
-    // Spawn a task to churn nodes
-    churn_nodes_task();
-
     // Shared bucket where we keep track of content created/stored on the network
     let content = ContentList::default();
+
+    // Upload some chunks before carry out any churning.
+
+    // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
+    store_chunks_task(client.clone(), content.clone());
+
+    // Spawn a task to churn nodes
+    churn_nodes_task();
 
     // Shared bucket where we keep track of the content which erred when creating/storing/fetching.
     // We remove them from this bucket if we are then able to query/fetch them successfully.
@@ -111,9 +120,6 @@ async fn data_availability_during_churn() -> Result<()> {
     if !chunks_only {
         create_registers_task(client.clone(), content.clone());
     }
-
-    // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
-    store_chunks_task(client.clone(), content.clone());
 
     // Spawn a task to randomly query/fetch the content we create/store
     query_content_task(client.clone(), content.clone(), content_erred.clone());
@@ -135,13 +141,31 @@ async fn data_availability_during_churn() -> Result<()> {
     }
 
     println!();
-    println!("Test stopped after running for {:?}.", start_time.elapsed());
+    println!(
+        "Test stopping after running for {:?}.",
+        start_time.elapsed()
+    );
     println!();
 
     let failed = failures.read().await;
     if failed.len() > 0 {
         bail!("{} failure/s in test: {:?}", failed.len(), failed.values());
     }
+
+    // The churning of storing_chunk/querying_chunk are all random,
+    // which will have a high chance that newly stored chunk got queried BEFORE
+    // the original holders churned out.
+    // i.e. the test may pass even without any replication
+    // Hence, we carry out a final round of query all data to confirm storage.
+    for net_addr in content.read().await.iter() {
+        println!("Final querying content at {net_addr:?}");
+        assert!(
+            query_content(&client, net_addr).await.is_ok(),
+            "Failed to query content at {net_addr:?}"
+        );
+    }
+
+    drop(log_appender_guard);
 
     println!("Test passed after running for {:?}.", start_time.elapsed());
     Ok(())
@@ -250,14 +274,13 @@ fn query_content_task(client: Client, content: ContentList, content_erred: Conte
     });
 }
 
-// Spawns a task which periodically picks up a random node, and restarts it to cause churn in the network.
+// Spawns a task which periodically picks up a node, and restarts it to cause churn in the network.
 fn churn_nodes_task() {
     let _handle = tokio::spawn(async {
+        let mut node_index = 1;
         let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
         let delay = Duration::from_millis(CHURN_PERIOD_MILLIS);
         loop {
-            // let's choose a random node to restart
-            let node_index = rand::thread_rng().gen_range(1..=NODE_COUNT);
             addr.set_port(12000 + node_index);
 
             println!("Restarting node through its RPC service at {addr} in {delay:?}");
@@ -265,6 +288,11 @@ fn churn_nodes_task() {
 
             if let Err(err) = node_restart(addr).await {
                 println!("Failed to restart node with RPC endpoint {addr}: {err}");
+            }
+
+            node_index += 1;
+            if node_index > NODE_COUNT {
+                node_index = 1;
             }
         }
     });
