@@ -709,7 +709,7 @@ mod tests {
 
         tokio::time::sleep(Duration::from_millis(2000)).await;
 
-        drop(network_events_recievers)
+        drop(network_events_recievers);
         Ok(())
     }
 
