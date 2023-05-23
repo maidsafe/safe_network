@@ -494,6 +494,7 @@ impl SwarmDriver {
                 };
                 if let Some(record) = DiskBackedRecordStore::read_from_disk(key, &storage_dir) {
                     let chunk = Chunk::new(record.value.clone().into());
+                    trace!("Replicating chunk {:?} to {dst:?}", chunk.name());
                     let request = Request::Cmd(Cmd::Replicate(ReplicatedData::Chunk(chunk)));
                     let _ = self
                         .swarm
