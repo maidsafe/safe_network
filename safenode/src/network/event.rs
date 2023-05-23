@@ -324,7 +324,7 @@ impl SwarmDriver {
 
     // Replication is triggered when the newly added peer or the dead peer was among our closest.
     fn try_trigger_replication(&mut self, peer: &PeerId, is_dead_peer: bool) {
-        debug!("trying to trigger replication");
+        debug!("trying to trigger replication, was dead: {is_dead_peer:?}");
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         // Fetch from local shall be enough.
         let closest_peers: Vec<_> = self
@@ -335,6 +335,7 @@ impl SwarmDriver {
             .collect();
         let target = NetworkAddress::from_peer(*peer).as_kbucket_key();
         if closest_peers.iter().any(|key| *key == target) {
+            debug!("Peer {peer:?} is among our closest peers, trigger replication");
             let mut all_peers: Vec<PeerId> = vec![];
             for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
                 for entry in kbucket.iter() {
@@ -347,15 +348,18 @@ impl SwarmDriver {
             // Hecence to reduce the computation work, no need to take all peers.
             let sorted_peers: Vec<PeerId> =
                 if let Ok(sorted_peers) = sort_peers_by_address(all_peers, &churned_peer_address) {
+                    debug!("peers sorted");
                     sorted_peers
                         .iter()
                         .take(2 * CLOSE_GROUP_SIZE)
                         .cloned()
                         .collect()
                 } else {
+                    debug!("leaving replication early, no peers sorted");
                     return;
                 };
-            if sorted_peers.len() <= CLOSE_GROUP_SIZE {
+                if sorted_peers.len() <= CLOSE_GROUP_SIZE {
+                debug!("leaving replication early, less peers that group");
                 return;
             }
 
@@ -387,6 +391,7 @@ impl SwarmDriver {
                         .cloned()
                         .collect()
                 } else {
+                    debug!("leaving replication early, no peers sorted for key {key:?}");
                     continue;
                 };
 
@@ -395,6 +400,7 @@ impl SwarmDriver {
                 if our_address.as_kbucket_key().distance(&record_key)
                     >= replicate_range.as_kbucket_key().distance(&record_key)
                 {
+                    debug!("continuing loop, we're out of repl range");
                     continue;
                 }
 
@@ -422,6 +428,9 @@ impl SwarmDriver {
                         .send_request(&dst, request);
                 }
             }
+        }
+        else {
+            debug!("repl trigger failed, peer not in closest peers");
         }
     }
 }
