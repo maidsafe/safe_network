@@ -706,7 +706,6 @@ mod tests {
             assert_lists(closest, expected_from_table.clone());
         }
 
-
         tokio::time::sleep(Duration::from_millis(2000)).await;
 
         drop(network_events_recievers);
