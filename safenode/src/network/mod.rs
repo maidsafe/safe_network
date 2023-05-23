@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod circular_vec;
 mod cmd;
 mod error;
 mod event;
@@ -18,6 +19,7 @@ pub use self::{
 };
 
 use self::{
+    circular_vec::CircularVec,
     cmd::SwarmCmd,
     error::Result,
     event::NodeBehaviour,
@@ -120,6 +122,7 @@ pub struct SwarmDriver {
     //     2, it ensures a corrected partially targeted replication .
     potential_dead_peers: LruCache<PeerId, usize>,
     local: bool,
+    dialed_peers: CircularVec<PeerId>,
 }
 
 impl SwarmDriver {
@@ -327,6 +330,7 @@ impl SwarmDriver {
                 DEAD_PEER_DETECTION_CAPACITY,
             ),
             local,
+            dialed_peers: CircularVec::new(63),
         };
 
         Ok((
