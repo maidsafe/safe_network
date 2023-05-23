@@ -118,6 +118,8 @@ pub enum NetworkEvent {
     PeerAdded(PeerId),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
+    /// AutoNAT status changed
+    NatStatusChanged(NatStatus),
 }
 
 impl SwarmDriver {
@@ -295,6 +297,9 @@ impl SwarmDriver {
                 autonat::Event::OutboundProbe(e) => trace!("AutoNAT outbound probe: {e:?}"),
                 autonat::Event::StatusChanged { old, new } => {
                     info!("AutoNAT status changed: {old:?} -> {new:?}");
+                    self.event_sender
+                        .send(NetworkEvent::NatStatusChanged(new.clone()))
+                        .await?;
 
                     match new {
                         NatStatus::Public(_addr) => {

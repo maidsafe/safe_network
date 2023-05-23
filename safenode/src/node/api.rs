@@ -27,6 +27,7 @@ use crate::{
     },
 };
 use libp2p::{
+    autonat::NatStatus,
     kad::{Record, RecordKey},
     Multiaddr, PeerId,
 };
@@ -195,6 +196,12 @@ impl Node {
                         };
                     }
                 });
+            }
+            NetworkEvent::NatStatusChanged(status) => {
+                if matches!(status, NatStatus::Private) {
+                    tracing::warn!("NAT status is determined to be private!");
+                    self.events_channel.broadcast(NodeEvent::BehindNat);
+                }
             }
         }
     }
