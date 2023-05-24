@@ -17,10 +17,9 @@ pub use self::{
 
 use self::api::TransferAction;
 
-use crate::network::Network;
-
 use libp2p::{Multiaddr, PeerId};
 use sn_domain::{node_transfers::Transfers, storage::RegisterStorage};
+use sn_networking::Network;
 use tokio::sync::mpsc;
 
 /// `Node` represents a single node in the distributed network. It handles
