@@ -49,8 +49,6 @@ pub mod git_hash;
 #[cfg(test)]
 mod tests_e2e;
 
-/// SAFE Client
-pub mod client;
 /// SAFE Node
 pub mod node;
 /// Peer acquisition logic.

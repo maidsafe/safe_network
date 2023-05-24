@@ -1,36 +1,31 @@
 [package]
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
-description = "Safe Network CLI"
+description = "Safe Network Client"
 documentation = "https://docs.rs/sn_node"
 edition = "2021"
 homepage = "https://maidsafe.net"
 license = "GPL-3.0"
-name = "sn_cli"
+name = "sn_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.77.0"
-
-[[bin]]
-path="src/main.rs"
-name="safe"
+version = "0.85.0"
 
 [dependencies]
+async-trait = "0.1"
 bincode = "1.3.1"
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
-chrono = "~0.4.19"
-clap = { version = "4.2.1", features = ["derive"]}
-color-eyre = "~0.6"
-dirs-next = "~2.0.0"
-hex = "~0.4.3"
-libp2p = { version="0.51", features = ["identify", "kad"] }
-safenode = { path = "../safenode", version = "^0.1.0" }
-sn_client = { path = "../sn_client", version = "0.85.0" }
+futures = "~0.3.13"
+itertools = "~0.10.1"
+libp2p = { version="0.51", features = ["identify"] }
+rayon = "~1.5.1"
+self_encryption = "~0.28.0"
+serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_dbc = { version = "17.0.0", features = ["serdes"] }
 sn_domain = { path = "../sn_domain", version = "0.1.0" }
-sn_logging = { path = "../sn_logging", version = "0.1.0" }
+sn_networking = { path = "../sn_networking", version = "0.1.0" }
 sn_protocol = { path = "../sn_protocol", version = "0.1.0" }
+thiserror = "1.0.23"
 tokio = { version = "1.17.0", features = ["fs", "io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
-walkdir = "2.3.1"
 xor_name = "5.0.0"
