@@ -19,7 +19,7 @@ use super::ClientEvent;
 #[allow(missing_docs)]
 pub enum Error {
     #[error("Network Error {0}.")]
-    Network(#[from] crate::network::Error),
+    Network(#[from] sn_networking::Error),
 
     #[error("Protocol error {0}.")]
     Protocol(#[from] sn_protocol::error::Error),

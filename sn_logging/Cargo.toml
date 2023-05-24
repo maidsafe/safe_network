@@ -1,0 +1,23 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Safe Networking Logging"
+documentation = "https://docs.rs/sn_node"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "sn_logging"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe_network"
+version = "0.1.0"
+
+[dependencies]
+file-rotate = "0.7.3"
+thiserror = "1.0.23"
+tracing = { version = "~0.1.26" }
+tracing-appender = "~0.2.0"
+tracing-core = "0.1.30"
+tracing-opentelemetry = { version = "0.17", optional = true }
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+
+[features]
+test-utils = []

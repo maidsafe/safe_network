@@ -8,7 +8,6 @@
 
 use safenode::{
     client::{get_tokens_from_faucet, load_faucet_wallet, Client},
-    log::init_node_logging,
     peers_acquisition::peers_from_opts_or_env,
 };
 
@@ -16,6 +15,7 @@ use clap::{Parser, Subcommand};
 use eyre::Result;
 use sn_dbc::Token;
 use sn_domain::wallet::parse_public_address;
+use sn_logging::init_node_logging;
 use tracing::info;
 
 #[tokio::main]

@@ -1,0 +1,32 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Safe Networking Infrastructure"
+documentation = "https://docs.rs/sn_node"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "sn_networking"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe_network"
+version = "0.1.0"
+
+[dependencies]
+async-trait = "0.1"
+bytes = { version = "1.0.1", features = ["serde"] }
+eyre = "0.6.8"
+futures = "~0.3.13"
+libp2p = { version="0.51", features = ["tokio", "dns", "kad", "macros", "request-response", "identify"] }
+libp2p-quic = { version = "0.7.0-alpha.3", features = ["tokio"] }
+lru_time_cache = "0.11.11"
+rand = { version = "~0.8.5", features = ["small_rng"] }
+rmp-serde = "1.1.1"
+serde = { version = "1.0.133", features = [ "derive", "rc" ]}
+sn_domain = { path = "../sn_domain", version = "0.1.0" }
+sn_logging = { path = "../sn_logging", features = ["test-utils"], version = "0.1.0" }
+sn_protocol = { path = "../sn_protocol", version = "0.1.0" }
+thiserror = "1.0.23"
+tokio = { version = "1.17.0", features = ["fs", "io-util", "macros", "parking_lot", "rt", "sync", "time"] }
+tracing = { version = "~0.1.26" }
+
+[dev-dependencies]
+assert_matches = "1.5.0"

@@ -8,7 +8,7 @@
 
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 
-use crate::network::error::Result;
+use crate::error::Result;
 
 use libp2p::{
     kad::{Record, RecordKey},

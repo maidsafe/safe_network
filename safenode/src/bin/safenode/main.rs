@@ -12,10 +12,10 @@ extern crate tracing;
 mod rpc;
 use safenode::{
     git_hash,
-    log::init_node_logging,
     node::{Node, NodeEvent, NodeEventsReceiver},
     peers_acquisition::peers_from_opts_or_env,
 };
+use sn_logging::init_node_logging;
 
 use clap::Parser;
 use eyre::{eyre, Error, Result};

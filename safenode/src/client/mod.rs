@@ -26,7 +26,7 @@ pub use self::{
 
 use self::event::ClientEventsChannel;
 
-use crate::network::Network;
+use sn_networking::Network;
 
 /// Client API implementation to store and get data.
 #[derive(Clone)]

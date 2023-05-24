@@ -6,8 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod appender;
-mod error;
+pub mod appender;
+pub mod error;
 
 use self::error::Result;
 
@@ -183,9 +183,9 @@ pub fn init_node_logging(log_dir: &Option<PathBuf>) -> Result<Option<WorkerGuard
 }
 
 /// Initialize logger for tests, this is run only once, even if called multiple times.
-#[cfg(test)]
+#[cfg(feature = "test-utils")]
 static TEST_INIT_LOGGER: std::sync::Once = std::sync::Once::new();
-#[cfg(test)]
+#[cfg(feature = "test-utils")]
 pub fn init_test_logger() {
     TEST_INIT_LOGGER.call_once(|| {
         tracing_subscriber::fmt::fmt()
@@ -193,7 +193,7 @@ pub fn init_test_logger() {
             //.pretty()
             .with_ansi(false)
             .with_target(false)
-            .event_format(crate::log::LogFormatter::default())
+            .event_format(LogFormatter::default())
             .try_init()
             .unwrap_or_else(|_| println!("Error initializing logger"));
     });

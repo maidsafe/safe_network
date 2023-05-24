@@ -6,12 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use safenode::log::init_node_logging;
 use safenode_proto::safe_node_client::SafeNodeClient;
 use safenode_proto::{
     NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RestartRequest, StopRequest,
     UpdateRequest,
 };
+use sn_logging::init_node_logging;
 use tonic::Request;
 
 use clap::Parser;

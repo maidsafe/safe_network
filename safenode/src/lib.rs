@@ -51,10 +51,6 @@ mod tests_e2e;
 
 /// SAFE Client
 pub mod client;
-/// Logging.
-pub mod log;
-/// The main logic of the network.
-pub mod network;
 /// SAFE Node
 pub mod node;
 /// Peer acquisition logic.

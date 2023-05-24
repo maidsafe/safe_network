@@ -11,12 +11,7 @@ use super::{
     event::NodeEventsChannel,
     Network, Node, NodeEvent,
 };
-use crate::{
-    domain::dbc_genesis::is_genesis_parent_tx,
-    network::multiaddr_strip_p2p,
-    network::{close_group_majority, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState},
-    node::{RegisterStorage, Transfers},
-};
+use crate::node::{RegisterStorage, Transfers};
 use libp2p::{
     autonat::NatStatus,
     kad::{Record, RecordKey},
@@ -25,6 +20,10 @@ use libp2p::{
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_dbc::{DbcTransaction, SignedSpend};
 use sn_domain::{dbc_genesis::is_genesis_parent_tx, storage::RegisterStorage};
+use sn_networking::multiaddr_strip_p2p;
+use sn_networking::{
+    close_group_majority, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState,
+};
 use sn_protocol::{
     error::{Error as ProtocolError, StorageError, TransferError},
     messages::{
