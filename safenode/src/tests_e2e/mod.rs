@@ -10,7 +10,7 @@ mod data_with_churn;
 
 use std::path::Path;
 
-use crate::client::{get_tokens_from_faucet, send, Client};
+use sn_client::{get_tokens_from_faucet, send, Client};
 
 use sn_dbc::Token;
 use sn_domain::wallet::{DepositWallet, LocalWallet, VerifyingClient, Wallet};

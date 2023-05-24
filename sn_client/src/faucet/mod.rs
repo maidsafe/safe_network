@@ -1,5 +1,5 @@
 use super::wallet::send;
-use crate::client::Client;
+use crate::Client;
 
 use sn_dbc::{Dbc, PublicAddress, Token};
 use sn_domain::dbc_genesis::{create_faucet_wallet, load_genesis_wallet};

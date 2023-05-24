@@ -17,9 +17,9 @@ use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wal
 use clap::Parser;
 use color_eyre::Result;
 
-use safenode::client::Client;
 use safenode::git_hash;
 use safenode::peers_acquisition::peers_from_opts_or_env;
+use sn_client::Client;
 use sn_logging::init_node_logging;
 use std::path::PathBuf;
 

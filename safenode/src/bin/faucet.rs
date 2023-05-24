@@ -6,13 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use safenode::{
-    client::{get_tokens_from_faucet, load_faucet_wallet, Client},
-    peers_acquisition::peers_from_opts_or_env,
-};
+use safenode::peers_acquisition::peers_from_opts_or_env;
 
 use clap::{Parser, Subcommand};
 use eyre::Result;
+use sn_client::{get_tokens_from_faucet, load_faucet_wallet, Client};
 use sn_dbc::Token;
 use sn_domain::wallet::parse_public_address;
 use sn_logging::init_node_logging;
