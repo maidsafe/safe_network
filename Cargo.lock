@@ -4187,6 +4187,8 @@ dependencies = [
  "serde",
  "sn_dbc",
  "sn_domain",
+ "sn_logging",
+ "sn_networking",
  "sn_protocol",
  "thiserror",
  "tiny-keccak",
@@ -4459,6 +4461,7 @@ dependencies = [
  "safenode",
  "sn_dbc",
  "sn_domain",
+ "sn_logging",
  "sn_protocol",
  "tokio",
  "tracing",
@@ -4511,6 +4514,42 @@ dependencies = [
  "tracing",
  "walkdir",
  "xor_name",
+]
+
+[[package]]
+name = "sn_logging"
+version = "0.1.0"
+dependencies = [
+ "file-rotate",
+ "thiserror",
+ "tracing",
+ "tracing-appender",
+ "tracing-core",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "sn_networking"
+version = "0.1.0"
+dependencies = [
+ "assert_matches",
+ "async-trait",
+ "bytes",
+ "eyre",
+ "futures",
+ "libp2p",
+ "libp2p-quic",
+ "lru_time_cache",
+ "rand 0.8.5",
+ "rmp-serde",
+ "serde",
+ "sn_domain",
+ "sn_logging",
+ "sn_protocol",
+ "thiserror",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

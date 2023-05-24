@@ -19,7 +19,8 @@ use color_eyre::Result;
 
 use safenode::client::Client;
 use safenode::git_hash;
-use safenode::{log::init_node_logging, peers_acquisition::peers_from_opts_or_env};
+use safenode::peers_acquisition::peers_from_opts_or_env;
+use sn_logging::init_node_logging;
 use std::path::PathBuf;
 
 #[tokio::main]

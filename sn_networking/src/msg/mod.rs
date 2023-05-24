@@ -10,7 +10,7 @@ mod codec;
 
 pub(crate) use codec::{MsgCodec, MsgProtocol};
 
-use crate::network::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
+use crate::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 
 use libp2p::request_response::{self, Message};
 use sn_protocol::messages::{Request, Response};

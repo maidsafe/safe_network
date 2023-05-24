@@ -6,6 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[macro_use]
+extern crate tracing;
+
 mod circular_vec;
 mod cmd;
 mod error;
@@ -194,7 +197,7 @@ impl SwarmDriver {
     }
 
     /// Same as `new` API but creates the network components in client mode
-    pub fn new_client(local: bool) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
+    pub fn new_client() -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let mut kad_cfg = KademliaConfig::default(); // default query timeout is 60 secs
@@ -427,8 +430,8 @@ pub(crate) fn sort_peers_by_key<T>(
 #[derive(Clone)]
 /// API to interact with the underlying Swarm
 pub struct Network {
-    pub(super) swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
-    pub(super) peer_id: PeerId,
+    pub swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
+    pub peer_id: PeerId,
 }
 
 impl Network {
@@ -669,7 +672,7 @@ pub fn multiaddr_is_global(multiaddr: &Multiaddr) -> bool {
 }
 
 // Strip out the p2p protocol from a multiaddr.
-pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
+pub fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
     multiaddr
         .iter()
         .filter(|p| !matches!(p, Protocol::P2p(_)))
@@ -679,19 +682,28 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
 #[cfg(test)]
 mod tests {
     use super::SwarmDriver;
-    use crate::{
-        log::init_test_logger,
-        network::{MsgResponder, NetworkEvent},
-        protocol::{
-            messages::{Cmd, CmdResponse, Request, Response},
-            storage::Chunk,
-        },
-    };
+    use crate::{MsgResponder, NetworkEvent};
     use assert_matches::assert_matches;
     use bytes::Bytes;
     use eyre::{eyre, Result};
     use rand::{thread_rng, Rng};
+    use sn_logging::init_test_logger;
+    use sn_protocol::{
+        messages::{Cmd, CmdResponse, Request, Response},
+        storage::Chunk,
+    };
     use std::{net::SocketAddr, time::Duration};
+
+    #[cfg(feature = "local-discovery")]
+    use libp2p::kad::kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus};
+    #[cfg(feature = "local-discovery")]
+    use libp2p::PeerId;
+    #[cfg(feature = "local-discovery")]
+    use std::collections::{BTreeMap, HashMap};
+    #[cfg(feature = "local-discovery")]
+    use std::fmt;
+    #[cfg(feature = "local-discovery")]
+    use xor_name::XorName;
 
     use std::path::Path;
 

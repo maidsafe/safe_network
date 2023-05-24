@@ -11,7 +11,7 @@ use super::{
     msg::MsgCodec,
     SwarmDriver,
 };
-use crate::network::IDENTIFY_AGENT_STR;
+use crate::IDENTIFY_AGENT_STR;
 
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
