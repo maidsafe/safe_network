@@ -17,9 +17,8 @@ use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wal
 use clap::Parser;
 use color_eyre::Result;
 
-use safenode::git_hash;
-use safenode::peers_acquisition::peers_from_opts_or_env;
 use sn_client::Client;
+use sn_domain::{git_hash::git_hash, peers_acquisition::peers_from_opts_or_env};
 use sn_logging::init_node_logging;
 use std::path::PathBuf;
 
@@ -33,7 +32,7 @@ async fn main() -> Result<()> {
 
     info!("Full client logs will be written to {:?}", tmp_dir);
     println!("Instantiating a SAFE client...");
-    println!("Current build's git commit hash: {}", git_hash::git_hash());
+    println!("Current build's git commit hash: {}", git_hash());
 
     let secret_key = bls::SecretKey::random();
     let peers = peers_from_opts_or_env(&opt.peers)?;

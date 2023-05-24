@@ -43,13 +43,8 @@
 #[macro_use]
 extern crate tracing;
 
-/// Build time git hash.
-pub mod git_hash;
-
 #[cfg(test)]
 mod tests_e2e;
 
 /// SAFE Node
 pub mod node;
-/// Peer acquisition logic.
-pub mod peers_acquisition;

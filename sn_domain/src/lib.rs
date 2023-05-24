@@ -14,8 +14,12 @@ extern crate tracing;
 pub mod client_transfers;
 /// Genesis DBC utilities.
 pub mod dbc_genesis;
+/// Git hashing utilities.
+pub mod git_hash;
 /// Node handling of token transfers.
 pub mod node_transfers;
+/// Utilities for working with peer addresses.
+pub mod peers_acquisition;
 /// Storage for spends, chunks and registers.
 pub mod storage;
 /// A wallet for network tokens.

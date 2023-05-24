@@ -10,16 +10,13 @@
 extern crate tracing;
 
 mod rpc;
-use safenode::{
-    git_hash,
-    node::{Node, NodeEvent, NodeEventsReceiver},
-    peers_acquisition::peers_from_opts_or_env,
-};
-use sn_logging::init_node_logging;
+use safenode::node::{Node, NodeEvent, NodeEventsReceiver};
 
 use clap::Parser;
 use eyre::{eyre, Error, Result};
 use libp2p::{Multiaddr, PeerId};
+use sn_domain::{git_hash::git_hash, peers_acquisition::peers_from_opts_or_env};
+use sn_logging::init_node_logging;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
@@ -117,7 +114,7 @@ fn main() -> Result<()> {
         (rt, guard)
     };
 
-    debug!("Current build's git commit hash: {}", git_hash::git_hash());
+    debug!("Current build's git commit hash: {}", git_hash());
 
     let root_dir = get_root_dir_path(opt.root_dir)?;
     let log_dir = if let Some(path) = opt.log_dir {
