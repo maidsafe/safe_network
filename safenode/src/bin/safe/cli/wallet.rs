@@ -20,8 +20,6 @@ use std::path::Path;
 
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
-    /// Print the address of the wallet.
-    Address,
     /// Print the balance of the wallet.
     Balance,
     /// Deposit `Dbc`s to the local wallet.
@@ -31,15 +29,17 @@ pub enum WalletCmds {
     /// that dir, for example by choosing that path when downloading
     /// the dbc file from email or browser.
     Deposit,
+    /// Send from the wallet to a `PublicAddress`.
     Send {
-        /// This shall be the number of nanos to send.
-        /// Necessary if the `to` argument has been given.
+        /// The number of nanos to send.
         #[clap(name = "amount")]
         amount: String,
-        /// This must be a hex-encoded `PublicAddress`.
+        /// Hex-encoded `PublicAddress`.
         #[clap(name = "to")]
         to: String,
     },
+    /// Print the `PublicAddress` of the wallet.
+    Receive,
 }
 
 pub(crate) async fn wallet_cmds(
@@ -48,15 +48,15 @@ pub(crate) async fn wallet_cmds(
     root_dir: &Path,
 ) -> Result<()> {
     match cmds {
-        WalletCmds::Address => address(root_dir).await?,
         WalletCmds::Balance => balance(root_dir).await?,
         WalletCmds::Deposit => deposit(root_dir).await?,
         WalletCmds::Send { amount, to } => send(amount, to, peers, root_dir).await?,
+        WalletCmds::Receive => receive(root_dir).await?,
     }
     Ok(())
 }
 
-async fn address(root_dir: &Path) -> Result<()> {
+async fn receive(root_dir: &Path) -> Result<()> {
     let wallet = LocalWallet::load_from(root_dir).await?;
     let address_hex = hex::encode(wallet.address().to_bytes());
     println!("{address_hex}");
