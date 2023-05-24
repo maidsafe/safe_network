@@ -6,11 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use safenode::client::{Client, Files};
-
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
+use sn_client::{Client, Files};
 use sn_protocol::storage::ChunkAddress;
 use std::{
     fs,

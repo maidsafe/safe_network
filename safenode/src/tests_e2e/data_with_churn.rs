@@ -8,13 +8,12 @@
 
 use super::get_client;
 
-use crate::client::{Client, Error, Files};
-
 use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
 
 use bytes::Bytes;
 use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
+use sn_client::{Client, Error, Files};
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress},
     NetworkAddress,

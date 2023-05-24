@@ -6,10 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use safenode::client::{Client, Error as ClientError};
-
 use clap::Subcommand;
 use color_eyre::Result;
+use sn_client::{Client, Error as ClientError};
 use xor_name::XorName;
 
 #[derive(Subcommand, Debug)]

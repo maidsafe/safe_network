@@ -4185,6 +4185,7 @@ dependencies = [
  "rmp-serde",
  "self_encryption",
  "serde",
+ "sn_client",
  "sn_dbc",
  "sn_domain",
  "sn_logging",
@@ -4459,6 +4460,7 @@ dependencies = [
  "hex",
  "libp2p",
  "safenode",
+ "sn_client",
  "sn_dbc",
  "sn_domain",
  "sn_logging",
@@ -4466,6 +4468,30 @@ dependencies = [
  "tokio",
  "tracing",
  "walkdir",
+ "xor_name",
+]
+
+[[package]]
+name = "sn_client"
+version = "0.85.0"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "blsttc",
+ "bytes",
+ "futures",
+ "itertools",
+ "libp2p",
+ "rayon",
+ "self_encryption",
+ "serde",
+ "sn_dbc",
+ "sn_domain",
+ "sn_networking",
+ "sn_protocol",
+ "thiserror",
+ "tokio",
+ "tracing",
  "xor_name",
 ]
 

@@ -6,13 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use safenode::client::{Client, WalletClient};
-
-use sn_dbc::Token;
-use sn_domain::wallet::{parse_public_address, LocalWallet, Wallet};
-
 use clap::Parser;
 use color_eyre::Result;
+use sn_client::{Client, WalletClient};
+use sn_dbc::Token;
+use sn_domain::wallet::{parse_public_address, LocalWallet, Wallet};
 use std::path::Path;
 
 #[derive(Parser, Debug)]
