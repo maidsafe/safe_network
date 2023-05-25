@@ -428,6 +428,8 @@ impl SwarmDriver {
 
     // Replication is triggered when the newly added peer or the dead peer was among our closest.
     fn try_trigger_replication(&mut self, peer: &PeerId, is_dead_peer: bool) {
+        return;
+        
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         // Fetch from local shall be enough.
         let closest_peers: Vec<_> = self
