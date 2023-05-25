@@ -34,7 +34,7 @@ pub enum QueryResponse {
     ///
     /// Response to [`GetDbcSpend`]
     ///
-    /// [`GetDbcSpend`]: crate::protocol::messages::SpendQuery::GetDbcSpend
+    /// [`GetDbcSpend`]: crate::messages::SpendQuery::GetDbcSpend
     #[debug(skip)]
     GetDbcSpend(Result<SignedSpend>),
     //
@@ -42,7 +42,7 @@ pub enum QueryResponse {
     //
     /// Response to [`GetChunk`]
     ///
-    /// [`GetChunk`]: crate::protocol::messages::Query::GetChunk
+    /// [`GetChunk`]: crate::messages::Query::GetChunk
     GetChunk(Result<Chunk>),
     //
     // ===== Register Data =====
