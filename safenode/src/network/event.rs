@@ -32,7 +32,7 @@ use libp2p::{
     kad::{kbucket::Key as KBucketKey, GetRecordOk, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
-    swarm::{behaviour::toggle::Toggle, NetworkBehaviour, SwarmEvent},
+    swarm::{behaviour::toggle::Toggle, DialError, NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
 #[cfg(feature = "local-discovery")]
@@ -269,25 +269,40 @@ impl SwarmDriver {
             } => {
                 info!("Connection closed to Peer {peer_id} - {endpoint:?} - {cause:?}");
             }
+            // Kademlia uses a technique called `lazy refreshing` to periodically check
+            // the responsiveness of nodes in its routing table, and attempts to
+            // replace it with a new node from its list of known nodes.
+            // However the incommunicable node will prolong the get_closest process a lot.
+            // Although the incommunicable node will be replaced by a new entry, it has a flaw that:
+            //     the dropout peer in close-range will be replaced by a far-range replaced in peer,
+            //     which the latter may not trigger a replication.
+            // That is because the replication range is defined by CLOSE_GROUP_SIZE (8)
+            // meanwhile replace range is defined by K-VALUE (20).
+            // If leave the replication only triggered by newly added peer,
+            // this leaves a risk that data copies may not get replicated out in time.
+            // Hence, a connection based dead peer detection gives at least following benefits:
+            //     1, make get_closest_peers faster with incommunicable node.
+            //        Even with larger network, it still gain something.
+            //     2, it ensures a corrected targeted replication
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 warn!("Having OutgoingConnectionError {peer_id:?} - {error:?}");
                 if let Some(peer_id) = peer_id {
+                    if let DialError::Transport(ref _addrs) = error {
+                        // A dead peer will cause a bunch of `OutgoingConnectionError`s
+                        // to be received within a short period.
+                        if let Some(error_count) = self.potential_dead_peers.get_mut(&peer_id) {
+                            *error_count += 1;
+                            if *error_count > DEAD_PEER_DETECTION_THRESHOLD {
+                                trace!("Detected dead peer {peer_id:?}");
+                                self.try_trigger_replication(&peer_id, true);
+                                let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
+                            }
+                        }
+                    }
                     if let Some(sender) = self.pending_dial.remove(&peer_id) {
                         let _ = sender.send(Err(error.into()));
                     } else {
                         info!("OutgoingConnectionError is due to non pending_dial to {peer_id}");
-                    }
-                    // A dead peer will cause a bunch of `OutgoingConnectionError`s
-                    // to be received within a short period.
-                    if let Some(value) = self.potential_dead_peers.get_mut(&peer_id) {
-                        *value += 1;
-                        if *value > DEAD_PEER_DETECTION_THRESHOLD {
-                            trace!("Detected dead peer {peer_id:?}");
-                            self.try_trigger_replication(&peer_id, true);
-                            let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
-                        }
-                    } else {
-                        let _ = self.potential_dead_peers.insert(peer_id, 1);
                     }
                 }
             }
