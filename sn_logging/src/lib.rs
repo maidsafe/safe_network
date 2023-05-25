@@ -9,12 +9,12 @@
 pub mod appender;
 pub mod error;
 
-use self::error::Result;
+use self::error::{Error, Result};
 
 use std::fs;
 use std::path::PathBuf;
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_core::{Event, Subscriber};
+use tracing_core::{Event, Level, Subscriber};
 use tracing_subscriber::{
     filter::Targets,
     fmt as tracing_fmt,
@@ -70,21 +70,17 @@ pub struct TracingLayers {
 }
 
 impl TracingLayers {
-    fn fmt_layer(&mut self, optional_log_dir: &Option<PathBuf>) {
-        // Filter by log level of this crate only
-        let target_filters: Box<dyn Filter<Registry> + Send + Sync> = Box::new(
-            Targets::new().with_target(current_crate_str(), tracing::Level::TRACE), // enable below for libp2p logs
-                                                                                    // .with_target("libp2p", tracing::Level::TRACE),
-        );
-        let fmt_layer = tracing_fmt::layer().with_ansi(false);
-
-        if let Some(log_dir) = optional_log_dir {
-            // first remove old logs
+    fn fmt_layer(
+        &mut self,
+        default_logging_targets: Vec<(String, Level)>,
+        optional_log_dir: &Option<PathBuf>,
+    ) -> Result<()> {
+        let layer = if let Some(log_dir) = optional_log_dir {
             if fs::remove_dir_all(log_dir).is_ok() {
                 println!("Removed old logs from directory: {log_dir:?}");
             }
 
-            println!("Starting logging to directory: {log_dir:?}");
+            println!("Logging to directory: {log_dir:?}");
 
             let logs_max_lines = 5000;
             let logs_uncompressed = 100;
@@ -94,27 +90,36 @@ impl TracingLayers {
                 appender::file_rotater(log_dir, logs_max_lines, logs_uncompressed, logs_max_files);
             self.guard = Some(worker_guard);
 
-            let fmt_layer = fmt_layer.with_writer(non_blocking);
-
-            let layer = fmt_layer
-                .event_format(LogFormatter::default())
-                .with_filter(target_filters)
-                .boxed();
-            self.layers.push(layer);
+            let fmt_layer = tracing_fmt::layer()
+                .with_ansi(false)
+                .with_writer(non_blocking);
+            fmt_layer.event_format(LogFormatter::default()).boxed()
         } else {
-            println!("Starting logging to stdout");
-
-            let layer = fmt_layer
+            println!("Logging to stdout");
+            tracing_fmt::layer()
+                .with_ansi(false)
                 .with_target(false)
                 .event_format(LogFormatter::default())
-                .with_filter(target_filters)
-                .boxed();
-            self.layers.push(layer);
+                .boxed()
         };
+
+        let targets = match std::env::var("SN_LOG") {
+            Ok(sn_log_val) => {
+                println!("Using SN_LOG={sn_log_val}");
+                get_logging_targets(&sn_log_val)?
+            }
+            Err(_) => default_logging_targets,
+        };
+
+        let target_filters: Box<dyn Filter<Registry> + Send + Sync> =
+            Box::new(Targets::new().with_targets(targets));
+        let layer = layer.with_filter(target_filters);
+        self.layers.push(Box::new(layer));
+        Ok(())
     }
 
     #[cfg(feature = "otlp")]
-    fn otlp_layer(&mut self) -> Result<()> {
+    fn otlp_layer(&mut self, default_logging_targets: Vec<(String, Level)>) -> Result<()> {
         use opentelemetry::{
             sdk::{trace, Resource},
             KeyValue,
@@ -122,8 +127,6 @@ impl TracingLayers {
         use opentelemetry_otlp::WithExportConfig;
         use opentelemetry_semantic_conventions::resource::{SERVICE_INSTANCE_ID, SERVICE_NAME};
         use rand::{distributions::Alphanumeric, thread_rng, Rng};
-        use tracing_subscriber::filter::LevelFilter;
-        use tracing_subscriber::EnvFilter;
 
         let service_name = std::env::var("OTLP_SERVICE_NAME").unwrap_or_else(|_| {
             let random_node_name: String = thread_rng()
@@ -131,7 +134,7 @@ impl TracingLayers {
                 .take(10)
                 .map(char::from)
                 .collect();
-            format!("{}_{}", current_crate_str(), random_node_name)
+            random_node_name
         });
         println!("The opentelemetry traces are logged under the name: {service_name}");
 
@@ -144,14 +147,19 @@ impl TracingLayers {
             ])))
             .install_batch(opentelemetry::runtime::Tokio)?;
 
-        let env_filter = EnvFilter::builder()
-            .with_default_directive(LevelFilter::INFO.into())
-            .with_env_var("RUST_LOG_OTLP")
-            .from_env_lossy();
+        let targets = match std::env::var("SN_LOG_OTLP") {
+            Ok(sn_log_val) => {
+                println!("Using SN_LOG_OTLP={sn_log_val}");
+                get_logging_targets(&sn_log_val)?
+            }
+            Err(_) => default_logging_targets,
+        };
 
+        let target_filters: Box<dyn Filter<Registry> + Send + Sync> =
+            Box::new(Targets::new().with_targets(targets));
         let otlp_layer = tracing_opentelemetry::layer()
             .with_tracer(tracer)
-            .with_filter(env_filter)
+            .with_filter(target_filters)
             .boxed();
         self.layers.push(otlp_layer);
         Ok(())
@@ -162,15 +170,18 @@ impl TracingLayers {
 /// This guard should be held for the life of the program.
 ///
 /// Logging should be instantiated only once.
-pub fn init_node_logging(log_dir: &Option<PathBuf>) -> Result<Option<WorkerGuard>> {
+pub fn init_node_logging(
+    default_logging_targets: Vec<(String, Level)>,
+    log_dir: &Option<PathBuf>,
+) -> Result<Option<WorkerGuard>> {
     let mut layers = TracingLayers::default();
-    layers.fmt_layer(log_dir);
+    layers.fmt_layer(default_logging_targets.clone(), log_dir)?;
 
     #[cfg(feature = "otlp")]
     {
         match std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
-            Ok(_) => layers.otlp_layer()?,
-            Err(_) => info!(
+            Ok(_) => layers.otlp_layer(default_logging_targets)?,
+            Err(_) => println!(
                 "The OTLP feature is enabled but the OTEL_EXPORTER_OTLP_ENDPOINT variable is not \
                 set, so traces will not be submitted."
             ),
@@ -199,9 +210,35 @@ pub fn init_test_logger() {
     });
 }
 
-/// Get current root module name (e.g. "safenode")
-fn current_crate_str() -> &'static str {
-    // Grab root from module path ("safenode::log::etc" -> "safenode")
-    let m = module_path!();
-    &m[..m.find(':').unwrap_or(m.len())]
+fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> {
+    let mut targets = Vec::new();
+    let crates = logging_env_value.split(',');
+    for c in crates {
+        let mut split = c.split('=');
+        let crate_name = split.next().ok_or_else(|| {
+            Error::LoggingConfigurationError(
+                "Could not obtain crate name in logging string".to_string(),
+            )
+        })?;
+        let log_level = split.next().ok_or_else(|| {
+            Error::LoggingConfigurationError(format!(
+                "Could not obtain log level for {crate_name} in logging string"
+            ))
+        })?;
+        targets.push((crate_name.to_string(), get_log_level_from_str(log_level)?));
+    }
+    Ok(targets)
+}
+
+fn get_log_level_from_str(log_level: &str) -> Result<Level> {
+    match log_level.to_lowercase().as_str() {
+        "info" => Ok(Level::INFO),
+        "debug" => Ok(Level::DEBUG),
+        "trace" => Ok(Level::TRACE),
+        "warn" => Ok(Level::WARN),
+        "error" => Ok(Level::WARN),
+        _ => Err(Error::LoggingConfigurationError(format!(
+            "Log level {log_level} is not supported"
+        ))),
+    }
 }
