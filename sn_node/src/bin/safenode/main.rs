@@ -10,7 +10,7 @@
 extern crate tracing;
 
 mod rpc;
-use safenode::node::{Node, NodeEvent, NodeEventsReceiver};
+use sn_node::{Node, NodeEvent, NodeEventsReceiver};
 
 use clap::Parser;
 use eyre::{eyre, Error, Result};

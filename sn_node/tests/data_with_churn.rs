@@ -6,8 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::get_client;
-
 use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
 
 use bytes::Bytes;
@@ -461,4 +459,11 @@ async fn query_content(client: &Client, net_addr: &NetworkAddress) -> Result<(),
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet
     }
+}
+
+async fn get_client() -> Client {
+    let secret_key = bls::SecretKey::random();
+    Client::new(secret_key, None)
+        .await
+        .expect("Client shall be successfully created.")
 }
