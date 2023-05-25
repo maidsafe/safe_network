@@ -143,7 +143,9 @@ impl SwarmDriver {
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
                         info!(%peer_id, ?info, "identify: received info");
-                        if self.dialed_peers.contains(&peer_id)
+
+                        // If we are not local, we care only for peers that we dialed and thus are reachable.
+                        if (self.local || self.dialed_peers.contains(&peer_id))
                             && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
                         {
                             let addrs = match self.local {
