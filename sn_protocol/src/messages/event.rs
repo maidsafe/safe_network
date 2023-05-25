@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 /// See the [`protocol`] module documentation for more details of the types supported by the Safe
 /// Network, and their semantics.
 ///
-/// [`protocol`]: crate::protocol
+/// [`protocol`]: crate
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
 pub enum Event {

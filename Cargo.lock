@@ -4467,6 +4467,7 @@ dependencies = [
  "sn_protocol",
  "tokio",
  "tracing",
+ "tracing-core",
  "walkdir",
  "xor_name",
 ]
@@ -4547,6 +4548,10 @@ name = "sn_logging"
 version = "0.1.0"
 dependencies = [
  "file-rotate",
+ "opentelemetry",
+ "opentelemetry-otlp",
+ "opentelemetry-semantic-conventions",
+ "rand 0.8.5",
  "thiserror",
  "tracing",
  "tracing-appender",
@@ -4601,9 +4606,6 @@ dependencies = [
  "libp2p",
  "libp2p-quic",
  "lru_time_cache",
- "opentelemetry",
- "opentelemetry-otlp",
- "opentelemetry-semantic-conventions",
  "prost",
  "rand 0.8.5",
  "rayon",

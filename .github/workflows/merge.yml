@@ -28,7 +28,6 @@ jobs:
           # we need rustfmt here while we have a build step
           components: rustfmt
 
-
       - name: Install cargo-udeps
         run: cargo install cargo-udeps --locked
       - name: Run cargo-udeps
@@ -85,8 +84,6 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Rust
-        # Only run on PRs w/ ubuntu
-        id: toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -94,31 +91,26 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v1
-        # Only run on PRs w/ ubuntu
         continue-on-error: true
         with:
           cache-on-failure: true
           sharedKey: ${{github.run_id}}-unit
 
       - name: Build tests before running
-        # Only run on PRs w/ ubuntu
         run: cargo test --no-run --release
         timeout-minutes: 30
 
       - name: Run network tests
-        # Only run on PRs w/ ubuntu
         timeout-minutes: 25
-        run: cargo test --release -p safenode -- network
+        run: cargo test --release --package sn_networking
 
       - name: Run protocol tests
-        # Only run on PRs w/ ubuntu
         timeout-minutes: 25
-        run: cargo test --release -p safenode -- protocol
+        run: cargo test --release --package sn_protocol
 
       - name: Run storage tests
-        # Only run on PRs w/ ubuntu
         timeout-minutes: 25
-        run: cargo test --release -p safenode -- storage -- --skip prop
+        run: cargo test --release --package sn_domain -- storage -- --skip prop
         env:
           # this will speed up PR merge flows, while giving us a modicum
           # of proptesting
@@ -137,7 +129,6 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Rust
-        id: toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -168,9 +159,8 @@ jobs:
 
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
-        id: section-startup
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 10
 
       - name: Set contact env var node.
@@ -181,48 +171,41 @@ jobs:
       - name: Check contact peer
         shell: bash
         run: echo "Peer is $SAFE_PEERS"
-      
-      
+
       - name: Start a client to upload files
         run: cargo run --bin safe --release -- files upload -- "./resources"
-        id: client-file-upload
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 2
 
       - name: Start a client to download files
         run: cargo run --bin safe --release -- files download
-        id: client-file-download
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 2
 
       - name: Start a client to create a register
         run: cargo run --bin safe --release -- register create baobao
-        id: client-register-create
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 2
 
       - name: Start a client to get a register
         run: cargo run --bin safe --release -- register get baobao
-        id: client-register-get
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 2
 
       - name: Start a client to edit a register
         run: cargo run --bin safe --release -- register edit baobao wood
-        id: client-register-edit
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 2
 
       - name: Start a faucet client to claim genesis
         run: cargo run --bin faucet --release -- claim-genesis
-        id: faucet-claim-genesis
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 2
 
       - name: Kill all nodes
@@ -263,7 +246,6 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Rust
-        id: toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -298,16 +280,14 @@ jobs:
 
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
-        id: section-startup
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 10
 
       - name: execute the dbc spend test
         run: cargo test --release --features="local-discovery" multiple_sequential_transfers_succeed  -- --nocapture
-        id: client-spend-dbc
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 10
 
       - name: Kill all nodes
@@ -346,7 +326,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust
-        id: toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -377,20 +356,18 @@ jobs:
 
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
-        id: section-startup
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 10
 
       - name: Chunks data integrity during nodes churn (during 10min) 
         run: cargo test --release --features="local-discovery" data_availability_during_churn -- --nocapture
-        id: data_availability_during_churn
         env:
           CHUNKS_ONLY: true
-          TEST_DURATION_MINS: 15
-          RUST_LOG: "safenode,safe=trace"
+          TEST_DURATION_MINS: 10
+          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
         timeout-minutes: 30
-      
+
       - name: Verify restart of nodes using rg
         shell: bash
         timeout-minutes: 1

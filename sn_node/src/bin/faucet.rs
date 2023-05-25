@@ -13,10 +13,17 @@ use sn_dbc::Token;
 use sn_domain::{peers_acquisition::peers_from_opts_or_env, wallet::parse_public_address};
 use sn_logging::init_node_logging;
 use tracing::info;
+use tracing_core::Level;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let _log_appender_guard = init_node_logging(&None)?;
+    let logging_targets = vec![
+        ("safenode".to_string(), Level::INFO),
+        ("sn_domain".to_string(), Level::INFO),
+        ("sn_networking".to_string(), Level::INFO),
+        ("sn_node".to_string(), Level::INFO),
+    ];
+    let _log_appender_guard = init_node_logging(logging_targets, &None)?;
 
     let opt = Opt::parse();
 

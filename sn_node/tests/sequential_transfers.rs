@@ -14,6 +14,7 @@ use sn_client::{get_tokens_from_faucet, send, Client};
 
 use sn_dbc::Token;
 use sn_domain::wallet::{DepositWallet, LocalWallet, VerifyingClient, Wallet};
+use tracing_core::Level;
 
 use assert_fs::TempDir;
 use eyre::Result;
@@ -21,7 +22,13 @@ use eyre::Result;
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "This test is ignored because it is not stable until we have DBCs stored as records."]
 async fn multiple_sequential_transfers_succeed() -> Result<()> {
-    let _log_appender_guard = sn_logging::init_node_logging(&None)?;
+    let logging_targets = vec![
+        ("safenode".to_string(), Level::INFO),
+        ("sn_domain".to_string(), Level::INFO),
+        ("sn_networking".to_string(), Level::INFO),
+        ("sn_node".to_string(), Level::INFO),
+    ];
+    let _log_appender_guard = sn_logging::init_node_logging(logging_targets, &None)?;
 
     let first_wallet_dir = TempDir::new()?;
     let first_wallet_balance = Token::from_nano(1_000_000_000);

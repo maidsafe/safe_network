@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 /// See the [`protocol`] module documentation for more details of the types supported by the Safe
 /// Network, and their semantics.
 ///
-/// [`protocol`]: crate::protocol
+/// [`protocol`]: crate
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
 pub enum Query {
@@ -25,12 +25,12 @@ pub enum Query {
     ///
     /// This should eventually lead to a [`GetChunk`] response.
     ///
-    /// [`Chunk`]:  crate::protocol::storage::Chunk
+    /// [`Chunk`]:  crate::storage::Chunk
     /// [`GetChunk`]: super::QueryResponse::GetChunk
     GetChunk(ChunkAddress),
     /// [`Register`] read operation.
     ///
-    /// [`Register`]: crate::protocol::storage::Register
+    /// [`Register`]: crate::storage::Register
     Register(RegisterQuery),
     /// [`Spend`] read operation.
     ///

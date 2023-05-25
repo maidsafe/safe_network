@@ -18,6 +18,8 @@ pub enum Error {
     #[cfg(feature = "otlp")]
     #[error("OpenTelemetry Tracing error: {0}")]
     OpenTelemetryTracing(#[from] opentelemetry::trace::TraceError),
+    #[error("Could not configure logging: {0}")]
+    LoggingConfigurationError(String),
     #[error("Could not configure OTLP logging: {0}")]
-    OtlpConfigurationError(String),
+    OtlpLoggingConfigurationError(String),
 }

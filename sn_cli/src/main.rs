@@ -21,6 +21,7 @@ use sn_client::Client;
 use sn_domain::{git_hash::git_hash, peers_acquisition::peers_from_opts_or_env};
 use sn_logging::init_node_logging;
 use std::path::PathBuf;
+use tracing_core::Level;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -28,7 +29,13 @@ async fn main() -> Result<()> {
     // For client, default to log to std::out
     // This is ruining the log output for the CLI. Needs to be fixed.
     let tmp_dir = std::env::temp_dir();
-    let log_appender_guard = init_node_logging(&Some(tmp_dir.join("safe-client")))?;
+    let logging_targets = vec![
+        ("safe".to_string(), Level::INFO),
+        ("sn_client".to_string(), Level::INFO),
+        ("sn_networking".to_string(), Level::INFO),
+    ];
+    let log_appender_guard =
+        init_node_logging(logging_targets, &Some(tmp_dir.join("safe-client")))?;
 
     info!("Full client logs will be written to {:?}", tmp_dir);
     println!("Instantiating a SAFE client...");

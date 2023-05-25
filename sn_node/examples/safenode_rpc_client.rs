@@ -20,6 +20,7 @@ use libp2p::{Multiaddr, PeerId};
 use std::str::FromStr;
 use std::{net::SocketAddr, time::Duration};
 use tokio_stream::StreamExt;
+use tracing_core::Level;
 
 // this includes code generated from .proto files
 mod safenode_proto {
@@ -74,7 +75,13 @@ enum Cmd {
 #[tokio::main]
 async fn main() -> Result<()> {
     // For client, default to log to std::out
-    let _log_appender_guard = init_node_logging(&None)?;
+    let logging_targets = vec![
+        ("safenode".to_string(), Level::INFO),
+        ("sn_domain".to_string(), Level::INFO),
+        ("sn_networking".to_string(), Level::INFO),
+        ("sn_node".to_string(), Level::INFO),
+    ];
+    let _log_appender_guard = init_node_logging(logging_targets, &None)?;
 
     let opt = Opt::parse();
     let addr = opt.addr;

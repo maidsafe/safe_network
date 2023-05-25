@@ -27,6 +27,7 @@ use tokio::{
     sync::{broadcast::error::RecvError, mpsc},
     time::sleep,
 };
+use tracing_core::Level;
 
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
@@ -104,13 +105,19 @@ enum NodeCtrl {
 
 fn main() -> Result<()> {
     let opt = Opt::parse();
+    let logging_targets = vec![
+        ("safenode".to_string(), Level::INFO),
+        ("sn_domain".to_string(), Level::INFO),
+        ("sn_networking".to_string(), Level::INFO),
+        ("sn_node".to_string(), Level::INFO),
+    ];
     #[cfg(not(feature = "otlp"))]
-    let _log_appender_guard = init_node_logging(&opt.log_dir)?;
+    let _log_appender_guard = init_node_logging(logging_targets, &opt.log_dir)?;
     #[cfg(feature = "otlp")]
     let (_rt, _guard) = {
         // init logging in a separate runtime if we are sending traces to an opentelemetry server
         let rt = Runtime::new()?;
-        let guard = rt.block_on(async { init_node_logging(&opt.log_dir) })?;
+        let guard = rt.block_on(async { init_node_logging(logging_targets, &opt.log_dir) })?;
         (rt, guard)
     };
 
