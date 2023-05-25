@@ -18,7 +18,7 @@ name = "faucet"
 path = "src/bin/faucet.rs"
 
 [features]
-default=[]
+default=[""]
 local-discovery=["libp2p/mdns"]
 otlp = [
     "opentelemetry",
