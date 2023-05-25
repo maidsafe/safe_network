@@ -185,17 +185,19 @@ impl Node {
                 }
             }
             NetworkEvent::NewListenAddr(_) => {
-                let network = self.network.clone();
-                let peers = self.initial_peers.clone();
-                let _handle = spawn(async move {
-                    for (peer_id, addr) in &peers {
-                        // The addresses passed might contain the peer_id, which we already pass seperately.
-                        let addr = multiaddr_strip_p2p(addr);
-                        if let Err(err) = network.dial(*peer_id, addr.clone()).await {
-                            tracing::error!("Failed to dial {peer_id}: {err:?}");
-                        };
-                    }
-                });
+                if !cfg!(feature = "local-discovery") {
+                    let network = self.network.clone();
+                    let peers = self.initial_peers.clone();
+                    let _handle = spawn(async move {
+                        for (peer_id, addr) in &peers {
+                            // The addresses passed might contain the peer_id, which we already pass seperately.
+                            let addr = multiaddr_strip_p2p(addr);
+                            if let Err(err) = network.dial(*peer_id, addr.clone()).await {
+                                tracing::error!("Failed to dial {peer_id}: {err:?}");
+                            };
+                        }
+                    });
+                }
             }
             NetworkEvent::NatStatusChanged(status) => {
                 if matches!(status, NatStatus::Private) {
