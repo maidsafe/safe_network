@@ -4583,7 +4583,6 @@ name = "sn_node"
 version = "0.83.0"
 dependencies = [
  "assert_fs",
- "assert_matches",
  "async-trait",
  "bincode",
  "blsttc",
@@ -4605,9 +4604,7 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry-semantic-conventions",
- "proptest",
  "prost",
- "quickcheck",
  "rand 0.8.5",
  "rayon",
  "rmp-serde",

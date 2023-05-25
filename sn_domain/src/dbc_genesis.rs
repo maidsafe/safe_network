@@ -49,7 +49,7 @@ pub enum Error {
     GenesisDbcError(String),
     /// The dbc error reason that parsing failed.
     #[error("Failed to parse reason: {0}")]
-    FailedToParseReason(#[from] DbcError),
+    FailedToParseReason(#[from] Box<DbcError>),
 }
 
 lazy_static! {
@@ -173,8 +173,12 @@ pub(super) fn split(
 ) -> GenesisResult<Vec<(Dbc, RevealedAmount)>> {
     let rng = &mut rng::thread_rng();
 
-    let derived_key = dbc.derived_key(main_key)?;
-    let revealed_amount = dbc.revealed_amount(&derived_key)?;
+    let derived_key = dbc
+        .derived_key(main_key)
+        .map_err(|e| Error::FailedToParseReason(Box::new(e)))?;
+    let revealed_amount = dbc
+        .revealed_amount(&derived_key)
+        .map_err(|e| Error::FailedToParseReason(Box::new(e)))?;
     let input = InputHistory {
         input: RevealedInput::new(derived_key, revealed_amount),
         input_src_tx: dbc.src_tx.clone(),

@@ -162,7 +162,7 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     // Finalize the tx builder to get the dbc builder.
     let dbc_builder = tx_builder
         .build(Hash::default(), &mut rng)
-        .map_err(Error::Dbcs)?;
+        .map_err(|e| Error::Dbcs(Box::new(e)))?;
 
     let tx_hash = dbc_builder.dst_tx.hash();
 
@@ -201,7 +201,7 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<Outputs> {
     // as well as building the output DBCs.
     let mut created_dbcs: Vec<_> = dbc_builder
         .build()
-        .map_err(Error::Dbcs)?
+        .map_err(|e| Error::Dbcs(Box::new(e)))?
         .into_iter()
         .map(|(dbc, amount)| CreatedDbc { dbc, amount })
         .collect();

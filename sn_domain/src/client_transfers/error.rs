@@ -22,7 +22,7 @@ pub enum Error {
     NotEnoughBalance(String),
     /// An error from the `sn_dbc` crate.
     #[error("Dbc error: {0}")]
-    Dbcs(#[from] DbcError),
+    Dbcs(#[from] Box<DbcError>),
     /// DbcReissueFailed
     #[error("DbcReissueFailed: {0}")]
     DbcReissueFailed(String),

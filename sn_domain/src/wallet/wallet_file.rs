@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{error::Result, public_address_name, KeyLessWallet};
+use super::{
+    error::{Error, Result},
+    public_address_name, KeyLessWallet,
+};
 
 use sn_dbc::Dbc;
 use sn_protocol::storage::DbcAddress;
@@ -62,7 +65,7 @@ pub(super) async fn store_created_dbcs(created_dbcs: Vec<Dbc>, wallet_dir: &Path
 
         let dbc_file_path = public_address_dir_path.join(dbc_id_file_name);
 
-        let hex = dbc.to_hex()?;
+        let hex = dbc.to_hex().map_err(|e| Error::Dbc(Box::new(e)))?;
         fs::write(dbc_file_path, &hex).await?;
     }
     Ok(())
