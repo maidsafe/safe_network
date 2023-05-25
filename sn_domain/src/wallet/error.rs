@@ -34,7 +34,7 @@ pub enum Error {
     FailedToHexEncodeKey(String),
     /// Dbc error.
     #[error("Dbc error: {0}")]
-    Dbc(#[from] sn_dbc::Error),
+    Dbc(#[from] Box<sn_dbc::Error>),
     /// Bls error.
     #[error("Bls error: {0}")]
     Bls(#[from] bls::error::Error),
