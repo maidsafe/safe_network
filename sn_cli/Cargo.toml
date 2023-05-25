@@ -24,7 +24,6 @@ color-eyre = "~0.6"
 dirs-next = "~2.0.0"
 hex = "~0.4.3"
 libp2p = { version="0.51", features = ["identify", "kad"] }
-safenode = { path = "../safenode", version = "^0.1.0" }
 sn_client = { path = "../sn_client", version = "0.85.0" }
 sn_dbc = { version = "17.0.0", features = ["serdes"] }
 sn_domain = { path = "../sn_domain", version = "0.1.0" }

@@ -8,7 +8,7 @@
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "verify-nodes")]
-    tonic_build::compile_protos("../safenode/src/protocol/safenode_proto/safenode.proto")?;
+    tonic_build::compile_protos("../sn_node/src/protocol/safenode_proto/safenode.proto")?;
 
     Ok(())
 }
