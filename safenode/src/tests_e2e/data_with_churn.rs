@@ -40,14 +40,16 @@ mod safenode_proto {
     tonic::include_proto!("safenode_proto");
 }
 
-const NODE_COUNT: u16 = 25;
-const CHURN_PERIOD_MILLIS: u64 = 10_000;
-const CHUNK_CREATION_RATIO_TO_CHURN: u64 = 15;
-const REGISTER_CREATION_RATIO_TO_CHURN: u64 = 15;
+const NODE_COUNT: u32 = 25;
+
+const CHURN_CYCLES: u32 = 1;
+// const CHURN_PERIOD_MILLIS: u64 = 10_000;
+const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 5;
+const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 5;
 
 const CHUNKS_SIZE: usize = 1024;
 
-const CONTENT_QUERY_RATIO_TO_CHURN: u64 = 12;
+const CONTENT_QUERY_RATIO_TO_CHURN: u32 = 12;
 const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 
 // Default total amount of time we run the checks for before reporting the outcome.
@@ -82,6 +84,15 @@ async fn data_availability_during_churn() -> Result<()> {
         TEST_DURATION
     };
 
+    let churn_period = if let Ok(str) = std::env::var("TEST_CHURN_CYCLES") {
+        let cycles = str.parse::<u32>()?;
+        test_duration / (cycles * NODE_COUNT)
+    } else {
+        test_duration / (CHURN_CYCLES * NODE_COUNT)
+    };
+
+    println!("Nodes will churn every {:?}", churn_period);
+
     // Create a cross thread usize for tracking churned nodes
     let churn_count = Arc::new(RwLock::new(0_usize));
 
@@ -106,13 +117,13 @@ async fn data_availability_during_churn() -> Result<()> {
     // Upload some chunks before carry out any churning.
 
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
-    store_chunks_task(client.clone(), content.clone());
+    store_chunks_task(client.clone(), content.clone(), churn_period);
 
     // Wait one churn period _before_ we start churning, to get some data PUT on the network
-    sleep(Duration::from_millis(CHURN_PERIOD_MILLIS)).await;
+    sleep(churn_period).await;
 
     // Spawn a task to churn nodes
-    churn_nodes_task(churn_count.clone(), test_duration);
+    churn_nodes_task(churn_count.clone(), test_duration, churn_period);
 
     // Shared bucket where we keep track of the content which erred when creating/storing/fetching.
     // We remove them from this bucket if we are then able to query/fetch them successfully.
@@ -124,15 +135,25 @@ async fn data_availability_during_churn() -> Result<()> {
 
     // Spawn a task to create Registers at random locations, at a higher frequency than the churning events
     if !chunks_only {
-        create_registers_task(client.clone(), content.clone());
+        create_registers_task(client.clone(), content.clone(), churn_period);
     }
 
     // Spawn a task to randomly query/fetch the content we create/store
-    query_content_task(client.clone(), content.clone(), content_erred.clone());
+    query_content_task(
+        client.clone(),
+        content.clone(),
+        content_erred.clone(),
+        churn_period,
+    );
 
     // Spawn a task to retry querying the content that failed, up to 'MAX_NUM_OF_QUERY_ATTEMPTS' times,
     // and mark them as failures if they effectivelly cannot be retrieved.
-    retry_query_content_task(client.clone(), content_erred.clone(), failures.clone());
+    retry_query_content_task(
+        client.clone(),
+        content_erred.clone(),
+        failures.clone(),
+        churn_period,
+    );
 
     let start_time = Instant::now();
     while start_time.elapsed() < test_duration {
@@ -143,7 +164,7 @@ async fn data_availability_during_churn() -> Result<()> {
             failed.len(),
             failed.values()
         );
-        sleep(Duration::from_millis(CHURN_PERIOD_MILLIS)).await;
+        sleep(churn_period).await;
     }
 
     println!();
@@ -180,7 +201,8 @@ async fn data_availability_during_churn() -> Result<()> {
     assert_eq!(
         content_queried_count,
         content.read().await.len(),
-        "Not all content was queried");
+        "Not all content was queried"
+    );
 
     drop(log_appender_guard);
 
@@ -189,10 +211,10 @@ async fn data_availability_during_churn() -> Result<()> {
 }
 
 // Spawns a task which periodically creates Registers at random locations.
-fn create_registers_task(client: Client, content: ContentList) {
+fn create_registers_task(client: Client, content: ContentList, churn_period: Duration) {
     let _handle = tokio::spawn(async move {
         // Create Registers at a higher frequency than the churning events
-        let delay = Duration::from_millis(CHURN_PERIOD_MILLIS / REGISTER_CREATION_RATIO_TO_CHURN);
+        let delay = churn_period / REGISTER_CREATION_RATIO_TO_CHURN;
 
         loop {
             let xorname = XorName(rand::random());
@@ -214,10 +236,10 @@ fn create_registers_task(client: Client, content: ContentList) {
 }
 
 // Spawns a task which periodically stores Chunks at random locations.
-fn store_chunks_task(client: Client, content: ContentList) {
+fn store_chunks_task(client: Client, content: ContentList, churn_period: Duration) {
     let _handle = tokio::spawn(async move {
         // Store Chunks at a higher frequency than the churning events
-        let delay = Duration::from_millis(CHURN_PERIOD_MILLIS / CHUNK_CREATION_RATIO_TO_CHURN);
+        let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
 
         let file_api = Files::new(client);
         let mut rng = OsRng;
@@ -249,9 +271,14 @@ fn store_chunks_task(client: Client, content: ContentList) {
 
 // Spawns a task which periodically queries a content by randomly choosing it from the list
 // of content created by another task.
-fn query_content_task(client: Client, content: ContentList, content_erred: ContentErredList) {
+fn query_content_task(
+    client: Client,
+    content: ContentList,
+    content_erred: ContentErredList,
+    churn_period: Duration,
+) {
     let _handle = tokio::spawn(async move {
-        let delay = Duration::from_millis(CHURN_PERIOD_MILLIS / CONTENT_QUERY_RATIO_TO_CHURN);
+        let delay = churn_period / CONTENT_QUERY_RATIO_TO_CHURN;
         loop {
             let len = content.read().await.len();
             if len == 0 {
@@ -292,12 +319,16 @@ fn query_content_task(client: Client, content: ContentList, content_erred: Conte
 }
 
 // Spawns a task which periodically picks up a node, and restarts it to cause churn in the network.
-fn churn_nodes_task(churn_count: Arc<RwLock<usize>>, test_duration: Duration) {
+fn churn_nodes_task(
+    churn_count: Arc<RwLock<usize>>,
+    test_duration: Duration,
+    churn_period: Duration,
+) {
     let start = Instant::now();
     let _handle = tokio::spawn(async move {
         let mut node_index = 1;
         let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
-        let delay = Duration::from_millis(CHURN_PERIOD_MILLIS);
+        let delay = churn_period;
         loop {
             // break out if we've run the duration of churn
             if start.elapsed() > test_duration {
@@ -312,13 +343,13 @@ fn churn_nodes_task(churn_count: Arc<RwLock<usize>>, test_duration: Duration) {
 
             if let Err(err) = node_restart(addr).await {
                 println!("Failed to restart node with RPC endpoint {addr}: {err}");
-                continue
+                continue;
             }
 
             *churn_count.write().await += 1;
 
             node_index += 1;
-            if node_index > NODE_COUNT {
+            if node_index > NODE_COUNT as u16 {
                 node_index = 1;
             }
         }
@@ -331,9 +362,10 @@ fn retry_query_content_task(
     client: Client,
     content_erred: ContentErredList,
     failures: ContentErredList,
+    churn_period: Duration,
 ) {
     let _handle = tokio::spawn(async move {
-        let delay = Duration::from_millis(2 * CHURN_PERIOD_MILLIS);
+        let delay = 2 * churn_period;
         loop {
             sleep(delay).await;
 
@@ -362,35 +394,22 @@ fn retry_query_content_task(
     });
 }
 
-
-async fn final_retry_query_content(
-    client: &Client,
-    net_addr: &NetworkAddress,
-) -> Result<()>{
-    println!("Performing final check on all content");
-
+async fn final_retry_query_content(client: &Client, net_addr: &NetworkAddress) -> Result<()> {
+    let mut attempts = 1;
     loop {
-
-        let mut attempts = 1;
-    
         println!("Querying content at {net_addr:?}, attempt: #{attempts} ...");
-        if let Err(last_err) = query_content(&client, &net_addr).await {
-            println!("Content is still not retrievable at {net_addr:?} after {attempts} attempts: {last_err:?}");
+        if let Err(last_err) = query_content(client, net_addr).await {
             attempts += 1;
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
                 bail!("Final check: Content is still not retrievable at {net_addr:?} after {attempts} attempts: {last_err:?}");
+            } else {
+                continue;
             }
-            else {
-                continue
-            }
-        }
-        else {
+        } else {
             // content retrieved fine
-            return Ok(())
+            return Ok(());
         }
     }
-
-
 }
 
 async fn node_restart(addr: SocketAddr) -> Result<()> {

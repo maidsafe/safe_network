@@ -328,8 +328,9 @@ jobs:
         env:
           CHUNKS_ONLY: true
           TEST_DURATION_MINS: 60
+          TEST_CHURN_CYCLES: 6
           RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 65
+        timeout-minutes: 70
       
       - name: Verify restart of nodes using rg
         shell: bash
