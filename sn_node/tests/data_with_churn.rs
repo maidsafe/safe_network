@@ -12,6 +12,7 @@ use bytes::Bytes;
 use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files};
+use sn_logging::init_node_logging;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress},
     NetworkAddress,
@@ -26,6 +27,8 @@ use std::{
 };
 use tokio::{fs::remove_dir_all, sync::RwLock, time::sleep};
 use tonic::Request;
+use tracing::trace;
+use tracing_core::Level;
 use xor_name::XorName;
 
 // this includes code generated from .proto files
@@ -99,7 +102,14 @@ async fn data_availability_during_churn() -> Result<()> {
     );
 
     let tmp_dir = std::env::temp_dir();
-    let log_appender_guard = init_node_logging(&Some(tmp_dir.join("safe-client")))?;
+    let logging_targets = vec![
+        ("safenode".to_string(), Level::INFO),
+        ("sn_domain".to_string(), Level::INFO),
+        ("sn_networking".to_string(), Level::INFO),
+        ("sn_node".to_string(), Level::INFO),
+    ];
+    let log_appender_guard =
+        init_node_logging(logging_targets, &Some(tmp_dir.join("safe-client")))?;
 
     println!("Creating a client...");
     let client = get_client().await;

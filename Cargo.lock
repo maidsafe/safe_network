@@ -899,16 +899,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "codespan-reporting"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3538270d33cc669650c4b093848450d380def10c331d38c768e34cac80576e6e"
-dependencies = [
- "termcolor",
- "unicode-width",
-]
-
-[[package]]
 name = "color-eyre"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1183,50 +1173,6 @@ dependencies = [
  "proc-macro2",
  "syn 1.0.109",
  "synstructure",
-]
-
-[[package]]
-name = "cxx"
-version = "1.0.94"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f61f1b6389c3fe1c316bf8a4dccc90a38208354b330925bce1f74a6c4756eb93"
-dependencies = [
- "cc",
- "cxxbridge-flags",
- "cxxbridge-macro",
- "link-cplusplus",
-]
-
-[[package]]
-name = "cxx-build"
-version = "1.0.94"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12cee708e8962df2aeb38f594aae5d827c022b6460ac71a7a3e2c3c2aae5a07b"
-dependencies = [
- "cc",
- "codespan-reporting",
- "once_cell",
- "proc-macro2",
- "quote",
- "scratch",
- "syn 2.0.15",
-]
-
-[[package]]
-name = "cxxbridge-flags"
-version = "1.0.94"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7944172ae7e4068c533afbb984114a56c46e9ccddda550499caa222902c7f7bb"
-
-[[package]]
-name = "cxxbridge-macro"
-version = "1.0.94"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2345488264226bf682893e25de0769f3360aac9957980ec49361b083ddaa5bc5"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.15",
 ]
 
 [[package]]
@@ -2758,15 +2704,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "link-cplusplus"
-version = "1.0.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecd207c9c713c34f95a097a5b029ac2ce6010530c7b49d7fea24d977dede04f5"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "linked-hash-map"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3617,7 +3554,6 @@ dependencies = [
  "byteorder",
  "lazy_static",
  "num-traits",
- "quick-error 2.0.1",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rand_xorshift",
@@ -3685,12 +3621,6 @@ name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
-
-[[package]]
-name = "quick-error"
-version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3"
 
 [[package]]
 name = "quick-protobuf"
@@ -4151,63 +4081,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
 
 [[package]]
-name = "safenode"
-version = "0.1.0"
-dependencies = [
- "assert_fs",
- "assert_matches",
- "async-trait",
- "bincode",
- "blsttc",
- "bytes",
- "chrono",
- "clap 4.2.7",
- "crdts",
- "custom_debug",
- "dirs-next",
- "eyre",
- "file-rotate",
- "futures",
- "hex",
- "itertools",
- "lazy_static",
- "libp2p",
- "libp2p-quic",
- "lru_time_cache",
- "opentelemetry",
- "opentelemetry-otlp",
- "opentelemetry-semantic-conventions",
- "proptest",
- "prost",
- "quickcheck",
- "rand 0.8.5",
- "rayon",
- "rmp-serde",
- "self_encryption",
- "serde",
- "sn_client",
- "sn_dbc",
- "sn_domain",
- "sn_logging",
- "sn_networking",
- "sn_protocol",
- "thiserror",
- "tiny-keccak",
- "tokio",
- "tokio-stream",
- "tonic",
- "tonic-build",
- "tracing",
- "tracing-appender",
- "tracing-core",
- "tracing-log",
- "tracing-opentelemetry",
- "tracing-subscriber",
- "walkdir",
- "xor_name",
-]
-
-[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4221,12 +4094,6 @@ name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
-
-[[package]]
-name = "scratch"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1792db035ce95be60c3f8853017b3999209281c24e2ba5bc8e59bf97a0c590c1"
 
 [[package]]
 name = "sct"
@@ -4459,7 +4326,6 @@ dependencies = [
  "dirs-next",
  "hex",
  "libp2p",
- "safenode",
  "sn_client",
  "sn_dbc",
  "sn_domain",
@@ -4569,6 +4435,7 @@ dependencies = [
  "bytes",
  "eyre",
  "futures",
+ "itertools",
  "libp2p",
  "libp2p-quic",
  "lru_time_cache",
@@ -4604,7 +4471,6 @@ dependencies = [
  "itertools",
  "lazy_static",
  "libp2p",
- "libp2p-quic",
  "lru_time_cache",
  "prost",
  "rand 0.8.5",
@@ -5367,12 +5233,6 @@ name = "unicode-segmentation"
 version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1dd624098567895118886609431a7c3b8f516e41d30e0643f03d94592a147e36"
-
-[[package]]
-name = "unicode-width"
-version = "0.1.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0edd1e5b14653f783770bce4a4dabb4a5108a5370a5f5d8cfe8710c361f6c8b"
 
 [[package]]
 name = "unicode-xid"
