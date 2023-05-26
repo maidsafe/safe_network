@@ -26,11 +26,11 @@ use std::{
 
 // Each node will have a replication interval between these bounds
 // This should serve to stagger the intense replication activity across the network
-pub(crate) const REPLICATION_INTERVAL_UPPER_BOUND: Duration = Duration::from_secs(540);
-pub(crate) const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(180);
+pub const REPLICATION_INTERVAL_UPPER_BOUND: Duration = Duration::from_secs(540);
+pub const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(180);
 
 /// A `RecordStore` that stores records on disk.
-pub(crate) struct DiskBackedRecordStore {
+pub struct DiskBackedRecordStore {
     /// The identity of the peer owning the store.
     #[allow(dead_code)]
     local_key: KBucketKey<PeerId>,

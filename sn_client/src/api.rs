@@ -13,8 +13,7 @@ use super::{
 
 use sn_dbc::{DbcId, SignedSpend};
 use sn_domain::client_transfers::SpendRequest;
-use sn_networking::multiaddr_is_global,
-use sn_networking::{close_group_majority, NetworkEvent, SwarmDriver};
+use sn_networking::{close_group_majority, multiaddr_is_global, NetworkEvent, SwarmDriver};
 use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
     storage::{Chunk, ChunkAddress, DbcAddress},

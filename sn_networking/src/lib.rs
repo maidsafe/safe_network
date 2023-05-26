@@ -35,7 +35,6 @@ use futures::{future::select_all, StreamExt};
 use libp2p::mdns;
 
 use libp2p::{
-    core::muxing::StreamMuxerBox,
     identity,
     kad::{kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
@@ -46,11 +45,11 @@ use libp2p::{
 use lru_time_cache::LruCache;
 use rand::Rng;
 use sn_domain::storage::{
-    DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL,
+    DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
     REPLICATION_INTERVAL_UPPER_BOUND,
 };
 use sn_protocol::{
-    messages::{QueryResponse, Request, Response},
+    messages::{QueryResponse, ReplicatedData, Request, Response},
     NetworkAddress,
 };
 use std::{
@@ -197,7 +196,7 @@ impl SwarmDriver {
     }
 
     /// Same as `new` API but creates the network components in client mode
-    pub fn new_client() -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
+    pub fn new_client(local: bool) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let mut kad_cfg = KademliaConfig::default(); // default query timeout is 60 secs
