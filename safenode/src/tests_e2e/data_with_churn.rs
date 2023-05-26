@@ -187,7 +187,12 @@ async fn data_availability_during_churn() -> Result<()> {
     // Hence, we carry out a final round of query all data to confirm storage.
     println!("Final querying content of content");
     let mut content_queried_count = 0;
-    for net_addr in content.read().await.iter() {
+
+    // take one read lock to avoid holding the lock for the whole loop
+    // prevent any late content uploads being added to the list
+    let content = content.read().await;
+    let uploaded_content_count = content.len();
+    for net_addr in content.iter() {
         assert!(
             final_retry_query_content(&client, net_addr).await.is_ok(),
             "Failed to query content at {net_addr:?}"
@@ -199,8 +204,7 @@ async fn data_availability_during_churn() -> Result<()> {
     println!("{:?} pieces of content queried", content_queried_count);
 
     assert_eq!(
-        content_queried_count,
-        content.read().await.len(),
+        content_queried_count, uploaded_content_count,
         "Not all content was queried"
     );
 
