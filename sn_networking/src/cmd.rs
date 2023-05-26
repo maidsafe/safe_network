@@ -16,7 +16,8 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use sn_protocol::{
-    messages::{QueryResponse, Request, Response},
+    messages::{QueryResponse, ReplicatedData, Request, Response},
+    storage::Chunk,
     NetworkAddress,
 };
 use std::collections::{hash_map, HashSet};

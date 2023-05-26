@@ -11,7 +11,10 @@ use super::{
     msg::MsgCodec,
     SwarmDriver,
 };
-use crate::IDENTIFY_AGENT_STR;
+use crate::{
+    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, sort_peers_by_key,
+    CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
+};
 
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
@@ -27,7 +30,7 @@ use libp2p::{
 };
 use sn_domain::storage::DiskBackedRecordStore;
 use sn_protocol::{
-    messages::{QueryResponse, Request, Response},
+    messages::{Cmd, QueryResponse, ReplicatedData, Request, Response},
     storage::Chunk,
     NetworkAddress,
 };
@@ -221,7 +224,6 @@ impl SwarmDriver {
                                     dial_failed = Some(error);
                                 }
                             }
-                        }
 
                             // if we error'd out, send the error back
                             if let Some(error) = dial_failed {
