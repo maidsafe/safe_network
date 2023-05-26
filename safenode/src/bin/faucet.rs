@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use libp2p::Multiaddr;
 use safenode::{
     client::Client,
     domain::{
@@ -13,7 +14,7 @@ use safenode::{
         wallet::parse_public_address,
     },
     log::init_node_logging,
-    peers_acquisition::peers_from_opts_or_env,
+    peers_acquisition::{parse_peer_addr, SAFE_PEERS_ENV},
 };
 
 use clap::{Parser, Subcommand};
@@ -30,8 +31,7 @@ async fn main() -> Result<()> {
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
-    let peers = peers_from_opts_or_env(&[])?;
-    let client = Client::new(secret_key, Some(peers)).await?;
+    let client = Client::new(secret_key, Some(opt.peers)).await?;
 
     faucet_cmds(opt.cmd, &client).await?;
 
@@ -41,6 +41,15 @@ async fn main() -> Result<()> {
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Opt {
+    /// Peer(s) to use for bootstrap, supports either a 'multiaddr' or a socket address like `1.2.3.4:1234`.
+    ///
+    /// A multiaddr looks like '/ip4/1.2.3.4/tcp/1200/tcp/p2p/12D3KooWRi6wF7yxWLuPSNskXc6kQ5cJ6eaymeMbCRdTnMesPgFx'
+    /// where `1.2.3.4` is the IP, `1200` is the port and the (optional) last part is the peer ID.
+    ///
+    /// This argument can be provided multiple times to connect to multiple peers.
+    #[clap(long = "peer", value_name = "multiaddr", env = SAFE_PEERS_ENV, value_delimiter = ',', value_parser = parse_peer_addr)]
+    peers: Vec<Multiaddr>,
+
     /// Available sub commands.
     #[clap(subcommand)]
     pub cmd: SubCmd,

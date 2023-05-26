@@ -44,7 +44,11 @@ use libp2p::{
     kad::{Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
-    swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
+    swarm::{
+        behaviour::toggle::Toggle,
+        dial_opts::{DialOpts, PeerCondition},
+        Swarm, SwarmBuilder,
+    },
     Multiaddr, PeerId, Transport,
 };
 use lru_time_cache::LruCache;
@@ -403,14 +407,19 @@ impl Network {
     }
 
     /// Dial the given peer at the given address.
-    pub async fn dial(&self, peer_id: PeerId, peer_addr: Multiaddr) -> Result<()> {
+    pub async fn dial(&self, mut addr: Multiaddr) -> Result<()> {
+        let peer_id = multiaddr_pop_p2p(&mut addr);
+        let opts = match peer_id {
+            Some(peer_id) => DialOpts::peer_id(peer_id)
+                // If we have a peer ID, we can prevent simultaneous dials.
+                .condition(PeerCondition::NotDialing)
+                .addresses(vec![addr])
+                .build(),
+            None => DialOpts::unknown_peer_id().address(addr).build(),
+        };
+
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::Dial {
-            peer_id,
-            peer_addr,
-            sender,
-        })
-        .await?;
+        self.send_swarm_cmd(SwarmCmd::Dial { opts, sender }).await?;
         receiver.await?
     }
 
@@ -630,7 +639,14 @@ pub fn multiaddr_is_global(multiaddr: &Multiaddr) -> bool {
     })
 }
 
-// Strip out the p2p protocol from a multiaddr.
+// Pop off the `/p2p/<peer_id>`.
+pub(crate) fn multiaddr_pop_p2p(multiaddr: &mut Multiaddr) -> Option<PeerId> {
+    PeerId::try_from_multiaddr(multiaddr).map(|id| {
+        let _ = multiaddr.pop();
+        id
+    })
+}
+// Strip off the p2p protocol from a multiaddr.
 pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
     multiaddr
         .iter()

@@ -18,10 +18,10 @@ use crate::{
 
 use libp2p::{
     kad::{Record, RecordKey},
-    multiaddr::Protocol,
+    swarm::dial_opts::DialOpts,
     Multiaddr, PeerId,
 };
-use std::collections::{hash_map, HashSet};
+use std::collections::HashSet;
 use tokio::sync::oneshot;
 
 /// Commands to send to the Swarm
@@ -32,8 +32,7 @@ pub enum SwarmCmd {
         sender: oneshot::Sender<Result<()>>,
     },
     Dial {
-        peer_id: PeerId,
-        peer_addr: Multiaddr,
+        opts: DialOpts,
         sender: oneshot::Sender<Result<()>>,
     },
     AddToRoutingTable {
@@ -109,35 +108,12 @@ impl SwarmDriver {
                     .add_address(&peer_id, peer_addr);
                 let _ = sender.send(Ok(()));
             }
-            SwarmCmd::Dial {
-                peer_id,
-                peer_addr,
-                sender,
-            } => {
-                let mut dial_error = None;
-                if let hash_map::Entry::Vacant(dial_entry) = self.pending_dial.entry(peer_id) {
-                    // immediately write to the pending dial hashmap, as dials can take time,
-                    // if we wait until its done more may be in flight
-                    let _ = dial_entry.insert(sender);
-                    match self
-                        .swarm
-                        .dial(peer_addr.with(Protocol::P2p(peer_id.into())))
-                    {
-                        Ok(()) => {}
-                        Err(e) => {
-                            dial_error = Some(e);
-                        }
-                    }
-                } else {
-                    let _ = sender.send(Err(Error::AlreadyDialingPeer(peer_id)));
-                }
-
-                // let's inform of our error if we have one
-                if let Some(error) = dial_error {
-                    if let Some(sender) = self.pending_dial.remove(&peer_id) {
-                        let _ = sender.send(Err(error.into()));
-                    }
-                }
+            SwarmCmd::Dial { opts, sender } => {
+                tracing::debug!(?opts, "dial");
+                let _ = match self.swarm.dial(opts) {
+                    Ok(_) => sender.send(Ok(())),
+                    Err(e) => sender.send(Err(e.into())),
+                };
             }
             SwarmCmd::GetClosestPeers { key, sender } => {
                 let query_id = self

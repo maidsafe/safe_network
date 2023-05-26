@@ -22,7 +22,7 @@ use crate::{
     network::Network,
 };
 
-use libp2p::{Multiaddr, PeerId};
+use libp2p::Multiaddr;
 use tokio::sync::mpsc;
 
 /// `Node` represents a single node in the distributed network. It handles
@@ -34,6 +34,6 @@ pub struct Node {
     transfers: Transfers,
     events_channel: NodeEventsChannel,
     /// Peers that are dialed at startup of node.
-    initial_peers: Vec<(PeerId, Multiaddr)>,
+    initial_peers: Vec<Multiaddr>,
     transfer_actor: mpsc::Sender<TransferAction>,
 }

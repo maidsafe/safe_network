@@ -33,13 +33,12 @@ use xor_name::XorName;
 
 impl Client {
     /// Instantiate a new client.
-    pub async fn new(signer: SecretKey, peers: Option<Vec<(PeerId, Multiaddr)>>) -> Result<Self> {
+    pub async fn new(signer: SecretKey, peers: Option<Vec<Multiaddr>>) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
-        let local = !peers
-            .clone()
-            .unwrap_or(vec![])
-            .iter()
-            .any(|(_, multiaddr)| multiaddr_is_global(multiaddr));
+        let local = match peers {
+            Some(ref peers) => !peers.iter().any(multiaddr_is_global),
+            None => true,
+        };
 
         info!("Starting Kad swarm in client mode...");
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client(local)?;
@@ -71,10 +70,12 @@ impl Client {
                         let network = network.clone();
                         let _handle = spawn(async move {
                             trace!("Client dialing network");
-                            for (peer_id, addr) in peers {
-                                let _ = network.add_to_routing_table(peer_id, addr.clone()).await;
-                                if let Err(err) = network.dial(peer_id, addr.clone()).await {
-                                    tracing::error!("Failed to dial {peer_id}: {err:?}");
+                            for addr in peers {
+                                if let Some(id) = PeerId::try_from_multiaddr(&addr) {
+                                    let _ = network.add_to_routing_table(id, addr.clone()).await;
+                                }
+                                if let Err(err) = network.dial(addr.clone()).await {
+                                    tracing::error!("Failed to dial {addr}: {err:?}");
                                 };
                             }
                         });
