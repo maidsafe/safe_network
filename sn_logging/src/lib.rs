@@ -175,10 +175,14 @@ pub fn init_node_logging(
     log_dir: &Option<PathBuf>,
 ) -> Result<Option<WorkerGuard>> {
     let mut layers = TracingLayers::default();
-    layers.fmt_layer(default_logging_targets.clone(), log_dir)?;
+
+    #[cfg(not(feature = "otlp"))]
+    layers.fmt_layer(default_logging_targets, log_dir)?;
 
     #[cfg(feature = "otlp")]
     {
+        layers.fmt_layer(default_logging_targets.clone(), log_dir)?;
+
         match std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
             Ok(_) => layers.otlp_layer(default_logging_targets)?,
             Err(_) => println!(

@@ -48,7 +48,7 @@ pub enum Cmd {
     },
     /// [`ReplicatedData`] write operation.
     ///
-    /// [`ReplicatedData`]: crate::protocol::messages::ReplicatedData
+    /// [`ReplicatedData`]: crate::messages::ReplicatedData
     Replicate(ReplicatedData),
 }
 

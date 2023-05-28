@@ -4437,7 +4437,6 @@ dependencies = [
  "futures",
  "itertools",
  "libp2p",
- "libp2p-quic",
  "lru_time_cache",
  "rand 0.8.5",
  "rmp-serde",
