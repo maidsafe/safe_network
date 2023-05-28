@@ -207,7 +207,7 @@ async fn build_node() -> Result<()> {
     debug!("Building safenode with args: {:?}", args);
     let build_result = Command::new("cargo")
         .args(args.clone())
-        .current_dir("safenode")
+        .current_dir("sn_node")
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .output()?;

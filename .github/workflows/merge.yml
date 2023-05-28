@@ -275,7 +275,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release multiple_sequential_transfers_succeed --no-run
+        run: cargo test --release --features local-discovery multiple_sequential_transfers_succeed --no-run
         timeout-minutes: 30
 
       - name: Start a local network
