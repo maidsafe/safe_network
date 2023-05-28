@@ -110,7 +110,7 @@ jobs:
 
       - name: Run storage tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_domain -- storage -- --skip prop
+        run: cargo test --release --package sn_domain -- storage
         env:
           # this will speed up PR merge flows, while giving us a modicum
           # of proptesting
