@@ -26,7 +26,6 @@ rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_record_store = { path = "../sn_record_store", version = "0.1.0" }
-sn_domain = { path = "../sn_domain", version = "0.1.0" }
 sn_logging = { path = "../sn_logging", features = ["test-utils"], version = "0.1.0" }
 sn_protocol = { path = "../sn_protocol", version = "0.1.0" }
 thiserror = "1.0.23"

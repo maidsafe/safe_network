@@ -4401,7 +4401,6 @@ dependencies = [
  "lazy_static",
  "libp2p",
  "proptest",
- "quickcheck",
  "rand 0.8.5",
  "self_encryption",
  "serde",
@@ -4447,7 +4446,6 @@ dependencies = [
  "rand 0.8.5",
  "rmp-serde",
  "serde",
- "sn_domain",
  "sn_logging",
  "sn_protocol",
  "sn_record_store",
@@ -4537,9 +4535,7 @@ dependencies = [
 name = "sn_record_store"
 version = "0.1.0"
 dependencies = [
- "assert_fs",
  "libp2p",
- "proptest",
  "quickcheck",
  "rand 0.8.5",
  "tracing",
