@@ -108,7 +108,21 @@ impl Files {
     /// without storing them onto the network.
     #[instrument(skip_all, level = "debug")]
     pub fn calculate_address(&self, bytes: Bytes) -> Result<XorName> {
-        chunk_bytes(bytes).map(|(name, _)| name)
+        self.chunk_bytes(bytes).map(|(name, _)| name)
+    }
+
+    /// Tries to chunk the bytes, returning the data-map address and chunks, without storing anything to network.
+    #[instrument(skip_all, level = "trace")]
+    pub fn chunk_bytes(&self, bytes: Bytes) -> Result<(XorName, Vec<Chunk>)> {
+        match LargeFile::new(bytes.clone()) {
+            Ok(file) => encrypt_large(file),
+            Err(Error::TooSmallForSelfEncryption { .. }) => {
+                let file = SmallFile::new(bytes)?;
+                let chunk = package_small(file)?;
+                Ok((*chunk.name(), vec![chunk]))
+            }
+            Err(error) => Err(error)?,
+        }
     }
 
     // --------------------------------------------
@@ -286,20 +300,6 @@ impl Files {
         } else {
             Ok(retrieved_chunks)
         }
-    }
-}
-
-/// Tries to chunk the bytes, returning an address and chunks, without storing anything to network.
-#[instrument(skip_all, level = "trace")]
-pub fn chunk_bytes(bytes: Bytes) -> Result<(XorName, Vec<Chunk>)> {
-    match LargeFile::new(bytes.clone()) {
-        Ok(file) => encrypt_large(file),
-        Err(Error::TooSmallForSelfEncryption { .. }) => {
-            let file = SmallFile::new(bytes)?;
-            let chunk = package_small(file)?;
-            Ok((*chunk.name(), vec![chunk]))
-        }
-        Err(error) => Err(error)?,
     }
 }
 
