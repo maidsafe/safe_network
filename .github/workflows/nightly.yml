@@ -19,12 +19,9 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Rust
-        id: toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: stable
-          override: true
 
       - uses: Swatinem/rust-cache@v1
         continue-on-error: true
@@ -146,12 +143,9 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Rust
-        id: toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: stable
-          override: true
 
       - uses: Swatinem/rust-cache@v1
         continue-on-error: true
@@ -205,12 +199,9 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Rust
-        id: toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: stable
-          override: true
 
       - uses: Swatinem/rust-cache@v1
         continue-on-error: true
@@ -295,13 +286,11 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v2
+
       - name: Install Rust
-        id: toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: stable
-          override: true
 
       - uses: Swatinem/rust-cache@v1
         continue-on-error: true
