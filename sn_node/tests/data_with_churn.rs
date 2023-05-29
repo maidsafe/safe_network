@@ -197,7 +197,9 @@ async fn data_availability_during_churn() -> Result<()> {
     let uploaded_content_count = content.len();
     for net_addr in content.iter() {
         assert!(
-            final_retry_query_content(&client, net_addr).await.is_ok(),
+            final_retry_query_content(&client, net_addr, churn_period)
+                .await
+                .is_ok(),
             "Failed to query content at {net_addr:?}"
         );
 
@@ -402,7 +404,11 @@ fn retry_query_content_task(
     });
 }
 
-async fn final_retry_query_content(client: &Client, net_addr: &NetworkAddress) -> Result<()> {
+async fn final_retry_query_content(
+    client: &Client,
+    net_addr: &NetworkAddress,
+    churn_period: Duration,
+) -> Result<()> {
     let mut attempts = 1;
     loop {
         println!("Querying content at {net_addr:?}, attempt: #{attempts} ...");
@@ -411,6 +417,8 @@ async fn final_retry_query_content(client: &Client, net_addr: &NetworkAddress) -
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
                 bail!("Final check: Content is still not retrievable at {net_addr:?} after {attempts} attempts: {last_err:?}");
             } else {
+                let delay = 2 * churn_period;
+                sleep(delay).await;
                 continue;
             }
         } else {
