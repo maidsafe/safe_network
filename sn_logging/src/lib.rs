@@ -29,6 +29,8 @@ use tracing_subscriber::{
     Layer, Registry,
 };
 
+const ALL_SN_LOGS: &str = "all";
+
 #[derive(Default, Debug)]
 /// Tracing log formatter setup for easier span viewing
 pub struct LogFormatter;
@@ -218,6 +220,25 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
     let mut targets = Vec::new();
     let crates = logging_env_value.split(',');
     for c in crates {
+        // TODO: are there other default short-circuits wanted?
+        // Could we have a default set if NOT on a release commit?
+        if c == ALL_SN_LOGS {
+            // short-circuit to get all logs
+            return Ok(vec![
+                ("sn_build_info".to_string(), Level::TRACE),
+                ("sn_cli".to_string(), Level::TRACE),
+                ("sn_client".to_string(), Level::TRACE),
+                ("sn_logging".to_string(), Level::TRACE),
+                ("sn_networking".to_string(), Level::TRACE),
+                ("sn_domain".to_string(), Level::TRACE),
+                ("sn_node".to_string(), Level::TRACE),
+                ("sn_peers_acquisition".to_string(), Level::TRACE),
+                ("sn_protocol".to_string(), Level::TRACE),
+                ("sn_record_store".to_string(), Level::TRACE),
+                ("sn_testnet".to_string(), Level::TRACE),
+            ]);
+        }
+
         let mut split = c.split('=');
         let crate_name = split.next().ok_or_else(|| {
             Error::LoggingConfigurationError(
