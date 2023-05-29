@@ -166,15 +166,25 @@ jobs:
       - name: Run network tests
         # Only run on PRs w/ ubuntu
         timeout-minutes: 25
-        run: cargo test --release -p safenode -- network
+        run: cargo test --release -p sn_network
 
       - name: Run protocol tests
         timeout-minutes: 25
-        run: cargo test --release -p safenode -- protocol
+        run: cargo test --release -p sn_protocol
 
       - name: Run storage tests
+        shell: bash
         timeout-minutes: 25
-        run: PROPTEST_CASES=512 cargo test --release -p safenode -- storage
+        env:
+          PROPTEST_CASES: 512
+        run: cargo test --release -p sn_record_store
+
+      - name: Run register storage tests
+        shell: bash
+        timeout-minutes: 25
+        env:
+          PROPTEST_CASES: 512
+        run: cargo test --release -p sn_domain -- storage
 
       - name: post notification to slack on failure
         if: ${{ failure() }}
