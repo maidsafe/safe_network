@@ -1,0 +1,11 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Safe Network Build Info"
+documentation = "https://docs.rs/sn_node"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "build_info"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe_network"
+version = "0.1.0"

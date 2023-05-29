@@ -224,11 +224,7 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
                 "Could not obtain crate name in logging string".to_string(),
             )
         })?;
-        let log_level = split.next().ok_or_else(|| {
-            Error::LoggingConfigurationError(format!(
-                "Could not obtain log level for {crate_name} in logging string"
-            ))
-        })?;
+        let log_level = split.next().unwrap_or("trace");
         targets.push((crate_name.to_string(), get_log_level_from_str(log_level)?));
     }
     Ok(targets)

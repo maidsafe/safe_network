@@ -662,6 +662,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "build_info"
+version = "0.1.0"
+
+[[package]]
 name = "bulletproofs"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4319,6 +4323,7 @@ version = "0.77.0"
 dependencies = [
  "bincode",
  "blsttc",
+ "build_info",
  "bytes",
  "chrono",
  "clap 4.3.0",
@@ -4457,6 +4462,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "blsttc",
+ "build_info",
  "bytes",
  "chrono",
  "clap 4.3.0",

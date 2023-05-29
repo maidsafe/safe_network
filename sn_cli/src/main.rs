@@ -17,8 +17,9 @@ use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wal
 use clap::Parser;
 use color_eyre::Result;
 
+use build_info::git_hash;
 use sn_client::Client;
-use sn_domain::{git_hash::git_hash, peers_acquisition::peers_from_opts_or_env};
+use sn_domain::peers_acquisition::peers_from_opts_or_env;
 use sn_logging::init_node_logging;
 use std::path::PathBuf;
 use tracing_core::Level;

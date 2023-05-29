@@ -5,20 +5,18 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-#![allow(dead_code)]
+use std::process::Command;
 
-#[macro_use]
-extern crate tracing;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let output = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .expect("Failed to execute git command");
 
-/// Client handling of token transfers.
-pub mod client_transfers;
-/// Genesis DBC utilities.
-pub mod dbc_genesis;
-/// Node handling of token transfers.
-pub mod node_transfers;
-/// Utilities for working with peer addresses.
-pub mod peers_acquisition;
-/// Storage for spends, chunks and registers.
-pub mod storage;
-/// A wallet for network tokens.
-pub mod wallet;
+    let git_hash = String::from_utf8(output.stdout).unwrap().trim().to_string();
+
+    // Set the Git hash as an environment variable
+    println!("cargo:rustc-env=GIT_HASH={}", git_hash);
+
+    Ok(())
+}
