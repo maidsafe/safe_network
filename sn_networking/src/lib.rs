@@ -14,6 +14,7 @@ mod cmd;
 mod error;
 mod event;
 mod msg;
+mod replication_fetcher;
 
 pub use self::{
     cmd::SwarmLocalState,
@@ -27,6 +28,7 @@ use self::{
     error::Result,
     event::NodeBehaviour,
     msg::{MsgCodec, MsgProtocol},
+    replication_fetcher::ReplicationFetcher,
 };
 
 use futures::{future::select_all, StreamExt};
@@ -46,7 +48,7 @@ use libp2p::{
 };
 use rand::Rng;
 use sn_protocol::{
-    messages::{ReplicatedData, Request, Response},
+    messages::{QueryResponse, Request, Response},
     NetworkAddress,
 };
 use sn_record_store::{
@@ -104,6 +106,7 @@ pub struct SwarmDriver {
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
     pending_query: HashMap<QueryId, oneshot::Sender<Result<Vec<u8>>>>,
+    replication_fetcher: ReplicationFetcher,
     local: bool,
     dialed_peers: CircularVec<PeerId>,
 }
@@ -331,6 +334,7 @@ impl SwarmDriver {
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
             pending_query: Default::default(),
+            replication_fetcher: Default::default(),
             local,
             dialed_peers: CircularVec::new(63),
         };
@@ -520,6 +524,20 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
+    /// Get `ReplicatedData` from local Storage
+    pub async fn get_replicated_data(
+        &self,
+        address: NetworkAddress,
+    ) -> Result<Result<QueryResponse>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetReplicatedData { address, sender })
+            .await?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
     /// Put data to KAD network as record
     pub async fn put_data_as_record(&self, record: Record) -> Result<()> {
         debug!(
@@ -531,14 +549,15 @@ impl Network {
             .await
     }
 
-    /// Store replicated data to local
+    /// Notify a list of keys within a holder to be replicated to self.
     /// The `chunk_storage` is currently held by `swarm_driver` within `network` instance.
     /// Hence has to carry out this notification.
-    pub async fn store_replicated_data_to_local(
+    pub async fn replication_keys_to_fetch(
         &self,
-        replicated_data: ReplicatedData,
+        holder: NetworkAddress,
+        keys: Vec<NetworkAddress>,
     ) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::StoreReplicatedData { replicated_data })
+        self.send_swarm_cmd(SwarmCmd::ReplicationKeysToFetch { holder, keys })
             .await
     }
 
@@ -689,7 +708,7 @@ mod tests {
         )?;
         let _driver_handle = tokio::spawn(driver.run());
 
-        // Spawn a task to handle the the Request that we recieve.
+        // Spawn a task to handle the Request that we recieve.
         // This handles the request and sends a response back.
         let _event_handler = tokio::spawn(async move {
             loop {

@@ -8,6 +8,7 @@
 
 use std::io;
 use thiserror::Error;
+use xor_name::XorName;
 
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -55,12 +56,14 @@ pub enum Error {
         maximum: usize,
     },
 
-    #[error("Not all chunks were retrieved, expected {expected}, retrieved {retrieved}.")]
+    #[error("Not all chunks were retrieved, expected {expected}, retrieved {retrieved}, missing {missing_chunks:?}.")]
     NotEnoughChunksRetrieved {
         /// Number of Chunks expected to be retrieved
         expected: usize,
         /// Number of Chunks retrieved
         retrieved: usize,
+        /// Missing chunks
+        missing_chunks: Vec<XorName>,
     },
 
     #[error("Not all data was chunked, expected {expected}, but we have {chunked}.)")]
