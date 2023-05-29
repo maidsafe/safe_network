@@ -28,7 +28,7 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = sn_logging::init_node_logging(logging_targets, &None)?;
+    let _log_appender_guard = sn_logging::init_logging(logging_targets, &None)?;
 
     let first_wallet_dir = TempDir::new()?;
     let first_wallet_balance = Token::from_nano(1_000_000_000);
