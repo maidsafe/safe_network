@@ -12,10 +12,11 @@ extern crate tracing;
 mod rpc;
 use sn_node::{Node, NodeEvent, NodeEventsReceiver};
 
+use build_info::git_hash;
 use clap::Parser;
 use eyre::{eyre, Error, Result};
 use libp2p::{Multiaddr, PeerId};
-use sn_domain::{git_hash::git_hash, peers_acquisition::peers_from_opts_or_env};
+use sn_domain::peers_acquisition::peers_from_opts_or_env;
 use sn_logging::init_node_logging;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -114,7 +115,7 @@ fn main() -> Result<()> {
     #[cfg(not(feature = "otlp"))]
     let _log_appender_guard = init_node_logging(logging_targets, &opt.log_dir)?;
     #[cfg(feature = "otlp")]
-    let (_rt, _guard) = {
+    let (_rt, _log_appender_guard) = {
         // init logging in a separate runtime if we are sending traces to an opentelemetry server
         let rt = Runtime::new()?;
         let guard = rt.block_on(async { init_node_logging(logging_targets, &opt.log_dir) })?;
