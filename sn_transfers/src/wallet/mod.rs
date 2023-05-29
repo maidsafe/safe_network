@@ -55,14 +55,12 @@
 mod error;
 mod keys;
 mod local_store;
-mod network_store;
 mod wallet_file;
 
 pub use self::{
     error::{Error, Result},
     keys::parse_public_address,
     local_store::LocalWallet,
-    // network_store::NetworkWallet,
 };
 
 use super::client_transfers::CreatedDbc;

@@ -25,17 +25,15 @@ use std::collections::BTreeMap;
 /// The peers will validate each signed spend they receive, before accepting it.
 /// Once enough peers have accepted all the spends of the transaction, and serve
 /// them upon request, the transaction will be completed.
-///
-/// (Disabled for now: DbcReason, can be added later.)
-#[allow(unused)]
 pub(crate) fn create_transfer(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
     recipients: Vec<(Token, DbcIdSource)>,
     change_to: PublicAddress,
+    reason_hash: Hash,
 ) -> Result<TransferOutputs> {
     // We need to select the necessary number of dbcs from those that we were passed.
     let selected_inputs = select_inputs(available_dbcs, recipients, change_to)?;
-    create_transfer_with(selected_inputs)
+    create_transfer_with(selected_inputs, reason_hash)
 }
 
 /// Select the necessary number of dbcs from those that we were passed.
@@ -121,7 +119,7 @@ fn verify_amounts(total_input_amount: Token, total_output_amount: Token) -> Resu
 /// To do that, the `signed_spends` of each new dbc, has to be uploaded
 /// to the network. When those same signed spends can be retrieved from
 /// enough peers in the network, the transaction will be completed.
-fn create_transfer_with(selected_inputs: Inputs) -> Result<TransferOutputs> {
+fn create_transfer_with(selected_inputs: Inputs, reason_hash: Hash) -> Result<TransferOutputs> {
     let Inputs {
         dbcs_to_spend,
         recipients,
@@ -161,7 +159,7 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<TransferOutputs> {
 
     // Finalize the tx builder to get the dbc builder.
     let dbc_builder = tx_builder
-        .build(Hash::default(), &mut rng)
+        .build(reason_hash, &mut rng)
         .map_err(Box::new)
         .map_err(Error::Dbcs)?;
 
