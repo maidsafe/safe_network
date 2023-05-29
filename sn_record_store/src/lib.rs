@@ -17,6 +17,7 @@ use libp2p::{
     },
 };
 use rand::Rng;
+use sn_protocol::NetworkAddress;
 use std::{
     borrow::Cow,
     collections::{hash_set, HashSet},
@@ -135,6 +136,13 @@ impl DiskBackedRecordStore {
 
     pub fn storage_dir(&self) -> PathBuf {
         self.config.storage_dir.clone()
+    }
+
+    pub fn record_addresses(&self) -> HashSet<NetworkAddress> {
+        self.records
+            .iter()
+            .map(|record_key| NetworkAddress::from_record_key(record_key.clone()))
+            .collect()
     }
 
     pub fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {

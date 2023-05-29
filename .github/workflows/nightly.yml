@@ -322,6 +322,10 @@ jobs:
         run: cargo build --release --bins --features local-discovery
         timeout-minutes: 30
 
+      - name: Build churn tests 
+        run: cargo test --release -p sn_node --features="local-discovery" --no-run
+        timeout-minutes: 30
+
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         id: section-startup

@@ -16,7 +16,7 @@ pub mod storage;
 use self::storage::{ChunkAddress, DbcAddress, RegisterAddress};
 
 use libp2p::{
-    kad::{kbucket::Distance, KBucketKey as Key},
+    kad::{kbucket::Distance, record::Key as RecordKey, KBucketKey as Key},
     PeerId,
 };
 use serde::{Deserialize, Serialize};
@@ -39,6 +39,8 @@ pub enum NetworkAddress {
     DbcAddress(DbcAddress),
     /// The NetworkAddress is representing a ChunkAddress.
     RegisterAddress(RegisterAddress),
+    /// The NetworkAddress is representing a RecordKey.
+    RecordKey(Vec<u8>),
 }
 
 impl NetworkAddress {
@@ -62,13 +64,40 @@ impl NetworkAddress {
         NetworkAddress::PeerId(peer_id.to_bytes())
     }
 
+    /// Return a `NetworkAddress` representation of the `RecordKey` by encapsulating its bytes.
+    pub fn from_record_key(record_key: RecordKey) -> Self {
+        NetworkAddress::RecordKey(record_key.to_vec())
+    }
+
     /// Return the encapsulated bytes of this `NetworkAddress`.
     pub fn as_bytes(&self) -> Vec<u8> {
         match self {
-            NetworkAddress::PeerId(bytes) => bytes.to_vec(),
+            NetworkAddress::PeerId(bytes) | NetworkAddress::RecordKey(bytes) => bytes.to_vec(),
             NetworkAddress::ChunkAddress(chunk_address) => chunk_address.name().0.to_vec(),
             NetworkAddress::DbcAddress(dbc_address) => dbc_address.name().0.to_vec(),
             NetworkAddress::RegisterAddress(register_address) => register_address.id().0.to_vec(),
+        }
+    }
+
+    /// Try to return the represented `PeerId`.
+    pub fn as_peer_id(&self) -> Option<PeerId> {
+        match self {
+            NetworkAddress::PeerId(bytes) => {
+                if let Ok(peer_id) = PeerId::from_bytes(bytes) {
+                    Some(peer_id)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Try to return the represented `RecordKey`.
+    pub fn as_record_key(&self) -> Option<RecordKey> {
+        match self {
+            NetworkAddress::RecordKey(bytes) => Some(RecordKey::new(bytes)),
+            _ => None,
         }
     }
 
@@ -112,6 +141,7 @@ impl std::fmt::Debug for NetworkAddress {
                 "NetworkAddress::RegisterAddress({:?} - ",
                 register_address.id()
             ),
+            NetworkAddress::RecordKey(_) => "NetworkAddress::RecordKey(".to_string(),
         };
         write!(f, "{name_str}{:?})", self.as_bytes())
     }

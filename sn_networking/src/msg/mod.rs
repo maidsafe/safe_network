@@ -47,11 +47,13 @@ impl SwarmDriver {
                     response,
                 } => {
                     trace!("Got response for id: {request_id:?}, res: {response}.");
-                    self.pending_requests
-                        .remove(&request_id)
-                        .ok_or(Error::ReceivedResponseDropped(request_id))?
-                        .send(Ok(response))
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    if let Some(sender) = self.pending_requests.remove(&request_id) {
+                        sender
+                            .send(Ok(response))
+                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    } else {
+                        self.handle_response(response);
+                    }
                 }
             },
             request_response::Event::OutboundFailure {

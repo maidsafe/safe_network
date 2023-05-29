@@ -343,18 +343,18 @@ jobs:
         run: cargo build --release --bins --features local-discovery
         timeout-minutes: 30
 
-      - name: Start a local network
-        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
-
-      - name: Build churn tests 
+      - name: Build churn tests
         run: cargo test --release -p sn_node --features="local-discovery" --no-run
         timeout-minutes: 30
         # new output folder to avoid linker issues w/ windows
         env:
           CARGO_TARGET_DIR: "./churn-target"
+
+      - name: Start a local network
+        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
 
       - name: Chunks data integrity during nodes churn (during 10min)
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 

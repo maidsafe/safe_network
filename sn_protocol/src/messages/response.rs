@@ -8,10 +8,12 @@
 
 use crate::{
     error::Result,
+    messages::ReplicatedData,
     storage::{
         registers::{Entry, EntryHash, Permissions, Policy, Register, User},
         Chunk,
     },
+    NetworkAddress,
 };
 
 #[allow(unused_imports)] // needed by rustdocs links
@@ -43,6 +45,13 @@ pub enum QueryResponse {
     ///
     /// [`GetChunk`]: crate::messages::Query::GetChunk
     GetChunk(Result<Chunk>),
+    //
+    // ===== ReplicatedData =====
+    //
+    /// Response to [`GetReplicatedData`]
+    ///
+    /// [`GetReplicatedData`]: crate::messages::Query::GetReplicatedData
+    GetReplicatedData(Result<(NetworkAddress, ReplicatedData)>),
     //
     // ===== Register Data =====
     //

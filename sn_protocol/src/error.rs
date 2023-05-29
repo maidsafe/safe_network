@@ -6,9 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::storage::{
-    registers::{EntryHash, User},
-    ChunkAddress, DbcAddress, RegisterAddress,
+use crate::{
+    storage::{
+        registers::{EntryHash, User},
+        ChunkAddress, DbcAddress, RegisterAddress,
+    },
+    NetworkAddress,
 };
 
 use serde::{Deserialize, Serialize};
@@ -26,6 +29,14 @@ pub enum Error {
     /// Chunk not found.
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
+    /// Replication not found.
+    #[error("Peer {holder:?} cann't find ReplicatedData {address:?}")]
+    ReplicatedDataNotFound {
+        /// Holder that being contacted
+        holder: NetworkAddress,
+        /// Address of the missing data
+        address: NetworkAddress,
+    },
     /// We failed to store chunk
     #[error("Chunk was not stored w/ xorname {0:?}")]
     ChunkNotStored(XorName),

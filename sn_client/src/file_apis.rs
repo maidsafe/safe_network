@@ -266,9 +266,22 @@ impl Files {
         }
 
         if expected_count > retrieved_chunks.len() {
+            let missing_chunks: Vec<XorName> = chunks_info
+                .iter()
+                .filter_map(|expected_info| {
+                    if !retrieved_chunks.iter().any(|retrieved_chunk| {
+                        XorName::from_content(&retrieved_chunk.content) == expected_info.dst_hash
+                    }) {
+                        None
+                    } else {
+                        Some(expected_info.dst_hash)
+                    }
+                })
+                .collect();
             Err(Error::NotEnoughChunksRetrieved {
                 expected: expected_count,
                 retrieved: retrieved_chunks.len(),
+                missing_chunks,
             })?
         } else {
             Ok(retrieved_chunks)

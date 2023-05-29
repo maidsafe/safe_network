@@ -44,7 +44,7 @@ const CHURN_CYCLES: u32 = 1;
 const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 5;
 const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 5;
 
-const CHUNKS_SIZE: usize = 1024;
+const CHUNKS_SIZE: usize = 1000 * 1000;
 
 const CONTENT_QUERY_RATIO_TO_CHURN: u32 = 12;
 const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
@@ -189,7 +189,7 @@ async fn data_availability_during_churn() -> Result<()> {
     // the original holders churned out.
     // i.e. the test may pass even without any replication
     // Hence, we carry out a final round of query all data to confirm storage.
-    println!("Final querying content of content");
+    println!("Final querying confirmation of content");
     let mut content_queried_count = 0;
 
     // take one read lock to avoid holding the lock for the whole loop
@@ -197,11 +197,10 @@ async fn data_availability_during_churn() -> Result<()> {
     let content = content.read().await;
     let uploaded_content_count = content.len();
     for net_addr in content.iter() {
+        let result = final_retry_query_content(&client, net_addr, churn_period).await;
         assert!(
-            final_retry_query_content(&client, net_addr, churn_period)
-                .await
-                .is_ok(),
-            "Failed to query content at {net_addr:?}"
+            result.is_ok(),
+            "Failed to query content at {net_addr:?} with error {result:?}"
         );
 
         content_queried_count += 1;
