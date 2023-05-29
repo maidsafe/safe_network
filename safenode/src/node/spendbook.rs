@@ -33,7 +33,9 @@ impl SpendBook {
         network: &Network,
         address: DbcAddress,
     ) -> Result<SignedSpend> {
+        trace!("Spend get for address: {address:?}");
         let _double_spend_guard = self.rw_lock.read().await;
+        trace!("Handling spend get for address: {address:?}");
 
         // get spend from kad
         let signed_spend_bytes = match network
@@ -42,7 +44,7 @@ impl SpendBook {
         {
             Ok(Ok(signed_spend_bytes)) => signed_spend_bytes,
             Ok(Err(err)) | Err(err) => {
-                error!("Error getting spend from network: {err}");
+                error!("Error getting spend from local store: {err}");
                 return Err(Error::SpendNotFound(address));
             }
         };
@@ -55,6 +57,8 @@ impl SpendBook {
                 return Err(Error::FailedToGetSpend(address));
             }
         };
+
+        trace!("Spend get for address: {address:?} successful");
         Ok(signed_spend)
     }
 
@@ -64,18 +68,24 @@ impl SpendBook {
         network: &Network,
         signed_spend: SignedSpend,
     ) -> Result<DbcAddress> {
-        let _double_spend_guard = self.rw_lock.write().await;
-
-        // check DBC spend
-        verify_spend_dbc(network, &signed_spend).await?;
-
-        // serialize spend
         let dbc_id = signed_spend.dbc_id();
         let dbc_addr = DbcAddress::from_dbc_id(dbc_id);
+
+        trace!("Spend put for {dbc_id:?} at {dbc_addr:?}");
+        let _double_spend_guard = self.rw_lock.write().await;
+        trace!("Handling spend put for {dbc_id:?} at {dbc_addr:?}");
+
+        // check DBC spend
+        if let Err(e) = verify_spend_dbc(network, &signed_spend).await {
+            error!("Failed to store spend for {dbc_id:?} because DBC verification failed: {e:?}");
+            return Err(Error::FailedToStoreSpend(dbc_addr));
+        }
+
+        // serialize spend
         let signed_spend_bytes = match bincode::serialize(&signed_spend) {
             Ok(b) => b,
             Err(e) => {
-                error!("Failed to store spend because serialization failed: {e:?}");
+                error!("Failed to store spend for {dbc_id:?} because serialization failed: {e:?}");
                 return Err(Error::FailedToStoreSpend(dbc_addr));
             }
         };
@@ -88,10 +98,11 @@ impl SpendBook {
             expires: None,
         };
         if let Err(e) = network.put_data_as_record(kademlia_record).await {
-            error!("Failed to store spend: {e:?}");
+            error!("Failed to store spend {dbc_id:?}: {e:?}");
             return Err(Error::FailedToStoreSpend(dbc_addr));
         }
 
+        trace!("Spend put for {dbc_id:?} at {dbc_addr:?} successful");
         Ok(dbc_addr)
     }
 
@@ -107,7 +118,25 @@ impl SpendBook {
 /// Checks if the spend already exists in the network.
 async fn check_for_double_spend(network: &Network, signed_spend: &SignedSpend) -> Result<()> {
     let dbc_addr = DbcAddress::from_dbc_id(signed_spend.dbc_id());
-    let spends = get_spend(network, dbc_addr).await?;
+    let spends = match get_spend(network, dbc_addr).await {
+        Ok(s) => s,
+        Err(Error::DoubleSpendAttempt {
+            spend_one,
+            spend_two,
+        }) => {
+            return Err(Error::DoubleSpendAttempt {
+                spend_one,
+                spend_two,
+            })?;
+        }
+        Err(e) => {
+            trace!(
+                "Get spend returned error while checking for double spend for {dbc_addr:?}: {e:?}"
+            );
+            vec![]
+        }
+    };
+
     for s in spends {
         if SpendBook::is_valid_double_spend(&s, signed_spend) {
             return Err(Error::DoubleSpendAttempt {

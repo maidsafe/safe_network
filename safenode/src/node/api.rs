@@ -190,8 +190,9 @@ impl Node {
                 }
             }
             Query::GetSpend(address) => {
+                trace!("Got GetSpend query for {address:?}");
                 let res = self.spendbook.spend_get(&self.network, address).await;
-                trace!("Sending response back on query DbcSpend {address:?}");
+                trace!("Sending response back on query DbcSpend {address:?}: {res:?}");
                 QueryResponse::GetDbcSpend(res)
             }
         };
