@@ -4593,6 +4593,7 @@ dependencies = [
  "libp2p",
  "quickcheck",
  "rand 0.8.5",
+ "sn_protocol",
  "tracing",
 ]
 

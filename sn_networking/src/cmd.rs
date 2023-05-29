@@ -16,10 +16,12 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use sn_protocol::{
-    messages::{ReplicatedData, Request, Response},
+    error::Error as ProtocolError,
+    messages::{Query, QueryResponse, ReplicatedData, Request, Response},
     storage::Chunk,
     NetworkAddress,
 };
+use sn_record_store::DiskBackedRecordStore;
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
 
@@ -63,8 +65,13 @@ pub enum SwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<Result<Vec<u8>>>,
     },
-    StoreReplicatedData {
-        replicated_data: ReplicatedData,
+    GetReplicatedData {
+        address: NetworkAddress,
+        sender: oneshot::Sender<Result<QueryResponse>>,
+    },
+    ReplicationKeysToFetch {
+        holder: NetworkAddress,
+        keys: Vec<NetworkAddress>,
     },
 }
 
@@ -84,6 +91,34 @@ impl SwarmDriver {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
                 let _ = self.pending_query.insert(query_id, sender);
             }
+            SwarmCmd::GetReplicatedData { address, sender } => {
+                let storage_dir = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .storage_dir();
+                let mut resp =
+                    QueryResponse::GetReplicatedData(Err(ProtocolError::ReplicatedDataNotFound {
+                        holder: NetworkAddress::from_peer(self.self_peer_id),
+                        address: address.clone(),
+                    }));
+                if let Some(record_key) = address.as_record_key() {
+                    if let Some(record) =
+                        DiskBackedRecordStore::read_from_disk(&record_key, &storage_dir)
+                    {
+                        let chunk = Chunk::new(record.value.clone().into());
+                        trace!("Replicating chunk {:?} to {sender:?}", chunk.name());
+                        resp = QueryResponse::GetReplicatedData(Ok((
+                            NetworkAddress::from_peer(self.self_peer_id),
+                            ReplicatedData::Chunk(chunk),
+                        )));
+                    }
+                } else {
+                    warn!("Cannot parse a record_key from {address:?}");
+                }
+                let _ = sender.send(Ok(resp));
+            }
             SwarmCmd::PutProvidedDataAsRecord { record } => {
                 let _ = self
                     .swarm
@@ -91,8 +126,8 @@ impl SwarmDriver {
                     .kademlia
                     .put_record(record, libp2p::kad::Quorum::All)?;
             }
-            SwarmCmd::StoreReplicatedData { replicated_data } => {
-                self.store_repliated_data(replicated_data);
+            SwarmCmd::ReplicationKeysToFetch { holder, keys } => {
+                self.replication_keys_to_fetch(holder, keys);
             }
             SwarmCmd::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {
@@ -205,14 +240,7 @@ impl SwarmDriver {
         Ok(())
     }
 
-    fn store_repliated_data(&mut self, replicated_data: ReplicatedData) {
-        match replicated_data {
-            ReplicatedData::Chunk(chunk) => self.replicate_chunk_to_local(chunk),
-            other => warn!("Not supporter other type of replicated data {:?}", other),
-        }
-    }
-
-    fn replicate_chunk_to_local(&mut self, chunk: Chunk) {
+    pub(crate) fn replicate_chunk_to_local(&mut self, chunk: Chunk) {
         let addr = *chunk.address();
         debug!("That's a replicate chunk in for :{:?}", addr.name());
 
@@ -230,5 +258,49 @@ impl SwarmDriver {
             .kademlia
             .store_mut()
             .write_to_local(record);
+    }
+
+    fn replication_keys_to_fetch(&mut self, holder: NetworkAddress, keys: Vec<NetworkAddress>) {
+        let peer_id = if let Some(peer_id) = holder.as_peer_id() {
+            peer_id
+        } else {
+            warn!("Cann't parse PeerId from NetworkAddress {holder:?}");
+            return;
+        };
+        trace!("Convert {holder:?} to {peer_id:?}");
+        let existing_keys: HashSet<NetworkAddress> = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_addresses();
+        let non_existing_keys: Vec<NetworkAddress> = keys
+            .iter()
+            .filter(|key| !existing_keys.contains(key))
+            .cloned()
+            .collect();
+        let keys_to_fetch = self
+            .replication_fetcher
+            .add_keys(peer_id, non_existing_keys);
+        self.fetching_replication_keys(keys_to_fetch);
+    }
+
+    pub(crate) fn fetching_replication_keys(
+        &mut self,
+        keys_to_fetch: Vec<(PeerId, NetworkAddress)>,
+    ) {
+        for (peer, key) in keys_to_fetch {
+            trace!("Fetching replication {key:?} from {peer:?}");
+            let request = Request::Query(Query::GetReplicatedData {
+                requester: NetworkAddress::from_peer(self.self_peer_id),
+                address: key,
+            });
+            let request_id = self
+                .swarm
+                .behaviour_mut()
+                .request_response
+                .send_request(&peer, request);
+            trace!("Request_id is {request_id:?}");
+        }
     }
 }

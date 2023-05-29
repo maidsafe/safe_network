@@ -11,7 +11,7 @@ use crate::{
     NetworkAddress,
 };
 
-use super::{RegisterCmd, ReplicatedData};
+use super::RegisterCmd;
 
 use sn_dbc::SignedSpend;
 
@@ -40,10 +40,16 @@ pub enum Cmd {
     /// The spend to be recorded.
     /// It contains the transaction it is being spent in.
     SpendDbc(SignedSpend),
-    /// [`ReplicatedData`] write operation.
+    /// Write operation to notify peer fetch a list of [`NetworkAddress`] from the holder.
     ///
-    /// [`ReplicatedData`]: crate::messages::ReplicatedData
-    Replicate(ReplicatedData),
+    /// [`NetworkAddress`]: crate::NetworkAddress
+    Replicate {
+        /// Holder of the replication keys.
+        holder: NetworkAddress,
+        /// Keys of copy that shall be replicated.
+        #[debug(skip)]
+        keys: Vec<NetworkAddress>,
+    },
 }
 
 impl Cmd {
@@ -57,7 +63,7 @@ impl Cmd {
             Cmd::SpendDbc(signed_spend) => {
                 NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
             }
-            Cmd::Replicate(replicated_data) => replicated_data.dst(),
+            Cmd::Replicate { holder, .. } => holder.clone(),
         }
     }
 }
@@ -74,8 +80,13 @@ impl std::fmt::Display for Cmd {
             Cmd::SpendDbc(signed_spend) => {
                 write!(f, "Cmd::SpendDbc({:?})", signed_spend.dbc_id())
             }
-            Cmd::Replicate(replicated_data) => {
-                write!(f, "Cmd::Replicate({:?})", replicated_data.name())
+            Cmd::Replicate { holder, keys } => {
+                write!(
+                    f,
+                    "Cmd::Replicate({:?} has {} keys)",
+                    holder.as_peer_id(),
+                    keys.len()
+                )
             }
         }
     }

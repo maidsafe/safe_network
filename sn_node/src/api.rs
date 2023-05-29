@@ -208,6 +208,25 @@ impl Node {
                 trace!("Sending response back on query DbcSpend {address:?}: {res:?}");
                 QueryResponse::GetDbcSpend(res)
             }
+            Query::GetReplicatedData {
+                requester: _,
+                address,
+            } => {
+                // TODO: consider pass down requester to make swarm_driver fire response directly.
+                //       which will avoid a blocking await here.
+                match self.network.get_replicated_data(address.clone()).await {
+                    Ok(Ok(response)) => response,
+                    Ok(Err(err)) | Err(err) => {
+                        error!("Error getting replicated data from local: {err}");
+                        QueryResponse::GetReplicatedData(Err(
+                            ProtocolError::ReplicatedDataNotFound {
+                                holder: NetworkAddress::from_peer(self.network.peer_id),
+                                address,
+                            },
+                        ))
+                    }
+                }
+            }
         };
         self.send_response(Response::Query(resp), response_channel)
             .await;
@@ -240,15 +259,13 @@ impl Node {
                 self.send_response(Response::Cmd(resp), response_channel)
                     .await;
             }
-            Cmd::Replicate(replicated_data) => {
+            Cmd::Replicate { holder, keys } => {
                 debug!(
-                    "That's a replicated data in for :{:?}",
-                    replicated_data.name()
+                    "That's a replicate list in from {:?} of {} keys",
+                    holder.as_peer_id(),
+                    keys.len()
                 );
-                let _ = self
-                    .network
-                    .store_replicated_data_to_local(replicated_data)
-                    .await;
+                let _ = self.network.replication_keys_to_fetch(holder, keys).await;
             }
             Cmd::Register(cmd) => {
                 let result = self.registers.write(&cmd).await;
