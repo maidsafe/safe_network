@@ -12,7 +12,7 @@ use bytes::Bytes;
 use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files};
-use sn_logging::init_node_logging;
+use sn_logging::init_logging;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress},
     NetworkAddress,
@@ -103,13 +103,12 @@ async fn data_availability_during_churn() -> Result<()> {
 
     let tmp_dir = std::env::temp_dir();
     let logging_targets = vec![
-        ("safenode".to_string(), Level::INFO),
-        ("sn_domain".to_string(), Level::INFO),
-        ("sn_networking".to_string(), Level::INFO),
-        ("sn_node".to_string(), Level::INFO),
+        ("safenode".to_string(), Level::TRACE),
+        ("sn_domain".to_string(), Level::TRACE),
+        ("sn_networking".to_string(), Level::TRACE),
+        ("sn_node".to_string(), Level::TRACE),
     ];
-    let log_appender_guard =
-        init_node_logging(logging_targets, &Some(tmp_dir.join("safe-client")))?;
+    let log_appender_guard = init_logging(logging_targets, &Some(tmp_dir.join("safe-client")))?;
 
     println!("Creating a client...");
     let client = get_client().await;
