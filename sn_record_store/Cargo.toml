@@ -18,6 +18,4 @@ tracing = { version = "~0.1.26" }
 
 
 [dev-dependencies]
-assert_fs = "1.0.0"
-proptest = { version = "1.0.0" }
 quickcheck = "1.0.3"
