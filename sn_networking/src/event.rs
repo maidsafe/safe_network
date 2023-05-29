@@ -284,18 +284,21 @@ impl SwarmDriver {
             //        Even with larger network, it still gain something.
             //     2, it ensures a corrected targeted replication
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
-                warn!("Having OutgoingConnectionError {peer_id:?} - {error:?}");
                 if let Some(peer_id) = peer_id {
                     if let DialError::Transport(ref _addrs) = error {
                         // A dead peer will cause a bunch of `OutgoingConnectionError`s
                         // to be received within a short period.
                         if let Some(error_count) = self.potential_dead_peers.get_mut(&peer_id) {
                             *error_count += 1;
+                            debug!("Transport error occured, tracking potential dead_peer: {peer_id:?} - {error:?}");
                             if *error_count > DEAD_PEER_DETECTION_THRESHOLD {
                                 trace!("Detected dead peer {peer_id:?}");
                                 self.try_trigger_replication(&peer_id, true);
                                 let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
                             }
+                        } else {
+                            debug!("Transport error occured, tracking potential dead_peer: {peer_id:?} - {error:?}");
+                            let _prior_none_value = self.potential_dead_peers.insert(peer_id, 1);
                         }
                     }
                     if let Some(sender) = self.pending_dial.remove(&peer_id) {
