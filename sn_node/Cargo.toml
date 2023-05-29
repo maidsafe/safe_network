@@ -18,7 +18,7 @@ name = "faucet"
 path = "src/bin/faucet.rs"
 
 [features]
-default=["local-discovery"]
+default=[]
 local-discovery=["sn_networking/local-discovery"]
 
 [dependencies]
