@@ -95,11 +95,18 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 2
 
-        
-      - name: Kill all nodes
+      - name: Kill all nodes on Windows
         shell: bash
         timeout-minutes: 1
-        if: failure()
+        if: always() && matrix.os == 'windows-latest'
+        continue-on-error: true
+        run: |
+          taskkill /IM "safenode.exe" /F
+
+      - name: Kill all nodes on non-Windows OS
+        shell: bash
+        timeout-minutes: 1
+        if: always() && matrix.os != 'windows-latest'
         continue-on-error: true
         run: |
           pkill safenode
@@ -237,10 +244,18 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      - name: Kill all nodes
+      - name: Kill all nodes on Windows
         shell: bash
         timeout-minutes: 1
-        if: failure()
+        if: always() && matrix.os == 'windows-latest'
+        continue-on-error: true
+        run: |
+          taskkill /IM "safenode.exe" /F
+
+      - name: Kill all nodes on non-Windows OS
+        shell: bash
+        timeout-minutes: 1
+        if: always() && matrix.os != 'windows-latest'
         continue-on-error: true
         run: |
           pkill safenode
@@ -363,10 +378,18 @@ jobs:
             exit 1
           fi
 
-      - name: Kill all nodes
+      - name: Kill all nodes on Windows
         shell: bash
         timeout-minutes: 1
-        if: failure()
+        if: always() && matrix.os == 'windows-latest'
+        continue-on-error: true
+        run: |
+          taskkill /IM "safenode.exe" /F
+
+      - name: Kill all nodes on non-Windows OS
+        shell: bash
+        timeout-minutes: 1
+        if: always() && matrix.os != 'windows-latest'
         continue-on-error: true
         run: |
           pkill safenode
