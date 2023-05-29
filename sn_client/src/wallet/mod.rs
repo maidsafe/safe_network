@@ -16,7 +16,11 @@ use sn_domain::wallet::{Error, LocalWallet, Result, SendWallet};
 use sn_protocol::NetworkAddress;
 
 use bls::SecretKey;
-use merkletree::{merkle::MerkleTree, store::VecStore};
+use merkletree::{
+    merkle::{next_pow2, MerkleTree},
+    proof::Proof,
+    store::VecStore,
+};
 use std::iter::Iterator;
 
 /// A wallet client can be used to send and
@@ -37,25 +41,35 @@ impl<W: SendWallet> WalletClient<W> {
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = &NetworkAddress>,
-    ) -> Result<Dbc> {
+    ) -> Result<(Dbc, Vec<Proof<[u8; 32]>>)> {
         // FIXME: calculate the amount to pay to each node, perhaps just 1 nano to begin with.
         let amount = Token::from_nano(1);
 
-        // Let's build the Merkle-tree to obtain the reason-hash
-        // FIXME: Merkletree requires number of leaves to be a power of 2
-        let mut origs = vec![];
-        let tree =
-            MerkleTree::<[u8; 32], Sha256Hasher, VecStore<_>>::new(content_addrs.map(|addr| {
+        // Let's build the Merkle-tree from list of addresses to obtain the reason-hash
+        let mut addrs: Vec<_> = content_addrs
+            .map(|addr| {
                 let mut arr = [0; 32];
                 arr.copy_from_slice(&addr.as_bytes());
-                origs.push(arr);
                 arr
-            }))
-            .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
+            })
+            .collect();
 
-        let num_of_leaves = tree.leafs();
+        // Merkletree requires the number of leaves to be a power of 2
+        let num_of_leaves = next_pow2(addrs.len());
+        println!(">> ADD LEAVES?? {} - {}", addrs.len(), num_of_leaves);
+        for i in addrs.len()..num_of_leaves {
+            println!(">> ADDING LEAF {i}");
+            // TODO: shall we use other addrs/leaves instead of blank leaves?
+            addrs.push([0; 32]);
+        }
+
+        let tree =
+            MerkleTree::<[u8; 32], Sha256Hasher, VecStore<_>>::new(addrs.clone().into_iter())
+                .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
+
         println!(">> TREE ({num_of_leaves} leaves): {:?}", tree);
-        for index in 0..num_of_leaves {
+        let mut proofs = vec![];
+        for (index, orig) in addrs.into_iter().enumerate() {
             let leaf = tree.read_at(index).unwrap();
             println!(">> LEAF {index}: {leaf:?}");
 
@@ -63,9 +77,9 @@ impl<W: SendWallet> WalletClient<W> {
                 .gen_proof(index)
                 .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
             println!(">> PROOF for {index}: {proof:?}");
+            proofs.push(proof.clone());
 
             // NOTE: there is a bug in proof.validate_with_data api: https://github.com/filecoin-project/merkletree/issues/95
-            let orig = origs[index];
             println!(">>=== ORIG {index}: {orig:?}");
 
             // Node receives chunk, so it builds the 'leaf' value, i.e. hash(chunk's xorname)
@@ -107,7 +121,7 @@ impl<W: SendWallet> WalletClient<W> {
             .await?;
 
         match &dbcs[..] {
-            [info, ..] => Ok(info.dbc.clone()),
+            [info, ..] => Ok((info.dbc.clone(), proofs)),
             [] => Err(Error::CouldNotSendTokens(
                 "No DBCs were returned from the wallet.".into(),
             )),

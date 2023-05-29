@@ -142,6 +142,7 @@ async fn pay_for_storage(client: &Client, root_dir: &Path, files_path: &Path) ->
     let mut chunks_addrs = vec![];
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
+            println!(">> GETTING chunks for {}", entry.path().display());
             let file = fs::read(entry.path())?;
             let bytes = Bytes::from(file);
             // we need all chunks addresses not just the data-map addr
@@ -152,8 +153,9 @@ async fn pay_for_storage(client: &Client, root_dir: &Path, files_path: &Path) ->
         }
     }
 
+    println!(">> PAYING FOR {} chunks", chunks_addrs.len());
     match wallet_client.pay_for_storage(chunks_addrs.iter()).await {
-        Ok(new_dbc) => {
+        Ok((new_dbc, proofs)) => {
             println!("Paid storage for: {chunks_addrs:?}");
             let mut wallet = wallet_client.into_wallet();
             let new_balance = wallet.balance();
@@ -167,6 +169,8 @@ async fn pay_for_storage(client: &Client, root_dir: &Path, files_path: &Path) ->
             let dbc_id = new_dbc.id();
             wallet.store_created_dbc(new_dbc).await?;
             println!("Successfully stored new dbc ({dbc_id:?}) to wallet dir. It can now be sent to the storage nodes when uploading paid chunks.");
+
+            println!(">> PROOFS for payment made: {proofs:?}.");
         }
         Err(err) => {
             println!("Failed to pay for storage due to {err:?}.");
