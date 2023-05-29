@@ -42,6 +42,18 @@ pub enum Query {
     /// [`SignedSpend`]: sn_dbc::SignedSpend
     /// [`GetDbcSpend`]: super::QueryResponse::GetDbcSpend
     GetSpend(DbcAddress),
+    /// Retrieve a [`ReplicatedData`] at the given address.
+    ///
+    /// This should eventually lead to a [`GetReplicatedData`] response.
+    ///
+    /// [`ReplicatedData`]:  crate::messages::ReplicatedData
+    /// [`GetReplicatedData`]: super::QueryResponse::GetReplicatedData
+    GetReplicatedData {
+        /// Sender of the query
+        requester: NetworkAddress,
+        /// Address of the data to be fetched
+        address: NetworkAddress,
+    },
 }
 
 impl Query {
@@ -51,6 +63,7 @@ impl Query {
             Query::GetChunk(address) => NetworkAddress::from_chunk_address(*address),
             Query::Register(query) => NetworkAddress::from_register_address(query.dst()),
             Query::GetSpend(address) => NetworkAddress::from_dbc_address(*address),
+            Query::GetReplicatedData { address, .. } => address.clone(),
         }
     }
 }
@@ -66,6 +79,12 @@ impl std::fmt::Display for Query {
             }
             Query::GetSpend(address) => {
                 write!(f, "Query::GetSpend({address:?})")
+            }
+            Query::GetReplicatedData { requester, address } => {
+                write!(
+                    f,
+                    "Query::GetReplicatedData({requester:?} querying {address:?})"
+                )
             }
         }
     }
