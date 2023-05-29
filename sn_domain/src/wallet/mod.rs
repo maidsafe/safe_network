@@ -128,7 +128,6 @@ pub trait SendWallet: DepositWallet {
         &mut self,
         to: Vec<(Token, PublicAddress)>,
         client: &C,
-        // TODO: provide fix against https://en.wikipedia.org/wiki/Preimage_attack
         reason_hash: Option<Hash>,
     ) -> Result<Vec<CreatedDbc>>;
 }

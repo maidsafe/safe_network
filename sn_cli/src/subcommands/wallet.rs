@@ -164,8 +164,9 @@ async fn pay_for_storage(client: &Client, root_dir: &Path, files_path: &Path) ->
                 println!("Successfully stored wallet with new balance {new_balance:?}.");
             }
 
+            let dbc_id = new_dbc.id();
             wallet.store_created_dbc(new_dbc).await?;
-            println!("Successfully stored new dbc to wallet dir. It can now be sent to the recipient, using any channel of choice.");
+            println!("Successfully stored new dbc ({dbc_id:?}) to wallet dir. It can now be sent to the storage nodes when uploading paid chunks.");
         }
         Err(err) => {
             println!("Failed to pay for storage due to {err:?}.");
