@@ -345,8 +345,7 @@ fn churn_nodes_task(
 
             addr.set_port(12000 + node_index);
 
-            println!("Restarting node through its RPC service at {addr} in {delay:?}");
-            sleep(delay).await;
+            println!("Restarting node through its RPC service at {addr}");
 
             if let Err(err) = node_restart(addr).await {
                 println!("Failed to restart node with RPC endpoint {addr}: {err}");
@@ -359,6 +358,8 @@ fn churn_nodes_task(
             if node_index > NODE_COUNT as u16 {
                 node_index = 1;
             }
+
+            sleep(delay).await;
         }
     });
 }
