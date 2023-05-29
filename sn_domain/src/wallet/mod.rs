@@ -55,19 +55,17 @@
 mod error;
 mod keys;
 mod local_store;
-mod network_store;
 mod wallet_file;
 
 pub use self::{
     error::{Error, Result},
     keys::parse_public_address,
     local_store::LocalWallet,
-    // network_store::NetworkWallet,
 };
 
 use super::client_transfers::{CreatedDbc, Outputs as TransferDetails};
 
-use sn_dbc::{Dbc, DbcId, DbcIdSource, PublicAddress, Token};
+use sn_dbc::{Dbc, DbcId, DbcIdSource, Hash, PublicAddress, Token};
 
 use async_trait::async_trait;
 use std::collections::BTreeMap;
@@ -122,6 +120,7 @@ pub trait SigningWallet {
 #[async_trait]
 pub trait SendWallet: DepositWallet {
     /// Sends the given tokens to the given addresses.
+    /// The hash of a reason can be optionally provided, which shall be the case when paying for storage.
     /// Returns the new dbcs that were created.
     /// Depending on the implementation of the send client, this may
     /// also register the transaction with the network.
@@ -129,6 +128,8 @@ pub trait SendWallet: DepositWallet {
         &mut self,
         to: Vec<(Token, PublicAddress)>,
         client: &C,
+        // TODO: provide fix against https://en.wikipedia.org/wiki/Preimage_attack
+        reason_hash: Option<Hash>,
     ) -> Result<Vec<CreatedDbc>>;
 }
 

@@ -16,7 +16,7 @@ use super::{
 
 use crate::client_transfers::{create_transfer, CreatedDbc, Outputs as TransferDetails};
 
-use sn_dbc::{Dbc, DbcIdSource, MainKey, PublicAddress, Token};
+use sn_dbc::{Dbc, DbcIdSource, Hash, MainKey, PublicAddress, Token};
 
 use async_trait::async_trait;
 use std::{
@@ -168,6 +168,7 @@ impl SendWallet for LocalWallet {
         &mut self,
         to: Vec<(Token, PublicAddress)>,
         client: &C,
+        reason_hash: Option<Hash>,
     ) -> Result<Vec<CreatedDbc>> {
         // First resend any pending txs. This is not guaranteed to succeed.
         // If the spend was invalid to start with then it will always fail here.
@@ -205,7 +206,9 @@ impl SendWallet for LocalWallet {
             }
         }
 
-        let transfer = create_transfer(available_dbcs, to, self.address())?;
+        let reason_hash = reason_hash.unwrap_or_default();
+
+        let transfer = create_transfer(available_dbcs, to, self.address(), reason_hash)?;
 
         let TransferDetails {
             change_dbc,
@@ -493,7 +496,7 @@ mod tests {
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let created_dbcs = sender.send(to, &MockSendClient).await?;
+        let created_dbcs = sender.send(to, &MockSendClient, None).await?;
 
         assert_eq!(1, created_dbcs.len());
         assert_eq!(GENESIS_DBC_AMOUNT - send_amount, sender.balance().as_nano());
@@ -526,7 +529,7 @@ mod tests {
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let _created_dbcs = sender.send(to, &MockSendClient).await?;
+        let _created_dbcs = sender.send(to, &MockSendClient, None).await?;
 
         sender.store().await?;
 
@@ -612,7 +615,7 @@ mod tests {
         let recipient_public_address = recipient.key.public_address();
 
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let created_dbcs = sender.send(to, &MockSendClient).await?;
+        let created_dbcs = sender.send(to, &MockSendClient, None).await?;
         let dbc = created_dbcs[0].dbc.clone();
         let dbc_id = dbc.id();
         sender.store_created_dbc(dbc).await?;

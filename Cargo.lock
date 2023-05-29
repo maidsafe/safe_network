@@ -2789,6 +2789,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
+name = "memmap2"
+version = "0.5.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83faa42c0a078c393f6b29d5db232d8be22776a891f8f56e5284faee4a20b327"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "memoffset"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2804,6 +2813,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d61c719bcfbcf5d62b3a09efa6088de8c54bc0bfcd3ea7ae39fcc186108b8de1"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "merkletree"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a0ed8c0ce1e281870da29266398541a0dbab168f5fb5fd36d7ef2bbdbf808a3"
+dependencies = [
+ "anyhow",
+ "arrayref",
+ "log",
+ "memmap2",
+ "positioned-io",
+ "rayon",
+ "serde",
+ "tempfile",
+ "typenum",
 ]
 
 [[package]]
@@ -3421,6 +3447,17 @@ dependencies = [
  "cpufeatures",
  "opaque-debug",
  "universal-hash 0.5.1",
+]
+
+[[package]]
+name = "positioned-io"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09b9485cf7f528baf34edd811ec8283a168864912e11d0b7d3e0510738761114"
+dependencies = [
+ "byteorder",
+ "libc",
+ "winapi",
 ]
 
 [[package]]
@@ -4349,6 +4386,7 @@ dependencies = [
  "futures",
  "itertools",
  "libp2p",
+ "merkletree",
  "rayon",
  "self_encryption",
  "serde",
@@ -4357,6 +4395,7 @@ dependencies = [
  "sn_networking",
  "sn_protocol",
  "thiserror",
+ "tiny-keccak",
  "tokio",
  "tracing",
  "xor_name",
