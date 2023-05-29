@@ -32,11 +32,13 @@ use self::{
 use futures::{future::select_all, StreamExt};
 
 #[cfg(feature = "local-discovery")]
-use libp2p::mdns;
+use libp2p::{
+    kad::{kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
+    mdns,
+};
 
 use libp2p::{
     identity,
-    kad::{kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
@@ -691,20 +693,8 @@ mod tests {
         messages::{Cmd, CmdResponse, Request, Response},
         storage::Chunk,
     };
-    use std::{net::SocketAddr, time::Duration};
-
-    #[cfg(feature = "local-discovery")]
-    use libp2p::kad::kbucket::{Entry, InsertResult, KBucketsTable, NodeStatus};
-    #[cfg(feature = "local-discovery")]
-    use libp2p::PeerId;
-    #[cfg(feature = "local-discovery")]
-    use std::collections::{BTreeMap, HashMap};
-    #[cfg(feature = "local-discovery")]
-    use std::fmt;
-    #[cfg(feature = "local-discovery")]
-    use xor_name::XorName;
-
     use std::path::Path;
+    use std::{net::SocketAddr, time::Duration};
 
     #[tokio::test]
     async fn msg_to_self_should_not_error_out() -> Result<()> {
