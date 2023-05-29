@@ -9,5 +9,6 @@ members = [
     "sn_node",
     "sn_peers_acquisition",
     "sn_protocol",
+    "sn_record_store",
     "sn_testnet"
 ]

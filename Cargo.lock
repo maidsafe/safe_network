@@ -4450,6 +4450,7 @@ dependencies = [
  "sn_domain",
  "sn_logging",
  "sn_protocol",
+ "sn_record_store",
  "thiserror",
  "tokio",
  "tracing",
@@ -4530,6 +4531,18 @@ dependencies = [
  "sn_dbc",
  "thiserror",
  "xor_name",
+]
+
+[[package]]
+name = "sn_record_store"
+version = "0.1.0"
+dependencies = [
+ "assert_fs",
+ "libp2p",
+ "proptest",
+ "quickcheck",
+ "rand 0.8.5",
+ "tracing",
 ]
 
 [[package]]
