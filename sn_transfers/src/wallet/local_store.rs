@@ -15,7 +15,8 @@ use super::{
 };
 use crate::client_transfers::{create_transfer, TransferOutputs};
 
-use sn_dbc::{Dbc, DbcIdSource, MainKey, PublicAddress, Token};
+use sn_dbc::{Dbc, DbcIdSource, Hash, MainKey, PublicAddress, Token};
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
@@ -153,7 +154,11 @@ impl LocalWallet {
         self.wallet.deposit(dbcs, &self.key);
     }
 
-    pub async fn local_send(&mut self, to: Vec<(Token, PublicAddress)>) -> Result<TransferOutputs> {
+    pub async fn local_send(
+        &mut self,
+        to: Vec<(Token, PublicAddress)>,
+        reason_hash: Option<Hash>,
+    ) -> Result<TransferOutputs> {
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
@@ -172,7 +177,10 @@ impl LocalWallet {
             }
         }
 
-        let transfer = create_transfer(available_dbcs, to_unique_keys, self.address())?;
+        let reason_hash = reason_hash.unwrap_or_default();
+
+        let transfer =
+            create_transfer(available_dbcs, to_unique_keys, self.address(), reason_hash)?;
 
         let TransferOutputs {
             change_dbc,
@@ -429,7 +437,7 @@ mod tests {
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let transfer = sender.local_send(to).await?;
+        let transfer = sender.local_send(to, None).await?;
         let created_dbcs = transfer.created_dbcs;
 
         assert_eq!(1, created_dbcs.len());
@@ -460,7 +468,7 @@ mod tests {
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let _created_dbcs = sender.local_send(to).await?;
+        let _created_dbcs = sender.local_send(to, None).await?;
 
         sender.store().await?;
 
@@ -543,7 +551,7 @@ mod tests {
         let recipient_public_address = recipient.key.public_address();
 
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let transfer = sender.local_send(to).await?;
+        let transfer = sender.local_send(to, None).await?;
         let created_dbcs = transfer.created_dbcs;
         let dbc = created_dbcs[0].dbc.clone();
         let dbc_id = dbc.id();
