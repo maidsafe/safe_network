@@ -370,11 +370,11 @@ jobs:
         timeout-minutes: 10
 
       - name: Build churn tests 
-        run: cargo test --release -p sn_client --features="local-discovery" --no-run
+        run: cargo test --release -p sn_node --features="local-discovery" --no-run
         timeout-minutes: 30
 
-      - name: Chunks data integrity during nodes churn (during 10min) 
-        run: cargo test --release -p sn_client --features="local-discovery" data_availability_during_churn -- --nocapture
+      - name: Chunks data integrity during nodes churn (during 10min) (in theory)
+        run: cargo test --release -p sn_node --features="local-discovery" data_availability_during_churn -- --nocapture
         env:
           CHUNKS_ONLY: true
           TEST_DURATION_MINS: 10
