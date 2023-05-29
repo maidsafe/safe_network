@@ -68,24 +68,65 @@ impl WalletClient {
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
+    // TODO: provide fix against https://en.wikipedia.org/wiki/Preimage_attack
     pub async fn pay_for_storage(
         &mut self,
-        chunks: impl Iterator<Item = &NetworkAddress>,
+        content_addrs: impl Iterator<Item = &NetworkAddress>,
     ) -> Result<Dbc> {
         // FIXME: calculate the amount to pay to each node, perhaps just 1 nano to begin with.
         let amount = Token::from_nano(1);
 
         // Let's build the Merkle-tree to obtain the reason-hash
-        let tree = MerkleTree::<[u8; 32], Sha256Hasher, VecStore<[u8; 32]>>::new(chunks.map(|c| {
-            let mut arr = [0; 32];
-            arr.copy_from_slice(&c.as_bytes());
-            arr
-        }))
-        .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
+        // FIXME: Merkletree requires number of leaves to be a power of 2
+        let mut origs = vec![];
+        let tree =
+            MerkleTree::<[u8; 32], Sha256Hasher, VecStore<_>>::new(content_addrs.map(|addr| {
+                let mut arr = [0; 32];
+                arr.copy_from_slice(&addr.as_bytes());
+                origs.push(arr);
+                arr
+            }))
+            .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
 
-        println!(">> TREE: {:?}", tree);
-        for index in 0..tree.leafs() {
-            println!(">> LEAF {index}: {:?}", tree.read_at(index));
+        let num_of_leaves = tree.leafs();
+        println!(">> TREE ({num_of_leaves} leaves): {:?}", tree);
+        for index in 0..num_of_leaves {
+            let leaf = tree.read_at(index).unwrap();
+            println!(">> LEAF {index}: {leaf:?}");
+
+            let proof = tree
+                .gen_proof(index)
+                .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
+            println!(">> PROOF for {index}: {proof:?}");
+
+            // NOTE: there is a bug in proof.validate_with_data api: https://github.com/filecoin-project/merkletree/issues/95
+            let orig = origs[index];
+            println!(">>=== ORIG {index}: {orig:?}");
+
+            // Node receives chunk, so it builds the 'leaf' value, i.e. hash(chunk's xorname)
+            // It also receives the reason-hash and the proof (lemma),
+            // the root of the proof should match the reason-hash
+            let mut hasher = Sha256Hasher::default();
+            let leaf_to_validate = hasher.leaf(orig);
+            println!(">>=== LEAF from Chunk {index}: {leaf_to_validate:?}");
+
+            let validated = if leaf_to_validate == proof.item() {
+                let proof_validated = proof.validate::<Sha256Hasher>().unwrap();
+                println!(">> LEAF matched!. PROOF validated? {proof_validated}");
+
+                let root = proof.root();
+                let root_matched = root == tree.root();
+                println!(">> ROOT matched {index} ?: {root:?} ==> {root_matched}");
+
+                proof_validated && root_matched
+            } else {
+                println!(">> LEAF doesn't match");
+                false
+            };
+
+            println!(">> VALIDATED WITH ORIG {index}: {validated}");
+
+            println!();
         }
 
         // The reason hash is set to be the root of the merkle-tree of chunks to pay for
@@ -211,7 +252,8 @@ impl Default for Sha256Hasher {
 
 impl std::hash::Hasher for Sha256Hasher {
     fn finish(&self) -> u64 {
-        // TODO: review if MerkleTree crate is not calling this as claimed in some examples
+        // merkletree::Algorithm trait is not calling this as per its doc:
+        // https://docs.rs/merkletree/latest/merkletree/hash/trait.Algorithm.html
         error!(
             "Hasher's contract (finish function is supposedly not used) is deliberately broken by design"
         );
