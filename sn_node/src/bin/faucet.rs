@@ -10,8 +10,9 @@ use clap::{Parser, Subcommand};
 use eyre::Result;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet, Client};
 use sn_dbc::Token;
-use sn_domain::{peers_acquisition::peers_from_opts_or_env, wallet::parse_public_address};
-use sn_logging::init_node_logging;
+use sn_domain::wallet::parse_public_address;
+use sn_logging::init_logging;
+use sn_peers_acquisition::peers_from_opts_or_env;
 use tracing::info;
 use tracing_core::Level;
 
@@ -23,7 +24,7 @@ async fn main() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = init_node_logging(logging_targets, &None)?;
+    let _log_appender_guard = init_logging(logging_targets, &None)?;
 
     let opt = Opt::parse();
 

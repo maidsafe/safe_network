@@ -170,7 +170,7 @@ impl TracingLayers {
 /// This guard should be held for the life of the program.
 ///
 /// Logging should be instantiated only once.
-pub fn init_node_logging(
+pub fn init_logging(
     default_logging_targets: Vec<(String, Level)>,
     log_dir: &Option<PathBuf>,
 ) -> Result<Option<WorkerGuard>> {

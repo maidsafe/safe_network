@@ -17,10 +17,10 @@ use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wal
 use clap::Parser;
 use color_eyre::Result;
 
-use build_info::git_hash;
+use sn_build_info::git_hash;
 use sn_client::Client;
-use sn_domain::peers_acquisition::peers_from_opts_or_env;
-use sn_logging::init_node_logging;
+use sn_logging::init_logging;
+use sn_peers_acquisition::peers_from_opts_or_env;
 use std::path::PathBuf;
 use tracing_core::Level;
 
@@ -35,8 +35,7 @@ async fn main() -> Result<()> {
         ("sn_client".to_string(), Level::INFO),
         ("sn_networking".to_string(), Level::INFO),
     ];
-    let log_appender_guard =
-        init_node_logging(logging_targets, &Some(tmp_dir.join("safe-client")))?;
+    let log_appender_guard = init_logging(logging_targets, &Some(tmp_dir.join("safe-client")))?;
 
     info!("Full client logs will be written to {:?}", tmp_dir);
     println!("Instantiating a SAFE client...");

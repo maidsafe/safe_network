@@ -662,10 +662,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "build_info"
-version = "0.1.0"
-
-[[package]]
 name = "bulletproofs"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4318,12 +4314,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
 
 [[package]]
+name = "sn_build_info"
+version = "0.1.0"
+
+[[package]]
 name = "sn_cli"
 version = "0.77.0"
 dependencies = [
  "bincode",
  "blsttc",
- "build_info",
  "bytes",
  "chrono",
  "clap 4.3.0",
@@ -4331,10 +4330,12 @@ dependencies = [
  "dirs-next",
  "hex",
  "libp2p",
+ "sn_build_info",
  "sn_client",
  "sn_dbc",
  "sn_domain",
  "sn_logging",
+ "sn_peers_acquisition",
  "sn_protocol",
  "tokio",
  "tracing",
@@ -4452,6 +4453,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "xor_name",
 ]
 
 [[package]]
@@ -4462,7 +4464,6 @@ dependencies = [
  "async-trait",
  "bincode",
  "blsttc",
- "build_info",
  "bytes",
  "chrono",
  "clap 4.3.0",
@@ -4483,11 +4484,13 @@ dependencies = [
  "rmp-serde",
  "self_encryption",
  "serde",
+ "sn_build_info",
  "sn_client",
  "sn_dbc",
  "sn_domain",
  "sn_logging",
  "sn_networking",
+ "sn_peers_acquisition",
  "sn_protocol",
  "thiserror",
  "tiny-keccak",
@@ -4503,6 +4506,15 @@ dependencies = [
  "tracing-subscriber",
  "walkdir",
  "xor_name",
+]
+
+[[package]]
+name = "sn_peers_acquisition"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "libp2p",
+ "tracing",
 ]
 
 [[package]]

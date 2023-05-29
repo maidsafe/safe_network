@@ -11,7 +11,7 @@ use safenode_proto::{
     NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RestartRequest, StopRequest,
     UpdateRequest,
 };
-use sn_logging::init_node_logging;
+use sn_logging::init_logging;
 use tonic::Request;
 
 use clap::Parser;
@@ -81,7 +81,7 @@ async fn main() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = init_node_logging(logging_targets, &None)?;
+    let _log_appender_guard = init_logging(logging_targets, &None)?;
 
     let opt = Opt::parse();
     let addr = opt.addr;
