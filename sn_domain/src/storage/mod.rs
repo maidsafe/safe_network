@@ -6,15 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub mod disk_backed_record_store;
 pub mod registers;
 pub mod spends;
 
 pub use self::{
-    disk_backed_record_store::{
-        DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
-        REPLICATION_INTERVAL_UPPER_BOUND,
-    },
     registers::{RegisterReplica, RegisterStorage},
     spends::SpendStorage,
 };
