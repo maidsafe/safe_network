@@ -144,9 +144,11 @@ async fn pay_for_storage(client: &Client, root_dir: &Path, files_path: &Path) ->
         if entry.file_type().is_file() {
             let file = fs::read(entry.path())?;
             let bytes = Bytes::from(file);
-            // FIXME: we need all chunks addresses not just the data-map addr
-            let addr = file_api.calculate_address(bytes)?;
-            chunks_addrs.push(NetworkAddress::ChunkAddress(ChunkAddress::new(addr)));
+            // we need all chunks addresses not just the data-map addr
+            let (_, chunks) = file_api.chunk_bytes(bytes)?;
+            chunks.iter().for_each(|c| {
+                chunks_addrs.push(NetworkAddress::ChunkAddress(ChunkAddress::new(*c.name())))
+            });
         }
     }
 

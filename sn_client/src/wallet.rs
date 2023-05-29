@@ -67,7 +67,7 @@ impl WalletClient {
         }
     }
 
-    /// Send tokens to nodes closest to the data we want to store and pay for.
+    /// Send tokens to nodes closest to the data we want to make storage payment for.
     pub async fn pay_for_storage(
         &mut self,
         chunks: impl Iterator<Item = &NetworkAddress>,
@@ -76,14 +76,20 @@ impl WalletClient {
         let amount = Token::from_nano(1);
 
         // Let's build the Merkle-tree to obtain the reason-hash
-        let tree_leaves: Vec<MerkleTreeItem> = chunks
-            .map(|c| MerkleTreeItem::from_slice(&c.as_bytes()))
-            .collect();
-        let tree = MerkleTree::<_, _, VecStore<MerkleTreeItem>>::from_data(tree_leaves)
-            .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
+        let tree = MerkleTree::<[u8; 32], Sha256Hasher, VecStore<[u8; 32]>>::new(chunks.map(|c| {
+            let mut arr = [0; 32];
+            arr.copy_from_slice(&c.as_bytes());
+            arr
+        }))
+        .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
+
+        println!(">> TREE: {:?}", tree);
+        for index in 0..tree.leafs() {
+            println!(">> LEAF {index}: {:?}", tree.read_at(index));
+        }
 
         // The reason hash is set to be the root of the merkle-tree of chunks to pay for
-        let reason_hash = tree.root().0.into();
+        let reason_hash = tree.root().into();
 
         // FIXME: calculate closest nodes to pay for storage
         let to = PublicAddress::new(SecretKey::random().public_key());
@@ -188,67 +194,28 @@ pub async fn send(from: LocalWallet, amount: Token, to: PublicAddress, client: &
     new_dbc
 }
 
-use merkletree::{
-    hash::{Algorithm, Hashable},
-    merkle::Element,
-};
-use std::fmt;
+use merkletree::hash::Algorithm;
 use tiny_keccak::{Hasher, Sha3};
 
-const SIZE: usize = 32;
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Debug, Default)]
-struct MerkleTreeItem([u8; SIZE]);
-
-impl AsRef<[u8]> for MerkleTreeItem {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl Element for MerkleTreeItem {
-    fn byte_len() -> usize {
-        SIZE
-    }
-
-    fn from_slice(bytes: &[u8]) -> Self {
-        assert_eq!(bytes.len(), Self::byte_len());
-        let mut el = [0u8; SIZE];
-        el[..].copy_from_slice(bytes);
-        MerkleTreeItem(el)
-    }
-
-    fn copy_to_slice(&self, bytes: &mut [u8]) {
-        bytes.copy_from_slice(&self.0);
-    }
-}
-
-struct TestSha256Hasher {
+struct Sha256Hasher {
     engine: Sha3,
 }
 
-impl TestSha256Hasher {
-    fn new() -> TestSha256Hasher {
-        TestSha256Hasher {
+impl Default for Sha256Hasher {
+    fn default() -> Self {
+        Self {
             engine: Sha3::v256(),
         }
     }
 }
 
-impl fmt::Debug for TestSha256Hasher {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str("Sha256Hasher")
-    }
-}
-
-impl Default for TestSha256Hasher {
-    fn default() -> Self {
-        TestSha256Hasher::new()
-    }
-}
-
-impl std::hash::Hasher for TestSha256Hasher {
+impl std::hash::Hasher for Sha256Hasher {
     fn finish(&self) -> u64 {
-        unimplemented!()
+        // TODO: review if MerkleTree crate is not calling this as claimed in some examples
+        error!(
+            "Hasher's contract (finish function is supposedly not used) is deliberately broken by design"
+        );
+        0
     }
 
     fn write(&mut self, bytes: &[u8]) {
@@ -256,28 +223,11 @@ impl std::hash::Hasher for TestSha256Hasher {
     }
 }
 
-impl Hashable<TestSha256Hasher> for MerkleTreeItem {
-    // Required method
-    fn hash(&self, state: &mut TestSha256Hasher) {}
-}
-
-impl Algorithm<MerkleTreeItem> for TestSha256Hasher {
-    fn hash(&mut self) -> MerkleTreeItem {
-        let mut result = MerkleTreeItem::default();
-        let item_size = result.0.len();
-
+impl Algorithm<[u8; 32]> for Sha256Hasher {
+    fn hash(&mut self) -> [u8; 32] {
         let sha3 = self.engine.clone();
         let mut hash = [0u8; 32];
         sha3.finalize(&mut hash);
-        let hash_output = hash.to_vec();
-
-        if item_size < hash_output.len() {
-            result
-                .0
-                .copy_from_slice(&hash_output.as_slice()[0..item_size]);
-        } else {
-            result.0.copy_from_slice(hash_output.as_slice())
-        }
-        result
+        hash
     }
 }
