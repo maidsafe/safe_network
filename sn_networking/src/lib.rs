@@ -46,13 +46,13 @@ use libp2p::{
 };
 use lru_time_cache::LruCache;
 use rand::Rng;
-use sn_domain::storage::{
-    DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
-    REPLICATION_INTERVAL_UPPER_BOUND,
-};
 use sn_protocol::{
     messages::{QueryResponse, ReplicatedData, Request, Response},
     NetworkAddress,
+};
+use sn_record_store::{
+    DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
+    REPLICATION_INTERVAL_UPPER_BOUND,
 };
 use std::{
     collections::{HashMap, HashSet},

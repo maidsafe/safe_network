@@ -28,12 +28,12 @@ use libp2p::{
     swarm::{behaviour::toggle::Toggle, DialError, NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
-use sn_domain::storage::DiskBackedRecordStore;
 use sn_protocol::{
     messages::{Cmd, QueryResponse, ReplicatedData, Request, Response},
     storage::Chunk,
     NetworkAddress,
 };
+use sn_record_store::DiskBackedRecordStore;
 #[cfg(feature = "local-discovery")]
 use std::collections::hash_map;
 use std::collections::HashSet;
