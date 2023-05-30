@@ -508,11 +508,12 @@ impl SwarmDriver {
                     let chunk = Chunk::new(record.value.clone().into());
                     trace!("Replicating chunk {:?} to {dst:?}", chunk.name());
                     let request = Request::Cmd(Cmd::Replicate(ReplicatedData::Chunk(chunk)));
-                    let _ = self
+                    let request_id = self
                         .swarm
                         .behaviour_mut()
                         .request_response
                         .send_request(&dst, request);
+                    trace!("Request id is {request_id:?}");
                 }
             }
         }
