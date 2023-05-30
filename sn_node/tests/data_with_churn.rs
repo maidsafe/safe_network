@@ -413,10 +413,10 @@ async fn final_retry_query_content(
     loop {
         println!("Querying content at {net_addr:?}, attempt: #{attempts} ...");
         if let Err(last_err) = query_content(client, net_addr).await {
-            attempts += 1;
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
                 bail!("Final check: Content is still not retrievable at {net_addr:?} after {attempts} attempts: {last_err:?}");
             } else {
+                attempts += 1;
                 let delay = 2 * churn_period;
                 sleep(delay).await;
                 continue;

@@ -48,7 +48,7 @@ const DEAD_PEER_DETECTION_THRESHOLD: usize = 3;
 // Defines how close that a node will trigger repliation.
 // That is, the node has to be among the REPLICATION_RANGE closest to data,
 // to carry out the replication.
-const REPLICATION_RANGE: usize = 3;
+const REPLICATION_RANGE: usize = 5;
 
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "NodeEvent")]
