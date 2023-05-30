@@ -39,8 +39,8 @@ mod safenode_proto {
 
 const NODE_COUNT: u32 = 25;
 
+const EXTRA_CHURN_COUNT: u32 = 5;
 const CHURN_CYCLES: u32 = 1;
-// const CHURN_PERIOD_MILLIS: u64 = 10_000;
 const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 5;
 const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 5;
 
@@ -85,7 +85,8 @@ async fn data_availability_during_churn() -> Result<()> {
         let cycles = str.parse::<u32>()?;
         test_duration / (cycles * NODE_COUNT)
     } else {
-        test_duration / (CHURN_CYCLES * NODE_COUNT)
+        // Ensure at least some nodes got churned twice.
+        test_duration / std::cmp::max(CHURN_CYCLES * NODE_COUNT, NODE_COUNT + EXTRA_CHURN_COUNT)
     };
 
     println!("Nodes will churn every {:?}", churn_period);
