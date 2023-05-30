@@ -225,6 +225,8 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
         if c == ALL_SN_LOGS {
             // short-circuit to get all logs
             return Ok(vec![
+                ("safenode".to_string(), Level::TRACE),
+                ("safe".to_string(), Level::TRACE),
                 ("sn_build_info".to_string(), Level::TRACE),
                 ("sn_cli".to_string(), Level::TRACE),
                 ("sn_client".to_string(), Level::TRACE),
