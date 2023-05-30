@@ -44,7 +44,6 @@ use libp2p::{
     swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
-use lru_time_cache::LruCache;
 use rand::Rng;
 use sn_protocol::{
     messages::{QueryResponse, ReplicatedData, Request, Response},
@@ -74,13 +73,6 @@ pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 // Sets the keep-alive timeout of idle connections.
 const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
-// Duration of the period during which counting the number of times a peer
-// emmits `OutgoingConnectionError` error.
-// This value and the correspendent `DEAD_PEER_DETECTION_THRESHOLD`,
-// will be affected by the data/requests transmission among the network.
-const DEAD_PEER_DETECTION_PERIOD: Duration = Duration::from_secs(10);
-// Number of entries to be held in the dead peer dectection LRU cache.
-const DEAD_PEER_DETECTION_CAPACITY: usize = 50;
 
 /// Our agent string has as a prefix that we can match against.
 pub const IDENTIFY_AGENT_STR: &str = "safe/node/";
@@ -111,22 +103,6 @@ pub struct SwarmDriver {
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
     pending_query: HashMap<QueryId, oneshot::Sender<Result<QueryResponse>>>,
-    // Kademlia uses a technique called `lazy refreshing` to periodically check
-    // the responsiveness of nodes in its routing table, and attempts to
-    // replace it with a new node from its list of known nodes.
-    // However the incommunicable node will prolong the get_closest process a lot.
-    // Although the incommunicable node will be replaced by a new entry, it has a flaw that:
-    //     the dropout peer in close-range will be replaced by a far-range replaced in peer,
-    //     which the latter may not trigger a replication.
-    // That is because the replication range is defined by CLOSE_GROUP_SIZE (8)
-    // meanwhile replace range is defined by K-VALUE (20).
-    // If leave the replication only triggered by newly added peer,
-    // this leaves a risk that data copies may not get replicated out in time.
-    // Hence, a connection based dead peer detection gives at least following benefits:
-    //     1, make get_closest_peers faster with incommunicable node.
-    //        Even with larger network, it still gain something.
-    //     2, it ensures a corrected partially targeted replication .
-    potential_dead_peers: LruCache<PeerId, usize>,
     local: bool,
     dialed_peers: CircularVec<PeerId>,
 }
@@ -347,10 +323,6 @@ impl SwarmDriver {
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
             pending_query: Default::default(),
-            potential_dead_peers: LruCache::with_expiry_duration_and_capacity(
-                DEAD_PEER_DETECTION_PERIOD,
-                DEAD_PEER_DETECTION_CAPACITY,
-            ),
             local,
             dialed_peers: CircularVec::new(63),
         };

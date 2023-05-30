@@ -354,8 +354,14 @@ jobs:
         # TODO: make this use an env var, or relate to testnet size
         run : |
           restart_count=$(rg "Node is restarting in" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
-          node_count=$(ls $log_dir | wc -l)
           echo "Restart $restart_count nodes"
+          detected_dead_peer=$(rg "Detected dead peer" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Detected dead peer $detected_dead_peer times"
+          if [ $detected_dead_peer -lt $restart_count ]; then
+            echo "Detected dead peer times of: $detected_dead_peer is less than the restart count of: $restart_count"
+            exit 1
+          fi
+          node_count=$(ls $log_dir | wc -l)
           if [ $restart_count -lt $node_count ]; then
             echo "Restart count of: $restart_count is less than the node count of: $node_count"
             exit 1
