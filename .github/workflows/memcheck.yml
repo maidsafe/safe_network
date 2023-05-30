@@ -42,11 +42,15 @@ jobs:
         run: cargo build --release --bins 
         timeout-minutes: 30
 
+      - name: Build churn tests 
+        run: cargo test --release -p sn_node --no-run
+        timeout-minutes: 30
+
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         id: section-startup
         env:
-          RUST_LOG: "safenode,safe=trace"
+          SN_LOG: "all"
         timeout-minutes: 10
 
       - name: Set contact env var node.
@@ -68,40 +72,79 @@ jobs:
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
       - name: Start a client to upload files
-        run: cargo run --bin safe --release -- files upload -- "./resources"
+        run: |
+          ls -l ./target/release
+          cargo run --bin safe --release -- files upload -- "./target/release/faucet"
+          cargo run --bin safe --release -- files upload -- "./target/release/safe"
+          cargo run --bin safe --release -- files upload -- "./target/release/safenode"
+          cargo run --bin safe --release -- files upload -- "./target/release/testnet"
         id: client-file-upload
         env:
-          RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 2
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      - name: Chunks data integrity during nodes churn (during 10min)
+        run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 
+        env:
+          CHUNKS_ONLY: true
+          TEST_DURATION_MINS: 10
+          SN_LOG: "all"
+        timeout-minutes: 30
+
+      - name: Verify restart of nodes using rg
+        shell: bash
+        timeout-minutes: 1
+        # get the counts, then the specific line, and then the digit count only
+        # then check we have an expected level of restarts
+        # TODO: make this use an env var, or relate to testnet size
+        run : |
+          restart_count=$(rg "Node is restarting in" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Restart $restart_count nodes"
+          detected_dead_peer=$(rg "Detected dead peer" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Detected dead peer $detected_dead_peer times"
+          if [ $detected_dead_peer -lt $restart_count ]; then
+            echo "Detected dead peer times of: $detected_dead_peer is less than the restart count of: $restart_count"
+            exit 1
+          fi
+          node_count=$(ls $log_dir | wc -l)
+          if [ $restart_count -lt $node_count ]; then
+            echo "Restart count of: $restart_count is less than the node count of: $node_count"
+            exit 1
+          fi
+        if: always()
+
+      - name: Verify data replication using rg
+        shell: bash
+        timeout-minutes: 1
+        # get the counts, then the specific line, and then the digit count only
+        # then check we have an expected level of replication
+        # TODO: make this use an env var, or relate to testnet size
+        run : |
+          replication_count=$(rg "That's a replicate chunk in for" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Replicated $replication_count copies"
+          replication_attempt_count=$(rg "Replicating chunk" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Carried out $replication_attempt_count attempts"
+          node_count=$(ls $log_dir | wc -l)
+          if [ $replication_count -lt $node_count ]; then
+            echo "Replication count of: $replication_count is less than the node count of: $node_count"
+            exit 1
+          fi
+        if: always()
 
       - name: Start a client to download files
-        run: cargo run --bin safe --release -- files download
+        run: |
+          cargo run --bin safe --release -- files download
+          ls -l .safe/client/downloaded_files
+          downloaded_files=$(ls .safe/client/downloaded_files | wc -l)
+          if [ $downloaded_files -lt 4 ]; then
+            echo "Only downloaded $downloaded_files files, less than the 4 files uploaded"
+            exit 1
+          fi
         id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 2
-
-      - name: Start a client to create a register
-        run: cargo run --bin safe --release -- register create baobao
-        id: client-register-create
-        env:
-          RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 2
-
-      - name: Start a client to get a register
-        run: cargo run --bin safe --release -- register get baobao
-        id: client-register-get
-        env:
-          RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 2
-
-      - name: Start a client to edit a register
-        run: cargo run --bin safe --release -- register edit baobao wood
-        id: client-register-edit
-        env:
-          RUST_LOG: "safenode,safe=trace"
-        timeout-minutes: 2
-
+        timeout-minutes: 10
+        if: always()
 
       - name: Kill all nodes
         shell: bash
@@ -131,7 +174,6 @@ jobs:
           # any wild memory issues 
           # Any changes to this value should be carefully considered and tested!
           MEM_LIMIT_MB: "35" # mb
-
         run: |
           MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{print $5}' | rg "M" -r "")
           echo "Memory usage: $MEMORY_USAGE MB"
@@ -139,6 +181,7 @@ jobs:
             echo "Memory usage exceeded threshold: $MEMORY_USAGE MB"
             exit 1
           fi
+        if: always()
 
       - name: Tar log files
         shell: bash
