@@ -20,6 +20,7 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -27,7 +28,7 @@ jobs:
         continue-on-error: true
         with:
           cache-on-failure: true
-          sharedKey: ${{github.run_id}}
+          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: install ripgrep ubuntu
         run: sudo apt-get install ripgrep
@@ -144,6 +145,7 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -151,7 +153,7 @@ jobs:
         continue-on-error: true
         with:
           cache-on-failure: true
-          sharedKey: ${{github.run_id}}-unit
+          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: Build tests before running
         run: cargo test --no-run --release
@@ -200,6 +202,7 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -207,7 +210,7 @@ jobs:
         continue-on-error: true
         with:
           cache-on-failure: true
-          sharedKey: ${{github.run_id}}
+          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: install ripgrep ubuntu
         run: sudo apt-get install ripgrep
@@ -292,6 +295,7 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -299,7 +303,7 @@ jobs:
         continue-on-error: true
         with:
           cache-on-failure: true
-          sharedKey: ${{github.run_id}}
+          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: install ripgrep ubuntu
         run: sudo apt-get install ripgrep
