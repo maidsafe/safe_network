@@ -40,15 +40,10 @@ use std::collections::HashSet;
 use tokio::sync::oneshot;
 use tracing::{info, warn};
 
-// Threshold of times of `OutgoingConnectionError` detected within the period.
-// If higher than this number of times detected,
-// the peer is counted as dropped out from the network.
-const DEAD_PEER_DETECTION_THRESHOLD: usize = 3;
-
 // Defines how close that a node will trigger repliation.
 // That is, the node has to be among the REPLICATION_RANGE closest to data,
 // to carry out the replication.
-const REPLICATION_RANGE: usize = 5;
+const REPLICATION_RANGE: usize = 3;
 
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "NodeEvent")]
@@ -285,22 +280,24 @@ impl SwarmDriver {
             //     2, it ensures a corrected targeted replication
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 if let Some(peer_id) = peer_id {
-                    if let DialError::Transport(ref _addrs) = error {
-                        // A dead peer will cause a bunch of `OutgoingConnectionError`s
-                        // to be received within a short period.
-                        if let Some(error_count) = self.potential_dead_peers.get_mut(&peer_id) {
-                            *error_count += 1;
-                            debug!("Transport error occured, tracking potential dead_peer: {peer_id:?} - {error:?}");
-                            if *error_count > DEAD_PEER_DETECTION_THRESHOLD {
-                                trace!("Detected dead peer {peer_id:?}");
-                                self.try_trigger_replication(&peer_id, true);
-                                let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
-                            }
-                        } else {
-                            debug!("Transport error occured, tracking potential dead_peer: {peer_id:?} - {error:?}");
-                            let _prior_none_value = self.potential_dead_peers.insert(peer_id, 1);
-                        }
+                    // Related errors are: WrongPeerId, ConnectionRefused
+                    let err_string = format!("{error:?}");
+                    let is_wrong_id = err_string.contains("WrongPeerId");
+                    let is_all_connection_refused = if let DialError::Transport(ref errors) = error
+                    {
+                        errors.iter().all(|(_, error)| {
+                            let err_string = format!("{error:?}");
+                            err_string.contains("ConnectionRefused")
+                        })
+                    } else {
+                        true
+                    };
+                    if is_wrong_id || is_all_connection_refused {
+                        self.try_trigger_replication(&peer_id, true);
+                        trace!("Detected dead peer {peer_id:?}");
+                        let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
                     }
+
                     if let Some(sender) = self.pending_dial.remove(&peer_id) {
                         let _ = sender.send(Err(error.into()));
                     } else {
