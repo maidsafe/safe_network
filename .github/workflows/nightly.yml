@@ -160,7 +160,7 @@ jobs:
       - name: Run network tests
         # Only run on PRs w/ ubuntu
         timeout-minutes: 25
-        run: cargo test --release -p sn_network
+        run: cargo test --release -p sn_networking
 
       - name: Run protocol tests
         timeout-minutes: 25
