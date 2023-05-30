@@ -24,11 +24,8 @@ jobs:
         with:
           toolchain: stable
 
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         continue-on-error: true
-        with:
-          cache-on-failure: true
-          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: install ripgrep ubuntu
         run: sudo apt-get install ripgrep
@@ -149,11 +146,8 @@ jobs:
         with:
           toolchain: stable
 
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         continue-on-error: true
-        with:
-          cache-on-failure: true
-          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: Build tests before running
         run: cargo test --no-run --release
@@ -206,11 +200,8 @@ jobs:
         with:
           toolchain: stable
 
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         continue-on-error: true
-        with:
-          cache-on-failure: true
-          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: install ripgrep ubuntu
         run: sudo apt-get install ripgrep
@@ -299,11 +290,8 @@ jobs:
         with:
           toolchain: stable
 
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         continue-on-error: true
-        with:
-          cache-on-failure: true
-          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: install ripgrep ubuntu
         run: sudo apt-get install ripgrep
