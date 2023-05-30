@@ -9,9 +9,8 @@
 use super::{Client, Error, Register, Result};
 
 use bincode::serialize;
-use sn_domain::storage::RegisterReplica;
+use sn_domain::storage::registers::RegisterReplica;
 use sn_protocol::{
-    error::Error as ProtocolError,
     messages::{
         Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
         RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
@@ -90,7 +89,7 @@ impl RegisterOffline {
 
     /// Return a value corresponding to the provided 'hash', if present.
     pub fn get(&self, hash: EntryHash) -> Result<&Entry> {
-        let entry = self.register.get(hash).map_err(ProtocolError::Storage)?;
+        let entry = self.register.get(hash)?;
         Ok(entry)
     }
 
@@ -135,13 +134,9 @@ impl RegisterOffline {
         // we need to check permissions first
         let public_key = self.client.signer_pk();
         self.register
-            .check_permissions(Action::Write, Some(User::Key(public_key)))
-            .map_err(ProtocolError::Storage)?;
+            .check_permissions(Action::Write, Some(User::Key(public_key)))?;
 
-        let (_hash, edit) = self
-            .register
-            .write(entry.into(), children)
-            .map_err(ProtocolError::Storage)?;
+        let (_hash, edit) = self.register.write(entry.into(), children)?;
         let op = EditRegister {
             address: *self.register.address(),
             edit,

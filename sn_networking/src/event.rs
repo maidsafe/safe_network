@@ -29,7 +29,7 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use sn_protocol::{
-    messages::{Cmd, QueryResponse, ReplicatedData, Request, Response},
+    messages::{Cmd, ReplicatedData, Request, Response},
     storage::Chunk,
     NetworkAddress,
 };
@@ -384,9 +384,7 @@ impl SwarmDriver {
                 );
                 if let Some(sender) = self.pending_query.remove(&id) {
                     sender
-                        .send(Ok(QueryResponse::GetChunk(Ok(Chunk::new(
-                            peer_record.record.value.into(),
-                        )))))
+                        .send(Ok(peer_record.record.value))
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
             }

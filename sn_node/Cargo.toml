@@ -46,7 +46,7 @@ self_encryption = "~0.28.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_build_info= { path="../sn_build_info", version="0.1.0" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version="0.1.0" }
-sn_dbc = { version = "17.0.0", features = ["serdes"] }
+sn_dbc = { version = "18.0.0", features = ["serdes"] }
 sn_domain = { path = "../sn_domain", version = "0.1.0" }
 sn_client = { path = "../sn_client", version = "0.85.0" }
 sn_logging = { path = "../sn_logging", version = "0.1.0" }

@@ -7,32 +7,5 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 pub mod registers;
-pub mod spends;
 
-pub use self::{
-    registers::{RegisterReplica, RegisterStorage},
-    spends::SpendStorage,
-};
-
-use sn_protocol::error::StorageError;
-use std::{
-    path::{Path, PathBuf},
-    result,
-};
-use xor_name::XorName;
-
-// A specialised `Result` type used within this storage implementation.
-type Result<T> = result::Result<T, StorageError>;
-
-const BIT_TREE_DEPTH: usize = 20;
-
-// Helper that returns the prefix tree path of depth BIT_TREE_DEPTH for a given xorname
-// Example:
-// - with a xorname with starting bits `010001110110....`
-// - and a BIT_TREE_DEPTH of `6`
-// returns the path `ROOT_PATH/0/1/0/0/0/1`
-fn prefix_tree_path(root: &Path, xorname: XorName) -> PathBuf {
-    let bin = format!("{xorname:b}");
-    let prefix_dir_path: PathBuf = bin.chars().take(BIT_TREE_DEPTH).map(String::from).collect();
-    root.join(prefix_dir_path)
-}
+pub use self::registers::{RegisterReplica, RegisterStorage};
