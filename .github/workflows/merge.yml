@@ -23,6 +23,7 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
           #Needs nightly to distinguish between deps of different versions
           toolchain: nightly
@@ -53,6 +54,7 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
           toolchain: stable
           components: rustfmt, clippy
@@ -84,6 +86,7 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -91,7 +94,7 @@ jobs:
         continue-on-error: true
         with:
           cache-on-failure: true
-          sharedKey: ${{github.run_id}}-unit
+          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: Build tests before running
         run: cargo test --no-run --release
@@ -136,6 +139,7 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -143,7 +147,7 @@ jobs:
         continue-on-error: true
         with:
           cache-on-failure: true
-          sharedKey: ${{github.run_id}}
+          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: install ripgrep ubuntu
         run: sudo apt-get install ripgrep
@@ -251,6 +255,7 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -258,7 +263,7 @@ jobs:
         continue-on-error: true
         with:
           cache-on-failure: true
-          sharedKey: ${{github.run_id}}
+          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: install ripgrep ubuntu
         run: sudo apt-get install ripgrep
@@ -331,6 +336,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@stable
+      id: rust-toolchain
         with:
           toolchain: stable
 
@@ -338,7 +344,7 @@ jobs:
         continue-on-error: true
         with:
           cache-on-failure: true
-          sharedKey: ${{github.run_id}}
+          sharedKey: steps.rust-toolchain.outputs.cachekey
 
       - name: install ripgrep ubuntu
         run: sudo apt-get install ripgrep
