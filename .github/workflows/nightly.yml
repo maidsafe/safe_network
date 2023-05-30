@@ -317,11 +317,16 @@ jobs:
       - name: Build churn tests 
         run: cargo test --release -p sn_node --features="local-discovery" --no-run
         timeout-minutes: 30
+        # new output folder to avoid linker issues w/ windows
+        env:
+          CARGO_TARGET_DIR: "./churn-target"
 
       - name: Chunks data integrity during nodes churn (during 10min) (in theory)
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture
         id: data_availability_during_churn
         env:
+          # new output folder to avoid linker issues w/ windows
+          CARGO_TARGET_DIR: "./churn-target"
           CHUNKS_ONLY: true
           TEST_DURATION_MINS: 60
           TEST_CHURN_CYCLES: 6
