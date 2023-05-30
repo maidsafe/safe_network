@@ -6,9 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{storage::ChunkAddress, NetworkAddress};
+use crate::{
+    storage::{ChunkAddress, DbcAddress},
+    NetworkAddress,
+};
 
-use super::{RegisterQuery, SpendQuery};
+use super::RegisterQuery;
 
 use serde::{Deserialize, Serialize};
 
@@ -32,10 +35,13 @@ pub enum Query {
     ///
     /// [`Register`]: crate::storage::Register
     Register(RegisterQuery),
-    /// [`Spend`] read operation.
+    /// Retrieve a [`SignedSpend`] at the given address.
     ///
-    /// [`Spend`]: super::transfers::SpendQuery.
-    Spend(SpendQuery),
+    /// This should eventually lead to a [`GetDbcSpend`] response.
+    ///
+    /// [`SignedSpend`]: sn_dbc::SignedSpend
+    /// [`GetDbcSpend`]: super::QueryResponse::GetDbcSpend
+    GetSpend(DbcAddress),
 }
 
 impl Query {
@@ -44,7 +50,7 @@ impl Query {
         match self {
             Query::GetChunk(address) => NetworkAddress::from_chunk_address(*address),
             Query::Register(query) => NetworkAddress::from_register_address(query.dst()),
-            Query::Spend(query) => NetworkAddress::from_dbc_address(query.dst()),
+            Query::GetSpend(address) => NetworkAddress::from_dbc_address(*address),
         }
     }
 }
@@ -58,8 +64,8 @@ impl std::fmt::Display for Query {
             Query::Register(query) => {
                 write!(f, "Query::Register({:?})", query.dst()) // more qualification needed
             }
-            Query::Spend(query) => {
-                write!(f, "Query::Spend({query:?})")
+            Query::GetSpend(address) => {
+                write!(f, "Query::GetSpend({address:?})")
             }
         }
     }

@@ -46,18 +46,18 @@ extern crate tracing;
 mod api;
 mod error;
 mod event;
+mod spendbook;
+
+use spendbook::SpendBook;
 
 pub use self::{
     api::RunningNode,
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
 };
 
-use self::api::TransferAction;
-
 use libp2p::{Multiaddr, PeerId};
-use sn_domain::{node_transfers::Transfers, storage::RegisterStorage};
+use sn_domain::storage::RegisterStorage;
 use sn_networking::Network;
-use tokio::sync::mpsc;
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
@@ -65,9 +65,8 @@ use tokio::sync::mpsc;
 pub struct Node {
     network: Network,
     registers: RegisterStorage,
-    transfers: Transfers,
+    spendbook: SpendBook,
     events_channel: NodeEventsChannel,
     /// Peers that are dialed at startup of node.
     initial_peers: Vec<(PeerId, Multiaddr)>,
-    transfer_actor: mpsc::Sender<TransferAction>,
 }

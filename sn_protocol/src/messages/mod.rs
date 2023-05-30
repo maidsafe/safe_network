@@ -8,16 +8,15 @@
 
 //! Data messages and their possible responses.
 mod cmd;
-mod event;
 mod node_id;
 mod query;
 mod register;
 mod response;
-mod spend;
+
+use crate::storage::Chunk;
 
 pub use self::{
     cmd::Cmd,
-    event::Event,
     node_id::NodeId,
     query::Query,
     register::{
@@ -25,18 +24,11 @@ pub use self::{
         SignedRegisterCreate, SignedRegisterEdit,
     },
     response::{CmdResponse, QueryResponse},
-    spend::SpendQuery,
 };
 
-use super::{
-    storage::{Chunk, DbcAddress},
-    NetworkAddress,
-};
-
-use sn_dbc::SignedSpend;
+use super::NetworkAddress;
 
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeSet, fmt::Debug};
 use xor_name::XorName;
 
 /// A request to peers in the network
@@ -46,8 +38,6 @@ pub enum Request {
     Cmd(Cmd),
     /// A query sent to peers. Queries are read-only.
     Query(Query),
-    /// A fact sent to peers.
-    Event(Event),
 }
 
 /// A response to peers in the network.
@@ -59,8 +49,6 @@ pub enum Response {
     Query(QueryResponse),
 }
 
-/// Messages to replicated data among nodes on the network
-#[allow(clippy::large_enum_variant)]
 #[derive(custom_debug::Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum ReplicatedData {
     /// A chunk of data.
@@ -69,12 +57,6 @@ pub enum ReplicatedData {
     RegisterWrite(RegisterCmd),
     /// An entire op log of a register.
     RegisterLog(ReplicatedRegisterLog),
-    /// A valid spend.
-    #[debug(skip)]
-    ValidSpend(SignedSpend),
-    /// A dbc marked as having attempted double spend.
-    #[debug(skip)]
-    DoubleSpend((DbcAddress, BTreeSet<SignedSpend>)),
 }
 
 impl Request {
@@ -83,7 +65,6 @@ impl Request {
         match self {
             Request::Cmd(cmd) => cmd.dst(),
             Request::Query(query) => query.dst(),
-            Request::Event(event) => event.dst(),
         }
     }
 }
@@ -95,8 +76,6 @@ impl ReplicatedData {
             Self::Chunk(chunk) => *chunk.name(),
             Self::RegisterLog(log) => *log.address.name(),
             Self::RegisterWrite(cmd) => *cmd.dst().name(),
-            Self::ValidSpend(spend) => *DbcAddress::from_dbc_id(spend.dbc_id()).name(),
-            Self::DoubleSpend((address, _)) => *address.name(),
         }
     }
 
@@ -106,10 +85,6 @@ impl ReplicatedData {
             Self::Chunk(chunk) => NetworkAddress::from_chunk_address(*chunk.address()),
             Self::RegisterLog(log) => NetworkAddress::from_register_address(log.address),
             Self::RegisterWrite(cmd) => NetworkAddress::from_register_address(cmd.dst()),
-            Self::ValidSpend(spend) => {
-                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(spend.dbc_id()))
-            }
-            Self::DoubleSpend((address, _)) => NetworkAddress::from_dbc_address(*address),
         }
     }
 }

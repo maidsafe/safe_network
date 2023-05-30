@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::collections::BTreeMap;
+
 use super::{
     error::{Error, Result},
     Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, Register, RegisterOffline,
@@ -15,7 +17,7 @@ use sn_dbc::{DbcId, SignedSpend};
 use sn_domain::client_transfers::SpendRequest;
 use sn_networking::{close_group_majority, multiaddr_is_global, NetworkEvent, SwarmDriver};
 use sn_protocol::{
-    messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response, SpendQuery},
+    messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     storage::{Chunk, ChunkAddress, DbcAddress},
     NetworkAddress,
 };
@@ -25,6 +27,7 @@ use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{kad::RecordKey, Multiaddr, PeerId};
 use tokio::task::spawn;
+use tracing::trace;
 use xor_name::XorName;
 
 impl Client {
@@ -186,11 +189,7 @@ impl Client {
             .get_provided_data(RecordKey::new(xorname))
             .await?
         {
-            Ok(QueryResponse::GetChunk(result)) => Ok(result?),
-            Ok(other) => {
-                warn!("On querying chunk {xorname:?} received unexpected response {other:?}",);
-                Err(Error::UnexpectedResponses)
-            }
+            Ok(chunk_bytes) => Ok(Chunk::new(chunk_bytes.into())),
             Err(err) => {
                 warn!("Local internal error when trying to query chunk {xorname:?}: {err:?}",);
                 Err(err.into())
@@ -226,22 +225,24 @@ impl Client {
         }
     }
 
-    pub(crate) async fn expect_closest_majority_ok(&self, spend: SpendRequest) -> Result<()> {
-        let dbc_id = spend.signed_spend.dbc_id();
-        let network_address = NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(dbc_id));
+    /// Send a `SpendDbc` request to the closest nodes to the dbc_id
+    /// Makes sure at least majority of them successfully stored it
+    pub(crate) async fn network_store_spend(&self, spend: SpendRequest) -> Result<()> {
+        let dbc_id = *spend.signed_spend.dbc_id();
+        let network_address = NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(&dbc_id));
 
-        trace!("Getting the closest peers to {dbc_id:?} / {network_address:?}.");
+        trace!("Getting the closest peers to the dbc_id {dbc_id:?} / {network_address:?}.");
         let closest_peers = self
             .network
             .client_get_closest_peers(&network_address)
             .await?;
 
-        let cmd = Cmd::SpendDbc {
-            signed_spend: Box::new(spend.signed_spend),
-            parent_tx: Box::new(spend.parent_tx),
-        };
+        let cmd = Cmd::SpendDbc(spend.signed_spend);
 
-        trace!("Sending {:?} to the closest peers.", cmd);
+        trace!(
+            "Sending {:?} to the closest peers to store spend for {dbc_id:?}.",
+            cmd
+        );
 
         let mut list_of_futures = vec![];
         for peer in closest_peers {
@@ -255,7 +256,7 @@ impl Client {
         while !list_of_futures.is_empty() {
             match select_all(list_of_futures).await {
                 (Ok(Response::Cmd(CmdResponse::Spend(Ok(())))), _, remaining_futures) => {
-                    trace!("Spend Ok response got.");
+                    trace!("Spend Ok response got while requesting to spend {dbc_id:?}");
                     ok_responses += 1;
 
                     // Return once we got required number of expected responses.
@@ -266,18 +267,18 @@ impl Client {
                     list_of_futures = remaining_futures;
                 }
                 (Ok(other), _, remaining_futures) => {
-                    trace!("Unexpected response got: {other}.");
+                    trace!("Unexpected response got while requesting to spend {dbc_id:?}: {other}");
                     list_of_futures = remaining_futures;
                 }
                 (Err(err), _, remaining_futures) => {
-                    trace!("Network error: {err:?}.");
+                    trace!("Network error while requesting to spend {dbc_id:?}: {err:?}.");
                     list_of_futures = remaining_futures;
                 }
             }
         }
 
         Err(Error::CouldNotVerifyTransfer(format!(
-            "Not enough close group nodes accepted the spend. Got {}, required: {}.",
+            "Not enough close group nodes accepted the spend for {dbc_id:?}. Got {}, required: {}.",
             ok_responses,
             close_group_majority()
         )))
@@ -292,7 +293,7 @@ impl Client {
             .client_get_closest_peers(&network_address)
             .await?;
 
-        let query = Query::Spend(SpendQuery::GetDbcSpend(address));
+        let query = Query::GetSpend(address);
         trace!("Sending {:?} to the closest peers.", query);
 
         let mut list_of_futures = vec![];
@@ -312,21 +313,39 @@ impl Client {
                     remaining_futures,
                 ) => {
                     if dbc_id == received_spend.dbc_id() {
-                        trace!("Signed spend got from network.");
-                        ok_responses.push(received_spend);
+                        match received_spend.verify(received_spend.spent_tx_hash()) {
+                            Ok(_) => {
+                                trace!("Verified signed spend got from network while getting Spend for {dbc_id:?}");
+                                ok_responses.push(received_spend);
+                            }
+                            Err(err) => {
+                                warn!("Invalid signed spend got from network while getting Spend for {dbc_id:?}: {err:?}.");
+                            }
+                        }
                     }
 
                     // Return once we got required number of expected responses.
                     if ok_responses.len() >= close_group_majority() {
                         use itertools::*;
-                        let majority_agreement = ok_responses
+                        let resp_count_by_spend: BTreeMap<SignedSpend, usize> = ok_responses
                             .clone()
                             .into_iter()
                             .map(|x| (x, 1))
                             .into_group_map()
                             .into_iter()
-                            .filter(|(_, v)| v.len() >= close_group_majority())
-                            .max_by_key(|(_, v)| v.len())
+                            .map(|(spend, vec_of_ones)| (spend, vec_of_ones.len()))
+                            .collect();
+
+                        if resp_count_by_spend.len() > 1 {
+                            return Err(Error::CouldNotVerifyTransfer(format!(
+                                "Double spend detected while getting Spend for {dbc_id:?}: {:?}",
+                                resp_count_by_spend.keys()
+                            )));
+                        }
+
+                        let majority_agreement = resp_count_by_spend
+                            .into_iter()
+                            .max_by_key(|(_, count)| *count)
                             .map(|(k, _)| k);
 
                         if let Some(agreed_spend) = majority_agreement {
@@ -339,11 +358,11 @@ impl Client {
                     list_of_futures = remaining_futures;
                 }
                 (Ok(other), _, remaining_futures) => {
-                    trace!("Unexpected response got: {other}.");
+                    trace!("Unexpected response while getting Spend for {dbc_id:?}: {other}.");
                     list_of_futures = remaining_futures;
                 }
                 (Err(err), _, remaining_futures) => {
-                    trace!("Network error: {err:?}.");
+                    trace!("Network error getting Spend for {dbc_id:?}: {err:?}.");
                     list_of_futures = remaining_futures;
                 }
             }

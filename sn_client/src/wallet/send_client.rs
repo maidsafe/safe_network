@@ -20,7 +20,7 @@ impl SendClient for Client {
     async fn send(&self, transfer: TransferDetails) -> Result<()> {
         let mut tasks = Vec::new();
         for spend_request in &transfer.all_spend_requests {
-            tasks.push(self.expect_closest_majority_ok(spend_request.clone()));
+            tasks.push(self.network_store_spend(spend_request.clone()));
         }
 
         for spend_attempt_result in join_all(tasks).await {
