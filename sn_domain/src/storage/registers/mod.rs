@@ -10,21 +10,17 @@ pub mod reg_crdt;
 pub mod reg_replica;
 
 pub use reg_replica::RegisterReplica;
-
-use super::{prefix_tree_path, Result};
-
-use bincode::serialize;
 use sn_protocol::{
-    error::{Error as ProtocolError, StorageError as Error},
+    error::{Error, Result},
     messages::{
         EditRegister, QueryResponse, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
         SignedRegisterCreate, SignedRegisterEdit,
     },
-    storage::{
-        registers::{Action, EntryHash, User},
-        DataAuthority, RegisterAddress,
-    },
+    storage::{Action, DataAuthority, EntryHash, RegisterAddress, User},
 };
+use xor_name::XorName;
+
+use bincode::serialize;
 use std::path::{Path, PathBuf};
 use tokio::{
     fs::{create_dir_all, read, remove_file, File},
@@ -35,6 +31,7 @@ use walkdir::WalkDir;
 
 pub(super) type RegisterLog = Vec<RegisterCmd>;
 
+const BIT_TREE_DEPTH: usize = 20;
 const REGISTERS_STORE_DIR_NAME: &str = "registers";
 
 #[derive(Clone, Debug)]
@@ -65,8 +62,7 @@ impl RegisterStorage {
             Get(address) => QueryResponse::GetRegister(
                 self.get_register(address, Action::Read, requester)
                     .await
-                    .map(|reg_replica| reg_replica.into())
-                    .map_err(ProtocolError::Storage),
+                    .map(|reg_replica| reg_replica.into()),
             ),
             Read(address) => self.read_register(*address, requester).await,
             GetOwner(address) => self.get_owner(*address, requester).await,
@@ -254,8 +250,7 @@ impl RegisterStorage {
         let result = match self.get_register(&address, Action::Read, requester).await {
             Ok(register) => Ok(register.read()),
             Err(error) => Err(error),
-        }
-        .map_err(ProtocolError::Storage);
+        };
 
         QueryResponse::ReadRegister(result)
     }
@@ -264,8 +259,7 @@ impl RegisterStorage {
         let result = match self.get_register(&address, Action::Read, requester).await {
             Ok(res) => Ok(res.owner()),
             Err(error) => Err(error),
-        }
-        .map_err(ProtocolError::Storage);
+        };
 
         QueryResponse::GetRegisterOwner(result)
     }
@@ -279,8 +273,7 @@ impl RegisterStorage {
         let result = self
             .get_register(&address, Action::Read, requester)
             .await
-            .and_then(|register| register.get(hash).map(|c| c.clone()))
-            .map_err(ProtocolError::Storage);
+            .and_then(|register| register.get(hash).map(|c| c.clone()));
 
         QueryResponse::GetRegisterEntry(result)
     }
@@ -294,8 +287,7 @@ impl RegisterStorage {
         let result = self
             .get_register(&address, Action::Read, requester)
             .await
-            .and_then(|register| register.permissions(user))
-            .map_err(ProtocolError::Storage);
+            .and_then(|register| register.permissions(user));
 
         QueryResponse::GetRegisterUserPermissions(result)
     }
@@ -304,8 +296,7 @@ impl RegisterStorage {
         let result = self
             .get_register(&address, Action::Read, requester_pk)
             .await
-            .map(|register| register.policy().clone())
-            .map_err(ProtocolError::Storage);
+            .map(|register| register.policy().clone());
 
         QueryResponse::GetRegisterPolicy(result)
     }
@@ -573,18 +564,18 @@ fn list_files_in(path: &Path) -> Vec<PathBuf> {
 #[cfg(test)]
 mod test {
     use super::{Error, RegisterReplica, RegisterStorage};
-    use bincode::serialize;
-    use bls::SecretKey;
-    use eyre::{bail, Result};
-    use rand::{distributions::Alphanumeric, Rng};
     use sn_protocol::{
-        error::Error as ProtocolError,
         messages::{
             CreateRegister, EditRegister, QueryResponse, RegisterCmd, RegisterQuery,
             SignedRegisterCreate, SignedRegisterEdit,
         },
         storage::registers::{DataAuthority, EntryHash, Policy, User},
     };
+
+    use bincode::serialize;
+    use bls::SecretKey;
+    use eyre::{bail, Result};
+    use rand::{distributions::Alphanumeric, Rng};
     use std::collections::BTreeSet;
     use xor_name::XorName;
 
@@ -889,7 +880,7 @@ mod test {
             .await;
         match res {
             QueryResponse::GetRegisterEntry(Err(e)) => {
-                assert_eq!(e, ProtocolError::Storage(Error::NoSuchEntry(hash)))
+                assert_eq!(e, Error::NoSuchEntry(hash))
             }
             QueryResponse::GetRegisterEntry(Ok(entry)) => {
                 panic!("Should not exist any entry for random hash! {entry:?}")
@@ -919,7 +910,7 @@ mod test {
             .await;
         match res {
             QueryResponse::GetRegisterUserPermissions(Err(e)) => {
-                assert_eq!(e, ProtocolError::Storage(Error::NoSuchUser(user)))
+                assert_eq!(e, Error::NoSuchUser(user))
             }
             QueryResponse::GetRegisterUserPermissions(Ok(perms)) => {
                 panic!("Should not exist any permissions for random user! {perms:?}",)
@@ -993,4 +984,15 @@ mod test {
 
         Ok(RegisterCmd::Create(SignedRegisterCreate { op, auth }))
     }
+}
+
+// Helper that returns the prefix tree path of depth BIT_TREE_DEPTH for a given xorname
+// Example:
+// - with a xorname with starting bits `010001110110....`
+// - and a BIT_TREE_DEPTH of `6`
+// returns the path `ROOT_PATH/0/1/0/0/0/1`
+fn prefix_tree_path(root: &Path, xorname: XorName) -> PathBuf {
+    let bin = format!("{xorname:b}");
+    let prefix_dir_path: PathBuf = bin.chars().take(BIT_TREE_DEPTH).map(String::from).collect();
+    root.join(prefix_dir_path)
 }

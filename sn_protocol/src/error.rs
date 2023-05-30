@@ -11,16 +11,18 @@ use crate::storage::{
     ChunkAddress, DbcAddress, RegisterAddress,
 };
 
-use sn_dbc::SignedSpend;
+use serde::{Deserialize, Serialize};
+use sn_dbc::{Hash, SignedSpend};
+use thiserror::Error;
 use xor_name::XorName;
 
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
+/// A specialised `Result` type for protocol crate.
+pub type Result<T> = std::result::Result<T, Error>;
 
-/// Errors related to storage operation on the network.
+/// Main error types for the SAFE protocol.
 #[derive(Error, Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 #[non_exhaustive]
-pub enum StorageError {
+pub enum Error {
     /// Chunk not found.
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
@@ -70,18 +72,26 @@ pub enum StorageError {
     /// Spend not found.
     #[error("Spend not found: {0:?}")]
     SpendNotFound(DbcAddress),
-    /// We failed to store spend
-    #[error("Spend was not stored: {0:?}")]
-    SpendNotStored(DbcAddress),
-    /// A double spend attempt was detected.
-    #[error("A double spend attempt was detected. Incoming and existing spend are not the same: {new:?}. Existing: {existing:?}")]
+    /// Insufficient valid spends found to make it valid, less that majority of closest peers
+    #[error("Insufficient valid spends found: {0:?}")]
+    InsufficientValidSpendsFound(DbcAddress),
+    /// Node failed to store spend
+    #[error("Failed to store spend: {0:?}")]
+    FailedToStoreSpend(DbcAddress),
+    /// Node failed to get spend
+    #[error("Failed to get spend: {0:?}")]
+    FailedToGetSpend(DbcAddress),
+    /// A double spend was detected.
+    #[error(
+        "A double spend was detected. Two diverging signed spends: {spend_one:?}, {spend_two:?}"
+    )]
     DoubleSpendAttempt {
         /// New spend that we received.
         #[debug(skip)]
-        new: Box<SignedSpend>,
+        spend_one: Box<SignedSpend>,
         /// Existing spend of same id that we already have.
         #[debug(skip)]
-        existing: Box<SignedSpend>,
+        spend_two: Box<SignedSpend>,
     },
     /// A spend that was attempted to be added was already marked as double spend.
     #[error("A spend that was attempted to be added was already marked as double spend: {0:?}")]
@@ -93,4 +103,38 @@ pub enum StorageError {
     /// Cannot verify a Spend signature.
     #[error("Spend signature is invalid: {0}")]
     InvalidSpendSignature(String),
+
+    ///
+    #[error("Contacting close group of parent spends failed: {0}.")]
+    SpendParentCloseGroupIssue(String),
+    /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
+    #[error(
+        "The signed spend src tx ({signed_src_tx_hash:?}) did not match the provided source tx's hash: {provided_src_tx_hash:?}"
+    )]
+    TxSourceMismatch {
+        /// The signed spend src tx hash.
+        signed_src_tx_hash: Hash,
+        /// The hash of the provided source tx.
+        provided_src_tx_hash: Hash,
+    },
+    /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
+    #[error(
+        "The signed spend src tx ({signed_src_tx_hash:?}) did not match a valid parent's dst tx hash: {parent_dst_tx_hash:?}. The trail is invalid."
+    )]
+    TxTrailMismatch {
+        /// The signed spend src tx hash.
+        signed_src_tx_hash: Hash,
+        /// The dst hash of a parent signed spend.
+        parent_dst_tx_hash: Hash,
+    },
+    /// The provided source tx did not check out when verified with all supposed inputs to it (i.e. our spends parents).
+    #[error(
+        "The provided source tx (with hash {provided_src_tx_hash:?}) when verified with all supposed inputs to it (i.e. our spends parents).."
+    )]
+    InvalidSourceTxProvided {
+        /// The signed spend src tx hash.
+        signed_src_tx_hash: Hash,
+        /// The hash of the provided source tx.
+        provided_src_tx_hash: Hash,
+    },
 }

@@ -46,7 +46,7 @@ use libp2p::{
 };
 use rand::Rng;
 use sn_protocol::{
-    messages::{QueryResponse, ReplicatedData, Request, Response},
+    messages::{ReplicatedData, Request, Response},
     NetworkAddress,
 };
 use sn_record_store::{
@@ -102,7 +102,7 @@ pub struct SwarmDriver {
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
-    pending_query: HashMap<QueryId, oneshot::Sender<Result<QueryResponse>>>,
+    pending_query: HashMap<QueryId, oneshot::Sender<Result<Vec<u8>>>>,
     local: bool,
     dialed_peers: CircularVec<PeerId>,
 }
@@ -468,18 +468,19 @@ impl Network {
             .await)
     }
 
-    /// Send `Request` to the closest peers. If `self` is among the closest_peers, the `Request` is
+    /// Send `Request` to the closest peers and ignore reply
+    /// If `self` is among the closest_peers, the `Request` is
     /// forwarded to itself and handled. Then a corresponding `Response` is created and is
     /// forwarded to iself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
-    pub async fn fire_and_forget_to_closest(&self, request: &Request) -> Result<()> {
+    pub async fn send_req_no_reply_to_closest(&self, request: &Request) -> Result<()> {
         info!(
             "Sending {request:?} with dst {:?} to the closest peers.",
             request.dst()
         );
         let closest_peers = self.node_get_closest_peers(&request.dst()).await?;
         for peer in closest_peers {
-            self.fire_and_forget(request.clone(), peer).await?;
+            self.send_req_ignore_reply(request.clone(), peer).await?;
         }
         Ok(())
     }
@@ -500,8 +501,8 @@ impl Network {
             .await)
     }
 
-    /// Get `Key` from our Storage
-    pub async fn get_provided_data(&self, key: RecordKey) -> Result<Result<QueryResponse>> {
+    /// Get `key` from our Storage
+    pub async fn get_provided_data(&self, key: RecordKey) -> Result<Result<Vec<u8>>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetData { key, sender })
             .await?;
@@ -551,7 +552,7 @@ impl Network {
     }
 
     /// Send `Request` to the the given `PeerId` and do _not_ await a response.
-    pub async fn fire_and_forget(&self, req: Request, peer: PeerId) -> Result<()> {
+    pub async fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let (sender, _) = oneshot::channel();
         let swarm_cmd = SwarmCmd::SendRequest { req, peer, sender };
         self.send_swarm_cmd(swarm_cmd).await

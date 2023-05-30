@@ -6,17 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{reg_crdt::RegisterCrdtImpl, Result};
-
-use self_encryption::MIN_ENCRYPTABLE_BYTES;
-use serde::{Deserialize, Serialize};
 use sn_protocol::{
-    error::StorageError as Error,
+    error::Error,
     storage::{
         registers::{Action, Entry, EntryHash, Permissions, Policy, Register, RegisterOp, User},
         RegisterAddress,
     },
 };
+
+use super::{reg_crdt::RegisterCrdtImpl, Result};
+
+use self_encryption::MIN_ENCRYPTABLE_BYTES;
+use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, hash::Hash};
 use xor_name::XorName;
 

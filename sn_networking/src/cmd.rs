@@ -16,7 +16,7 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use sn_protocol::{
-    messages::{QueryResponse, ReplicatedData, Request, Response},
+    messages::{ReplicatedData, Request, Response},
     storage::Chunk,
     NetworkAddress,
 };
@@ -61,7 +61,7 @@ pub enum SwarmCmd {
     /// Get data from the kademlia store
     GetData {
         key: RecordKey,
-        sender: oneshot::Sender<Result<QueryResponse>>,
+        sender: oneshot::Sender<Result<Vec<u8>>>,
     },
     StoreReplicatedData {
         replicated_data: ReplicatedData,
@@ -85,7 +85,6 @@ impl SwarmDriver {
                 let _ = self.pending_query.insert(query_id, sender);
             }
             SwarmCmd::PutProvidedDataAsRecord { record } => {
-                // TODO: when do we remove records. Do we need to?
                 let _ = self
                     .swarm
                     .behaviour_mut()

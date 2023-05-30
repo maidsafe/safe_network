@@ -25,7 +25,7 @@ libp2p = { version="0.51", features = ["identify"] }
 rayon = "~1.5.1"
 self_encryption = "~0.28.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_dbc = { version = "17.0.0", features = ["serdes"] }
+sn_dbc = { version = "18.0.0", features = ["serdes"] }
 sn_domain = { path = "../sn_domain", version = "0.1.0" }
 sn_networking = { path = "../sn_networking", version = "0.1.0" }
 sn_protocol = { path = "../sn_protocol", version = "0.1.0" }

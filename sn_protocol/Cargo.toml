@@ -16,6 +16,6 @@ crdts = { version = "7.3", default-features = false, features = ["merkle"] }
 custom_debug = "~0.5.0"
 libp2p = { version="0.51", features = ["identify", "kad"] }
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_dbc = { version = "17.0.0", features = ["serdes"] }
+sn_dbc = { version = "18.0.0", features = ["serdes"] }
 thiserror = "1.0.23"
 xor_name = "5.0.0"
