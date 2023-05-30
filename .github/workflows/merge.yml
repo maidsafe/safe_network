@@ -164,7 +164,7 @@ jobs:
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         env:
-          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
+          SN_LOG: "all"
         timeout-minutes: 10
 
       - name: Set contact env var node.
@@ -179,37 +179,37 @@ jobs:
       - name: Start a client to upload files
         run: cargo run --bin safe --release -- files upload -- "./resources"
         env:
-          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
+          SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to download files
         run: cargo run --bin safe --release -- files download
         env:
-          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
+          SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to create a register
         run: cargo run --bin safe --release -- register create baobao
         env:
-          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
+          SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to get a register
         run: cargo run --bin safe --release -- register get baobao
         env:
-          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
+          SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to edit a register
         run: cargo run --bin safe --release -- register edit baobao wood
         env:
-          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
+          SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a faucet client to claim genesis
         run: cargo run --bin faucet --release -- claim-genesis
         env:
-          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
+          SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Kill all nodes
@@ -283,13 +283,13 @@ jobs:
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         env:
-          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
+          SN_LOG: "all"
         timeout-minutes: 10
 
       - name: execute the dbc spend test
         run: cargo test --release --features="local-discovery" multiple_sequential_transfers_succeed  -- --nocapture
         env:
-          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
+          SN_LOG: "all"
         timeout-minutes: 10
 
       - name: Kill all nodes
@@ -359,7 +359,7 @@ jobs:
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
         env:
-          SN_LOG: "safenode=trace,sn_networking=trace,sn_node=trace,sn_domain=trace"
+          SN_LOG: "all"
         timeout-minutes: 10
 
       - name: Build churn tests 
