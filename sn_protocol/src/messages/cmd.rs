@@ -39,7 +39,7 @@ pub enum Cmd {
     /// [`SignedSpend`]: sn_dbc::SignedSpend
     /// The spend to be recorded.
     /// It contains the transaction it is being spent in.
-    SpendDbc(#[debug(skip)] SignedSpend),
+    SpendDbc(SignedSpend),
     /// [`ReplicatedData`] write operation.
     ///
     /// [`ReplicatedData`]: crate::messages::ReplicatedData

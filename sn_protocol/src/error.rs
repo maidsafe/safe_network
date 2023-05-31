@@ -82,41 +82,15 @@ pub enum Error {
     #[error("Failed to get spend: {0:?}")]
     FailedToGetSpend(DbcAddress),
     /// A double spend was detected.
-    #[error(
-        "A double spend was detected. Two diverging signed spends: {spend_one:?}, {spend_two:?}"
-    )]
-    DoubleSpendAttempt {
-        /// New spend that we received.
-        #[debug(skip)]
-        spend_one: Box<SignedSpend>,
-        /// Existing spend of same id that we already have.
-        #[debug(skip)]
-        spend_two: Box<SignedSpend>,
-    },
-    /// A spend that was attempted to be added was already marked as double spend.
-    #[error("A spend that was attempted to be added was already marked as double spend: {0:?}")]
-    AlreadyMarkedAsDoubleSpend(DbcAddress),
-    /// NB: This is a temporary error, which circumvents double spend detection for now.
-    /// A spend that was attempted to be added already existed.
-    #[error("A spend that was attempted to be added already existed: {0:?}")]
-    AlreadyExists(DbcAddress),
+    #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
+    DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
     /// Cannot verify a Spend signature.
     #[error("Spend signature is invalid: {0}")]
     InvalidSpendSignature(String),
+    /// Cannot verify a Spend's parents.
+    #[error("Spend parents are invalid: {0}")]
+    InvalidSpendParents(String),
 
-    ///
-    #[error("Contacting close group of parent spends failed: {0}.")]
-    SpendParentCloseGroupIssue(String),
-    /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
-    #[error(
-        "The signed spend src tx ({signed_src_tx_hash:?}) did not match the provided source tx's hash: {provided_src_tx_hash:?}"
-    )]
-    TxSourceMismatch {
-        /// The signed spend src tx hash.
-        signed_src_tx_hash: Hash,
-        /// The hash of the provided source tx.
-        provided_src_tx_hash: Hash,
-    },
     /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
     #[error(
         "The signed spend src tx ({signed_src_tx_hash:?}) did not match a valid parent's dst tx hash: {parent_dst_tx_hash:?}. The trail is invalid."
