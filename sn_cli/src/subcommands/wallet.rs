@@ -133,7 +133,11 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
     Ok(())
 }
 
-async fn pay_for_storage(client: &Client, root_dir: &Path, files_path: &Path) -> Result<()> {
+pub(super) async fn pay_for_storage(
+    client: &Client,
+    root_dir: &Path,
+    files_path: &Path,
+) -> Result<()> {
     let wallet = LocalWallet::load_from(root_dir).await?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     let file_api: Files = Files::new(client.clone());
