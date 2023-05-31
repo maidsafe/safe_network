@@ -49,8 +49,8 @@ impl SpendBook {
             }
         };
 
-        // deserialize spend
-        let signed_spend = match bincode::deserialize(&signed_spend_bytes) {
+        // deserialize spends
+        let signed_spends = match bincode::deserialize::<Vec<SignedSpend>>(&signed_spend_bytes) {
             Ok(s) => s,
             Err(e) => {
                 error!("Failed to get spend because deserialization failed: {e:?}");
@@ -58,8 +58,24 @@ impl SpendBook {
             }
         };
 
-        trace!("Spend get for address: {address:?} successful");
-        Ok(signed_spend)
+        // if there are multiple spends, it is a double spend
+        match signed_spends.as_slice() {
+            [one, two, ..] => {
+                error!("Found double spend for {address:?}");
+                Err(Error::DoubleSpendAttempt(
+                    Box::new(one.to_owned()),
+                    Box::new(two.to_owned()),
+                ))
+            }
+            [one] => {
+                trace!("Spend get for address: {address:?} successful");
+                Ok(one.clone())
+            }
+            _ => {
+                trace!("Found no spend for {address:?}");
+                Err(Error::SpendNotFound(address))
+            }
+        }
     }
 
     /// Put a SpendBook entry for a given SignedSpend
@@ -75,14 +91,20 @@ impl SpendBook {
         let _double_spend_guard = self.rw_lock.write().await;
         trace!("Handling spend put for {dbc_id:?} at {dbc_addr:?}");
 
-        // check DBC spend
-        if let Err(e) = verify_spend_dbc(network, &signed_spend).await {
-            error!("Failed to store spend for {dbc_id:?} because DBC verification failed: {e:?}");
-            return Err(Error::FailedToStoreSpend(dbc_addr));
-        }
+        // check DBC spend, if it is a double spend, still store them both
+        let signed_spends = match verify_spend_dbc(network, &signed_spend).await {
+            Ok(()) => vec![signed_spend.clone()],
+            Err(Error::DoubleSpendAttempt(one, two)) => vec![*one, *two],
+            Err(e) => {
+                error!(
+                    "Failed to store spend for {dbc_id:?} because DBC verification failed: {e:?}"
+                );
+                return Err(Error::FailedToStoreSpend(dbc_addr));
+            }
+        };
 
-        // serialize spend
-        let signed_spend_bytes = match bincode::serialize(&signed_spend) {
+        // serialize
+        let signed_spends_bytes = match bincode::serialize(&signed_spends) {
             Ok(b) => b,
             Err(e) => {
                 error!("Failed to store spend for {dbc_id:?} because serialization failed: {e:?}");
@@ -93,13 +115,21 @@ impl SpendBook {
         // create a kad record and upload it
         let kademlia_record = Record {
             key: RecordKey::new(dbc_addr.name()),
-            value: signed_spend_bytes,
+            value: signed_spends_bytes,
             publisher: None,
             expires: None,
         };
         if let Err(e) = network.put_data_as_record(kademlia_record).await {
             error!("Failed to store spend {dbc_id:?}: {e:?}");
             return Err(Error::FailedToStoreSpend(dbc_addr));
+        }
+
+        // if it was a double spend, report the error after having stored it
+        if let [one, two, ..] = signed_spends.as_slice() {
+            return Err(Error::DoubleSpendAttempt(
+                Box::new(one.to_owned()),
+                Box::new(two.to_owned()),
+            ));
         }
 
         trace!("Spend put for {dbc_id:?} at {dbc_addr:?} successful");
@@ -115,19 +145,16 @@ impl SpendBook {
     }
 }
 
-/// Checks if the spend already exists in the network.
-async fn check_for_double_spend(network: &Network, signed_spend: &SignedSpend) -> Result<()> {
+/// Checks the network for a double spend
+async fn find_double_spend(
+    network: &Network,
+    signed_spend: &SignedSpend,
+) -> Option<(Box<SignedSpend>, Box<SignedSpend>)> {
     let dbc_addr = DbcAddress::from_dbc_id(signed_spend.dbc_id());
     let spends = match get_spend(network, dbc_addr).await {
         Ok(s) => s,
-        Err(Error::DoubleSpendAttempt {
-            spend_one,
-            spend_two,
-        }) => {
-            return Err(Error::DoubleSpendAttempt {
-                spend_one,
-                spend_two,
-            })?;
+        Err(Error::DoubleSpendAttempt(spend_one, spend_two)) => {
+            return Some((spend_one, spend_two));
         }
         Err(e) => {
             trace!(
@@ -139,14 +166,11 @@ async fn check_for_double_spend(network: &Network, signed_spend: &SignedSpend) -
 
     for s in spends {
         if SpendBook::is_valid_double_spend(&s, signed_spend) {
-            return Err(Error::DoubleSpendAttempt {
-                spend_one: Box::new(signed_spend.clone()),
-                spend_two: Box::new(s),
-            })?;
+            return Some((Box::new(signed_spend.clone()), Box::new(s)));
         }
     }
 
-    Ok(())
+    None
 }
 
 /// Verifies a spend to make sure it is safe to store it on the Network
@@ -160,8 +184,16 @@ async fn verify_spend_dbc(network: &Network, signed_spend: &SignedSpend) -> Resu
             signed_spend.dbc_id()
         )));
     }
-    check_parent_spends(network, signed_spend).await?;
-    check_for_double_spend(network, signed_spend).await?;
+
+    // check parents
+    if let Err(e) = check_parent_spends(network, signed_spend).await {
+        return Err(Error::InvalidSpendParents(format!("{:?}", e)));
+    }
+
+    // find a double spend
+    if let Some((spend1, spend2)) = find_double_spend(network, signed_spend).await {
+        return Err(Error::DoubleSpendAttempt(spend1, spend2));
+    }
 
     Ok(())
 }
@@ -278,10 +310,10 @@ async fn get_network_valid_spend(network: &Network, address: DbcAddress) -> Resu
         if resp_count_by_spend.keys().len() > 1 {
             let mut proof = resp_count_by_spend.keys().take(2);
             if let (Some(spend_one), Some(spend_two)) = (proof.next(), proof.next()) {
-                return Err(Error::DoubleSpendAttempt {
-                    spend_one: Box::new(spend_one.to_owned().clone()),
-                    spend_two: Box::new(spend_two.to_owned().clone()),
-                })?;
+                return Err(Error::DoubleSpendAttempt(
+                    Box::new(spend_one.to_owned().clone()),
+                    Box::new(spend_two.to_owned().clone()),
+                ))?;
             }
         }
 
@@ -319,7 +351,7 @@ async fn get_spend(network: &Network, address: DbcAddress) -> Result<Vec<SignedS
                 Response::Query(QueryResponse::GetDbcSpend(Ok(signed_spend))) => {
                     Some(signed_spend.clone())
                 }
-                Response::Query(QueryResponse::GetDbcSpend(Err(Error::DoubleSpendAttempt{ spend_one, spend_two }))) => {
+                Response::Query(QueryResponse::GetDbcSpend(Err(Error::DoubleSpendAttempt(spend_one, spend_two)))) => {
                     if SpendBook::is_valid_double_spend(spend_one, spend_two) {
                         warn!("Double spend attempt reported by peer: {spend_one:?} and {spend_two:?}");
                         double_spend_answer = Some((spend_one, spend_two));
@@ -342,10 +374,10 @@ async fn get_spend(network: &Network, address: DbcAddress) -> Result<Vec<SignedS
 
     // check if peers reported double spend
     if let Some((spend_one, spend_two)) = double_spend_answer {
-        return Err(Error::DoubleSpendAttempt {
-            spend_one: spend_one.to_owned(),
-            spend_two: spend_two.to_owned(),
-        })?;
+        return Err(Error::DoubleSpendAttempt(
+            spend_one.to_owned(),
+            spend_two.to_owned(),
+        ))?;
     }
 
     Ok(spends)
