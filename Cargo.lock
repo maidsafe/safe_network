@@ -4398,6 +4398,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tracing",
+ "typenum",
  "xor_name",
 ]
 
@@ -4470,6 +4471,7 @@ version = "0.1.0"
 dependencies = [
  "assert_matches",
  "async-trait",
+ "blsttc",
  "bytes",
  "eyre",
  "futures",
@@ -4508,6 +4510,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "libp2p",
+ "merkletree",
  "prost",
  "rand 0.8.5",
  "rayon",
@@ -4534,6 +4537,7 @@ dependencies = [
  "tracing-log",
  "tracing-opentelemetry",
  "tracing-subscriber",
+ "typenum",
  "walkdir",
  "xor_name",
 ]

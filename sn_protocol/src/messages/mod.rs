@@ -16,7 +16,7 @@ mod response;
 use crate::storage::Chunk;
 
 pub use self::{
-    cmd::Cmd,
+    cmd::{Cmd, PaymentProof},
     node_id::NodeId,
     query::Query,
     register::{
