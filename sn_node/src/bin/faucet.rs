@@ -10,9 +10,9 @@ use clap::{Parser, Subcommand};
 use eyre::Result;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet, Client};
 use sn_dbc::Token;
-use sn_domain::wallet::parse_public_address;
 use sn_logging::init_logging;
 use sn_peers_acquisition::peers_from_opts_or_env;
+use sn_transfers::wallet::parse_public_address;
 use tracing::info;
 use tracing_core::Level;
 
@@ -20,7 +20,7 @@ use tracing_core::Level;
 async fn main() -> Result<()> {
     let logging_targets = vec![
         ("safenode".to_string(), Level::INFO),
-        ("sn_domain".to_string(), Level::INFO),
+        ("sn_transfers".to_string(), Level::INFO),
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];

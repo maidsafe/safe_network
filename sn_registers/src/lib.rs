@@ -5,6 +5,10 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
+#![allow(dead_code)]
+
+#[macro_use]
+extern crate tracing;
 
 pub mod reg_crdt;
 pub mod reg_replica;
@@ -29,7 +33,7 @@ use tokio::{
 use tracing::trace;
 use walkdir::WalkDir;
 
-pub(super) type RegisterLog = Vec<RegisterCmd>;
+pub(crate) type RegisterLog = Vec<RegisterCmd>;
 
 const BIT_TREE_DEPTH: usize = 20;
 const REGISTERS_STORE_DIR_NAME: &str = "registers";
@@ -91,7 +95,7 @@ impl RegisterStorage {
 
     /// This is to be used when a node is shrinking the address range it is responsible for.
     #[allow(dead_code)]
-    pub(super) async fn remove(&self, address: &RegisterAddress) -> Result<()> {
+    pub(crate) async fn remove(&self, address: &RegisterAddress) -> Result<()> {
         trace!("Removing Register: {address:?}");
         let filepath = self.address_to_filepath(address)?;
         if let Err(err) = remove_file(filepath).await {
@@ -102,7 +106,7 @@ impl RegisterStorage {
 
     /// Update our RegisterReplica's replica on receiving data from other nodes.
     #[allow(dead_code)]
-    pub(super) async fn update(&self, data: &ReplicatedRegisterLog) -> Result<()> {
+    pub(crate) async fn update(&self, data: &ReplicatedRegisterLog) -> Result<()> {
         let addr = data.address;
         debug!("Updating Register store: {addr:?}");
         let mut stored_reg = self.try_load_stored_register(&addr).await?;

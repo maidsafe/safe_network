@@ -102,9 +102,9 @@ jobs:
         timeout-minutes: 25
         run: cargo test --release --package sn_protocol
 
-      - name: Run register storage tests
+      - name: Run register tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_domain -- storage
+        run: cargo test --release --package sn_registers
         env:
           # this will speed up PR merge flows, while giving us a modicum
           # of proptesting

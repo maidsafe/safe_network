@@ -105,7 +105,7 @@ async fn data_availability_during_churn() -> Result<()> {
     let tmp_dir = std::env::temp_dir();
     let logging_targets = vec![
         ("safenode".to_string(), Level::TRACE),
-        ("sn_domain".to_string(), Level::TRACE),
+        ("sn_transfers".to_string(), Level::TRACE),
         ("sn_networking".to_string(), Level::TRACE),
         ("sn_node".to_string(), Level::TRACE),
     ];

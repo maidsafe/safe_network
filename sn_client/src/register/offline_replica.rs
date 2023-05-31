@@ -9,7 +9,6 @@
 use super::{Client, Error, Register, Result};
 
 use bincode::serialize;
-use sn_domain::storage::registers::RegisterReplica;
 use sn_protocol::{
     messages::{
         Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
@@ -20,6 +19,7 @@ use sn_protocol::{
         RegisterAddress,
     },
 };
+use sn_registers::RegisterReplica;
 use std::{
     collections::{BTreeSet, LinkedList},
     convert::From,

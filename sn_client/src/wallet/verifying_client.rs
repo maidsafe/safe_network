@@ -10,7 +10,7 @@ use super::Client;
 
 use futures::future::join_all;
 use sn_dbc::Dbc;
-use sn_domain::wallet::{Error, Result, VerifyingClient};
+use sn_transfers::wallet::{Error, Result, VerifyingClient};
 
 #[async_trait::async_trait]
 impl VerifyingClient for Client {
