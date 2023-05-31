@@ -268,6 +268,8 @@ jobs:
       - name: Build testing executable
         run: cargo test --release --features local-discovery multiple_sequential_transfers_succeed --no-run
         timeout-minutes: 30
+        env:
+          CARGO_TARGET_DIR: "./transfer-target"
 
       - name: Start a local network
         run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
@@ -279,6 +281,7 @@ jobs:
         run: cargo test --release --features="local-discovery" multiple_sequential_transfers_succeed  -- --nocapture
         env:
           SN_LOG: "all"
+          CARGO_TARGET_DIR: "./transfer-target"
         timeout-minutes: 10
 
       - name: Kill all nodes
