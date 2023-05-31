@@ -17,7 +17,10 @@ use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk};
-use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_protocol::{
+    messages::PaymentProof,
+    storage::{Chunk, ChunkAddress},
+};
 use tokio::task;
 use tracing::trace;
 use xor_name::XorName;
@@ -91,8 +94,8 @@ impl Files {
     /// Directly writes [`Bytes`] to the network in the
     /// form of immutable chunks, without any batching.
     #[instrument(skip(self, bytes), level = "debug")]
-    pub async fn upload(&self, bytes: Bytes) -> Result<ChunkAddress> {
-        self.upload_bytes(bytes, false).await
+    pub async fn upload(&self, bytes: Bytes, payment: PaymentProof) -> Result<ChunkAddress> {
+        self.upload_bytes(bytes, payment, false).await
     }
 
     /// Directly writes [`Bytes`] to the network in the
@@ -100,8 +103,12 @@ impl Files {
     /// It also attempts to verify that all the data was uploaded to the network before returning.
     /// It does this via running `read_bytes` with each chunk with `query_timeout` set.
     #[instrument(skip_all, level = "trace")]
-    pub async fn upload_and_verify(&self, bytes: Bytes) -> Result<ChunkAddress> {
-        self.upload_bytes(bytes, true).await
+    pub async fn upload_and_verify(
+        &self,
+        bytes: Bytes,
+        payment: PaymentProof,
+    ) -> Result<ChunkAddress> {
+        self.upload_bytes(bytes, payment, true).await
     }
 
     /// Calculates a LargeFile's/SmallFile's address from self encrypted chunks,
@@ -130,12 +137,17 @@ impl Files {
     // --------------------------------------------
 
     #[instrument(skip(self, bytes), level = "trace")]
-    async fn upload_bytes(&self, bytes: Bytes, verify: bool) -> Result<ChunkAddress> {
+    async fn upload_bytes(
+        &self,
+        bytes: Bytes,
+        payment: PaymentProof,
+        verify: bool,
+    ) -> Result<ChunkAddress> {
         match LargeFile::new(bytes.clone()) {
-            Ok(file) => self.upload_large(file, verify).await,
+            Ok(file) => self.upload_large(file, payment, verify).await,
             Err(Error::TooSmallForSelfEncryption { .. }) => {
                 let file = SmallFile::new(bytes)?;
-                self.upload_small(file, verify).await
+                self.upload_small(file, payment, verify).await
             }
             Err(error) => Err(error)?,
         }
@@ -144,11 +156,16 @@ impl Files {
     /// Directly writes a [`SmallFile`] to the network in the
     /// form of a single chunk, without any batching.
     #[instrument(skip_all, level = "trace")]
-    async fn upload_small(&self, small: SmallFile, verify: bool) -> Result<ChunkAddress> {
+    async fn upload_small(
+        &self,
+        small: SmallFile,
+        payment: PaymentProof,
+        verify: bool,
+    ) -> Result<ChunkAddress> {
         let chunk = package_small(small)?;
         let address = *chunk.address();
 
-        self.client.store_chunk(chunk).await?;
+        self.client.store_chunk(chunk, payment).await?;
 
         if verify {
             self.verify_chunk_is_stored(address).await?;
@@ -160,15 +177,20 @@ impl Files {
     /// Directly writes a [`LargeFile`] to the network in the
     /// form of immutable self encrypted chunks, without any batching.
     #[instrument(skip_all, level = "trace")]
-    async fn upload_large(&self, large: LargeFile, verify: bool) -> Result<ChunkAddress> {
+    async fn upload_large(
+        &self,
+        large: LargeFile,
+        payment: PaymentProof,
+        verify: bool,
+    ) -> Result<ChunkAddress> {
         let (head_address, all_chunks) = encrypt_large(large)?;
         for next_batch in all_chunks.chunks(CHUNKS_BATCH_MAX_SIZE) {
             let tasks = next_batch.iter().cloned().map(|chunk| {
                 let client = self.client.clone();
-
+                let payment = payment.clone();
                 task::spawn(async move {
                     let chunk_addr = *chunk.address();
-                    client.store_chunk(chunk).await?;
+                    client.store_chunk(chunk, payment).await?;
                     if verify {
                         let _ = client.get_chunk(chunk_addr).await?;
                     }

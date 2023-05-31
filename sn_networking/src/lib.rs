@@ -685,12 +685,13 @@ mod tests {
     use super::SwarmDriver;
     use crate::{MsgResponder, NetworkEvent};
     use assert_matches::assert_matches;
+    use bls::SecretKey;
     use bytes::Bytes;
     use eyre::{eyre, Result};
     use rand::{thread_rng, Rng};
     use sn_logging::init_test_logger;
     use sn_protocol::{
-        messages::{Cmd, CmdResponse, Request, Response},
+        messages::{Cmd, CmdResponse, PaymentProof, Request, Response},
         storage::Chunk,
     };
     use std::path::Path;
@@ -726,9 +727,14 @@ mod tests {
         // Send a request to store a random chunk to `self`.
         let mut random_data = [0u8; 128];
         thread_rng().fill(&mut random_data);
-        let req = Request::Cmd(Cmd::StoreChunk(Chunk::new(Bytes::copy_from_slice(
-            &random_data,
-        ))));
+        let req = Request::Cmd(Cmd::StoreChunk {
+            chunk: Chunk::new(Bytes::copy_from_slice(&random_data)),
+            payment: PaymentProof {
+                dbc_id: SecretKey::random().public_key(),
+                lemma: vec![],
+                path: vec![],
+            },
+        });
         // Send the request to `self` and wait for a response.
         let now = tokio::time::Instant::now();
         loop {

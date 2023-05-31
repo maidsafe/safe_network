@@ -90,12 +90,11 @@ impl WalletClient {
             })
             .collect();
 
-        // Merkletree requires the number of leaves to be a power of 2
-        let num_of_leaves = next_pow2(addrs.len());
+        // Merkletree requires the number of leaves to be a power of 2, and at least 2 leaves.
+        let num_of_leaves = usize::max(2, next_pow2(addrs.len()));
         println!(">> ADD LEAVES?? {} - {}", addrs.len(), num_of_leaves);
-        for i in addrs.len()..num_of_leaves {
-            println!(">> ADDING LEAF {i}");
-            // TODO: shall we use other addrs/leaves instead of blank leaves?
+        for _ in addrs.len()..num_of_leaves {
+            // fill it up with blank value leafs
             addrs.push([0; 32]);
         }
 
@@ -115,15 +114,19 @@ impl WalletClient {
             println!(">> PROOF for {index}: {proof:?}");
             proofs.push(proof.clone());
 
-            // NOTE: there is a bug in proof.validate_with_data api: https://github.com/filecoin-project/merkletree/issues/95
+            // <SECTION TO BE REMOVED>
             println!(">>=== ORIG {index}: {orig:?}");
 
-            // Node receives chunk, so it builds the 'leaf' value, i.e. hash(chunk's xorname)
-            // It also receives the reason-hash and the proof (lemma),
-            // the root of the proof should match the reason-hash
             let mut hasher = Sha256Hasher::default();
             let leaf_to_validate = hasher.leaf(orig);
             println!(">>=== LEAF from Chunk {index}: {leaf_to_validate:?}");
+
+            use typenum::{UInt, UTerm, B0, B1};
+            let proof: Proof<[u8; 32], UInt<UInt<UTerm, B1>, B0>> =
+                Proof::new::<UTerm, UTerm>(None, proof.lemma().to_vec(), proof.path().to_vec())
+                    .unwrap();
+
+            println!(">>=== PROOF RECEIVED for Chunk: {proof:?}");
 
             let validated = if leaf_to_validate == proof.item() {
                 let proof_validated = proof.validate::<Sha256Hasher>().unwrap();
@@ -142,6 +145,7 @@ impl WalletClient {
             println!(">> VALIDATED WITH ORIG {index}: {validated}");
 
             println!();
+            // </ SECTION TO BE REMOVED>
         }
 
         // The reason hash is set to be the root of the merkle-tree of chunks to pay for

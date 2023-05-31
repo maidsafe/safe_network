@@ -234,9 +234,72 @@ impl Node {
 
     async fn handle_cmd(&mut self, cmd: Cmd, response_channel: MsgResponder) {
         match cmd {
-            Cmd::StoreChunk(chunk) => {
+            Cmd::StoreChunk { chunk, payment } => {
                 let addr = *chunk.address();
                 debug!("That's a store chunk in for :{:?}", addr.name());
+
+                // NOTE: there is a bug in proof.validate_with_data api: https://github.com/filecoin-project/merkletree/issues/95
+                info!(
+                    ">> Verifying payment proof for chunk store {:?} ...",
+                    addr.name()
+                );
+
+                // We need to fetch the PaymentProof's DBC to obtain the reason-hash
+                let dbc_id = payment.dbc_id;
+                let reason_hash = match self
+                    .network
+                    .get_provided_data(RecordKey::new(&dbc_id.to_bytes()))
+                    .await
+                {
+                    Ok(Ok(dbc_bytes)) => {
+                        let dbc = sn_dbc::Dbc::from_hex(
+                            std::str::from_utf8(dbc_bytes.as_slice()).unwrap(),
+                        )
+                        .unwrap();
+
+                        // TODO: verify DBC outputs are correct, i.e. they pay the closest nodes
+
+                        *dbc.reason().slice()
+                    }
+                    Err(err) | Ok(Err(err)) => {
+                        error!("Error getting payment DBC from network: {err}");
+                        let resp = CmdResponse::StoreChunk(Err(ProtocolError::SpendNotFound(
+                            DbcAddress::from_dbc_id(&sn_dbc::DbcId::new(dbc_id)),
+                        )));
+                        self.send_response(Response::Cmd(resp), response_channel)
+                            .await;
+                        return;
+                    }
+                };
+
+                // We build the merkletree leaf value from the received Chunk, i.e. hash(chunk's xorname).
+                // The DBC's reason-hash should match the root of the PaymentProof's audit trail (lemma)
+                let mut hasher = Sha256Hasher::default();
+                let leaf_to_validate = hasher.leaf(addr.name().0);
+                info!(">>=== LEAF from Chunk: {leaf_to_validate:?}");
+
+                use merkletree::proof::Proof;
+                use typenum::{UInt, UTerm, B0, B1};
+                let proof: Proof<[u8; 32], UInt<UInt<UTerm, B1>, B0>> =
+                    Proof::new::<UTerm, UTerm>(None, payment.lemma, payment.path).unwrap();
+
+                info!(">>=== PROOF RECEIVED for Chunk: {proof:?}");
+
+                let validated = if leaf_to_validate == proof.item() {
+                    let proof_validated = proof.validate::<Sha256Hasher>().unwrap();
+                    info!(">> LEAF matched!. PROOF validated? {proof_validated}");
+
+                    let root = proof.root();
+                    let root_matched = root == reason_hash;
+                    info!(">> ROOT matched ?: {root:?} ==> {root_matched}");
+
+                    proof_validated && root_matched
+                } else {
+                    info!(">> LEAF doesn't match");
+                    false
+                };
+
+                info!(">> VALIDATED WITH ORIG: {validated}");
 
                 // Create a Kademlia record for storage
                 let record = Record {
@@ -313,5 +376,44 @@ impl Node {
         if let Err(err) = self.network.send_response(resp, response_channel).await {
             warn!("Error while sending response: {err:?}");
         }
+    }
+}
+
+use merkletree::hash::Algorithm;
+use tiny_keccak::{Hasher, Sha3};
+
+struct Sha256Hasher {
+    engine: Sha3,
+}
+
+impl Default for Sha256Hasher {
+    fn default() -> Self {
+        Self {
+            engine: Sha3::v256(),
+        }
+    }
+}
+
+impl std::hash::Hasher for Sha256Hasher {
+    fn finish(&self) -> u64 {
+        // merkletree::Algorithm trait is not calling this as per its doc:
+        // https://docs.rs/merkletree/latest/merkletree/hash/trait.Algorithm.html
+        error!(
+            "Hasher's contract (finish function is supposedly not used) is deliberately broken by design"
+        );
+        0
+    }
+
+    fn write(&mut self, bytes: &[u8]) {
+        self.engine.update(bytes)
+    }
+}
+
+impl Algorithm<[u8; 32]> for Sha256Hasher {
+    fn hash(&mut self) -> [u8; 32] {
+        let sha3 = self.engine.clone();
+        let mut hash = [0u8; 32];
+        sha3.finalize(&mut hash);
+        hash
     }
 }

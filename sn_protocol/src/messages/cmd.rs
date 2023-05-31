@@ -15,6 +15,7 @@ use super::RegisterCmd;
 
 use sn_dbc::SignedSpend;
 
+use bls::PublicKey;
 use serde::{Deserialize, Serialize};
 
 /// Data and Dbc cmds - recording spends or creating, updating, and removing data.
@@ -29,7 +30,11 @@ pub enum Cmd {
     /// [`Chunk`] write operation.
     ///
     /// [`Chunk`]: crate::storage::Chunk
-    StoreChunk(Chunk),
+    StoreChunk {
+        chunk: Chunk,
+        // Storage payment proof
+        payment: PaymentProof,
+    },
     /// [`Register`] write operation.
     ///
     /// [`Register`]: crate::storage::Register
@@ -56,7 +61,7 @@ impl Cmd {
     /// Used to send a cmd to the close group of the address.
     pub fn dst(&self) -> NetworkAddress {
         match self {
-            Cmd::StoreChunk(chunk) => {
+            Cmd::StoreChunk { chunk, .. } => {
                 NetworkAddress::from_chunk_address(ChunkAddress::new(*chunk.name()))
             }
             Cmd::Register(cmd) => NetworkAddress::from_register_address(cmd.dst()),
@@ -71,7 +76,7 @@ impl Cmd {
 impl std::fmt::Display for Cmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Cmd::StoreChunk(chunk) => {
+            Cmd::StoreChunk { chunk, .. } => {
                 write!(f, "Cmd::StoreChunk({:?})", chunk.name())
             }
             Cmd::Register(cmd) => {
@@ -90,4 +95,15 @@ impl std::fmt::Display for Cmd {
             }
         }
     }
+}
+
+#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
+pub struct PaymentProof {
+    // Id of the DBC the storage payment was made with
+    pub dbc_id: PublicKey,
+    // Merkletree audit trail to prove the Chunk has been paid by the
+    // given DBC (using the DBC's 'reason' field)
+    pub lemma: Vec<[u8; 32]>,
+    // Path of the audit trail
+    pub path: Vec<usize>,
 }
