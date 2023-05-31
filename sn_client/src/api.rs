@@ -16,7 +16,7 @@ use super::{
 use sn_dbc::{DbcId, SignedSpend};
 use sn_networking::{close_group_majority, multiaddr_is_global, NetworkEvent, SwarmDriver};
 use sn_protocol::{
-    messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
+    messages::{Cmd, CmdResponse, PaymentProof, Query, QueryResponse, Request, Response},
     storage::{Chunk, ChunkAddress, DbcAddress},
     NetworkAddress,
 };
@@ -221,9 +221,9 @@ impl Client {
     }
 
     /// Store `Chunk` to its close group.
-    pub(super) async fn store_chunk(&self, chunk: Chunk) -> Result<()> {
+    pub(super) async fn store_chunk(&self, chunk: Chunk, payment: PaymentProof) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
-        let request = Request::Cmd(Cmd::StoreChunk(chunk));
+        let request = Request::Cmd(Cmd::StoreChunk { chunk, payment });
         let response = self.send_and_wait_till_first_rsp(request).await?;
 
         if matches!(response, Response::Cmd(CmdResponse::StoreChunk(Ok(())))) {
