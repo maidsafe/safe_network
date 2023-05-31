@@ -5,7 +5,14 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
+#![allow(dead_code)]
 
-pub mod registers;
+#[macro_use]
+extern crate tracing;
 
-pub use self::registers::{RegisterReplica, RegisterStorage};
+/// Client handling of token transfers.
+pub mod client_transfers;
+/// Genesis DBC utilities.
+pub mod dbc_genesis;
+/// A wallet for network tokens.
+pub mod wallet;

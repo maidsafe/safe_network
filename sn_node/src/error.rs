@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_domain::dbc_genesis::Error as GenesisError;
 use sn_networking::Error as NetworkError;
 use sn_protocol::error::Error as ProtocolError;
+use sn_transfers::dbc_genesis::Error as GenesisError;
 use thiserror::Error;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;

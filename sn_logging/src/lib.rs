@@ -232,12 +232,13 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
                 ("sn_client".to_string(), Level::TRACE),
                 ("sn_logging".to_string(), Level::TRACE),
                 ("sn_networking".to_string(), Level::TRACE),
-                ("sn_domain".to_string(), Level::TRACE),
                 ("sn_node".to_string(), Level::TRACE),
                 ("sn_peers_acquisition".to_string(), Level::TRACE),
                 ("sn_protocol".to_string(), Level::TRACE),
                 ("sn_record_store".to_string(), Level::TRACE),
+                ("sn_registers".to_string(), Level::TRACE),
                 ("sn_testnet".to_string(), Level::TRACE),
+                ("sn_transfers".to_string(), Level::TRACE),
             ]);
         }
 

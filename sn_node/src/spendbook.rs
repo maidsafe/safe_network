@@ -6,11 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_domain::dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC};
 use sn_networking::{close_group_majority, Network};
 use sn_protocol::error::{Error, Result};
 use sn_protocol::messages::{Query, QueryResponse, Request, Response};
 use sn_protocol::storage::DbcAddress;
+use sn_transfers::dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC};
 
 use std::collections::{BTreeMap, BTreeSet};
 

@@ -14,13 +14,13 @@ use super::{
 };
 
 use sn_dbc::{DbcId, SignedSpend};
-use sn_domain::client_transfers::SpendRequest;
 use sn_networking::{close_group_majority, multiaddr_is_global, NetworkEvent, SwarmDriver};
 use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     storage::{Chunk, ChunkAddress, DbcAddress},
     NetworkAddress,
 };
+use sn_transfers::client_transfers::SpendRequest;
 
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;

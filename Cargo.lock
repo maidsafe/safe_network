@@ -4327,10 +4327,10 @@ dependencies = [
  "sn_build_info",
  "sn_client",
  "sn_dbc",
- "sn_domain",
  "sn_logging",
  "sn_peers_acquisition",
  "sn_protocol",
+ "sn_transfers",
  "tokio",
  "tracing",
  "tracing-core",
@@ -4353,9 +4353,10 @@ dependencies = [
  "self_encryption",
  "serde",
  "sn_dbc",
- "sn_domain",
  "sn_networking",
  "sn_protocol",
+ "sn_registers",
+ "sn_transfers",
  "thiserror",
  "tokio",
  "tracing",
@@ -4378,34 +4379,6 @@ dependencies = [
  "serde",
  "thiserror",
  "tiny-keccak",
-]
-
-[[package]]
-name = "sn_domain"
-version = "0.1.0"
-dependencies = [
- "assert_fs",
- "async-trait",
- "bincode",
- "blsttc",
- "crdts",
- "dirs-next",
- "eyre",
- "hex",
- "lazy_static",
- "libp2p",
- "proptest",
- "rand 0.8.5",
- "self_encryption",
- "serde",
- "sn_dbc",
- "sn_protocol",
- "thiserror",
- "tiny-keccak",
- "tokio",
- "tracing",
- "walkdir",
- "xor_name",
 ]
 
 [[package]]
@@ -4478,11 +4451,12 @@ dependencies = [
  "sn_build_info",
  "sn_client",
  "sn_dbc",
- "sn_domain",
  "sn_logging",
  "sn_networking",
  "sn_peers_acquisition",
  "sn_protocol",
+ "sn_registers",
+ "sn_transfers",
  "thiserror",
  "tiny-keccak",
  "tokio",
@@ -4534,6 +4508,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "sn_registers"
+version = "0.1.0"
+dependencies = [
+ "assert_fs",
+ "bincode",
+ "blsttc",
+ "crdts",
+ "eyre",
+ "hex",
+ "proptest",
+ "rand 0.8.5",
+ "self_encryption",
+ "serde",
+ "sn_protocol",
+ "tiny-keccak",
+ "tokio",
+ "tracing",
+ "walkdir",
+ "xor_name",
+]
+
+[[package]]
 name = "sn_testnet"
 version = "0.1.5"
 dependencies = [
@@ -4554,6 +4550,29 @@ dependencies = [
  "tracing-core",
  "tracing-subscriber",
  "walkdir",
+]
+
+[[package]]
+name = "sn_transfers"
+version = "0.1.0"
+dependencies = [
+ "assert_fs",
+ "async-trait",
+ "bincode",
+ "blsttc",
+ "dirs-next",
+ "eyre",
+ "hex",
+ "lazy_static",
+ "rand 0.8.5",
+ "serde",
+ "sn_dbc",
+ "sn_protocol",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "walkdir",
+ "xor_name",
 ]
 
 [[package]]

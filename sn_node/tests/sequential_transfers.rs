@@ -13,7 +13,7 @@ use std::path::Path;
 use sn_client::{get_tokens_from_faucet, send, Client};
 
 use sn_dbc::Token;
-use sn_domain::wallet::{DepositWallet, LocalWallet, VerifyingClient, Wallet};
+use sn_transfers::wallet::{DepositWallet, LocalWallet, VerifyingClient, Wallet};
 use tracing_core::Level;
 
 use assert_fs::TempDir;
@@ -24,7 +24,7 @@ use eyre::Result;
 async fn multiple_sequential_transfers_succeed() -> Result<()> {
     let logging_targets = vec![
         ("safenode".to_string(), Level::INFO),
-        ("sn_domain".to_string(), Level::INFO),
+        ("sn_transfers".to_string(), Level::INFO),
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];

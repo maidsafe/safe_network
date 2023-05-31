@@ -56,8 +56,8 @@ pub use self::{
 };
 
 use libp2p::{Multiaddr, PeerId};
-use sn_domain::storage::RegisterStorage;
 use sn_networking::Network;
+use sn_registers::RegisterStorage;
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data

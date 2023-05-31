@@ -8,7 +8,7 @@
 
 use super::Client;
 
-use sn_domain::{
+use sn_transfers::{
     client_transfers::Outputs as TransferDetails,
     wallet::{Error, Result, SendClient},
 };
