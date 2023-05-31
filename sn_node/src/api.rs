@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Result, event::NodeEventsChannel, Network, Node, NodeEvent};
-use crate::{spendbook::SpendBook, RegisterStorage};
+use crate::spendbook::SpendBook;
 use libp2p::{
     autonat::NatStatus,
     kad::{Record, RecordKey},
@@ -22,6 +22,7 @@ use sn_protocol::{
     storage::{registers::User, Chunk, DbcAddress},
     NetworkAddress,
 };
+use sn_registers::RegisterStorage;
 
 use std::{net::SocketAddr, path::Path, time::Duration};
 use tokio::task::spawn;

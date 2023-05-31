@@ -175,12 +175,12 @@ jobs:
           PROPTEST_CASES: 512
         run: cargo test --release -p sn_record_store
 
-      - name: Run register storage tests
+      - name: Run register tests
         shell: bash
         timeout-minutes: 25
         env:
           PROPTEST_CASES: 512
-        run: cargo test --release -p sn_domain -- storage
+        run: cargo test --release -p sn_registers
 
       - name: post notification to slack on failure
         if: ${{ failure() }}
