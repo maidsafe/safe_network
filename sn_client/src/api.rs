@@ -25,7 +25,11 @@ use sn_transfers::client_transfers::SpendRequest;
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use itertools::Itertools;
-use libp2p::{kad::RecordKey, Multiaddr, PeerId};
+use libp2p::{
+    kad::{RecordKey, K_VALUE},
+    Multiaddr, PeerId,
+};
+use std::num::NonZeroUsize;
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
@@ -48,6 +52,7 @@ impl Client {
             network: network.clone(),
             events_channel,
             signer,
+            peers_added: 0,
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -118,9 +123,18 @@ impl Client {
             // We are not doing AutoNAT and don't care about our status.
             NetworkEvent::NatStatusChanged(_) => {}
             NetworkEvent::PeerAdded(peer_id) => {
-                self.events_channel
-                    .broadcast(ClientEvent::ConnectedToNetwork)?;
                 debug!("PeerAdded: {peer_id}");
+                // In case client running in non-local-discovery mode,
+                // it may take some time to fillup the RT.
+                // To avoid such delay may fail the query with RecordNotFound,
+                // wait till certain amount of peers populated into RT
+                if let Some(peers_added) = NonZeroUsize::new(self.peers_added) {
+                    if peers_added >= K_VALUE {
+                        self.events_channel
+                            .broadcast(ClientEvent::ConnectedToNetwork)?;
+                    }
+                }
+                self.peers_added += 1;
             }
         }
 
