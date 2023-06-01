@@ -31,12 +31,16 @@ impl SwarmDriver {
                     ..
                 } => {
                     trace!("Received request with id: {request_id:?}, req: {request:?}");
-                    self.event_sender
+                    if let Err(error) = self
+                        .event_sender
                         .send(NetworkEvent::RequestReceived {
                             req: request,
                             channel: MsgResponder::FromPeer(channel),
                         })
-                        .await?
+                        .await
+                    {
+                        error!("Failed in notify {request_id:?} NetworkEvent: {error:?}");
+                    }
                 }
                 Message::Response {
                     request_id,
@@ -51,13 +55,18 @@ impl SwarmDriver {
                 }
             },
             request_response::Event::OutboundFailure {
-                request_id, error, ..
+                request_id,
+                error,
+                peer,
             } => {
-                self.pending_requests
-                    .remove(&request_id)
-                    .ok_or(Error::ReceivedResponseDropped(request_id))?
-                    .send(Err(error.into()))
-                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                if let Some(sender) = self.pending_requests.remove(&request_id) {
+                    sender
+                        .send(Err(error.into()))
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                } else {
+                    warn!("RequestResponse: OutboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
+                    return Err(Error::ReceivedResponseDropped(request_id));
+                }
             }
             request_response::Event::InboundFailure {
                 peer,

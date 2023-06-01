@@ -259,9 +259,9 @@ impl SwarmDriver {
                 peer_id,
                 endpoint,
                 cause,
-                ..
+                num_established,
             } => {
-                info!("Connection closed to Peer {peer_id} - {endpoint:?} - {cause:?}");
+                info!("Connection closed to Peer {peer_id}({num_established:?}) - {endpoint:?} - {cause:?}");
             }
             // Kademlia uses a technique called `lazy refreshing` to periodically check
             // the responsiveness of nodes in its routing table, and attempts to
@@ -279,20 +279,23 @@ impl SwarmDriver {
             //        Even with larger network, it still gain something.
             //     2, it ensures a corrected targeted replication
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
+                trace!("OutgoingConnectionError to {peer_id:?} - {error:?}");
                 if let Some(peer_id) = peer_id {
-                    // Related errors are: WrongPeerId, ConnectionRefused
+                    // Related errors are: WrongPeerId, ConnectionRefused(TCP), HandshakeTimedOut(QUIC)
                     let err_string = format!("{error:?}");
                     let is_wrong_id = err_string.contains("WrongPeerId");
-                    let is_all_connection_refused = if let DialError::Transport(ref errors) = error
-                    {
+                    let is_all_connection_failed = if let DialError::Transport(ref errors) = error {
                         errors.iter().all(|(_, error)| {
                             let err_string = format!("{error:?}");
                             err_string.contains("ConnectionRefused")
+                        }) || errors.iter().all(|(_, error)| {
+                            let err_string = format!("{error:?}");
+                            err_string.contains("HandshakeTimedOut")
                         })
                     } else {
-                        true
+                        false
                     };
-                    if is_wrong_id || is_all_connection_refused {
+                    if is_wrong_id || is_all_connection_failed {
                         self.try_trigger_replication(&peer_id, true);
                         trace!("Detected dead peer {peer_id:?}");
                         let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
@@ -506,14 +509,17 @@ impl SwarmDriver {
                 };
                 if let Some(record) = DiskBackedRecordStore::read_from_disk(key, &storage_dir) {
                     let chunk = Chunk::new(record.value.clone().into());
-                    trace!("Replicating chunk {:?} to {dst:?}", chunk.name());
+                    let chunk_name = *chunk.name();
                     let request = Request::Cmd(Cmd::Replicate(ReplicatedData::Chunk(chunk)));
                     let request_id = self
                         .swarm
                         .behaviour_mut()
                         .request_response
                         .send_request(&dst, request);
-                    trace!("Request id is {request_id:?}");
+                    trace!(
+                        "Replicating chunk {:?} to {dst:?} with id {request_id:?}",
+                        chunk_name
+                    );
                 }
             }
         }

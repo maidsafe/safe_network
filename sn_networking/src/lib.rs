@@ -312,8 +312,8 @@ impl SwarmDriver {
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
-        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(100);
-        let (network_event_sender, network_event_receiver) = mpsc::channel(100);
+        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(1000);
+        let (network_event_sender, network_event_receiver) = mpsc::channel(1000);
         let swarm_driver = Self {
             self_peer_id: peer_id,
             swarm,
