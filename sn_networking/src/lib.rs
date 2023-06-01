@@ -83,6 +83,7 @@ const IDENTIFY_AGENT_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_V
 const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PKG_VERSION"));
 const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
+const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
 pub const fn close_group_majority() -> usize {
@@ -312,8 +313,8 @@ impl SwarmDriver {
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
-        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(1000);
-        let (network_event_sender, network_event_receiver) = mpsc::channel(1000);
+        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
+        let (network_event_sender, network_event_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
         let swarm_driver = Self {
             self_peer_id: peer_id,
             swarm,
