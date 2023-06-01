@@ -216,9 +216,7 @@ impl SwarmDriver {
             SwarmEvent::NewListenAddr { address, .. } => {
                 let local_peer_id = *self.swarm.local_peer_id();
                 let address = address.with(Protocol::P2p(local_peer_id.into()));
-                self.event_sender
-                    .send(NetworkEvent::NewListenAddr(address.clone()))
-                    .await?;
+                self.send_event(NetworkEvent::NewListenAddr(address.clone()));
                 info!("Local node is listening on {address:?}");
             }
             SwarmEvent::IncomingConnection { .. } => {}
@@ -278,9 +276,7 @@ impl SwarmDriver {
                 autonat::Event::OutboundProbe(e) => trace!("AutoNAT outbound probe: {e:?}"),
                 autonat::Event::StatusChanged { old, new } => {
                     info!("AutoNAT status changed: {old:?} -> {new:?}");
-                    self.event_sender
-                        .send(NetworkEvent::NatStatusChanged(new.clone()))
-                        .await?;
+                    self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
 
                     match new {
                         NatStatus::Public(_addr) => {
@@ -390,9 +386,7 @@ impl SwarmDriver {
             } => {
                 if is_new_peer {
                     self.log_kbuckets(&peer);
-                    self.event_sender
-                        .send(NetworkEvent::PeerAdded(peer))
-                        .await?;
+                    self.send_event(NetworkEvent::PeerAdded(peer));
                 }
             }
             KademliaEvent::InboundRequest {

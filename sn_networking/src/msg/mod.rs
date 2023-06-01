@@ -31,16 +31,10 @@ impl SwarmDriver {
                     ..
                 } => {
                     trace!("Received request with id: {request_id:?}, req: {request:?}");
-                    if let Err(error) = self
-                        .event_sender
-                        .send(NetworkEvent::RequestReceived {
-                            req: request,
-                            channel: MsgResponder::FromPeer(channel),
-                        })
-                        .await
-                    {
-                        error!("Failed in notify {request_id:?} NetworkEvent: {error:?}");
-                    }
+                    self.send_event(NetworkEvent::RequestReceived {
+                        req: request,
+                        channel: MsgResponder::FromPeer(channel),
+                    })
                 }
                 Message::Response {
                     request_id,
