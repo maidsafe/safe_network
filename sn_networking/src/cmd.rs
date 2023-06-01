@@ -273,12 +273,11 @@ impl SwarmDriver {
                 // `self` then handles the request and sends a response back again to itself.
                 if peer == *self.swarm.local_peer_id() {
                     trace!("Sending request to self");
-                    self.event_sender
-                        .send(NetworkEvent::RequestReceived {
-                            req,
-                            channel: MsgResponder::FromSelf(sender),
-                        })
-                        .await?;
+
+                    self.send_event(NetworkEvent::RequestReceived {
+                        req,
+                        channel: MsgResponder::FromSelf(sender),
+                    });
                 } else {
                     let request_id = self
                         .swarm
