@@ -4695,6 +4695,7 @@ version = "0.1.13"
 dependencies = [
  "assert_matches",
  "async-trait",
+ "bincode",
  "blsttc",
  "bytes",
  "eyre",
@@ -4778,6 +4779,7 @@ dependencies = [
 name = "sn_protocol"
 version = "0.1.6"
 dependencies = [
+ "bincode",
  "blsttc",
  "bytes",
  "crdts",

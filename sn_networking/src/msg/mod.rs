@@ -52,7 +52,7 @@ impl SwarmDriver {
                             .send(Ok(response))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
                     } else {
-                        self.handle_response(response);
+                        self.handle_response(response)?;
                     }
                 }
             },
