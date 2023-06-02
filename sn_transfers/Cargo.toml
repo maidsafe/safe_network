@@ -19,7 +19,7 @@ hex = "~0.4.3"
 lazy_static = "~1.4.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_dbc = { version = "18.0.0", features = ["serdes"] }
+sn_dbc = { version = "19.0.0", features = ["serdes"] }
 sn_protocol = { path = "../sn_protocol", version = "0.1.0" }
 tokio = { version = "1.17.0" }
 tracing = { version = "~0.1.26" }
