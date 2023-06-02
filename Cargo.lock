@@ -4351,6 +4351,7 @@ dependencies = [
  "futures",
  "itertools",
  "libp2p",
+ "rand 0.8.5",
  "rayon",
  "self_encryption",
  "serde",
