@@ -558,18 +558,18 @@ impl SwarmDriver {
         trace!("Sending a replication list({request_id:?}) with {len:?} keys to {peer_id:?}");
     }
 
-    pub(crate) fn handle_response(&mut self, response: Response) {
+    pub(crate) fn handle_response(&mut self, response: Response) -> Result<()> {
         let (result, holder, key) = match response {
             Response::Query(QueryResponse::GetReplicatedData(Ok((holder, replicated_data)))) => {
                 let address = match replicated_data {
                     ReplicatedData::Chunk(chunk) => {
                         let record_key = RecordKey::new(chunk.address().name());
-                        self.replicate_chunk_to_local(chunk);
+                        self.replicate_chunk_to_local(chunk)?;
                         NetworkAddress::from_record_key(record_key)
                     }
                     other => {
                         warn!("Not support other type of replicated data {:?}", other);
-                        return;
+                        return Ok(());
                     }
                 };
                 (true, holder, address)
@@ -579,7 +579,7 @@ impl SwarmDriver {
             ))) => (false, holder, address),
             other => {
                 trace!("Ignored response {other:?}");
-                return;
+                return Ok(());
             }
         };
 
@@ -591,5 +591,6 @@ impl SwarmDriver {
         } else {
             warn!("Cannot parse PeerId from {holder:?}");
         }
+        Ok(())
     }
 }

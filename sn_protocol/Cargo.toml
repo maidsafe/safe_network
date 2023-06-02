@@ -11,6 +11,7 @@ version = "0.1.6"
 
 [dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
+bincode = "1.3.1"
 bytes = { version = "1.0.1", features = ["serde"] }
 crdts = { version = "7.3", default-features = false, features = ["merkle"] }
 custom_debug = "~0.5.0"

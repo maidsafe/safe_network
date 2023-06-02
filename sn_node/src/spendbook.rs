@@ -9,14 +9,14 @@
 use sn_networking::{close_group_majority, Network};
 use sn_protocol::error::{Error, Result};
 use sn_protocol::messages::{Query, QueryResponse, Request, Response};
-use sn_protocol::storage::DbcAddress;
+use sn_protocol::storage::{DbcAddress, RecordHeader, RecordKind};
 use sn_protocol::NetworkAddress;
 use sn_transfers::dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC};
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use libp2p::kad::{Record, RecordKey};
-use sn_dbc::{DbcTransaction, SignedSpend, TransactionVerifier};
+use sn_dbc::{DbcTransaction, SignedSpend};
 
 /// The entitiy managing spends in a Node
 #[derive(Default, Clone)]
@@ -77,7 +77,6 @@ impl SpendBook {
         &self,
         network: &Network,
         signed_spend: SignedSpend,
-        parent_tx: DbcTransaction,
     ) -> Result<DbcAddress> {
         let dbc_id = signed_spend.dbc_id();
         let dbc_addr = DbcAddress::from_dbc_id(dbc_id);
@@ -85,41 +84,53 @@ impl SpendBook {
         trace!("Spend put for {dbc_id:?} at {dbc_addr:?}");
 
         // check DBC spend, if it is a double spend, still store them both
-        let signed_spends = match verify_spend_dbc(network, &signed_spend, &parent_tx).await {
+        let signed_spends = match verify_spend_dbc(network, &signed_spend).await {
             Ok(()) => vec![signed_spend.clone()],
             Err(Error::DoubleSpendAttempt(one, two)) => vec![*one, *two],
             Err(e) => {
-                let err_str = format!(
+                error!(
                     "Failed to store spend for {dbc_id:?} because DBC verification failed: {e:?}"
                 );
-                error!("{:}", err_str);
-                return Err(Error::FailedToStoreSpend(err_str));
+                return Err(Error::FailedToStoreSpend(dbc_addr));
             }
         };
 
-        // serialize
-        let signed_spends_bytes = match bincode::serialize(&signed_spends) {
-            Ok(b) => b,
-            Err(e) => {
-                let err_str = format!(
-                    "Failed to store spend for {dbc_id:?} because serialization failed: {e:?}"
-                );
-                error!("{:}", err_str);
-                return Err(Error::FailedToStoreSpend(err_str));
-            }
-        };
+        // Prepend Kademlia record with a header for storage
+        let kademlia_record = {
+            let signed_spends_bytes = match bincode::serialize(&signed_spends) {
+                Ok(b) => b,
+                Err(e) => {
+                    error!(
+                        "Failed to store spend for {dbc_id:?} because serialization failed: {e:?}"
+                    );
+                    return Err(Error::FailedToStoreSpend(dbc_addr));
+                }
+            };
 
-        // create a kad record and upload it
-        let kademlia_record = Record {
-            key: RecordKey::new(dbc_addr.name()),
-            value: signed_spends_bytes,
-            publisher: None,
-            expires: None,
+            let record_header = RecordHeader {
+                kind: RecordKind::Chunk,
+            };
+            let mut record_value = match bincode::serialize(&record_header) {
+                Ok(b) => b,
+                Err(e) => {
+                    error!(
+                        "Failed to store spend for {dbc_id:?} because RecordHeader serialization failed: {e:?}"
+                    );
+                    return Err(Error::FailedToStoreSpend(dbc_addr));
+                }
+            };
+
+            record_value.extend(signed_spends_bytes);
+            Record {
+                key: RecordKey::new(dbc_addr.name()),
+                value: record_value,
+                publisher: None,
+                expires: None,
+            }
         };
         if let Err(e) = network.put_data_as_record(kademlia_record).await {
-            let err_str = format!("Failed to store spend {dbc_id:?}: {e:?}");
-            error!("{:}", err_str);
-            return Err(Error::FailedToStoreSpend(err_str));
+            error!("Failed to store spend {dbc_id:?}: {e:?}");
+            return Err(Error::FailedToStoreSpend(dbc_addr));
         }
 
         // if it was a double spend, report the error after having stored it
@@ -173,16 +184,9 @@ async fn find_double_spend(
 
 /// Verifies a spend to make sure it is safe to store it on the Network
 /// - check if the DBC Spend is valid
-/// - check that the parent tx hash matches the one in the DBC Spend (aka: is indeed the parent tx)
 /// - check if the parents of this DBC exist on the Network (recursively meaning it comes from Genesis)
-/// - checks the parent tx (meaning this DBC was created in a valid tx)
 /// - check if another Spend for the same DBC exists on the Network (double spend)
-async fn verify_spend_dbc(
-    network: &Network,
-    signed_spend: &SignedSpend,
-    parent_tx: &DbcTransaction,
-) -> Result<()> {
-    // check DBC spend
+async fn verify_spend_dbc(network: &Network, signed_spend: &SignedSpend) -> Result<()> {
     if let Err(e) = signed_spend.verify(signed_spend.spent_tx_hash()) {
         return Err(Error::InvalidSpendSignature(format!(
             "while verifying spend for {:?}: {e:?}",
@@ -190,17 +194,9 @@ async fn verify_spend_dbc(
         )));
     }
 
-    // check parent tx hash
-    if parent_tx.hash() != signed_spend.dbc_creation_tx_hash() {
-        return Err(Error::InvalidSpendParents(format!(
-            "parent tx hash does not match the parent tx in the DBC we're trying to spend: {:?} != {:?}",
-            signed_spend.dbc_creation_tx_hash(),
-            parent_tx.hash(),
-        )));
-    }
-
     // check parents
-    if let Err(e) = check_parent_spends(network, signed_spend, parent_tx).await {
+    if let Err(e) = check_parent_spends(network, signed_spend).await {
+        warn!("Invalid parent spends for {signed_spend:?}: {e:?}");
         return Err(Error::InvalidSpendParents(format!("{:?}", e)));
     }
 
@@ -215,70 +211,57 @@ async fn verify_spend_dbc(
 
 /// Fetch all parent spends from the network and check them
 /// they should all exist as valid spends for this current spend attempt to be valid
-/// The signed_spend.dbc_id() shall exist among the parent_tx's outputs.
-async fn check_parent_spends(
-    network: &Network,
-    signed_spend: &SignedSpend,
-    parent_tx: &DbcTransaction,
-) -> Result<()> {
-    // skip check if the spent DBC is Genesis
-    if is_genesis_parent_tx(parent_tx) && signed_spend.dbc_id() == &GENESIS_DBC.id {
-        trace!(
-            "Validated parent_spends because spent DBC is Genesis: {:?}",
-            signed_spend.dbc_id()
-        );
-        return Ok(());
-    }
-
-    // check that the spent DBC is an output of the parent tx
-    if !parent_tx
-        .outputs
-        .iter()
-        .any(|o| o.dbc_id() == signed_spend.dbc_id())
-    {
-        return Err(Error::InvalidParentTx(format!(
-            "The DBC we're trying to spend: {signed_spend:?} is not an output of the parent tx: {parent_tx:?}",
-        )));
-    }
-
-    // get the parent spends form the network
+async fn check_parent_spends(network: &Network, signed_spend: &SignedSpend) -> Result<()> {
     trace!("Getting parent_spends for {:?}", signed_spend.dbc_id());
-    let parent_spends = match get_parent_spends(network, parent_tx).await {
+    let parent_spends = match get_parent_spends(network, &signed_spend.spent_tx()).await {
         Ok(parent_spends) => parent_spends,
         Err(e) => return Err(e)?,
     };
 
-    // check the parent spends
     trace!("Validating parent_spends for {:?}", signed_spend.dbc_id());
-    validate_parent_spends(signed_spend, parent_tx, parent_spends)?;
+    validate_parent_spends(signed_spend, &signed_spend.spent_tx(), parent_spends)?;
 
     trace!("Validated parent_spends for {:?}", signed_spend.dbc_id());
     Ok(())
 }
 
-/// Checks the parent tx with parent spends
+/// The src_tx is the tx where the dbc to spend, was created.
+/// The signed_spend.dbc_id() shall exist among its outputs.
 fn validate_parent_spends(
     signed_spend: &SignedSpend,
-    parent_tx: &DbcTransaction,
+    spent_tx: &DbcTransaction,
     parent_spends: BTreeSet<SignedSpend>,
 ) -> Result<()> {
-    // Check that the parent spends are all from the parent tx
+    // The parent_spends will be different spends,
+    // one for each input that went into creating the signed_spend.
     for parent_spend in &parent_spends {
-        let tx_our_dbc_was_created_in = signed_spend.dbc_creation_tx_hash();
-        let tx_its_parents_where_spent_in = parent_spend.spent_tx_hash();
-        if tx_our_dbc_was_created_in != tx_its_parents_where_spent_in {
-            return Err(Error::BadParentSpendHash(format!(
-                "One of the parents was spent in another transaction. Expected: {tx_our_dbc_was_created_in:?} Got: {tx_its_parents_where_spent_in:?}"
-            )));
+        // The dst tx of the parent must be the src tx of the spend.
+        if signed_spend.dbc_creation_tx_hash() != parent_spend.spent_tx_hash() {
+            return Err(Error::TxTrailMismatch {
+                signed_src_tx_hash: signed_spend.dbc_creation_tx_hash(),
+                parent_dst_tx_hash: parent_spend.spent_tx_hash(),
+            });
         }
     }
 
-    // Here we check that the DBC we're trying to spend was created in a valid tx
-    if let Err(e) = TransactionVerifier::verify(parent_tx, &parent_spends) {
-        return Err(Error::InvalidParentTx(format!(
-            "verification failed for parent tx for {:?}: {e:?}",
-            signed_spend.dbc_id()
-        )));
+    // We have gotten all the parent inputs from the network, so the network consider them all valid.
+    // But the source tx corresponding to the signed_spend, might not match the parents' details, so that's what we check here.
+    let known_parent_blinded_amounts: Vec<_> = parent_spends
+        .iter()
+        .map(|s| s.spend.blinded_amount)
+        .collect();
+
+    if is_genesis_parent_tx(spent_tx) && signed_spend.dbc_id() == &GENESIS_DBC.id {
+        return Ok(());
+    }
+
+    // Here we check that the spend that is attempted, was created in a valid tx.
+    let src_tx_validity = spent_tx.verify(&known_parent_blinded_amounts);
+    if src_tx_validity.is_err() {
+        return Err(Error::InvalidSourceTxProvided {
+            signed_src_tx_hash: signed_spend.dbc_creation_tx_hash(),
+            provided_src_tx_hash: spent_tx.hash(),
+        });
     }
 
     Ok(())
@@ -287,14 +270,21 @@ fn validate_parent_spends(
 /// Fetch all parent spends from the network
 async fn get_parent_spends(
     network: &Network,
-    parent_tx: &DbcTransaction,
+    spent_tx: &DbcTransaction,
 ) -> Result<BTreeSet<SignedSpend>> {
+    // These will be different spends, one for each input that went into
+    // creating the above spend passed in to this function.
     let mut all_parent_spends = BTreeSet::new();
+
+    if is_genesis_parent_tx(spent_tx) {
+        trace!("Return with empty parent_spends for genesis");
+        return Ok(all_parent_spends);
+    }
 
     // First we fetch all parent spends from the network.
     // They shall naturally all exist as valid spends for this current
     // spend attempt to be valid.
-    for parent_input in &parent_tx.inputs {
+    for parent_input in &spent_tx.inputs {
         let parent_address = DbcAddress::from_dbc_id(&parent_input.dbc_id());
         // This call makes sure we get the same spend from all in the close group.
         // If we receive a spend here, it is assumed to be valid. But we will verify
