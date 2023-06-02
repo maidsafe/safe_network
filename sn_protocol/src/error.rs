@@ -15,7 +15,7 @@ use crate::{
 };
 
 use serde::{Deserialize, Serialize};
-use sn_dbc::SignedSpend;
+use sn_dbc::{Hash, SignedSpend};
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -104,8 +104,8 @@ pub enum Error {
     #[error("Insufficient valid spends found: {0:?}")]
     InsufficientValidSpendsFound(DbcAddress),
     /// Node failed to store spend
-    #[error("Failed to store spend: {0}")]
-    FailedToStoreSpend(String),
+    #[error("Failed to store spend: {0:?}")]
+    FailedToStoreSpend(DbcAddress),
     /// Node failed to get spend
     #[error("Failed to get spend: {0:?}")]
     FailedToGetSpend(DbcAddress),
@@ -119,13 +119,27 @@ pub enum Error {
     #[error("Spend parents are invalid: {0}")]
     InvalidSpendParents(String),
 
-    /// The DBC we're trying to Spend came with an invalid parent Tx
-    #[error("Invalid Parent Tx: {0}")]
-    InvalidParentTx(String),
-    /// One or more parent spends of a requested spend has an invalid hash
-    #[error("Invalid parent spend hash: {0}")]
-    BadParentSpendHash(String),
+    /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
+    #[error(
+        "The signed spend src tx ({signed_src_tx_hash:?}) did not match a valid parent's dst tx hash: {parent_dst_tx_hash:?}. The trail is invalid."
+    )]
+    TxTrailMismatch {
+        /// The signed spend src tx hash.
+        signed_src_tx_hash: Hash,
+        /// The dst hash of a parent signed spend.
+        parent_dst_tx_hash: Hash,
+    },
     /// The provided source tx did not check out when verified with all supposed inputs to it (i.e. our spends parents).
-    #[error("The provided source tx is invalid: {0}")]
-    InvalidSourceTxProvided(String),
+    #[error(
+        "The provided source tx (with hash {provided_src_tx_hash:?}) when verified with all supposed inputs to it (i.e. our spends parents).."
+    )]
+    InvalidSourceTxProvided {
+        /// The signed spend src tx hash.
+        signed_src_tx_hash: Hash,
+        /// The hash of the provided source tx.
+        provided_src_tx_hash: Hash,
+    },
+    // Could not Deserialize RecordHeader from Record
+    #[error("Could not Deserialize RecordHeader from Record")]
+    RecordHeaderParsingFailed,
 }

@@ -24,12 +24,11 @@ use sn_protocol::{
     messages::{
         Cmd, CmdResponse, PaymentProof, Query, QueryResponse, RegisterCmd, Request, Response,
     },
-    storage::{registers::User, Chunk, DbcAddress},
+    storage::{registers::User, Chunk, DbcAddress, RecordHeader, RecordKind},
     NetworkAddress,
 };
 use sn_registers::RegisterStorage;
 use sn_transfers::payment_proof::validate_payment_proof;
-
 use std::{net::SocketAddr, path::Path, time::Duration};
 use tokio::task::spawn;
 use xor_name::XorName;
@@ -268,12 +267,31 @@ impl Node {
                     }
                 }
 
-                // Create a Kademlia record for storage
-                let record = Record {
-                    key: RecordKey::new(&addr_name),
-                    value: chunk.value().to_vec(),
-                    publisher: None,
-                    expires: None,
+                // Prepend Kademlia record with a header for storage
+                let record_header = RecordHeader {
+                    kind: RecordKind::Chunk,
+                };
+
+                let record = match bincode::serialize(&record_header) {
+                    Ok(mut record_value) => {
+                        record_value.extend_from_slice(chunk.value());
+                        Record {
+                            key: RecordKey::new(addr.name()),
+                            value: record_value,
+                            publisher: None,
+                            expires: None,
+                        }
+                    }
+                    Err(err) => {
+                        // send error back and short-circuit
+                        error!("Failed to serialize RecordHeader: {err:?}");
+                        let resp = CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(
+                            *addr.name(),
+                        )));
+                        self.send_response(Response::Cmd(resp), response_channel)
+                            .await;
+                        return;
+                    }
                 };
 
                 let resp = match self.network.put_data_as_record(record).await {
@@ -322,14 +340,11 @@ impl Node {
                 self.send_response(Response::Cmd(resp), response_channel)
                     .await;
             }
-            Cmd::SpendDbc(signed_spend, parent_tx) => {
+            Cmd::SpendDbc(signed_spend, _) => {
                 let dbc_id = *signed_spend.dbc_id();
+                let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
-                let resp = match self
-                    .spendbook
-                    .spend_put(&self.network, signed_spend, parent_tx)
-                    .await
-                {
+                let resp = match self.spendbook.spend_put(&self.network, signed_spend).await {
                     Ok(addr) => {
                         debug!("Broadcasting valid spend: {dbc_id:?} at: {addr:?}");
                         self.events_channel
@@ -338,7 +353,7 @@ impl Node {
                     }
                     Err(err) => {
                         error!("Failed to StoreSpend: {err:?}");
-                        CmdResponse::Spend(Err(err))
+                        CmdResponse::Spend(Err(ProtocolError::FailedToStoreSpend(dbc_addr)))
                     }
                 };
 

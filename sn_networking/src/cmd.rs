@@ -18,7 +18,7 @@ use libp2p::{
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{Query, QueryResponse, ReplicatedData, Request, Response},
-    storage::Chunk,
+    storage::{Chunk, RecordHeader, RecordKind},
     NetworkAddress,
 };
 use sn_record_store::DiskBackedRecordStore;
@@ -240,14 +240,20 @@ impl SwarmDriver {
         Ok(())
     }
 
-    pub(crate) fn replicate_chunk_to_local(&mut self, chunk: Chunk) {
+    pub(crate) fn replicate_chunk_to_local(&mut self, chunk: Chunk) -> Result<()> {
         let addr = *chunk.address();
         debug!("Chunk received for replication: {:?}", addr.name());
 
-        // Create a Kademlia record for storage
+        // Prepend Kademlia record with a header for storage
+        let record_header = RecordHeader {
+            kind: RecordKind::Chunk,
+        };
+        let mut record_value = bincode::serialize(&record_header)?;
+        record_value.extend_from_slice(chunk.value());
+
         let record = Record {
             key: RecordKey::new(addr.name()),
-            value: chunk.value().to_vec(),
+            value: record_value,
             publisher: None,
             expires: None,
         };
@@ -258,6 +264,8 @@ impl SwarmDriver {
             .kademlia
             .store_mut()
             .write_to_local(record);
+
+        Ok(())
     }
 
     fn replication_keys_to_fetch(&mut self, holder: NetworkAddress, keys: Vec<NetworkAddress>) {

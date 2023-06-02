@@ -49,6 +49,7 @@ use libp2p::{
 use rand::Rng;
 use sn_protocol::{
     messages::{QueryResponse, Request, Response},
+    storage::RecordHeader,
     NetworkAddress,
 };
 use sn_record_store::{
@@ -538,7 +539,8 @@ impl Network {
             .await)
     }
 
-    /// Get `key` from our Storage
+    /// Get data from the KAD network as bytes
+    /// The `RecordHeader` is stripped and only the body is returned
     pub async fn get_provided_data(&self, key: RecordKey) -> Result<Result<Vec<u8>>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetData { key, sender })
@@ -547,6 +549,12 @@ impl Network {
         receiver
             .await
             .map_err(|_e| Error::InternalMsgChannelDropped)
+            .map(|response| {
+                response.map(|bytes| {
+                    // ignore the record header
+                    bytes[RecordHeader::SIZE..].to_vec()
+                })
+            })
     }
 
     /// Get `ReplicatedData` from local Storage
