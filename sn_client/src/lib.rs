@@ -37,5 +37,4 @@ pub struct Client {
     network: Network,
     events_channel: ClientEventsChannel,
     signer: bls::SecretKey,
-    peers_added: usize,
 }
