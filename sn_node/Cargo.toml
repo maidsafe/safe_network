@@ -20,7 +20,6 @@ path = "src/bin/faucet.rs"
 [features]
 default=[]
 local-discovery=["sn_networking/local-discovery"]
-inactive-client-redials=[]
 otlp = ["sn_logging/otlp"]
 
 [dependencies]
