@@ -65,81 +65,11 @@ pub use self::{
     // network_store::NetworkWallet,
 };
 
-use super::client_transfers::{CreatedDbc, Outputs as TransferDetails};
+use super::client_transfers::CreatedDbc;
 
-use sn_dbc::{Dbc, DbcId, DbcIdSource, PublicAddress, Token};
+use sn_dbc::{Dbc, DbcId, PublicAddress, Token};
 
-use async_trait::async_trait;
 use std::collections::BTreeMap;
-
-/// A SendClient is used to transfer tokens to other addresses.
-///
-/// It does so by creating a transfer and returning that to the caller.
-/// It is expected that the implementation of this trait is a network client,
-/// that will also upload the transfer to the network before returning it.
-/// The network will validate the transfer upon receiving it. Once enough peers have accepted it,
-/// the transfer is completed.
-///  
-/// For unit tests the implementation can be without network connection,
-/// and just return the transfer to the caller.
-#[async_trait]
-pub trait SendClient: Send + Sync + Clone {
-    /// Registers a created transfer in the network.
-    async fn send(&self, transfer: TransferDetails) -> Result<()>;
-}
-
-/// A VerifyingClient is used to verify the validity of dbcs on the network.
-///
-/// It does so by querying for the necessary info of nodes in the network
-/// and returning the result to the caller.
-/// It is expected that the implementation of this trait is a network client,
-/// that will connect to the network before returning the result.
-///  
-/// For unit tests the implementation can be without network connection,
-/// and just return the transfer to the caller.
-#[async_trait]
-pub trait VerifyingClient: Send + Sync + Clone {
-    ///
-    async fn verify(&self, dbc: &Dbc) -> Result<()>;
-}
-
-/// A wallet has an address and a balance.
-pub trait Wallet {
-    /// The address of the wallet, to which others send tokens.
-    fn address(&self) -> PublicAddress;
-    /// The current balance of the wallet.
-    fn balance(&self) -> Token;
-}
-
-/// A wallet that can sign msgs.
-pub trait SigningWallet {
-    /// Signs the given msg.
-    fn sign(&self, msg: &[u8]) -> bls::Signature;
-}
-
-/// A send wallet is a wallet that, in addition to the capabilities
-/// of a deposit wallet, can also send tokens to other addresses.
-#[async_trait]
-pub trait SendWallet: DepositWallet {
-    /// Sends the given tokens to the given addresses.
-    /// Returns the new dbcs that were created.
-    /// Depending on the implementation of the send client, this may
-    /// also register the transaction with the network.
-    async fn send<C: SendClient>(
-        &mut self,
-        to: Vec<(Token, PublicAddress)>,
-        client: &C,
-    ) -> Result<Vec<CreatedDbc>>;
-}
-
-/// A deposit wallet is a wallet that can receive tokens from other wallets.
-/// It can however not send tokens to other addresses.
-pub trait DepositWallet: Wallet {
-    /// Used to generate a new dbc id for receiving tokens.
-    fn new_dbc_address(&self) -> DbcIdSource;
-    /// Will only deposit those that are actually accessible by this wallet.
-    fn deposit(&mut self, dbcs: Vec<Dbc>);
-}
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub(super) struct KeyLessWallet {
@@ -148,12 +78,6 @@ pub(super) struct KeyLessWallet {
     /// These are dbcs we've owned, that have been
     /// spent when sending tokens to other addresses.
     spent_dbcs: BTreeMap<DbcId, Dbc>,
-    /// These have not yet been successfully confirmed in
-    /// the network and need to be republished, to reach network validity.
-    /// We maintain the order they were added in, as to republish
-    /// them in the correct order, in case any later spend was
-    /// dependent on an earlier spend.
-    unconfirmed_txs: Vec<TransferDetails>,
     /// These are the dbcs we own that are not yet spent.
     available_dbcs: BTreeMap<DbcId, Dbc>,
     /// These are the dbcs we've created by
