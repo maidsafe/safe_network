@@ -1,0 +1,32 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Safe Network Transfer Logic"
+documentation = "https://docs.rs/sn_node"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "sn_transfers"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe_network"
+version = "0.1.0"
+
+[dependencies]
+async-trait = "0.1"
+bincode = "1.3.1"
+bls = { package = "blsttc", version = "8.0.1" }
+dirs-next = "~2.0.0"
+hex = "~0.4.3"
+lazy_static = "~1.4.0"
+rand = { version = "~0.8.5", features = ["small_rng"] }
+serde = { version = "1.0.133", features = [ "derive", "rc" ]}
+sn_dbc = { version = "18.0.0", features = ["serdes"] }
+sn_protocol = { path = "../sn_protocol", version = "0.1.0" }
+tokio = { version = "1.17.0" }
+tracing = { version = "~0.1.26" }
+thiserror = "1.0.23"
+walkdir = "2.3.1"
+xor_name = "5.0.0"
+
+[dev-dependencies]
+eyre = "0.6.8"
+assert_fs = "1.0.0"

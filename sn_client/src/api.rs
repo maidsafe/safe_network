@@ -14,21 +14,28 @@ use super::{
 };
 
 use sn_dbc::{DbcId, SignedSpend};
-use sn_domain::client_transfers::SpendRequest;
 use sn_networking::{close_group_majority, multiaddr_is_global, NetworkEvent, SwarmDriver};
 use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     storage::{Chunk, ChunkAddress, DbcAddress},
     NetworkAddress,
 };
+use sn_transfers::client_transfers::SpendRequest;
 
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use itertools::Itertools;
-use libp2p::{kad::RecordKey, Multiaddr, PeerId};
+use libp2p::{
+    kad::{RecordKey, K_VALUE},
+    Multiaddr, PeerId,
+};
+use std::num::NonZeroUsize;
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
+
+/// The timeout duration for the client to receive any response from the network.
+const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(10);
 
 impl Client {
     /// Instantiate a new client.
@@ -48,6 +55,7 @@ impl Client {
             network: network.clone(),
             events_channel,
             signer,
+            peers_added: 0,
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -63,14 +71,15 @@ impl Client {
             trace!("Starting up client swarm_driver");
             swarm_driver.run()
         });
+
         let _event_handler = spawn(async move {
             loop {
                 if let Some(peers) = peers.clone() {
                     if must_dial_network {
                         let network = network.clone();
                         let _handle = spawn(async move {
-                            trace!("Client dialing network");
                             for (peer_id, addr) in peers {
+                                trace!("Client dialing network peer {peer_id} at {addr:?}");
                                 let _ = network.add_to_routing_table(peer_id, addr.clone()).await;
                                 if let Err(err) = network.dial(peer_id, addr.clone()).await {
                                     tracing::error!("Failed to dial {peer_id}: {err:?}");
@@ -83,16 +92,37 @@ impl Client {
                 }
 
                 info!("Client waiting for a network event");
-                let event = match network_event_receiver.recv().await {
-                    Some(event) => event,
-                    None => {
-                        error!("The `NetworkEvent` channel has been closed");
+                match tokio::time::timeout(INACTIVITY_TIMEOUT, network_event_receiver.recv()).await
+                {
+                    Ok(event) => {
+                        let the_event = match event {
+                            Some(the_event) => the_event,
+                            None => {
+                                error!("The `NetworkEvent` channel has been closed");
+                                continue;
+                            }
+                        };
+                        trace!("Client recevied a network event {the_event:?}");
+                        if let Err(err) = client_clone.handle_network_event(the_event) {
+                            warn!("Error handling network event: {err}");
+                        }
+
                         continue;
                     }
-                };
-                trace!("Client recevied a network event {event:?}");
-                if let Err(err) = client_clone.handle_network_event(event) {
-                    warn!("Error handling network event: {err}");
+                    Err(_elapse_err) => {
+                        if cfg!(feature = "inactive-client-redials") {
+                            must_dial_network = true;
+                            info!("Inactive client for {INACTIVITY_TIMEOUT:?}, will attempt to dial the network again");
+                            println!("Inactive client for {INACTIVITY_TIMEOUT:?}, will attempt to dial the network again");
+                        } else if let Err(error) = client_clone
+                            .events_channel
+                            .broadcast(ClientEvent::InactiveClient(INACTIVITY_TIMEOUT))
+                        {
+                            error!("Error broadcasting inactive client event: {error}");
+                        }
+
+                        continue;
+                    }
                 }
             }
         });
@@ -102,6 +132,10 @@ impl Client {
                 ClientEvent::ConnectedToNetwork => {
                     info!("Client connected to the Network.");
                     println!("Client successfully connected to the Network.");
+                }
+                ClientEvent::InactiveClient(timeout) => {
+                    error!("Inactive client for {timeout:?}, inactive-client-redial is not set, and so shutting down");
+                    return Err(Error::InactiveClient(timeout));
                 }
             }
         }
@@ -118,9 +152,18 @@ impl Client {
             // We are not doing AutoNAT and don't care about our status.
             NetworkEvent::NatStatusChanged(_) => {}
             NetworkEvent::PeerAdded(peer_id) => {
-                self.events_channel
-                    .broadcast(ClientEvent::ConnectedToNetwork)?;
                 debug!("PeerAdded: {peer_id}");
+                // In case client running in non-local-discovery mode,
+                // it may take some time to fillup the RT.
+                // To avoid such delay may fail the query with RecordNotFound,
+                // wait till certain amount of peers populated into RT
+                if let Some(peers_added) = NonZeroUsize::new(self.peers_added) {
+                    if peers_added >= K_VALUE {
+                        self.events_channel
+                            .broadcast(ClientEvent::ConnectedToNetwork)?;
+                    }
+                }
+                self.peers_added += 1;
             }
         }
 

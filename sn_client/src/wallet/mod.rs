@@ -12,7 +12,7 @@ pub(crate) mod verifying_client;
 use super::Client;
 
 use sn_dbc::{Dbc, PublicAddress, Token};
-use sn_domain::wallet::{Error, LocalWallet, Result, SendWallet};
+use sn_transfers::wallet::{Error, LocalWallet, Result, SendWallet};
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.

@@ -39,6 +39,9 @@ impl ClientEventsChannel {
 pub enum ClientEvent {
     /// The client has been connected to the network
     ConnectedToNetwork,
+    /// No network activity has been received for a given duration
+    /// we should error out
+    InactiveClient(std::time::Duration),
 }
 
 /// Receiver Channel where users of the public API can listen to events broadcasted by the client.
