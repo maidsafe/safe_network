@@ -76,7 +76,6 @@ pub async fn load_genesis_wallet() -> LocalWallet {
         return genesis_wallet;
     }
 
-    use super::wallet::{DepositWallet, Wallet};
     genesis_wallet.deposit(vec![GENESIS_DBC.clone()]);
     genesis_wallet
         .store()
