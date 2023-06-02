@@ -11,9 +11,11 @@ pub mod registers;
 
 mod address;
 mod chunks;
+mod header;
 
 pub use self::{
     address::{ChunkAddress, DbcAddress, RegisterAddress},
     chunks::Chunk,
+    header::{RecordHeader, RecordKind},
     registers::*,
 };
