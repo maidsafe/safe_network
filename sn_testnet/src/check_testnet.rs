@@ -206,7 +206,7 @@ fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
                 .expect("Failed to get parent dir")
                 .to_path_buf();
 
-            lines.filter_map(|item| item.ok()).for_each(|line| {
+            lines.map_while(|item| item.ok()).for_each(|line| {
                 if let Some(cap) = re.captures_iter(&line).next() {
                     let pid = cap[1].parse().expect("Failed to parse PID from node log");
                     let peer_id =
