@@ -11,14 +11,11 @@ use super::{
     wallet_file::{
         create_received_dbcs_dir, get_wallet, load_received_dbcs, store_created_dbcs, store_wallet,
     },
-    DepositWallet, KeyLessWallet, Result, SendClient, SendWallet, SigningWallet, Wallet,
+    KeyLessWallet, Result,
 };
-
-use crate::client_transfers::{create_transfer, CreatedDbc, Outputs as TransferDetails};
+use crate::client_transfers::{create_transfer, TransactionOutputs};
 
 use sn_dbc::{Dbc, DbcIdSource, MainKey, PublicAddress, Token};
-
-use async_trait::async_trait;
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
@@ -101,7 +98,6 @@ impl KeyLessWallet {
             spent_dbcs: BTreeMap::new(),
             available_dbcs: BTreeMap::new(),
             dbcs_created_for_others: vec![],
-            unconfirmed_txs: vec![],
         }
     }
 
@@ -136,62 +132,36 @@ impl KeyLessWallet {
     }
 }
 
-impl Wallet for LocalWallet {
-    fn address(&self) -> PublicAddress {
+impl LocalWallet {
+    pub fn address(&self) -> PublicAddress {
         self.key.public_address()
     }
 
-    fn balance(&self) -> Token {
+    pub fn balance(&self) -> Token {
         self.wallet.balance()
     }
-}
 
-impl SigningWallet for LocalWallet {
-    fn sign(&self, msg: &[u8]) -> bls::Signature {
+    pub fn sign(&self, msg: &[u8]) -> bls::Signature {
         self.key.sign(msg)
     }
-}
 
-impl DepositWallet for LocalWallet {
-    fn new_dbc_address(&self) -> DbcIdSource {
+    pub fn new_dbc_address(&self) -> DbcIdSource {
         self.key.random_dbc_id_src(&mut rand::thread_rng())
     }
 
-    fn deposit(&mut self, dbcs: Vec<Dbc>) {
+    pub fn deposit(&mut self, dbcs: Vec<Dbc>) {
         self.wallet.deposit(dbcs, &self.key);
     }
-}
 
-#[async_trait]
-impl SendWallet for LocalWallet {
-    async fn send<C: SendClient>(
+    pub async fn local_send(
         &mut self,
         to: Vec<(Token, PublicAddress)>,
-        client: &C,
-    ) -> Result<Vec<CreatedDbc>> {
-        // First resend any pending txs. This is not guaranteed to succeed.
-        // If the spend was invalid to start with then it will always fail here.
-        // It can disrupt the use of the wallet, if we got change from that invalid
-        // tx, that we try to spend later. So either we need to make sure that the
-        // failing transfers are not failing due to being invalid, or we need a way
-        // to check that later and clear those out from the pending txs list.
-        // Since they could become "invalid" while being in the pending txs list
-        // (the DBCs they spend, became spent in other txs in the meanwhile), the latter
-        // solution of being able to check and clean out the list later seems to be necessary.
-        resend_pending_txs(self, client).await;
-
-        // do not make a pointless send to ourselves
-
-        let to: Vec<_> = to
+    ) -> Result<TransactionOutputs> {
+        // create a unique key for each output
+        let to_unique_keys: Vec<_> = to
             .into_iter()
-            .filter_map(|(amount, address)| {
-                let dbc_id_src = address.random_dbc_id_src(&mut rand::thread_rng());
-                (address != self.address()).then_some((amount, dbc_id_src))
-            })
+            .map(|(amount, address)| (amount, address.random_dbc_id_src(&mut rand::thread_rng())))
             .collect();
-        if to.is_empty() {
-            return Ok(vec![]);
-        }
 
         let mut available_dbcs = vec![];
         for dbc in self.wallet.available_dbcs.values() {
@@ -205,9 +175,9 @@ impl SendWallet for LocalWallet {
             }
         }
 
-        let transfer = create_transfer(available_dbcs, to, self.address())?;
+        let transfer = create_transfer(available_dbcs, to_unique_keys, self.address())?;
 
-        let TransferDetails {
+        let TransactionOutputs {
             change_dbc,
             created_dbcs,
             ..
@@ -231,28 +201,7 @@ impl SendWallet for LocalWallet {
             .dbcs_created_for_others
             .extend(created_dbcs.clone());
 
-        // Last of all, register the spend in the network.
-        println!("Sending transfer to the network: {transfer:#?}");
-        if let Err(error) = client.send(transfer.clone()).await {
-            println!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
-            let _ = self.wallet.unconfirmed_txs.push(transfer);
-        }
-
-        Ok(created_dbcs)
-    }
-}
-
-async fn resend_pending_txs<C: SendClient>(local: &mut LocalWallet, client: &C) {
-    for (index, transfer) in local.wallet.unconfirmed_txs.clone().into_iter().enumerate() {
-        println!("Trying to republish pending tx: {:?}..", transfer.tx_hash);
-        if client.send(transfer.clone()).await.is_ok() {
-            println!("Tx {:?} was successfully republished!", transfer.tx_hash);
-            let _ = local.wallet.unconfirmed_txs.remove(index);
-            // We might want to be _really_ sure and do the below
-            // as well, but it's not necessary.
-            // use crate::domain::wallet::VerifyingClient;
-            // client.verify(tx_hash).await.ok();
-        }
+        Ok(transfer)
     }
 }
 
@@ -261,9 +210,9 @@ mod tests {
     use super::{get_wallet, store_wallet, LocalWallet};
 
     use crate::{
-        client_transfers::Outputs as TransferDetails,
+        client_transfers::TransactionOutputs,
         dbc_genesis::{create_first_dbc_from_key, GENESIS_DBC_AMOUNT},
-        wallet::{local_store::WALLET_DIR_NAME, public_address_name, KeyLessWallet, SendClient},
+        wallet::{local_store::WALLET_DIR_NAME, public_address_name, KeyLessWallet},
     };
 
     use sn_dbc::{MainKey, Token};
@@ -271,6 +220,17 @@ mod tests {
 
     use assert_fs::TempDir;
     use eyre::Result;
+
+    #[derive(Clone)]
+    struct MockSendClient;
+
+    impl MockSendClient {
+        async fn send(&self, _transfer: TransactionOutputs) -> super::Result<()> {
+            // Here we just return Ok(()), without network calls,
+            // and without sending it to the network.
+            Ok(())
+        }
+    }
 
     #[tokio::test]
     async fn keyless_wallet_to_and_from_file() -> Result<()> {
@@ -297,9 +257,6 @@ mod tests {
 
     #[test]
     fn wallet_basics() -> Result<()> {
-        // Bring in the necessary traits.
-        use super::{DepositWallet, Wallet};
-
         let key = MainKey::random();
         let public_address = key.public_address();
         let dir = create_temp_dir();
@@ -330,9 +287,6 @@ mod tests {
 
     #[test]
     fn deposit_empty_list_does_nothing() -> Result<()> {
-        // Bring in the necessary trait.
-        use super::{DepositWallet, Wallet};
-
         let dir = create_temp_dir();
 
         let mut deposit_only = LocalWallet {
@@ -354,9 +308,6 @@ mod tests {
 
     #[test]
     fn deposit_adds_dbcs_that_belongs_to_the_wallet() -> Result<()> {
-        // Bring in the necessary trait.
-        use super::{DepositWallet, Wallet};
-
         let key = MainKey::random();
         let genesis = create_first_dbc_from_key(&key).expect("Genesis creation to succeed.");
         let dir = create_temp_dir();
@@ -376,9 +327,6 @@ mod tests {
 
     #[test]
     fn deposit_does_not_add_dbcs_not_belonging_to_the_wallet() -> Result<()> {
-        // Bring in the necessary traits.
-        use super::{DepositWallet, Wallet};
-
         let genesis =
             create_first_dbc_from_key(&MainKey::random()).expect("Genesis creation to succeed.");
         let dir = create_temp_dir();
@@ -398,9 +346,6 @@ mod tests {
 
     #[test]
     fn deposit_is_idempotent() -> Result<()> {
-        // Bring in the necessary trait.
-        use super::{DepositWallet, Wallet};
-
         let key = MainKey::random();
         let genesis_0 = create_first_dbc_from_key(&key).expect("Genesis creation to succeed.");
         let genesis_1 = create_first_dbc_from_key(&key).expect("Genesis creation to succeed.");
@@ -426,9 +371,6 @@ mod tests {
 
     #[tokio::test]
     async fn deposit_wallet_to_and_from_file() -> Result<()> {
-        // Bring in the necessary traits.
-        use super::{DepositWallet, Wallet};
-
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
@@ -475,9 +417,6 @@ mod tests {
 
     #[tokio::test]
     async fn sending_decreases_balance() -> Result<()> {
-        // Bring in the necessary traits.
-        use super::{DepositWallet, SendWallet, Wallet};
-
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
@@ -493,7 +432,8 @@ mod tests {
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let created_dbcs = sender.send(to, &MockSendClient).await?;
+        let transfer = sender.local_send(to).await?;
+        let created_dbcs = transfer.created_dbcs;
 
         assert_eq!(1, created_dbcs.len());
         assert_eq!(GENESIS_DBC_AMOUNT - send_amount, sender.balance().as_nano());
@@ -510,9 +450,6 @@ mod tests {
 
     #[tokio::test]
     async fn send_wallet_to_and_from_file() -> Result<()> {
-        // Bring in the necessary traits.
-        use super::{DepositWallet, SendWallet, Wallet};
-
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
@@ -526,7 +463,7 @@ mod tests {
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let _created_dbcs = sender.send(to, &MockSendClient).await?;
+        let _created_dbcs = sender.local_send(to).await?;
 
         sender.store().await?;
 
@@ -592,9 +529,6 @@ mod tests {
 
     #[tokio::test]
     async fn store_created_dbc_gives_file_that_try_load_deposits_can_use() -> Result<()> {
-        // Bring in the necessary traits.
-        use super::{DepositWallet, SendWallet};
-
         let sender_root_dir = create_temp_dir();
         let sender_root_dir = sender_root_dir.path().to_path_buf();
 
@@ -612,7 +546,8 @@ mod tests {
         let recipient_public_address = recipient.key.public_address();
 
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let created_dbcs = sender.send(to, &MockSendClient).await?;
+        let transfer = sender.local_send(to).await?;
+        let created_dbcs = transfer.created_dbcs;
         let dbc = created_dbcs[0].dbc.clone();
         let dbc_id = dbc.id();
         sender.store_created_dbc(dbc).await?;
@@ -655,18 +590,6 @@ mod tests {
         assert_eq!(send_amount, recipient.wallet.balance().as_nano());
 
         Ok(())
-    }
-
-    #[derive(Clone)]
-    struct MockSendClient;
-
-    #[async_trait::async_trait]
-    impl SendClient for MockSendClient {
-        async fn send(&self, _transfer: TransferDetails) -> super::Result<()> {
-            // Here we just return Ok(()), without network calls,
-            // and without sending it to the network.
-            Ok(())
-        }
     }
 
     fn create_temp_dir() -> TempDir {

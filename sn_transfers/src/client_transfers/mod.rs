@@ -55,7 +55,7 @@ pub struct Inputs {
 /// The created dbcs and change dbc from a transfer
 /// of tokens from one or more dbcs, into one or more new dbcs.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Outputs {
+pub struct TransactionOutputs {
     /// This is the hash of the transaction
     /// where all the below spends were made
     /// and dbcs created.

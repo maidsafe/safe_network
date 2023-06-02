@@ -6,30 +6,56 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub(crate) mod send_client;
-pub(crate) mod verifying_client;
-
 use super::Client;
 
+use sn_transfers::{
+    client_transfers::TransactionOutputs,
+    wallet::{Error, LocalWallet, Result},
+};
+
+use futures::future::join_all;
 use sn_dbc::{Dbc, PublicAddress, Token};
-use sn_transfers::wallet::{Error, LocalWallet, Result, SendWallet};
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
-pub struct WalletClient<W: SendWallet> {
+pub struct WalletClient {
     client: Client,
-    wallet: W,
+    wallet: LocalWallet,
+    /// These have not yet been successfully confirmed in
+    /// the network and need to be republished, to reach network validity.
+    /// We maintain the order they were added in, as to republish
+    /// them in the correct order, in case any later spend was
+    /// dependent on an earlier spend.
+    unconfirmed_txs: Vec<TransactionOutputs>,
 }
 
-impl<W: SendWallet> WalletClient<W> {
+impl WalletClient {
     /// Create a new wallet client.
-    pub fn new(client: Client, wallet: W) -> Self {
-        Self { client, wallet }
+    pub fn new(client: Client, wallet: LocalWallet) -> Self {
+        Self {
+            client,
+            wallet,
+            unconfirmed_txs: vec![],
+        }
     }
 
     /// Send tokens to another wallet.
     pub async fn send(&mut self, amount: Token, to: PublicAddress) -> Result<Dbc> {
-        let dbcs = self.wallet.send(vec![(amount, to)], &self.client).await?;
+        // retry previous failures
+        self.resend_pending_txs().await;
+
+        // offline transfer
+        let transfer = self.wallet.local_send(vec![(amount, to)]).await?;
+        let dbcs = transfer.created_dbcs.clone();
+
+        // send to network
+        println!("Sending transfer to the network: {transfer:#?}");
+        if let Err(error) = self.client.send(transfer.clone()).await {
+            println!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
+            self.unconfirmed_txs.push(transfer);
+        }
+
+        // return created DBCs even if network part failed???
         match &dbcs[..] {
             [info, ..] => Ok(info.dbc.clone()),
             [] => Err(Error::CouldNotSendTokens(
@@ -38,9 +64,65 @@ impl<W: SendWallet> WalletClient<W> {
         }
     }
 
+    /// Resend failed txs
+    async fn resend_pending_txs(&mut self) {
+        for (index, transfer) in self.unconfirmed_txs.clone().into_iter().enumerate() {
+            println!("Trying to republish pending tx: {:?}..", transfer.tx_hash);
+            if self.client.send(transfer.clone()).await.is_ok() {
+                println!("Tx {:?} was successfully republished!", transfer.tx_hash);
+                let _ = self.unconfirmed_txs.remove(index);
+                // We might want to be _really_ sure and do the below
+                // as well, but it's not necessary.
+                // use crate::domain::wallet::VerifyingClient;
+                // client.verify(tx_hash).await.ok();
+            }
+        }
+    }
+
     /// Return the wallet.
-    pub fn into_wallet(self) -> W {
+    pub fn into_wallet(self) -> LocalWallet {
         self.wallet
+    }
+}
+
+impl Client {
+    pub async fn send(&self, transfer: TransactionOutputs) -> Result<()> {
+        let mut tasks = Vec::new();
+        for spend_request in &transfer.all_spend_requests {
+            tasks.push(self.network_store_spend(spend_request.clone()));
+        }
+
+        for spend_attempt_result in join_all(tasks).await {
+            spend_attempt_result.map_err(|err| Error::CouldNotSendTokens(err.to_string()))?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn verify(&self, dbc: &Dbc) -> Result<()> {
+        // We need to get all the spends in the dbc from the network,
+        // and compare them to the spends in the dbc, to know if the
+        // transfer is considered valid in the network.
+        let mut tasks = Vec::new();
+        for spend in &dbc.signed_spends {
+            tasks.push(self.expect_closest_majority_same(spend.dbc_id()));
+        }
+
+        let mut received_spends = std::collections::BTreeSet::new();
+        for result in join_all(tasks).await {
+            let network_valid_spend =
+                result.map_err(|err| Error::CouldNotVerifyTransfer(err.to_string()))?;
+            let _ = received_spends.insert(network_valid_spend);
+        }
+
+        // If all the spends in the dbc are the same as the ones in the network,
+        // we have successfully verified that the dbc is globally recognised and therefor valid.
+        if received_spends == dbc.signed_spends {
+            return Ok(());
+        }
+        Err(Error::CouldNotVerifyTransfer(
+            "The spends in network were not the same as the ones in the DBC.".into(),
+        ))
     }
 }
 

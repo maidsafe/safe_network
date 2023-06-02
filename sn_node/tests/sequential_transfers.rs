@@ -13,7 +13,7 @@ use std::path::Path;
 use sn_client::{get_tokens_from_faucet, send, Client};
 
 use sn_dbc::Token;
-use sn_transfers::wallet::{DepositWallet, LocalWallet, VerifyingClient, Wallet};
+use sn_transfers::wallet::LocalWallet;
 use tracing_core::Level;
 
 use assert_fs::TempDir;
