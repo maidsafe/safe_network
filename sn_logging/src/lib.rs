@@ -8,9 +8,10 @@
 
 pub mod appender;
 pub mod error;
+#[cfg(feature = "process-metrics")]
+pub mod metrics;
 
 use self::error::{Error, Result};
-
 use std::fs;
 use std::path::PathBuf;
 use tracing_appender::non_blocking::WorkerGuard;

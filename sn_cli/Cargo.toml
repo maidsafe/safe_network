@@ -14,6 +14,9 @@ version = "0.77.0"
 path="src/main.rs"
 name="safe"
 
+[features]
+metrics = ["sn_logging/process-metrics"]
+
 [dependencies]
 bincode = "1.3.1"
 bls = { package = "blsttc", version = "8.0.1" }

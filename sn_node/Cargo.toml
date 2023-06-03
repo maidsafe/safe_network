@@ -21,6 +21,7 @@ path = "src/bin/faucet.rs"
 default=[]
 local-discovery=["sn_networking/local-discovery"]
 otlp = ["sn_logging/otlp"]
+metrics = ["sn_logging/process-metrics"]
 
 [dependencies]
 async-trait = "0.1"
