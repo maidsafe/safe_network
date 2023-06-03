@@ -10,14 +10,17 @@
 extern crate tracing;
 
 mod rpc;
+
+use sn_build_info::git_hash;
+use sn_logging::init_logging;
+#[cfg(feature = "metrics")]
+use sn_logging::metrics::init_metrics;
 use sn_node::{Node, NodeEvent, NodeEventsReceiver};
+use sn_peers_acquisition::peers_from_opts_or_env;
 
 use clap::Parser;
 use eyre::{eyre, Error, Result};
 use libp2p::{Multiaddr, PeerId};
-use sn_build_info::git_hash;
-use sn_logging::init_logging;
-use sn_peers_acquisition::peers_from_opts_or_env;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
@@ -145,6 +148,8 @@ fn main() -> Result<()> {
         // Create a tokio runtime per `start_node` attempt, this ensures
         // any spawned tasks are closed before this would be run again.
         let rt = Runtime::new()?;
+        #[cfg(feature = "metrics")]
+        rt.spawn(init_metrics(std::process::id()));
         rt.block_on(start_node(
             node_socket_addr,
             peers.clone(),
