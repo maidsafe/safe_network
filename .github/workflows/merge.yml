@@ -20,7 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         id: rust-toolchain
@@ -47,7 +46,7 @@ jobs:
 
   checks:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: Run rustfmt and clippy
+    name: various checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -60,6 +59,9 @@ jobs:
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
+
+      - name: Check the whole workspace can build
+        run: cargo build --all-targets --all-features
 
       - name: Check formatting
         run: cargo fmt --all -- --check
