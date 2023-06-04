@@ -1,0 +1,61 @@
+[workspace]
+allow_dirty = false
+changelog_update = true
+dependencies_update = false
+git_release_enable = false
+publish_allow_dirty = false
+semver_check = false
+
+[[package]]
+name = "sn_build_info"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "sn_client"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "sn_logging"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "sn_networking"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "sn_peers_acquisition"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "sn_protocol"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "sn_record_store"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "sn_registers"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "sn_transfers"
+changelog_update = true
+git_release_enable = false
+publish = true
