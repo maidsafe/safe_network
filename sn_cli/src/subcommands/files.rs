@@ -6,13 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::pay_for_storage;
+use super::wallet::pay_for_storage;
 
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
 use sn_client::{Client, Files};
 use sn_protocol::storage::ChunkAddress;
+use sn_transfers::payment_proof::PaymentProofsMap;
+
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -26,6 +28,9 @@ pub enum FilesCmds {
         /// The location of the files to upload.
         #[clap(name = "path", value_name = "DIRECTORY")]
         path: PathBuf,
+        /// Whether to make the payment and generate proofs for the files to upload.
+        #[clap(long)]
+        pay: bool,
     },
     Download {
         /// Name of the file to download.
@@ -39,7 +44,7 @@ pub enum FilesCmds {
 
 pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path) -> Result<()> {
     match cmds {
-        FilesCmds::Upload { path } => upload_files(path, client, root_dir).await?,
+        FilesCmds::Upload { path, pay } => upload_files(path, client, root_dir, pay).await?,
         FilesCmds::Download {
             file_name,
             file_addr,
@@ -71,14 +76,25 @@ pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path)
     Ok(())
 }
 
-async fn upload_files(files_path: PathBuf, client: Client, root_dir: &Path) -> Result<()> {
+async fn upload_files(
+    files_path: PathBuf,
+    client: Client,
+    root_dir: &Path,
+    pay: bool,
+) -> Result<()> {
     let file_api: Files = Files::new(client.clone());
 
     // The input files_path has to be a dir
     let file_names_path = root_dir.join("uploaded_files");
     let mut chunks_to_fetch = Vec::new();
 
-    let (_dbc, payment_proofs) = pay_for_storage(&client, root_dir, &files_path).await?;
+    // We make the payment for Chunks storage only if requested by the user
+    let payment_proofs = if pay {
+        let (_dbc, payment_proofs) = pay_for_storage(&client, root_dir, &files_path).await?;
+        payment_proofs
+    } else {
+        PaymentProofsMap::default()
+    };
 
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {

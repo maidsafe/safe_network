@@ -169,10 +169,9 @@ impl Files {
     ) -> Result<ChunkAddress> {
         let chunk = package_small(small)?;
         let address = *chunk.address();
-        let payment = payment_proofs
-            .get(&address.name().0)
-            .cloned()
-            .ok_or(super::Error::MissingPaymentProof(address))?;
+        let payment = payment_proofs.get(&address.name().0).cloned();
+        // TODO: re-enable requirement to always provide payment proof
+        //.ok_or(super::Error::MissingPaymentProof(address))?;
 
         self.client.store_chunk(chunk, payment).await?;
 
@@ -198,10 +197,9 @@ impl Files {
             for chunk in next_batch.iter().cloned() {
                 let client = self.client.clone();
                 let chunk_addr = *chunk.address();
-                let payment = payment_proofs
-                    .get(&chunk_addr.name().0)
-                    .cloned()
-                    .ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
+                let payment = payment_proofs.get(&chunk_addr.name().0).cloned();
+                // TODO: re-enable requirement to always provide payment proof
+                //.ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
 
                 tasks.push(task::spawn(async move {
                     client.store_chunk(chunk, payment).await?;

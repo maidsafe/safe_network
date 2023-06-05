@@ -241,36 +241,38 @@ impl Node {
                 let addr_name = *addr.name();
                 debug!("That's a store chunk in for :{addr_name:?}");
 
-                // Let's first make sure the payment proof is valid for the chunk's name
-                let resp = match validate_payment_proof(addr_name, &payment) {
-                    Err(err) => {
+                // TODO: temporarily payment proof is optional
+                if let Some(payment_proof) = payment {
+                    // Let's make sure the payment proof is valid for the chunk's name
+                    if let Err(err) = validate_payment_proof(addr_name, &payment_proof) {
                         debug!("Chunk payment proof deemed invalid: {err:?}");
-                        CmdResponse::StoreChunk(Err(ProtocolError::InvalidPaymentProof {
-                            addr_name,
-                            reason: err.to_string(),
-                        }))
+                        let resp =
+                            CmdResponse::StoreChunk(Err(ProtocolError::InvalidPaymentProof {
+                                addr_name,
+                                reason: err.to_string(),
+                            }));
+                        return self
+                            .send_response(Response::Cmd(resp), response_channel)
+                            .await;
                     }
-                    Ok(()) => {
-                        // Create a Kademlia record for storage
-                        let record = Record {
-                            key: RecordKey::new(&addr_name),
-                            value: chunk.value().to_vec(),
-                            publisher: None,
-                            expires: None,
-                        };
+                }
 
-                        match self.network.put_data_as_record(record).await {
-                            Ok(()) => {
-                                self.events_channel.broadcast(NodeEvent::ChunkStored(addr));
-                                CmdResponse::StoreChunk(Ok(()))
-                            }
-                            Err(err) => {
-                                error!("Failed to StoreChunk: {err:?}");
-                                CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(
-                                    addr_name,
-                                )))
-                            }
-                        }
+                // Create a Kademlia record for storage
+                let record = Record {
+                    key: RecordKey::new(&addr_name),
+                    value: chunk.value().to_vec(),
+                    publisher: None,
+                    expires: None,
+                };
+
+                let resp = match self.network.put_data_as_record(record).await {
+                    Ok(()) => {
+                        self.events_channel.broadcast(NodeEvent::ChunkStored(addr));
+                        CmdResponse::StoreChunk(Ok(()))
+                    }
+                    Err(err) => {
+                        error!("Failed to StoreChunk: {err:?}");
+                        CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(addr_name)))
                     }
                 };
 

@@ -37,6 +37,7 @@ type BinaryMerkletreeProofType = Proof<MerkleTreeNodesType, UInt<UInt<UTerm, B1>
 pub type PaymentProofsMap = BTreeMap<[u8; 32], PaymentProof>;
 
 /// Build a Merkletree to generate the PaymentProofs for each of the content addresses provided
+// TODO: provide fix against https://en.wikipedia.org/wiki/Preimage_attack ?
 pub fn build_payment_proofs<'a>(
     content_addrs: impl Iterator<Item = &'a NetworkAddress>,
 ) -> Result<(Hash, PaymentProofsMap)> {
