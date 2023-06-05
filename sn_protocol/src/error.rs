@@ -57,6 +57,14 @@ pub enum Error {
         /// Targeted Register's address
         reg_addr: RegisterAddress,
     },
+    /// Payment proof provided deemed invalid
+    #[error("Payment proof provided deemed invalid for item's name {addr_name:?}: {reason}")]
+    InvalidPaymentProof {
+        /// XorName the payment proof deemed invalid for
+        addr_name: XorName,
+        /// Reason why the payment proof was deemed invalid
+        reason: String,
+    },
     /// Access denied for user
     #[error("Access denied for user: {0:?}")]
     AccessDenied(User),

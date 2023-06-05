@@ -13,9 +13,9 @@ use crate::{
 
 use super::RegisterCmd;
 
-use sn_dbc::SignedSpend;
+// TODO: remove this dependency and define these types herein.
+pub use sn_dbc::{Hash, SignedSpend};
 
-use bls::PublicKey;
 use serde::{Deserialize, Serialize};
 
 /// Data and Dbc cmds - recording spends or creating, updating, and removing data.
@@ -97,10 +97,11 @@ impl std::fmt::Display for Cmd {
     }
 }
 
-#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
 pub struct PaymentProof {
-    // Id of the DBC the storage payment was made with
-    pub dbc_id: PublicKey,
+    // Reason-hash value set in the input/parent DBCs spent for this storage payment.
+    // TOOD: pass the output DBC instead, nodes can check input/parent DBCs' reason-hash among other pending validations.
+    pub reason_hash: Hash,
     // Merkletree audit trail to prove the Chunk has been paid by the
     // given DBC (using the DBC's 'reason' field)
     pub lemma: Vec<[u8; 32]>,

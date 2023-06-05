@@ -21,6 +21,7 @@ use sn_protocol::{
     messages::PaymentProof,
     storage::{Chunk, ChunkAddress},
 };
+use std::collections::BTreeMap;
 use tokio::task;
 use tracing::trace;
 use xor_name::XorName;
@@ -94,8 +95,12 @@ impl Files {
     /// Directly writes [`Bytes`] to the network in the
     /// form of immutable chunks, without any batching.
     #[instrument(skip(self, bytes), level = "debug")]
-    pub async fn upload(&self, bytes: Bytes, payment: PaymentProof) -> Result<ChunkAddress> {
-        self.upload_bytes(bytes, payment, false).await
+    pub async fn upload(
+        &self,
+        bytes: Bytes,
+        payment_proofs: &BTreeMap<[u8; 32], PaymentProof>,
+    ) -> Result<ChunkAddress> {
+        self.upload_bytes(bytes, payment_proofs, false).await
     }
 
     /// Directly writes [`Bytes`] to the network in the
@@ -106,9 +111,9 @@ impl Files {
     pub async fn upload_and_verify(
         &self,
         bytes: Bytes,
-        payment: PaymentProof,
+        payment_proofs: &BTreeMap<[u8; 32], PaymentProof>,
     ) -> Result<ChunkAddress> {
-        self.upload_bytes(bytes, payment, true).await
+        self.upload_bytes(bytes, payment_proofs, true).await
     }
 
     /// Calculates a LargeFile's/SmallFile's address from self encrypted chunks,
@@ -140,14 +145,14 @@ impl Files {
     async fn upload_bytes(
         &self,
         bytes: Bytes,
-        payment: PaymentProof,
+        payment_proofs: &BTreeMap<[u8; 32], PaymentProof>,
         verify: bool,
     ) -> Result<ChunkAddress> {
         match LargeFile::new(bytes.clone()) {
-            Ok(file) => self.upload_large(file, payment, verify).await,
+            Ok(file) => self.upload_large(file, payment_proofs, verify).await,
             Err(Error::TooSmallForSelfEncryption { .. }) => {
                 let file = SmallFile::new(bytes)?;
-                self.upload_small(file, payment, verify).await
+                self.upload_small(file, payment_proofs, verify).await
             }
             Err(error) => Err(error)?,
         }
@@ -159,11 +164,15 @@ impl Files {
     async fn upload_small(
         &self,
         small: SmallFile,
-        payment: PaymentProof,
+        payment_proofs: &BTreeMap<[u8; 32], PaymentProof>,
         verify: bool,
     ) -> Result<ChunkAddress> {
         let chunk = package_small(small)?;
         let address = *chunk.address();
+        let payment = payment_proofs
+            .get(&address.name().0)
+            .cloned()
+            .ok_or(super::Error::MissingPaymentProof(address))?;
 
         self.client.store_chunk(chunk, payment).await?;
 
@@ -180,23 +189,28 @@ impl Files {
     async fn upload_large(
         &self,
         large: LargeFile,
-        payment: PaymentProof,
+        payment_proofs: &BTreeMap<[u8; 32], PaymentProof>,
         verify: bool,
     ) -> Result<ChunkAddress> {
         let (head_address, all_chunks) = encrypt_large(large)?;
         for next_batch in all_chunks.chunks(CHUNKS_BATCH_MAX_SIZE) {
-            let tasks = next_batch.iter().cloned().map(|chunk| {
+            let mut tasks = vec![];
+            for chunk in next_batch.iter().cloned() {
                 let client = self.client.clone();
-                let payment = payment.clone();
-                task::spawn(async move {
-                    let chunk_addr = *chunk.address();
+                let chunk_addr = *chunk.address();
+                let payment = payment_proofs
+                    .get(&chunk_addr.name().0)
+                    .cloned()
+                    .ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
+
+                tasks.push(task::spawn(async move {
                     client.store_chunk(chunk, payment).await?;
                     if verify {
                         let _ = client.get_chunk(chunk_addr).await?;
                     }
                     Ok::<(), super::error::Error>(())
-                })
-            });
+                }));
+            }
 
             let respones = join_all(tasks)
                 .await
