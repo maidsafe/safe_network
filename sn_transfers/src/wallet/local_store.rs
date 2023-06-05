@@ -13,7 +13,7 @@ use super::{
     },
     KeyLessWallet, Result,
 };
-use crate::client_transfers::{create_transfer, TransactionOutputs};
+use crate::client_transfers::{create_transfer, TransferOutputs};
 
 use sn_dbc::{Dbc, DbcIdSource, MainKey, PublicAddress, Token};
 use std::{
@@ -153,10 +153,7 @@ impl LocalWallet {
         self.wallet.deposit(dbcs, &self.key);
     }
 
-    pub async fn local_send(
-        &mut self,
-        to: Vec<(Token, PublicAddress)>,
-    ) -> Result<TransactionOutputs> {
+    pub async fn local_send(&mut self, to: Vec<(Token, PublicAddress)>) -> Result<TransferOutputs> {
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
@@ -177,7 +174,7 @@ impl LocalWallet {
 
         let transfer = create_transfer(available_dbcs, to_unique_keys, self.address())?;
 
-        let TransactionOutputs {
+        let TransferOutputs {
             change_dbc,
             created_dbcs,
             ..
@@ -210,7 +207,7 @@ mod tests {
     use super::{get_wallet, store_wallet, LocalWallet};
 
     use crate::{
-        client_transfers::TransactionOutputs,
+        client_transfers::TransferOutputs,
         dbc_genesis::{create_first_dbc_from_key, GENESIS_DBC_AMOUNT},
         wallet::{local_store::WALLET_DIR_NAME, public_address_name, KeyLessWallet},
     };
@@ -225,7 +222,7 @@ mod tests {
     struct MockSendClient;
 
     impl MockSendClient {
-        async fn send(&self, _transfer: TransactionOutputs) -> super::Result<()> {
+        async fn send(&self, _transfer: TransferOutputs) -> super::Result<()> {
             // Here we just return Ok(()), without network calls,
             // and without sending it to the network.
             Ok(())
