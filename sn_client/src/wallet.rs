@@ -70,7 +70,6 @@ impl WalletClient {
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
-    // TODO: provide fix against https://en.wikipedia.org/wiki/Preimage_attack
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = &NetworkAddress>,

@@ -221,7 +221,11 @@ impl Client {
     }
 
     /// Store `Chunk` to its close group.
-    pub(super) async fn store_chunk(&self, chunk: Chunk, payment: PaymentProof) -> Result<()> {
+    pub(super) async fn store_chunk(
+        &self,
+        chunk: Chunk,
+        payment: Option<PaymentProof>,
+    ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let request = Request::Cmd(Cmd::StoreChunk { chunk, payment });
         let response = self.send_and_wait_till_first_rsp(request).await?;
