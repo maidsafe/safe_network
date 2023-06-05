@@ -727,11 +727,11 @@ mod tests {
         thread_rng().fill(&mut random_data);
         let req = Request::Cmd(Cmd::StoreChunk {
             chunk: Chunk::new(Bytes::copy_from_slice(&random_data)),
-            payment: PaymentProof {
+            payment: Some(PaymentProof {
                 reason_hash: Hash::hash(&random_data),
                 lemma: vec![],
                 path: vec![],
-            },
+            }),
         });
         // Send the request to `self` and wait for a response.
         let now = tokio::time::Instant::now();

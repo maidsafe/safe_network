@@ -33,7 +33,8 @@ pub enum Cmd {
     StoreChunk {
         chunk: Chunk,
         // Storage payment proof
-        payment: PaymentProof,
+        // TODO: temporarily payment proof is optional
+        payment: Option<PaymentProof>,
     },
     /// [`Register`] write operation.
     ///
