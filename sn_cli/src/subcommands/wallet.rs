@@ -7,9 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use sn_client::{Client, Files, WalletClient};
-use sn_dbc::Token;
+use sn_dbc::{Dbc, Token};
 use sn_protocol::{storage::ChunkAddress, NetworkAddress};
-use sn_transfers::wallet::{parse_public_address, LocalWallet};
+use sn_transfers::{
+    payment_proof::PaymentProofsMap,
+    wallet::{parse_public_address, LocalWallet},
+};
 
 use bytes::Bytes;
 use clap::Parser;
@@ -55,7 +58,7 @@ pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Pa
         WalletCmds::Balance => balance(root_dir).await?,
         WalletCmds::Deposit => deposit(root_dir).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
-        WalletCmds::Pay { path } => pay_for_storage(client, root_dir, &path).await?,
+        WalletCmds::Pay { path } => pay_for_storage(client, root_dir, &path).await.map(|_| ())?,
     }
     Ok(())
 }
@@ -137,7 +140,7 @@ pub(super) async fn pay_for_storage(
     client: &Client,
     root_dir: &Path,
     files_path: &Path,
-) -> Result<()> {
+) -> Result<(Dbc, PaymentProofsMap)> {
     let wallet = LocalWallet::load_from(root_dir).await?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     let file_api: Files = Files::new(client.clone());
@@ -146,7 +149,6 @@ pub(super) async fn pay_for_storage(
     let mut chunks_addrs = vec![];
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
-            println!(">> GETTING chunks for {}", entry.path().display());
             let file = fs::read(entry.path())?;
             let bytes = Bytes::from(file);
             // we need all chunks addresses not just the data-map addr
@@ -157,29 +159,21 @@ pub(super) async fn pay_for_storage(
         }
     }
 
-    println!(">> PAYING FOR {} chunks", chunks_addrs.len());
-    match wallet_client.pay_for_storage(chunks_addrs.iter()).await {
-        Ok((new_dbc, proofs)) => {
-            println!("Paid storage for: {chunks_addrs:?}");
-            let mut wallet = wallet_client.into_wallet();
-            let new_balance = wallet.balance();
+    println!("Making payment for {} Chunks...", chunks_addrs.len());
+    let (new_dbc, proofs) = wallet_client.pay_for_storage(chunks_addrs.iter()).await?;
 
-            if let Err(err) = wallet.store().await {
-                println!("Failed to store wallet: {err:?}");
-            } else {
-                println!("Successfully stored wallet with new balance {new_balance:?}.");
-            }
+    let mut wallet = wallet_client.into_wallet();
+    let new_balance = wallet.balance();
 
-            let dbc_id = new_dbc.id();
-            wallet.store_created_dbc(new_dbc).await?;
-            println!("Successfully stored new dbc ({dbc_id:?}) to wallet dir. It can now be sent to the storage nodes when uploading paid chunks.");
-
-            println!(">> PROOFS for payment made: {proofs:?}.");
-        }
-        Err(err) => {
-            println!("Failed to pay for storage due to {err:?}.");
-        }
+    if let Err(err) = wallet.store().await {
+        println!("Failed to store wallet: {err:?}");
+    } else {
+        println!("Successfully stored wallet with new balance {new_balance:?}.");
     }
 
-    Ok(())
+    let dbc_id = new_dbc.id();
+    wallet.store_created_dbc(new_dbc.clone()).await?;
+    println!("Successfully stored new dbc ({dbc_id:?}) to wallet dir. It can now be sent to the storage nodes when uploading paid chunks.");
+
+    Ok((new_dbc, proofs))
 }

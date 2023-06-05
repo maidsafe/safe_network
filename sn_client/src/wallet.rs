@@ -11,17 +11,14 @@ use super::Client;
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
     client_transfers::TransferOutputs,
+    payment_proof::{build_payment_proofs, PaymentProofsMap},
     wallet::{Error, LocalWallet, Result},
 };
 
 use bls::SecretKey;
 use futures::future::join_all;
-use merkletree::{
-    merkle::{next_pow2, MerkleTree},
-    proof::Proof,
-    store::VecStore,
-};
 use sn_dbc::{Dbc, PublicAddress, Token};
+
 use std::iter::Iterator;
 
 /// A wallet client can be used to send and
@@ -77,90 +74,21 @@ impl WalletClient {
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = &NetworkAddress>,
-    ) -> Result<(Dbc, Vec<Proof<[u8; 32]>>)> {
-        // FIXME: calculate the amount to pay to each node, perhaps just 1 nano to begin with.
+    ) -> Result<(Dbc, PaymentProofsMap)> {
+        // TODO: calculate the amount to pay to each node, perhaps just 1 nano to begin with.
         let amount = Token::from_nano(1);
 
-        // Let's build the Merkle-tree from list of addresses to obtain the reason-hash
-        let mut addrs: Vec<_> = content_addrs
-            .map(|addr| {
-                let mut arr = [0; 32];
-                arr.copy_from_slice(&addr.as_bytes());
-                arr
-            })
-            .collect();
+        // FIXME: calculate closest nodes to pay for storage, we are now just burning the output amount.
+        let to = vec![(amount, PublicAddress::new(SecretKey::random().public_key()))];
 
-        // Merkletree requires the number of leaves to be a power of 2, and at least 2 leaves.
-        let num_of_leaves = usize::max(2, next_pow2(addrs.len()));
-        println!(">> ADD LEAVES?? {} - {}", addrs.len(), num_of_leaves);
-        for _ in addrs.len()..num_of_leaves {
-            // fill it up with blank value leafs
-            addrs.push([0; 32]);
-        }
+        // Let's build the payment proofs for list of content addresses
+        let (reason_hash, payment_proofs) = build_payment_proofs(content_addrs)
+            .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
 
-        let tree =
-            MerkleTree::<[u8; 32], Sha256Hasher, VecStore<_>>::new(addrs.clone().into_iter())
-                .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
-
-        println!(">> TREE ({num_of_leaves} leaves): {:?}", tree);
-        let mut proofs = vec![];
-        for (index, orig) in addrs.into_iter().enumerate() {
-            let leaf = tree.read_at(index).unwrap();
-            println!(">> LEAF {index}: {leaf:?}");
-
-            let proof = tree
-                .gen_proof(index)
-                .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
-            println!(">> PROOF for {index}: {proof:?}");
-            proofs.push(proof.clone());
-
-            // <SECTION TO BE REMOVED>
-            println!(">>=== ORIG {index}: {orig:?}");
-
-            let mut hasher = Sha256Hasher::default();
-            let leaf_to_validate = hasher.leaf(orig);
-            println!(">>=== LEAF from Chunk {index}: {leaf_to_validate:?}");
-
-            use typenum::{UInt, UTerm, B0, B1};
-            let proof: Proof<[u8; 32], UInt<UInt<UTerm, B1>, B0>> =
-                Proof::new::<UTerm, UTerm>(None, proof.lemma().to_vec(), proof.path().to_vec())
-                    .unwrap();
-
-            println!(">>=== PROOF RECEIVED for Chunk: {proof:?}");
-
-            let validated = if leaf_to_validate == proof.item() {
-                let proof_validated = proof.validate::<Sha256Hasher>().unwrap();
-                println!(">> LEAF matched!. PROOF validated? {proof_validated}");
-
-                let root = proof.root();
-                let root_matched = root == tree.root();
-                println!(">> ROOT matched {index} ?: {root:?} ==> {root_matched}");
-
-                proof_validated && root_matched
-            } else {
-                println!(">> LEAF doesn't match");
-                false
-            };
-
-            println!(">> VALIDATED WITH ORIG {index}: {validated}");
-
-            println!();
-            // </ SECTION TO BE REMOVED>
-        }
-
-        // The reason hash is set to be the root of the merkle-tree of chunks to pay for
-        let reason_hash = tree.root().into();
-
-        // FIXME: calculate closest nodes to pay for storage
-        let to = PublicAddress::new(SecretKey::random().public_key());
-
-        let transfer = self
-            .wallet
-            .local_send(vec![(amount, to)], Some(reason_hash))
-            .await?;
+        let transfer = self.wallet.local_send(to, Some(reason_hash)).await?;
 
         match &transfer.created_dbcs[..] {
-            [info, ..] => Ok((info.dbc.clone(), proofs)),
+            [info, ..] => Ok((info.dbc.clone(), payment_proofs)),
             [] => Err(Error::CouldNotSendTokens(
                 "No DBCs were returned from the wallet.".into(),
             )),
@@ -252,43 +180,4 @@ pub async fn send(from: LocalWallet, amount: Token, to: PublicAddress, client: &
         .expect("Created dbc shall be successfully stored.");
 
     new_dbc
-}
-
-use merkletree::hash::Algorithm;
-use tiny_keccak::{Hasher, Sha3};
-
-struct Sha256Hasher {
-    engine: Sha3,
-}
-
-impl Default for Sha256Hasher {
-    fn default() -> Self {
-        Self {
-            engine: Sha3::v256(),
-        }
-    }
-}
-
-impl std::hash::Hasher for Sha256Hasher {
-    fn finish(&self) -> u64 {
-        // merkletree::Algorithm trait is not calling this as per its doc:
-        // https://docs.rs/merkletree/latest/merkletree/hash/trait.Algorithm.html
-        error!(
-            "Hasher's contract (finish function is supposedly not used) is deliberately broken by design"
-        );
-        0
-    }
-
-    fn write(&mut self, bytes: &[u8]) {
-        self.engine.update(bytes)
-    }
-}
-
-impl Algorithm<[u8; 32]> for Sha256Hasher {
-    fn hash(&mut self) -> [u8; 32] {
-        let sha3 = self.engine.clone();
-        let mut hash = [0u8; 32];
-        sha3.finalize(&mut hash);
-        hash
-    }
 }

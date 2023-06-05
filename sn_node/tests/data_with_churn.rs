@@ -267,7 +267,7 @@ fn store_chunks_task(client: Client, content: ContentList, churn_period: Duratio
             println!("Storing Chunk at {addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match file_api.upload(bytes).await {
+            match file_api.upload(bytes, &BTreeMap::default()).await {
                 Ok(_) => content
                     .write()
                     .await

@@ -685,17 +685,15 @@ mod tests {
     use super::SwarmDriver;
     use crate::{MsgResponder, NetworkEvent};
     use assert_matches::assert_matches;
-    use bls::SecretKey;
     use bytes::Bytes;
     use eyre::{eyre, Result};
     use rand::{thread_rng, Rng};
     use sn_logging::init_test_logger;
     use sn_protocol::{
-        messages::{Cmd, CmdResponse, PaymentProof, Request, Response},
+        messages::{Cmd, CmdResponse, Hash, PaymentProof, Request, Response},
         storage::Chunk,
     };
-    use std::path::Path;
-    use std::{net::SocketAddr, time::Duration};
+    use std::{net::SocketAddr, path::Path, time::Duration};
 
     #[tokio::test]
     async fn msg_to_self_should_not_error_out() -> Result<()> {
@@ -730,7 +728,7 @@ mod tests {
         let req = Request::Cmd(Cmd::StoreChunk {
             chunk: Chunk::new(Bytes::copy_from_slice(&random_data)),
             payment: PaymentProof {
-                dbc_id: SecretKey::random().public_key(),
+                reason_hash: Hash::hash(&random_data),
                 lemma: vec![],
                 path: vec![],
             },

@@ -10,6 +10,7 @@ pub(crate) mod register;
 pub(crate) mod wallet;
 
 use clap::Subcommand;
+use wallet::pay_for_storage;
 
 #[derive(Subcommand, Debug)]
 pub(super) enum SubCmd {

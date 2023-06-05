@@ -23,9 +23,6 @@ futures = "~0.3.13"
 itertools = "~0.10.1"
 libp2p = { version="0.51", features = ["identify"] }
 rand = { version = "~0.8.5", features = ["small_rng"] }
-merkletree = "~0.23.0"
-typenum = "1.16.0"
-
 rayon = "~1.5.1"
 self_encryption = "~0.28.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
