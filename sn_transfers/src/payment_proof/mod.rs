@@ -41,6 +41,7 @@ pub fn build_payment_proofs<'a>(
     content_addrs: impl Iterator<Item = &'a NetworkAddress>,
 ) -> Result<(Hash, PaymentProofsMap)> {
     // Let's build the Merkle-tree from list of addresses needed to generate the payment proofs
+    // TODO: bail out if the list is empty
     let mut addrs: Vec<_> = content_addrs
         .map(|addr| {
             let mut arr = MerkleTreeNodesType::default();
@@ -52,8 +53,9 @@ pub fn build_payment_proofs<'a>(
 
     // Merkletree requires the number of leaves to be a power of 2, and at least 2 leaves.
     let num_of_leaves = usize::max(2, next_pow2(addrs.len()));
-    for _ in addrs.len()..num_of_leaves {
-        // fill it up with blank value leafs
+    let num_of_addrs = addrs.len();
+    for _ in num_of_addrs..num_of_leaves {
+        // fill it up with blank value leaves
         addrs.push(MerkleTreeNodesType::default());
     }
 
@@ -66,7 +68,7 @@ pub fn build_payment_proofs<'a>(
     let reason_hash = merkletree.root().into();
 
     let mut payment_proofs = BTreeMap::new();
-    for (index, addr) in addrs.into_iter().enumerate() {
+    for (index, addr) in addrs.into_iter().take(num_of_addrs).enumerate() {
         let proof = merkletree
             .gen_proof(index)
             .map_err(|err| Error::GenAuditTrail {
@@ -88,43 +90,162 @@ pub fn build_payment_proofs<'a>(
 }
 
 /// Verify if the payment proof is valid and contains a valid audit trail for the given xorname
-pub fn validate_payment_proof(addr_name: XorName, payment: PaymentProof) -> Result<()> {
+pub fn validate_payment_proof(addr_name: XorName, payment: &PaymentProof) -> Result<()> {
     trace!("Verifying payment proof for chunk store {addr_name:?} ...");
 
     // We build the merkletree leaf value from the received xorname, i.e. hash(xorname).
     // The DBC's reason-hash should match the root of the PaymentProof's audit trail (lemma)
     let mut hasher = Sha256Hasher::default();
     let leaf_to_validate = hasher.leaf(addr_name.0);
-    trace!(">>=== LEAF from Chunk: {leaf_to_validate:?}");
 
-    let proof = BinaryMerkletreeProofType::new::<UTerm, UTerm>(None, payment.lemma, payment.path)
-        .map_err(|err| Error::InvalidAuditTrail(err.to_string()))?;
-
-    trace!(">>=== PROOF RECEIVED for Chunk: {proof:?}");
+    let proof = BinaryMerkletreeProofType::new::<UTerm, UTerm>(
+        None,
+        payment.lemma.clone(),
+        payment.path.clone(),
+    )
+    .map_err(|err| Error::InvalidAuditTrail(err.to_string()))?;
 
     if leaf_to_validate != proof.item() {
-        trace!(">> LEAF doesn't match");
         return Err(Error::AuditTrailItemMismatch(addr_name));
     }
 
-    let proof_validated = proof
+    if !proof
         .validate::<Sha256Hasher>()
-        .map_err(|err| Error::AuditTrailSelfValidation(err.to_string()))?;
-
-    trace!(">> LEAF matched!. PROOF validated? {proof_validated}");
-    if !proof_validated {
+        .map_err(|err| Error::AuditTrailSelfValidation(err.to_string()))?
+    {
         return Err(Error::AuditTrailSelfValidation(
             "inclusion proof validation failed".to_string(),
         ));
     }
 
-    let root: Hash = proof.root().into();
-    let root_matched = root == payment.reason_hash;
-    trace!(">> ROOT matched ?: {root:?} ==> {root_matched}");
-
-    if root_matched {
+    if payment.reason_hash == proof.root().into() {
         Ok(())
     } else {
         Err(Error::ReasonHashMismatch(payment.reason_hash.to_hex()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use eyre::{eyre, Result};
+    use sn_protocol::storage::ChunkAddress;
+    use tiny_keccak::{Hasher, Sha3};
+    use xor_name::XorName;
+
+    // Helper to generate the sha3-256 hash of the provided bytes, with the provided prefix.
+    // We use a prefix since that's what the 'merkletree' crate we use adds to each tree node,
+    // e.g. prefix '0' to leaves and prefix '1' to root node.
+    fn hash(prefix: u8, bytes_l: &[u8], bytes_r: &[u8]) -> [u8; 32] {
+        let mut sha3 = Sha3::v256();
+        sha3.update(&[prefix]);
+        sha3.update(bytes_l);
+        sha3.update(bytes_r);
+        let mut hash = [0u8; 32];
+        sha3.finalize(&mut hash);
+        hash
+    }
+
+    #[test]
+    fn test_payment_proof_basic() -> Result<()> {
+        let name0 = XorName([11; 32]);
+        let name1 = XorName([22; 32]);
+        let name2 = XorName([33; 32]);
+
+        let leaf0 = hash(0, &name0.0, &[]);
+        let leaf1 = hash(0, &name1.0, &[]);
+        let leaf2 = hash(0, &name2.0, &[]);
+        let leaf3 = hash(0, &MerkleTreeNodesType::default(), &[]);
+        let node0 = hash(1, &leaf0, &leaf1);
+        let node1 = hash(1, &leaf2, &leaf3);
+        let root = hash(1, &node0, &node1);
+
+        let addrs = [name0, name1, name2]
+            .into_iter()
+            .map(|name| NetworkAddress::ChunkAddress(ChunkAddress::new(name)))
+            .collect::<Vec<_>>();
+
+        let (reason_hash, payment_proofs) = build_payment_proofs(addrs.iter())?;
+
+        assert_eq!(payment_proofs.len(), addrs.len());
+        assert_eq!(reason_hash, root.into());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_payment_proof_non_power_of_2_input() -> Result<()> {
+        let addrs = [
+            [11; 32], [22; 32], [33; 32], [44; 32], [55; 32], [66; 32], [77; 32], [88; 32],
+        ]
+        .into_iter()
+        .map(|b| NetworkAddress::ChunkAddress(ChunkAddress::new(XorName(b))))
+        .collect::<Vec<_>>();
+
+        for i in 0..addrs.len() {
+            let (_, payment_proofs) = build_payment_proofs(addrs.iter().take(i))?;
+            assert_eq!(payment_proofs.len(), i);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_payment_proof_validation() -> Result<()> {
+        let name0 = XorName([11; 32]);
+        let name1 = XorName([22; 32]);
+        let name2 = XorName([33; 32]);
+
+        let addrs = [name0, name1, name2]
+            .into_iter()
+            .map(|name| NetworkAddress::ChunkAddress(ChunkAddress::new(name)))
+            .collect::<Vec<_>>();
+
+        let (_, payment_proofs) = build_payment_proofs(addrs.iter())?;
+
+        assert_eq!(payment_proofs.len(), addrs.len());
+
+        assert!(
+            matches!(payment_proofs.get(&name0.0), Some(proof) if validate_payment_proof(name0, proof).is_ok())
+        );
+        assert!(
+            matches!(payment_proofs.get(&name1.0), Some(proof) if validate_payment_proof(name1, proof).is_ok())
+        );
+        assert!(
+            matches!(payment_proofs.get(&name2.0), Some(proof) if validate_payment_proof(name2, proof).is_ok())
+        );
+
+        let mut proof = payment_proofs
+            .get(&name2.0)
+            .cloned()
+            .ok_or_else(|| eyre!("Failed to obtain valid payment proof"))?;
+        let invalid_name = XorName([99; 32]);
+        assert!(matches!(
+            validate_payment_proof(invalid_name, &proof),
+            Err(Error::AuditTrailItemMismatch(name)) if name == invalid_name
+        ));
+
+        let mut corrupted_proof = proof.clone();
+        corrupted_proof.lemma[1][0] = 0; // corrupt one byte of the audit trail
+        assert!(matches!(
+            validate_payment_proof(name2, &corrupted_proof),
+            Err(Error::AuditTrailSelfValidation(_))
+        ));
+
+        let mut corrupted_proof = proof.clone();
+        corrupted_proof.lemma.push(name0.0); // corrupt the audit trail by adding some random item
+        assert!(matches!(
+            validate_payment_proof(name2, &corrupted_proof),
+            Err(Error::InvalidAuditTrail(_))
+        ));
+
+        let invalid_reason_hash: Hash = [66; 32].into();
+        proof.reason_hash = invalid_reason_hash; // corrupt the PaymentProof by setting an invalid reason hash value
+        assert!(matches!(
+            validate_payment_proof(name2, &proof),
+            Err(Error::ReasonHashMismatch(hex)) if hex == invalid_reason_hash.to_hex()
+        ));
+
+        Ok(())
     }
 }
