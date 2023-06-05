@@ -105,6 +105,10 @@ jobs:
         timeout-minutes: 25
         run: cargo test --release --package sn_protocol
 
+      - name: Run transfers tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_transfers
+
       - name: Run register tests
         timeout-minutes: 25
         run: cargo test --release --package sn_registers
