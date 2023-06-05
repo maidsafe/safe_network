@@ -27,7 +27,6 @@ color-eyre = "~0.6"
 dirs-next = "~2.0.0"
 hex = "~0.4.3"
 libp2p = { version="0.51", features = ["identify", "kad"] }
-sn_build_info= { path="../sn_build_info", version="0.1.0" }
 sn_client = { path = "../sn_client", version = "0.85.0" }
 sn_dbc = { version = "19.0.0", features = ["serdes"] }
 sn_transfers = { path = "../sn_transfers", version = "0.1.0" }
@@ -39,3 +38,6 @@ tracing = { version = "~0.1.26" }
 tracing-core = "0.1.30"
 walkdir = "2.3.1"
 xor_name = "5.0.0"
+
+[build-dependencies]
+sn_build_info = { path="../sn_build_info", version="0.1.0" }

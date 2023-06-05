@@ -14,7 +14,6 @@ mod subcommands;
 
 use crate::cli::Opt;
 use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wallet_cmds, SubCmd};
-use sn_build_info::git_hash;
 use sn_client::Client;
 use sn_logging::init_logging;
 #[cfg(feature = "metrics")]
@@ -43,7 +42,8 @@ async fn main() -> Result<()> {
 
     info!("Full client logs will be written to {:?}", tmp_dir);
     println!("Instantiating a SAFE client...");
-    println!("Current build's git commit hash: {}", git_hash());
+    println!("Current build's git commit hash: {}", env!("GIT_HASH"));
+    debug!("Current build's git commit hash: {}", env!("GIT_HASH"));
 
     let secret_key = bls::SecretKey::random();
     let peers = peers_from_opts_or_env(&opt.peers)?;
