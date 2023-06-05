@@ -242,7 +242,7 @@ impl Node {
                 debug!("That's a store chunk in for :{addr_name:?}");
 
                 // Let's first make sure the payment proof is valid for the chunk's name
-                let resp = match validate_payment_proof(addr_name, payment) {
+                let resp = match validate_payment_proof(addr_name, &payment) {
                     Err(err) => {
                         debug!("Chunk payment proof deemed invalid: {err:?}");
                         CmdResponse::StoreChunk(Err(ProtocolError::InvalidPaymentProof {
