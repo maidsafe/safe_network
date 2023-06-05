@@ -5,18 +5,9 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-use std::process::Command;
+use sn_build_info::pre_build_set_git_commit_env;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let output = Command::new("git")
-        .args(["rev-parse", "HEAD"])
-        .output()
-        .expect("Failed to execute git command");
-
-    let git_hash = String::from_utf8(output.stdout).unwrap().trim().to_string();
-
-    // Set the Git hash as an environment variable
-    println!("cargo:rustc-env=GIT_HASH={}", git_hash);
-
+    pre_build_set_git_commit_env()?;
     Ok(())
 }

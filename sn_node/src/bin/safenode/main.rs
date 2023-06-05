@@ -11,7 +11,6 @@ extern crate tracing;
 
 mod rpc;
 
-use sn_build_info::git_hash;
 use sn_logging::init_logging;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
@@ -125,7 +124,7 @@ fn main() -> Result<()> {
         (rt, guard)
     };
 
-    debug!("Current build's git commit hash: {}", git_hash());
+    debug!("Current build's git commit hash: {}", env!("GIT_HASH"));
 
     let root_dir = get_root_dir_path(opt.root_dir)?;
     let log_dir = if let Some(path) = opt.log_dir {
