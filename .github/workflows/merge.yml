@@ -60,19 +60,20 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Check the whole workspace can build
-        run: cargo build --all-targets --all-features
-
+      
       - name: Check formatting
         run: cargo fmt --all -- --check
-
+      
       - shell: bash
         run: cargo clippy --all-targets --all-features -- -Dwarnings
-
+      
       - name: Check documentation
         # Deny certain `rustdoc` lints that are unwanted.
         # See https://doc.rust-lang.org/rustdoc/lints.html for lints that are 'warning' by default.
         run: RUSTDOCFLAGS="--deny=warnings" cargo doc --no-deps
+
+      - name: Check the whole workspace can build
+        run: cargo build --all-targets --all-features
 
   unit:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
