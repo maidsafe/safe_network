@@ -269,7 +269,9 @@ impl SwarmDriver {
         let identify = {
             let cfg =
                 libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                    .with_agent_version(identify_version);
+                    .with_agent_version(identify_version)
+                    // Default in future libp2p version. (TODO: check if default already)
+                    .with_initial_delay(Duration::from_secs(0));
             libp2p::identify::Behaviour::new(cfg)
         };
 

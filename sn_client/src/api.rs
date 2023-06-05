@@ -37,6 +37,9 @@ use xor_name::XorName;
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(10);
 
+/// The initial rounds of `get_random` allowing client to fill up the RT.
+const INITIAL_GET_RANDOM_ROUNDS: usize = 5;
+
 impl Client {
     /// Instantiate a new client.
     pub async fn new(signer: SecretKey, peers: Option<Vec<(PeerId, Multiaddr)>>) -> Result<Self> {
@@ -106,36 +109,43 @@ impl Client {
                         if let Err(err) = client_clone.handle_network_event(the_event) {
                             warn!("Error handling network event: {err}");
                         }
-
-                        continue;
                     }
                     Err(_elapse_err) => {
-                        if cfg!(feature = "inactive-client-redials") {
-                            must_dial_network = true;
-                            info!("Inactive client for {INACTIVITY_TIMEOUT:?}, will attempt to dial the network again");
-                            println!("Inactive client for {INACTIVITY_TIMEOUT:?}, will attempt to dial the network again");
-                        } else if let Err(error) = client_clone
+                        if let Err(error) = client_clone
                             .events_channel
                             .broadcast(ClientEvent::InactiveClient(INACTIVITY_TIMEOUT))
                         {
                             error!("Error broadcasting inactive client event: {error}");
                         }
-
-                        continue;
                     }
                 }
             }
         });
 
-        if let Ok(event) = client_events_rx.recv().await {
-            match event {
-                ClientEvent::ConnectedToNetwork => {
+        loop {
+            let mut rng = rand::thread_rng();
+            // Carry out 5 rounds of random get to fill up the RT at the begginning.
+            for _ in 0..INITIAL_GET_RANDOM_ROUNDS {
+                let random_target = ChunkAddress::new(XorName::random(&mut rng));
+                let _ = client.get_chunk(random_target).await;
+            }
+            match client_events_rx.recv().await {
+                Ok(ClientEvent::ConnectedToNetwork) => {
                     info!("Client connected to the Network.");
                     println!("Client successfully connected to the Network.");
+                    break;
                 }
-                ClientEvent::InactiveClient(timeout) => {
-                    error!("Inactive client for {timeout:?}, inactive-client-redial is not set, and so shutting down");
-                    return Err(Error::InactiveClient(timeout));
+                Ok(ClientEvent::InactiveClient(timeout)) => {
+                    let random_target = ChunkAddress::new(XorName::random(&mut rng));
+                    debug!("No ClientEvent activity in the past {timeout:?}, performing a random get_chunk query to target: {random_target:?}");
+                    println!("Client not having enough peers detected after {timeout:?}, performing one more round of network scanning");
+                    let _ = client.get_chunk(random_target).await;
+                    continue;
+                }
+                Err(err) => {
+                    error!("Unexpected error during client startup {err:?}");
+                    println!("Unexpected error during client startup {err:?}");
+                    return Err(err);
                 }
             }
         }
@@ -161,6 +171,11 @@ impl Client {
                     if peers_added >= K_VALUE {
                         self.events_channel
                             .broadcast(ClientEvent::ConnectedToNetwork)?;
+                    } else {
+                        println!(
+                            "Client waiting for fully connected to newtork, progression ({}/{})",
+                            self.peers_added, K_VALUE
+                        );
                     }
                 }
                 self.peers_added += 1;

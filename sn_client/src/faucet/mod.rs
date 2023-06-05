@@ -3,7 +3,7 @@ use crate::Client;
 
 use sn_dbc::{Dbc, PublicAddress, Token};
 use sn_transfers::dbc_genesis::{create_faucet_wallet, load_genesis_wallet};
-use sn_transfers::wallet::{DepositWallet, LocalWallet, VerifyingClient, Wallet};
+use sn_transfers::wallet::LocalWallet;
 
 /// Returns a dbc with the requested number of tokens, for use by E2E test instances.
 pub async fn get_tokens_from_faucet(amount: Token, to: PublicAddress, client: &Client) -> Dbc {
