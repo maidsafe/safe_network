@@ -9,7 +9,7 @@
 use super::Client;
 
 use sn_transfers::{
-    client_transfers::TransactionOutputs,
+    client_transfers::TransferOutputs,
     wallet::{Error, LocalWallet, Result},
 };
 
@@ -26,7 +26,7 @@ pub struct WalletClient {
     /// We maintain the order they were added in, as to republish
     /// them in the correct order, in case any later spend was
     /// dependent on an earlier spend.
-    unconfirmed_txs: Vec<TransactionOutputs>,
+    unconfirmed_txs: Vec<TransferOutputs>,
 }
 
 impl WalletClient {
@@ -86,7 +86,7 @@ impl WalletClient {
 }
 
 impl Client {
-    pub async fn send(&self, transfer: TransactionOutputs) -> Result<()> {
+    pub async fn send(&self, transfer: TransferOutputs) -> Result<()> {
         let mut tasks = Vec::new();
         for spend_request in &transfer.all_spend_requests {
             tasks.push(self.network_store_spend(spend_request.clone()));

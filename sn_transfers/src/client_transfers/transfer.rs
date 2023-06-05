@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{CreatedDbc, Error, Inputs, Result, SpendRequest, TransactionOutputs};
+use super::{CreatedDbc, Error, Inputs, Result, SpendRequest, TransferOutputs};
 
 use sn_dbc::{
     rng, Dbc, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedInput, Token,
@@ -32,7 +32,7 @@ pub(crate) fn create_transfer(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
     recipients: Vec<(Token, DbcIdSource)>,
     change_to: PublicAddress,
-) -> Result<TransactionOutputs> {
+) -> Result<TransferOutputs> {
     // We need to select the necessary number of dbcs from those that we were passed.
     let selected_inputs = select_inputs(available_dbcs, recipients, change_to)?;
     create_transfer_with(selected_inputs)
@@ -121,7 +121,7 @@ fn verify_amounts(total_input_amount: Token, total_output_amount: Token) -> Resu
 /// To do that, the `signed_spends` of each new dbc, has to be uploaded
 /// to the network. When those same signed spends can be retrieved from
 /// enough peers in the network, the transaction will be completed.
-fn create_transfer_with(selected_inputs: Inputs) -> Result<TransactionOutputs> {
+fn create_transfer_with(selected_inputs: Inputs) -> Result<TransferOutputs> {
     let Inputs {
         dbcs_to_spend,
         recipients,
@@ -218,7 +218,7 @@ fn create_transfer_with(selected_inputs: Inputs) -> Result<TransactionOutputs> {
         }
     });
 
-    Ok(TransactionOutputs {
+    Ok(TransferOutputs {
         tx_hash,
         created_dbcs,
         change_dbc,
