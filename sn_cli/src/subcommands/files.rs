@@ -6,11 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::pay_for_storage;
+
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
 use sn_client::{Client, Files};
-use sn_protocol::{messages::PaymentProof, storage::ChunkAddress};
+use sn_protocol::storage::ChunkAddress;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -76,6 +78,8 @@ async fn upload_files(files_path: PathBuf, client: Client, root_dir: &Path) -> R
     let file_names_path = root_dir.join("uploaded_files");
     let mut chunks_to_fetch = Vec::new();
 
+    let (_dbc, payment_proofs) = pay_for_storage(&client, root_dir, &files_path).await?;
+
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
             let file = fs::read(entry.path())?;
@@ -92,25 +96,7 @@ async fn upload_files(files_path: PathBuf, client: Client, root_dir: &Path) -> R
 
             println!("Storing file {file_name:?} of {} bytes..", bytes.len());
 
-            // TODO: make a single payment for all files?
-            let wallet = sn_domain::wallet::LocalWallet::load_from(root_dir).await?;
-            let mut wallet_client = sn_client::WalletClient::new(client.clone(), wallet);
-            let (_, chunks) = file_api.chunk_bytes(bytes.clone())?;
-            let chunks_addrs: Vec<_> = chunks
-                .iter()
-                .map(|c| sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*c.name())))
-                .collect();
-
-            let (dbc, proofs) = wallet_client.pay_for_storage(chunks_addrs.iter()).await?;
-
-            // FIXME: provide the correct lemma and path for the current chunk being uploaded
-            let payment = PaymentProof {
-                dbc_id: bls::PublicKey::from_bytes(dbc.public_address().to_bytes())?,
-                lemma: proofs[0].lemma().to_vec(),
-                path: proofs[0].path().to_vec(),
-            };
-
-            match file_api.upload(bytes, payment).await {
+            match file_api.upload(bytes, &payment_proofs).await {
                 Ok(address) => {
                     // Output address in hex string.
                     println!(

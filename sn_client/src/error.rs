@@ -8,7 +8,10 @@
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
-use sn_protocol::storage::registers::{Entry, EntryHash};
+use sn_protocol::storage::{
+    registers::{Entry, EntryHash},
+    ChunkAddress,
+};
 use std::collections::BTreeSet;
 use std::time::Duration;
 use thiserror::Error;
@@ -57,4 +60,7 @@ pub enum Error {
         Entries hashes of branches are: {0:?}"
     )]
     ContentBranchDetected(BTreeSet<(EntryHash, Entry)>),
+
+    #[error("Payment proof not provided for uploading Chunk: {0:?}")]
+    MissingPaymentProof(ChunkAddress),
 }
