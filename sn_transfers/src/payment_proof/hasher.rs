@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::MerkleTreeNodesType;
+
 use merkletree::hash::Algorithm;
 use tiny_keccak::{Hasher, Sha3};
 
@@ -37,10 +39,10 @@ impl std::hash::Hasher for Sha256Hasher {
     }
 }
 
-impl Algorithm<[u8; 32]> for Sha256Hasher {
-    fn hash(&mut self) -> [u8; 32] {
+impl Algorithm<MerkleTreeNodesType> for Sha256Hasher {
+    fn hash(&mut self) -> MerkleTreeNodesType {
         let sha3 = self.engine.clone();
-        let mut hash = [0u8; 32];
+        let mut hash = MerkleTreeNodesType::default();
         sha3.finalize(&mut hash);
         hash
     }
