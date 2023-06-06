@@ -12,16 +12,14 @@ use super::{
     Client,
 };
 
+use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_transfers::payment_proof::PaymentProofsMap;
+
 use bincode::deserialize;
 use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk};
-use sn_protocol::{
-    messages::PaymentProof,
-    storage::{Chunk, ChunkAddress},
-};
-use std::collections::BTreeMap;
 use tokio::task;
 use tracing::trace;
 use xor_name::XorName;
@@ -98,7 +96,7 @@ impl Files {
     pub async fn upload(
         &self,
         bytes: Bytes,
-        payment_proofs: &BTreeMap<[u8; 32], PaymentProof>,
+        payment_proofs: &PaymentProofsMap,
     ) -> Result<ChunkAddress> {
         self.upload_bytes(bytes, payment_proofs, false).await
     }
@@ -111,7 +109,7 @@ impl Files {
     pub async fn upload_and_verify(
         &self,
         bytes: Bytes,
-        payment_proofs: &BTreeMap<[u8; 32], PaymentProof>,
+        payment_proofs: &PaymentProofsMap,
     ) -> Result<ChunkAddress> {
         self.upload_bytes(bytes, payment_proofs, true).await
     }
@@ -145,7 +143,7 @@ impl Files {
     async fn upload_bytes(
         &self,
         bytes: Bytes,
-        payment_proofs: &BTreeMap<[u8; 32], PaymentProof>,
+        payment_proofs: &PaymentProofsMap,
         verify: bool,
     ) -> Result<ChunkAddress> {
         match LargeFile::new(bytes.clone()) {
@@ -164,7 +162,7 @@ impl Files {
     async fn upload_small(
         &self,
         small: SmallFile,
-        payment_proofs: &BTreeMap<[u8; 32], PaymentProof>,
+        payment_proofs: &PaymentProofsMap,
         verify: bool,
     ) -> Result<ChunkAddress> {
         let chunk = package_small(small)?;
@@ -188,7 +186,7 @@ impl Files {
     async fn upload_large(
         &self,
         large: LargeFile,
-        payment_proofs: &BTreeMap<[u8; 32], PaymentProof>,
+        payment_proofs: &PaymentProofsMap,
         verify: bool,
     ) -> Result<ChunkAddress> {
         let (head_address, all_chunks) = encrypt_large(large)?;
