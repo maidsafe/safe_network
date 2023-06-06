@@ -17,3 +17,5 @@ settings.json
 
 # ignore log files
 *.log
+
+bump_version_output
