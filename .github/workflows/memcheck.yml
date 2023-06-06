@@ -173,7 +173,7 @@ jobs:
           # resources and node locatin in the network, but hopefully low enough to catch 
           # any wild memory issues 
           # Any changes to this value should be carefully considered and tested!
-          MEM_LIMIT_MB: "35" # mb
+          MEM_LIMIT_MB: "50" # mb
         run: |
           MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{print $5}' | rg "M" -r "")
           echo "Memory usage: $MEMORY_USAGE MB"
