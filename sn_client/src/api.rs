@@ -173,7 +173,7 @@ impl Client {
                             .broadcast(ClientEvent::ConnectedToNetwork)?;
                     } else {
                         println!(
-                            "Client waiting for fully connected to newtork, progression ({}/{})",
+                            "Client waiting for fully connected to network, progression ({}/{})",
                             self.peers_added, K_VALUE
                         );
                     }
