@@ -729,7 +729,7 @@ mod tests {
             chunk: Chunk::new(Bytes::copy_from_slice(&random_data)),
             payment: Some(PaymentProof {
                 reason_hash: Hash::hash(&random_data),
-                lemma: vec![],
+                audit_trail: vec![],
                 path: vec![],
             }),
         });

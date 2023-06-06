@@ -98,6 +98,9 @@ impl std::fmt::Display for Cmd {
     }
 }
 
+// Data type of each of the nodes in the binary Merkle-tree built for payment proofs
+pub type MerkleTreeNodesType = [u8; 32];
+
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
 pub struct PaymentProof {
     // Reason-hash value set in the input/parent DBCs spent for this storage payment.
@@ -105,7 +108,7 @@ pub struct PaymentProof {
     pub reason_hash: Hash,
     // Merkletree audit trail to prove the Chunk has been paid by the
     // given DBC (using the DBC's 'reason' field)
-    pub lemma: Vec<[u8; 32]>,
+    pub audit_trail: Vec<MerkleTreeNodesType>,
     // Path of the audit trail
     pub path: Vec<usize>,
 }

@@ -13,7 +13,7 @@ use error::{Error, Result};
 use hasher::Sha256Hasher;
 
 use sn_protocol::{
-    messages::{Hash, PaymentProof},
+    messages::{Hash, MerkleTreeNodesType, PaymentProof},
     NetworkAddress,
 };
 
@@ -27,14 +27,26 @@ use std::collections::BTreeMap;
 use typenum::{UInt, UTerm, B0, B1};
 use xor_name::XorName;
 
-// Data type of each of the nodes in the binary Merkle-tree we build payment proofs with
-type MerkleTreeNodesType = [u8; 32];
+// The storage payment proofs are generated using a binary Merkle tree:
+// https://en.wikipedia.org/wiki/Merkle_tree
+//
+// A Merkle tree, also known as hash tree, is a data structure used for data verification and synchronization.
+// It is a tree data structure where each non-leaf node is a hash of it’s child nodes. All the leaf nodes
+// are at the same depth and are as far left as possible. It maintains data integrity and uses hash functions for this purpose.
+//
+// In SAFE, in order to pay the network for data storage, all files are first self-encrypted obtaining
+// all the chunks the user needs to pay for before uploading them. A binary Merkle tree is created using all
+// these chunks' addresses/Xornames, each leaves in the Merkle tree hold the value obtained from hashing each of the
+// Chunk's Xorname/address.
+// The user links the payment made to nodes by setting the Merkle tree root value as the 'Dbc::reason_hash' value. Thanks
+// to the properties of the Merkle tree, the user can then provide the output DBC and audit trail for each of the Chunks
+// being payed with the same DBC and tree, to the storage nodes upon uploading the Chunks for storing them on the network.
 
 // We use a binary Merkle-tree to build payment proofs
 type BinaryMerkletreeProofType = Proof<MerkleTreeNodesType, UInt<UInt<UTerm, B1>, B0>>;
 
 /// Map from content address name to its corresponding PaymentProof
-pub type PaymentProofsMap = BTreeMap<[u8; 32], PaymentProof>;
+pub type PaymentProofsMap = BTreeMap<MerkleTreeNodesType, PaymentProof>;
 
 /// Build a Merkletree to generate the PaymentProofs for each of the content addresses provided
 // TODO: provide fix against https://en.wikipedia.org/wiki/Preimage_attack ?
@@ -81,7 +93,7 @@ pub fn build_payment_proofs<'a>(
             addr,
             PaymentProof {
                 reason_hash,
-                lemma: proof.lemma().to_vec(),
+                audit_trail: proof.lemma().to_vec(),
                 path: proof.path().to_vec(),
             },
         );
@@ -101,7 +113,7 @@ pub fn validate_payment_proof(addr_name: XorName, payment: &PaymentProof) -> Res
 
     let proof = BinaryMerkletreeProofType::new::<UTerm, UTerm>(
         None,
-        payment.lemma.clone(),
+        payment.audit_trail.clone(),
         payment.path.clone(),
     )
     .map_err(|err| Error::InvalidAuditTrail(err.to_string()))?;
@@ -137,12 +149,12 @@ mod tests {
     // Helper to generate the sha3-256 hash of the provided bytes, with the provided prefix.
     // We use a prefix since that's what the 'merkletree' crate we use adds to each tree node,
     // e.g. prefix '0' to leaves and prefix '1' to root node.
-    fn hash(prefix: u8, bytes_l: &[u8], bytes_r: &[u8]) -> [u8; 32] {
+    fn hash(prefix: u8, bytes_l: &[u8], bytes_r: &[u8]) -> MerkleTreeNodesType {
         let mut sha3 = Sha3::v256();
         sha3.update(&[prefix]);
         sha3.update(bytes_l);
         sha3.update(bytes_r);
-        let mut hash = [0u8; 32];
+        let mut hash = MerkleTreeNodesType::default();
         sha3.finalize(&mut hash);
         hash
     }
@@ -227,14 +239,14 @@ mod tests {
         ));
 
         let mut corrupted_proof = proof.clone();
-        corrupted_proof.lemma[1][0] = 0; // corrupt one byte of the audit trail
+        corrupted_proof.audit_trail[1][0] = 0; // corrupt one byte of the audit trail
         assert!(matches!(
             validate_payment_proof(name2, &corrupted_proof),
             Err(Error::AuditTrailSelfValidation(_))
         ));
 
         let mut corrupted_proof = proof.clone();
-        corrupted_proof.lemma.push(name0.0); // corrupt the audit trail by adding some random item
+        corrupted_proof.audit_trail.push(name0.0); // corrupt the audit trail by adding some random item
         assert!(matches!(
             validate_payment_proof(name2, &corrupted_proof),
             Err(Error::InvalidAuditTrail(_))
