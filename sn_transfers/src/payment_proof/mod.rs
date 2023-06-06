@@ -6,6 +6,55 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+//! The storage payment proofs are generated using a binary [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree).
+//!
+//! A Merkle tree, also known as hash tree, is a data structure used for data verification
+//! and synchronization. It is a tree data structure where each non-leaf node is a hash of
+//! it’s child nodes. All the leaf nodes are at the same depth and are as far left as
+//! possible. It maintains data integrity and uses hash functions for this purpose.
+//!
+//! In SAFE, in order to pay the network for data storage, all files are first self-encrypted
+//! obtaining all the chunks the user needs to pay for before uploading them. A binary Merkle
+//! tree is created using all these chunks' addresses/Xornames, each leaf in the Merkle tree
+//! holds the value obtained from hashing each of the Chunk's Xorname/address.
+//!
+//! The following tree depicts how two files A and B, with two chunks each, would be used
+//! to build its the merkle tree:
+//! ```text
+//!                                        [ Root ]
+//!                                   hash(Node0 + Node1)
+//!                                            ^
+//!                                            |
+//!                      *-------------------------------------------*
+//!                      |                                           |
+//!                  [ Node0 ]                                   [ Node1 ]
+//!             hash(Leaf0 + Leaf1)                         hash(Leaf2 + Leaf3)
+//!                      ^                                           ^
+//!                      |                                           |
+//!          *----------------------*                    *----------------------*
+//!          |                      |                    |                      |
+//!      [ Leaf0 ]              [ Leaf1 ]            [ Leaf2 ]              [ Leaf3 ]
+//!  hash(ChunkA_0.addr)    hash(ChunkA_1.addr)  hash(ChunkB_0.addr)    hash(ChunkB_1.addr)
+//!
+//!
+//!          ^                      ^                    ^                      ^
+//!          ^                      ^                    ^                      ^
+//!          |                      |                    |                      |
+//!     [ ChunkA_0 ]           [ ChunkA_1 ]         [ ChunkB_0 ]           [ ChunkB_1 ]
+//!          ^                      ^                    ^                      ^
+//!          |                      |                    |                      |
+//!          *----------------------*                    *----------------------*
+//!                      |                                           |
+//!               self-encryption                             self-encryption
+//!                      |                                           |
+//!                  [ FileA ]                                   [ FileB ]
+//!
+//! The user links the payment made to the storing nodes by setting the Merkle tree root value
+//! as the 'Dbc::reason_hash' value. Thanks to the properties of the Merkle tree, the user can
+//! then provide the output DBC and audit trail for each of the Chunks being payed with the same
+//! DBC and tree, to the storage nodes upon uploading the Chunks for storing them on the network.
+//! ```
+
 mod error;
 mod hasher;
 
@@ -26,21 +75,6 @@ use merkletree::{
 use std::collections::BTreeMap;
 use typenum::{UInt, UTerm, B0, B1};
 use xor_name::XorName;
-
-// The storage payment proofs are generated using a binary Merkle tree:
-// https://en.wikipedia.org/wiki/Merkle_tree
-//
-// A Merkle tree, also known as hash tree, is a data structure used for data verification and synchronization.
-// It is a tree data structure where each non-leaf node is a hash of it’s child nodes. All the leaf nodes
-// are at the same depth and are as far left as possible. It maintains data integrity and uses hash functions for this purpose.
-//
-// In SAFE, in order to pay the network for data storage, all files are first self-encrypted obtaining
-// all the chunks the user needs to pay for before uploading them. A binary Merkle tree is created using all
-// these chunks' addresses/Xornames, each leaves in the Merkle tree hold the value obtained from hashing each of the
-// Chunk's Xorname/address.
-// The user links the payment made to nodes by setting the Merkle tree root value as the 'Dbc::reason_hash' value. Thanks
-// to the properties of the Merkle tree, the user can then provide the output DBC and audit trail for each of the Chunks
-// being payed with the same DBC and tree, to the storage nodes upon uploading the Chunks for storing them on the network.
 
 // We use a binary Merkle-tree to build payment proofs
 type BinaryMerkletreeProofType = Proof<MerkleTreeNodesType, UInt<UInt<UTerm, B1>, B0>>;
