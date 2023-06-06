@@ -173,7 +173,7 @@ impl Client {
                             .broadcast(ClientEvent::ConnectedToNetwork)?;
                     } else {
                         println!(
-                            "Client waiting for fully connected to network, progression ({}/{})",
+                            "Waiting for sufficient peer connections ({}/{})",
                             self.peers_added, K_VALUE
                         );
                     }
