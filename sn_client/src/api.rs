@@ -179,6 +179,8 @@ impl Client {
         match event {
             // Clients do not handle requests.
             NetworkEvent::RequestReceived { .. } => {}
+            // Clients do not store Records
+            NetworkEvent::PutRequest { .. } => {}
             // We do not listen on sockets.
             NetworkEvent::NewListenAddr(_) => {}
             // We are not doing AutoNAT and don't care about our status.

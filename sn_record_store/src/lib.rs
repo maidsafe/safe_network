@@ -81,7 +81,6 @@ impl Default for DiskBackedRecordStoreConfig {
 
 impl DiskBackedRecordStore {
     /// Creates a new `DiskBackedStore` with a default configuration.
-    #[allow(dead_code)]
     pub fn new(local_id: PeerId) -> Self {
         Self::with_config(local_id, Default::default())
     }
@@ -95,6 +94,11 @@ impl DiskBackedRecordStore {
             replication_start: Instant::now(),
             distance_range: None,
         }
+    }
+
+    /// Returns `true` if the `Key` is present locally
+    pub fn contains(&self, key: &Key) -> bool {
+        self.records.contains(key)
     }
 
     /// Retains the records satisfying a predicate.
@@ -177,10 +181,6 @@ impl DiskBackedRecordStore {
         }
     }
 
-    pub fn write_to_local(&mut self, record: Record) -> Result<()> {
-        self.put(record)
-    }
-
     fn storage_pruning(&mut self) {
         if let Some(distance_bar) = self.distance_range {
             let our_kbucket_key = self.local_key.clone();
@@ -220,17 +220,6 @@ impl RecordStore for DiskBackedRecordStore {
                 r.value.len()
             );
             return Err(Error::ValueTooLarge);
-        }
-
-        // todo: the key is not tied to the value it contains, hence the value can be overwritten
-        // (incase of dbc double spends etc), hence need to deal with those.
-        // Maybe implement a RecordHeader to store the type of data we're storing?
-        if self.records.contains(&r.key) {
-            debug!(
-                "Record with key {:?} already exists, not overwriting.",
-                r.key
-            );
-            return Ok(());
         }
 
         let num_records = self.records.len();

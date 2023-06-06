@@ -15,16 +15,14 @@ use crate::{
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, sort_peers_by_key,
     CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
 };
-
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{
-        kbucket::Key as KBucketKey, record::Key as RecordKey, GetRecordOk, Kademlia, KademliaEvent,
-        QueryResult, K_VALUE,
+        kbucket::Key as KBucketKey, record::Key as RecordKey, GetRecordOk, InboundRequest,
+        Kademlia, KademliaEvent, QueryResult, Record, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
@@ -122,6 +120,8 @@ pub enum NetworkEvent {
         /// The channel to send the `Response` through
         channel: MsgResponder,
     },
+    /// Incoming PUT record from a peer
+    PutRequest { peer: PeerId, record: Record },
     /// Emitted when the DHT is updated
     PeerAdded(PeerId),
     /// Started listening on a new address
@@ -407,6 +407,20 @@ impl SwarmDriver {
                         .send(NetworkEvent::PeerAdded(peer))
                         .await?;
                     self.try_trigger_replication(&peer, false);
+                }
+            }
+            KademliaEvent::InboundRequest {
+                request: InboundRequest::PutRecord { source, record, .. },
+            } => {
+                if let Some(record) = record {
+                    self.event_sender
+                        .send(NetworkEvent::PutRequest {
+                            peer: source,
+                            record,
+                        })
+                        .await?
+                } else {
+                    warn!("The PutRecord KademliaEvent should include a Record. Enable record filtering via the kad config")
                 }
             }
             other => {

@@ -41,6 +41,7 @@ use libp2p::{
 
 use libp2p::{
     identity::Keypair,
+    kad::KademliaStoreInserts,
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
@@ -156,6 +157,8 @@ impl SwarmDriver {
             .disjoint_query_paths(true)
             // Records never expire
             .set_record_ttl(None)
+            // Emit PUT events for validation prior to insertion into the RecordStore.
+            .set_record_filtering(KademliaStoreInserts::FilterBoth)
             // Disable provider records publication job
             .set_provider_publication_interval(None);
 
@@ -571,15 +574,43 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
-    /// Put data to KAD network as record
-    pub async fn put_data_as_record(&self, record: Record) -> Result<()> {
+    /// Get `Record` from the local RecordStore
+    pub async fn get_local_record(&self, key: &RecordKey) -> Result<Option<Record>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetLocalRecord {
+            key: key.clone(),
+            sender,
+        })
+        .await?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
+    /// Put `Record` to the local RecordStore
+    pub async fn put_local_record(&self, record: Record) -> Result<()> {
         debug!(
             "Putting data as record, for {:?} - length {:?}",
             record.key,
             record.value.len()
         );
-        self.send_swarm_cmd(SwarmCmd::PutProvidedDataAsRecord { record })
+        self.send_swarm_cmd(SwarmCmd::PutLocalRecord { record })
             .await
+    }
+
+    /// Returns true if a RecordKey is present locally in the RecordStore
+    pub async fn is_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::RecordStoreHasKey {
+            key: key.clone(),
+            sender,
+        })
+        .await?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
     /// Notify a list of keys within a holder to be replicated to self.
