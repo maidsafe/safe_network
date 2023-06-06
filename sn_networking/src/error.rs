@@ -15,7 +15,7 @@ use libp2p::{
     TransportError,
 };
 use sn_protocol::messages::Response;
-use std::io;
+use std::{io, path::PathBuf};
 use thiserror::Error;
 use tokio::sync::{mpsc, oneshot};
 
@@ -36,6 +36,12 @@ pub enum Error {
 
     #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0}")]
     OutgoingResponseDropped(Response),
+
+    #[error("Could not create storage dir: {path:?}, error: {source}")]
+    FailedToCreateRecordStoreDir {
+        path: PathBuf,
+        source: std::io::Error,
+    },
 
     #[error("I/O error: {0}")]
     Io(#[from] io::Error),
