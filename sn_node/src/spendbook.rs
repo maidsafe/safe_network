@@ -6,17 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_networking::{close_group_majority, Network};
-use sn_protocol::error::{Error, Result};
-use sn_protocol::messages::{Query, QueryResponse, Request, Response};
-use sn_protocol::storage::{DbcAddress, RecordHeader, RecordKind};
-use sn_protocol::NetworkAddress;
-use sn_transfers::dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC};
-
-use std::collections::{BTreeMap, BTreeSet};
-
+use itertools::Itertools;
 use libp2p::kad::{Record, RecordKey};
-use sn_dbc::{DbcTransaction, SignedSpend};
+use sn_dbc::{DbcId, DbcTransaction, SignedSpend};
+use sn_networking::{close_group_majority, Network};
+use sn_protocol::{
+    error::{Error, Result},
+    messages::{Query, QueryResponse, Request, Response},
+    storage::{DbcAddress, RecordHeader, RecordKind},
+    NetworkAddress,
+};
+use sn_transfers::dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 /// The entitiy managing spends in a Node
 #[derive(Default, Clone)]
@@ -128,7 +129,7 @@ impl SpendBook {
                 expires: None,
             }
         };
-        if let Err(e) = network.put_data_as_record(kademlia_record).await {
+        if let Err(e) = network.put_local_record(kademlia_record).await {
             error!("Failed to store spend {dbc_id:?}: {e:?}");
             return Err(Error::FailedToStoreSpend(dbc_addr));
         }
@@ -211,7 +212,10 @@ async fn verify_spend_dbc(network: &Network, signed_spend: &SignedSpend) -> Resu
 
 /// Fetch all parent spends from the network and check them
 /// they should all exist as valid spends for this current spend attempt to be valid
-async fn check_parent_spends(network: &Network, signed_spend: &SignedSpend) -> Result<()> {
+pub(crate) async fn check_parent_spends(
+    network: &Network,
+    signed_spend: &SignedSpend,
+) -> Result<()> {
     trace!("Getting parent_spends for {:?}", signed_spend.dbc_id());
     let parent_spends = match get_parent_spends(network, &signed_spend.spent_tx()).await {
         Ok(parent_spends) => parent_spends,
@@ -409,4 +413,59 @@ async fn get_spend_from_peers(network: &Network, address: DbcAddress) -> Result<
         address.name()
     );
     Ok(spends)
+}
+
+// ########################################3
+
+// collects all the unique dbcs for the dbc_id
+pub(crate) async fn get_spend_2(network: &Network, dbc_id: DbcId) -> Result<HashSet<SignedSpend>> {
+    let address = DbcAddress::from_dbc_id(&dbc_id);
+    let request = Request::Query(Query::GetSpend(address));
+    let responses = network.node_send_to_closest(&request).await.map_err(|e| {
+        warn!("Error while fetching spends on the Network for {address:?}: {e:?}");
+        Error::FailedToGetSpend(address)
+    })?;
+
+    // Get all the distinct spends
+    let mut spends = HashSet::new();
+    responses.into_iter().flatten().for_each(|resp| {
+        match resp {
+            Response::Query(QueryResponse::GetDbcSpend(Ok(signed_spend))) => {
+                let _ = spends.insert(signed_spend);
+            }
+            Response::Query(QueryResponse::GetDbcSpend(Err(Error::DoubleSpendAttempt(
+                spend_one,
+                spend_two,
+            )))) => {
+                warn!("Double spend attempt reported by peer: {spend_one:?} and {spend_two:?}");
+                let _ = spends.insert(*spend_one);
+                let _ = spends.insert(*spend_two);
+            }
+            Response::Query(QueryResponse::GetDbcSpend(Err(e))) => {
+                warn!("Peer sent us an error while getting spend from network: {e:?}");
+            }
+            _ => {
+                // TODO check what it means if we get a different response type
+            }
+        }
+    });
+    Ok(spends)
+}
+
+// check for double spends if len > 1
+// if we have more than 2 valid spends, retain just 2 of them
+pub(super) fn validate_spends(
+    spends: HashSet<SignedSpend>,
+    valid_dbc_id: DbcId,
+) -> Vec<SignedSpend> {
+    spends
+        .into_iter()
+        // make sure the dbc_id and the signature are valid.
+        .filter(|spend| {
+            spend.dbc_id() == &valid_dbc_id && spend.verify(spend.spent_tx_hash()).is_ok()
+        })
+        // must be ordered to just store 2 of them.
+        .sorted_by(|a, b| a.cmp(b))
+        .take(2)
+        .collect()
 }
