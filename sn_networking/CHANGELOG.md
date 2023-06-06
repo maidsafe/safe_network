@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/jacderida/safe_network/compare/sn_networking-v0.1.0...sn_networking-v0.1.1) - 2023-06-06
+
+### Added
+- refactor replication flow to using pull model
+- *(node)* remove delay for Identify
+
+### Other
+- *(node)* return proper error if failing to create storage dir
+
 ## [0.1.0](https://github.com/jacderida/safe_network/releases/tag/sn_networking-v0.1.0) - 2023-06-04
 
 ### Added
