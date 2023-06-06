@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::MerkleTreeNodesType;
+use sn_protocol::messages::MerkleTreeNodesType;
 
 use merkletree::hash::Algorithm;
 use tiny_keccak::{Hasher, Sha3};
