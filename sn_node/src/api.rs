@@ -148,6 +148,12 @@ impl Node {
                 let _handle =
                     spawn(async move { stateless_node_copy.handle_request(req, channel).await });
             }
+            NetworkEvent::PutRequest { peer, record } => {
+                debug!("Got a Record PutRequest from {peer:?}");
+                if let Err(err) = self.validate_and_store_record(record).await {
+                    error!("Error while validating PutRequest {err:?}");
+                }
+            }
             NetworkEvent::PeerAdded(peer_id) => {
                 debug!("PeerAdded: {peer_id}");
                 // perform a get_closest query to self on node join. This should help populate the node's RT
@@ -294,7 +300,7 @@ impl Node {
                     }
                 };
 
-                let resp = match self.network.put_data_as_record(record).await {
+                let resp = match self.network.put_local_record(record).await {
                     Ok(()) => {
                         self.events_channel.broadcast(NodeEvent::ChunkStored(addr));
                         CmdResponse::StoreChunk(Ok(()))
