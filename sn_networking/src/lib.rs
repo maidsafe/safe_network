@@ -237,7 +237,12 @@ impl SwarmDriver {
         let kademlia = {
             // Configures the disk_store to store records under the provided path and increase the max record size
             let storage_dir = disk_store_path.unwrap_or(std::env::temp_dir());
-            std::fs::create_dir_all(&storage_dir)?;
+            if let Err(error) = std::fs::create_dir_all(&storage_dir) {
+                return Err(Error::FailedToCreateRecordStoreDir {
+                    path: storage_dir,
+                    source: error,
+                });
+            }
 
             let store_cfg = DiskBackedRecordStoreConfig {
                 max_value_bytes: 1024 * 1024,
