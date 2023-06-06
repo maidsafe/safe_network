@@ -11,7 +11,7 @@ use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 use crate::error::Result;
 
 use libp2p::{
-    kad::{Record, RecordKey},
+    kad::{store::RecordStore, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
@@ -60,10 +60,24 @@ pub enum SwarmCmd {
     PutProvidedDataAsRecord {
         record: Record,
     },
-    /// Get data from the kademlia store
+    /// Get data from the Kad network
     GetData {
         key: RecordKey,
         sender: oneshot::Sender<Result<Vec<u8>>>,
+    },
+    /// Check if the local RecordStore contains the provided key
+    RecordStoreHasKey {
+        key: RecordKey,
+        sender: oneshot::Sender<bool>,
+    },
+    /// Put data to the local RecordStore
+    PutLocalRecord {
+        record: Record,
+    },
+    /// Get data from the local RecordStore
+    GetLocalRecord {
+        key: RecordKey,
+        sender: oneshot::Sender<Option<Record>>,
     },
     GetReplicatedData {
         address: NetworkAddress,
@@ -118,6 +132,32 @@ impl SwarmDriver {
                     warn!("Cannot parse a record_key from {address:?}");
                 }
                 let _ = sender.send(Ok(resp));
+            }
+            SwarmCmd::GetLocalRecord { key, sender } => {
+                let record = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .get(&key)
+                    .map(|rec| rec.into_owned());
+                let _ = sender.send(record);
+            }
+            SwarmCmd::PutLocalRecord { record } => {
+                self.swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .put(record)?;
+            }
+            SwarmCmd::RecordStoreHasKey { key, sender } => {
+                let has_key = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .contains(&key);
+                let _ = sender.send(has_key);
             }
             SwarmCmd::PutProvidedDataAsRecord { record } => {
                 let _ = self
@@ -258,12 +298,7 @@ impl SwarmDriver {
             expires: None,
         };
 
-        let _ = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .store_mut()
-            .write_to_local(record);
+        let _ = self.swarm.behaviour_mut().kademlia.store_mut().put(record);
 
         Ok(())
     }
