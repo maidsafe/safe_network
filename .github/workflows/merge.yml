@@ -366,9 +366,10 @@ jobs:
           # new output folder to avoid linker issues w/ windows
           CARGO_TARGET_DIR: "./churn-target"
           CHUNKS_ONLY: true
-          TEST_DURATION_MINS: 10
+          TEST_DURATION_MINS: 60
+          TEST_CHURN_CYCLES: 6
           SN_LOG: "all"
-        timeout-minutes: 30
+        timeout-minutes: 0
 
       - name: Verify restart of nodes using rg
         shell: bash
