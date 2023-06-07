@@ -281,7 +281,7 @@ impl Node {
             }
             Cmd::Replicate { holder, keys } => {
                 debug!(
-                    "That's a replicate list in from {:?} of {} keys",
+                    "Replicate list received from {:?} of {} keys",
                     holder.as_peer_id(),
                     keys.len()
                 );
