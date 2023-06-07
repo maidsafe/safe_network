@@ -42,7 +42,6 @@ async fn main() -> Result<()> {
 
     println!("Current build's git commit hash: {}", env!("GIT_HASH"));
     debug!("Current build's git commit hash: {}", env!("GIT_HASH"));
-    println!("Starting a SAFE client...");
     info!("Full client logs will be written to {:?}", tmp_dir);
 
     let secret_key = bls::SecretKey::random();
