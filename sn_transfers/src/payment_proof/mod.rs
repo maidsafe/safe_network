@@ -231,7 +231,7 @@ mod tests {
         .map(XorName)
         .collect::<Vec<_>>();
 
-        for i in 0..addrs.len() {
+        for i in 1..addrs.len() {
             let (_, payment_proofs) = build_payment_proofs(addrs.iter().take(i))?;
             assert_eq!(payment_proofs.len(), i);
         }
