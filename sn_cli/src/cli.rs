@@ -14,7 +14,19 @@ use crate::subcommands::SubCmd;
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub(crate) struct Opt {
-    /// Nodes we dial at start to help us get connected to the network. Can be specified multiple times.
+    /// Provide a peer to connect to a public network, using the MultiAddr format.
+    ///
+    /// The MultiAddr format looks like so:
+    ///
+    /// /ip4/13.40.152.226/udp/12000/quic-v1/p2p/12D3KooWRi6wF7yxWLuPSNskXc6kQ5cJ6eaymeMbCRdTnMesPgFx
+    ///
+    /// Noteworthy are the second, fourth, and last parts.
+    ///
+    /// Those are the IP address and UDP port the peer is listening on, and its peer ID, respectively.
+    ///
+    /// Many peers can be provided by using the argument multiple times.
+    ///
+    /// If none are provided, a connection will be attempted to a local network.
     #[clap(long = "peer", global = true)]
     pub peers: Vec<Multiaddr>,
 
