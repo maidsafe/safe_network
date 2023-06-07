@@ -49,7 +49,7 @@ const MAX_PRELICATION_KEYS_PER_REQUEST: usize = 500;
 // Defines how close that a node will trigger repliation.
 // That is, the node has to be among the REPLICATION_RANGE closest to data,
 // to carry out the replication.
-const REPLICATION_RANGE: usize = 3;
+const REPLICATION_RANGE: usize = 8;
 
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "NodeEvent")]
@@ -417,7 +417,7 @@ impl SwarmDriver {
         Ok(())
     }
 
-    // Replication is triggered when the newly added peer or the dead peer was among our closest.
+    /// Replication is triggered when the newly added peer or the dead peer was among our closest.
     fn try_trigger_replication(&mut self, peer: &PeerId, is_dead_peer: bool) {
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         trace!(
