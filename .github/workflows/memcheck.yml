@@ -120,7 +120,7 @@ jobs:
         # then check we have an expected level of replication
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          replication_count=$(rg "That's a replicate chunk in for" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          replication_count=$(rg "Chunk received for replication" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Replicated $replication_count copies"
           replication_attempt_count=$(rg "Replicating chunk" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Carried out $replication_attempt_count attempts"

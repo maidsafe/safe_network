@@ -242,7 +242,7 @@ impl SwarmDriver {
 
     pub(crate) fn replicate_chunk_to_local(&mut self, chunk: Chunk) {
         let addr = *chunk.address();
-        debug!("That's a replicate chunk in for :{:?}", addr.name());
+        debug!("Chunk received for replication: {:?}", addr.name());
 
         // Create a Kademlia record for storage
         let record = Record {
