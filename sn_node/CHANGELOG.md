@@ -5,21 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.83.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.0...sn_node-v0.83.1) - 2023-06-07
-
-### Added
-- attach payment proof when uploading Chunks
-
-### Fixed
-- reduce churn weight to ~1/2mb
-
-### Other
-- *(logs)* enable metrics feature by default
-- log msg text updated
-- making Chunk payment proof optional for now
-- adding unit tests to payment proof utilities
-- moving all payment proofs utilities into sn_transfers crate
-
 ## v0.1.0 (2023-05-04)
 
 ### Chore
