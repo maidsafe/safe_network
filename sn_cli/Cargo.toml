@@ -15,6 +15,7 @@ path="src/main.rs"
 name="safe"
 
 [features]
+default = ["metrics"]
 metrics = ["sn_logging/process-metrics"]
 
 [dependencies]
