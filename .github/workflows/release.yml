@@ -1,11 +1,13 @@
 name: release
 
-# on:
-#   push:
-#     branches:
-#       - main
+on:
+  push:
+    branches:
+      - main
 
 env:
+  RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.11/release-plz-x86_64-unknown-linux-gnu.tar.gz
+  JUST_BIN_URL: https://github.com/casey/just/releases/download/1.13.0/just-1.13.0-x86_64-unknown-linux-musl.tar.gz
   WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
 
 jobs:
@@ -38,8 +40,11 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      # It's quite slow to install just by building it, but here we need a cross-platform solution.
       - shell: bash
-        run: make gha-build-${{ matrix.target }}
+        run: cargo install just
+      - shell: bash
+        run: just build-release-artifacts "${{ matrix.target }}"
       - uses: actions/upload-artifact@main
         with:
           name: safe_network-${{ matrix.target }}
@@ -54,7 +59,7 @@ jobs:
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Release Failed"
 
-  gh_release:
+  release:
     if: |
       github.repository_owner == 'maidsafe' &&
       startsWith(github.event.head_commit.message, 'chore(release):')
@@ -62,7 +67,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: eu-west-2
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@master
@@ -90,157 +98,37 @@ jobs:
           name: safe_network-aarch64-unknown-linux-musl
           path: artifacts/prod/aarch64-unknown-linux-musl/release
 
-      - shell: bash
-        name: package artifacts for release
-        run: |
-          make prepare-deploy
-          make safenode-package-version-artifacts-for-release
-          make safe-package-version-artifacts-for-release
-
-      - shell: bash
-        id: versioning
-        run: |
-          ./resources/scripts/output_versioning_info.sh
-
-      - name: generate release description first pass
+      # It's possible to `cargo install` these tools, but it's very slow to compile on GHA infra.
+      # Therefore we just pull some binaries from the Github Releases.
+      - name: install tools
         shell: bash
         run: |
-          ./resources/scripts/get_release_description.sh > release_description.md
+          curl -L -O $RELEASE_PLZ_BIN_URL
+          tar xvf release-plz-x86_64-unknown-linux-gnu.tar.gz
+          rm release-plz-x86_64-unknown-linux-gnu.tar.gz
+          sudo mv release-plz /usr/local/bin
 
-      # The second pass uses Python to extract the changelog entries for this version.
-      # Python can easily do a string replace and avoid all the pain with newlines you get in Bash.
-      # The script operates on the release_description.md that was generated in the previous step.
-      - name: generate release description second pass
-        shell: bash
-        run: |
-          pip install toml
-          ./resources/scripts/insert_changelog_entry.py
-
-      - name: create github release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.versioning.outputs.gh_release_tag_name }}
-          release_name: ${{ steps.versioning.outputs.gh_release_name }}
-          draft: false
-          prerelease: false
-          body_path: release_description.md
-
-      # There's an action you can use for uploading an asset to a release, but because there are so
-      # many assets, using the 'gh' CLI is much more concise. The 'gh' tool should be on an Actions
-      # build agent by default.
-      - name: upload artifacts as assets
-        shell: bash
-        run: |
-          (
-            cd deploy/prod/safenode
-            ls | xargs gh release upload ${{ steps.versioning.outputs.gh_release_tag_name }}
-          )
-          (
-            cd deploy/prod/safe
-            ls | xargs gh release upload ${{ steps.versioning.outputs.gh_release_tag_name }}
-          )
-
-      - uses: shallwefootball/s3-upload-action@master
-        name: upload safenode artifacts to s3
-        with:
-          aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          aws_bucket: safenode
-          source_dir: deploy/prod/safenode
-          destination_dir: ""
-
-      - uses: shallwefootball/s3-upload-action@master
-        name: upload safe artifacts to s3
-        with:
-          aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          aws_bucket: safe
-          source_dir: deploy/prod/safe
-          destination_dir: ""
-
-      # Now repackage and upload the artifacts using 'latest' for the version.
+          curl -L -O $JUST_BIN_URL
+          mkdir just
+          tar xvf just-1.13.0-x86_64-unknown-linux-musl.tar.gz -C just
+          rm just-1.13.0-x86_64-unknown-linux-musl.tar.gz
+          sudo mv just/just /usr/local/bin
+          rm -rf just
       - shell: bash
-        name: package artifacts for release
         run: |
-          make prepare-deploy
-          make safenode-package-version-artifacts-for-release \
-            SAFENODE_VERSION=latest DEPLOY_PATH=deploy
-          make safe-package-version-artifacts-for-release SAFE_VERSION=latest DEPLOY_PATH=deploy
-
-      - uses: shallwefootball/s3-upload-action@master
-        name: upload safenode artifacts to s3
-        with:
-          aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          aws_bucket: safenode
-          source_dir: deploy/prod/safenode
-          destination_dir: ""
-
-      - uses: shallwefootball/s3-upload-action@master
-        name: upload safe artifacts to s3
-        with:
-          aws_key_id: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          aws_bucket: safe
-          source_dir: deploy/prod/safe
-          destination_dir: ""
-      - name: post notification to slack on failure
-        if: ${{ failure() }}
-        uses: bryannice/gitactions-slack-notification@2.0.0
-        env:
-          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
-          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-          SLACK_TITLE: "Release Failed"
-
-  # publish:
-  #   name: publish
-  #   runs-on: ubuntu-latest
-  #   needs: [gh_release]
-  #   if: |
-  #     github.repository_owner == 'maidsafe' &&
-  #     startsWith(github.event.head_commit.message, 'chore(release):')
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: "0"
-  #     - uses: actions-rs/toolchain@v1
-  #       with:
-  #         profile: minimal
-  #         toolchain: stable
-  #         override: true
-  #     - shell: bash
-  #       id: versioning
-  #       run: |
-  #         ./resources/scripts/output_versioning_info.sh
-  #     # - name: cargo login
-  #     #   run: cargo login ${{ secrets.CRATES_IO_TOKEN }}
-  #     ## We will probably need this one later
-  #     # - name: publish sn_updater
-  #     #   run: |
-  #     #     commit_message="${{ github.event.head_commit.message }}"
-  #     #     if [[ $commit_message == *"sn_updater"* ]]; then
-  #     #       # The sn_updater crate doesn't have any dependencies so we can go ahead and publish.
-  #     #       cd sn_updater && cargo publish --allow-dirty
-  #     #     fi
-  #     - name: publish safenode
-  #       run: |
-  #         commit_message="${{ github.event.head_commit.message }}"
-  #         if [[ $commit_message == *"safenode"* ]]; then
-  #           ./resources/scripts/publish_crate_with_retries.sh "safenode"
-  #         fi
-  #     - name: publish safe
-  #       run: |
-  #         commit_message="${{ github.event.head_commit.message }}"
-  #         if [[ $commit_message == *"safe-"* ]]; then
-  #           ./resources/scripts/publish_crate_with_retries.sh "safe"
-  #         fi
-  #     - name: post notification to slack on failure
-  #       if: ${{ failure() }}
-  #       uses: bryannice/gitactions-slack-notification@2.0.0
-  #       env:
-  #         SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
-  #         SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-  #         SLACK_TITLE: "Release Failed"
+          cargo login ${{ secrets.CRATES_IO_TOKEN }}
+          release-plz release --git-token ${{ secrets.GITHUB_TOKEN }}
+          just package-release-assets "safe"
+          just package-release-assets "safenode"
+          just package-release-assets "testnet"
+          just upload-release-assets
+          just upload-release-assets-to-s3 "safe"
+          just upload-release-assets-to-s3 "safenode"
+          just upload-release-assets-to-s3 "testnet"
+          # Now repackage and upload the artifacts to S3 using 'latest' for the version.
+          just package-release-assets "safe" "latest"
+          just package-release-assets "safenode" "latest"
+          just package-release-assets "testnet" "latest"
+          just upload-release-assets-to-s3 "safe"
+          just upload-release-assets-to-s3 "safenode"
+          just upload-release-assets-to-s3 "testnet"
