@@ -63,7 +63,7 @@ jobs:
     if: |
       github.repository_owner == 'maidsafe' &&
       startsWith(github.event.head_commit.message, 'chore(release):')
-    name: create github release
+    name: publish and release
     runs-on: ubuntu-latest
     needs: [build]
     env:
@@ -97,7 +97,10 @@ jobs:
         with:
           name: safe_network-aarch64-unknown-linux-musl
           path: artifacts/prod/aarch64-unknown-linux-musl/release
-
+      - shell: bash
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
       # It's possible to `cargo install` these tools, but it's very slow to compile on GHA infra.
       # Therefore we just pull some binaries from the Github Releases.
       - name: install tools
@@ -132,3 +135,10 @@ jobs:
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "testnet"
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Release Failed"
