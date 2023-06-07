@@ -315,7 +315,7 @@ impl Files {
             let missing_chunks: Vec<XorName> = chunks_info
                 .iter()
                 .filter_map(|expected_info| {
-                    if !retrieved_chunks.iter().any(|retrieved_chunk| {
+                    if retrieved_chunks.iter().any(|retrieved_chunk| {
                         XorName::from_content(&retrieved_chunk.content) == expected_info.dst_hash
                     }) {
                         None
