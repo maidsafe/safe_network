@@ -11,10 +11,10 @@ use crate::{
     spendbook::{check_parent_spends, get_spend_2, validate_spends},
     Node,
 };
-use bytes::Bytes;
 use libp2p::kad::{Record, RecordKey};
 use sn_dbc::SignedSpend;
-use sn_protocol::storage::{Chunk, DbcAddress, RecordHeader, RecordKind};
+use sn_protocol::storage::{ChunkWithPayment, DbcAddress, RecordHeader, RecordKind};
+use sn_transfers::payment_proof::validate_payment_proof;
 use std::collections::HashSet;
 
 impl Node {
@@ -39,10 +39,30 @@ impl Node {
                     );
                     return Ok(());
                 }
-                let chunk = Chunk::new(Bytes::copy_from_slice(&record.value[RecordHeader::SIZE..]));
+
+                let chunk_with_payment = &record.value[RecordHeader::SIZE..];
+                let chunk_with_payment: ChunkWithPayment =
+                    match bincode::deserialize(chunk_with_payment) {
+                        Ok(chunk) => chunk,
+                        Err(e) => {
+                            error!("Failed to get chunk because deserialization failed: {e:?}");
+                            return Ok(());
+                        }
+                    };
+
+                let addr = *chunk_with_payment.chunk.address();
+                let addr_name = *addr.name();
+                // TODO: temporarily payment proof is optional
+                if let Some(payment_proof) = chunk_with_payment.payment {
+                    // Let's make sure the payment proof is valid for the chunk's name
+                    if let Err(err) = validate_payment_proof(addr_name, &payment_proof) {
+                        debug!("Chunk payment proof deemed invalid: {err:?}");
+                        return Ok(());
+                    }
+                }
 
                 // check if the deserialized value's ChunkAddress matches the record's key
-                if record.key != RecordKey::new(chunk.address().name()) {
+                if record.key != RecordKey::new(&addr_name) {
                     error!(
                         "Record's key does not match with the value's ChunkAddress, ignoring PUT."
                     );

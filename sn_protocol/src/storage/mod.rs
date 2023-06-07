@@ -15,7 +15,7 @@ mod header;
 
 pub use self::{
     address::{ChunkAddress, DbcAddress, RegisterAddress},
-    chunks::Chunk,
+    chunks::{Chunk, ChunkWithPayment},
     header::{RecordHeader, RecordKind},
     registers::*,
 };
