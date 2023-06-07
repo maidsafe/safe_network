@@ -4,12 +4,13 @@ name: Version Bump
 concurrency:
   group: "version-bumping"
 
-# on:
-#   push:
-#     branches:
-#       - main
+on:
+  push:
+    branches:
+      - main
 
 env:
+  RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.11/release-plz-x86_64-unknown-linux-gnu.tar.gz
   WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
 
 jobs:
@@ -33,11 +34,18 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-      - shell: bash
-        run: cargo install cargo-smart-release
+      # It's possible to `cargo install` release-plz, but it's very slow to compile on GHA infra.
+      # Therefore we just pull the binary from the Github Release.
+      - name: install release-plz
+        shell: bash
+        run: |
+          curl -L -O $RELEASE_PLZ_BIN_URL
+          tar xvf release-plz-x86_64-unknown-linux-gnu.tar.gz
+          rm release-plz-x86_64-unknown-linux-gnu.tar.gz
+          sudo mv release-plz /usr/local/bin
       - shell: bash
         run: ./resources/scripts/bump_version.sh
-      - name: push version bump commit and tags
+      - name: push version bump commit
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
