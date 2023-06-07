@@ -138,7 +138,7 @@ impl Client {
                 Ok(ClientEvent::InactiveClient(timeout)) => {
                     let random_target = ChunkAddress::new(XorName::random(&mut rng));
                     debug!("No ClientEvent activity in the past {timeout:?}, performing a random get_chunk query to target: {random_target:?}");
-                    println!("Client not having enough peers detected after {timeout:?}, performing one more round of network scanning");
+                    println!("The client still does not know enough network nodes to begin operating, (after {timeout:?}). Continuing to scan the network...");
                     let _ = client.get_chunk(random_target).await;
                     continue;
                 }
@@ -172,10 +172,8 @@ impl Client {
                         self.events_channel
                             .broadcast(ClientEvent::ConnectedToNetwork)?;
                     } else {
-                        println!(
-                            "Waiting for sufficient peer connections ({}/{})",
-                            self.peers_added, K_VALUE
-                        );
+                        info!("{}/{} peers added", self.peers_added, K_VALUE);
+                        println!("{}/{} peers added", self.peers_added, K_VALUE);
                     }
                 }
                 self.peers_added += 1;
