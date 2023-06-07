@@ -120,10 +120,16 @@ jobs:
         # then check we have an expected level of replication
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          replication_count=$(rg "Chunk received for replication" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
-          echo "Replicated $replication_count copies"
+          sending_list_count=$(rg "Sending a replication list" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Sent $sending_list_count replication lists"
+          received_list_count=$(rg "Replicate list received from" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Received $received_list_count replication lists"
+          fetching_attempt_count=$(rg "Fetching replication" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Carried out $fetching_attempt_count fetching attempts"
           replication_attempt_count=$(rg "Replicating chunk" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
-          echo "Carried out $replication_attempt_count attempts"
+          echo "Sent $replication_attempt_count chunk copies"
+          replication_count=$(rg "Chunk received for replication" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Received $replication_count chunk copies"
           node_count=$(ls $log_dir | wc -l)
           if [ $replication_count -lt $node_count ]; then
             echo "Replication count of: $replication_count is less than the node count of: $node_count"
