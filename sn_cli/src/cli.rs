@@ -15,7 +15,7 @@ use crate::subcommands::SubCmd;
 #[command(author, version, about, long_about = None)]
 pub(crate) struct Opt {
     /// Nodes we dial at start to help us get connected to the network. Can be specified multiple times.
-    #[clap(long = "peer")]
+    #[clap(long = "peer", global = true)]
     pub peers: Vec<Multiaddr>,
 
     /// Available sub commands.
