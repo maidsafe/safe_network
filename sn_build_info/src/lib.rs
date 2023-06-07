@@ -5,19 +5,29 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-use std::process::Command;
 
-/// set GIT_HASH env var to current commit
-pub fn pre_build_set_git_commit_env() -> Result<(), Box<dyn std::error::Error>> {
-    let output = Command::new("git")
-        .args(["rev-parse", "HEAD"])
-        .output()
-        .expect("Failed to execute git command");
+/// Git information separated by slashes: `<sha> / <branch> / <describe>`
+pub fn git_info() -> &'static str {
+    concat!(
+        env!("VERGEN_GIT_SHA"),
+        " / ",
+        env!("VERGEN_GIT_BRANCH"),
+        " / ",
+        env!("VERGEN_GIT_DESCRIBE")
+    )
+}
 
-    let git_hash = String::from_utf8(output.stdout).unwrap().trim().to_string();
+/// Annotated tag description, or fall back to abbreviated commit object.
+pub fn git_describe() -> &'static str {
+    env!("VERGEN_GIT_DESCRIBE")
+}
 
-    // Set the Git hash as an environment variable
-    println!("cargo:rustc-env=GIT_HASH={}", git_hash);
+/// Current git branch.
+pub fn git_branch() -> &'static str {
+    env!("VERGEN_GIT_BRANCH")
+}
 
-    Ok(())
+/// Shortened SHA-1 hash.
+pub fn git_sha() -> &'static str {
+    env!("VERGEN_GIT_SHA")
 }

@@ -6,10 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 // use sn_build_info::pre_build_set_git_commit_env;
-use sn_build_info::pre_build_set_git_commit_env;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     tonic_build::compile_protos("./src/protocol/safenode_proto/safenode.proto")?;
-    pre_build_set_git_commit_env()?;
     Ok(())
 }
