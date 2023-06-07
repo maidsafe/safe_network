@@ -13,6 +13,14 @@ use super::{
     Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, Register, RegisterOffline,
 };
 
+use bls::{PublicKey, SecretKey, Signature};
+use futures::future::select_all;
+use indicatif::ProgressBar;
+use itertools::Itertools;
+use libp2p::{
+    kad::{RecordKey, K_VALUE},
+    Multiaddr, PeerId,
+};
 use sn_dbc::{DbcId, SignedSpend};
 use sn_networking::{close_group_majority, multiaddr_is_global, NetworkEvent, SwarmDriver};
 use sn_protocol::{
@@ -21,15 +29,8 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_transfers::client_transfers::SpendRequest;
-
-use bls::{PublicKey, SecretKey, Signature};
-use futures::future::select_all;
-use itertools::Itertools;
-use libp2p::{
-    kad::{RecordKey, K_VALUE},
-    Multiaddr, PeerId,
-};
 use std::num::NonZeroUsize;
+use std::time::Duration;
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
@@ -54,11 +55,13 @@ impl Client {
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client(local)?;
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
+
         let client = Self {
             network: network.clone(),
             events_channel,
             signer,
             peers_added: 0,
+            progress: Self::setup_connection_progress(),
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -132,13 +135,12 @@ impl Client {
             match client_events_rx.recv().await {
                 Ok(ClientEvent::ConnectedToNetwork) => {
                     info!("Client connected to the Network.");
-                    println!("Client successfully connected to the Network.");
                     break;
                 }
                 Ok(ClientEvent::InactiveClient(timeout)) => {
                     let random_target = ChunkAddress::new(XorName::random(&mut rng));
                     debug!("No ClientEvent activity in the past {timeout:?}, performing a random get_chunk query to target: {random_target:?}");
-                    println!("The client still does not know enough network nodes to begin operating, (after {timeout:?}). Continuing to scan the network...");
+                    println!("The client still does not know enough network nodes.");
                     let _ = client.get_chunk(random_target).await;
                     continue;
                 }
@@ -151,6 +153,20 @@ impl Client {
         }
 
         Ok(client)
+    }
+
+    /// Set up our initial progress bar for network connectivity
+    fn setup_connection_progress() -> ProgressBar {
+        // Network connection progress bar
+        let progress = ProgressBar::new_spinner();
+        progress.enable_steady_tick(Duration::from_millis(120));
+        progress.set_message("Connecting to The SAFE Network...");
+        let new_style = progress.style().tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈🔗");
+        progress.set_style(new_style);
+
+        progress.set_message("Connecting to The SAFE Network...");
+
+        progress
     }
 
     fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
@@ -169,11 +185,16 @@ impl Client {
                 // wait till certain amount of peers populated into RT
                 if let Some(peers_added) = NonZeroUsize::new(self.peers_added) {
                     if peers_added >= K_VALUE {
+                        self.progress
+                            .finish_with_message("Connected to the Network");
                         self.events_channel
                             .broadcast(ClientEvent::ConnectedToNetwork)?;
                     } else {
-                        info!("{}/{} peers added", self.peers_added, K_VALUE);
-                        println!("{}/{} peers added", self.peers_added, K_VALUE);
+                        debug!("{}/{} initial peers found.", self.peers_added, K_VALUE);
+                        self.progress.set_message(format!(
+                            "{}/{} initial peers found.",
+                            self.peers_added, K_VALUE
+                        ));
                     }
                 }
                 self.peers_added += 1;
