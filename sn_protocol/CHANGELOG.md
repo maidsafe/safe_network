@@ -6,16 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.2](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.1.1...sn_protocol-v0.1.2) - 2023-06-07
-
-### Added
-- attach payment proof when uploading Chunks
-
-### Other
-- exposing definition of merkletree nodes data type and additional doc in code
-- making Chunk payment proof optional for now
-- moving all payment proofs utilities into sn_transfers crate
-
 ## [0.1.1](https://github.com/jacderida/safe_network/compare/sn_protocol-v0.1.0...sn_protocol-v0.1.1) - 2023-06-06
 
 ### Added
