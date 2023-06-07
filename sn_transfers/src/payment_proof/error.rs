@@ -15,8 +15,8 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
-    /// Failed to build the payment prooff tree
-    #[error("Failed to build the payment prooff tree: {0}")]
+    /// Failed to build the payment proof tree
+    #[error("Failed to build the payment proof tree: {0}")]
     ProofTree(String),
     /// Failed to generate the audit trail for an item
     #[error("Failed to generate the audit trail for leaf item #{index}: {reason}")]

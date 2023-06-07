@@ -8,7 +8,7 @@
 
 use super::Client;
 
-use sn_protocol::NetworkAddress;
+use sn_dbc::{Dbc, PublicAddress, Token};
 use sn_transfers::{
     client_transfers::TransferOutputs,
     payment_proof::{build_payment_proofs, PaymentProofsMap},
@@ -17,9 +17,8 @@ use sn_transfers::{
 
 use bls::SecretKey;
 use futures::future::join_all;
-use sn_dbc::{Dbc, PublicAddress, Token};
-
 use std::iter::Iterator;
+use xor_name::XorName;
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
@@ -72,7 +71,7 @@ impl WalletClient {
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     pub async fn pay_for_storage(
         &mut self,
-        content_addrs: impl Iterator<Item = &NetworkAddress>,
+        content_addrs: impl Iterator<Item = &XorName>,
     ) -> Result<(Dbc, PaymentProofsMap)> {
         // TODO: calculate the amount to pay to each node, perhaps just 1 nano to begin with.
         let amount = Token::from_nano(1);

@@ -8,7 +8,6 @@
 
 use sn_client::{Client, Files, WalletClient};
 use sn_dbc::{Dbc, Token};
-use sn_protocol::{storage::ChunkAddress, NetworkAddress};
 use sn_transfers::{
     payment_proof::PaymentProofsMap,
     wallet::{parse_public_address, LocalWallet},
@@ -153,9 +152,7 @@ pub(super) async fn pay_for_storage(
             let bytes = Bytes::from(file);
             // we need all chunks addresses not just the data-map addr
             let (_, chunks) = file_api.chunk_bytes(bytes)?;
-            chunks.iter().for_each(|c| {
-                chunks_addrs.push(NetworkAddress::ChunkAddress(ChunkAddress::new(*c.name())))
-            });
+            chunks.iter().for_each(|c| chunks_addrs.push(*c.name()));
         }
     }
 
