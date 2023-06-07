@@ -61,7 +61,7 @@ impl Client {
             events_channel,
             signer,
             peers_added: 0,
-            progress: Self::setup_connection_progress(),
+            progress: Some(Self::setup_connection_progress()),
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -185,16 +185,23 @@ impl Client {
                 // wait till certain amount of peers populated into RT
                 if let Some(peers_added) = NonZeroUsize::new(self.peers_added) {
                     if peers_added >= K_VALUE {
-                        self.progress
-                            .finish_with_message("Connected to the Network");
+                        if let Some(progress) = &self.progress {
+                            progress.finish_with_message("Connected to the Network");
+                            // Remove the progress bar
+                            self.progress = None;
+                        }
+
                         self.events_channel
                             .broadcast(ClientEvent::ConnectedToNetwork)?;
                     } else {
                         debug!("{}/{} initial peers found.", self.peers_added, K_VALUE);
-                        self.progress.set_message(format!(
-                            "{}/{} initial peers found.",
-                            self.peers_added, K_VALUE
-                        ));
+
+                        if let Some(progress) = &self.progress {
+                            progress.set_message(format!(
+                                "{}/{} initial peers found.",
+                                self.peers_added, K_VALUE
+                            ));
+                        }
                     }
                 }
                 self.peers_added += 1;

@@ -38,5 +38,5 @@ pub struct Client {
     events_channel: ClientEventsChannel,
     signer: bls::SecretKey,
     peers_added: usize,
-    progress: ProgressBar,
+    progress: Option<ProgressBar>,
 }
