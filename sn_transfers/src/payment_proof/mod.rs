@@ -61,10 +61,7 @@ mod hasher;
 use error::{Error, Result};
 use hasher::Sha256Hasher;
 
-use sn_protocol::{
-    messages::{Hash, MerkleTreeNodesType, PaymentProof},
-    NetworkAddress,
-};
+use sn_protocol::messages::{Hash, MerkleTreeNodesType, PaymentProof};
 
 use merkletree::{
     hash::Algorithm,
@@ -85,18 +82,23 @@ pub type PaymentProofsMap = BTreeMap<MerkleTreeNodesType, PaymentProof>;
 /// Build a Merkletree to generate the PaymentProofs for each of the content addresses provided
 // TODO: provide fix against https://en.wikipedia.org/wiki/Preimage_attack ?
 pub fn build_payment_proofs<'a>(
-    content_addrs: impl Iterator<Item = &'a NetworkAddress>,
+    content_addrs: impl Iterator<Item = &'a XorName>,
 ) -> Result<(Hash, PaymentProofsMap)> {
     // Let's build the Merkle-tree from list of addresses needed to generate the payment proofs
-    // TODO: bail out if the list is empty
     let mut addrs: Vec<_> = content_addrs
         .map(|addr| {
             let mut arr = MerkleTreeNodesType::default();
-            // TODO: check the length of addr is 32 so we don't (unexpectedly) miss bytes...?
-            arr.copy_from_slice(&addr.as_bytes());
+            // we know the length of a XorName is 32 so we won't miss any byte
+            arr.copy_from_slice(addr);
             arr
         })
         .collect();
+
+    if addrs.is_empty() {
+        return Err(Error::ProofTree(
+            "Cannot build payment proofs with an empty list of addresses".to_string(),
+        ));
+    }
 
     // Merkletree requires the number of leaves to be a power of 2, and at least 2 leaves.
     let num_of_leaves = usize::max(2, next_pow2(addrs.len()));
@@ -176,7 +178,6 @@ pub fn validate_payment_proof(addr_name: XorName, payment: &PaymentProof) -> Res
 mod tests {
     use super::*;
     use eyre::{eyre, Result};
-    use sn_protocol::storage::ChunkAddress;
     use tiny_keccak::{Hasher, Sha3};
     use xor_name::XorName;
 
@@ -207,10 +208,7 @@ mod tests {
         let node1 = hash(1, &leaf2, &leaf3);
         let root = hash(1, &node0, &node1);
 
-        let addrs = [name0, name1, name2]
-            .into_iter()
-            .map(|name| NetworkAddress::ChunkAddress(ChunkAddress::new(name)))
-            .collect::<Vec<_>>();
+        let addrs = [name0, name1, name2];
 
         let (reason_hash, payment_proofs) = build_payment_proofs(addrs.iter())?;
 
@@ -222,11 +220,15 @@ mod tests {
 
     #[test]
     fn test_payment_proof_non_power_of_2_input() -> Result<()> {
+        assert!(
+            matches!(build_payment_proofs(vec![].iter()), Err(Error::ProofTree(err)) if err == "Cannot build payment proofs with an empty list of addresses")
+        );
+
         let addrs = [
             [11; 32], [22; 32], [33; 32], [44; 32], [55; 32], [66; 32], [77; 32], [88; 32],
         ]
         .into_iter()
-        .map(|b| NetworkAddress::ChunkAddress(ChunkAddress::new(XorName(b))))
+        .map(XorName)
         .collect::<Vec<_>>();
 
         for i in 0..addrs.len() {
@@ -243,10 +245,7 @@ mod tests {
         let name1 = XorName([22; 32]);
         let name2 = XorName([33; 32]);
 
-        let addrs = [name0, name1, name2]
-            .into_iter()
-            .map(|name| NetworkAddress::ChunkAddress(ChunkAddress::new(name)))
-            .collect::<Vec<_>>();
+        let addrs = [name0, name1, name2];
 
         let (_, payment_proofs) = build_payment_proofs(addrs.iter())?;
 
