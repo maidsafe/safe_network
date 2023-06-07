@@ -40,9 +40,10 @@ async fn main() -> Result<()> {
     #[cfg(feature = "metrics")]
     tokio::spawn(init_metrics(std::process::id()));
 
-    println!("Current build's git commit hash: {}", env!("GIT_HASH"));
-    debug!("Current build's git commit hash: {}", env!("GIT_HASH"));
+    debug!("Built with git version: {}", sn_build_info::git_info());
+    println!("Built with git version: {}", sn_build_info::git_info());
     info!("Full client logs will be written to {:?}", tmp_dir);
+    println!("Instantiating a SAFE client...");
 
     let secret_key = bls::SecretKey::random();
     let peers = peers_from_opts_or_env(&opt.peers)?;

@@ -126,7 +126,7 @@ fn main() -> Result<()> {
         (rt, guard)
     };
 
-    debug!("Current build's git commit hash: {}", env!("GIT_HASH"));
+    debug!("Built with git version: {}", sn_build_info::git_info());
 
     let root_dir = get_root_dir_path(opt.root_dir)?;
     let log_dir = if let Some(path) = opt.log_dir {

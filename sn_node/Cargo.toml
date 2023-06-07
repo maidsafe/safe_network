@@ -46,6 +46,7 @@ rmp-serde = "1.1.1"
 rayon = "~1.5.1"
 self_encryption = "~0.28.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
+sn_build_info = { path="../sn_build_info", version = "0.1.1" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version="0.1.0" }
 sn_dbc = { version = "19.0.0", features = ["serdes"] }
 sn_client = { path = "../sn_client", version = "0.85.3" }
@@ -72,4 +73,3 @@ assert_fs = "1.0.0"
 
 [build-dependencies]
 tonic-build = { version = "0.6.2" }
-sn_build_info = { path="../sn_build_info", version = "0.1.1" }
