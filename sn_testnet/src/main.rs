@@ -51,7 +51,7 @@ struct Cmd {
     #[clap(long = "join", short = 'j', value_parser)]
     join_network: bool,
 
-    /// Optional location for a network contacts file.
+    /// Location for a network contacts file.
     ///
     /// This should only be used in conjunction with the 'join' command. You can supply it if you
     /// have an existing network contacts path and you want to launch nodes perhaps on another
@@ -62,7 +62,7 @@ struct Cmd {
     #[clap(long = "network-contacts-path", short = 'n', value_name = "FILE_PATH")]
     network_contacts_path: Option<PathBuf>,
 
-    /// Interval between node launches in ms. Defaults to 5000.
+    /// Interval between node launches in milliseconds. Defaults to 5000.
     #[clap(long = "interval", short = 'i')]
     node_launch_interval: Option<u64>,
 

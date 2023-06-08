@@ -14,12 +14,12 @@ use clap::Subcommand;
 #[derive(Subcommand, Debug)]
 pub(super) enum SubCmd {
     #[clap(name = "wallet", subcommand)]
-    /// Manage wallets on the SAFE Network
+    /// Commands for wallet management
     Wallet(wallet::WalletCmds),
     #[clap(name = "files", subcommand)]
-    /// Manage files on the SAFE Network
+    /// Commands for file management
     Files(files::FilesCmds),
     #[clap(name = "register", subcommand)]
-    /// Manage files on the SAFE Network
+    /// Commands for register management
     Register(register::RegisterCmds),
 }
