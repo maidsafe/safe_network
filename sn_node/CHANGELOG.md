@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - adding unit tests to payment proof utilities
 - moving all payment proofs utilities into sn_transfers crate
 
+## [0.83.2](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.1...sn_node-v0.83.2) - 2023-06-08
+
+### Other
+- improve documentation for cli arguments
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
