@@ -76,12 +76,12 @@ pub enum CmdResponse {
     // ===== Dbc Spends =====
     //
     /// Response to DbcCmd::Spend.
-    Spend(Result<()>),
+    Spend(Result<CmdOk>),
     //
     // ===== Chunk =====
     //
     /// Response to Cmd::StoreChunk
-    StoreChunk(Result<()>),
+    StoreChunk(Result<CmdOk>),
     //
     // ===== Register Data =====
     //
@@ -91,6 +91,13 @@ pub enum CmdResponse {
     EditRegister(Result<()>),
     /// Response to ReplicateCmd
     Replicate(Result<()>),
+}
+
+/// The Ok variant of a CmdResponse
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CmdOk {
+    StoredSuccessfully,
+    DataAlreadyPresent,
 }
 
 impl std::fmt::Display for QueryResponse {

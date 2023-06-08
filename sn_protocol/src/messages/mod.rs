@@ -13,8 +13,6 @@ mod query;
 mod register;
 mod response;
 
-use crate::storage::Chunk;
-
 pub use self::{
     cmd::{Cmd, Hash, MerkleTreeNodesType, PaymentProof},
     node_id::NodeId,
@@ -23,11 +21,11 @@ pub use self::{
         CreateRegister, EditRegister, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
         SignedRegisterCreate, SignedRegisterEdit,
     },
-    response::{CmdResponse, QueryResponse},
+    response::{CmdOk, CmdResponse, QueryResponse},
 };
 
 use super::NetworkAddress;
-
+use crate::storage::Chunk;
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;
 

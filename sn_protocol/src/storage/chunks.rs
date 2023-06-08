@@ -74,7 +74,7 @@ impl<'de> Deserialize<'de> for Chunk {
     }
 }
 
-// The Chunk along with the Payment is written as Record to kademlia
+/// The Chunk along with the Payment is written as Record to kademlia
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ChunkWithPayment {
     pub chunk: Chunk,
