@@ -4476,7 +4476,7 @@ version = "0.1.1"
 
 [[package]]
 name = "sn_cli"
-version = "0.77.2"
+version = "0.77.3"
 dependencies = [
  "bincode",
  "blsttc",
@@ -4703,7 +4703,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",
