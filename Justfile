@@ -55,6 +55,29 @@ build-release-artifacts arch:
   find target/$arch/release -maxdepth 1 -type f -exec cp '{}' artifacts \;
   rm -f artifacts/.cargo-lock
 
+# Debugging target that builds an `artifacts` directory to be used with packaging targets.
+#
+# To use, download the artifact zip files from the workflow run and put them in an `artifacts`
+# directory here. Then run the target.
+make-artifacts-directory:
+  #!/usr/bin/env bash
+  set -e
+
+  architectures=(
+    "x86_64-pc-windows-msvc"
+    "x86_64-apple-darwin"
+    "x86_64-unknown-linux-musl"
+    "arm-unknown-linux-musleabi"
+    "armv7-unknown-linux-musleabihf"
+    "aarch64-unknown-linux-musl"
+  )
+  cd artifacts
+  for arch in "${architectures[@]}" ; do
+    mkdir -p $arch/release
+    unzip safe_network-$arch.zip -d $arch/release
+    rm safe_network-$arch.zip
+  done
+
 package-release-assets bin version="":
   #!/usr/bin/env bash
   set -e
