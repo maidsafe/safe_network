@@ -79,27 +79,27 @@ jobs:
       - uses: actions/download-artifact@master
         with:
           name: safe_network-x86_64-pc-windows-msvc
-          path: artifacts/prod/x86_64-pc-windows-msvc/release
+          path: artifacts/x86_64-pc-windows-msvc/release
       - uses: actions/download-artifact@master
         with:
           name: safe_network-x86_64-unknown-linux-musl
-          path: artifacts/prod/x86_64-unknown-linux-musl/release
+          path: artifacts/x86_64-unknown-linux-musl/release
       - uses: actions/download-artifact@master
         with:
           name: safe_network-x86_64-apple-darwin
-          path: artifacts/prod/x86_64-apple-darwin/release
+          path: artifacts/x86_64-apple-darwin/release
       - uses: actions/download-artifact@master
         with:
           name: safe_network-arm-unknown-linux-musleabi
-          path: artifacts/prod/arm-unknown-linux-musleabi/release
+          path: artifacts/arm-unknown-linux-musleabi/release
       - uses: actions/download-artifact@master
         with:
           name: safe_network-armv7-unknown-linux-musleabihf
-          path: artifacts/prod/armv7-unknown-linux-musleabihf/release
+          path: artifacts/armv7-unknown-linux-musleabihf/release
       - uses: actions/download-artifact@master
         with:
           name: safe_network-aarch64-unknown-linux-musl
-          path: artifacts/prod/aarch64-unknown-linux-musl/release
+          path: artifacts/aarch64-unknown-linux-musl/release
       - shell: bash
         run: |
           git config --local user.email "action@github.com"
