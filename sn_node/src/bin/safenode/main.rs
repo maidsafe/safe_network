@@ -83,7 +83,9 @@ struct Opt {
     #[clap(long = "peer", value_name = "MultiAddr")]
     peers: Vec<Multiaddr>,
 
-    /// Enable the admin/ctrl RPC service by providing an IP and port for it to listen on.
+    /// Enable the admin/control RPC service by providing an IP and port for it to listen on.
+    ///
+    /// The RPC service can be used for querying information about the running node.
     #[clap(long)]
     rpc: Option<SocketAddr>,
 
