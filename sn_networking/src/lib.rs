@@ -699,7 +699,7 @@ mod tests {
     use rand::{thread_rng, Rng};
     use sn_logging::init_test_logger;
     use sn_protocol::{
-        messages::{Cmd, CmdResponse, Hash, PaymentProof, Request, Response},
+        messages::{CmdResponse, Query, Request, Response},
         storage::Chunk,
     };
     use std::{net::SocketAddr, path::Path, time::Duration};
@@ -731,17 +731,12 @@ mod tests {
             }
         });
 
-        // Send a request to store a random chunk to `self`.
+        // Send a request to query a random chunk to `self`.
         let mut random_data = [0u8; 128];
         thread_rng().fill(&mut random_data);
-        let req = Request::Cmd(Cmd::StoreChunk {
-            chunk: Chunk::new(Bytes::copy_from_slice(&random_data)),
-            payment: Some(PaymentProof {
-                reason_hash: Hash::hash(&random_data),
-                audit_trail: vec![],
-                path: vec![],
-            }),
-        });
+        let req = Request::Query(Query::GetChunk(
+            *Chunk::new(Bytes::copy_from_slice(&random_data)).address(),
+        ));
         // Send the request to `self` and wait for a response.
         let now = tokio::time::Instant::now();
         loop {

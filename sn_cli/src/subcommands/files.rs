@@ -11,9 +11,8 @@ use super::wallet::pay_for_storage;
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
-use sn_client::{Client, Files};
+use sn_client::{Client, Files, PaymentProofsMap};
 use sn_protocol::storage::ChunkAddress;
-use sn_transfers::payment_proof::PaymentProofsMap;
 
 use std::{
     fs,
@@ -90,8 +89,7 @@ async fn upload_files(
 
     // We make the payment for Chunks storage only if requested by the user
     let payment_proofs = if pay {
-        let (_dbc, payment_proofs) = pay_for_storage(&client, root_dir, &files_path).await?;
-        payment_proofs
+        pay_for_storage(&client, root_dir, &files_path).await?
     } else {
         PaymentProofsMap::default()
     };

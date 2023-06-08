@@ -61,7 +61,7 @@ mod hasher;
 use error::{Error, Result};
 use hasher::Sha256Hasher;
 
-use sn_protocol::messages::{Hash, MerkleTreeNodesType, PaymentProof};
+use sn_protocol::messages::{Hash, MerkleTreeNodesType};
 
 use merkletree::{
     hash::Algorithm,
@@ -73,17 +73,17 @@ use std::collections::BTreeMap;
 use typenum::{UInt, UTerm, B0, B1};
 use xor_name::XorName;
 
+/// Map from content address name to its corresponding audit trail and trail path.
+pub type PaymentProofsTrailInfoMap =
+    BTreeMap<MerkleTreeNodesType, (Vec<MerkleTreeNodesType>, Vec<usize>)>;
+
 // We use a binary Merkle-tree to build payment proofs
 type BinaryMerkletreeProofType = Proof<MerkleTreeNodesType, UInt<UInt<UTerm, B1>, B0>>;
 
-/// Map from content address name to its corresponding PaymentProof
-pub type PaymentProofsMap = BTreeMap<MerkleTreeNodesType, PaymentProof>;
-
-/// Build a Merkletree to generate the PaymentProofs for each of the content addresses provided
-// TODO: provide fix against https://en.wikipedia.org/wiki/Preimage_attack ?
+/// Build a Merkletree to generate the audit trail and path for each of the content addresses provided.
 pub fn build_payment_proofs<'a>(
     content_addrs: impl Iterator<Item = &'a XorName>,
-) -> Result<(Hash, PaymentProofsMap)> {
+) -> Result<(Hash, PaymentProofsTrailInfoMap)> {
     // Let's build the Merkle-tree from list of addresses needed to generate the payment proofs
     let mut addrs: Vec<_> = content_addrs
         .map(|addr| {
@@ -125,21 +125,19 @@ pub fn build_payment_proofs<'a>(
                 reason: err.to_string(),
             })?;
 
-        payment_proofs.insert(
-            addr,
-            PaymentProof {
-                reason_hash,
-                audit_trail: proof.lemma().to_vec(),
-                path: proof.path().to_vec(),
-            },
-        );
+        payment_proofs.insert(addr, (proof.lemma().to_vec(), proof.path().to_vec()));
     }
 
     Ok((reason_hash, payment_proofs))
 }
 
 /// Verify if the payment proof is valid and contains a valid audit trail for the given xorname
-pub fn validate_payment_proof(addr_name: XorName, payment: &PaymentProof) -> Result<()> {
+pub fn validate_payment_proof(
+    addr_name: XorName,
+    reason_hash: &Hash,
+    audit_trail: &[MerkleTreeNodesType],
+    path: &[usize],
+) -> Result<()> {
     trace!("Verifying payment proof for chunk store {addr_name:?} ...");
 
     // We build the merkletree leaf value from the received xorname, i.e. hash(xorname).
@@ -147,12 +145,9 @@ pub fn validate_payment_proof(addr_name: XorName, payment: &PaymentProof) -> Res
     let mut hasher = Sha256Hasher::default();
     let leaf_to_validate = hasher.leaf(addr_name.0);
 
-    let proof = BinaryMerkletreeProofType::new::<UTerm, UTerm>(
-        None,
-        payment.audit_trail.clone(),
-        payment.path.clone(),
-    )
-    .map_err(|err| Error::InvalidAuditTrail(err.to_string()))?;
+    let proof =
+        BinaryMerkletreeProofType::new::<UTerm, UTerm>(None, audit_trail.to_vec(), path.to_vec())
+            .map_err(|err| Error::InvalidAuditTrail(err.to_string()))?;
 
     if leaf_to_validate != proof.item() {
         return Err(Error::AuditTrailItemMismatch(addr_name));
@@ -167,10 +162,10 @@ pub fn validate_payment_proof(addr_name: XorName, payment: &PaymentProof) -> Res
         ));
     }
 
-    if payment.reason_hash == proof.root().into() {
+    if *reason_hash == proof.root().into() {
         Ok(())
     } else {
-        Err(Error::ReasonHashMismatch(payment.reason_hash.to_hex()))
+        Err(Error::ReasonHashMismatch(reason_hash.to_hex()))
     }
 }
 
@@ -247,48 +242,47 @@ mod tests {
 
         let addrs = [name0, name1, name2];
 
-        let (_, payment_proofs) = build_payment_proofs(addrs.iter())?;
+        let (reason_hash, payment_proofs) = build_payment_proofs(addrs.iter())?;
 
         assert_eq!(payment_proofs.len(), addrs.len());
 
         assert!(
-            matches!(payment_proofs.get(&name0.0), Some(proof) if validate_payment_proof(name0, proof).is_ok())
+            matches!(payment_proofs.get(&name0.0), Some((audit_trail, path)) if validate_payment_proof(name0, &reason_hash, audit_trail, path).is_ok())
         );
         assert!(
-            matches!(payment_proofs.get(&name1.0), Some(proof) if validate_payment_proof(name1, proof).is_ok())
+            matches!(payment_proofs.get(&name1.0), Some((audit_trail, path)) if validate_payment_proof(name1, &reason_hash, audit_trail, path).is_ok())
         );
         assert!(
-            matches!(payment_proofs.get(&name2.0), Some(proof) if validate_payment_proof(name2, proof).is_ok())
+            matches!(payment_proofs.get(&name2.0), Some(( audit_trail, path)) if validate_payment_proof(name2, &reason_hash, audit_trail, path).is_ok())
         );
 
-        let mut proof = payment_proofs
+        let (audit_trail, path) = payment_proofs
             .get(&name2.0)
             .cloned()
             .ok_or_else(|| eyre!("Failed to obtain valid payment proof"))?;
         let invalid_name = XorName([99; 32]);
         assert!(matches!(
-            validate_payment_proof(invalid_name, &proof),
+            validate_payment_proof(invalid_name, &reason_hash, &audit_trail, &path),
             Err(Error::AuditTrailItemMismatch(name)) if name == invalid_name
         ));
 
-        let mut corrupted_proof = proof.clone();
-        corrupted_proof.audit_trail[1][0] = 0; // corrupt one byte of the audit trail
+        let mut corrupted_audit_trail = audit_trail.clone();
+        corrupted_audit_trail[1][0] = 0; // corrupt one byte of the audit trail
         assert!(matches!(
-            validate_payment_proof(name2, &corrupted_proof),
+            validate_payment_proof(name2, &reason_hash, &corrupted_audit_trail, &path),
             Err(Error::AuditTrailSelfValidation(_))
         ));
 
-        let mut corrupted_proof = proof.clone();
-        corrupted_proof.audit_trail.push(name0.0); // corrupt the audit trail by adding some random item
+        let mut corrupted_audit_trail = audit_trail.clone();
+        corrupted_audit_trail.push(name0.0); // corrupt the audit trail by adding some random item
         assert!(matches!(
-            validate_payment_proof(name2, &corrupted_proof),
+            validate_payment_proof(name2, &reason_hash, &corrupted_audit_trail, &path),
             Err(Error::InvalidAuditTrail(_))
         ));
 
         let invalid_reason_hash: Hash = [66; 32].into();
-        proof.reason_hash = invalid_reason_hash; // corrupt the PaymentProof by setting an invalid reason hash value
         assert!(matches!(
-            validate_payment_proof(name2, &proof),
+            validate_payment_proof(name2, &invalid_reason_hash, &audit_trail, &path),
             Err(Error::ReasonHashMismatch(hex)) if hex == invalid_reason_hash.to_hex()
         ));
 

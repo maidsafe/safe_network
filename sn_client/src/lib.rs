@@ -24,7 +24,7 @@ pub use self::{
     faucet::{get_tokens_from_faucet, load_faucet_wallet},
     file_apis::Files,
     register::{Register, RegisterOffline},
-    wallet::{send, WalletClient},
+    wallet::{send, PaymentProofsMap, WalletClient},
 };
 
 use self::event::ClientEventsChannel;

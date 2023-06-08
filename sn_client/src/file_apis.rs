@@ -9,11 +9,11 @@
 use super::{
     chunks::{to_chunk, DataMapLevel, Error, LargeFile, SmallFile},
     error::Result,
+    wallet::PaymentProofsMap,
     Client,
 };
 
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::payment_proof::PaymentProofsMap;
 
 use bincode::deserialize;
 use bytes::Bytes;

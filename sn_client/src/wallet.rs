@@ -9,16 +9,20 @@
 use super::Client;
 
 use sn_dbc::{Dbc, PublicAddress, Token};
+use sn_protocol::messages::{MerkleTreeNodesType, PaymentProof};
 use sn_transfers::{
     client_transfers::TransferOutputs,
-    payment_proof::{build_payment_proofs, PaymentProofsMap},
+    payment_proof::build_payment_proofs,
     wallet::{Error, LocalWallet, Result},
 };
 
 use bls::SecretKey;
 use futures::future::join_all;
-use std::iter::Iterator;
+use std::{collections::BTreeMap, iter::Iterator};
 use xor_name::XorName;
+
+/// Map from content address name to its corresponding PaymentProof.
+pub type PaymentProofsMap = BTreeMap<MerkleTreeNodesType, PaymentProof>;
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
@@ -80,13 +84,31 @@ impl WalletClient {
         let to = vec![(amount, PublicAddress::new(SecretKey::random().public_key()))];
 
         // Let's build the payment proofs for list of content addresses
-        let (reason_hash, payment_proofs) = build_payment_proofs(content_addrs)
+        let (reason_hash, audit_trail_info) = build_payment_proofs(content_addrs)
             .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
 
         let transfer = self.wallet.local_send(to, Some(reason_hash)).await?;
 
         match &transfer.created_dbcs[..] {
-            [info, ..] => Ok((info.dbc.clone(), payment_proofs)),
+            [info, ..] => {
+                let dbc = info.dbc.clone();
+                let payment_proofs = audit_trail_info
+                    .into_iter()
+                    .map(|(addr, (audit_trail, path))| {
+                        (
+                            addr,
+                            PaymentProof {
+                                reason_hash,
+                                dbc: dbc.clone(),
+                                audit_trail,
+                                path,
+                            },
+                        )
+                    })
+                    .collect();
+
+                Ok((dbc, payment_proofs))
+            }
             [] => Err(Error::CouldNotSendTokens(
                 "No DBCs were returned from the wallet.".into(),
             )),
