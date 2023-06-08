@@ -7,26 +7,19 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Result, event::NodeEventsChannel, Network, Node, NodeEvent};
-use crate::spendbook::SpendBook;
-use libp2p::{
-    autonat::NatStatus,
-    kad::{Record, RecordKey},
-    Multiaddr, PeerId,
-};
+use libp2p::{autonat::NatStatus, kad::RecordKey, Multiaddr, PeerId};
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use sn_dbc::SignedSpend;
 use sn_networking::{
     multiaddr_strip_p2p, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{
-        Cmd, CmdResponse, PaymentProof, Query, QueryResponse, RegisterCmd, Request, Response,
-    },
-    storage::{registers::User, Chunk, DbcAddress, RecordHeader, RecordKind},
+    messages::{Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, Request, Response},
+    storage::{registers::User, ChunkWithPayment, DbcAddress},
     NetworkAddress,
 };
 use sn_registers::RegisterStorage;
-use sn_transfers::payment_proof::validate_payment_proof;
 use std::{net::SocketAddr, path::Path, time::Duration};
 use tokio::task::spawn;
 
@@ -83,7 +76,6 @@ impl Node {
             registers: RegisterStorage::new(root_dir),
             events_channel: node_events_channel.clone(),
             initial_peers,
-            spendbook: SpendBook::default(),
         };
 
         let network_clone = network.clone();
@@ -207,10 +199,18 @@ impl Node {
             Query::GetChunk(address) => {
                 match self
                     .network
-                    .get_provided_data(RecordKey::new(address.name()))
+                    .get_data_from_network(RecordKey::new(address.name()))
                     .await
                 {
-                    Ok(Ok(data)) => QueryResponse::GetChunk(Ok(Chunk::new(data.into()))),
+                    Ok(Ok(data)) => match bincode::deserialize::<ChunkWithPayment>(&data) {
+                        Ok(chunk_with_payment) => {
+                            QueryResponse::GetChunk(Ok(chunk_with_payment.chunk))
+                        }
+                        Err(err) => {
+                            error!("Error while deserializing data to ChunkWithPayment: {err}");
+                            QueryResponse::GetChunk(Err(ProtocolError::ChunkNotFound(address)))
+                        }
+                    },
                     Err(err) | Ok(Err(err)) => {
                         error!("Error getting chunk from network: {err}");
                         QueryResponse::GetChunk(Err(ProtocolError::ChunkNotFound(address)))
@@ -219,9 +219,48 @@ impl Node {
             }
             Query::GetSpend(address) => {
                 trace!("Got GetSpend query for {address:?}");
-                let res = self.spendbook.spend_get(&self.network, address).await;
-                trace!("Sending response back on query DbcSpend {address:?}: {res:?}");
-                QueryResponse::GetDbcSpend(res)
+                // get spend from kad
+                let result = match self
+                    .network
+                    .get_data_from_network(RecordKey::new(address.name()))
+                    .await
+                {
+                    Ok(Ok(signed_spend_bytes)) => {
+                        match bincode::deserialize::<Vec<SignedSpend>>(&signed_spend_bytes) {
+                            Ok(signed_spends) => {
+                                // if there are multiple spends, it is a double spend
+                                match signed_spends.as_slice() {
+                                    [one, two, ..] => {
+                                        error!("Found double spend for {address:?}");
+                                        Err(ProtocolError::DoubleSpendAttempt(
+                                            Box::new(one.to_owned()),
+                                            Box::new(two.to_owned()),
+                                        ))
+                                    }
+                                    [one] => {
+                                        trace!("Spend get for address: {address:?} successful");
+                                        Ok(one.clone())
+                                    }
+                                    _ => {
+                                        trace!("Found no spend for {address:?}");
+                                        Err(ProtocolError::SpendNotFound(address))
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                error!("Failed to get spend because deserialization failed: {e:?}");
+                                Err(ProtocolError::SpendNotFound(address))
+                            }
+                        }
+                    }
+                    Ok(Err(err)) | Err(err) => {
+                        error!("Error getting spend from local store: {err}");
+                        Err(ProtocolError::SpendNotFound(address))
+                    }
+                };
+                let resp = QueryResponse::GetDbcSpend(result);
+                trace!("Sending response back on query DbcSpend {address:?}: {resp:?}");
+                resp
             }
             Query::GetReplicatedData {
                 requester: _,
@@ -251,68 +290,16 @@ impl Node {
         match cmd {
             Cmd::StoreChunk { chunk, payment } => {
                 let addr = *chunk.address();
-                let addr_name = *addr.name();
-                debug!("That's a store chunk in for :{addr_name:?}");
+                let chunk_with_payment = ChunkWithPayment { chunk, payment };
 
-                // TODO: temporarily payment proof is optional
-                if let Some(PaymentProof {
-                    reason_hash,
-                    audit_trail,
-                    path,
-                    ..
-                }) = &payment
-                {
-                    // Let's make sure the payment proof is valid for the chunk's name
-                    if let Err(err) =
-                        validate_payment_proof(addr_name, reason_hash, audit_trail, path)
-                    {
-                        debug!("Chunk payment proof deemed invalid: {err:?}");
-                        let resp =
-                            CmdResponse::StoreChunk(Err(ProtocolError::InvalidPaymentProof {
-                                addr_name,
-                                reason: err.to_string(),
-                            }));
-                        return self
-                            .send_response(Response::Cmd(resp), response_channel)
-                            .await;
-                    }
-                }
-
-                // Prepend Kademlia record with a header for storage
-                let record_header = RecordHeader {
-                    kind: RecordKind::Chunk,
-                };
-
-                let record = match bincode::serialize(&record_header) {
-                    Ok(mut record_value) => {
-                        record_value.extend_from_slice(chunk.value());
-                        Record {
-                            key: RecordKey::new(addr.name()),
-                            value: record_value,
-                            publisher: None,
-                            expires: None,
-                        }
-                    }
-                    Err(err) => {
-                        // send error back and short-circuit
-                        error!("Failed to serialize RecordHeader: {err:?}");
-                        let resp = CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(
-                            *addr.name(),
-                        )));
-                        self.send_response(Response::Cmd(resp), response_channel)
-                            .await;
-                        return;
-                    }
-                };
-
-                let resp = match self.network.put_local_record(record).await {
-                    Ok(()) => {
+                let resp = match self.validate_and_store_chunk(chunk_with_payment).await {
+                    Ok(cmd_ok) => {
                         self.events_channel.broadcast(NodeEvent::ChunkStored(addr));
-                        CmdResponse::StoreChunk(Ok(()))
+                        CmdResponse::StoreChunk(Ok(cmd_ok))
                     }
                     Err(err) => {
                         error!("Failed to StoreChunk: {err:?}");
-                        CmdResponse::StoreChunk(Err(ProtocolError::ChunkNotStored(addr_name)))
+                        CmdResponse::StoreChunk(Err(err))
                     }
                 };
 
@@ -327,7 +314,7 @@ impl Node {
                 );
                 let _ = self.network.replication_keys_to_fetch(holder, keys).await;
 
-                // if we do not send a response, we can cause conneciton failures.
+                // if we do not send a response, we can cause connection failures.
                 let resp = CmdResponse::Replicate(Ok(()));
                 self.send_response(Response::Cmd(resp), response_channel)
                     .await;
@@ -354,17 +341,16 @@ impl Node {
             Cmd::SpendDbc(signed_spend, _) => {
                 let dbc_id = *signed_spend.dbc_id();
                 let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
-
-                let resp = match self.spendbook.spend_put(&self.network, signed_spend).await {
-                    Ok(addr) => {
-                        debug!("Broadcasting valid spend: {dbc_id:?} at: {addr:?}");
+                let resp = match self.validate_and_store_spend(vec![signed_spend]).await {
+                    Ok(cmd_ok) => {
+                        debug!("Broadcasting valid spend: {dbc_id:?} at: {dbc_addr:?}");
                         self.events_channel
                             .broadcast(NodeEvent::SpendStored(dbc_id));
-                        CmdResponse::Spend(Ok(()))
+                        CmdResponse::StoreChunk(Ok(cmd_ok))
                     }
                     Err(err) => {
                         error!("Failed to StoreSpend: {err:?}");
-                        CmdResponse::Spend(Err(ProtocolError::FailedToStoreSpend(dbc_addr)))
+                        CmdResponse::Spend(Err(err))
                     }
                 };
 

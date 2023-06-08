@@ -264,7 +264,7 @@ impl Client {
         let request = Request::Cmd(Cmd::StoreChunk { chunk, payment });
         let response = self.send_and_wait_till_first_rsp(request).await?;
 
-        if matches!(response, Response::Cmd(CmdResponse::StoreChunk(Ok(())))) {
+        if matches!(response, Response::Cmd(CmdResponse::StoreChunk(Ok(_)))) {
             return Ok(());
         }
 
@@ -282,7 +282,7 @@ impl Client {
         let xorname = address.name();
         match self
             .network
-            .get_provided_data(RecordKey::new(xorname))
+            .get_data_from_network(RecordKey::new(xorname))
             .await?
         {
             Ok(chunk_bytes) => Ok(Chunk::new(chunk_bytes.into())),
@@ -351,8 +351,10 @@ impl Client {
 
         while !list_of_futures.is_empty() {
             match select_all(list_of_futures).await {
-                (Ok(Response::Cmd(CmdResponse::Spend(Ok(())))), _, remaining_futures) => {
-                    trace!("Spend Ok response got while requesting to spend {dbc_id:?}");
+                (Ok(Response::Cmd(CmdResponse::Spend(Ok(spend_ok)))), _, remaining_futures) => {
+                    trace!(
+                        "Spend Ok {spend_ok:?} response got while requesting to spend {dbc_id:?}"
+                    );
                     ok_responses += 1;
 
                     // Return once we got required number of expected responses.
