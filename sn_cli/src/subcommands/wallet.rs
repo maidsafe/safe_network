@@ -6,12 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_client::{Client, Files, WalletClient};
-use sn_dbc::{Dbc, Token};
-use sn_transfers::{
-    payment_proof::PaymentProofsMap,
-    wallet::{parse_public_address, LocalWallet},
-};
+use sn_client::{Client, Files, PaymentProofsMap, WalletClient};
+use sn_dbc::Token;
+use sn_transfers::wallet::{parse_public_address, LocalWallet};
 
 use bytes::Bytes;
 use clap::Parser;
@@ -142,7 +139,7 @@ pub(super) async fn pay_for_storage(
     client: &Client,
     root_dir: &Path,
     files_path: &Path,
-) -> Result<(Dbc, PaymentProofsMap)> {
+) -> Result<PaymentProofsMap> {
     let wallet = LocalWallet::load_from(root_dir).await?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     let file_api: Files = Files::new(client.clone());
@@ -175,5 +172,5 @@ pub(super) async fn pay_for_storage(
     wallet.store_created_dbc(new_dbc.clone()).await?;
     println!("Successfully stored new dbc ({dbc_id:?}) to wallet dir. It can now be sent to the storage nodes when uploading paid chunks.");
 
-    Ok((new_dbc, proofs))
+    Ok(proofs)
 }

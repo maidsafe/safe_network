@@ -19,7 +19,9 @@ use sn_networking::{
 };
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, Request, Response},
+    messages::{
+        Cmd, CmdResponse, PaymentProof, Query, QueryResponse, RegisterCmd, Request, Response,
+    },
     storage::{registers::User, Chunk, DbcAddress},
     NetworkAddress,
 };
@@ -248,9 +250,17 @@ impl Node {
                 debug!("That's a store chunk in for :{addr_name:?}");
 
                 // TODO: temporarily payment proof is optional
-                if let Some(payment_proof) = payment {
+                if let Some(PaymentProof {
+                    reason_hash,
+                    audit_trail,
+                    path,
+                    ..
+                }) = &payment
+                {
                     // Let's make sure the payment proof is valid for the chunk's name
-                    if let Err(err) = validate_payment_proof(addr_name, &payment_proof) {
+                    if let Err(err) =
+                        validate_payment_proof(addr_name, reason_hash, audit_trail, path)
+                    {
                         debug!("Chunk payment proof deemed invalid: {err:?}");
                         let resp =
                             CmdResponse::StoreChunk(Err(ProtocolError::InvalidPaymentProof {
