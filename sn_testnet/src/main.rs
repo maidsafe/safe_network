@@ -42,10 +42,12 @@ use tracing::{debug, info};
 
 const DEFAULT_NODE_COUNT: u32 = 25;
 
+// Please do not remove the blank lines in these doc comments.
+// They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Debug, clap::StructOpt)]
 #[clap(name = "testnet", version)]
 struct Cmd {
-    /// Launched nodes will join an existing testnet.
+    /// If set, any nodes that are launched will join an existing testnet.
     #[clap(long = "join", short = 'j', value_parser)]
     join_network: bool,
 
@@ -74,7 +76,7 @@ struct Cmd {
 
     /// Build the node from source.
     ///
-    /// This assumes you're running the process from the `safe_network` repository.
+    /// This assumes the process is running from the `safe_network` repository.
     #[clap(long, short = 'b')]
     build_node: bool,
 

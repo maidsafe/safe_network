@@ -11,12 +11,14 @@ use libp2p::Multiaddr;
 
 use crate::subcommands::SubCmd;
 
+// Please do not remove the blank lines in these doc comments.
+// They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub(crate) struct Opt {
     /// Provide a peer to connect to a public network, using the MultiAddr format.
     ///
-    /// The MultiAddr format looks like so:
+    /// An example MultiAddr:
     ///
     /// /ip4/13.40.152.226/udp/12000/quic-v1/p2p/12D3KooWRi6wF7yxWLuPSNskXc6kQ5cJ6eaymeMbCRdTnMesPgFx
     ///

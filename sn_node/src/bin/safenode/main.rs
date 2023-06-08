@@ -69,7 +69,7 @@ struct Opt {
 
     /// Provide a peer to connect to a public network, using the MultiAddr format.
     ///
-    /// The MultiAddr format looks like so:
+    /// An example MultiAddr:
     ///
     /// /ip4/13.40.152.226/udp/12000/quic-v1/p2p/12D3KooWRi6wF7yxWLuPSNskXc6kQ5cJ6eaymeMbCRdTnMesPgFx
     ///
