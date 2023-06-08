@@ -1,0 +1,51 @@
+name: build release artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: The branch to build.
+        type: string
+        required: true
+        default: main
+
+jobs:
+  build:
+    name: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-latest
+            target: arm-unknown-linux-musleabi
+          - os: ubuntu-latest
+            target: armv7-unknown-linux-musleabihf
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+      - uses: actions-rs/toolchain@v1
+        id: toolchain
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      # It's quite slow to install just by building it, but here we need a cross-platform solution.
+      - shell: bash
+        run: cargo install just
+      - shell: bash
+        run: just build-release-artifacts "${{ matrix.target }}"
+      - uses: actions/upload-artifact@main
+        with:
+          name: safe_network-${{ matrix.target }}
+          path: |
+            artifacts
+            !artifacts/.cargo-lock
