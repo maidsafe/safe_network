@@ -21,7 +21,6 @@ use sn_protocol::{
     storage::{Chunk, RecordHeader, RecordKind},
     NetworkAddress,
 };
-use sn_record_store::DiskBackedRecordStore;
 use std::collections::{hash_map, HashSet};
 use tokio::sync::oneshot;
 
@@ -56,10 +55,6 @@ pub enum SwarmCmd {
         channel: MsgResponder,
     },
     GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
-    /// Put data to the Kad network as record
-    PutProvidedDataAsRecord {
-        record: Record,
-    },
     /// Get data from the Kad network
     GetData {
         key: RecordKey,
@@ -106,20 +101,19 @@ impl SwarmDriver {
                 let _ = self.pending_query.insert(query_id, sender);
             }
             SwarmCmd::GetReplicatedData { address, sender } => {
-                let storage_dir = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .storage_dir();
                 let mut resp =
                     QueryResponse::GetReplicatedData(Err(ProtocolError::ReplicatedDataNotFound {
                         holder: NetworkAddress::from_peer(self.self_peer_id),
                         address: address.clone(),
                     }));
                 if let Some(record_key) = address.as_record_key() {
-                    if let Some(record) =
-                        DiskBackedRecordStore::read_from_disk(&record_key, &storage_dir)
+                    if let Some(record) = self
+                        .swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .store_mut()
+                        .get(&record_key)
+                        .to_owned()
                     {
                         let chunk = Chunk::new(record.value.clone().into());
                         trace!("Replicating chunk {:?} to {sender:?}", chunk.name());
@@ -127,6 +121,8 @@ impl SwarmDriver {
                             NetworkAddress::from_peer(self.self_peer_id),
                             ReplicatedData::Chunk(chunk),
                         )));
+                    } else {
+                        debug!("Cannot record for GetReplicatedData from {address:?}");
                     }
                 } else {
                     warn!("Cannot parse a record_key from {address:?}");
@@ -159,13 +155,7 @@ impl SwarmDriver {
                     .contains(&key);
                 let _ = sender.send(has_key);
             }
-            SwarmCmd::PutProvidedDataAsRecord { record } => {
-                let _ = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .put_record(record, libp2p::kad::Quorum::All)?;
-            }
+
             SwarmCmd::ReplicationKeysToFetch { holder, keys } => {
                 self.replication_keys_to_fetch(holder, keys);
             }

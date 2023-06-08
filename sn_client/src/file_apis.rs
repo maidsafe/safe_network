@@ -12,14 +12,12 @@ use super::{
     wallet::PaymentProofsMap,
     Client,
 };
-
-use sn_protocol::storage::{Chunk, ChunkAddress};
-
 use bincode::deserialize;
 use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
+use sn_protocol::storage::{Chunk, ChunkAddress};
 use tokio::task;
 use tracing::trace;
 use xor_name::XorName;
