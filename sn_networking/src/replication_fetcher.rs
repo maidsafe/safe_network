@@ -14,7 +14,7 @@ use std::{
 };
 
 // Max parallel fetches can be undertaken at the same time.
-const MAX_PARALLEL_FETCH: usize = 8;
+const MAX_PARALLEL_FETCH: usize = 4;
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
