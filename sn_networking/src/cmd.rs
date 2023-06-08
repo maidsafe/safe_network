@@ -201,12 +201,12 @@ impl SwarmDriver {
                         })
                         .await?;
                 } else {
-                    trace!("Sending request to peer {peer:?}");
                     let request_id = self
                         .swarm
                         .behaviour_mut()
                         .request_response
                         .send_request(&peer, req);
+                    trace!("Sending request {request_id:?} to peer {peer:?}");
                     let _ = self.pending_requests.insert(request_id, sender);
                 }
             }
