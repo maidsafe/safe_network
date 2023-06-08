@@ -46,8 +46,8 @@ extern crate tracing;
 mod api;
 mod error;
 mod event;
-mod record_validation;
-mod spendbook;
+mod put_validation;
+mod spends;
 
 pub use self::{
     api::RunningNode,
@@ -57,7 +57,6 @@ pub use self::{
 use libp2p::{Multiaddr, PeerId};
 use sn_networking::Network;
 use sn_registers::RegisterStorage;
-use spendbook::SpendBook;
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
@@ -66,7 +65,6 @@ use spendbook::SpendBook;
 pub struct Node {
     network: Network,
     registers: RegisterStorage,
-    spendbook: SpendBook,
     events_channel: NodeEventsChannel,
     /// Peers that are dialed at startup of node.
     initial_peers: Vec<(PeerId, Multiaddr)>,

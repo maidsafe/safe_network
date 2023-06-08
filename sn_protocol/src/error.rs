@@ -29,17 +29,10 @@ pub enum Error {
     /// Chunk not found.
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
-    /// Replication not found.
-    #[error("Peer {holder:?} cann't find ReplicatedData {address:?}")]
-    ReplicatedDataNotFound {
-        /// Holder that being contacted
-        holder: NetworkAddress,
-        /// Address of the missing data
-        address: NetworkAddress,
-    },
     /// We failed to store chunk
     #[error("Chunk was not stored w/ xorname {0:?}")]
     ChunkNotStored(XorName),
+
     /// Register not found.
     #[error("Register not found: {0:?}")]
     RegisterNotFound(RegisterAddress),
@@ -56,14 +49,6 @@ pub enum Error {
         dst_addr: RegisterAddress,
         /// Targeted Register's address
         reg_addr: RegisterAddress,
-    },
-    /// Payment proof provided deemed invalid
-    #[error("Payment proof provided deemed invalid for item's name {addr_name:?}: {reason}")]
-    InvalidPaymentProof {
-        /// XorName the payment proof deemed invalid for
-        addr_name: XorName,
-        /// Reason why the payment proof was deemed invalid
-        reason: String,
     },
     /// At least one input of payment proof provided has a mismatching spend Tx
     #[error("At least one input of payment proof provided for {0:?} has a mismatching spend Tx")]
@@ -97,18 +82,18 @@ pub enum Error {
     /// Data authority provided is invalid.
     #[error("Provided PublicKey could not validate signature: {0:?}")]
     InvalidSignature(bls::PublicKey),
+
+    #[error("Incoming SpendDbc PUT with incorrect number of SingedSpends")]
+    IncorrectSignedSpendLength,
     /// Spend not found.
     #[error("Spend not found: {0:?}")]
     SpendNotFound(DbcAddress),
+    /// Node failed to store spend
+    #[error("Failed to store spend: {0:?}")]
+    SpendNotStored(Option<DbcAddress>),
     /// Insufficient valid spends found to make it valid, less that majority of closest peers
     #[error("Insufficient valid spends found: {0:?}")]
     InsufficientValidSpendsFound(DbcAddress),
-    /// Node failed to store spend
-    #[error("Failed to store spend: {0:?}")]
-    FailedToStoreSpend(DbcAddress),
-    /// Node failed to get spend
-    #[error("Failed to get spend: {0:?}")]
-    FailedToGetSpend(DbcAddress),
     /// A double spend was detected.
     #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
     DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
@@ -118,7 +103,6 @@ pub enum Error {
     /// Cannot verify a Spend's parents.
     #[error("Spend parents are invalid: {0}")]
     InvalidSpendParents(String),
-
     /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
     #[error(
         "The signed spend src tx ({signed_src_tx_hash:?}) did not match a valid parent's dst tx hash: {parent_dst_tx_hash:?}. The trail is invalid."
@@ -139,7 +123,32 @@ pub enum Error {
         /// The hash of the provided source tx.
         provided_src_tx_hash: Hash,
     },
-    // Could not Deserialize RecordHeader from Record
-    #[error("Could not Deserialize RecordHeader from Record")]
+
+    /// Replication not found.
+    #[error("Peer {holder:?} cann't find ReplicatedData {address:?}")]
+    ReplicatedDataNotFound {
+        /// Holder that being contacted
+        holder: NetworkAddress,
+        /// Address of the missing data
+        address: NetworkAddress,
+    },
+
+    /// Payment proof provided deemed invalid
+    #[error("Payment proof provided deemed invalid for item's name {addr_name:?}: {reason}")]
+    InvalidPaymentProof {
+        /// XorName the payment proof deemed invalid for
+        addr_name: XorName,
+        /// Reason why the payment proof was deemed invalid
+        reason: String,
+    },
+
+    // Could not Serialize/Deserialize RecordHeader from Record
+    #[error("Could not Serialize/Deserialize RecordHeader to/from Record")]
     RecordHeaderParsingFailed,
+    // Could not Serialize/Deserialize Record
+    #[error("Could not Serialize/Deserialize Record")]
+    RecordParsingFailed,
+    // The Record::key must match with the one that is derived from the Record::value
+    #[error("The Record::key does not match with the key derived from Record::value")]
+    RecordKeyMismatch,
 }

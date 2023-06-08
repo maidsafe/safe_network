@@ -512,7 +512,7 @@ impl Network {
     /// Send `Request` to the closest peers and ignore reply
     /// If `self` is among the closest_peers, the `Request` is
     /// forwarded to itself and handled. Then a corresponding `Response` is created and is
-    /// forwarded to iself. Hence the flow remains the same and there is no branching at the upper
+    /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
     pub async fn send_req_no_reply_to_closest(&self, request: &Request) -> Result<()> {
         info!(
@@ -544,7 +544,7 @@ impl Network {
 
     /// Get data from the KAD network as bytes
     /// The `RecordHeader` is stripped and only the body is returned
-    pub async fn get_provided_data(&self, key: RecordKey) -> Result<Result<Vec<u8>>> {
+    pub async fn get_data_from_network(&self, key: RecordKey) -> Result<Result<Vec<u8>>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetData { key, sender })
             .await?;
@@ -589,9 +589,10 @@ impl Network {
     }
 
     /// Put `Record` to the local RecordStore
+    /// Must be called after the validations are performed on the Record
     pub async fn put_local_record(&self, record: Record) -> Result<()> {
         debug!(
-            "Putting data as record, for {:?} - length {:?}",
+            "Writing Record locally, for {:?} - length {:?}",
             record.key,
             record.value.len()
         );
@@ -756,7 +757,7 @@ mod tests {
     use rand::{thread_rng, Rng};
     use sn_logging::init_test_logger;
     use sn_protocol::{
-        messages::{CmdResponse, Query, Request, Response},
+        messages::{CmdOk, CmdResponse, Query, Request, Response},
         storage::Chunk,
     };
     use std::{net::SocketAddr, path::Path, time::Duration};
@@ -783,7 +784,7 @@ mod tests {
                     ..
                 }) = event_rx.recv().await
                 {
-                    let res = Response::Cmd(CmdResponse::StoreChunk(Ok(())));
+                    let res = Response::Cmd(CmdResponse::StoreChunk(Ok(CmdOk::StoredSuccessfully)));
                     assert!(channel.send(Ok(res)).is_ok());
                 }
             }
@@ -811,7 +812,10 @@ mod tests {
                     .remove(0)
                     .expect("There should be at least one response!");
                 info!("Got response {:?}", res);
-                assert_matches!(res, Response::Cmd(CmdResponse::StoreChunk(Ok(()))));
+                assert_matches!(
+                    res,
+                    Response::Cmd(CmdResponse::StoreChunk(Ok(CmdOk::StoredSuccessfully)))
+                );
                 return Ok(());
             }
         }
