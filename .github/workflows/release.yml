@@ -73,6 +73,9 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: "0"
+          token: ${{ secrets.RELEASE_PAT }}
       - uses: actions/download-artifact@master
         with:
           name: safe_network-x86_64-pc-windows-msvc
