@@ -174,12 +174,12 @@ jobs:
       - name: Check memory usage
         shell: bash
         env:
-          # The resources file we upload may change, and with it mem consumption.
+          # The resources file and churning chunk_size we upload may change, and with it mem consumption.
           # This is set to a value high enough to allow for some variation depending on 
           # resources and node locatin in the network, but hopefully low enough to catch 
           # any wild memory issues 
           # Any changes to this value should be carefully considered and tested!
-          MEM_LIMIT_MB: "35" # mb
+          MEM_LIMIT_MB: "40" # mb
         run: |
           MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{print $5}' | rg "M" -r "")
           echo "Memory usage: $MEMORY_USAGE MB"
