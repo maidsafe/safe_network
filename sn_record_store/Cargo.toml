@@ -13,7 +13,7 @@ version = "0.1.2"
 [dependencies]
 libp2p = { version="0.51", features = ["tokio","kad", "macros"] }
 rand = { version = "~0.8.5", features = ["small_rng"] }
-sn_protocol = { path = "../sn_protocol", version = "0.1.2" }
+sn_protocol = { path = "../sn_protocol", version = "0.1.3" }
 tracing = { version = "~0.1.26" }
 
 [dev-dependencies]
