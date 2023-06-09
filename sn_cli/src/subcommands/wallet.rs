@@ -22,25 +22,28 @@ use std::{
 };
 use walkdir::WalkDir;
 
+// Please do not remove the blank lines in these doc comments.
+// They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
     /// Print the address of the wallet.
     Address,
     /// Print the balance of the wallet.
     Balance,
-    /// Deposit `Dbc`s to the local wallet.
-    /// Tries to load any `Dbc`s from the `received_dbcs`
-    /// path in the wallet dir, and deposit it to the wallet.
-    /// The user has to manually place received dbc files to
-    /// that dir, for example by choosing that path when downloading
-    /// the dbc file from email or browser.
+    /// Deposit DBCs to the local wallet.
+    ///
+    /// Tries to load DBCs from the received DBCs path in the wallet directory and deposit them to
+    /// the wallet.
+    ///
+    /// Received DBCs must be placed in this directory manually.
     Deposit,
     Send {
-        /// This shall be the number of nanos to send.
-        /// Necessary if the `to` argument has been given.
+        /// The number of nanos to send.
+        ///
+        /// Necessary if the `to` argument is used.
         #[clap(name = "amount")]
         amount: String,
-        /// This must be a hex-encoded `PublicAddress`.
+        /// The hex-encoded public address for the recipient of the DBC.
         #[clap(name = "to")]
         to: String,
     },

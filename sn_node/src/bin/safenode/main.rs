@@ -89,7 +89,7 @@ struct Opt {
     #[clap(long)]
     rpc: Option<SocketAddr>,
 
-    /// Run the node in local network mode.
+    /// Run the node in local mode.
     ///
     /// When this flag is set, we will not filter out local addresses that we observe.
     #[clap(long)]

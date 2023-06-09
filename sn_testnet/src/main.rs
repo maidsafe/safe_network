@@ -51,7 +51,7 @@ struct Cmd {
     #[clap(long = "join", short = 'j', value_parser)]
     join_network: bool,
 
-    /// Location for a network contacts file.
+    /// Location for the network contacts file.
     ///
     /// This should only be used in conjunction with the 'join' command. You can supply it if you
     /// have an existing network contacts path and you want to launch nodes perhaps on another
