@@ -34,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - provide clarity on command arguments
 
+## [0.83.4](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.3...sn_node-v0.83.4) - 2023-06-09
+
+### Other
+- heavier load during the churning test
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
