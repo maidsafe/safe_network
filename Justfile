@@ -138,8 +138,7 @@ upload-release-assets:
   )
 
   commit_msg=$(git log -1 --pretty=%B)
-  # Remove 'chore(release): ' prefix
-  commit_msg=${commit_msg#*: }
+  commit_msg=${commit_msg#*: } # Remove 'chore(release): ' prefix
 
   IFS='/' read -ra crates_with_versions <<< "$commit_msg"
   declare -a crate_names
@@ -150,35 +149,42 @@ upload-release-assets:
 
   for crate in "${crates[@]}"; do
     for binary_crate in "${binary_crates[@]}"; do
-        if [[ "$crate" == "$binary_crate" ]]; then
-            case "$crate" in
-              sn_cli)
-                bin_name="safe"
-                ;;
-              sn_node)
-                bin_name="safenode"
-                ;;
-              sn_testnet)
-                bin_name="testnet"
-                ;;
-              *)
-                echo "The only supported binaries are safe, safenode or testnet."
-                exit 1
-                ;;
-            esac
-            # The crate_with_version variable will correspond to the tag name of the release.
-            # However, only binary crates have releases, so we need to skip any tags that don't
-            # correspond to a binary.
-            for crate_with_version in "${crates_with_versions[@]}"; do
-              if [[ $crate_with_version == $crate-v* ]]; then
-                (
-                  echo "Uploading $bin_name assets to $crate_with_version release..."
-                  cd deploy/$bin_name
-                  ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
-                )
-              fi
-            done
-        fi
+      if [[ "$crate" == "$binary_crate" ]]; then
+        case "$crate" in
+          sn_cli)
+            bin_name="safe"
+            bucket="sn-cli"
+            ;;
+          sn_node)
+            bin_name="safenode"
+            bucket="sn-node"
+            ;;
+          sn_testnet)
+            bin_name="testnet"
+            bucket="sn-testnet"
+            ;;
+          *)
+            echo "The only supported binaries are safe, safenode or testnet."
+            exit 1
+            ;;
+        esac
+        # The crate_with_version variable will correspond to the tag name of the release.
+        # However, only binary crates have releases, so we need to skip any tags that don't
+        # correspond to a binary.
+        for crate_with_version in "${crates_with_versions[@]}"; do
+          if [[ $crate_with_version == $crate-v* ]]; then
+            (
+              echo "Uploading $bin_name assets to $crate_with_version release..."
+              cd deploy/$bin_name
+              ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
+              echo "Uploading $bin_name assets to S3 bucket..."
+              for file in *.zip *.tar.gz; do
+                aws s3 cp "$file" "s3://$bucket/$file" --acl public-read
+              done
+            )
+          fi
+        done
+      fi
     done
   done
 
