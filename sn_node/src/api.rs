@@ -286,6 +286,11 @@ impl Node {
                     keys.len()
                 );
                 let _ = self.network.replication_keys_to_fetch(holder, keys).await;
+
+                // if we do not send a response, we can cause conneciton failures.
+                let resp = CmdResponse::Replicate(Ok(()));
+                self.send_response(Response::Cmd(resp), response_channel)
+                    .await;
             }
             Cmd::Register(cmd) => {
                 let result = self.registers.write(&cmd).await;

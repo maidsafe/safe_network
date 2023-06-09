@@ -89,6 +89,8 @@ pub enum CmdResponse {
     CreateRegister(Result<()>),
     /// Response to RegisterCmd::Edit.
     EditRegister(Result<()>),
+    /// Response to ReplicateCmd
+    Replicate(Result<()>),
 }
 
 impl std::fmt::Display for QueryResponse {
