@@ -70,7 +70,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: eu-west-2
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.RELEASE_PAT }}
     steps:
       - uses: actions/checkout@v3
         with:
