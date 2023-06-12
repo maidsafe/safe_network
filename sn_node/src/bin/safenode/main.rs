@@ -15,7 +15,7 @@ use sn_logging::init_logging;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_node::{Node, NodeEvent, NodeEventsReceiver};
-use sn_peers_acquisition::peers_from_opts_or_env;
+use sn_peers_acquisition::PeersArgs;
 
 use clap::Parser;
 use eyre::{eyre, Error, Result};
@@ -48,42 +48,26 @@ struct Opt {
     /// Specify the node's data directory.
     ///
     /// If not provided, the default location is platform specific:
-    ///
-    /// * Linux: $HOME/.local/share/safe/node
-    ///
-    /// * macOS: $HOME/Library/Application Support/safe/node
-    ///
-    /// * Windows: C:\Users\{username}\AppData\Roaming\safe\node
-    #[clap(long)]
+    ///  - Linux: $HOME/.local/share/safe/node
+    ///  - macOS: $HOME/Library/Application Support/safe/node
+    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\node
+    #[clap(long, verbatim_doc_comment)]
     root_dir: Option<PathBuf>,
 
     /// Specify the port to listen on.
     ///
-    /// Defaults to 0, which means any available port.
+    /// The special value `0` will cause the OS to assign a random port.
     #[clap(long, default_value_t = 0)]
     port: u16,
 
     /// Specify the IP to listen on.
     ///
-    /// Defaults to 0.0.0.0, which will bind to all network interfaces.
+    /// The special value `0.0.0.0` binds to all network interfaces available.
     #[clap(long, default_value_t = IpAddr::V4(Ipv4Addr::UNSPECIFIED))]
     ip: IpAddr,
 
-    /// Provide a peer to connect to a public network, using the MultiAddr format.
-    ///
-    /// An example MultiAddr:
-    ///
-    /// /ip4/13.40.152.226/udp/12000/quic-v1/p2p/12D3KooWRi6wF7yxWLuPSNskXc6kQ5cJ6eaymeMbCRdTnMesPgFx
-    ///
-    /// Noteworthy are the second, fourth, and last parts.
-    ///
-    /// Those are the IP address and UDP port the peer is listening on, and its peer ID, respectively.
-    ///
-    /// Many peers can be provided by using the argument multiple times.
-    ///
-    /// If none are provided, a connection will be attempted to a local network.
-    #[clap(long = "peer", value_name = "MultiAddr")]
-    peers: Vec<Multiaddr>,
+    #[command(flatten)]
+    peers: PeersArgs,
 
     /// Enable the admin/control RPC service by providing an IP and port for it to listen on.
     ///
@@ -130,6 +114,14 @@ fn main() -> Result<()> {
 
     debug!("Built with git version: {}", sn_build_info::git_info());
 
+    if opt.peers.peers.is_empty() {
+        if cfg!(feature = "local-discovery") {
+            warn!("No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.");
+        } else {
+            info!("No peers given. As `local-discovery` feature is enabled, we will attempt to connect to the network using mDNS.");
+        }
+    }
+
     let root_dir = get_root_dir_path(opt.root_dir)?;
     let log_dir = if let Some(path) = opt.log_dir {
         format!("{}", path.display())
@@ -138,7 +130,6 @@ fn main() -> Result<()> {
     };
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
-    let peers = peers_from_opts_or_env(&opt.peers)?;
 
     loop {
         let msg = format!(
@@ -155,7 +146,7 @@ fn main() -> Result<()> {
         rt.spawn(init_metrics(std::process::id()));
         rt.block_on(start_node(
             node_socket_addr,
-            peers.clone(),
+            opt.peers.peers.clone(),
             opt.rpc,
             opt.local,
             &log_dir,

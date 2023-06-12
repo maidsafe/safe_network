@@ -11,7 +11,7 @@ use eyre::Result;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet, Client};
 use sn_dbc::Token;
 use sn_logging::init_logging;
-use sn_peers_acquisition::peers_from_opts_or_env;
+use sn_peers_acquisition::PeersArgs;
 use sn_transfers::wallet::parse_public_address;
 use tracing::info;
 use tracing_core::Level;
@@ -31,8 +31,7 @@ async fn main() -> Result<()> {
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
-    let peers = peers_from_opts_or_env(&[])?;
-    let client = Client::new(secret_key, Some(peers), None).await?;
+    let client = Client::new(secret_key, Some(opt.peers.peers), None).await?;
 
     faucet_cmds(opt.cmd, &client).await?;
 
@@ -42,6 +41,9 @@ async fn main() -> Result<()> {
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Opt {
+    #[command(flatten)]
+    peers: PeersArgs,
+
     /// Available sub commands.
     #[clap(subcommand)]
     pub cmd: SubCmd,

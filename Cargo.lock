@@ -4651,6 +4651,7 @@ dependencies = [
 name = "sn_peers_acquisition"
 version = "0.1.0"
 dependencies = [
+ "clap 4.3.0",
  "eyre",
  "libp2p",
  "tracing",
