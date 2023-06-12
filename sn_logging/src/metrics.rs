@@ -9,7 +9,7 @@
 use serde::Serialize;
 use std::time::Duration;
 use sysinfo::{self, CpuExt, NetworkExt, Pid, PidExt, ProcessExt, System, SystemExt};
-use tracing::{error, trace};
+use tracing::{debug, error};
 
 const UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 const TO_MB: f32 = 1_000_000.0;
@@ -130,7 +130,7 @@ pub async fn init_metrics(pid: u32) {
             process,
         };
         match serde_json::to_string(&metrics) {
-            Ok(metrics) => trace!("{metrics}"),
+            Ok(metrics) => debug!("PID: {} {metrics}, ", std::process::id()),
             Err(err) => error!("Metrics error, could not serialize to JSON {err}"),
         }
 
