@@ -139,12 +139,14 @@ impl Node {
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
                 trace!("RequestReceived: {req:?}, spawning a new task to handle it");
+                // requests are network intensive so we run them in a background task
                 let _handle =
                     spawn(async move { stateless_node_copy.handle_request(req, channel).await });
             }
             NetworkEvent::PeerAdded(peer_id) => {
                 debug!("PeerAdded: {peer_id}");
                 // perform a get_closest query to self on node join. This should help populate the node's RT
+                // since this only runs once, we don't need to make it run in a background task
                 if !*initial_join_flows_done {
                     debug!("Performing a get_closest query to self on node join");
                     if let Ok(closest) = self

@@ -10,22 +10,17 @@ use sn_networking::{close_group_majority, Network};
 use sn_protocol::error::{Error, Result};
 use sn_protocol::messages::{Query, QueryResponse, Request, Response};
 use sn_protocol::storage::DbcAddress;
+use sn_protocol::NetworkAddress;
 use sn_transfers::dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC};
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use libp2p::kad::{Record, RecordKey};
 use sn_dbc::{DbcTransaction, SignedSpend};
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 /// The entitiy managing spends in a Node
 #[derive(Default, Clone)]
-pub(crate) struct SpendBook {
-    /// This RW lock is here to prevent race conditions on spendbook querries
-    /// that would enable double spends
-    rw_lock: Arc<RwLock<()>>,
-}
+pub(crate) struct SpendBook();
 
 impl SpendBook {
     /// Get a SpendBook entry for a given DbcAddress
@@ -35,8 +30,6 @@ impl SpendBook {
         address: DbcAddress,
     ) -> Result<SignedSpend> {
         trace!("Spend get for address: {address:?}");
-        let _double_spend_guard = self.rw_lock.read().await;
-        trace!("Handling spend get for address: {address:?}");
 
         // get spend from kad
         let signed_spend_bytes = match network
@@ -89,8 +82,6 @@ impl SpendBook {
         let dbc_addr = DbcAddress::from_dbc_id(dbc_id);
 
         trace!("Spend put for {dbc_id:?} at {dbc_addr:?}");
-        let _double_spend_guard = self.rw_lock.write().await;
-        trace!("Handling spend put for {dbc_id:?} at {dbc_addr:?}");
 
         // check DBC spend, if it is a double spend, still store them both
         let signed_spends = match verify_spend_dbc(network, &signed_spend).await {
@@ -152,13 +143,13 @@ async fn find_double_spend(
     signed_spend: &SignedSpend,
 ) -> Option<(Box<SignedSpend>, Box<SignedSpend>)> {
     let dbc_addr = DbcAddress::from_dbc_id(signed_spend.dbc_id());
-    let spends = match get_spend(network, dbc_addr).await {
+    let spends = match get_spend_from_peers(network, dbc_addr).await {
         Ok(s) => s,
         Err(Error::DoubleSpendAttempt(spend_one, spend_two)) => {
             return Some((spend_one, spend_two));
         }
         Err(e) => {
-            trace!(
+            warn!(
                 "Get spend returned error while checking for double spend for {dbc_addr:?}: {e:?}"
             );
             vec![]
@@ -188,11 +179,13 @@ async fn verify_spend_dbc(network: &Network, signed_spend: &SignedSpend) -> Resu
 
     // check parents
     if let Err(e) = check_parent_spends(network, signed_spend).await {
+        warn!("Invalid parent spends for {signed_spend:?}: {e:?}");
         return Err(Error::InvalidSpendParents(format!("{:?}", e)));
     }
 
     // find a double spend
     if let Some((spend1, spend2)) = find_double_spend(network, signed_spend).await {
+        warn!("Double spend detected for: {signed_spend:?}");
         return Err(Error::DoubleSpendAttempt(spend1, spend2));
     }
 
@@ -291,12 +284,13 @@ async fn get_parent_spends(
 /// Retrieve spends from the closest peers and checks if majority agrees on it
 /// If majority agrees, return the agreed spend
 async fn get_network_valid_spend(network: &Network, address: DbcAddress) -> Result<SignedSpend> {
-    let spends = get_spend(network, address).await?;
+    let spends = get_spend_from_peers(network, address).await?;
     let valid_spends: Vec<_> = spends
         .iter()
         .filter(|signed_spend| signed_spend.verify(signed_spend.spent_tx_hash()).is_ok())
         .collect();
 
+    trace!("Counting received spends for {:?}", address.name());
     if valid_spends.len() >= close_group_majority() {
         use itertools::*;
         let resp_count_by_spend: BTreeMap<&SignedSpend, usize> = valid_spends
@@ -335,12 +329,24 @@ async fn get_network_valid_spend(network: &Network, address: DbcAddress) -> Resu
 }
 
 /// Requests spends from the closest peers
-async fn get_spend(network: &Network, address: DbcAddress) -> Result<Vec<SignedSpend>> {
+async fn get_spend_from_peers(network: &Network, address: DbcAddress) -> Result<Vec<SignedSpend>> {
+    trace!("Get spend for {:?}", address.name());
     let request = Request::Query(Query::GetSpend(address));
-    let responses = network.node_send_to_closest(&request).await.map_err(|e| {
-        warn!("Error while fetching spends on the Network for {address:?}: {e:?}");
-        Error::FailedToGetSpend(address)
-    })?;
+    let peers_for_this_spend = network
+        .node_get_closest_peers(&NetworkAddress::DbcAddress(address))
+        .await
+        .map_err(|e| {
+            warn!(
+                "Failed to get peers for {:?} because {:?}",
+                address.name(),
+                e
+            );
+            Error::FailedToGetSpend(address)
+        })?;
+    let responses = network
+        .send_and_get_responses(peers_for_this_spend, &request, true)
+        .await;
+    trace!("Got spends for {:?}", address.name());
 
     // Get all Ok results of the expected response type `GetDbcSpend`.
     let mut double_spend_answer = None;
@@ -381,5 +387,9 @@ async fn get_spend(network: &Network, address: DbcAddress) -> Result<Vec<SignedS
         ))?;
     }
 
+    trace!(
+        "Returning found spends for {:?}: {spends:?}",
+        address.name()
+    );
     Ok(spends)
 }
