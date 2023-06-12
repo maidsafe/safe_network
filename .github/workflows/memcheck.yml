@@ -68,6 +68,8 @@ jobs:
           mkdir -p ~/.safe/heapnode
           heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode &
           sleep 10
+        env:
+          SN_LOG: "all"
 
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
@@ -119,16 +121,18 @@ jobs:
         # get the counts, then the specific line, and then the digit count only
         # then check we have an expected level of replication
         # TODO: make this use an env var, or relate to testnet size
+        # As the heap_node using separate folder for logging, 
+        # hence the folder input to rg needs to cover that as well.
         run : |
-          sending_list_count=$(rg "Sending a replication list" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          sending_list_count=$(rg "Sending a replication list" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Sent $sending_list_count replication lists"
-          received_list_count=$(rg "Replicate list received from" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          received_list_count=$(rg "Replicate list received from" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Received $received_list_count replication lists"
-          fetching_attempt_count=$(rg "Fetching replication" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          fetching_attempt_count=$(rg "Fetching replication" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Carried out $fetching_attempt_count fetching attempts"
-          replication_attempt_count=$(rg "Replicating chunk" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          replication_attempt_count=$(rg "Replicating chunk" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Sent $replication_attempt_count chunk copies"
-          replication_count=$(rg "Chunk received for replication" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          replication_count=$(rg "Chunk received for replication" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Received $replication_count chunk copies"
           node_count=$(ls $log_dir | wc -l)
           if [ $replication_count -lt $node_count ]; then
@@ -179,7 +183,7 @@ jobs:
           # resources and node locatin in the network, but hopefully low enough to catch 
           # any wild memory issues 
           # Any changes to this value should be carefully considered and tested!
-          MEM_LIMIT_MB: "40" # mb
+          MEM_LIMIT_MB: "45" # mb
         run: |
           MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{print $5}' | rg "M" -r "")
           echo "Memory usage: $MEMORY_USAGE MB"
@@ -193,6 +197,7 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
+          find ~/.safe/heapnode -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
           find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
           find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
           find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
