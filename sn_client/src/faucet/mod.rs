@@ -7,6 +7,7 @@ use sn_transfers::wallet::LocalWallet;
 
 /// Returns a dbc with the requested number of tokens, for use by E2E test instances.
 pub async fn get_tokens_from_faucet(amount: Token, to: PublicAddress, client: &Client) -> Dbc {
+    println!("[DEBUG] get_tokens_from_faucet {amount:?} to {to:?}");
     send(load_faucet_wallet(client).await, amount, to, client).await
 }
 

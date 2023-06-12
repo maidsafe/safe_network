@@ -156,7 +156,10 @@ impl Client {
 }
 
 /// Use the client to send a DBC from a local wallet to an address.
+/// This marks the spent DBC as spent in the Network
 pub async fn send(from: LocalWallet, amount: Token, to: PublicAddress, client: &Client) -> Dbc {
+    println!("[DEBUG] send {amount:?} to {to:?}");
+
     if amount.as_nano() == 0 {
         panic!("Amount must be more than zero.");
     }

@@ -4735,6 +4735,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "blsttc",
+ "custom_debug",
  "dirs-next",
  "eyre",
  "hex",
