@@ -32,6 +32,9 @@ use std::{
 pub const REPLICATION_INTERVAL_UPPER_BOUND: Duration = Duration::from_secs(540);
 pub const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(180);
 
+/// Max number of records a node can store
+const MAX_RECORDS_COUNT: usize = 2048;
+
 /// A `RecordStore` that stores records on disk.
 pub struct DiskBackedRecordStore {
     /// The identity of the peer owning the store.
@@ -67,7 +70,7 @@ impl Default for DiskBackedRecordStoreConfig {
 
         Self {
             storage_dir: std::env::temp_dir(),
-            max_records: 1024,
+            max_records: MAX_RECORDS_COUNT,
             max_value_bytes: 65 * 1024,
             replication_interval,
         }
