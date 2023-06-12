@@ -62,6 +62,7 @@ use sn_registers::RegisterStorage;
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
 /// storage, and broadcasts node-related events.
+#[derive(Clone)]
 pub struct Node {
     network: Network,
     registers: RegisterStorage,

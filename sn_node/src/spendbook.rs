@@ -16,14 +16,15 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use libp2p::kad::{Record, RecordKey};
 use sn_dbc::{DbcTransaction, SignedSpend};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
 /// The entitiy managing spends in a Node
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(crate) struct SpendBook {
     /// This RW lock is here to prevent race conditions on spendbook querries
     /// that would enable double spends
-    rw_lock: RwLock<()>,
+    rw_lock: Arc<RwLock<()>>,
 }
 
 impl SpendBook {

@@ -134,9 +134,13 @@ impl Node {
         event: NetworkEvent,
         initial_join_flows_done: &mut bool,
     ) {
+        let mut stateless_node_copy = self.clone();
+
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
-                self.handle_request(req, channel).await
+                trace!("RequestReceived: {req:?}, spawning a new task to handle it");
+                let _handle =
+                    spawn(async move { stateless_node_copy.handle_request(req, channel).await });
             }
             NetworkEvent::PeerAdded(peer_id) => {
                 debug!("PeerAdded: {peer_id}");
@@ -183,12 +187,12 @@ impl Node {
     async fn handle_request(&mut self, request: Request, response_channel: MsgResponder) {
         trace!("Handling request: {request:?}");
         match request {
-            Request::Cmd(cmd) => self.handle_cmd(cmd, response_channel).await,
+            Request::Cmd(cmd) => self.handle_node_cmd(cmd, response_channel).await,
             Request::Query(query) => self.handle_query(query, response_channel).await,
         }
     }
 
-    async fn handle_query(&mut self, query: Query, response_channel: MsgResponder) {
+    async fn handle_query(&self, query: Query, response_channel: MsgResponder) {
         let resp = match query {
             Query::Register(query) => self.registers.read(&query, User::Anyone).await,
             Query::GetChunk(address) => {
@@ -234,7 +238,7 @@ impl Node {
             .await;
     }
 
-    async fn handle_cmd(&mut self, cmd: Cmd, response_channel: MsgResponder) {
+    async fn handle_node_cmd(&mut self, cmd: Cmd, response_channel: MsgResponder) {
         match cmd {
             Cmd::StoreChunk { chunk, payment } => {
                 let addr = *chunk.address();
