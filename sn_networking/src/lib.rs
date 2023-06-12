@@ -620,16 +620,17 @@ impl Network {
         sort_peers_by_address(closest_peers, key, CLOSE_GROUP_SIZE)
     }
 
-    // Send a `Request` to the provided set of peers and wait for their responses concurrently.
-    // If `get_all_responses` is true, we wait for the responses from all the peers. Will return an
-    // error if the request timeouts.
-    // If `get_all_responses` is false, we return the first successful response that we get
-    async fn send_and_get_responses(
+    /// Send a `Request` to the provided set of peers and wait for their responses concurrently.
+    /// If `get_all_responses` is true, we wait for the responses from all the peers.
+    /// NB TODO: Will return an error if the request timeouts.
+    /// If `get_all_responses` is false, we return the first successful response that we get
+    pub async fn send_and_get_responses(
         &self,
         peers: Vec<PeerId>,
         req: &Request,
         get_all_responses: bool,
     ) -> Vec<Result<Response>> {
+        trace!("send_and_get_responses for {req:?}");
         let mut list_of_futures = peers
             .iter()
             .map(|peer| Box::pin(self.send_request(req.clone(), *peer)))
@@ -650,6 +651,7 @@ impl Network {
             list_of_futures = remaining_futures;
         }
 
+        trace!("got all respsonses for {req:?}");
         responses
     }
 }

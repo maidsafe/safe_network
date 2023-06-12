@@ -54,7 +54,7 @@ pub struct Inputs {
 
 /// The created dbcs and change dbc from a transfer
 /// of tokens from one or more dbcs, into one or more new dbcs.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TransferOutputs {
     /// This is the hash of the transaction
     /// where all the below spends were made
@@ -62,20 +62,23 @@ pub struct TransferOutputs {
     pub tx_hash: sn_dbc::Hash,
     /// The dbcs that were created containing
     /// the tokens sent to respective recipient.
+    #[debug(skip)]
     pub created_dbcs: Vec<CreatedDbc>,
     /// The dbc holding surplus tokens after
     /// spending the necessary input dbcs.
+    #[debug(skip)]
     pub change_dbc: Option<Dbc>,
     /// The parameters necessary to send all spend requests to the network.
     pub all_spend_requests: Vec<SpendRequest>,
 }
 
 /// The parameters necessary to send a spend request to the network.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SpendRequest {
     /// The dbc to register in the network as spent.
     pub signed_spend: SignedSpend,
     /// The dbc transaction that the spent dbc was created in.
+    #[debug(skip)]
     pub parent_tx: DbcTransaction,
 }
 
