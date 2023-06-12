@@ -18,7 +18,6 @@ use sn_client::Client;
 use sn_logging::init_logging;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
-use sn_peers_acquisition::peers_from_opts_or_env;
 
 use clap::Parser;
 use color_eyre::Result;
@@ -46,10 +45,19 @@ async fn main() -> Result<()> {
     println!("Instantiating a SAFE client...");
 
     let secret_key = bls::SecretKey::random();
-    let peers = peers_from_opts_or_env(&opt.peers)?;
     let root_dir = get_client_dir().await?;
 
-    let client = Client::new(secret_key, Some(peers), opt.timeout).await?;
+    if opt.peers.peers.is_empty() {
+        if cfg!(feature = "local-discovery") {
+            let log_str = "No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.";
+            warn!(log_str);
+            return Err(color_eyre::eyre::eyre!(log_str));
+        } else {
+            info!("No peers given. As `local-discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
+        }
+    }
+
+    let client = Client::new(secret_key, Some(opt.peers.peers), opt.timeout).await?;
 
     match opt.cmd {
         SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client, &root_dir).await?,
