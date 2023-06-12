@@ -59,6 +59,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(node)* move request handling off thread
 
+## [0.83.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.8...sn_node-v0.83.9) - 2023-06-12
+
+### Added
+- remove spendbook rw locks, improve logging
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
