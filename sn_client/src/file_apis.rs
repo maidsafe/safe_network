@@ -25,7 +25,7 @@ use tracing::trace;
 use xor_name::XorName;
 
 // Maximum number of concurrent chunks to be uploaded/retrieved for a file
-const CHUNKS_BATCH_MAX_SIZE: usize = 5;
+const CHUNKS_BATCH_MAX_SIZE: usize = 20;
 
 /// File APIs.
 pub struct Files {
