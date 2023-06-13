@@ -23,6 +23,7 @@ use sn_peers_acquisition::peers_from_opts_or_env;
 use clap::Parser;
 use color_eyre::Result;
 use std::path::PathBuf;
+use std::time::Duration;
 use tracing_core::Level;
 
 #[tokio::main]
@@ -48,8 +49,9 @@ async fn main() -> Result<()> {
     let secret_key = bls::SecretKey::random();
     let peers = peers_from_opts_or_env(&opt.peers)?;
     let root_dir = get_client_dir().await?;
+    let req_resp_timeout = opt.timeout.map(Duration::from_secs);
 
-    let client = Client::new(secret_key, Some(peers)).await?;
+    let client = Client::new(secret_key, Some(peers), req_resp_timeout).await?;
 
     match opt.cmd {
         SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client, &root_dir).await?,

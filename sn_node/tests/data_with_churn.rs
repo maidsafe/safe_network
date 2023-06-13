@@ -481,7 +481,7 @@ async fn query_content(client: &Client, net_addr: &NetworkAddress) -> Result<(),
 
 async fn get_client() -> Client {
     let secret_key = bls::SecretKey::random();
-    Client::new(secret_key, None)
+    Client::new(secret_key, None, None)
         .await
         .expect("Client shall be successfully created.")
 }

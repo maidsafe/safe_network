@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
     let signer = SecretKey::random();
 
     println!("Starting SAFE client...");
-    let client = Client::new(signer, None).await?;
+    let client = Client::new(signer, None, None).await?;
     println!("SAFE client signer public key: {:?}", client.signer_pk());
 
     // we'll retrieve (or create if not found) a Register, and write on it

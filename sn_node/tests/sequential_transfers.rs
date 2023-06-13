@@ -74,7 +74,7 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
 
 async fn get_client() -> Client {
     let secret_key = bls::SecretKey::random();
-    Client::new(secret_key, None)
+    Client::new(secret_key, None, None)
         .await
         .expect("Client shall be successfully created.")
 }
