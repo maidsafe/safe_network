@@ -14,13 +14,14 @@ use color_eyre::Result;
 use sn_client::{Client, Files};
 use sn_protocol::storage::ChunkAddress;
 use sn_transfers::payment_proof::PaymentProofsMap;
-
+use tokio::sync::Semaphore;
 use std::{
     fs,
     path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
 use xor_name::XorName;
+use std::sync::Arc;
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
@@ -96,7 +97,10 @@ async fn upload_files(
         PaymentProofsMap::default()
     };
 
+    // let's limit the number of concurrent uploads to the number of CPUs
     let cpus = num_cpus::get();
+    let semaphore = Arc::new(Semaphore::new(cpus));
+    let mut upload_tasks : Vec<_> = vec![];
 
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
@@ -112,17 +116,25 @@ async fn upload_files(
             };
 
             let file_path = entry.path();
+            let semaphore = semaphore.clone();
+            let task = async move {
+                let _permit = semaphore.acquire().await?;
+                upload_file(
+                    &file_api,
+                    file_path,
+                    file_name,
+                    &mut chunks_to_fetch,
+                    &mut payment_proofs,
+                )
+                .await
+            };
 
-            upload_file(
-                &file_api,
-                file_path,
-                file_name,
-                &mut chunks_to_fetch,
-                &mut payment_proofs,
-            )
-            .await?;
+            upload_tasks.push(task);
+
         }
     }
+
+    futures::future::try_join_all(upload_tasks).await?;
 
     let content = bincode::serialize(&chunks_to_fetch)?;
     tokio::fs::create_dir_all(file_names_path.as_path()).await?;
