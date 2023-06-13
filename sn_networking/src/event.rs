@@ -442,8 +442,27 @@ impl SwarmDriver {
                 all_peers.push(entry.node.key.clone().into_preimage());
             }
         }
-        all_peers.push(self.self_peer_id);
+        if all_peers.len() <= CLOSE_GROUP_SIZE {
+            return;
+        }
 
+        // Setup the record storage distance range.
+        let sorted_peers: Vec<PeerId> = if let Ok(sorted_peers) =
+            sort_peers_by_address(all_peers.clone(), &our_address, CLOSE_GROUP_SIZE + 1)
+        {
+            sorted_peers
+        } else {
+            return;
+        };
+        let distance_bar =
+            NetworkAddress::from_peer(sorted_peers[CLOSE_GROUP_SIZE]).distance(&our_address);
+        self.swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .set_distance_range(distance_bar);
+
+        all_peers.push(self.self_peer_id);
         let churned_peer_address = NetworkAddress::from_peer(*peer);
         // Only nearby peers (two times of the CLOSE_GROUP_SIZE) may affect the later on
         // calculation of `closest peers to each entry`.
@@ -456,9 +475,6 @@ impl SwarmDriver {
         } else {
             return;
         };
-        if sorted_peers.len() <= CLOSE_GROUP_SIZE {
-            return;
-        }
 
         let distance_bar = NetworkAddress::from_peer(sorted_peers[CLOSE_GROUP_SIZE])
             .distance(&churned_peer_address);
