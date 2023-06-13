@@ -64,6 +64,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - remove spendbook rw locks, improve logging
 
+## [0.83.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.9...sn_node-v0.83.10) - 2023-06-13
+
+### Added
+- *(node)* write pid file
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
