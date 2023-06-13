@@ -32,7 +32,7 @@ async fn main() -> Result<()> {
 
     let secret_key = bls::SecretKey::random();
     let peers = peers_from_opts_or_env(&[])?;
-    let client = Client::new(secret_key, Some(peers)).await?;
+    let client = Client::new(secret_key, Some(peers), None).await?;
 
     faucet_cmds(opt.cmd, &client).await?;
 

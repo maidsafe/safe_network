@@ -162,6 +162,7 @@ impl SwarmDriver {
             local,
             false,
             replication_interval,
+            None,
             Some(root_dir.join("record_store")),
             ProtocolSupport::Full,
             IDENTIFY_AGENT_VERSION_STR.to_string(),
@@ -178,7 +179,10 @@ impl SwarmDriver {
     }
 
     /// Same as `new` API but creates the network components in client mode
-    pub fn new_client(local: bool) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
+    pub fn new_client(
+        local: bool,
+        request_timeout: Option<Duration>,
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let mut kad_cfg = KademliaConfig::default(); // default query timeout is 60 secs
@@ -199,18 +203,21 @@ impl SwarmDriver {
             true,
             // Nonsense interval for the client which never replicates
             Duration::from_secs(1000),
+            request_timeout,
             None,
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
         )
     }
 
-    // Private helper to create the network components with the provided config and req/res behaviour
+    #[allow(clippy::too_many_arguments)]
+    /// Private helper to create the network components with the provided config and req/res behaviour
     fn with(
         kad_cfg: KademliaConfig,
         local: bool,
         is_client: bool,
         replication_interval: Duration,
+        request_response_timeout: Option<Duration>,
         disk_store_path: Option<PathBuf>,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
@@ -226,7 +233,7 @@ impl SwarmDriver {
         let request_response = {
             let mut cfg = RequestResponseConfig::default();
             let _ = cfg
-                .set_request_timeout(REQUEST_TIMEOUT)
+                .set_request_timeout(request_response_timeout.unwrap_or(REQUEST_TIMEOUT))
                 .set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
             request_response::Behaviour::new(
