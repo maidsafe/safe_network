@@ -4617,6 +4617,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "libp2p",
+ "num_cpus",
  "prost",
  "rand 0.8.5",
  "rayon",

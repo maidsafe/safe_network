@@ -96,6 +96,8 @@ async fn upload_files(
         PaymentProofsMap::default()
     };
 
+    let cpus = num_cpus::get();
+
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
             let file_name = if let Some(file_name) = entry.file_name().to_str() {
