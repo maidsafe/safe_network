@@ -38,7 +38,6 @@ const MAX_RECORDS_COUNT: usize = 2048;
 /// A `RecordStore` that stores records on disk.
 pub struct DiskBackedRecordStore {
     /// The identity of the peer owning the store.
-    #[allow(dead_code)]
     local_key: KBucketKey<PeerId>,
     /// The configuration of the store.
     config: DiskBackedRecordStoreConfig,
@@ -46,6 +45,9 @@ pub struct DiskBackedRecordStore {
     records: HashSet<Key>,
     /// Time that replication triggered.
     replication_start: Instant,
+    /// Distance range specify the acceptable range of record entry.
+    /// `None` means accept all.
+    distance_range: Option<Distance>,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -91,11 +93,11 @@ impl DiskBackedRecordStore {
             config,
             records: Default::default(),
             replication_start: Instant::now(),
+            distance_range: None,
         }
     }
 
     /// Retains the records satisfying a predicate.
-    #[allow(dead_code)]
     pub fn retain<F>(&mut self, predicate: F)
     where
         F: Fn(&Key) -> bool,
@@ -125,6 +127,11 @@ impl DiskBackedRecordStore {
             })
             .cloned()
             .collect()
+    }
+
+    /// Setup the distance range.
+    pub fn set_distance_range(&mut self, distance_bar: Distance) {
+        self.distance_range = Some(distance_bar);
     }
 
     // Converts a Key into a Hex string.
@@ -173,6 +180,19 @@ impl DiskBackedRecordStore {
     pub fn write_to_local(&mut self, record: Record) -> Result<()> {
         self.put(record)
     }
+
+    fn storage_pruning(&mut self) {
+        if let Some(distance_bar) = self.distance_range {
+            let our_kbucket_key = self.local_key.clone();
+            let predicate = |key: &Key| {
+                let kbucket_key = KBucketKey::from(key.to_vec());
+                our_kbucket_key.distance(&kbucket_key) < distance_bar
+            };
+            self.retain(predicate);
+        } else {
+            warn!("Record storage didn't have the distance_range setup yet.");
+        }
+    }
 }
 
 impl RecordStore for DiskBackedRecordStore {
@@ -215,8 +235,13 @@ impl RecordStore for DiskBackedRecordStore {
 
         let num_records = self.records.len();
         if num_records >= self.config.max_records {
-            warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
-            return Err(Error::MaxRecords);
+            self.storage_pruning();
+            let new_num_records = self.records.len();
+            trace!("A pruning reduced number of record in hold from {num_records} to {new_num_records}");
+            if new_num_records >= self.config.max_records {
+                warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
+                return Err(Error::MaxRecords);
+            }
         }
 
         let filename = Self::key_to_hex(&r.key);
