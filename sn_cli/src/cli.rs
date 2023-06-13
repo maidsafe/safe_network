@@ -6,11 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use clap::Parser;
-use libp2p::Multiaddr;
-
 use crate::subcommands::SubCmd;
-
+use clap::Parser;
+use color_eyre::Result;
+use libp2p::Multiaddr;
+use std::time::Duration;
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser)]
@@ -37,6 +37,6 @@ pub(crate) struct Opt {
     pub cmd: SubCmd,
 
     /// Timeout in seconds for the CLI to wait for a data response from the network.
-    #[clap(long = "timeout", global = true)]
-    pub timeout: Option<u64>,
+    #[clap(long = "timeout", global = true, value_parser = |t: &str| -> Result<Duration> { Ok(t.parse().map(Duration::from_secs)?) })]
+    pub timeout: Option<Duration>,
 }
