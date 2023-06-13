@@ -216,7 +216,11 @@ impl RecordStore for DiskBackedRecordStore {
         let num_records = self.records.len();
         if num_records >= self.config.max_records {
             warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
-            return Err(Error::MaxRecords);
+            // To avoid returning error causing libp2p holding un-necessary copy in cache,
+            // to achieve specified `quorumn::ALL` successes,
+            // which may result in OOM(Out Of Memory) issue under certain network circumstance.
+            // Here returning `OK` instead of `Error::MaxRecords`.
+            return Ok(());
         }
 
         let filename = Self::key_to_hex(&r.key);
