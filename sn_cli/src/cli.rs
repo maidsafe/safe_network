@@ -35,4 +35,8 @@ pub(crate) struct Opt {
     /// Available sub commands.
     #[clap(subcommand)]
     pub cmd: SubCmd,
+
+    /// Timeout in seconds for the CLI to wait for a data response from the network.
+    #[clap(long = "timeout", global = true)]
+    pub timeout: Option<u64>,
 }

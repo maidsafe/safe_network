@@ -43,7 +43,11 @@ const INITIAL_GET_RANDOM_ROUNDS: usize = 5;
 
 impl Client {
     /// Instantiate a new client.
-    pub async fn new(signer: SecretKey, peers: Option<Vec<(PeerId, Multiaddr)>>) -> Result<Self> {
+    pub async fn new(
+        signer: SecretKey,
+        peers: Option<Vec<(PeerId, Multiaddr)>>,
+        req_response_timeout: Option<Duration>,
+    ) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
         let local = !peers
             .clone()
@@ -52,7 +56,9 @@ impl Client {
             .any(|(_, multiaddr)| multiaddr_is_global(multiaddr));
 
         info!("Starting Kad swarm in client mode...");
-        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new_client(local)?;
+
+        let (network, mut network_event_receiver, swarm_driver) =
+            SwarmDriver::new_client(local, req_response_timeout)?;
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 
