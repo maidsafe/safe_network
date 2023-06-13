@@ -13,6 +13,7 @@ use clap::Parser;
 use color_eyre::Result;
 use sn_client::{Client, Files, PaymentProofsMap};
 use sn_protocol::storage::ChunkAddress;
+use walkdir::DirEntry;
 
 use std::{
     fs,
@@ -75,6 +76,7 @@ pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path)
     Ok(())
 }
 
+/// Givena directory, upload all files contained
 async fn upload_files(
     files_path: PathBuf,
     client: Client,
@@ -88,7 +90,7 @@ async fn upload_files(
     let mut chunks_to_fetch = Vec::new();
 
     // We make the payment for Chunks storage only if requested by the user
-    let payment_proofs = if pay {
+    let mut payment_proofs = if pay {
         pay_for_storage(&client, root_dir, &files_path).await?
     } else {
         PaymentProofsMap::default()
@@ -98,36 +100,7 @@ async fn upload_files(
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
             at_least_one_file_exists = true;
-            let file = fs::read(entry.path())?;
-            let bytes = Bytes::from(file);
-            let file_name = if let Some(file_name) = entry.file_name().to_str() {
-                file_name.to_string()
-            } else {
-                println!(
-                    "Skipping file {:?} as it is not valid UTF-8.",
-                    entry.file_name()
-                );
-                continue;
-            };
-
-            println!("Storing file {file_name:?} of {} bytes..", bytes.len());
-
-            match file_api.upload(bytes, &payment_proofs).await {
-                Ok(address) => {
-                    // Output address in hex string.
-                    println!(
-                        "Successfully stored file {:?} to {:64x}",
-                        entry.file_name(),
-                        address.name()
-                    );
-                    chunks_to_fetch.push((*address.name(), file_name));
-                }
-                Err(error) => {
-                    println!(
-                        "Did not store file {file_name:?} to all nodes in the close group! {error}"
-                    )
-                }
-            };
+            upload_file(&file_api, entry, &mut chunks_to_fetch, &mut payment_proofs).await?;
         }
     }
     if !at_least_one_file_exists {
@@ -143,6 +116,49 @@ async fn upload_files(
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
     println!("Writing {} bytes to {file_names_path:?}", content.len());
     fs::write(file_names_path, content)?;
+
+    Ok(())
+}
+
+/// Upload an individual file to the network.
+async fn upload_file(
+    file_api: &Files,
+    entry: DirEntry,
+    chunks_to_fetch: &mut Vec<(XorName, String)>,
+    payment_proofs: &mut PaymentProofsMap,
+) -> Result<()> {
+    let file_name = if let Some(file_name) = entry.file_name().to_str() {
+        file_name.to_string()
+    } else {
+        println!(
+            "Skipping file {:?} as it is not valid UTF-8.",
+            entry.file_name()
+        );
+
+        return Ok(());
+    };
+
+    let file_path = entry.path();
+
+    let file = fs::read(file_path)?;
+    let bytes = Bytes::from(file);
+
+    println!("Storing file {file_name:?} of {} bytes..", bytes.len());
+
+    match file_api.upload_with_proof(bytes, payment_proofs).await {
+        Ok(address) => {
+            // Output address in hex string.
+            println!(
+                "Successfully stored file {:?} to {:64x}",
+                file_name,
+                address.name()
+            );
+            chunks_to_fetch.push((*address.name(), file_name));
+        }
+        Err(error) => {
+            println!("Did not store file {file_name:?} to all nodes in the close group! {error}")
+        }
+    };
 
     Ok(())
 }

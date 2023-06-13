@@ -91,7 +91,7 @@ impl Files {
     /// Directly writes [`Bytes`] to the network in the
     /// form of immutable chunks, without any batching.
     #[instrument(skip(self, bytes), level = "debug")]
-    pub async fn upload(
+    pub async fn upload_with_proof(
         &self,
         bytes: Bytes,
         payment_proofs: &PaymentProofsMap,
