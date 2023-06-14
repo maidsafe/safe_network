@@ -48,11 +48,25 @@ impl SwarmDriver {
                 } => {
                     trace!("Got response for id: {request_id:?}, res: {response}.");
                     if let Some(sender) = self.pending_requests.remove(&request_id) {
-                        sender
-                            .send(Ok(response))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        // The sender will be provided if the caller (Requester) is awaiting for a response
+                        // at the call site.
+                        // Else the Request was just sent to the peer and the Response was
+                        // meant to be handled in another way and is not awaited.
+                        match sender {
+                            Some(sender) => sender
+                                .send(Ok(response))
+                                .map_err(|_| Error::InternalMsgChannelDropped)?,
+                            None => {
+                                // responses that are not awaited at the call site must be handled
+                                // separately
+                                self.event_sender
+                                    .send(NetworkEvent::ResponseReceived { res: response })
+                                    .await?;
+                            }
+                        }
                     } else {
-                        self.handle_response(response)?;
+                        warn!("Tried to remove a RequestId from pending_requests which was not inserted in the first place.
+                        Use Cmd::SendRequest with sender:None if you want the Response to be fed into the common handle_response function");
                     }
                 }
             },
@@ -62,9 +76,17 @@ impl SwarmDriver {
                 peer,
             } => {
                 if let Some(sender) = self.pending_requests.remove(&request_id) {
-                    sender
-                        .send(Err(error.into()))
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    match sender {
+                        Some(sender) => {
+                            sender
+                                .send(Err(error.into()))
+                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        }
+                        None => {
+                            warn!("RequestResponse: OutboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
+                            return Err(Error::ReceivedResponseDropped(request_id));
+                        }
+                    }
                 } else {
                     warn!("RequestResponse: OutboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
                     return Err(Error::ReceivedResponseDropped(request_id));
