@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.1.6...sn_networking-v0.1.7) - 2023-06-14
+
+### Added
+- *(client)* increase default request timeout
+- *(client)* expose req/resp timeout to client cli
+
+### Other
+- *(networking)* update naming of REQUEST_TIMEOUT_DEFAULT_S
+
 ## [0.1.6](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.1.5...sn_networking-v0.1.6) - 2023-06-13
 
 ### Other

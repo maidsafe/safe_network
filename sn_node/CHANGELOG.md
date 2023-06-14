@@ -74,6 +74,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.83.12](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.11...sn_node-v0.83.12) - 2023-06-14
+
+### Added
+- *(client)* expose req/resp timeout to client cli
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
