@@ -14,6 +14,7 @@ use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
@@ -145,14 +146,16 @@ pub(super) async fn pay_for_storage(
     let file_api: Files = Files::new(client.clone());
 
     // Get the list of Chunks addresses from the files found at 'files_path'
-    let mut chunks_addrs = vec![];
+    let mut chunks_addrs = BTreeSet::new();
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
             let file = fs::read(entry.path())?;
             let bytes = Bytes::from(file);
             // we need all chunks addresses not just the data-map addr
             let (_, chunks) = file_api.chunk_bytes(bytes)?;
-            chunks.iter().for_each(|c| chunks_addrs.push(*c.name()));
+            chunks.iter().for_each(|c| {
+                let _ = chunks_addrs.insert(*c.name());
+            });
         }
     }
 
