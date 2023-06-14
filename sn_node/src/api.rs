@@ -14,6 +14,7 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use sn_dbc::Hash;
 use sn_networking::{
     multiaddr_strip_p2p, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState,
 };
@@ -30,6 +31,7 @@ use sn_transfers::payment_proof::validate_payment_proof;
 
 use std::{net::SocketAddr, path::Path, time::Duration};
 use tokio::task::spawn;
+use xor_name::XorName;
 
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
@@ -250,23 +252,14 @@ impl Node {
                 debug!("That's a store chunk in for :{addr_name:?}");
 
                 // TODO: temporarily payment proof is optional
-                if let Some(PaymentProof {
-                    reason_hash,
-                    audit_trail,
-                    path,
-                    ..
-                }) = &payment
-                {
+                if let Some(payment_proof) = &payment {
                     // Let's make sure the payment proof is valid for the chunk's name
-                    if let Err(err) =
-                        validate_payment_proof(addr_name, reason_hash, audit_trail, path)
+                    if let Err(err) = self
+                        .validate_storage_payment(addr_name, payment_proof)
+                        .await
                     {
                         debug!("Chunk payment proof deemed invalid: {err:?}");
-                        let resp =
-                            CmdResponse::StoreChunk(Err(ProtocolError::InvalidPaymentProof {
-                                addr_name,
-                                reason: err.to_string(),
-                            }));
+                        let resp = CmdResponse::StoreChunk(Err(err));
                         return self
                             .send_response(Response::Cmd(resp), response_channel)
                             .await;
@@ -356,6 +349,63 @@ impl Node {
     async fn send_response(&self, resp: Response, response_channel: MsgResponder) {
         if let Err(err) = self.network.send_response(resp, response_channel).await {
             warn!("Error while sending response: {err:?}");
+        }
+    }
+
+    async fn validate_storage_payment(
+        &self,
+        addr_name: XorName,
+        PaymentProof {
+            dbc,
+            audit_trail,
+            path,
+        }: &PaymentProof,
+    ) -> Result<(), ProtocolError> {
+        // TODO: perform some self-validation on the DBC, e.g. correct amounts, signatures, etc., it may
+        // need some missing API from sn_dbc since the `Dbc::verify` is meant to be used by the recipient.
+
+        // We need to fetch the input of the payment DBC in order to obtain the reason-hash and
+        // other info for verifications of valid payment, e.g. expected beneficiaries.
+        // TODO: perform verifications in multiple concurrent tasks
+        let mut reasons = Vec::<Hash>::new();
+        for input in &dbc.src_tx.inputs {
+            let dbc_id = input.dbc_id();
+            let addr = DbcAddress::from_dbc_id(&dbc_id);
+            match self.spendbook.spend_get(&self.network, addr).await {
+                Ok(signed_spend) => {
+                    // TODO: verify DBC outputs are correct, i.e. they pay the closest/expected nodes
+
+                    reasons.push(signed_spend.reason());
+                }
+                Err(err) => {
+                    error!("Error getting payment's input DBC {dbc_id:?} from network: {err}");
+                    return Err(ProtocolError::SpendNotFound(addr));
+                }
+            }
+        }
+
+        match reasons.first() {
+            None => Err(ProtocolError::InvalidPaymentProof {
+                addr_name,
+                reason: "Payment DBC has no input DBCs".to_string(),
+            }),
+            Some(reason_hash) => {
+                // check all reasons are the same
+                if !reasons.iter().all(|r| r == reason_hash) {
+                    return Err(ProtocolError::InvalidPaymentProof {
+                        addr_name,
+                        reason: "Not all input DBCs contain the same reason hash value".to_string(),
+                    });
+                }
+
+                // check the reason hash verifies the merkle-tree audit trail and path against the content address name
+                validate_payment_proof(addr_name, reason_hash, audit_trail, path).map_err(|err| {
+                    ProtocolError::InvalidPaymentProof {
+                        addr_name,
+                        reason: err.to_string(),
+                    }
+                })
+            }
         }
     }
 }
