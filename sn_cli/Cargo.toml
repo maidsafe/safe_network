@@ -14,6 +14,10 @@ version = "0.77.17"
 path="src/main.rs"
 name="safe"
 
+[[bench]]
+name = "files"
+harness = false
+
 [features]
 default = ["metrics"]
 metrics = ["sn_logging/process-metrics"]
@@ -40,3 +44,7 @@ tracing = { version = "~0.1.26" }
 tracing-core = "0.1.30"
 walkdir = "2.3.1"
 xor_name = "5.0.0"
+
+[dev-dependencies]
+criterion = "0.5.1"
+tempfile = "3.6.0"

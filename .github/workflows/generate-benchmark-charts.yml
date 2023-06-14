@@ -1,0 +1,131 @@
+name: Benchmark Chart Generation
+
+# Do not run this workflow on pull request since this workflow has permission to modify contents.
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  # deployments permission to deploy GitHub pages website
+  deployments: write
+  # contents permission to update benchmark contents in gh-pages branch
+  contents: write
+
+env:
+  CARGO_INCREMENTAL: '0'
+  RUST_BACKTRACE: 1
+
+jobs:
+  benchmark:
+    name: Run and log benchmark results on gh-pages
+    # right now only ubuntu, running on multiple systems would require many pushes...\
+    # perhaps this can be done with one consolidation action in the future, pulling down all results and pushing
+    # once to the branch..
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        id: toolchain
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v1
+        with:
+          cache-on-failure: true
+
+      - run: cargo install cargo-criterion
+
+      - name: ubuntu install ripgrep
+        run: sudo apt-get -y install ripgrep
+
+     
+      - name: Build sn bins
+        run: cargo build --release --bins
+        timeout-minutes: 30
+
+      - name: Start a local network
+        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      - name: Set contact env var node.
+        shell: bash
+        # get all nodes listen ports
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+
+      - name: Check contact peer
+        shell: bash
+        run: echo "Peer is $SAFE_PEERS"
+
+      ########################
+      ### Benchmark itself ###
+      ########################
+
+      - name: Bench `safe`
+        shell: bash
+        # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
+        # passes to tee which displays it in the terminal and writes to output.txt
+        run: cargo criterion --output-format bencher 2>&1 | tee -a output.txt
+
+
+      - name: Stop the network on fail
+        shell: bash
+        if: failure()
+        run: safe node killall || true && safe auth stop || true
+
+      - name: Failure logs
+        shell: bash
+        if: failure()
+        run: tail $HOME/.safe/node/local-test-network/*/*.log*
+
+      - name: Remove git hooks so gh-pages git commits will work
+        shell: bash
+        run: rm -rf .git/hooks/pre-commit
+
+      #################################
+      ### Log any regression alerts ###
+      #################################
+
+      # gh-pages branch is updated and pushed automatically with extracted benchmark data
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Safe Network Benchmarks
+          tool: 'cargo'
+          output-file-path: output.txt
+          # Access token to deploy GitHub Pages branch
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Push and deploy GitHub pages branch automatically
+          auto-push: true
+          max-items-in-chart: 300
+
+
+        ### CLEANUP ###
+      - name: Kill all nodes
+        shell: bash
+        timeout-minutes: 1
+        if: failure()
+        continue-on-error: true
+        run: |
+            pkill safenode
+            echo "$(pgrep safenode | wc -l) nodes still running"
+
+      - name: Tar log files
+        shell: bash
+        continue-on-error: true
+        run: |
+            find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
+        if: failure()
+
+      - name: Upload Node Logs
+        uses: actions/upload-artifact@main
+        with:
+            name: safe_test_logs_e2e_${{matrix.os}}
+            path: log_files.tar.gz
+        if: failure()
+        continue-on-error: true
