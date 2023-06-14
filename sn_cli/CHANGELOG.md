@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.77.14](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.77.13...sn_cli-v0.77.14) - 2023-06-14
+
+### Added
+- *(client)* expose req/resp timeout to client cli
+
+### Other
+- *(client)* parse duration in clap derivation
+
 ## [0.77.13](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.77.12...sn_cli-v0.77.13) - 2023-06-13
 
 ### Other
