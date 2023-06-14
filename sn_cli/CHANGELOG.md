@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.77.17](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.77.16...sn_cli-v0.77.17) - 2023-06-14
+
+### Added
+- include output DBC within payment proof for Chunks storage
+
 ## [0.77.16](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.77.15...sn_cli-v0.77.16) - 2023-06-14
 
 ### Other
