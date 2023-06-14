@@ -10,18 +10,18 @@ use super::wallet::pay_for_storage;
 
 use bytes::Bytes;
 use clap::Parser;
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, Files};
 use sn_protocol::storage::ChunkAddress;
 use sn_transfers::payment_proof::PaymentProofsMap;
-use tokio::sync::Semaphore;
+use std::sync::Arc;
 use std::{
     fs,
     path::{Path, PathBuf},
 };
+use tokio::sync::Semaphore;
 use walkdir::WalkDir;
 use xor_name::XorName;
-use std::sync::Arc;
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
@@ -83,14 +83,11 @@ async fn upload_files(
     root_dir: &Path,
     pay: bool,
 ) -> Result<()> {
-    let file_api: Files = Files::new(client.clone());
-
     // The input files_path has to be a dir
     let file_names_path = root_dir.join("uploaded_files");
-    let mut chunks_to_fetch = Vec::new();
 
     // We make the payment for Chunks storage only if requested by the user
-    let mut payment_proofs = if pay {
+    let payment_proofs = if pay {
         let (_dbc, payment_proofs) = pay_for_storage(&client, root_dir, &files_path).await?;
         payment_proofs
     } else {
@@ -100,7 +97,11 @@ async fn upload_files(
     // let's limit the number of concurrent uploads to the number of CPUs
     let cpus = num_cpus::get();
     let semaphore = Arc::new(Semaphore::new(cpus));
-    let mut upload_tasks : Vec<_> = vec![];
+    let mut upload_tasks: Vec<_> = vec![];
+
+    // setup the folder where we'll store the file names
+    tokio::fs::create_dir_all(file_names_path.as_path()).await?;
+    let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
 
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
@@ -115,33 +116,40 @@ async fn upload_files(
                 continue;
             };
 
-            let file_path = entry.path();
+            let file_path = entry.path().to_path_buf();
             let semaphore = semaphore.clone();
+            let date_time = date_time.clone();
+            let payment_proofs = payment_proofs.clone();
+            let file_name = file_name.clone();
+            let file_api: Files = Files::new(client.clone());
+
             let task = async move {
-                let _permit = semaphore.acquire().await?;
-                upload_file(
+                let _permit = semaphore.acquire_owned().await?;
+                let address = upload_file(
                     &file_api,
-                    file_path,
-                    file_name,
-                    &mut chunks_to_fetch,
-                    &mut payment_proofs,
+                    file_path.clone(),
+                    file_name.clone(),
+                    payment_proofs,
                 )
-                .await
+                .await?;
+
+                // Now save that info so we can download it again later
+                let content = bincode::serialize(&(*address.name(), &file_name))?;
+                let chunk_stored_file_path = file_path.join(format!("${file_name}_{}", date_time));
+                println!(
+                    "Writing {} bytes to {chunk_stored_file_path:?}",
+                    content.len()
+                );
+                fs::write(chunk_stored_file_path, content)?;
+
+                Ok::<_, color_eyre::Report>(())
             };
 
             upload_tasks.push(task);
-
         }
     }
 
     futures::future::try_join_all(upload_tasks).await?;
-
-    let content = bincode::serialize(&chunks_to_fetch)?;
-    tokio::fs::create_dir_all(file_names_path.as_path()).await?;
-    let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-    let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
-    println!("Writing {} bytes to {file_names_path:?}", content.len());
-    fs::write(file_names_path, content)?;
 
     Ok(())
 }
@@ -149,17 +157,16 @@ async fn upload_files(
 /// Upload an individual file to the network.
 async fn upload_file(
     file_api: &Files,
-    file_path: &Path,
+    file_path: PathBuf,
     file_name: String,
-    chunks_to_fetch: &mut Vec<(XorName, String)>,
-    payment_proofs: &mut PaymentProofsMap,
-) -> Result<()> {
+    payment_proofs: PaymentProofsMap,
+) -> Result<ChunkAddress> {
     let file = fs::read(file_path)?;
     let bytes = Bytes::from(file);
 
     println!("Storing file {file_name:?} of {} bytes..", bytes.len());
 
-    match file_api.upload_with_proof(bytes, payment_proofs).await {
+    match file_api.upload_with_proof(bytes, &payment_proofs).await {
         Ok(address) => {
             // Output address in hex string.
             println!(
@@ -167,14 +174,14 @@ async fn upload_file(
                 file_name,
                 address.name()
             );
-            chunks_to_fetch.push((*address.name(), file_name));
+
+            Ok(address)
         }
         Err(error) => {
-            println!("Did not store file {file_name:?} to all nodes in the close group! {error}")
+            println!("Did not store file {file_name:?} to all nodes in the close group! {error}");
+            Err(eyre!("Failed to upload file: {error}"))
         }
-    };
-
-    Ok(())
+    }
 }
 
 async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
