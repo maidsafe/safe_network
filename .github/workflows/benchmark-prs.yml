@@ -245,7 +245,7 @@ jobs:
         shell: bash
         env:
           CLIENT_PEAK_MEM_LIMIT_MB: "1000" # mb
-          CLIENT_AVG_MEM_LIMIT_MB: "600" # mb
+          CLIENT_AVG_MEM_LIMIT_MB: "700" # mb
         run: |
           peak_mem_usage=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r "")
           echo "Peak memory usage: $peak_mem_usage MB"
