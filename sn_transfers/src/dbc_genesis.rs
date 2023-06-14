@@ -56,7 +56,6 @@ lazy_static! {
     /// Load the genesis DBC.
     /// The genesis DBC is the first DBC in the network. It is created without
     /// a source transaction, as there was nothing before it.
-    #[derive(Debug)]
     pub static ref GENESIS_DBC: Dbc = match sn_dbc::Dbc::from_hex(GENESIS_DBC_HEX) {
         Ok(dbc) => dbc,
         Err(err) => panic!("Failed to read genesis DBC: {err:?}"),
