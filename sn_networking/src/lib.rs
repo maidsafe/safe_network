@@ -103,7 +103,7 @@ pub struct SwarmDriver {
     event_sender: mpsc::Sender<NetworkEvent>,
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_get_closest_peers: PendingGetClosest,
-    pending_requests: HashMap<RequestId, oneshot::Sender<Result<Response>>>,
+    pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
     pending_query: HashMap<QueryId, oneshot::Sender<Result<Vec<u8>>>>,
     replication_fetcher: ReplicationFetcher,
     local: bool,
@@ -704,16 +704,23 @@ impl Network {
     /// layers.
     pub async fn send_request(&self, req: Request, peer: PeerId) -> Result<Response> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::SendRequest { req, peer, sender })
-            .await?;
+        self.send_swarm_cmd(SwarmCmd::SendRequest {
+            req,
+            peer,
+            sender: Some(sender),
+        })
+        .await?;
         receiver.await?
     }
 
-    /// Send `Request` to the the given `PeerId` and do _not_ await a response.
-    /// todo: instead it will be handled at
+    /// Send `Request` to the the given `PeerId` and do _not_ await a response here.
+    /// Instead the Response will be handled by the common `response_handler`
     pub async fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
-        let (sender, _) = oneshot::channel();
-        let swarm_cmd = SwarmCmd::SendRequest { req, peer, sender };
+        let swarm_cmd = SwarmCmd::SendRequest {
+            req,
+            peer,
+            sender: None,
+        };
         self.send_swarm_cmd(swarm_cmd).await
     }
 
@@ -858,7 +865,9 @@ mod tests {
                 }) = event_rx.recv().await
                 {
                     let res = Response::Cmd(CmdResponse::StoreChunk(Ok(CmdOk::StoredSuccessfully)));
-                    assert!(channel.send(Ok(res)).is_ok());
+                    if let Some(channel) = channel {
+                        assert!(channel.send(Ok(res)).is_ok());
+                    }
                 }
             }
         });

@@ -87,7 +87,7 @@ impl From<autonat::Event> for NodeEvent {
 /// Channel to send the `Response` through.
 pub enum MsgResponder {
     /// Respond to a request from `self` through a simple one-shot channel.
-    FromSelf(oneshot::Sender<Result<Response>>),
+    FromSelf(Option<oneshot::Sender<Result<Response>>>),
     /// Respond to a request from a peer in the network.
     FromPeer(PeerResponseChannel<Response>),
 }

@@ -137,23 +137,22 @@ impl Node {
         Ok(())
     }
 
-    fn send_replicate_list_without_wait(
+    async fn send_replicate_list_without_wait(
         &mut self,
         our_address: &NetworkAddress,
         peer_id: &PeerId,
         keys: Vec<NetworkAddress>,
-    ) {
+    ) -> Result<()> {
         let len = keys.len();
         let request = Request::Cmd(Cmd::Replicate {
             holder: our_address.clone(),
             keys,
         });
-        let request_id = self
-            .swarm
-            .behaviour_mut()
-            .request_response
-            .send_request(peer_id, request);
-        trace!("Sending a replication list({request_id:?}) with {len:?} keys to {peer_id:?}");
+        self.network
+            .send_req_ignore_reply(request, *peer_id)
+            .await?;
+        trace!("Sending a replication list with {len:?} keys to {peer_id:?}");
+        Ok(())
     }
 
     /// Notify a list of keys within a holder to be replicated to self.

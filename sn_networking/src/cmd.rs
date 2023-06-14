@@ -56,7 +56,10 @@ pub enum SwarmCmd {
     SendRequest {
         req: Request,
         peer: PeerId,
-        sender: oneshot::Sender<Result<Response>>,
+        // If the `sender` is provided, then the requesting node will wait for the response
+        // from the Peer at the call site. Else the Response is handled by the common
+        // `response_handler`
+        sender: Option<oneshot::Sender<Result<Response>>>,
     },
     SendResponse {
         resp: Response,
@@ -306,9 +309,20 @@ impl SwarmDriver {
                 // If the response is for `self`, send it directly through the oneshot channel.
                 MsgResponder::FromSelf(channel) => {
                     trace!("Sending response to self");
-                    channel
-                        .send(Ok(resp))
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    match channel {
+                        Some(channel) => {
+                            channel
+                                .send(Ok(resp))
+                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        }
+                        None => {
+                            // responses that are not awaited at the call site must be handled
+                            // separately
+                            self.event_sender
+                                .send(NetworkEvent::ResponseReceived { res: resp })
+                                .await?;
+                        }
+                    }
                 }
                 MsgResponder::FromPeer(channel) => {
                     self.swarm
