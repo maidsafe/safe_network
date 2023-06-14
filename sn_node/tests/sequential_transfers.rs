@@ -20,10 +20,11 @@ use assert_fs::TempDir;
 use eyre::Result;
 
 #[tokio::test(flavor = "multi_thread")]
-#[ignore = "This test is ignored because it is not stable until we have DBCs stored as records."]
+// #[ignore = "This test is ignored because it is not stable until we have DBCs stored as records."]
 async fn multiple_sequential_transfers_succeed() -> Result<()> {
     let logging_targets = vec![
         ("safenode".to_string(), Level::INFO),
+        ("sn_client".to_string(), Level::TRACE),
         ("sn_transfers".to_string(), Level::INFO),
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),

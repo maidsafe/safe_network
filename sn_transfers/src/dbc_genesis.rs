@@ -56,6 +56,7 @@ lazy_static! {
     /// Load the genesis DBC.
     /// The genesis DBC is the first DBC in the network. It is created without
     /// a source transaction, as there was nothing before it.
+    #[derive(Debug)]
     pub static ref GENESIS_DBC: Dbc = match sn_dbc::Dbc::from_hex(GENESIS_DBC_HEX) {
         Ok(dbc) => dbc,
         Err(err) => panic!("Failed to read genesis DBC: {err:?}"),
@@ -68,14 +69,10 @@ pub fn is_genesis_parent_tx(parent_tx: &DbcTransaction) -> bool {
 }
 
 pub async fn load_genesis_wallet() -> LocalWallet {
-    println!("Loading genesis...");
+    info!("Loading genesis...");
     let mut genesis_wallet = create_genesis_wallet().await;
-    let genesis_balance = genesis_wallet.balance();
-    if genesis_balance.as_nano() > 0 {
-        println!("Genesis wallet balance: {genesis_balance}");
-        return genesis_wallet;
-    }
 
+    info!("Depositing genesis DBC: {:#?}", GENESIS_DBC.id());
     genesis_wallet.deposit(vec![GENESIS_DBC.clone()]);
     genesis_wallet
         .store()
@@ -83,7 +80,7 @@ pub async fn load_genesis_wallet() -> LocalWallet {
         .expect("Genesis wallet shall be stored successfully.");
 
     let genesis_balance = genesis_wallet.balance();
-    println!("Genesis wallet balance: {genesis_balance}");
+    info!("Genesis wallet balance: {genesis_balance}");
 
     genesis_wallet
 }
