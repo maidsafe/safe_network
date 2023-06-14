@@ -23,7 +23,7 @@ use std::{
     collections::{hash_set, HashSet},
     fs,
     path::{Path, PathBuf},
-    time::{Duration, Instant},
+    time::Duration,
     vec,
 };
 
@@ -43,8 +43,6 @@ pub struct DiskBackedRecordStore {
     config: DiskBackedRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
     records: HashSet<Key>,
-    /// Time that replication triggered.
-    replication_start: Instant,
     /// Distance range specify the acceptable range of record entry.
     /// `None` means accept all.
     distance_range: Option<Distance>,
@@ -91,7 +89,6 @@ impl DiskBackedRecordStore {
             local_key: KBucketKey::from(local_id),
             config,
             records: Default::default(),
-            replication_start: Instant::now(),
             distance_range: None,
         }
     }
@@ -116,13 +113,12 @@ impl DiskBackedRecordStore {
         to_be_removed.iter().for_each(|key| self.remove(key));
     }
 
-    /// Returns the list of keys that within the distance to the target
-    pub fn entries_to_be_replicated(
+    /// Returns the list of keys that are within the provided distance to the target
+    pub fn get_record_keys_closest_to_target(
         &mut self,
         target: KBucketKey<Vec<u8>>,
         distance_bar: Distance,
     ) -> Vec<Key> {
-        self.replication_start = Instant::now();
         self.records
             .iter()
             .filter(|key| {
@@ -265,15 +261,9 @@ impl RecordStore for DiskBackedRecordStore {
 
     // A backstop replication shall only trigger within pre-defined interval
     fn records(&self) -> Self::RecordsIter<'_> {
-        trace!(
-            "Periodic replication shall be triggered: {:?}",
-            self.replication_start + self.config.replication_interval < Instant::now()
-        );
         RecordsIterator {
             keys: self.records.iter(),
             storage_dir: self.config.storage_dir.clone(),
-            // Set to false to ensure periodic replication disabled.
-            is_triggered: false,
         }
     }
 
@@ -302,16 +292,12 @@ impl RecordStore for DiskBackedRecordStore {
 pub struct RecordsIterator<'a> {
     keys: hash_set::Iter<'a, Key>,
     storage_dir: PathBuf,
-    is_triggered: bool,
 }
 
 impl<'a> Iterator for RecordsIterator<'a> {
     type Item = Cow<'a, Record>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if !self.is_triggered {
-            return None;
-        }
         for key in self.keys.by_ref() {
             let record = DiskBackedRecordStore::read_from_disk(key, &self.storage_dir);
             if record.is_some() {

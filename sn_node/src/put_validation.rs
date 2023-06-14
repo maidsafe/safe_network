@@ -373,7 +373,7 @@ impl Node {
         Ok(Some(signed_spends))
     }
 
-    fn try_deserialize_record<T: serde::de::DeserializeOwned>(
+    pub(crate) fn try_deserialize_record<T: serde::de::DeserializeOwned>(
         record: &Record,
     ) -> Result<T, ProtocolError> {
         let bytes = &record.value[RecordHeader::SIZE..];
@@ -384,7 +384,7 @@ impl Node {
         value
     }
 
-    fn try_serialize_record<T: serde::Serialize>(
+    pub(crate) fn try_serialize_record<T: serde::Serialize>(
         data: &T,
         record_kind: RecordKind,
     ) -> Result<Vec<u8>, ProtocolError> {
