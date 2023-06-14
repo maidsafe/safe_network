@@ -259,15 +259,31 @@ impl Client {
         RegisterOffline::create(self.clone(), xorname, tag)
     }
 
-    /// Store `Chunk` to its close group.
+    /// Store `Chunk` to spcified target.
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
         payment: Option<PaymentProof>,
+        closest_peers: Vec<PeerId>,
     ) -> Result<()> {
-        info!("Store chunk: {:?}", chunk.address());
+        let address = *chunk.name();
+        info!("Store chunk: {:?}", address);
         let request = Request::Cmd(Cmd::StoreChunk { chunk, payment });
-        let response = self.send_and_wait_till_first_rsp(request).await?;
+
+        // Result will be: just one with `StoreChunk(Ok(_))` response;
+        // or a vector of error responses, which only take the first into account.
+        let mut responses = self
+            .network
+            .send_and_get_responses(closest_peers, &request, false)
+            .await
+            .into_iter()
+            .map(|res| res.map_err(Error::Network))
+            .collect_vec();
+        let response = if let Some(response) = responses.pop() {
+            response?
+        } else {
+            return Err(Error::UnexpectedResponses);
+        };
 
         if matches!(response, Response::Cmd(CmdResponse::StoreChunk(Ok(_)))) {
             return Ok(());
@@ -279,6 +295,14 @@ impl Client {
 
         // If there were no store chunk errors, then we had unexpected responses.
         Err(Error::UnexpectedResponses)
+    }
+
+    /// Return the closest_peers to self, fetched from local.
+    pub(super) async fn get_closest_local_peers(&self) -> Result<Vec<PeerId>> {
+        Ok(self
+            .network
+            .get_closest_local_peers(&NetworkAddress::from_peer(self.network.peer_id))
+            .await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.
@@ -307,23 +331,6 @@ impl Client {
             .map(|res| res.map_err(Error::Network))
             .collect_vec();
         Ok(responses)
-    }
-
-    pub(crate) async fn send_and_wait_till_first_rsp(&self, request: Request) -> Result<Response> {
-        let mut responses = self
-            .network
-            .client_send_to_closest(&request, false)
-            .await?
-            .into_iter()
-            .map(|res| res.map_err(Error::Network))
-            .collect_vec();
-        // The responses will be just one OK response or a vector of error responses.
-        // In case of error responses, only need to return one.
-        if let Some(response) = responses.pop() {
-            response
-        } else {
-            Err(Error::UnexpectedResponses)
-        }
     }
 
     /// Send a `SpendDbc` request to the closest nodes to the dbc_id
