@@ -30,26 +30,23 @@ use self::{
     msg::{MsgCodec, MsgProtocol},
     replication_fetcher::ReplicationFetcher,
 };
-
 use futures::{future::select_all, StreamExt};
-
-#[cfg(feature = "local-discovery")]
-use libp2p::{
-    kad::{kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
-    mdns,
-};
-
 use libp2p::{
     identity::Keypair,
-    kad::KademliaStoreInserts,
+    kad::{kbucket::Distance, KademliaStoreInserts},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
+#[cfg(feature = "local-discovery")]
+use libp2p::{
+    kad::{kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
+    mdns,
+};
 use rand::Rng;
 use sn_protocol::{
-    messages::{QueryResponse, Request, Response},
+    messages::{Request, Response},
     storage::RecordHeader,
     NetworkAddress,
 };
@@ -71,7 +68,7 @@ use tracing::warn;
 /// The maximum number of peers to return in a `GetClosestPeers` response.
 /// This is the group size used in safe network protocol to be responsible for
 /// an item in the network.
-pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
+pub const CLOSE_GROUP_SIZE: usize = 8;
 
 // Timeout for requests sent/received through the request_response behaviour.
 const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
@@ -408,7 +405,7 @@ impl SwarmDriver {
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
-pub(crate) fn sort_peers_by_address(
+pub fn sort_peers_by_address(
     peers: Vec<PeerId>,
     address: &NetworkAddress,
     expected_entries: usize,
@@ -418,7 +415,7 @@ pub(crate) fn sort_peers_by_address(
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
 /// Return with the closest expected number of entries if has.
-pub(crate) fn sort_peers_by_key<T>(
+pub fn sort_peers_by_key<T>(
     mut peers: Vec<PeerId>,
     key: &KBucketKey<T>,
     expected_entries: usize,
@@ -488,9 +485,37 @@ impl Network {
     }
 
     /// Returns the closest peers to the given `NetworkAddress`, sorted by their distance to the key.
+    ///
     /// Includes our node's `PeerId` while calculating the closest peers.
     pub async fn node_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
         self.get_closest_peers(key, false).await
+    }
+
+    /// Returns the closest peers to the given `NetworkAddress` that is fetched from the local
+    /// Routing Table. It is ordered by increasing distance of the peers
+    pub async fn get_closest_local_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetClosestLocalPeers {
+            key: key.clone(),
+            sender,
+        })
+        .await?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
+    /// Returns all the PeerId from all the KBuckets from our local Routing Table
+    /// Also contains our own PeerId.
+    pub async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetAllLocalPeers { sender })
+            .await?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
     /// Send `Request` to the closest peers. If `self` is among the closest_peers, the `Request` is
@@ -542,11 +567,30 @@ impl Network {
             .await)
     }
 
+    /// Returns the list of keys that are within the provided distance to the target
+    pub async fn get_record_keys_closest_to_target(
+        &self,
+        target: &NetworkAddress,
+        distance: Distance,
+    ) -> Result<Vec<RecordKey>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetRecordKeysClosestToTarget {
+            key: target.clone(),
+            distance,
+            sender,
+        })
+        .await?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
     /// Get data from the KAD network as bytes
     /// The `RecordHeader` is stripped and only the body is returned
     pub async fn get_data_from_network(&self, key: RecordKey) -> Result<Result<Vec<u8>>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetData { key, sender })
+        self.send_swarm_cmd(SwarmCmd::GetNetworkRecord { key, sender })
             .await?;
 
         receiver
@@ -558,20 +602,6 @@ impl Network {
                     bytes[RecordHeader::SIZE..].to_vec()
                 })
             })
-    }
-
-    /// Get `ReplicatedData` from local Storage
-    pub async fn get_replicated_data(
-        &self,
-        address: NetworkAddress,
-    ) -> Result<Result<QueryResponse>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetReplicatedData { address, sender })
-            .await?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
     /// Get `Record` from the local RecordStore
@@ -600,6 +630,17 @@ impl Network {
             .await
     }
 
+    /// Get the RecordAddress of all the Records stored locally
+    pub async fn get_all_local_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetAllRecordAddress { sender })
+            .await?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
     /// Returns true if a RecordKey is present locally in the RecordStore
     pub async fn is_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
@@ -614,15 +655,46 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
-    /// Notify a list of keys within a holder to be replicated to self.
-    /// The `chunk_storage` is currently held by `swarm_driver` within `network` instance.
-    /// Hence has to carry out this notification.
-    pub async fn replication_keys_to_fetch(
+    // Add a list of keys of a holder to RecordFetcher.  Return with a list of keys to fetch, if present.
+    pub async fn add_keys_to_replication_fetcher(
         &self,
-        holder: NetworkAddress,
+        peer: PeerId,
         keys: Vec<NetworkAddress>,
-    ) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::ReplicationKeysToFetch { holder, keys })
+    ) -> Result<Vec<(PeerId, NetworkAddress)>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { peer, keys, sender })
+            .await?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
+    // Notify the fetch result of a key from a holder. Return with a list of keys to fetch, if present.
+    pub async fn notify_fetch_result(
+        &self,
+        peer: PeerId,
+        key: NetworkAddress,
+        result: bool,
+    ) -> Result<Vec<(PeerId, NetworkAddress)>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::NotifyFetchResult {
+            peer,
+            key,
+            result,
+            sender,
+        })
+        .await?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
+    /// Set the acceptable range of record entry. A record is removed from the storage if the
+    /// distance between the record and the node is greater than the provided `distance`.
+    pub async fn set_record_distance_range(&self, distance: Distance) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::SetRecordDistanceRange { distance })
             .await
     }
 
@@ -637,17 +709,18 @@ impl Network {
         receiver.await?
     }
 
-    /// Send a `Response` through the channel opened by the requester.
-    pub async fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
-            .await
-    }
-
     /// Send `Request` to the the given `PeerId` and do _not_ await a response.
+    /// todo: instead it will be handled at
     pub async fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let (sender, _) = oneshot::channel();
         let swarm_cmd = SwarmCmd::SendRequest { req, peer, sender };
         self.send_swarm_cmd(swarm_cmd).await
+    }
+
+    /// Send a `Response` through the channel opened by the requester.
+    pub async fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
+            .await
     }
 
     /// Return a `SwarmLocalState` with some information obtained from swarm's local state.

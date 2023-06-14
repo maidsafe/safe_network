@@ -7,18 +7,14 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
-
 use crate::error::Result;
-
 use libp2p::{
-    kad::{store::RecordStore, Record, RecordKey},
+    kad::{kbucket::Distance, store::RecordStore, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
 use sn_protocol::{
-    error::Error as ProtocolError,
-    messages::{Query, QueryResponse, ReplicatedData, Request, Response},
-    storage::{Chunk, RecordHeader, RecordKind},
+    messages::{Request, Response},
     NetworkAddress,
 };
 use std::collections::{hash_map, HashSet};
@@ -41,10 +37,22 @@ pub enum SwarmCmd {
         peer_addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
     },
+    // Get closest peers from the network
     GetClosestPeers {
         key: NetworkAddress,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
+    // Get closest peers from the local RoutingTable
+    GetClosestLocalPeers {
+        key: NetworkAddress,
+        sender: oneshot::Sender<Vec<PeerId>>,
+    },
+    // Returns all the peers from all the kbuckets from the local Routing Table.
+    // This includes our PeerId as well.
+    GetAllLocalPeers {
+        sender: oneshot::Sender<Vec<PeerId>>,
+    },
+    // Send Request to the PeerId.
     SendRequest {
         req: Request,
         peer: PeerId,
@@ -55,32 +63,49 @@ pub enum SwarmCmd {
         channel: MsgResponder,
     },
     GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
-    /// Get data from the Kad network
-    GetData {
-        key: RecordKey,
-        sender: oneshot::Sender<Result<Vec<u8>>>,
-    },
     /// Check if the local RecordStore contains the provided key
     RecordStoreHasKey {
         key: RecordKey,
         sender: oneshot::Sender<bool>,
     },
-    /// Put data to the local RecordStore
-    PutLocalRecord {
-        record: Record,
+    /// Get data from the Kad network
+    GetNetworkRecord {
+        key: RecordKey,
+        sender: oneshot::Sender<Result<Vec<u8>>>,
     },
     /// Get data from the local RecordStore
     GetLocalRecord {
         key: RecordKey,
         sender: oneshot::Sender<Option<Record>>,
     },
-    GetReplicatedData {
-        address: NetworkAddress,
-        sender: oneshot::Sender<Result<QueryResponse>>,
+    /// Put data to the local RecordStore
+    PutLocalRecord {
+        record: Record,
     },
-    ReplicationKeysToFetch {
-        holder: NetworkAddress,
+    /// Get all the Addressess of all Records stored locally
+    GetAllRecordAddress {
+        sender: oneshot::Sender<HashSet<NetworkAddress>>,
+    },
+    /// Get the list of keys that within the provided distance to the target Key
+    GetRecordKeysClosestToTarget {
+        key: NetworkAddress,
+        distance: Distance,
+        sender: oneshot::Sender<Vec<RecordKey>>,
+    },
+    AddKeysToReplicationFetcher {
+        peer: PeerId,
         keys: Vec<NetworkAddress>,
+        sender: oneshot::Sender<Vec<(PeerId, NetworkAddress)>>,
+    },
+    NotifyFetchResult {
+        peer: PeerId,
+        key: NetworkAddress,
+        result: bool,
+        sender: oneshot::Sender<Vec<(PeerId, NetworkAddress)>>,
+    },
+    // Set the acceptable range of `Record` entry
+    SetRecordDistanceRange {
+        distance: Distance,
     },
 }
 
@@ -96,38 +121,54 @@ pub struct SwarmLocalState {
 impl SwarmDriver {
     pub(crate) async fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
-            SwarmCmd::GetData { key, sender } => {
+            SwarmCmd::GetAllRecordAddress { sender } => {
+                let addresses = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .record_addresses();
+                let _ = sender.send(addresses);
+            }
+            SwarmCmd::GetRecordKeysClosestToTarget {
+                key,
+                distance,
+                sender,
+            } => {
+                let peers = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .get_record_keys_closest_to_target(key.as_kbucket_key(), distance);
+                let _ = sender.send(peers);
+            }
+            SwarmCmd::AddKeysToReplicationFetcher { peer, keys, sender } => {
+                let keys_to_fetch = self.replication_fetcher.add_keys(peer, keys);
+                let _ = sender.send(keys_to_fetch);
+            }
+            SwarmCmd::NotifyFetchResult {
+                peer,
+                key,
+                result,
+                sender,
+            } => {
+                let keys_to_fetch = self
+                    .replication_fetcher
+                    .notify_fetch_result(peer, key, result);
+                let _ = sender.send(keys_to_fetch);
+            }
+
+            SwarmCmd::SetRecordDistanceRange { distance } => {
+                self.swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .set_distance_range(distance);
+            }
+            SwarmCmd::GetNetworkRecord { key, sender } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
                 let _ = self.pending_query.insert(query_id, sender);
-            }
-            SwarmCmd::GetReplicatedData { address, sender } => {
-                let mut resp =
-                    QueryResponse::GetReplicatedData(Err(ProtocolError::ReplicatedDataNotFound {
-                        holder: NetworkAddress::from_peer(self.self_peer_id),
-                        address: address.clone(),
-                    }));
-                if let Some(record_key) = address.as_record_key() {
-                    if let Some(record) = self
-                        .swarm
-                        .behaviour_mut()
-                        .kademlia
-                        .store_mut()
-                        .get(&record_key)
-                        .to_owned()
-                    {
-                        let chunk = Chunk::new(record.value.clone().into());
-                        trace!("Replicating chunk {:?} to {sender:?}", chunk.name());
-                        resp = QueryResponse::GetReplicatedData(Ok((
-                            NetworkAddress::from_peer(self.self_peer_id),
-                            ReplicatedData::Chunk(chunk),
-                        )));
-                    } else {
-                        debug!("Cannot record for GetReplicatedData from {address:?}");
-                    }
-                } else {
-                    warn!("Cannot parse a record_key from {address:?}");
-                }
-                let _ = sender.send(Ok(resp));
             }
             SwarmCmd::GetLocalRecord { key, sender } => {
                 let record = self
@@ -156,9 +197,6 @@ impl SwarmDriver {
                 let _ = sender.send(has_key);
             }
 
-            SwarmCmd::ReplicationKeysToFetch { holder, keys } => {
-                self.replication_keys_to_fetch(holder, keys);
-            }
             SwarmCmd::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {
                     Ok(_) => sender.send(Ok(())),
@@ -218,6 +256,30 @@ impl SwarmDriver {
                     .pending_get_closest_peers
                     .insert(query_id, (sender, Default::default()));
             }
+            SwarmCmd::GetClosestLocalPeers { key, sender } => {
+                let key = key.as_kbucket_key();
+                // calls `kbuckets.closest_keys(key)` internally, which orders the peers by
+                // increasing distance
+                let closest_peers = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .get_closest_local_peers(&key)
+                    .map(|peer| peer.into_preimage())
+                    .collect();
+
+                let _ = sender.send(closest_peers);
+            }
+            SwarmCmd::GetAllLocalPeers { sender } => {
+                let mut all_peers: Vec<PeerId> = vec![];
+                for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+                    for entry in kbucket.iter() {
+                        all_peers.push(entry.node.key.clone().into_preimage());
+                    }
+                }
+                all_peers.push(self.self_peer_id);
+                let _ = sender.send(all_peers);
+            }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 // If `self` is the recipient, forward the request directly to our upper layer to
                 // be handled.
@@ -268,72 +330,5 @@ impl SwarmDriver {
             }
         }
         Ok(())
-    }
-
-    pub(crate) fn replicate_chunk_to_local(&mut self, chunk: Chunk) -> Result<()> {
-        let addr = *chunk.address();
-        debug!("Chunk received for replication: {:?}", addr.name());
-
-        // Prepend Kademlia record with a header for storage
-        let record_header = RecordHeader {
-            kind: RecordKind::Chunk,
-        };
-        let mut record_value = bincode::serialize(&record_header)?;
-        record_value.extend_from_slice(chunk.value());
-
-        let record = Record {
-            key: RecordKey::new(addr.name()),
-            value: record_value,
-            publisher: None,
-            expires: None,
-        };
-
-        let _ = self.swarm.behaviour_mut().kademlia.store_mut().put(record);
-
-        Ok(())
-    }
-
-    fn replication_keys_to_fetch(&mut self, holder: NetworkAddress, keys: Vec<NetworkAddress>) {
-        let peer_id = if let Some(peer_id) = holder.as_peer_id() {
-            peer_id
-        } else {
-            warn!("Cann't parse PeerId from NetworkAddress {holder:?}");
-            return;
-        };
-        trace!("Convert {holder:?} to {peer_id:?}");
-        let existing_keys: HashSet<NetworkAddress> = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .store_mut()
-            .record_addresses();
-        let non_existing_keys: Vec<NetworkAddress> = keys
-            .iter()
-            .filter(|key| !existing_keys.contains(key))
-            .cloned()
-            .collect();
-        let keys_to_fetch = self
-            .replication_fetcher
-            .add_keys(peer_id, non_existing_keys);
-        self.fetching_replication_keys(keys_to_fetch);
-    }
-
-    pub(crate) fn fetching_replication_keys(
-        &mut self,
-        keys_to_fetch: Vec<(PeerId, NetworkAddress)>,
-    ) {
-        for (peer, key) in keys_to_fetch {
-            trace!("Fetching replication {key:?} from {peer:?}");
-            let request = Request::Query(Query::GetReplicatedData {
-                requester: NetworkAddress::from_peer(self.self_peer_id),
-                address: key,
-            });
-            let request_id = self
-                .swarm
-                .behaviour_mut()
-                .request_response
-                .send_request(&peer, request);
-            trace!("Request_id is {request_id:?}");
-        }
     }
 }

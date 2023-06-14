@@ -179,6 +179,8 @@ impl Client {
         match event {
             // Clients do not handle requests.
             NetworkEvent::RequestReceived { .. } => {}
+            // Clients do not handle responses
+            NetworkEvent::ResponseReceived { .. } => {}
             // Clients do not store Records
             NetworkEvent::PutRequest { .. } => {}
             // We do not listen on sockets.
@@ -214,6 +216,7 @@ impl Client {
                 }
                 self.peers_added += 1;
             }
+            NetworkEvent::PeerRemoved(_) => {}
         }
 
         Ok(())

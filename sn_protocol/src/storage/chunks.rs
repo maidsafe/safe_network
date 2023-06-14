@@ -6,10 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::messages::PaymentProof;
-
 use super::ChunkAddress;
-
+use crate::messages::PaymentProof;
 use bytes::Bytes;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use xor_name::XorName;
@@ -75,7 +73,7 @@ impl<'de> Deserialize<'de> for Chunk {
 }
 
 /// The Chunk along with the Payment is written as Record to kademlia
-#[derive(Eq, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ChunkWithPayment {
     pub chunk: Chunk,
     pub payment: Option<PaymentProof>,
