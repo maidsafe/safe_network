@@ -327,11 +327,15 @@ impl Node {
                 self.send_response(Response::Cmd(resp), response_channel)
                     .await;
             }
-            Cmd::SpendDbc(signed_spend) => {
+            Cmd::SpendDbc(signed_spend, parent_tx) => {
                 let dbc_id = *signed_spend.dbc_id();
                 let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
-                let resp = match self.spendbook.spend_put(&self.network, signed_spend).await {
+                let resp = match self
+                    .spendbook
+                    .spend_put(&self.network, signed_spend, parent_tx)
+                    .await
+                {
                     Ok(addr) => {
                         debug!("Broadcasting valid spend: {dbc_id:?} at: {addr:?}");
                         self.events_channel

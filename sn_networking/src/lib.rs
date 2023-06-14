@@ -74,7 +74,7 @@ pub(crate) const CLOSE_GROUP_SIZE: usize = 8;
 // Timeout for requests sent/received through the request_response behaviour.
 const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
 // Sets the keep-alive timeout of idle connections.
-const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
+const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(100000);
 
 /// Our agent string has as a prefix that we can match against.
 pub const IDENTIFY_AGENT_STR: &str = "safe/node/";

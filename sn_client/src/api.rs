@@ -331,7 +331,7 @@ impl Client {
             .client_get_closest_peers(&network_address)
             .await?;
 
-        let cmd = Cmd::SpendDbc(spend.signed_spend);
+        let cmd = Cmd::SpendDbc(spend.signed_spend, spend.parent_tx);
 
         trace!(
             "Sending {:?} to the closest peers to store spend for {dbc_id:?}.",
@@ -371,11 +371,14 @@ impl Client {
             }
         }
 
-        Err(Error::CouldNotVerifyTransfer(format!(
+        let err = Err(Error::CouldNotVerifyTransfer(format!(
             "Not enough close group nodes accepted the spend for {dbc_id:?}. Got {}, required: {}.",
             ok_responses,
             close_group_majority()
-        )))
+        )));
+
+        warn!("Failed to store spend on the network: {:?}", err);
+        err
     }
 
     pub(crate) async fn expect_closest_majority_same(&self, dbc_id: &DbcId) -> Result<SignedSpend> {

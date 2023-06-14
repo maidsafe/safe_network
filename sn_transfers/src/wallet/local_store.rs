@@ -170,12 +170,13 @@ impl LocalWallet {
             if let Ok(derived_key) = dbc.derived_key(&self.key) {
                 available_dbcs.push((dbc.clone(), derived_key));
             } else {
-                println!(
+                warn!(
                     "Skipping DBC {:?} because we don't have the key to spend it",
                     dbc.id()
                 );
             }
         }
+        trace!("Available DBCs: {:#?}", available_dbcs);
 
         let reason_hash = reason_hash.unwrap_or_default();
 

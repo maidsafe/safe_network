@@ -77,6 +77,7 @@ impl SpendBook {
         &self,
         network: &Network,
         signed_spend: SignedSpend,
+        parent_tx: DbcTransaction,
     ) -> Result<DbcAddress> {
         let dbc_id = signed_spend.dbc_id();
         let dbc_addr = DbcAddress::from_dbc_id(dbc_id);
@@ -84,7 +85,7 @@ impl SpendBook {
         trace!("Spend put for {dbc_id:?} at {dbc_addr:?}");
 
         // check DBC spend, if it is a double spend, still store them both
-        let signed_spends = match verify_spend_dbc(network, &signed_spend).await {
+        let signed_spends = match verify_spend_dbc(network, &signed_spend, &parent_tx).await {
             Ok(()) => vec![signed_spend.clone()],
             Err(Error::DoubleSpendAttempt(one, two)) => vec![*one, *two],
             Err(e) => {
@@ -167,9 +168,15 @@ async fn find_double_spend(
 
 /// Verifies a spend to make sure it is safe to store it on the Network
 /// - check if the DBC Spend is valid
+/// - check that the parent tx hash matches the one in the DBC Spend (aka: is indeed the parent tx)
 /// - check if the parents of this DBC exist on the Network (recursively meaning it comes from Genesis)
 /// - check if another Spend for the same DBC exists on the Network (double spend)
-async fn verify_spend_dbc(network: &Network, signed_spend: &SignedSpend) -> Result<()> {
+async fn verify_spend_dbc(
+    network: &Network,
+    signed_spend: &SignedSpend,
+    parent_tx: &DbcTransaction,
+) -> Result<()> {
+    // check DBC spend
     if let Err(e) = signed_spend.verify(signed_spend.spent_tx_hash()) {
         return Err(Error::InvalidSpendSignature(format!(
             "while verifying spend for {:?}: {e:?}",
@@ -177,9 +184,17 @@ async fn verify_spend_dbc(network: &Network, signed_spend: &SignedSpend) -> Resu
         )));
     }
 
+    // check parent tx hash
+    if parent_tx.hash() != signed_spend.dbc_creation_tx_hash() {
+        return Err(Error::InvalidSpendParents(format!(
+            "parent tx hash does not match the parent tx in the DBC we're trying to spend: {:?} != {:?}",
+            signed_spend.dbc_creation_tx_hash(),
+            parent_tx.hash(),
+        )));
+    }
+
     // check parents
-    if let Err(e) = check_parent_spends(network, signed_spend).await {
-        warn!("Invalid parent spends for {signed_spend:?}: {e:?}");
+    if let Err(e) = check_parent_spends(network, signed_spend, parent_tx).await {
         return Err(Error::InvalidSpendParents(format!("{:?}", e)));
     }
 
@@ -194,9 +209,13 @@ async fn verify_spend_dbc(network: &Network, signed_spend: &SignedSpend) -> Resu
 
 /// Fetch all parent spends from the network and check them
 /// they should all exist as valid spends for this current spend attempt to be valid
-async fn check_parent_spends(network: &Network, signed_spend: &SignedSpend) -> Result<()> {
+async fn check_parent_spends(
+    network: &Network,
+    signed_spend: &SignedSpend,
+    parent_tx: &DbcTransaction,
+) -> Result<()> {
     trace!("Getting parent_spends for {:?}", signed_spend.dbc_id());
-    let parent_spends = match get_parent_spends(network, &signed_spend.spent_tx()).await {
+    let parent_spends = match get_parent_spends(network, parent_tx).await {
         Ok(parent_spends) => parent_spends,
         Err(e) => return Err(e)?,
     };
@@ -215,15 +234,14 @@ fn validate_parent_spends(
     spent_tx: &DbcTransaction,
     parent_spends: BTreeSet<SignedSpend>,
 ) -> Result<()> {
-    // The parent_spends will be different spends,
-    // one for each input that went into creating the signed_spend.
+    // The parent_spends must have been spent in the tx that created our dbc here
     for parent_spend in &parent_spends {
-        // The dst tx of the parent must be the src tx of the spend.
-        if signed_spend.dbc_creation_tx_hash() != parent_spend.spent_tx_hash() {
-            return Err(Error::TxTrailMismatch {
-                signed_src_tx_hash: signed_spend.dbc_creation_tx_hash(),
-                parent_dst_tx_hash: parent_spend.spent_tx_hash(),
-            });
+        let tx_our_dbc_was_created_in = signed_spend.dbc_creation_tx_hash();
+        let tx_its_parents_where_spent_in = parent_spend.spent_tx_hash();
+        if tx_our_dbc_was_created_in != tx_its_parents_where_spent_in {
+            return Err(Error::BadParentSpendHash(format!(
+                "One of the parents was spent in another transaction. Expected: {tx_our_dbc_was_created_in:?} Got: {tx_its_parents_where_spent_in:?}"
+            )));
         }
     }
 
