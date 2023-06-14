@@ -11,6 +11,7 @@ use super::wallet::pay_for_storage;
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
+use futures::future::join_all;
 use sn_client::{Client, Files};
 use sn_protocol::storage::ChunkAddress;
 use sn_transfers::payment_proof::PaymentProofsMap;
@@ -56,20 +57,20 @@ pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path)
                 (Some(name), Some(address)) => {
                     let bytes = hex::decode(address).expect("Input address is not a hex string");
                     download_file(
-                        &file_api,
-                        &XorName(
+                        file_api,
+                        XorName(
                             bytes
                                 .try_into()
                                 .expect("Failed to parse XorName from hex string"),
                         ),
-                        &name,
-                        root_dir,
+                        name,
+                        root_dir.to_path_buf(),
                     )
                     .await
                 }
                 _ => {
                     println!("Trying to download files recorded in uploaded_files folder");
-                    download_previously_uploaded_files(&file_api, root_dir).await?
+                    download_previously_uploaded_files(file_api, root_dir).await?
                 }
             }
         }
@@ -187,45 +188,53 @@ async fn upload_file(
     }
 }
 
-async fn download_previously_uploaded_files(file_api: &Files, root_dir: &Path) -> Result<()> {
+async fn download_previously_uploaded_files(file_api: Files, root_dir: &Path) -> Result<()> {
     let docs_of_uploaded_files_path = root_dir.join("uploaded_files");
     let download_path = root_dir.join("downloaded_files");
     tokio::fs::create_dir_all(download_path.as_path()).await?;
 
+    let mut tasks = vec![];
     for entry in WalkDir::new(docs_of_uploaded_files_path)
         .into_iter()
         .flatten()
     {
         if entry.file_type().is_file() {
             let index_doc_bytes = Bytes::from(fs::read(entry.path())?);
-            let file_name = entry.file_name();
+            let uploaded_file_name = entry.file_name();
+            println!("Loading file from {uploaded_file_name:?}");
 
-            println!("Loading file from {file_name:?}");
             let file_to_fetch: (XorName, String) = bincode::deserialize(&index_doc_bytes)?;
 
-            println!("file to fetch isss: {file_to_fetch:?}");
             let (xorname, file_name) = file_to_fetch;
-            download_file(file_api, &xorname, &file_name, &download_path).await;
+
+            let download_path = download_path.clone();
+            let file_api = file_api.clone();
+            let task =
+                async move { download_file(file_api, xorname, file_name, download_path).await };
+
+            tasks.push(task);
         }
     }
+
+    join_all(tasks).await;
 
     Ok(())
 }
 
 async fn download_file(
-    file_api: &Files,
-    xorname: &XorName,
-    file_name: &String,
-    download_path: &Path,
+    file_api: Files,
+    xorname: XorName,
+    file_name: String,
+    download_path: PathBuf,
 ) {
     println!(
         "Downloading file {file_name:?} with address {:64x}",
         xorname
     );
-    match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
+    match file_api.read_bytes(ChunkAddress::new(xorname)).await {
         Ok(bytes) => {
             println!("Successfully got file {file_name}!");
-            let file_name_path = download_path.join(file_name);
+            let file_name_path = download_path.join(&file_name);
             println!("Writing {} bytes to {file_name_path:?}", bytes.len());
             if let Err(err) = fs::write(file_name_path, bytes) {
                 println!("Failed to create file {file_name:?} with error {err:?}");

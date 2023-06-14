@@ -28,6 +28,7 @@ use xor_name::XorName;
 const CHUNKS_BATCH_MAX_SIZE: usize = 20;
 
 /// File APIs.
+#[derive(Clone)]
 pub struct Files {
     client: Client,
 }
