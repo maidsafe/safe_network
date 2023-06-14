@@ -110,16 +110,9 @@ pub enum Error {
     #[error("Spend parents are invalid: {0}")]
     InvalidSpendParents(String),
 
-    /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
-    #[error(
-        "The signed spend src tx ({signed_src_tx_hash:?}) did not match a valid parent's dst tx hash: {parent_dst_tx_hash:?}. The trail is invalid."
-    )]
-    TxTrailMismatch {
-        /// The signed spend src tx hash.
-        signed_src_tx_hash: Hash,
-        /// The dst hash of a parent signed spend.
-        parent_dst_tx_hash: Hash,
-    },
+    /// One or more parent spends of a requested spend has an invalid hash
+    #[error("Invalid parent spend hash: {0}")]
+    BadParentSpendHash(String),
     /// The provided source tx did not check out when verified with all supposed inputs to it (i.e. our spends parents).
     #[error(
         "The provided source tx (with hash {provided_src_tx_hash:?}) when verified with all supposed inputs to it (i.e. our spends parents).."

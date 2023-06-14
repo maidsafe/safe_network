@@ -13,6 +13,7 @@ use crate::{
 
 use super::RegisterCmd;
 
+use sn_dbc::DbcTransaction;
 // TODO: remove this dependency and define these types herein.
 pub use sn_dbc::{Dbc, Hash, SignedSpend};
 
@@ -44,8 +45,8 @@ pub enum Cmd {
     ///
     /// [`SignedSpend`]: sn_dbc::SignedSpend
     /// The spend to be recorded.
-    /// It contains the transaction it is being spent in.
-    SpendDbc(SignedSpend),
+    /// As well as the parent_tx: the transaction this DBC was created in.
+    SpendDbc(SignedSpend, DbcTransaction),
     /// Write operation to notify peer fetch a list of [`NetworkAddress`] from the holder.
     ///
     /// [`NetworkAddress`]: crate::NetworkAddress
@@ -66,7 +67,7 @@ impl Cmd {
                 NetworkAddress::from_chunk_address(ChunkAddress::new(*chunk.name()))
             }
             Cmd::Register(cmd) => NetworkAddress::from_register_address(cmd.dst()),
-            Cmd::SpendDbc(signed_spend) => {
+            Cmd::SpendDbc(signed_spend, _) => {
                 NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
             }
             Cmd::Replicate { holder, .. } => holder.clone(),
@@ -83,7 +84,7 @@ impl std::fmt::Display for Cmd {
             Cmd::Register(cmd) => {
                 write!(f, "Cmd::Register({:?})", cmd.name()) // more qualification needed
             }
-            Cmd::SpendDbc(signed_spend) => {
+            Cmd::SpendDbc(signed_spend, _) => {
                 write!(f, "Cmd::SpendDbc({:?})", signed_spend.dbc_id())
             }
             Cmd::Replicate { holder, keys } => {

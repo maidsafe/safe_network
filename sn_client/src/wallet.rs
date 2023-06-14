@@ -57,9 +57,9 @@ impl WalletClient {
         let dbcs = transfer.created_dbcs.clone();
 
         // send to network
-        println!("Sending transfer to the network: {transfer:#?}");
+        trace!("Sending transfer to the network: {transfer:#?}");
         if let Err(error) = self.client.send(transfer.clone()).await {
-            println!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
+            warn!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
             self.unconfirmed_txs.push(transfer);
         }
 
@@ -140,6 +140,7 @@ impl Client {
     pub async fn send(&self, transfer: TransferOutputs) -> Result<()> {
         let mut tasks = Vec::new();
         for spend_request in &transfer.all_spend_requests {
+            trace!("sending spend request to the network: {spend_request:#?}");
             tasks.push(self.network_store_spend(spend_request.clone()));
         }
 
