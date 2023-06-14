@@ -15,8 +15,10 @@ use sn_networking::{
 };
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, Request, Response},
-    storage::{registers::User, ChunkWithPayment, DbcAddress},
+    messages::{
+        Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, ReplicatedData, Request, Response,
+    },
+    storage::{registers::User, ChunkWithPayment, DbcAddress, RecordHeader, RecordKind},
     NetworkAddress,
 };
 use sn_registers::RegisterStorage;
@@ -137,6 +139,12 @@ impl Node {
                 let _handle =
                     spawn(async move { stateless_node_copy.handle_request(req, channel).await });
             }
+            NetworkEvent::ResponseReceived { res } => {
+                trace!("NetworkEvent::ResponseReceived that are not awaited at call site. {res:?}");
+                if let Err(err) = self.handle_response(res).await {
+                    error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
+                }
+            }
             NetworkEvent::PutRequest { peer, record } => {
                 debug!("Got a Record PutRequest from {peer:?}");
                 if let Err(err) = self.validate_and_store_record(record).await {
@@ -160,6 +168,14 @@ impl Node {
                     self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
 
                     *initial_join_flows_done = true;
+                }
+                if let Err(err) = self.try_trigger_replication(&peer_id, false).await {
+                    error!("Error while triggering replication {err:?}");
+                }
+            }
+            NetworkEvent::PeerRemoved(peer_id) => {
+                if let Err(err) = self.try_trigger_replication(&peer_id, true).await {
+                    error!("Error while triggering replication {err:?}");
                 }
             }
             NetworkEvent::NewListenAddr(_) => {
@@ -186,15 +202,82 @@ impl Node {
         }
     }
 
-    async fn handle_request(&mut self, request: Request, response_channel: MsgResponder) {
-        trace!("Handling request: {request:?}");
-        match request {
-            Request::Cmd(cmd) => self.handle_node_cmd(cmd, response_channel).await,
-            Request::Query(query) => self.handle_query(query, response_channel).await,
-        }
+    // Handle the respones that are not awaited at the call site
+    async fn handle_response(&mut self, response: Response) -> Result<()> {
+        match response {
+            Response::Query(QueryResponse::GetReplicatedData(Ok((holder, replicated_data)))) => {
+                let address = match replicated_data {
+                    ReplicatedData::Chunk(chunk_with_payment) => {
+                        let chunk_addr = *chunk_with_payment.chunk.address();
+                        debug!("Chunk received for replication: {:?}", chunk_addr.name());
+                        let addr =
+                            NetworkAddress::from_record_key(RecordKey::new(chunk_addr.name()));
+
+                        let success = self.validate_and_store_chunk(chunk_with_payment).await?;
+                        trace!("RecplicatedData::Chunk with {chunk_addr:?} has been validated and stored. {success:?}");
+                        addr
+                    }
+                    ReplicatedData::DbcSpend(spends) => {
+                        // Put validations make sure that we have >= 1 spends and with the same
+                        // dbc_id
+                        let dbc_addr = DbcAddress::from_dbc_id(spends[0].dbc_id());
+                        debug!("DbcSpend received for replication: {:?}", dbc_addr.name());
+                        let addr = NetworkAddress::from_record_key(RecordKey::new(dbc_addr.name()));
+
+                        let success = self.validate_and_store_spend(spends).await?;
+                        trace!("RecplicatedData::Chunk with {addr:?} has been validated and stored. {success:?}");
+                        addr
+                    }
+                    other => {
+                        warn!("Not support other type of replicated data {:?}", other);
+                        return Ok(());
+                    }
+                };
+
+                // notify the fetch result
+                if let Some(peer_id) = holder.as_peer_id() {
+                    let keys_to_fetch = self
+                        .network
+                        .notify_fetch_result(peer_id, address, true)
+                        .await?;
+                    self.fetching_replication_keys(keys_to_fetch).await?;
+                } else {
+                    warn!("Cannot parse PeerId from {holder:?}");
+                }
+            }
+            Response::Query(QueryResponse::GetReplicatedData(Err(
+                ProtocolError::ReplicatedDataNotFound { holder, address },
+            ))) => {
+                // notify the fetch result
+                if let Some(peer_id) = holder.as_peer_id() {
+                    let keys_to_fetch = self
+                        .network
+                        .notify_fetch_result(peer_id, address, false)
+                        .await?;
+                    self.fetching_replication_keys(keys_to_fetch).await?;
+                } else {
+                    warn!("Cannot parse PeerId from {holder:?}");
+                }
+            }
+            other => {
+                error!("handle_response not implemented for {other:?}");
+                return Ok(());
+            }
+        };
+
+        Ok(())
     }
 
-    async fn handle_query(&self, query: Query, response_channel: MsgResponder) {
+    async fn handle_request(&mut self, request: Request, response_channel: MsgResponder) {
+        trace!("Handling request: {request:?}");
+        let response = match request {
+            Request::Cmd(cmd) => self.handle_node_cmd(cmd).await,
+            Request::Query(query) => self.handle_query(query).await,
+        };
+        self.send_response(response, response_channel).await;
+    }
+
+    async fn handle_query(&self, query: Query) -> Response {
         let resp = match query {
             Query::Register(query) => self.registers.read(&query, User::Anyone).await,
             Query::GetChunk(address) => {
@@ -267,33 +350,59 @@ impl Node {
                 requester: _,
                 address,
             } => {
-                // TODO: consider pass down requester to make swarm_driver fire response directly.
-                //       which will avoid a blocking await here.
-                match self.network.get_replicated_data(address.clone()).await {
-                    Ok(Ok(response)) => response,
-                    Ok(Err(err)) | Err(err) => {
-                        error!("Error getting replicated data from local: {err}");
-                        QueryResponse::GetReplicatedData(Err(
-                            ProtocolError::ReplicatedDataNotFound {
-                                holder: NetworkAddress::from_peer(self.network.peer_id),
-                                address,
-                            },
-                        ))
+                let mut resp =
+                    QueryResponse::GetReplicatedData(Err(ProtocolError::ReplicatedDataNotFound {
+                        holder: NetworkAddress::from_peer(self.network.peer_id),
+                        address: address.clone(),
+                    }));
+                if let Some(record_key) = address.as_record_key() {
+                    if let Ok(Some(record)) = self.network.get_local_record(&record_key).await {
+                        if let Ok(header) = RecordHeader::from_record(&record) {
+                            match header.kind {
+                                RecordKind::Chunk => {
+                                    if let Ok(chunk_with_payment) =
+                                        Self::try_deserialize_record(&record)
+                                    {
+                                        resp = QueryResponse::GetReplicatedData(Ok((
+                                            NetworkAddress::from_peer(self.network.peer_id),
+                                            ReplicatedData::Chunk(chunk_with_payment),
+                                        )));
+                                    }
+                                }
+                                RecordKind::DbcSpend => {
+                                    if let Ok(spends) = Self::try_deserialize_record(&record) {
+                                        resp = QueryResponse::GetReplicatedData(Ok((
+                                            NetworkAddress::from_peer(self.network.peer_id),
+                                            ReplicatedData::DbcSpend(spends),
+                                        )));
+                                    }
+                                }
+                                RecordKind::Register => {
+                                    warn!("Query::GetReplicatedData not implemented for RecordKind::Register");
+                                }
+                            }
+                        } else {
+                            error!("Query::GetReplicatedData. Error while obtaining RecordHeader from Record");
+                        }
+                    } else {
+                        debug!("Query::GetReplicatedData. Record not found in local store, addr {address:?}");
                     }
-                }
+                } else {
+                    error!("Query::GetReplicatedData. Error while converting NetworkAddress to Record_key, addr {address:?}");
+                };
+                resp
             }
         };
-        self.send_response(Response::Query(resp), response_channel)
-            .await;
+        Response::Query(resp)
     }
 
-    async fn handle_node_cmd(&mut self, cmd: Cmd, response_channel: MsgResponder) {
-        match cmd {
+    async fn handle_node_cmd(&mut self, cmd: Cmd) -> Response {
+        let resp = match cmd {
             Cmd::StoreChunk { chunk, payment } => {
                 let addr = *chunk.address();
                 let chunk_with_payment = ChunkWithPayment { chunk, payment };
 
-                let resp = match self.validate_and_store_chunk(chunk_with_payment).await {
+                match self.validate_and_store_chunk(chunk_with_payment).await {
                     Ok(cmd_ok) => {
                         self.events_channel.broadcast(NodeEvent::ChunkStored(addr));
                         CmdResponse::StoreChunk(Ok(cmd_ok))
@@ -302,10 +411,7 @@ impl Node {
                         error!("Failed to StoreChunk: {err:?}");
                         CmdResponse::StoreChunk(Err(err))
                     }
-                };
-
-                self.send_response(Response::Cmd(resp), response_channel)
-                    .await;
+                }
             }
             Cmd::Replicate { holder, keys } => {
                 debug!(
@@ -313,18 +419,17 @@ impl Node {
                     holder.as_peer_id(),
                     keys.len()
                 );
-                let _ = self.network.replication_keys_to_fetch(holder, keys).await;
 
+                // todo: error is not propagated to the caller here
+                let _ = self.replication_keys_to_fetch(holder, keys).await;
                 // if we do not send a response, we can cause connection failures.
-                let resp = CmdResponse::Replicate(Ok(()));
-                self.send_response(Response::Cmd(resp), response_channel)
-                    .await;
+                CmdResponse::Replicate(Ok(()))
             }
             Cmd::Register(cmd) => {
                 let result = self.registers.write(&cmd).await;
 
                 let xorname = cmd.dst();
-                let resp = match cmd {
+                match cmd {
                     RegisterCmd::Create(_) => {
                         self.events_channel
                             .broadcast(NodeEvent::RegisterCreated(xorname));
@@ -335,14 +440,15 @@ impl Node {
                             .broadcast(NodeEvent::RegisterEdited(xorname));
                         CmdResponse::EditRegister(result)
                     }
-                };
-                self.send_response(Response::Cmd(resp), response_channel)
-                    .await;
+                }
             }
             Cmd::SpendDbc(signed_spend, _) => {
                 let dbc_id = *signed_spend.dbc_id();
                 let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
-                let resp = match self.validate_and_store_spend(vec![signed_spend]).await {
+                match self
+                    .validate_and_store_spend(vec![vec![signed_spend]])
+                    .await
+                {
                     Ok(cmd_ok) => {
                         debug!("Broadcasting valid spend: {dbc_id:?} at: {dbc_addr:?}");
                         self.events_channel
@@ -353,12 +459,11 @@ impl Node {
                         error!("Failed to StoreSpend: {err:?}");
                         CmdResponse::Spend(Err(err))
                     }
-                };
-
-                self.send_response(Response::Cmd(resp), response_channel)
-                    .await;
+                }
             }
-        }
+        };
+
+        Response::Cmd(resp)
     }
 
     async fn send_response(&self, resp: Response, response_channel: MsgResponder) {

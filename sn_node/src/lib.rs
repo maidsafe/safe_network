@@ -47,6 +47,7 @@ mod api;
 mod error;
 mod event;
 mod put_validation;
+mod replication;
 mod spends;
 
 pub use self::{
