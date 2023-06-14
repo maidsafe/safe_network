@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    chunks::{to_chunk, DataMapLevel, Error, LargeFile, SmallFile},
+    chunks::{to_chunk, DataMapLevel, Error, SmallFile},
     error::Result,
     wallet::PaymentProofsMap,
     Client,
@@ -19,7 +19,7 @@ use bincode::deserialize;
 use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
-use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk};
+use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
 use tokio::task;
 use tracing::trace;
 use xor_name::XorName;
@@ -121,17 +121,16 @@ impl Files {
         self.chunk_bytes(bytes).map(|(name, _)| name)
     }
 
-    /// Tries to chunk the bytes, returning the data-map address and chunks, without storing anything to network.
+    /// Tries to chunk the bytes, returning the data-map address and chunks,
+    /// without storing anything to network.
     #[instrument(skip_all, level = "trace")]
     pub fn chunk_bytes(&self, bytes: Bytes) -> Result<(XorName, Vec<Chunk>)> {
-        match LargeFile::new(bytes.clone()) {
-            Ok(file) => encrypt_large(file),
-            Err(Error::TooSmallForSelfEncryption { .. }) => {
-                let file = SmallFile::new(bytes)?;
-                let chunk = package_small(file)?;
-                Ok((*chunk.name(), vec![chunk]))
-            }
-            Err(error) => Err(error)?,
+        if bytes.len() < MIN_ENCRYPTABLE_BYTES {
+            let file = SmallFile::new(bytes)?;
+            let chunk = package_small(file)?;
+            Ok((*chunk.name(), vec![chunk]))
+        } else {
+            encrypt_large(bytes)
         }
     }
 
@@ -146,13 +145,11 @@ impl Files {
         payment_proofs: &PaymentProofsMap,
         verify: bool,
     ) -> Result<ChunkAddress> {
-        match LargeFile::new(bytes.clone()) {
-            Ok(file) => self.upload_large(file, payment_proofs, verify).await,
-            Err(Error::TooSmallForSelfEncryption { .. }) => {
-                let file = SmallFile::new(bytes)?;
-                self.upload_small(file, payment_proofs, verify).await
-            }
-            Err(error) => Err(error)?,
+        if bytes.len() < MIN_ENCRYPTABLE_BYTES {
+            let file = SmallFile::new(bytes)?;
+            self.upload_small(file, payment_proofs, verify).await
+        } else {
+            self.upload_large(bytes, payment_proofs, verify).await
         }
     }
 
@@ -185,14 +182,16 @@ impl Files {
     #[instrument(skip_all, level = "trace")]
     async fn upload_large(
         &self,
-        large: LargeFile,
+        large: Bytes,
         payment_proofs: &PaymentProofsMap,
         verify: bool,
     ) -> Result<ChunkAddress> {
-        let (head_address, all_chunks) = encrypt_large(large)?;
-        for next_batch in all_chunks.chunks(CHUNKS_BATCH_MAX_SIZE) {
+        let (head_address, mut all_chunks) = encrypt_large(large)?;
+        while !all_chunks.is_empty() {
+            let chop_size = std::cmp::min(CHUNKS_BATCH_MAX_SIZE, all_chunks.len());
+            let next_batch: Vec<Chunk> = all_chunks.drain(..chop_size).collect();
             let mut tasks = vec![];
-            for chunk in next_batch.iter().cloned() {
+            for chunk in next_batch {
                 let client = self.client.clone();
                 let chunk_addr = *chunk.address();
                 let payment = payment_proofs.get(&chunk_addr.name().0).cloned();
@@ -337,9 +336,9 @@ impl Files {
 
 /// Encrypts a [`LargeFile`] and returns the resulting address and all chunks.
 /// Does not store anything to the network.
-#[instrument(skip(file), level = "trace")]
-fn encrypt_large(file: LargeFile) -> Result<(XorName, Vec<Chunk>)> {
-    Ok(super::chunks::encrypt_large(file.bytes())?)
+#[instrument(skip(bytes), level = "trace")]
+fn encrypt_large(bytes: Bytes) -> Result<(XorName, Vec<Chunk>)> {
+    Ok(super::chunks::encrypt_large(bytes)?)
 }
 
 /// Packages a [`SmallFile`] and returns the resulting address and the chunk.
