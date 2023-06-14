@@ -69,7 +69,7 @@ pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path)
                 }
                 _ => {
                     println!("Trying to download files recorded in uploaded_files folder");
-                    download_files(&file_api, root_dir).await?
+                    download_previously_uploaded_files(&file_api, root_dir).await?
                 }
             }
         }
@@ -121,6 +121,7 @@ async fn upload_files(
             let date_time = date_time.clone();
             let payment_proofs = payment_proofs.clone();
             let file_name = file_name.clone();
+            let file_names_path = file_names_path.clone();
             let file_api: Files = Files::new(client.clone());
 
             let task = async move {
@@ -133,9 +134,11 @@ async fn upload_files(
                 )
                 .await?;
 
+                debug!("Uploaded file {:?} to {:?}", file_path, address);
                 // Now save that info so we can download it again later
                 let content = bincode::serialize(&(*address.name(), &file_name))?;
-                let chunk_stored_file_path = file_path.join(format!("${file_name}_{}", date_time));
+                let chunk_stored_file_path =
+                    file_names_path.join(format!("${file_name}_{}", date_time));
                 println!(
                     "Writing {} bytes to {chunk_stored_file_path:?}",
                     content.len()
@@ -184,7 +187,7 @@ async fn upload_file(
     }
 }
 
-async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
+async fn download_previously_uploaded_files(file_api: &Files, root_dir: &Path) -> Result<()> {
     let docs_of_uploaded_files_path = root_dir.join("uploaded_files");
     let download_path = root_dir.join("downloaded_files");
     tokio::fs::create_dir_all(download_path.as_path()).await?;
@@ -195,17 +198,14 @@ async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
     {
         if entry.file_type().is_file() {
             let index_doc_bytes = Bytes::from(fs::read(entry.path())?);
-            let index_doc_name = entry.file_name();
+            let file_name = entry.file_name();
 
-            println!("Loading file names from index doc {index_doc_name:?}");
-            let files_to_fetch: Vec<(XorName, String)> = bincode::deserialize(&index_doc_bytes)?;
+            println!("Loading file from {file_name:?}");
+            let file_to_fetch: (XorName, String) = bincode::deserialize(&index_doc_bytes)?;
 
-            if files_to_fetch.is_empty() {
-                println!("No files to download!");
-            }
-            for (xorname, file_name) in files_to_fetch.iter() {
-                download_file(file_api, xorname, file_name, &download_path).await;
-            }
+            println!("file to fetch isss: {file_to_fetch:?}");
+            let (xorname, file_name) = file_to_fetch;
+            download_file(file_api, &xorname, &file_name, &download_path).await;
         }
     }
 
