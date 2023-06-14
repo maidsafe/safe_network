@@ -104,13 +104,10 @@ pub type MerkleTreeNodesType = [u8; 32];
 
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
 pub struct PaymentProof {
-    // Output DBC for nodes to check the Chunk payment is valid and inputs have
+    // Output DBC for nodes to check the storage payment is valid and inputs have
     // been effectivelly spent on the network.
     pub dbc: Dbc,
-    // Reason-hash value set in the input/parent DBCs spent for this storage payment.
-    // TODO: remove it since nodes should get this from the input/parent spent DBC/s
-    pub reason_hash: Hash,
-    // Merkletree audit trail to prove the Chunk has been paid by the
+    // Merkletree audit trail to prove the content storage has been paid by the
     // given DBC (using DBC's parent/s 'reason' field)
     pub audit_trail: Vec<MerkleTreeNodesType>,
     // Path of the audit trail

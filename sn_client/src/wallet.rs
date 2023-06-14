@@ -98,7 +98,6 @@ impl WalletClient {
                         (
                             addr,
                             PaymentProof {
-                                reason_hash,
                                 dbc: dbc.clone(),
                                 audit_trail,
                                 path,
