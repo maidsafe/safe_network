@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_record_store"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.1.3"
+version = "0.1.4"
 
 [dependencies]
 libp2p = { version="0.51", features = ["tokio","kad", "macros"] }
