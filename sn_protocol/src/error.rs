@@ -15,7 +15,7 @@ use crate::{
 };
 
 use serde::{Deserialize, Serialize};
-use sn_dbc::{Hash, SignedSpend};
+use sn_dbc::SignedSpend;
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -110,17 +110,13 @@ pub enum Error {
     #[error("Spend parents are invalid: {0}")]
     InvalidSpendParents(String),
 
+    /// The DBC we're trying to Spend came with an invalid parent Tx
+    #[error("Invalid Parent Tx: {0}")]
+    InvalidParentTx(String),
     /// One or more parent spends of a requested spend has an invalid hash
     #[error("Invalid parent spend hash: {0}")]
     BadParentSpendHash(String),
     /// The provided source tx did not check out when verified with all supposed inputs to it (i.e. our spends parents).
-    #[error(
-        "The provided source tx (with hash {provided_src_tx_hash:?}) when verified with all supposed inputs to it (i.e. our spends parents).."
-    )]
-    InvalidSourceTxProvided {
-        /// The signed spend src tx hash.
-        signed_src_tx_hash: Hash,
-        /// The hash of the provided source tx.
-        provided_src_tx_hash: Hash,
-    },
+    #[error("The provided source tx is invalid: {0}")]
+    InvalidSourceTxProvided(String),
 }
