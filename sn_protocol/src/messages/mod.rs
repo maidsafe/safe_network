@@ -25,8 +25,9 @@ pub use self::{
 };
 
 use super::NetworkAddress;
-use crate::storage::Chunk;
+use crate::storage::{ChunkWithPayment, DbcAddress};
 use serde::{Deserialize, Serialize};
+use sn_dbc::SignedSpend;
 use xor_name::XorName;
 
 /// A request to peers in the network
@@ -50,7 +51,9 @@ pub enum Response {
 #[derive(custom_debug::Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum ReplicatedData {
     /// A chunk of data.
-    Chunk(Chunk),
+    Chunk(ChunkWithPayment),
+    /// A DbcSpend
+    DbcSpend(Vec<SignedSpend>),
     /// A single cmd for a register.
     RegisterWrite(RegisterCmd),
     /// An entire op log of a register.
@@ -71,7 +74,8 @@ impl ReplicatedData {
     /// Return the name.
     pub fn name(&self) -> XorName {
         match self {
-            Self::Chunk(chunk) => *chunk.name(),
+            Self::Chunk(chunk) => *chunk.chunk.name(),
+            Self::DbcSpend(spends) => *DbcAddress::from_dbc_id(spends[0].dbc_id()).name(),
             Self::RegisterLog(log) => *log.address.name(),
             Self::RegisterWrite(cmd) => *cmd.dst().name(),
         }
@@ -80,7 +84,10 @@ impl ReplicatedData {
     /// Return the dst.
     pub fn dst(&self) -> NetworkAddress {
         match self {
-            Self::Chunk(chunk) => NetworkAddress::from_chunk_address(*chunk.address()),
+            Self::Chunk(chunk) => NetworkAddress::from_chunk_address(*chunk.chunk.address()),
+            Self::DbcSpend(spends) => {
+                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(spends[0].dbc_id()))
+            }
             Self::RegisterLog(log) => NetworkAddress::from_register_address(log.address),
             Self::RegisterWrite(cmd) => NetworkAddress::from_register_address(cmd.dst()),
         }

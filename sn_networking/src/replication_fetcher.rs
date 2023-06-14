@@ -52,16 +52,16 @@ impl ReplicationFetcher {
     // Return with a list of keys to fetch, if presents.
     pub(crate) fn notify_fetch_result(
         &mut self,
-        peer_id: &PeerId,
-        key: &NetworkAddress,
+        peer_id: PeerId,
+        key: NetworkAddress,
         result: bool,
     ) -> Vec<(PeerId, NetworkAddress)> {
         self.on_going_fetches = self.on_going_fetches.saturating_sub(1);
 
         if result {
-            let _ = self.to_be_fetched.remove(key);
-        } else if let Some(holders) = self.to_be_fetched.get_mut(key) {
-            if let Some(status) = holders.get_mut(peer_id) {
+            let _ = self.to_be_fetched.remove(&key);
+        } else if let Some(holders) = self.to_be_fetched.get_mut(&key) {
+            if let Some(status) = holders.get_mut(&peer_id) {
                 status.1 = HolderStatus::Failed;
             }
         }
