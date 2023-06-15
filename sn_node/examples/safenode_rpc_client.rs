@@ -49,15 +49,17 @@ enum Cmd {
     /// Note this blocks the app and it will print events as they are broadcasted by the node
     #[clap(name = "events")]
     Events,
-    /// Restart the node after the specified delay
+    /// Restart the node after the specified delay. This maintains the same node process,
+    /// but will will restart all node services and regenerate node keys.
     #[clap(name = "restart")]
     Restart {
         /// Delay in milliseconds before restartng the node
         #[clap(default_value = "0")]
         delay_millis: u64,
     },
-    /// Hard Restart of node after the specified delay, forcing a fresh run of the application
-    /// in order to pick up any updates that may have been provided
+    /// Hard Restart of node after the specified delay. Creates a completeley separate process
+    /// running from the same binary. This forces a fresh run of the application
+    /// in order to pick up any updates that may have been applied to the binary
     #[clap(name = "hard-restart")]
     HardRestart {
         /// Delay in milliseconds before restartng the node
