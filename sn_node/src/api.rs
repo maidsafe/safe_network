@@ -23,7 +23,7 @@ use sn_protocol::{
     messages::{
         Cmd, CmdResponse, PaymentProof, Query, QueryResponse, RegisterCmd, Request, Response,
     },
-    storage::{registers::User, Chunk},
+    storage::{registers::User, Chunk, DbcAddress},
     NetworkAddress,
 };
 use sn_registers::RegisterStorage;
@@ -356,24 +356,33 @@ impl Node {
         &self,
         addr_name: XorName,
         PaymentProof {
-            dbc,
+            tx,
             audit_trail,
             path,
         }: &PaymentProof,
     ) -> Result<(), ProtocolError> {
-        // TODO: perform some self-validation on the DBC, e.g. correct amounts, signatures, etc., it may
-        // need some missing API from sn_dbc since the `Dbc::verify` is meant to be used by the recipient.
+        // TODO: check the expected amount of tokens was paid by the Tx,
+        // i.e. one of the outputs is the predefined "burning address" and the sent (unblinded) amount matches.
 
-        // We need to fetch the input of the payment DBC in order to obtain the reason-hash and
-        // other info for verifications of valid payment, e.g. expected beneficiaries.
+        // We need to fetch the inputs of the DBC tx in order to obtain the reason-hash and
+        // other info for verifications of valid payment.
         // TODO: perform verifications in multiple concurrent tasks
         let mut reasons = Vec::<Hash>::new();
-        for input in &dbc.src_tx.inputs {
+        for input in &tx.inputs {
             let dbc_id = input.dbc_id();
             let addr = DbcAddress::from_dbc_id(&dbc_id);
             match self.spendbook.spend_get(&self.network, addr).await {
                 Ok(signed_spend) => {
-                    // TODO: verify DBC outputs are correct, i.e. they pay the closest/expected nodes
+                    // TODO: self-verification of the signed spend?
+
+                    if &signed_spend.spent_tx() != tx {
+                        // TODO: have a specific error type
+                        return Err(ProtocolError::InvalidPaymentProof {
+                            addr_name,
+                            reason: "DBC Tx doesn't match the retrieved SignedSpend's Tx"
+                                .to_string(),
+                        });
+                    }
 
                     reasons.push(signed_spend.reason());
                 }
@@ -386,12 +395,14 @@ impl Node {
 
         match reasons.first() {
             None => Err(ProtocolError::InvalidPaymentProof {
+                // TODO: have a specific error type
                 addr_name,
                 reason: "Payment DBC has no input DBCs".to_string(),
             }),
             Some(reason_hash) => {
                 // check all reasons are the same
                 if !reasons.iter().all(|r| r == reason_hash) {
+                    // TODO: have a specific error type
                     return Err(ProtocolError::InvalidPaymentProof {
                         addr_name,
                         reason: "Not all input DBCs contain the same reason hash value".to_string(),

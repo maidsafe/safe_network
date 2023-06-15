@@ -76,7 +76,7 @@ impl WalletClient {
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = &XorName>,
-    ) -> Result<(Dbc, PaymentProofsMap)> {
+    ) -> Result<PaymentProofsMap> {
         // TODO: calculate the amount to pay to each node, perhaps just 1 nano to begin with.
         let amount = Token::from_nano(1);
 
@@ -91,14 +91,14 @@ impl WalletClient {
 
         match &transfer.created_dbcs[..] {
             [info, ..] => {
-                let dbc = info.dbc.clone();
+                let src_tx = &info.dbc.src_tx;
                 let payment_proofs = audit_trail_info
                     .into_iter()
                     .map(|(addr, (audit_trail, path))| {
                         (
                             addr,
                             PaymentProof {
-                                dbc: dbc.clone(),
+                                tx: src_tx.clone(),
                                 audit_trail,
                                 path,
                             },
@@ -106,7 +106,7 @@ impl WalletClient {
                     })
                     .collect();
 
-                Ok((dbc, payment_proofs))
+                Ok(payment_proofs)
             }
             [] => Err(Error::CouldNotSendTokens(
                 "No DBCs were returned from the wallet.".into(),

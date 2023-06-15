@@ -160,9 +160,9 @@ pub(super) async fn pay_for_storage(
     }
 
     println!("Making payment for {} Chunks...", chunks_addrs.len());
-    let (new_dbc, proofs) = wallet_client.pay_for_storage(chunks_addrs.iter()).await?;
+    let proofs = wallet_client.pay_for_storage(chunks_addrs.iter()).await?;
 
-    let mut wallet = wallet_client.into_wallet();
+    let wallet = wallet_client.into_wallet();
     let new_balance = wallet.balance();
 
     if let Err(err) = wallet.store().await {
@@ -171,9 +171,7 @@ pub(super) async fn pay_for_storage(
         println!("Successfully stored wallet with new balance {new_balance:?}.");
     }
 
-    let dbc_id = new_dbc.id();
-    wallet.store_created_dbc(new_dbc.clone()).await?;
-    println!("Successfully stored new dbc ({dbc_id:?}) to wallet dir. It can now be sent to the storage nodes when uploading paid chunks.");
+    println!("Successfully paid for storage and generated the proofs. They can now be sent to the storage nodes when uploading paid chunks.");
 
     Ok(proofs)
 }
