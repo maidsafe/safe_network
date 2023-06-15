@@ -74,7 +74,9 @@ jobs:
         shell: bash
         # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
         # passes to tee which displays it in the terminal and writes to output.txt
-        run: cargo criterion --output-format bencher 2>&1 | tee -a output.txt
+        run: |
+          cargo criterion --output-format bencher 2>&1 | tee -a output.txt
+          cat output.txt
 
      
       #################################
@@ -101,6 +103,17 @@ jobs:
           # Enable Job Summary for PRs
           summary-always: true
 
+
+      # Start a heaptracked client instance to compare memory usage
+      # The generated large single file (around 450MB) may vary little bit along the releases
+      - name: Start client with heaptrack
+        run: |
+          tar -czvf release_zip.tar.gz ./target/release
+          heaptrack ./target/release/safe files upload -- "./release_zip.tar.gz"
+        env:
+          SN_LOG: "all"
+
+
       ### CLEANUP ###
       - name: Kill all nodes
         shell: bash
@@ -110,21 +123,6 @@ jobs:
         run: |
           pkill safenode
           echo "$(pgrep safenode | wc -l) nodes still running"
-
-      
-      #########################
-      ### Node Mem Analysis ###
-      #########################
-      - name: Check for heaptrack file
-        run: ls -la
-
-      - name: Analyze memory usage
-        shell: bash
-        run: |
-          HEAPTRACK_FILE=$(ls -t heaptrack.safenode.*.zst | head -1)
-          heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safenode.txt
-        if: always()
-
 
       - name: Tar log files
         shell: bash
@@ -136,8 +134,28 @@ jobs:
           find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
         if: failure()
 
+      - name: Upload Logs
+        uses: actions/upload-artifact@main
+        with:
+          name: sn_node_logs_benchmark_prs
+          path: log_files.tar.gz
+        if: failure()
+        continue-on-error: true
+      
+      #########################
+      ### Node Mem Analysis ###
+      #########################
+      - name: Check for Node heaptrack file
+        run: ls -la
 
-      - name: Upload Heaptrack
+      - name: Analyze node memory usage
+        shell: bash
+        run: |
+          HEAPTRACK_FILE=$(ls -t heaptrack.safenode.*.zst | head -1)
+          heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safenode.txt
+        if: always()
+
+      - name: Upload Node Heaptrack
         uses: actions/upload-artifact@main
         with:
           name: heaptrack_safenode
@@ -145,47 +163,98 @@ jobs:
         continue-on-error: true
         if: always()
 
-      - name: Upload Node Logs
-        uses: actions/upload-artifact@main
-        with:
-          name: sn_node_logs_benchmark_prs
-          path: log_files.tar.gz
-        if: failure()
-        continue-on-error: true
-
-      - name: Check memory usage
-        id: memory-usage-check
+      # The large file uploaded will increase node's peak mem usage a lot
+      - name: Check node memory usage
+        id: node-memory-usage-check
         shell: bash
         env:
-          MEM_LIMIT_MB: "45" # mb
+          NODE_MEM_LIMIT_MB: "100" # mb
         run: |
           MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{print $5}' | rg "M" -r "")
           echo "Memory usage: $MEMORY_USAGE MB"
-          if (( $(echo "$MEMORY_USAGE > $MEM_LIMIT_MB" | bc -l) )); then
-            echo "Memory usage exceeded threshold: $MEMORY_USAGE MB"
+          if (( $(echo "$MEMORY_USAGE > $NODE_MEM_LIMIT_MB" | bc -l) )); then
+            echo "Node memory usage exceeded threshold: $MEMORY_USAGE MB"
             exit 1
           fi
-          # Write the memory usage to a JSON file
-          echo '{
-            "benchmarks": [
+          # Write the node memory usage to a file
+          echo '[
               {
-                "name": "node-memory-usage-through-safe-benchmark",
-                "value": '$MEMORY_USAGE',
-                "unit": "MB"
+                  "name": "node-memory-usage-through-safe-benchmark",
+                  "value": '$MEMORY_USAGE',
+                  "unit": "MB"
               }
-            ]
-          }' > memory_usage.json
+          ]' > node_memory_usage.json
         if: always()
 
-
-      - name: Alert for memory usage
+      - name: Alert for node memory usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'Memory Usage of Node through safe-benchmark'
           tool: 'customSmallerIsBetter'
-          output-file-path: './memory_usage.json'
+          output-file-path: node_memory_usage.json
           # Where the previous data file is stored
-          external-data-json-path: ./cache/benchmark-data.json
+          external-data-json-path: ./cache/node-mem-usage.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-on-alert: true
+          # 200% regression will result in alert
+          alert-threshold: '200%'
+          # Enable Job Summary for PRs
+          summary-always: true
+
+      ###########################
+      ### Client Mem Analysis ###
+      ###########################
+      - name: Check for Client heaptrack file
+        run: ls -la
+
+      - name: Analyze client memory usage
+        shell: bash
+        run: |
+          HEAPTRACK_FILE=$(ls -t heaptrack.safe.*.zst | head -1)
+          heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safe.txt
+        if: always()
+
+      - name: Upload Client Heaptrack
+        uses: actions/upload-artifact@main
+        with:
+          name: heaptrack_safe
+          path: heaptrack.safe.*
+        continue-on-error: true
+        if: always()
+
+      - name: Check client memory usage
+        id: client-memory-usage-check
+        shell: bash
+        env:
+          CLIENT_MEM_LIMIT_MB: "1000" # mb
+        run: |
+          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r "")
+          echo "Memory usage: $MEMORY_USAGE MB"
+          if (( $(echo "$MEMORY_USAGE > $CLIENT_MEM_LIMIT_MB" | bc -l) )); then
+            echo "Client memory usage exceeded threshold: $MEMORY_USAGE MB"
+            exit 1
+          fi
+          # Write the client memory usage to a file
+          echo '[
+              {
+                  "name": "client-memory-usage-through-safe-benchmark",
+                  "value": '$MEMORY_USAGE',
+                  "unit": "MB"
+              }
+          ]' > client_memory_usage.json
+        if: always()
+
+      - name: Alert for client memory usage
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: 'Memory Usage of Client during uploading large file'
+          tool: 'customSmallerIsBetter'
+          output-file-path: client_memory_usage.json
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/client-mem-usage.json
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # GitHub API token to make a commit comment
