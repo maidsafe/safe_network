@@ -4779,12 +4779,12 @@ dependencies = [
 name = "sn_protocol"
 version = "0.1.5"
 dependencies = [
- "bincode",
  "blsttc",
  "bytes",
  "crdts",
  "custom_debug",
  "libp2p",
+ "rmp-serde",
  "serde",
  "sn_dbc",
  "thiserror",
