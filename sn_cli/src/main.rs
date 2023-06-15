@@ -48,7 +48,7 @@ async fn main() -> Result<()> {
     let root_dir = get_client_dir().await?;
 
     if opt.peers.peers.is_empty() {
-        if cfg!(feature = "local-discovery") {
+        if !cfg!(feature = "local-discovery") {
             let log_str = "No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.";
             warn!(log_str);
             return Err(color_eyre::eyre::eyre!(log_str));
