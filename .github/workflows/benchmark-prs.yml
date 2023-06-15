@@ -148,7 +148,7 @@ jobs:
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: sn_node_logs_benchmark_chart_generation
+          name: sn_node_logs_benchmark_prs
           path: log_files.tar.gz
         if: failure()
         continue-on-error: true
@@ -178,7 +178,7 @@ jobs:
         if: always()
 
 
-      - name: Upload Memory Usage
+      - name: Alert for memory usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: 'Memory Usage of Node through safe-benchmark'
