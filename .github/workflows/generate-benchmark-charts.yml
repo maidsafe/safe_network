@@ -25,6 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y heaptrack
       - uses: actions-rs/toolchain@v1
         id: toolchain
         with:
@@ -62,6 +66,15 @@ jobs:
         shell: bash
         run: echo "Peer is $SAFE_PEERS"
 
+      # Start a heaptracked node instance to compare memory usage
+      - name: Start safenode with heaptrack
+        run: |
+          mkdir -p ~/.safe/heapnode
+          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode &
+          sleep 10
+        env:
+          SN_LOG: "all"
+
       ########################
       ### Benchmark itself ###
       ########################
@@ -72,25 +85,10 @@ jobs:
         # passes to tee which displays it in the terminal and writes to output.txt
         run: cargo criterion --output-format bencher 2>&1 | tee -a output.txt
 
-
-      - name: Stop the network on fail
-        shell: bash
-        if: failure()
-        run: safe node killall || true && safe auth stop || true
-
-      - name: Failure logs
-        shell: bash
-        if: failure()
-        run: tail $HOME/.safe/node/local-test-network/*/*.log*
-
       - name: Remove git hooks so gh-pages git commits will work
         shell: bash
         run: rm -rf .git/hooks/pre-commit
-
-      #################################
-      ### Log any regression alerts ###
-      #################################
-
+        
       # gh-pages branch is updated and pushed automatically with extracted benchmark data
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
@@ -104,28 +102,91 @@ jobs:
           auto-push: true
           max-items-in-chart: 300
 
-
-        ### CLEANUP ###
+      ### CLEANUP ###
       - name: Kill all nodes
         shell: bash
         timeout-minutes: 1
-        if: failure()
+        if: always()
         continue-on-error: true
         run: |
-            pkill safenode
-            echo "$(pgrep safenode | wc -l) nodes still running"
+          pkill safenode
+          echo "$(pgrep safenode | wc -l) nodes still running"
+
+      
+      #########################
+      ### Node Mem Analysis ###
+      #########################
+      - name: Check for heaptrack file
+        run: ls -la
+
+      - name: Analyze memory usage
+        shell: bash
+        run: |
+          HEAPTRACK_FILE=$(ls -t heaptrack.safenode.*.zst | head -1)
+          heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safenode.txt
+        if: always()
+
 
       - name: Tar log files
         shell: bash
         continue-on-error: true
         run: |
-            find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure()
+          find ~/.safe/heapnode -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
+          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
+          find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
+          find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
+        if: always()
+
+
+      - name: Upload Heaptrack
+        uses: actions/upload-artifact@main
+        with:
+          name: heaptrack_safenode
+          path: heaptrack.safenode.*
+        continue-on-error: true
+        if: always()
 
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-            name: safe_test_logs_e2e_${{matrix.os}}
-            path: log_files.tar.gz
-        if: failure()
+          name: sn_node_logs_benchmark_chart_generation
+          path: log_files.tar.gz
+        if: always()
         continue-on-error: true
+
+      - name: Check memory usage
+        id: memory-usage-check
+        shell: bash
+        env:
+          MEM_LIMIT_MB: "45" # mb
+        run: |
+          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{print $5}' | rg "M" -r "")
+          echo "Memory usage: $MEMORY_USAGE MB"
+          if (( $(echo "$MEMORY_USAGE > $MEM_LIMIT_MB" | bc -l) )); then
+            echo "Memory usage exceeded threshold: $MEMORY_USAGE MB"
+            exit 1
+          fi
+          # Write the memory usage to a JSON file
+          echo '{
+            "benchmarks": [
+              {
+                "name": "node-memory-usage-through-safe-benchmark",
+                "value": '$MEMORY_USAGE',
+                "unit": "MB"
+              }
+            ]
+          }' > memory_usage.json
+        if: always()
+
+
+      - name: Upload Memory Usage
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: 'Memory Usage of Node through safe-benchmark'
+          tool: 'customSmallerIsBetter'
+          output-file-path: './memory_usage.json'
+          # Access token to deploy GitHub Pages branch
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Push and deploy GitHub pages branch automatically
+          auto-push: true
+          max-items-in-chart: 300
