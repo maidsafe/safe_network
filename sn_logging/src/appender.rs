@@ -35,9 +35,20 @@ pub(super) fn file_rotater(
     uncompressed_files: usize,
     max_files: usize,
 ) -> (NonBlocking, WorkerGuard) {
+    let pid = std::process::id();
+    // get the binary name or fallback to `safe`
+    let bin_name = std::env::current_exe()
+        .ok()
+        .and_then(|path| {
+            path.file_name()
+                .map(|name| name.to_string_lossy().to_string())
+        })
+        .unwrap_or_else(|| "safe".to_string());
+
+    let log_file_prefix = format!("{bin_name}-{}.log", pid);
     let file_appender = FileRotateAppender::make_rotate_appender(
         dir,
-        "safenode.log",
+        log_file_prefix,
         AppendTimestamp::default(FileLimit::MaxFiles(max_files)),
         ContentLimit::Lines(max_lines),
         Compression::OnRotate(uncompressed_files),
