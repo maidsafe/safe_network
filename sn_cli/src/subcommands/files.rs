@@ -94,8 +94,10 @@ async fn upload_files(
         PaymentProofsMap::default()
     };
 
+    let mut at_least_one_file_exists = false;
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
+            at_least_one_file_exists = true;
             let file = fs::read(entry.path())?;
             let bytes = Bytes::from(file);
             let file_name = if let Some(file_name) = entry.file_name().to_str() {
@@ -127,6 +129,12 @@ async fn upload_files(
                 }
             };
         }
+    }
+    if !at_least_one_file_exists {
+        println!(
+            "The provided path does not contain any file. Please check your path!\nExiting..."
+        );
+        return Ok(());
     }
 
     let content = bincode::serialize(&chunks_to_fetch)?;
