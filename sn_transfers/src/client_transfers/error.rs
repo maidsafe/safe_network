@@ -10,7 +10,7 @@ use sn_dbc::Error as DbcError;
 
 use thiserror::Error;
 
-pub(crate) type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// Error type returned by the API
 #[derive(Debug, Error)]

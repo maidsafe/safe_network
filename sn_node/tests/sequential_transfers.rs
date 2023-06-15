@@ -13,11 +13,24 @@ use std::path::Path;
 use sn_client::{get_tokens_from_faucet, send, Client};
 
 use sn_dbc::Token;
-use sn_transfers::wallet::LocalWallet;
+use sn_transfers::{client_transfers::create_transfer, wallet::LocalWallet};
 use tracing_core::Level;
 
 use assert_fs::TempDir;
 use eyre::Result;
+
+async fn get_client() -> Client {
+    let secret_key = bls::SecretKey::random();
+    Client::new(secret_key, None, None)
+        .await
+        .expect("Client shall be successfully created.")
+}
+
+async fn get_wallet(root_dir: &Path) -> LocalWallet {
+    LocalWallet::load_from(root_dir)
+        .await
+        .expect("Wallet shall be successfully created.")
+}
 
 #[tokio::test(flavor = "multi_thread")]
 async fn multiple_sequential_transfers_succeed() -> Result<()> {
@@ -72,15 +85,79 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
     Ok(())
 }
 
-async fn get_client() -> Client {
-    let secret_key = bls::SecretKey::random();
-    Client::new(secret_key, None, None)
-        .await
-        .expect("Client shall be successfully created.")
-}
+#[tokio::test(flavor = "multi_thread")]
+async fn double_spend_transfers_fail() -> Result<()> {
+    let logging_targets = vec![
+        ("safenode".to_string(), Level::INFO),
+        ("sn_client".to_string(), Level::TRACE),
+        ("sn_transfers".to_string(), Level::INFO),
+        ("sn_networking".to_string(), Level::INFO),
+        ("sn_node".to_string(), Level::INFO),
+    ];
+    let _log_appender_guard = sn_logging::init_logging(logging_targets, &None)?;
 
-async fn get_wallet(root_dir: &Path) -> LocalWallet {
-    LocalWallet::load_from(root_dir)
-        .await
-        .expect("Wallet shall be successfully created.")
+    // create 1 wallet add money from faucet
+    let first_wallet_dir = TempDir::new()?;
+    let first_wallet_balance = Token::from_nano(1_000_000_000);
+    let mut first_wallet = get_wallet(first_wallet_dir.path()).await;
+    let client = get_client().await;
+    println!("Getting {first_wallet_balance} tokens from the faucet...");
+    let tokens =
+        get_tokens_from_faucet(first_wallet_balance, first_wallet.address(), &client).await;
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    println!("Verifying the transfer from faucet...");
+    client.verify(&tokens).await?;
+    first_wallet.deposit(vec![tokens]);
+    assert_eq!(first_wallet.balance(), first_wallet_balance);
+    println!("Tokens deposited to first wallet: {first_wallet_balance}.");
+
+    // create wallet 2 and 3 to receive money from 1
+    let second_wallet_dir = TempDir::new()?;
+    let second_wallet = get_wallet(second_wallet_dir.path()).await;
+    assert_eq!(second_wallet.balance(), Token::zero());
+    let third_wallet_dir = TempDir::new()?;
+    let third_wallet = get_wallet(third_wallet_dir.path()).await;
+    assert_eq!(third_wallet.balance(), Token::zero());
+
+    // manually forge two transfers of the same source
+    let amount = Token::from_nano(first_wallet_balance.as_nano() / 3);
+    let to1 = first_wallet.address();
+    let to2 = second_wallet.address();
+    let to3 = third_wallet.address();
+
+    let some_dbcs = first_wallet.available_dbcs();
+    let same_dbcs = some_dbcs.clone();
+    let to2_unique_key = (amount, to2.random_dbc_id_src(&mut rand::thread_rng()));
+    let to3_unique_key = (amount, to3.random_dbc_id_src(&mut rand::thread_rng()));
+    let reason_hash: sn_dbc::Hash = None.unwrap_or_default();
+
+    let transfer_to_2 = create_transfer(some_dbcs, vec![to2_unique_key], to1, reason_hash).unwrap();
+    let transfer_to_3 = create_transfer(same_dbcs, vec![to3_unique_key], to1, reason_hash).unwrap();
+
+    // send both transfers to the network
+    println!("Sending both transfers to the network...");
+    let res = client.send(transfer_to_2.clone()).await;
+    assert!(res.is_ok());
+    let res = client.send(transfer_to_3.clone()).await;
+    assert!(res.is_err());
+
+    // check the DBCs, it should fail
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    println!("Verifying the transfers from first wallet...");
+    let dbcs_for_2: Vec<_> = transfer_to_2
+        .created_dbcs
+        .iter()
+        .map(|d| d.dbc.clone())
+        .collect();
+    let dbcs_for_3: Vec<_> = transfer_to_3
+        .created_dbcs
+        .iter()
+        .map(|d| d.dbc.clone())
+        .collect();
+    let should_err1 = client.verify(&dbcs_for_2[0]).await;
+    let should_err2 = client.verify(&dbcs_for_3[0]).await;
+    println!("Verifying at least one fails: {should_err1:?} {should_err2:?}");
+    assert!(should_err1.is_err() || should_err2.is_err());
+
+    Ok(())
 }

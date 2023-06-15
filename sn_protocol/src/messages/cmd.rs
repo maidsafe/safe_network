@@ -46,7 +46,7 @@ pub enum Cmd {
     /// [`SignedSpend`]: sn_dbc::SignedSpend
     /// The spend to be recorded.
     /// As well as the parent_tx: the transaction this DBC was created in.
-    SpendDbc(SignedSpend, DbcTransaction),
+    SpendDbc(SignedSpend, #[debug(skip)] DbcTransaction),
     /// Write operation to notify peer fetch a list of [`NetworkAddress`] from the holder.
     ///
     /// [`NetworkAddress`]: crate::NetworkAddress

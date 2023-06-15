@@ -89,10 +89,11 @@ impl SpendBook {
             Ok(()) => vec![signed_spend.clone()],
             Err(Error::DoubleSpendAttempt(one, two)) => vec![*one, *two],
             Err(e) => {
-                error!(
+                let err_str = format!(
                     "Failed to store spend for {dbc_id:?} because DBC verification failed: {e:?}"
                 );
-                return Err(Error::FailedToStoreSpend(dbc_addr));
+                error!("{:}", err_str);
+                return Err(Error::FailedToStoreSpend(err_str));
             }
         };
 
@@ -100,8 +101,11 @@ impl SpendBook {
         let signed_spends_bytes = match bincode::serialize(&signed_spends) {
             Ok(b) => b,
             Err(e) => {
-                error!("Failed to store spend for {dbc_id:?} because serialization failed: {e:?}");
-                return Err(Error::FailedToStoreSpend(dbc_addr));
+                let err_str = format!(
+                    "Failed to store spend for {dbc_id:?} because serialization failed: {e:?}"
+                );
+                error!("{:}", err_str);
+                return Err(Error::FailedToStoreSpend(err_str));
             }
         };
 
@@ -113,8 +117,9 @@ impl SpendBook {
             expires: None,
         };
         if let Err(e) = network.put_data_as_record(kademlia_record).await {
-            error!("Failed to store spend {dbc_id:?}: {e:?}");
-            return Err(Error::FailedToStoreSpend(dbc_addr));
+            let err_str = format!("Failed to store spend {dbc_id:?}: {e:?}");
+            error!("{:}", err_str);
+            return Err(Error::FailedToStoreSpend(err_str));
         }
 
         // if it was a double spend, report the error after having stored it

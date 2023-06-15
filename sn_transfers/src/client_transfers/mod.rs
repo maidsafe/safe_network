@@ -30,10 +30,8 @@
 mod error;
 mod transfer;
 
-pub(crate) use self::{
-    error::{Error, Result},
-    transfer::create_transfer,
-};
+pub(crate) use self::error::{Error, Result};
+pub use self::transfer::create_transfer;
 
 use sn_dbc::{
     Dbc, DbcIdSource, DbcTransaction, DerivedKey, PublicAddress, RevealedAmount, SignedSpend, Token,

@@ -95,8 +95,8 @@ pub enum Error {
     #[error("Insufficient valid spends found: {0:?}")]
     InsufficientValidSpendsFound(DbcAddress),
     /// Node failed to store spend
-    #[error("Failed to store spend: {0:?}")]
-    FailedToStoreSpend(DbcAddress),
+    #[error("Failed to store spend: {0}")]
+    FailedToStoreSpend(String),
     /// Node failed to get spend
     #[error("Failed to get spend: {0:?}")]
     FailedToGetSpend(DbcAddress),
