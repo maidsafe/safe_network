@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1686825600177,
+  "lastUpdate": 1686830736910,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -335,6 +335,48 @@ window.BENCHMARK_DATA = {
             "name": "Download Benchmark/safe files download",
             "value": 51760396946,
             "range": "± 1266860732",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5e20c0bedfbfd3cfa280fb19337c6f5469236437",
+          "message": "ci: Benchmark node memory usage in main to generate charts",
+          "timestamp": "2023-06-15T20:41:14+09:00",
+          "tree_id": "0dc9c51d9aff4f0bd82374667deb6044c2ca62ad",
+          "url": "https://github.com/maidsafe/safe_network/commit/5e20c0bedfbfd3cfa280fb19337c6f5469236437"
+        },
+        "date": 1686830735874,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Upload Benchmark 1MB/safe files upload/1",
+            "value": 1866312856,
+            "range": "± 289797038",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Upload Benchmark 10MB/safe files upload/10",
+            "value": 3223633518,
+            "range": "± 440251739",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Download Benchmark/safe files download",
+            "value": 55488354664,
+            "range": "± 1535766153",
             "unit": "ns/iter"
           }
         ]
