@@ -1,5 +1,6 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::fs::File;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use dirs_next::home_dir;
+use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
 use std::process::{exit, Command};
@@ -28,6 +29,19 @@ fn safe_files_download() {
     if !output.status.success() {
         panic!("Download command executed with failing error code");
     }
+}
+
+fn get_downloaded_files_size() -> u64 {
+    let path = home_dir()
+        .expect("Could not get home directory")
+        .join(".safe/client/downloaded_files");
+
+    fs::read_dir(path)
+        .expect("Failed to read directory")
+        .filter_map(Result::ok)
+        .filter(|e| e.metadata().expect("Failed to get metadata").is_file())
+        .map(|e| e.metadata().expect("Failed to get metadata").len())
+        .sum()
 }
 
 fn create_file(size_mb: u64) -> tempfile::TempDir {
@@ -60,6 +74,9 @@ fn criterion_benchmark(c: &mut Criterion) {
         group.measurement_time(Duration::from_secs(120));
         group.warm_up_time(Duration::from_secs(10));
 
+        // Set the throughput to be reported in terms of bytes
+        group.throughput(Throughput::Bytes(size * 1024 * 1024));
+
         group.bench_function(BenchmarkId::new("safe files upload", size), |b| {
             b.iter(|| safe_files_upload(dir_path))
         });
@@ -72,6 +89,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.sample_size(10);
 
     group.bench_function("safe files download", |b| b.iter(safe_files_download));
+    // Report the download throughput in terms of bytes
+    let download_size = get_downloaded_files_size();
+    group.throughput(Throughput::Bytes(download_size));
+
     group.finish();
 }
 
