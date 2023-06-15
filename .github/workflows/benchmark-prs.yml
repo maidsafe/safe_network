@@ -178,12 +178,17 @@ jobs:
         if: always()
 
 
+      - name: Check memory_usage.json
+        run: cat memory_usage.json
+        if: always()
+        continue-on-error: true
+
       - name: Alert for memory usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: 'Memory Usage of Node through safe-benchmark'
           tool: 'customSmallerIsBetter'
-          output-file-path: './memory_usage.json'
+          output-file-path: 'memory_usage.json'
           # Where the previous data file is stored
           external-data-json-path: ./cache/benchmark-data.json
           # Workflow will fail when an alert happens
