@@ -9,7 +9,6 @@
 use super::{error::Result, event::NodeEventsChannel, Network, Node, NodeEvent};
 use libp2p::{autonat::NatStatus, identity::Keypair, kad::RecordKey, Multiaddr, PeerId};
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sn_dbc::SignedSpend;
 use sn_networking::{
     multiaddr_strip_p2p, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState,
 };
@@ -18,7 +17,7 @@ use sn_protocol::{
     messages::{
         Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, ReplicatedData, Request, Response,
     },
-    storage::{registers::User, ChunkWithPayment, DbcAddress, RecordHeader, RecordKind},
+    storage::{registers::User, ChunkWithPayment, DbcAddress},
     NetworkAddress,
 };
 use sn_registers::RegisterStorage;
@@ -281,116 +280,30 @@ impl Node {
         let resp = match query {
             Query::Register(query) => self.registers.read(&query, User::Anyone).await,
             Query::GetChunk(address) => {
-                match self
-                    .network
-                    .get_data_from_network(RecordKey::new(address.name()))
-                    .await
-                {
-                    Ok(Ok(data)) => match bincode::deserialize::<ChunkWithPayment>(&data) {
-                        Ok(chunk_with_payment) => {
-                            QueryResponse::GetChunk(Ok(chunk_with_payment.chunk))
-                        }
-                        Err(err) => {
-                            error!("Error while deserializing data to ChunkWithPayment: {err}");
-                            QueryResponse::GetChunk(Err(ProtocolError::ChunkNotFound(address)))
-                        }
-                    },
-                    Err(err) | Ok(Err(err)) => {
-                        error!("Error getting chunk from network: {err}");
-                        QueryResponse::GetChunk(Err(ProtocolError::ChunkNotFound(address)))
-                    }
-                }
+                trace!("Got GetChunk query for {address:?}");
+                let result = self.get_chunk_from_network(address).await;
+                QueryResponse::GetChunk(result)
             }
             Query::GetSpend(address) => {
                 trace!("Got GetSpend query for {address:?}");
-                // get spend from kad
-                let result = match self
-                    .network
-                    .get_data_from_network(RecordKey::new(address.name()))
-                    .await
-                {
-                    Ok(Ok(signed_spend_bytes)) => {
-                        match bincode::deserialize::<Vec<SignedSpend>>(&signed_spend_bytes) {
-                            Ok(signed_spends) => {
-                                // if there are multiple spends, it is a double spend
-                                match signed_spends.as_slice() {
-                                    [one, two, ..] => {
-                                        error!("Found double spend for {address:?}");
-                                        Err(ProtocolError::DoubleSpendAttempt(
-                                            Box::new(one.to_owned()),
-                                            Box::new(two.to_owned()),
-                                        ))
-                                    }
-                                    [one] => {
-                                        trace!("Spend get for address: {address:?} successful");
-                                        Ok(one.clone())
-                                    }
-                                    _ => {
-                                        trace!("Found no spend for {address:?}");
-                                        Err(ProtocolError::SpendNotFound(address))
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                error!("Failed to get spend because deserialization failed: {e:?}");
-                                Err(ProtocolError::SpendNotFound(address))
-                            }
-                        }
-                    }
-                    Ok(Err(err)) | Err(err) => {
-                        error!("Error getting spend from local store: {err}");
-                        Err(ProtocolError::SpendNotFound(address))
-                    }
-                };
-                let resp = QueryResponse::GetDbcSpend(result);
-                trace!("Sending response back on query DbcSpend {address:?}: {resp:?}");
-                resp
+                let result = self.get_spend_from_network(address).await;
+                QueryResponse::GetDbcSpend(result)
             }
             Query::GetReplicatedData {
                 requester: _,
                 address,
             } => {
-                let mut resp =
-                    QueryResponse::GetReplicatedData(Err(ProtocolError::ReplicatedDataNotFound {
-                        holder: NetworkAddress::from_peer(self.network.peer_id),
-                        address: address.clone(),
-                    }));
-                if let Some(record_key) = address.as_record_key() {
-                    if let Ok(Some(record)) = self.network.get_local_record(&record_key).await {
-                        if let Ok(header) = RecordHeader::from_record(&record) {
-                            match header.kind {
-                                RecordKind::Chunk => {
-                                    if let Ok(chunk_with_payment) =
-                                        Self::try_deserialize_record(&record)
-                                    {
-                                        resp = QueryResponse::GetReplicatedData(Ok((
-                                            NetworkAddress::from_peer(self.network.peer_id),
-                                            ReplicatedData::Chunk(chunk_with_payment),
-                                        )));
-                                    }
-                                }
-                                RecordKind::DbcSpend => {
-                                    if let Ok(spends) = Self::try_deserialize_record(&record) {
-                                        resp = QueryResponse::GetReplicatedData(Ok((
-                                            NetworkAddress::from_peer(self.network.peer_id),
-                                            ReplicatedData::DbcSpend(spends),
-                                        )));
-                                    }
-                                }
-                                RecordKind::Register => {
-                                    warn!("Query::GetReplicatedData not implemented for RecordKind::Register");
-                                }
-                            }
-                        } else {
-                            error!("Query::GetReplicatedData. Error while obtaining RecordHeader from Record");
-                        }
-                    } else {
-                        debug!("Query::GetReplicatedData. Record not found in local store, addr {address:?}");
-                    }
-                } else {
-                    error!("Query::GetReplicatedData. Error while converting NetworkAddress to Record_key, addr {address:?}");
-                };
-                resp
+                trace!("Got GetReplicatedData query for {address:?}");
+                let result = self
+                    .get_replicated_data(address)
+                    .await
+                    .map(|replicated_data| {
+                        (
+                            NetworkAddress::from_peer(self.network.peer_id),
+                            replicated_data,
+                        )
+                    });
+                QueryResponse::GetReplicatedData(result)
             }
         };
         Response::Query(resp)
