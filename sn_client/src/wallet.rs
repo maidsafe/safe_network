@@ -85,9 +85,19 @@ impl WalletClient {
 
         // Let's build the payment proofs for list of content addresses
         let (reason_hash, audit_trail_info) = build_payment_proofs(content_addrs)
-            .map_err(|err| Error::StoragePaymentReason(err.to_string()))?;
+            .map_err(|err| Error::StoragePaymentReason(err.to_string()))?; // TODO: have a specific error type
 
         let transfer = self.wallet.local_send(to, Some(reason_hash)).await?;
+
+        // send to network
+        trace!("Sending transfer to the network: {transfer:#?}");
+        if let Err(error) = self.client.send(transfer.clone()).await {
+            let msg = format!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
+            warn!(msg);
+            self.unconfirmed_txs.push(transfer);
+            // TODO: have a specific error type
+            return Err(Error::StoragePaymentReason(msg));
+        }
 
         match &transfer.created_dbcs[..] {
             [info, ..] => {
