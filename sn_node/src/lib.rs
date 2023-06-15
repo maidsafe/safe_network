@@ -46,6 +46,7 @@ extern crate tracing;
 mod api;
 mod error;
 mod event;
+mod get_validation;
 mod put_validation;
 mod replication;
 mod spends;
