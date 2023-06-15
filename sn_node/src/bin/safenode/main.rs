@@ -37,7 +37,7 @@ use tracing_core::Level;
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser, Debug)]
-#[clap(name = "safenode cli")]
+#[clap(name = "safenode cli", version = env!("CARGO_PKG_VERSION"))]
 struct Opt {
     /// Specify the node's logging output directory.
     ///
