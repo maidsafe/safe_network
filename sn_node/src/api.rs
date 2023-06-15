@@ -22,7 +22,7 @@ use sn_protocol::{
     messages::{
         Cmd, CmdResponse, PaymentProof, Query, QueryResponse, RegisterCmd, Request, Response,
     },
-    storage::{registers::User, Chunk, DbcAddress},
+    storage::{registers::User, Chunk},
     NetworkAddress,
 };
 use sn_registers::RegisterStorage;
@@ -329,7 +329,6 @@ impl Node {
             }
             Cmd::SpendDbc(signed_spend, parent_tx) => {
                 let dbc_id = *signed_spend.dbc_id();
-                let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
                 let resp = match self
                     .spendbook
@@ -344,7 +343,7 @@ impl Node {
                     }
                     Err(err) => {
                         error!("Failed to StoreSpend: {err:?}");
-                        CmdResponse::Spend(Err(ProtocolError::FailedToStoreSpend(dbc_addr)))
+                        CmdResponse::Spend(Err(err))
                     }
                 };
 

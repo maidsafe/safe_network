@@ -173,7 +173,7 @@ impl Client {
             return Ok(());
         }
         Err(Error::CouldNotVerifyTransfer(
-            "The spends in network were not the same as the ones in the DBC.".into(),
+            "The spends in network were not the same as the ones in the DBC. The parents of this DBC are probably double spends.".into(),
         ))
     }
 }
