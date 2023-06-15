@@ -71,10 +71,10 @@ pub enum SwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<bool>,
     },
-    /// Get data from the Kad network
+    /// Get Record from the Kad network
     GetNetworkRecord {
         key: RecordKey,
-        sender: oneshot::Sender<Result<Vec<u8>>>,
+        sender: oneshot::Sender<Result<Record>>,
     },
     /// Get data from the local RecordStore
     GetLocalRecord {

@@ -373,7 +373,7 @@ impl SwarmDriver {
                 );
                 if let Some(sender) = self.pending_query.remove(&id) {
                     sender
-                        .send(Ok(peer_record.record.value))
+                        .send(Ok(peer_record.record))
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
             }
