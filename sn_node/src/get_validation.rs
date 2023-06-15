@@ -26,6 +26,7 @@ impl Node {
             .get_record_from_network(RecordKey::new(address.name()))
             .await
             .map_err(|_| Error::ChunkNotFound(address))?;
+        debug!("Got record from the network, {:?}", record.key);
         let header =
             RecordHeader::from_record(&record).map_err(|_| Error::ChunkNotFound(address))?;
 
@@ -34,7 +35,7 @@ impl Node {
                 .map_err(|_| Error::ChunkNotFound(address))?;
             Ok(chunk_with_payment.chunk)
         } else {
-            error!("RecordKind mistmatch while tyring to retrieve a chunk");
+            error!("RecordKind mismatch while trying to retrieve a chunk");
             Err(Error::RecordKindMismatch(RecordKind::Chunk))
         }
     }
@@ -45,6 +46,7 @@ impl Node {
             .get_record_from_network(RecordKey::new(address.name()))
             .await
             .map_err(|_| Error::SpendNotFound(address))?;
+        debug!("Got record from the network, {:?}", record.key);
         let header =
             RecordHeader::from_record(&record).map_err(|_| Error::SpendNotFound(address))?;
 
@@ -70,7 +72,7 @@ impl Node {
                 }
             }
         } else {
-            error!("RecordKind mistmatch while tyring to retrieve a Vec<SignedSpend>");
+            error!("RecordKind mismatch while trying to retrieve a Vec<SignedSpend>");
             Err(Error::RecordKindMismatch(RecordKind::DbcSpend))
         }
     }
@@ -79,7 +81,6 @@ impl Node {
         &self,
         address: NetworkAddress,
     ) -> Result<ReplicatedData> {
-        // let holder = NetworkAddress::from_peer(self.network.peer_id);
         let error = Error::ReplicatedDataNotFound {
             holder: NetworkAddress::from_peer(self.network.peer_id),
             address: address.clone(),

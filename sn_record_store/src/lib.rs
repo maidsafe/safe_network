@@ -287,7 +287,7 @@ impl RecordStore for DiskBackedRecordStore {
     }
 }
 
-// Since 'Record's need to be read from disk for each indiviaul 'Key', we need this iterator
+// Since 'Record's need to be read from disk for each individual 'Key', we need this iterator
 // which does that operation at the very moment the consumer/user is iterating each item.
 pub struct RecordsIterator<'a> {
     keys: hash_set::Iter<'a, Key>,

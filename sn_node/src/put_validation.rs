@@ -32,6 +32,8 @@ impl Node {
         chunk_with_payment: ChunkWithPayment,
     ) -> Result<CmdOk, ProtocolError> {
         let chunk_name = *chunk_with_payment.chunk.name();
+        debug!("validating and storing chunk {chunk_name:?}");
+
         let key = RecordKey::new(&chunk_name);
         let present_locally = self
             .network
@@ -59,6 +61,7 @@ impl Node {
         };
 
         // finally store the Record directly into the local storage
+        debug!("Storing chunk as Record locally");
         self.network.put_local_record(record).await.map_err(|err| {
             warn!("Error while locally storing Chunk as a Record{err}");
             ProtocolError::ChunkNotStored(chunk_name)
@@ -68,7 +71,7 @@ impl Node {
     }
 
     /// Validate and store a `SignedSpend` to the RecordStore
-    pub(crate) async fn validate_and_store_spend(
+    pub(crate) async fn validate_and_store_spends(
         &mut self,
         spends: Vec<SignedSpend>,
     ) -> Result<CmdOk, ProtocolError> {
@@ -89,6 +92,8 @@ impl Node {
             return Err(ProtocolError::SpendNotStored(None));
         };
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
+
+        debug!("validating and storing spends {:?}", dbc_addr.name());
         let key = RecordKey::new(dbc_addr.name());
 
         let present_locally = self
@@ -143,7 +148,7 @@ impl Node {
     /// of using our custom Cmd flow.
     /// Also prevents Record overwrite through `malicious_node.kademlia.put_record()` which would trigger
     /// trigger a SwarmEvent that is propagated to here to be handled.
-    /// Note: Kad's PUT does not support error propagation. Only the error variants inside
+    /// Note: KAD's PUT does not support error propagation. Only the error variants inside
     /// `RecordStore` are propagated.
     pub(crate) async fn validate_and_store_record(&self, mut record: Record) -> Result<(), Error> {
         let header = RecordHeader::from_record(&record)?;
@@ -154,7 +159,7 @@ impl Node {
                 // return early without deserializing
                 if present_locally {
                     // We outright short circuit if the Record::key is present locally;
-                    // Hence we dont have to verify if the local_header::kind == Chunk
+                    // Hence we don't have to verify if the local_header::kind == Chunk
                     debug!(
                         "Chunk with key {:?} already exists, not overwriting",
                         record.key
@@ -173,7 +178,7 @@ impl Node {
                 }
 
                 // Common validation logic. Can ignore the new_data_present as we already have a
-                // check for it earlier in the code that allows us to bail out early wihtout
+                // check for it earlier in the code that allows us to bail out early without
                 // deserializing the `Record`
                 let _new_data_present = self
                     .chunk_validation(&chunk_with_payment, present_locally)
@@ -248,7 +253,7 @@ impl Node {
         Ok(())
     }
 
-    /// Perfrom validations on the provided `ChunkWithPayment`. Retruns `Some(())>` if the Chunk has to be
+    /// Perform validations on the provided `ChunkWithPayment`. Returns `Some(())>` if the Chunk has to be
     /// stored stored to the RecordStore
     /// - Return early if overwrite attempt
     /// - Validate the provided payment proof
@@ -286,14 +291,41 @@ impl Node {
                 let dbc_id = input.dbc_id();
                 let addr = DbcAddress::from_dbc_id(&dbc_id);
                 match get_aggregated_spends_from_peers(&self.network, dbc_id).await {
-                    Ok(signed_spend) => {
-                        // TODO: self-verification of the signed spend?
+                    Ok(mut signed_spends) => {
+                        match signed_spends.len() {
+                            0 => {
+                                error!("Could not get spends from the network");
+                                return Err(ProtocolError::SpendNotFound(addr));
+                            }
+                            1 => {
+                                match signed_spends.pop() {
+                                    Some(signed_spend) => {
+                                        // TODO: self-verification of the signed spend?
 
-                        // if &signed_spend.spent_tx() != tx {
-                        //     return Err(ProtocolError::PaymentProofTxMismatch(addr_name));
-                        // }
+                                        if &signed_spend.spent_tx() != tx {
+                                            return Err(ProtocolError::PaymentProofTxMismatch(
+                                                addr_name,
+                                            ));
+                                        }
 
-                        // reasons.push(signed_spend.reason());
+                                        reasons.push(signed_spend.reason());
+                                    }
+                                    None => return Err(ProtocolError::SpendNotFound(addr)),
+                                }
+                            }
+                            _ => {
+                                warn!("Got a double spend for during chunk payment validation {dbc_id:?}",);
+                                let mut proof = signed_spends.iter();
+                                if let (Some(spend_one), Some(spend_two)) =
+                                    (proof.next(), proof.next())
+                                {
+                                    return Err(ProtocolError::DoubleSpendAttempt(
+                                        Box::new(spend_one.to_owned()),
+                                        Box::new(spend_two.to_owned()),
+                                    ))?;
+                                }
+                            }
+                        }
                     }
                     Err(err) => {
                         error!("Error getting payment's input DBC {dbc_id:?} from network: {err}");
@@ -324,7 +356,7 @@ impl Node {
         Ok(Some(()))
     }
 
-    /// Perfrom validations on the provided `Vec<SignedSpend>`. Returns `Some<Vec<SignedSpend>>` if
+    /// Perform validations on the provided `Vec<SignedSpend>`. Returns `Some<Vec<SignedSpend>>` if
     /// the spends has to be stored to the `RecordStore` where the spends are aggregated and can
     /// have a max of only 2 elements. Any double spend error has to be thrown by the caller.
     ///
@@ -360,7 +392,7 @@ impl Node {
             let local_record = match local_record {
                 Some(r) => r,
                 None => {
-                    error!("Could not retreive Record with key{record_key:?}, the Record is supposed to be present.");
+                    error!("Could not retrieve Record with key{record_key:?}, the Record is supposed to be present.");
                     return Err(ProtocolError::SpendNotFound(dbc_addr));
                 }
             };
@@ -386,6 +418,9 @@ impl Node {
                 debug!("Vec<SignedSpend> with addr {dbc_addr:?} already exists, not overwriting!",);
                 return Ok(None);
             } else {
+                debug!(
+                    "Seen new spends that are not part of the local copy. Mostly a double spend, checking for it"
+                );
                 // continue with local_spends + new_ones
                 signed_spends = local_signed_spends
                     .into_iter()
@@ -397,20 +432,25 @@ impl Node {
         // Check the parent spends and check the closest(dbc_id) for any double spend
         // if so aggregate the spends and return just 2 spends.
         let signed_spends = if signed_spends.len() == 1 {
+            debug!(
+                "Received a single SingedSpend, verifying the parent and checking for double spend"
+            );
             let signed_spend = signed_spends.remove(0);
             // Returns an error if any of the parent_input has a DoubleSpend
             check_parent_spends(&self.network, &signed_spend).await?;
 
-            // check the network if any spend has happned for the same dbc_id
+            // check the network if any spend has happened for the same dbc_id
             // Does not return an error, instead the Vec<SignedSpend> is returned.
             let mut spends = get_aggregated_spends_from_peers(&self.network, dbc_id).await?;
             // aggregate the spends from the network with our own
             spends.push(signed_spend);
             aggregate_spends(spends, dbc_id)
         } else {
+            debug!("Received >1 SignedSpend. Aggregating the spends to check for double spend. Not performing parent check or querying the network for double spend");
             // if we got 2 or more, then it is a double spend for sure.
             // We don't have to check parent/ ask network for extra spend.
             // Validate and store just 2 of them.
+            // The nodes will be synced up during replication.
             aggregate_spends(signed_spends, dbc_id)
         };
 

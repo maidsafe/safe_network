@@ -47,7 +47,7 @@ pub enum SwarmCmd {
         key: NetworkAddress,
         sender: oneshot::Sender<Vec<PeerId>>,
     },
-    // Returns all the peers from all the kbuckets from the local Routing Table.
+    // Returns all the peers from all the k-buckets from the local Routing Table.
     // This includes our PeerId as well.
     GetAllLocalPeers {
         sender: oneshot::Sender<Vec<PeerId>>,
@@ -56,8 +56,12 @@ pub enum SwarmCmd {
     SendRequest {
         req: Request,
         peer: PeerId,
-        // If the `sender` is provided, then the requesting node will wait for the response
-        // from the Peer at the call site. Else the Response is handled by the common
+
+        // If a `sender` is provided, the requesting node will await for a `Response` from the
+        // Peer. The result is then returned at the call site.
+        //
+        // If a `sender` is not provided, the requesting node will not wait for the Peer's
+        // response. Instead we trigger a `NetworkEvent::ResponseReceived` which calls the common
         // `response_handler`
         sender: Option<oneshot::Sender<Result<Response>>>,
     },
@@ -85,7 +89,7 @@ pub enum SwarmCmd {
     PutLocalRecord {
         record: Record,
     },
-    /// Get all the Addressess of all Records stored locally
+    /// Get all the Addresses of all Records stored locally
     GetAllRecordAddress {
         sender: oneshot::Sender<HashSet<NetworkAddress>>,
     },
@@ -117,7 +121,7 @@ pub enum SwarmCmd {
 pub struct SwarmLocalState {
     /// List of currently connected peers
     pub connected_peers: Vec<PeerId>,
-    /// List of aaddresses the node is currently listening on
+    /// List of addresses the node is currently listening on
     pub listeners: Vec<Multiaddr>,
 }
 

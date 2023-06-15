@@ -118,7 +118,7 @@ impl Client {
                                 continue;
                             }
                         };
-                        trace!("Client recevied a network event {the_event:?}");
+                        trace!("Client received a network event {the_event:?}");
                         if let Err(err) = client_clone.handle_network_event(the_event) {
                             warn!("Error handling network event: {err}");
                         }
@@ -137,7 +137,7 @@ impl Client {
 
         loop {
             let mut rng = rand::thread_rng();
-            // Carry out 5 rounds of random get to fill up the RT at the begginning.
+            // Carry out 5 rounds of random get to fill up the RT at the beginning.
             for _ in 0..INITIAL_GET_RANDOM_ROUNDS {
                 let random_target = ChunkAddress::new(XorName::random(&mut rng));
                 let _ = client.get_chunk(random_target).await;
@@ -194,7 +194,7 @@ impl Client {
             NetworkEvent::PeerAdded(peer_id) => {
                 debug!("PeerAdded: {peer_id}");
                 // In case client running in non-local-discovery mode,
-                // it may take some time to fillup the RT.
+                // it may take some time to fill up the RT.
                 // To avoid such delay may fail the query with RecordNotFound,
                 // wait till certain amount of peers populated into RT
                 if let Some(peers_added) = NonZeroUsize::new(self.peers_added) {
@@ -236,7 +236,7 @@ impl Client {
         self.signer.sign(data)
     }
 
-    /// Return the publick key of the data signing key
+    /// Return the public key of the data signing key
     pub fn signer_pk(&self) -> PublicKey {
         self.signer.public_key()
     }
@@ -254,7 +254,7 @@ impl Client {
     }
 
     /// Create a new offline Register instance.
-    /// It returns a Rgister instance which can be used to apply operations offline,
+    /// It returns a Register instance which can be used to apply operations offline,
     /// and publish them all to the network on a ad hoc basis.
     pub fn create_register_offline(&self, xorname: XorName, tag: u64) -> Result<RegisterOffline> {
         info!("Instantiating a new (offline) Register replica with name {xorname} and tag {tag}");

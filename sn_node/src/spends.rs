@@ -31,6 +31,7 @@ pub(crate) async fn get_aggregated_spends_from_peers(
 ) -> Result<Vec<SignedSpend>> {
     let address = DbcAddress::from_dbc_id(&dbc_id);
     let request = Request::Query(Query::GetSpend(address));
+    debug!("Trying to GetSepnd from the closest nodes to {:?}", address);
     let responses = network.node_send_to_closest(&request).await.map_err(|e| {
         warn!("Error while fetching spends on the Network for {address:?}: {e:?}");
         Error::SpendNotFound(address)

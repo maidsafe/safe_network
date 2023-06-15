@@ -205,13 +205,13 @@ impl Files {
                 }));
             }
 
-            let respones = join_all(tasks)
+            let responses = join_all(tasks)
                 .await
                 .into_iter()
                 .flatten() // swallows errors
                 .collect_vec();
 
-            for res in respones {
+            for res in responses {
                 // fail with any issue here
                 res?;
             }

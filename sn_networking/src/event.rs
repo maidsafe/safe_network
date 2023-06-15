@@ -345,7 +345,7 @@ impl SwarmDriver {
                     })?;
 
                 // TODO: consider order the result and terminate when reach any of the
-                //       following creterias:
+                //       following criteria:
                 //   1, `stats.num_pending()` is 0
                 //   2, `stats.duration()` is longer than a defined period
                 let new_peers: HashSet<PeerId> = closest_peers.peers.clone().into_iter().collect();
@@ -385,7 +385,7 @@ impl SwarmDriver {
             } => {
                 warn!("Query task {id:?} failed to get record with error: {err:?}, {stats:?} - {step:?}");
                 if step.last {
-                    // To avoid the caller wait forever on a non-existring entry
+                    // To avoid the caller wait forever on a non-existing entry
                     if let Some(sender) = self.pending_query.remove(&id) {
                         sender
                             .send(Err(Error::RecordNotFound))
@@ -414,6 +414,12 @@ impl SwarmDriver {
                         })
                         .await?
                 } else {
+                    // If the Record filtering is not enabled at the kad cfg, a malicious node
+                    // can just call `kad.put_record()` which would store that record at the
+                    // closest nodes without any validations
+                    //
+                    // Enable it to instead get the above `PutRequest` event which is then
+                    // handled separately
                     warn!("The PutRecord KademliaEvent should include a Record. Enable record filtering via the kad config")
                 }
             }
