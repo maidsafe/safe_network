@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1686830921373,
+  "lastUpdate": 1686858294897,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -419,6 +419,48 @@ window.BENCHMARK_DATA = {
             "name": "Download Benchmark/safe files download",
             "value": 52575771355,
             "range": "± 1299583691",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "action@github.com",
+            "name": "GitHub Action",
+            "username": "actions-user"
+          },
+          "committer": {
+            "email": "action@github.com",
+            "name": "GitHub Action",
+            "username": "actions-user"
+          },
+          "distinct": true,
+          "id": "38e02eefaead874748a5880c86f5fd7f9c119d93",
+          "message": "chore(release): sn_cli-v0.77.23/sn_client-v0.85.10/sn_networking-v0.1.10/sn_protocol-v0.1.5/sn_transfers-v0.9.4/sn_node-v0.83.21/sn_testnet-v0.1.25/sn_record_store-v0.1.6/sn_registers-v0.1.4",
+          "timestamp": "2023-06-15T19:22:11Z",
+          "tree_id": "0aa16b837bea2fb8c4dbfb76aee292b38bb515cd",
+          "url": "https://github.com/maidsafe/safe_network/commit/38e02eefaead874748a5880c86f5fd7f9c119d93"
+        },
+        "date": 1686858294282,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Upload Benchmark 1MB/safe files upload/1",
+            "value": 1708075920,
+            "range": "± 324067679",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Upload Benchmark 10MB/safe files upload/10",
+            "value": 3520143350,
+            "range": "± 488649284",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Download Benchmark/safe files download",
+            "value": 48707923616,
+            "range": "± 1350070214",
             "unit": "ns/iter"
           }
         ]
