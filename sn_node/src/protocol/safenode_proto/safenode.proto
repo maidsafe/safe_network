@@ -36,6 +36,9 @@ service SafeNode {
 
   // Restart the node
   rpc Restart (RestartRequest) returns (RestartResponse);
+  
+  // Hard restart the node by starting a new binary process
+  rpc HardRestart (HardRestartRequest) returns (HardRestartResponse);
 
   // Update the node
   rpc Update (UpdateRequest) returns (UpdateResponse);

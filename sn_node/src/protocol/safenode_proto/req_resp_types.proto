@@ -42,7 +42,15 @@ message RestartRequest {
   uint64 delay_millis = 1;
 }
 
+// Hard-restart the safenode app
+// ie, call the binary with the same args and close the current process
+message HardRestartRequest {
+  uint64 delay_millis = 1;
+}
+
 message RestartResponse {}
+
+message HardRestartResponse {}
 
 // Update the safenode app
 message UpdateRequest {

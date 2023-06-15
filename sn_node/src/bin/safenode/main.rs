@@ -90,6 +90,9 @@ enum NodeCtrl {
     // Request to restart the exeution of the safenode app,
     // retrying to join the network, after the requested delay.
     Restart(Duration),
+    // Request to fully restart the process, starting a fresh run with the binary, after the requested delay.
+    // Relevant information will be passed to the new process via the command line arguments.
+    HardRestart(Duration),
     // Request to update the safenode app, and restart it, after the requested delay.
     Update(Duration),
 }
@@ -193,6 +196,15 @@ async fn start_node(
     // We'll monitor any NodeCtrl cmd to restart/stop/update,
     loop {
         match ctrl_rx.recv().await {
+            Some(NodeCtrl::HardRestart(delay)) => {
+                let msg = format!("Node is hard-restarting in {delay:?}...");
+                info!("{msg}");
+                println!("{msg} Node log path: {log_dir}");
+                sleep(delay).await;
+
+                error!("Did not actually hard restart yet");
+                break Ok(());
+            }
             Some(NodeCtrl::Restart(delay)) => {
                 let msg = format!("Node is restarting in {delay:?}...");
                 info!("{msg}");
