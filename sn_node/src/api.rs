@@ -139,10 +139,13 @@ impl Node {
                     spawn(async move { stateless_node_copy.handle_request(req, channel).await });
             }
             NetworkEvent::ResponseReceived { res } => {
-                trace!("NetworkEvent::ResponseReceived that are not awaited at call site. {res:?}");
-                if let Err(err) = self.handle_response(res).await {
-                    error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
-                }
+                trace!("NetworkEvent::ResponseReceived that was not awaited at call site. {res:?}");
+                // requests are network intensive so we run them in a background task
+                let _handle = spawn(async move {
+                    if let Err(err) = stateless_node_copy.handle_response(res).await {
+                        error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
+                    }
+                });
             }
             NetworkEvent::PutRequest { peer, record } => {
                 debug!("Got a Record PutRequest from {peer:?}");
@@ -183,7 +186,7 @@ impl Node {
                     let peers = self.initial_peers.clone();
                     let _handle = spawn(async move {
                         for (peer_id, addr) in &peers {
-                            // The addresses passed might contain the peer_id, which we already pass seperately.
+                            // The addresses passed might contain the peer_id, which we already pass separately.
                             let addr = multiaddr_strip_p2p(addr);
                             if let Err(err) = network.dial(*peer_id, addr.clone()).await {
                                 tracing::error!("Failed to dial {peer_id}: {err:?}");
@@ -201,7 +204,7 @@ impl Node {
         }
     }
 
-    // Handle the respones that are not awaited at the call site
+    // Handle the response that was not awaited at the call site
     async fn handle_response(&mut self, response: Response) -> Result<()> {
         match response {
             Response::Query(QueryResponse::GetReplicatedData(Ok((holder, replicated_data)))) => {
@@ -213,7 +216,7 @@ impl Node {
                             NetworkAddress::from_record_key(RecordKey::new(chunk_addr.name()));
 
                         let success = self.validate_and_store_chunk(chunk_with_payment).await?;
-                        trace!("RecplicatedData::Chunk with {chunk_addr:?} has been validated and stored. {success:?}");
+                        trace!("ReplicatedData::Chunk with {chunk_addr:?} has been validated and stored. {success:?}");
                         addr
                     }
                     ReplicatedData::DbcSpend(spends) => {
@@ -223,8 +226,8 @@ impl Node {
                         debug!("DbcSpend received for replication: {:?}", dbc_addr.name());
                         let addr = NetworkAddress::from_record_key(RecordKey::new(dbc_addr.name()));
 
-                        let success = self.validate_and_store_spend(spends).await?;
-                        trace!("RecplicatedData::Chunk with {addr:?} has been validated and stored. {success:?}");
+                        let success = self.validate_and_store_spends(spends).await?;
+                        trace!("ReplicatedData::Chunk with {addr:?} has been validated and stored. {success:?}");
                         addr
                     }
                     other => {
@@ -239,7 +242,8 @@ impl Node {
                         .network
                         .notify_fetch_result(peer_id, address, true)
                         .await?;
-                    self.fetching_replication_keys(keys_to_fetch).await?;
+                    self.fetch_replication_keys_without_wait(keys_to_fetch)
+                        .await?;
                 } else {
                     warn!("Cannot parse PeerId from {holder:?}");
                 }
@@ -253,7 +257,8 @@ impl Node {
                         .network
                         .notify_fetch_result(peer_id, address, false)
                         .await?;
-                    self.fetching_replication_keys(keys_to_fetch).await?;
+                    self.fetch_replication_keys_without_wait(keys_to_fetch)
+                        .await?;
                 } else {
                     warn!("Cannot parse PeerId from {holder:?}");
                 }
@@ -358,10 +363,7 @@ impl Node {
             Cmd::SpendDbc(signed_spend, _) => {
                 let dbc_id = *signed_spend.dbc_id();
                 let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
-                match self
-                    .validate_and_store_spend(vec![vec![signed_spend]])
-                    .await
-                {
+                match self.validate_and_store_spends(vec![signed_spend]).await {
                     Ok(cmd_ok) => {
                         debug!("Broadcasting valid spend: {dbc_id:?} at: {dbc_addr:?}");
                         self.events_channel

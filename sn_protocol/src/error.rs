@@ -39,7 +39,7 @@ pub enum Error {
     /// Register operation was not stored.
     #[error("Register operation was not stored: {0:?}")]
     RegisterCmdNotStored(RegisterAddress),
-    /// Register operation destination address mistmatch
+    /// Register operation destination address mismatch
     #[error(
         "The CRDT operation cannot be applied since the Register operation destination address ({dst_addr:?}) \
          doesn't match the targeted Register's address: {reg_addr:?}"
@@ -125,7 +125,7 @@ pub enum Error {
     },
 
     /// Replication not found.
-    #[error("Peer {holder:?} cann't find ReplicatedData {address:?}")]
+    #[error("Peer {holder:?} cannot find ReplicatedData {address:?}")]
     ReplicatedDataNotFound {
         /// Holder that being contacted
         holder: NetworkAddress,

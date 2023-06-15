@@ -113,7 +113,7 @@ impl SwarmDriver {
     /// Creates a new `SwarmDriver` instance, along with a `Network` handle
     /// for sending commands and an `mpsc::Receiver<NetworkEvent>` for receiving
     /// network events. It initializes the swarm, sets up the transport, and
-    /// configures the Kademlia and mDNS behaviours for peer discovery.
+    /// configures the Kademlia and mDNS behaviour for peer discovery.
     ///
     /// # Returns
     ///
@@ -519,7 +519,7 @@ impl Network {
 
     /// Send `Request` to the closest peers. If `self` is among the closest_peers, the `Request` is
     /// forwarded to itself and handled. Then a corresponding `Response` is created and is
-    /// forwarded to iself. Hence the flow remains the same and there is no branching at the upper
+    /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
     pub async fn node_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
         info!(
@@ -788,7 +788,7 @@ impl Network {
             list_of_futures = remaining_futures;
         }
 
-        trace!("got all respsonses for {req:?}");
+        trace!("got all responses for {req:?}");
         responses
     }
 }
