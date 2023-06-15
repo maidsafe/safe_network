@@ -32,7 +32,8 @@ use std::{
 use tokio::time::{sleep, Duration};
 use walkdir::WalkDir;
 
-const LOG_FILENAME_PREFIX: &str = "safenode.log";
+const LOG_FILENAME_PREFIX: &str = "safenode";
+const LOG_FILENAME_SUFFIX: &str = ".log";
 
 // Struct to collect node info from logs and RPC responses
 #[derive(Debug, Clone)]
@@ -198,7 +199,7 @@ fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
             continue;
         };
 
-        if file_name.starts_with(LOG_FILENAME_PREFIX) {
+        if file_name.starts_with(LOG_FILENAME_PREFIX) && file_name.ends_with(LOG_FILENAME_SUFFIX) {
             let file = File::open(&file_path)?;
             let lines = BufReader::new(file).lines();
             let log_path = file_path
