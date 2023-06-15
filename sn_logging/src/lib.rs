@@ -12,7 +12,6 @@ pub mod error;
 pub mod metrics;
 
 use self::error::{Error, Result};
-use std::fs;
 use std::path::PathBuf;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::{Event, Level, Subscriber};
@@ -79,10 +78,6 @@ impl TracingLayers {
         optional_log_dir: &Option<PathBuf>,
     ) -> Result<()> {
         let layer = if let Some(log_dir) = optional_log_dir {
-            if fs::remove_dir_all(log_dir).is_ok() {
-                println!("Removed old logs from directory: {log_dir:?}");
-            }
-
             println!("Logging to directory: {log_dir:?}");
 
             let logs_max_lines = 5000;
