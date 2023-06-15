@@ -9,7 +9,7 @@
 use crate::{
     storage::{
         registers::{EntryHash, User},
-        ChunkAddress, DbcAddress, RegisterAddress,
+        ChunkAddress, DbcAddress, RecordKind, RegisterAddress,
     },
     NetworkAddress,
 };
@@ -151,4 +151,7 @@ pub enum Error {
     // The Record::key must match with the one that is derived from the Record::value
     #[error("The Record::key does not match with the key derived from Record::value")]
     RecordKeyMismatch,
+    // The RecordKind that was obtained did not match with the expected one
+    #[error("The RecordKind obtained from the Record did not match with the expected kind: {0}")]
+    RecordKindMismatch(RecordKind),
 }

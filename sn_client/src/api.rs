@@ -24,8 +24,12 @@ use libp2p::{
 use sn_dbc::{DbcId, SignedSpend};
 use sn_networking::{close_group_majority, multiaddr_is_global, NetworkEvent, SwarmDriver};
 use sn_protocol::{
+    error::Error as ProtocolError,
     messages::{Cmd, CmdResponse, PaymentProof, Query, QueryResponse, Request, Response},
-    storage::{Chunk, ChunkAddress, DbcAddress},
+    storage::{
+        try_deserialize_record, Chunk, ChunkAddress, ChunkWithPayment, DbcAddress, RecordHeader,
+        RecordKind,
+    },
     NetworkAddress,
 };
 use sn_transfers::client_transfers::SpendRequest;
@@ -283,16 +287,16 @@ impl Client {
     pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
         let xorname = address.name();
-        match self
+        let record = self
             .network
-            .get_data_from_network(RecordKey::new(xorname))
-            .await?
-        {
-            Ok(chunk_bytes) => Ok(Chunk::new(chunk_bytes.into())),
-            Err(err) => {
-                warn!("Local internal error when trying to query chunk {xorname:?}: {err:?}",);
-                Err(err.into())
-            }
+            .get_record_from_network(RecordKey::new(xorname))
+            .await?;
+        let header = RecordHeader::from_record(&record)?;
+        if let RecordKind::Chunk = header.kind {
+            let chunk_with_payment: ChunkWithPayment = try_deserialize_record(&record)?;
+            Ok(chunk_with_payment.chunk)
+        } else {
+            Err(ProtocolError::RecordKindMismatch(RecordKind::Chunk).into())
         }
     }
 

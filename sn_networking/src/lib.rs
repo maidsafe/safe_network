@@ -47,7 +47,6 @@ use libp2p::{
 use rand::Rng;
 use sn_protocol::{
     messages::{Request, Response},
-    storage::RecordHeader,
     NetworkAddress,
 };
 use sn_record_store::{
@@ -104,7 +103,7 @@ pub struct SwarmDriver {
     pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
-    pending_query: HashMap<QueryId, oneshot::Sender<Result<Vec<u8>>>>,
+    pending_query: HashMap<QueryId, oneshot::Sender<Result<Record>>>,
     replication_fetcher: ReplicationFetcher,
     local: bool,
     dialed_peers: CircularVec<PeerId>,
@@ -586,22 +585,15 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
-    /// Get data from the KAD network as bytes
-    /// The `RecordHeader` is stripped and only the body is returned
-    pub async fn get_data_from_network(&self, key: RecordKey) -> Result<Result<Vec<u8>>> {
+    /// Get the Record from the network
+    pub async fn get_record_from_network(&self, key: RecordKey) -> Result<Record> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetNetworkRecord { key, sender })
             .await?;
 
         receiver
             .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
-            .map(|response| {
-                response.map(|bytes| {
-                    // ignore the record header
-                    bytes[RecordHeader::SIZE..].to_vec()
-                })
-            })
+            .map_err(|_e| Error::InternalMsgChannelDropped)?
     }
 
     /// Get `Record` from the local RecordStore

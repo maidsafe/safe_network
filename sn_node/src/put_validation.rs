@@ -17,7 +17,10 @@ use sn_dbc::{DbcId, SignedSpend};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{CmdOk, PaymentProof},
-    storage::{ChunkWithPayment, DbcAddress, RecordHeader, RecordKind},
+    storage::{
+        try_deserialize_record, try_serialize_record, ChunkWithPayment, DbcAddress, RecordHeader,
+        RecordKind,
+    },
 };
 use sn_transfers::payment_proof::validate_payment_proof;
 use std::collections::HashSet;
@@ -50,7 +53,7 @@ impl Node {
 
         let record = Record {
             key: RecordKey::new(chunk_with_payment.chunk.name()),
-            value: Self::try_serialize_record(&chunk_with_payment, RecordKind::Chunk)?,
+            value: try_serialize_record(&chunk_with_payment, RecordKind::Chunk)?,
             publisher: None,
             expires: None,
         };
@@ -112,7 +115,7 @@ impl Node {
         // store the record into the local storage
         let record = Record {
             key,
-            value: Self::try_serialize_record(&signed_spends, RecordKind::DbcSpend)?,
+            value: try_serialize_record(&signed_spends, RecordKind::DbcSpend)?,
             publisher: None,
             expires: None,
         };
@@ -159,7 +162,7 @@ impl Node {
                     return Ok(());
                 }
 
-                let chunk_with_payment: ChunkWithPayment = Self::try_deserialize_record(&record)?;
+                let chunk_with_payment: ChunkWithPayment = try_deserialize_record(&record)?;
                 let addr = chunk_with_payment.chunk.name();
                 // check if the deserialized value's ChunkAddress matches the record's key
                 if record.key != RecordKey::new(&addr) {
@@ -177,7 +180,7 @@ impl Node {
                     .await?;
             }
             RecordKind::DbcSpend => {
-                let signed_spends: Vec<SignedSpend> = Self::try_deserialize_record(&record)?;
+                let signed_spends: Vec<SignedSpend> = try_deserialize_record(&record)?;
                 // Prevents someone from crafting large Vec and slowing down nodes
                 if signed_spends.len() > 2 {
                     warn!(
@@ -222,7 +225,7 @@ impl Node {
 
                         // replace the Record's value with the new one
                         let signed_spends =
-                            Self::try_serialize_record(&signed_spends, RecordKind::DbcSpend)?;
+                            try_serialize_record(&signed_spends, RecordKind::DbcSpend)?;
                         record.value = signed_spends;
                     }
                     None => {
@@ -369,8 +372,7 @@ impl Node {
                 return Err(ProtocolError::SpendNotStored(Some(dbc_addr)));
             }
 
-            let local_signed_spends: Vec<SignedSpend> =
-                Self::try_deserialize_record(&local_record)?;
+            let local_signed_spends: Vec<SignedSpend> = try_deserialize_record(&local_record)?;
 
             // spends that are not present locally
             let newly_seen_spends = signed_spends
@@ -413,45 +415,5 @@ impl Node {
         };
 
         Ok(Some(signed_spends))
-    }
-
-    pub(crate) fn try_deserialize_record<T: serde::de::DeserializeOwned>(
-        record: &Record,
-    ) -> Result<T, ProtocolError> {
-        let bytes = &record.value[RecordHeader::SIZE..];
-        let value = bincode::deserialize(bytes).map_err(|_| ProtocolError::RecordParsingFailed);
-        if let Err(err) = &value {
-            warn!("Error while deserializing Record to a value {err}");
-        }
-        value
-    }
-
-    pub(crate) fn try_serialize_record<T: serde::Serialize>(
-        data: &T,
-        record_kind: RecordKind,
-    ) -> Result<Vec<u8>, ProtocolError> {
-        let payload = match bincode::serialize(data).map_err(|_| ProtocolError::RecordParsingFailed)
-        {
-            Ok(p) => p,
-            Err(err) => {
-                error!("Error while serializing data to Record");
-                return Err(err);
-            }
-        };
-
-        let record_header = RecordHeader { kind: record_kind };
-
-        let mut record_value = match bincode::serialize(&record_header)
-            .map_err(|_| ProtocolError::RecordParsingFailed)
-        {
-            Ok(r) => r,
-            Err(err) => {
-                error!("Error while serializing RecordHeader");
-                return Err(err);
-            }
-        };
-
-        record_value.extend(payload);
-        Ok(record_value)
     }
 }
