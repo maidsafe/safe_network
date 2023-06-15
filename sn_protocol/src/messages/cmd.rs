@@ -13,9 +13,8 @@ use crate::{
 
 use super::RegisterCmd;
 
-use sn_dbc::DbcTransaction;
 // TODO: remove this dependency and define these types herein.
-pub use sn_dbc::{Dbc, Hash, SignedSpend};
+pub use sn_dbc::{DbcTransaction, Hash, SignedSpend};
 
 use serde::{Deserialize, Serialize};
 
@@ -104,9 +103,9 @@ pub type MerkleTreeNodesType = [u8; 32];
 
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
 pub struct PaymentProof {
-    // Output DBC for nodes to check the storage payment is valid and inputs have
+    // DBC transaction for nodes to check the storage payment is valid and inputs have
     // been effectivelly spent on the network.
-    pub dbc: Dbc,
+    pub tx: DbcTransaction,
     // Merkletree audit trail to prove the content storage has been paid by the
     // given DBC (using DBC's parent/s 'reason' field)
     pub audit_trail: Vec<MerkleTreeNodesType>,
