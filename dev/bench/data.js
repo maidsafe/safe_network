@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1686858294897,
+  "lastUpdate": 1686858404400,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -461,6 +461,48 @@ window.BENCHMARK_DATA = {
             "name": "Download Benchmark/safe files download",
             "value": 48707923616,
             "range": "± 1350070214",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "d2ac85e433cf189e34bb2dd9a6df98920307550a",
+          "message": "feat: add double spend test",
+          "timestamp": "2023-06-15T18:25:16Z",
+          "tree_id": "6d73568ed8dbc7720c28233d4017d964c3aa9175",
+          "url": "https://github.com/maidsafe/safe_network/commit/d2ac85e433cf189e34bb2dd9a6df98920307550a"
+        },
+        "date": 1686858403306,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Upload Benchmark 1MB/safe files upload/1",
+            "value": 1966434459,
+            "range": "± 280199969",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Upload Benchmark 10MB/safe files upload/10",
+            "value": 3660878859,
+            "range": "± 478791643",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Download Benchmark/safe files download",
+            "value": 58915469437,
+            "range": "± 1348036773",
             "unit": "ns/iter"
           }
         ]
