@@ -15,7 +15,7 @@ use super::{
 };
 use crate::client_transfers::{create_transfer, TransferOutputs};
 
-use sn_dbc::{Dbc, DbcIdSource, Hash, MainKey, PublicAddress, Token};
+use sn_dbc::{Dbc, DbcIdSource, DerivedKey, Hash, MainKey, PublicAddress, Token};
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -154,6 +154,21 @@ impl LocalWallet {
         self.wallet.deposit(dbcs, &self.key);
     }
 
+    pub fn available_dbcs(&self) -> Vec<(Dbc, DerivedKey)> {
+        let mut available_dbcs = vec![];
+        for dbc in self.wallet.available_dbcs.values() {
+            if let Ok(derived_key) = dbc.derived_key(&self.key) {
+                available_dbcs.push((dbc.clone(), derived_key));
+            } else {
+                warn!(
+                    "Skipping DBC {:?} because we don't have the key to spend it",
+                    dbc.id()
+                );
+            }
+        }
+        available_dbcs
+    }
+
     pub async fn local_send(
         &mut self,
         to: Vec<(Token, PublicAddress)>,
@@ -165,17 +180,8 @@ impl LocalWallet {
             .map(|(amount, address)| (amount, address.random_dbc_id_src(&mut rand::thread_rng())))
             .collect();
 
-        let mut available_dbcs = vec![];
-        for dbc in self.wallet.available_dbcs.values() {
-            if let Ok(derived_key) = dbc.derived_key(&self.key) {
-                available_dbcs.push((dbc.clone(), derived_key));
-            } else {
-                println!(
-                    "Skipping DBC {:?} because we don't have the key to spend it",
-                    dbc.id()
-                );
-            }
-        }
+        let available_dbcs = self.available_dbcs();
+        trace!("Available DBCs: {:#?}", available_dbcs);
 
         let reason_hash = reason_hash.unwrap_or_default();
 
