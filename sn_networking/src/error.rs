@@ -78,7 +78,4 @@ pub enum Error {
 
     #[error("Record was not found locally")]
     RecordNotFound,
-
-    #[error("Bincode error:: {0}")]
-    Bincode(#[from] bincode::Error),
 }
