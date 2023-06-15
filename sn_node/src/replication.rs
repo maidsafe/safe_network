@@ -17,9 +17,9 @@ use sn_protocol::{
 use std::collections::{BTreeMap, HashSet};
 
 // To reduce the number of messages exchanged, patch max 500 replication keys into one request.
-const MAX_PRELICATION_KEYS_PER_REQUEST: usize = 500;
+const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
 
-// Defines how close that a node will trigger repliation.
+// Defines how close that a node will trigger replication.
 // That is, the node has to be among the REPLICATION_RANGE closest to data,
 // to carry out the replication.
 const REPLICATION_RANGE: usize = 8;
@@ -63,7 +63,7 @@ impl Node {
         let churned_peer_address = NetworkAddress::from_peer(*peer);
         // Only nearby peers (two times of the CLOSE_GROUP_SIZE) may affect the later on
         // calculation of `closest peers to each entry`.
-        // Hecence to reduce the computation work, no need to take all peers.
+        // Hence to reduce the computation work, no need to take all peers.
         // Plus 1 because the result contains self.
         let sorted_peers: Vec<PeerId> = if let Ok(sorted_peers) =
             sort_peers_by_address(all_peers, &churned_peer_address, 2 * CLOSE_GROUP_SIZE + 1)
@@ -125,33 +125,15 @@ impl Node {
             let (left, mut remaining_keys) = keys.split_at(0);
             trace!("Left len {:?}", left.len());
             trace!("Remaining keys len {:?}", remaining_keys.len());
-            while remaining_keys.len() > MAX_PRELICATION_KEYS_PER_REQUEST {
-                let (left, right) = remaining_keys.split_at(MAX_PRELICATION_KEYS_PER_REQUEST);
+            while remaining_keys.len() > MAX_REPLICATION_KEYS_PER_REQUEST {
+                let (left, right) = remaining_keys.split_at(MAX_REPLICATION_KEYS_PER_REQUEST);
                 remaining_keys = right;
-                self.send_replicate_list_without_wait(&our_address, &peer_id, left.to_vec())
+                self.send_replicate_cmd_without_wait(&our_address, &peer_id, left.to_vec())
                     .await?;
             }
-            self.send_replicate_list_without_wait(&our_address, &peer_id, remaining_keys.to_vec())
+            self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())
                 .await?;
         }
-        Ok(())
-    }
-
-    async fn send_replicate_list_without_wait(
-        &mut self,
-        our_address: &NetworkAddress,
-        peer_id: &PeerId,
-        keys: Vec<NetworkAddress>,
-    ) -> Result<()> {
-        let len = keys.len();
-        let request = Request::Cmd(Cmd::Replicate {
-            holder: our_address.clone(),
-            keys,
-        });
-        self.network
-            .send_req_ignore_reply(request, *peer_id)
-            .await?;
-        trace!("Sending a replication list with {len:?} keys to {peer_id:?}");
         Ok(())
     }
 
@@ -177,15 +159,19 @@ impl Node {
             .filter(|key| !existing_keys.contains(key))
             .cloned()
             .collect();
+
         let keys_to_fetch = self
             .network
             .add_keys_to_replication_fetcher(peer_id, non_existing_keys)
             .await?;
-        self.fetching_replication_keys(keys_to_fetch).await?;
+        self.fetch_replication_keys_without_wait(keys_to_fetch)
+            .await?;
         Ok(())
     }
 
-    pub(crate) async fn fetching_replication_keys(
+    /// Utility to send `Query::GetReplicatedData` without awaiting for the `Response` at the call
+    /// site
+    pub(crate) async fn fetch_replication_keys_without_wait(
         &mut self,
         keys_to_fetch: Vec<(PeerId, NetworkAddress)>,
     ) -> Result<()> {
@@ -197,6 +183,25 @@ impl Node {
             });
             self.network.send_req_ignore_reply(request, peer).await?
         }
+        Ok(())
+    }
+
+    // Utility to send `Cmd::Replicate` without awaiting for the `Response` at the call site.
+    async fn send_replicate_cmd_without_wait(
+        &mut self,
+        our_address: &NetworkAddress,
+        peer_id: &PeerId,
+        keys: Vec<NetworkAddress>,
+    ) -> Result<()> {
+        let len = keys.len();
+        let request = Request::Cmd(Cmd::Replicate {
+            holder: our_address.clone(),
+            keys,
+        });
+        self.network
+            .send_req_ignore_reply(request, *peer_id)
+            .await?;
+        trace!("Sending a replication list with {len:?} keys to {peer_id:?}");
         Ok(())
     }
 }
