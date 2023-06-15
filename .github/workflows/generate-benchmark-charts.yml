@@ -18,7 +18,7 @@ env:
 
 jobs:
   benchmark:
-    name: Run and log benchmark results on gh-pages
+    name: Run and log benchmark criterion results on gh-pages
     # right now only ubuntu, running on multiple systems would require many pushes...\
     # perhaps this can be done with one consolidation action in the future, pulling down all results and pushing
     # once to the branch..
