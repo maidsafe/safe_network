@@ -98,6 +98,10 @@ impl Node {
             RecordKind::Chunk => {
                 let chunk_with_payment =
                     try_deserialize_record::<ChunkWithPayment>(&record).map_err(|_| error)?;
+                trace!(
+                    "Replicating chunk with address {:?}",
+                    chunk_with_payment.chunk.address()
+                );
 
                 Ok(ReplicatedData::Chunk(chunk_with_payment))
             }
