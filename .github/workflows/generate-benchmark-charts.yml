@@ -178,13 +178,17 @@ jobs:
           }' > memory_usage.json
         if: always()
 
+      - name: Check memory_usage.json
+        run: cat memory_usage.json
+        if: always()
+        continue-on-error: true
 
       - name: Upload Memory Usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: 'Memory Usage of Node through safe-benchmark'
           tool: 'customSmallerIsBetter'
-          output-file-path: './memory_usage.json'
+          output-file-path: 'memory_usage.json'
           # Access token to deploy GitHub Pages branch
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # Push and deploy GitHub pages branch automatically
