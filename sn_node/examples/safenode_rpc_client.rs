@@ -8,8 +8,8 @@
 
 use safenode_proto::safe_node_client::SafeNodeClient;
 use safenode_proto::{
-    NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RestartRequest, StopRequest,
-    UpdateRequest,
+    HardRestartRequest, NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RestartRequest,
+    StopRequest, UpdateRequest,
 };
 use sn_logging::init_logging;
 use tonic::Request;
@@ -56,6 +56,14 @@ enum Cmd {
         #[clap(default_value = "0")]
         delay_millis: u64,
     },
+    /// Hard Restart of node after the specified delay, forcing a fresh run of the application
+    /// in order to pick up any updates that may have been provided
+    #[clap(name = "hard-restart")]
+    HardRestart {
+        /// Delay in milliseconds before restartng the node
+        #[clap(default_value = "0")]
+        delay_millis: u64,
+    },
     /// Stop the node after the specified delay
     #[clap(name = "stop")]
     Stop {
@@ -91,6 +99,7 @@ async fn main() -> Result<()> {
         Cmd::Netinfo => network_info(addr).await,
         Cmd::Events => node_events(addr).await,
         Cmd::Restart { delay_millis } => node_restart(addr, delay_millis).await,
+        Cmd::HardRestart { delay_millis } => hard_node_restart(addr, delay_millis).await,
         Cmd::Stop { delay_millis } => node_stop(addr, delay_millis).await,
         Cmd::Update { delay_millis } => node_update(addr, delay_millis).await,
     }
@@ -168,6 +177,18 @@ pub async fn node_restart(addr: SocketAddr, delay_millis: u64) -> Result<()> {
         .await?;
     println!(
         "Node successfully received the request to restart in {:?}",
+        Duration::from_millis(delay_millis)
+    );
+    Ok(())
+}
+pub async fn hard_node_restart(addr: SocketAddr, delay_millis: u64) -> Result<()> {
+    let endpoint = format!("https://{addr}");
+    let mut client = SafeNodeClient::connect(endpoint).await?;
+    let _response = client
+        .hard_restart(Request::new(HardRestartRequest { delay_millis }))
+        .await?;
+    println!(
+        "Node successfully received the request to perform a full restart in {:?}",
         Duration::from_millis(delay_millis)
     );
     Ok(())

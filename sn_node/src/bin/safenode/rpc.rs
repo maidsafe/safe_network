@@ -24,9 +24,9 @@ use tracing::{debug, info, trace};
 
 use safenode_proto::safe_node_server::{SafeNode, SafeNodeServer};
 use safenode_proto::{
-    NetworkInfoRequest, NetworkInfoResponse, NodeEvent, NodeEventsRequest, NodeInfoRequest,
-    NodeInfoResponse, RestartRequest, RestartResponse, StopRequest, StopResponse, UpdateRequest,
-    UpdateResponse,
+    HardRestartRequest, HardRestartResponse, NetworkInfoRequest, NetworkInfoResponse, NodeEvent,
+    NodeEventsRequest, NodeInfoRequest, NodeInfoResponse, RestartRequest, RestartResponse,
+    StopRequest, StopResponse, UpdateRequest, UpdateResponse,
 };
 
 // this includes code generated from .proto files
@@ -164,6 +164,26 @@ impl SafeNode for SafeNodeRpcService {
             Err(err) => Err(Status::new(
                 Code::Internal,
                 format!("Failed to restart the node: {err}"),
+            )),
+        }
+    }
+
+    async fn hard_restart(
+        &self,
+        request: Request<HardRestartRequest>,
+    ) -> Result<Response<HardRestartResponse>, Status> {
+        trace!(
+            "RPC request received at {}: {:?}",
+            self.addr,
+            request.get_ref()
+        );
+
+        let delay = Duration::from_millis(request.get_ref().delay_millis);
+        match self.ctrl_tx.send(NodeCtrl::HardRestart(delay)).await {
+            Ok(()) => Ok(Response::new(HardRestartResponse {})),
+            Err(err) => Err(Status::new(
+                Code::Internal,
+                format!("Failed to hard-restart the node: {err}"),
             )),
         }
     }
