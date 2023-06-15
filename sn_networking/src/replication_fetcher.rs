@@ -20,7 +20,7 @@ const MAX_PARALLEL_FETCH: usize = 4;
 // if no response got from that peer.
 const FETCH_FAILED_DURATION: Duration = Duration::from_secs(10);
 
-// Status of the data fetching progroess from the holder.
+// Status of the data fetching progress from the holder.
 #[derive(PartialEq)]
 pub(crate) enum HolderStatus {
     Pending,
