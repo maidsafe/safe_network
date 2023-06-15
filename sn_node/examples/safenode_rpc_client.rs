@@ -188,7 +188,7 @@ pub async fn hard_node_restart(addr: SocketAddr, delay_millis: u64) -> Result<()
         .hard_restart(Request::new(HardRestartRequest { delay_millis }))
         .await?;
     println!(
-        "Node successfully received the request to perform a full restart in {:?}",
+        "Node successfully received the request to perform a hard restart in {:?}",
         Duration::from_millis(delay_millis)
     );
     Ok(())

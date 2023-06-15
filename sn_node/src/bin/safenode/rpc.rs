@@ -209,6 +209,7 @@ impl SafeNode for SafeNodeRpcService {
     }
 }
 
+/// Returns the RPC handle incase we want to shut it down.
 pub(super) fn start_rpc_service(
     addr: SocketAddr,
     log_dir: &str,
@@ -227,7 +228,7 @@ pub(super) fn start_rpc_service(
     info!("RPC Server listening on {addr}");
     println!("RPC Server listening on {addr}");
 
-    let _handle = tokio::spawn(async move {
+    let _rpc_handle = tokio::spawn(async move {
         // adding our service to our server.
         Server::builder()
             .add_service(SafeNodeServer::new(service))
