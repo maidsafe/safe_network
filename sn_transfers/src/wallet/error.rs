@@ -19,7 +19,7 @@ pub enum Error {
     CreateTransfer(#[from] crate::client_transfers::Error),
     /// Could not build storage payment reason for content
     #[error("Could not build storage payment reason for content: {0}")]
-    StoragePaymentReason(String),
+    StoragePaymentReason(#[from] crate::payment_proof::error::Error),
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),
