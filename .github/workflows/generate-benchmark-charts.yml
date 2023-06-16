@@ -187,7 +187,7 @@ jobs:
       - name: Upload Node Memory Usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'Memory Usage of Node through safe-benchmark'
+          name: 'Node memory usage'
           tool: 'customSmallerIsBetter'
           output-file-path: node_memory_usage.json
           # Access token to deploy GitHub Pages branch
@@ -217,6 +217,14 @@ jobs:
         continue-on-error: true
         if: always()
 
+      - run: ll ./heaptrack.safe.txt 
+      - run: MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r "")
+      - run: |
+          echo "Memory usage: $MEMORY_USAGE MB"
+          if (( $(echo "$MEMORY_USAGE > $CLIENT_MEM_LIMIT_MB" | bc -l) )); then
+            echo "Client memory usage exceeded threshold: $MEMORY_USAGE MB"
+            exit 1
+          fi
       - name: Check client memory usage
         id: client-memory-usage-check
         shell: bash
@@ -225,7 +233,6 @@ jobs:
         env:
           CLIENT_MEM_LIMIT_MB: "1000" # mb
         run: |
-          ll ./heaptrack.safe.txt 
           MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r "")
           echo "Memory usage: $MEMORY_USAGE MB"
           if (( $(echo "$MEMORY_USAGE > $CLIENT_MEM_LIMIT_MB" | bc -l) )); then
@@ -245,7 +252,7 @@ jobs:
       - name: Upload Client Memory Usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'Memory Usage of Client during uploading large file'
+          name: 'Client memory during upload'
           tool: 'customSmallerIsBetter'
           output-file-path: client_memory_usage.json
           # Access token to deploy GitHub Pages branch
