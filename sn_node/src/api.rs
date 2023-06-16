@@ -361,8 +361,8 @@ impl Node {
             path,
         }: &PaymentProof,
     ) -> Result<(), ProtocolError> {
-        // TODO: check the expected amount of tokens was paid by the Tx,
-        // i.e. one of the outputs is the predefined "burning address" and the sent (unblinded) amount matches.
+        // TODO: check the expected amount of tokens was paid by the Tx, i.e. the amount one of the
+        // outputs sent (unblinded) is the expected, and the paid address is the predefined "burning address"
 
         // We need to fetch the inputs of the DBC tx in order to obtain the reason-hash and
         // other info for verifications of valid payment.
