@@ -1,6 +1,5 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use dirs_next::home_dir;
-use std::fs::{self, File};
+use criterion::{criterion_group, criterion_main, Criterion, Throughput};
+use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::process::{exit, Command};
@@ -18,30 +17,6 @@ fn safe_files_upload(dir: &str) {
     if !output.status.success() {
         panic!("Upload command executed with failing error code");
     }
-}
-fn safe_files_download() {
-    let output = Command::new("./target/release/safe")
-        .arg("files")
-        .arg("download")
-        .output()
-        .expect("Failed to execute command");
-
-    if !output.status.success() {
-        panic!("Download command executed with failing error code");
-    }
-}
-
-fn get_downloaded_files_size() -> u64 {
-    let path = home_dir()
-        .expect("Could not get home directory")
-        .join(".safe/client/downloaded_files");
-
-    fs::read_dir(path)
-        .expect("Failed to read directory")
-        .filter_map(Result::ok)
-        .filter(|e| e.metadata().expect("Failed to get metadata").is_file())
-        .map(|e| e.metadata().expect("Failed to get metadata").len())
-        .sum()
 }
 
 fn create_file(size_mb: u64) -> tempfile::TempDir {
@@ -69,31 +44,16 @@ fn criterion_benchmark(c: &mut Criterion) {
         let dir_path = dir.path().to_str().unwrap();
 
         let mut group = c.benchmark_group(format!("Upload Benchmark {}MB", size));
-        group.sample_size(50);
         group.sampling_mode(criterion::SamplingMode::Flat);
         group.measurement_time(Duration::from_secs(120));
-        group.warm_up_time(Duration::from_secs(10));
+        group.warm_up_time(Duration::from_secs(5));
 
         // Set the throughput to be reported in terms of bytes
         group.throughput(Throughput::Bytes(size * 1024 * 1024));
-
-        group.bench_function(BenchmarkId::new("safe files upload", size), |b| {
-            b.iter(|| safe_files_upload(dir_path))
-        });
+        let bench_id = format!("safe files upload {}mb", size);
+        group.bench_function(bench_id, |b| b.iter(|| safe_files_upload(dir_path)));
         group.finish();
     }
-
-    // and now run downloads (will download everything we just uploaded)
-    let mut group = c.benchmark_group("Download Benchmark");
-    group.warm_up_time(Duration::from_secs(10));
-    group.sample_size(10);
-
-    group.bench_function("safe files download", |b| b.iter(safe_files_download));
-    // Report the download throughput in terms of bytes
-    let download_size = get_downloaded_files_size();
-    group.throughput(Throughput::Bytes(download_size));
-
-    group.finish();
 }
 
 criterion_group!(benches, criterion_benchmark);
