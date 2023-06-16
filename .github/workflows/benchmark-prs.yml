@@ -74,9 +74,13 @@ jobs:
         shell: bash
         # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
         # passes to tee which displays it in the terminal and writes to output.txt
-        run: |
-          cargo criterion --output-format bencher 2>&1 | tee -a output.txt
-          cat output.txt
+        run: | 
+          cargo criterion --message-format=json 2>&1 | tee -a output.txt
+          cat output.txt | rg benchmark-complete | jq -c '{
+              name: (.id | split("/")[-1]),
+              unit: "MiB/s",
+              value: ((.throughput[0].per_iteration / (1024*1024)) / (.mean.estimate / 1e9))
+          }' > files-benchmark.json
 
      
       #################################
@@ -87,9 +91,8 @@ jobs:
         uses: benchmark-action/github-action-benchmark@v1
         with:
           # What benchmark tool the output.txt came from
-          tool: 'cargo'
-          # Where the output from the benchmark tool is stored
-          output-file-path: output.txt
+          tool: 'customBiggerIsBetter'
+          output-file-path: files-benchmark.json
           # Where the previous data file is stored
           external-data-json-path: ./cache/benchmark-data.json
           # Workflow will fail when an alert happens
