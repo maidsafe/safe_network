@@ -77,15 +77,17 @@ impl WalletClient {
         &mut self,
         content_addrs: impl Iterator<Item = &XorName>,
     ) -> Result<PaymentProofsMap> {
-        // TODO: calculate the amount to pay to each node, perhaps just 1 nano to begin with.
-        let amount = Token::from_nano(1);
-
-        // FIXME: calculate closest nodes to pay for storage, we are now just burning the output amount.
-        let to = vec![(amount, PublicAddress::new(SecretKey::random().public_key()))];
-
         // Let's build the payment proofs for list of content addresses
         let (reason_hash, audit_trail_info) = build_payment_proofs(content_addrs)
             .map_err(|err| Error::StoragePaymentReason(err.to_string()))?; // TODO: have a specific error type
+
+        // TODO: request an invoice to network which provides the amount to pay.
+        // For now, we just pay 1 nano per Chunk.
+        let num_of_addrs = audit_trail_info.len() as u64;
+        let amount = Token::from_nano(num_of_addrs);
+
+        // FIXME: calculate closest nodes to pay for storage, we are now just burning the output amount.
+        let to = vec![(amount, PublicAddress::new(SecretKey::random().public_key()))];
 
         let transfer = self.wallet.local_send(to, Some(reason_hash)).await?;
 
