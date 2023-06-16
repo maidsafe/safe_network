@@ -376,12 +376,7 @@ impl Node {
                     // TODO: self-verification of the signed spend?
 
                     if &signed_spend.spent_tx() != tx {
-                        // TODO: have a specific error type
-                        return Err(ProtocolError::InvalidPaymentProof {
-                            addr_name,
-                            reason: "DBC Tx doesn't match the retrieved SignedSpend's Tx"
-                                .to_string(),
-                        });
+                        return Err(ProtocolError::PaymentProofTxMismatch(addr_name));
                     }
 
                     reasons.push(signed_spend.reason());
@@ -394,19 +389,11 @@ impl Node {
         }
 
         match reasons.first() {
-            None => Err(ProtocolError::InvalidPaymentProof {
-                // TODO: have a specific error type
-                addr_name,
-                reason: "Payment DBC has no input DBCs".to_string(),
-            }),
+            None => Err(ProtocolError::PaymentProofWithoutInputs(addr_name)),
             Some(reason_hash) => {
                 // check all reasons are the same
                 if !reasons.iter().all(|r| r == reason_hash) {
-                    // TODO: have a specific error type
-                    return Err(ProtocolError::InvalidPaymentProof {
-                        addr_name,
-                        reason: "Not all input DBCs contain the same reason hash value".to_string(),
-                    });
+                    return Err(ProtocolError::PaymentProofInconsistentReason(addr_name));
                 }
 
                 // check the reason hash verifies the merkle-tree audit trail and path against the content address name

@@ -55,7 +55,7 @@
 //! DBC and tree, to the storage nodes upon uploading the Chunks for storing them on the network.
 //! ```
 
-mod error;
+pub(crate) mod error;
 mod hasher;
 
 use error::{Error, Result};
