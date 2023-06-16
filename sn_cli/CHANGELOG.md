@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.77.31](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.77.30...sn_cli-v0.77.31) - 2023-06-16
+
+### Fixed
+- CLI is missing local-discovery feature
+
 ## [0.77.30](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.77.29...sn_cli-v0.77.30) - 2023-06-16
 
 ### Other
