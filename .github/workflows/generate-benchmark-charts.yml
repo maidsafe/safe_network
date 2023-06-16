@@ -112,6 +112,7 @@ jobs:
       # Start a heaptracked client instance to compare memory usage
       # The generated large single file (around 450MB) may vary little bit along the releases
       - name: Start client with heaptrack
+        shell: bash
         run: |
           tar -czvf release_zip.tar.gz ./target/release
           heaptrack ./target/release/safe --files upload -- "./release_zip.tar.gz" &
@@ -151,6 +152,7 @@ jobs:
       ### Node Mem Analysis ###
       #########################
       - name: Check for Node heaptrack file
+        shell: bash
         run: ls -la
 
       - name: Analyze node memory usage
@@ -206,6 +208,7 @@ jobs:
       ### Client Mem Analysis ###
       ###########################
       - name: Check for Client heaptrack file
+        shell: bash
         run: ls -la
 
       - name: Analyze client memory usage
@@ -224,8 +227,13 @@ jobs:
         if: always()
 
       - run: ll ./heaptrack.safe.txt 
+        shell: bash
+
       - run: MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r "")
-      - run: |
+        shell: bash
+      - name: Check the usage setup
+        shell: bash
+        run: |
           echo "Memory usage: $MEMORY_USAGE MB"
           if (( $(echo "$MEMORY_USAGE > $CLIENT_MEM_LIMIT_MB" | bc -l) )); then
             echo "Client memory usage exceeded threshold: $MEMORY_USAGE MB"
