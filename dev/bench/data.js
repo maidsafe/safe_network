@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1686876590543,
+  "lastUpdate": 1686876635463,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -731,6 +731,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "node-memory-usage-through-safe-benchmark",
             "value": 9.47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "38d6a497c69f3344585a27473ea29539aaf82139",
+          "message": "fix: reduce client mem usage during uploading",
+          "timestamp": "2023-06-15T23:26:49Z",
+          "tree_id": "edf60d2f7093fc43ef48812f87005e4022748556",
+          "url": "https://github.com/maidsafe/safe_network/commit/38d6a497c69f3344585a27473ea29539aaf82139"
+        },
+        "date": 1686876634611,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "node-memory-usage-through-safe-benchmark",
+            "value": 10.17,
             "unit": "MB"
           }
         ]
