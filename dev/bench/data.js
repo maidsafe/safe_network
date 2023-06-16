@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1686873559976,
+  "lastUpdate": 1686876537000,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -587,6 +587,48 @@ window.BENCHMARK_DATA = {
             "name": "Download Benchmark/safe files download",
             "value": 56930646289,
             "range": "± 1426164506",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "38d6a497c69f3344585a27473ea29539aaf82139",
+          "message": "fix: reduce client mem usage during uploading",
+          "timestamp": "2023-06-15T23:26:49Z",
+          "tree_id": "edf60d2f7093fc43ef48812f87005e4022748556",
+          "url": "https://github.com/maidsafe/safe_network/commit/38d6a497c69f3344585a27473ea29539aaf82139"
+        },
+        "date": 1686876536187,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Upload Benchmark 1MB/safe files upload/1",
+            "value": 1905233333,
+            "range": "± 333066340",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Upload Benchmark 10MB/safe files upload/10",
+            "value": 3511230632,
+            "range": "± 443089531",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Download Benchmark/safe files download",
+            "value": 55508778992,
+            "range": "± 1058118988",
             "unit": "ns/iter"
           }
         ]
