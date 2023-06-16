@@ -291,6 +291,13 @@ jobs:
           CARGO_TARGET_DIR: "./transfer-target"
         timeout-minutes: 10
 
+      - name: execute the storage payment test
+        run: cargo test --release --features="local-discovery" storage_payment_succeeds -- --nocapture
+        env:
+          SN_LOG: "all"
+          CARGO_TARGET_DIR: "./transfer-target"
+        timeout-minutes: 10
+
       - name: Kill all nodes
         shell: bash
         timeout-minutes: 1
