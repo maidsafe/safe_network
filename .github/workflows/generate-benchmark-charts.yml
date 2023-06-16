@@ -95,9 +95,13 @@ jobs:
       - name: Remove git hooks so gh-pages git commits will work
         shell: bash
         run: rm -rf .git/hooks/pre-commit
+
+      - name: check files-benchmark.json
+        shell: bash
+        run: cat files-benchmark.json
         
       # gh-pages branch is updated and pushed automatically with extracted benchmark data
-      - name: Store benchmark result
+      - name: Store cli files benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: Safe `files` benchmarks
@@ -192,6 +196,10 @@ jobs:
           ]' > node_memory_usage.json
         if: always()
 
+      - name: check node_memory_usage.json
+        shell: bash
+        run: cat node_memory_usage.json
+
       - name: Upload Node Memory Usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -231,6 +239,7 @@ jobs:
 
       - run: MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r "")
         shell: bash
+
       - name: Check the usage setup
         shell: bash
         run: |
@@ -239,6 +248,7 @@ jobs:
             echo "Client memory usage exceeded threshold: $MEMORY_USAGE MB"
             exit 1
           fi
+
       - name: Check client memory usage
         id: client-memory-usage-check
         shell: bash
@@ -262,6 +272,10 @@ jobs:
               }
           ]' > client_memory_usage.json
         if: always()
+
+      - name: check client_memory_usage.json
+        shell: bash
+        run: cat client_memory_usage.json
 
       - name: Upload Client Memory Usage
         uses: benchmark-action/github-action-benchmark@v1
