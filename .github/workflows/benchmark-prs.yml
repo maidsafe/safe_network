@@ -202,6 +202,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # Enable alert commit comment
           comment-on-alert: true
+          # Comment on the PR
+          comment-always: true
           # 200% regression will result in alert
           alert-threshold: '200%'
           # Enable Job Summary for PRs
