@@ -25,9 +25,8 @@ pub use self::{
 };
 
 use super::NetworkAddress;
-use crate::storage::{ChunkWithPayment, DbcAddress};
+use crate::storage::{ChunkWithPayment, DbcAddress, SpendWithParent};
 use serde::{Deserialize, Serialize};
-use sn_dbc::SignedSpend;
 use xor_name::XorName;
 
 /// A request to peers in the network
@@ -52,8 +51,8 @@ pub enum Response {
 pub enum ReplicatedData {
     /// A chunk of data.
     Chunk(ChunkWithPayment),
-    /// A DbcSpend
-    DbcSpend(Vec<SignedSpend>),
+    /// DbcSpend wrapped along with its ParentTx
+    DbcSpend(Vec<SpendWithParent>),
     /// A single cmd for a register.
     RegisterWrite(RegisterCmd),
     /// An entire op log of a register.
@@ -75,7 +74,9 @@ impl ReplicatedData {
     pub fn name(&self) -> XorName {
         match self {
             Self::Chunk(chunk) => *chunk.chunk.name(),
-            Self::DbcSpend(spends) => *DbcAddress::from_dbc_id(spends[0].dbc_id()).name(),
+            Self::DbcSpend(spends) => {
+                *DbcAddress::from_dbc_id(spends[0].signed_spend.dbc_id()).name()
+            }
             Self::RegisterLog(log) => *log.address.name(),
             Self::RegisterWrite(cmd) => *cmd.dst().name(),
         }
@@ -85,9 +86,9 @@ impl ReplicatedData {
     pub fn dst(&self) -> NetworkAddress {
         match self {
             Self::Chunk(chunk) => NetworkAddress::from_chunk_address(*chunk.chunk.address()),
-            Self::DbcSpend(spends) => {
-                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(spends[0].dbc_id()))
-            }
+            Self::DbcSpend(spends) => NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(
+                spends[0].signed_spend.dbc_id(),
+            )),
             Self::RegisterLog(log) => NetworkAddress::from_register_address(log.address),
             Self::RegisterWrite(cmd) => NetworkAddress::from_register_address(cmd.dst()),
         }
@@ -97,8 +98,12 @@ impl ReplicatedData {
 impl std::fmt::Display for Response {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Response::Query(QueryResponse::GetDbcSpend(Ok(spend))) => {
-                write!(f, "GetDbcSpend(Ok({:?}))", spend.dbc_id())
+            Response::Query(QueryResponse::GetDbcSpend(Ok(spend_with_parent))) => {
+                write!(
+                    f,
+                    "GetDbcSpend(Ok({:?}))",
+                    spend_with_parent.signed_spend.dbc_id()
+                )
             }
             _ => write!(f, "{:?}", self),
         }

@@ -8,13 +8,12 @@
 
 use crate::Node;
 use libp2p::kad::RecordKey;
-use sn_dbc::SignedSpend;
 use sn_protocol::{
     error::{Error, Result},
     messages::ReplicatedData,
     storage::{
         try_deserialize_record, Chunk, ChunkAddress, ChunkWithPayment, DbcAddress, RecordHeader,
-        RecordKind,
+        RecordKind, SpendWithParent,
     },
     NetworkAddress,
 };
@@ -40,7 +39,10 @@ impl Node {
         }
     }
 
-    pub(crate) async fn get_spend_from_network(&self, address: DbcAddress) -> Result<SignedSpend> {
+    pub(crate) async fn get_spend_from_network(
+        &self,
+        address: DbcAddress,
+    ) -> Result<SpendWithParent> {
         let record = self
             .network
             .get_record_from_network(RecordKey::new(address.name()))
@@ -50,8 +52,8 @@ impl Node {
         let header =
             RecordHeader::from_record(&record).map_err(|_| Error::SpendNotFound(address))?;
 
-        if let RecordKind::Chunk = header.kind {
-            match try_deserialize_record::<Vec<SignedSpend>>(&record)
+        if let RecordKind::DbcSpend = header.kind {
+            match try_deserialize_record::<Vec<SpendWithParent>>(&record)
                 .map_err(|_| Error::SpendNotFound(address))?
                 .as_slice()
             {
@@ -108,7 +110,7 @@ impl Node {
 
             RecordKind::DbcSpend => {
                 let spends =
-                    try_deserialize_record::<Vec<SignedSpend>>(&record).map_err(|_| error)?;
+                    try_deserialize_record::<Vec<SpendWithParent>>(&record).map_err(|_| error)?;
                 Ok(ReplicatedData::DbcSpend(spends))
             }
             RecordKind::Register => {
