@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1686876635463,
+  "lastUpdate": 1686876697065,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -760,6 +760,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "node-memory-usage-through-safe-benchmark",
             "value": 10.17,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "action@github.com",
+            "name": "GitHub Action",
+            "username": "actions-user"
+          },
+          "committer": {
+            "email": "action@github.com",
+            "name": "GitHub Action",
+            "username": "actions-user"
+          },
+          "distinct": true,
+          "id": "588d9a1653b1b115024388b0cb5a3749d6c57cc2",
+          "message": "chore(release): sn_cli-v0.77.25/sn_client-v0.85.11/sn_node-v0.83.23/sn_testnet-v0.1.27",
+          "timestamp": "2023-06-16T00:26:12Z",
+          "tree_id": "a792f26123b7f55e9b14e282b6416b861c5aa44d",
+          "url": "https://github.com/maidsafe/safe_network/commit/588d9a1653b1b115024388b0cb5a3749d6c57cc2"
+        },
+        "date": 1686876696249,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "node-memory-usage-through-safe-benchmark",
+            "value": 10.73,
             "unit": "MB"
           }
         ]
