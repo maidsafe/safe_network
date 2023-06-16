@@ -219,14 +219,15 @@ impl Node {
                         trace!("ReplicatedData::Chunk with {chunk_addr:?} has been validated and stored. {success:?}");
                         addr
                     }
-                    ReplicatedData::DbcSpend(spends) => {
+                    ReplicatedData::DbcSpend(spends_with_parent) => {
                         // Put validations make sure that we have >= 1 spends and with the same
                         // dbc_id
-                        let dbc_addr = DbcAddress::from_dbc_id(spends[0].dbc_id());
+                        let dbc_addr =
+                            DbcAddress::from_dbc_id(spends_with_parent[0].signed_spend.dbc_id());
                         debug!("DbcSpend received for replication: {:?}", dbc_addr.name());
                         let addr = NetworkAddress::from_record_key(RecordKey::new(dbc_addr.name()));
 
-                        let success = self.validate_and_store_spends(spends).await?;
+                        let success = self.validate_and_store_spends(spends_with_parent).await?;
                         trace!("ReplicatedData::Chunk with {addr:?} has been validated and stored. {success:?}");
                         addr
                     }
@@ -360,15 +361,18 @@ impl Node {
                     }
                 }
             }
-            Cmd::SpendDbc(signed_spend, _) => {
-                let dbc_id = *signed_spend.dbc_id();
+            Cmd::SpendDbc(spend_with_parent) => {
+                let dbc_id = *spend_with_parent.signed_spend.dbc_id();
                 let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
-                match self.validate_and_store_spends(vec![signed_spend]).await {
+                match self
+                    .validate_and_store_spends(vec![spend_with_parent])
+                    .await
+                {
                     Ok(cmd_ok) => {
                         debug!("Broadcasting valid spend: {dbc_id:?} at: {dbc_addr:?}");
                         self.events_channel
                             .broadcast(NodeEvent::SpendStored(dbc_id));
-                        CmdResponse::StoreChunk(Ok(cmd_ok))
+                        CmdResponse::Spend(Ok(cmd_ok))
                     }
                     Err(err) => {
                         error!("Failed to StoreSpend: {err:?}");
