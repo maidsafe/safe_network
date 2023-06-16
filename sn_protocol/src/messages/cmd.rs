@@ -6,17 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::RegisterCmd;
 use crate::{
-    storage::{Chunk, ChunkAddress, DbcAddress},
+    storage::{Chunk, ChunkAddress, DbcAddress, SpendWithParent},
     NetworkAddress,
 };
-
-use super::RegisterCmd;
-
+use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
 pub use sn_dbc::{DbcTransaction, Hash, SignedSpend};
-
-use serde::{Deserialize, Serialize};
 
 /// Data and Dbc cmds - recording spends or creating, updating, and removing data.
 ///
@@ -40,12 +37,11 @@ pub enum Cmd {
     ///
     /// [`Register`]: crate::storage::Register
     Register(RegisterCmd),
-    /// [`SignedSpend`] write operation.
+    /// [`SpendWithParent`] write operation.
     ///
-    /// [`SignedSpend`]: sn_dbc::SignedSpend
-    /// The spend to be recorded.
-    /// As well as the parent_tx: the transaction this DBC was created in.
-    SpendDbc(SignedSpend, #[debug(skip)] DbcTransaction),
+    /// [`SpendWithParent`]: crate::storage::SpendWithParent
+    /// The spend to be recorded wrapped together with the transaction this DBC was created in
+    SpendDbc(SpendWithParent),
     /// Write operation to notify peer fetch a list of [`NetworkAddress`] from the holder.
     ///
     /// [`NetworkAddress`]: crate::NetworkAddress
@@ -66,9 +62,9 @@ impl Cmd {
                 NetworkAddress::from_chunk_address(ChunkAddress::new(*chunk.name()))
             }
             Cmd::Register(cmd) => NetworkAddress::from_register_address(cmd.dst()),
-            Cmd::SpendDbc(signed_spend, _) => {
-                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
-            }
+            Cmd::SpendDbc(spend_with_parent) => NetworkAddress::from_dbc_address(
+                DbcAddress::from_dbc_id(spend_with_parent.signed_spend.dbc_id()),
+            ),
             Cmd::Replicate { holder, .. } => holder.clone(),
         }
     }
@@ -83,8 +79,12 @@ impl std::fmt::Display for Cmd {
             Cmd::Register(cmd) => {
                 write!(f, "Cmd::Register({:?})", cmd.name()) // more qualification needed
             }
-            Cmd::SpendDbc(signed_spend, _) => {
-                write!(f, "Cmd::SpendDbc({:?})", signed_spend.dbc_id())
+            Cmd::SpendDbc(spend_with_parent) => {
+                write!(
+                    f,
+                    "Cmd::SpendDbc({:?})",
+                    spend_with_parent.signed_spend.dbc_id()
+                )
             }
             Cmd::Replicate { holder, keys } => {
                 write!(
