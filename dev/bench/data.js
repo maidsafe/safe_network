@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1686879737678,
+  "lastUpdate": 1686882134213,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -755,6 +755,48 @@ window.BENCHMARK_DATA = {
             "name": "Download Benchmark/safe files download",
             "value": 55016416664,
             "range": "± 1395355236",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "721150f6cef9f3b7d677a467f3633f797bc34b25",
+          "message": "chore: `--version` argument for `safenode`\n\nAt some point this was either removed, or it was never present.",
+          "timestamp": "2023-06-16T00:40:17Z",
+          "tree_id": "a91c181d70b86a6588bfc11a3a2d8791e6de4562",
+          "url": "https://github.com/maidsafe/safe_network/commit/721150f6cef9f3b7d677a467f3633f797bc34b25"
+        },
+        "date": 1686882133355,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Upload Benchmark 1MB/safe files upload/1",
+            "value": 1813010966,
+            "range": "± 355922892",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Upload Benchmark 10MB/safe files upload/10",
+            "value": 3349578508,
+            "range": "± 531875621",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Download Benchmark/safe files download",
+            "value": 52198793609,
+            "range": "± 1597075413",
             "unit": "ns/iter"
           }
         ]
