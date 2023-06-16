@@ -6,21 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[allow(unused_imports)] // needed by rustdocs links
+use super::RegisterQuery;
 use crate::{
     error::Result,
     messages::ReplicatedData,
     storage::{
         registers::{Entry, EntryHash, Permissions, Policy, Register, User},
-        Chunk,
+        Chunk, SpendWithParent,
     },
     NetworkAddress,
 };
-
-#[allow(unused_imports)] // needed by rustdocs links
-use super::RegisterQuery;
-
-use sn_dbc::SignedSpend;
-
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, fmt::Debug};
 
@@ -37,7 +33,7 @@ pub enum QueryResponse {
     /// Response to [`GetDbcSpend`]
     ///
     /// [`GetDbcSpend`]: crate::messages::Query::GetSpend
-    GetDbcSpend(Result<SignedSpend>),
+    GetDbcSpend(Result<SpendWithParent>),
     //
     // ===== Chunk =====
     //
@@ -103,8 +99,12 @@ pub enum CmdOk {
 impl std::fmt::Display for QueryResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            QueryResponse::GetDbcSpend(Ok(spend)) => {
-                write!(f, "GetDbcSpend(Ok({:?}))", spend.dbc_id())
+            QueryResponse::GetDbcSpend(Ok(spend_with_parent)) => {
+                write!(
+                    f,
+                    "GetDbcSpend(Ok({:?}))",
+                    spend_with_parent.signed_spend.dbc_id()
+                )
             }
             _ => write!(f, "{:?}", self),
         }

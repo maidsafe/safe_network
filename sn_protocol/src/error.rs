@@ -9,13 +9,11 @@
 use crate::{
     storage::{
         registers::{EntryHash, User},
-        ChunkAddress, DbcAddress, RecordKind, RegisterAddress,
+        ChunkAddress, DbcAddress, RecordKind, RegisterAddress, SpendWithParent,
     },
     NetworkAddress,
 };
-
 use serde::{Deserialize, Serialize};
-use sn_dbc::{Hash, SignedSpend};
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -83,46 +81,35 @@ pub enum Error {
     #[error("Provided PublicKey could not validate signature: {0:?}")]
     InvalidSignature(bls::PublicKey),
 
-    #[error("Incoming SpendDbc PUT with incorrect number of SingedSpends")]
-    IncorrectSignedSpendLength,
+    #[error("Incoming SpendDbc PUT with incorrect number of SpendWithParent")]
+    MaxNumberOfSpendsExceeded,
     /// Spend not found.
     #[error("Spend not found: {0:?}")]
     SpendNotFound(DbcAddress),
     /// Node failed to store spend
     #[error("Failed to store spend: {0:?}")]
-    SpendNotStored(Option<DbcAddress>),
+    SpendNotStored(String),
     /// Insufficient valid spends found to make it valid, less that majority of closest peers
     #[error("Insufficient valid spends found: {0:?}")]
     InsufficientValidSpendsFound(DbcAddress),
     /// A double spend was detected.
     #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
-    DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
+    DoubleSpendAttempt(Box<SpendWithParent>, Box<SpendWithParent>),
     /// Cannot verify a Spend signature.
     #[error("Spend signature is invalid: {0}")]
     InvalidSpendSignature(String),
     /// Cannot verify a Spend's parents.
     #[error("Spend parents are invalid: {0}")]
     InvalidSpendParents(String),
-    /// One or more parent spends of a requested spend had a different dst tx hash than the signed spend src tx hash.
-    #[error(
-        "The signed spend src tx ({signed_src_tx_hash:?}) did not match a valid parent's dst tx hash: {parent_dst_tx_hash:?}. The trail is invalid."
-    )]
-    TxTrailMismatch {
-        /// The signed spend src tx hash.
-        signed_src_tx_hash: Hash,
-        /// The dst hash of a parent signed spend.
-        parent_dst_tx_hash: Hash,
-    },
+    /// The DBC we're trying to Spend came with an invalid parent Tx
+    #[error("Invalid Parent Tx: {0}")]
+    InvalidParentTx(String),
+    /// One or more parent spends of a requested spend has an invalid hash
+    #[error("Invalid parent spend hash: {0}")]
+    BadParentSpendHash(String),
     /// The provided source tx did not check out when verified with all supposed inputs to it (i.e. our spends parents).
-    #[error(
-        "The provided source tx (with hash {provided_src_tx_hash:?}) when verified with all supposed inputs to it (i.e. our spends parents).."
-    )]
-    InvalidSourceTxProvided {
-        /// The signed spend src tx hash.
-        signed_src_tx_hash: Hash,
-        /// The hash of the provided source tx.
-        provided_src_tx_hash: Hash,
-    },
+    #[error("The provided source tx is invalid: {0}")]
+    InvalidSourceTxProvided(String),
 
     /// Replication not found.
     #[error("Peer {holder:?} cannot find ReplicatedData {address:?}")]

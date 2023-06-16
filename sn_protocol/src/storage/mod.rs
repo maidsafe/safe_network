@@ -12,10 +12,12 @@ pub mod registers;
 mod address;
 mod chunks;
 mod header;
+mod spend;
 
 pub use self::{
     address::{ChunkAddress, DbcAddress, RegisterAddress},
     chunks::{Chunk, ChunkWithPayment},
     header::{try_deserialize_record, try_serialize_record, RecordHeader, RecordKind},
     registers::*,
+    spend::SpendWithParent,
 };
