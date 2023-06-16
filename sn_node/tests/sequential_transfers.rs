@@ -10,7 +10,7 @@ mod data_with_churn;
 
 use std::path::Path;
 
-use sn_client::{get_tokens_from_faucet, send, Client};
+use sn_client::{get_tokens_from_faucet, send, Client, WalletClient};
 
 use sn_dbc::Token;
 use sn_transfers::{client_transfers::create_transfer, wallet::LocalWallet};
@@ -18,6 +18,8 @@ use tracing_core::Level;
 
 use assert_fs::TempDir;
 use eyre::Result;
+use rand::Rng;
+use xor_name::XorName;
 
 async fn get_client() -> Client {
     let secret_key = bls::SecretKey::random();
@@ -158,6 +160,61 @@ async fn double_spend_transfers_fail() -> Result<()> {
     let should_err2 = client.verify(&dbcs_for_3[0]).await;
     println!("Verifying at least one fails: {should_err1:?} {should_err2:?}");
     assert!(should_err1.is_err() || should_err2.is_err());
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn storage_payment_succeeds() -> Result<()> {
+    let logging_targets = vec![
+        ("safenode".to_string(), Level::INFO),
+        ("sn_client".to_string(), Level::TRACE),
+        ("sn_transfers".to_string(), Level::INFO),
+        ("sn_networking".to_string(), Level::INFO),
+        ("sn_node".to_string(), Level::INFO),
+    ];
+    let _log_appender_guard = sn_logging::init_logging(logging_targets, &None)?;
+
+    let paying_wallet_dir = TempDir::new()?;
+    let paying_wallet_balance = Token::from_nano(500_000);
+
+    let mut paying_wallet = get_wallet(paying_wallet_dir.path()).await;
+    let client = get_client().await;
+    println!("Getting {paying_wallet_balance} tokens from the faucet...");
+    let tokens =
+        get_tokens_from_faucet(paying_wallet_balance, paying_wallet.address(), &client).await;
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    println!("Verifying the transfer from faucet...");
+    client.verify(&tokens).await?;
+    paying_wallet.deposit(vec![tokens]);
+    assert_eq!(paying_wallet.balance(), paying_wallet_balance);
+    println!("Tokens deposited to the wallet that'll pay for storage: {paying_wallet_balance}.");
+
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    // generate a random number (between 50 and 100) of random addresses
+    let mut rng = rand::thread_rng();
+    let random_content_addrs = (0..rng.gen_range(50..100))
+        .collect::<Vec<_>>()
+        .iter()
+        .map(|_| XorName::random(&mut rng))
+        .collect::<Vec<_>>();
+    println!(
+        "Paying for {} random addresses...",
+        random_content_addrs.len()
+    );
+
+    let proofs = wallet_client
+        .pay_for_storage(random_content_addrs.iter())
+        .await?;
+
+    std::thread::sleep(std::time::Duration::from_secs(5));
+
+    let cost = proofs.len() as u64; // 1 nano per addr
+    let new_balance = Token::from_nano(paying_wallet_balance.as_nano() - cost);
+    println!("Verifying new balance on paying wallet is {new_balance} ...");
+    let paying_wallet = wallet_client.into_wallet();
+    assert_eq!(paying_wallet.balance(), new_balance);
 
     Ok(())
 }
