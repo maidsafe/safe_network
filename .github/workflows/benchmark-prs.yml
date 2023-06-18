@@ -82,6 +82,12 @@ jobs:
               value: ((.throughput[0].per_iteration / (1024*1024)) / (.mean.estimate / 1e9))
           }' > files-benchmark.json
 
+
+      - name: Check for Client heaptrack file
+        shell: bash
+        run: | 
+          ls -la  
+          cat files-benchmark.json        
      
       #################################
       ### Log any regression alerts ###
@@ -110,6 +116,7 @@ jobs:
       # Start a heaptracked client instance to compare memory usage
       # The generated large single file (around 450MB) may vary little bit along the releases
       - name: Start client with heaptrack
+        shell: bash
         run: |
           tar -czvf release_zip.tar.gz ./target/release
           heaptrack ./target/release/safe files upload -- "./release_zip.tar.gz"
@@ -150,6 +157,8 @@ jobs:
       #########################
       - name: Check for Node heaptrack file
         run: ls -la
+        shell: bash
+
 
       - name: Analyze node memory usage
         shell: bash
@@ -214,6 +223,8 @@ jobs:
       ###########################
       - name: Check for Client heaptrack file
         run: ls -la
+        shell: bash
+
 
       - name: Analyze client memory usage
         shell: bash
