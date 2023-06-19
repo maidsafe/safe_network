@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687151578824,
+  "lastUpdate": 1687153485430,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -1038,6 +1038,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 2.88777892701517,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ccc4cea83798d4db399c89e70c3880ad8653aa12",
+          "message": "fix: ci chart generation using non-linux cmd",
+          "timestamp": "2023-06-19T14:28:54+09:00",
+          "tree_id": "88bef75649cc4dd225bfbcc42ffc1fa70d1f0127",
+          "url": "https://github.com/maidsafe/safe_network/commit/ccc4cea83798d4db399c89e70c3880ad8653aa12"
+        },
+        "date": 1687153483927,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5929951380245495,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.1350951604772725,
             "unit": "MiB/s"
           }
         ]
