@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687153485430,
+  "lastUpdate": 1687153573736,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -1103,6 +1103,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "node-memory-usage-through-safe-benchmark",
             "value": 10.16,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ccc4cea83798d4db399c89e70c3880ad8653aa12",
+          "message": "fix: ci chart generation using non-linux cmd",
+          "timestamp": "2023-06-19T14:28:54+09:00",
+          "tree_id": "88bef75649cc4dd225bfbcc42ffc1fa70d1f0127",
+          "url": "https://github.com/maidsafe/safe_network/commit/ccc4cea83798d4db399c89e70c3880ad8653aa12"
+        },
+        "date": 1687153573359,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "node-memory-usage-through-safe-benchmark",
+            "value": 11.38,
             "unit": "MB"
           }
         ]
