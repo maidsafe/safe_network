@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687156631616,
+  "lastUpdate": 1687176590008,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe `files` benchmarks": [
@@ -101,6 +101,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 3.078326451029672,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f81acd200128e520dbe643d051da39211b32dc22",
+          "message": "ci: fix missing mb->kb change for client mem measurements",
+          "timestamp": "2023-06-19T20:48:01+09:00",
+          "tree_id": "40192d2d04a315192f3f1bc21ac6b5b431a49c59",
+          "url": "https://github.com/maidsafe/safe_network/commit/f81acd200128e520dbe643d051da39211b32dc22"
+        },
+        "date": 1687176589501,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5829100360585217,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.1337843815001385,
             "unit": "MiB/s"
           }
         ]
