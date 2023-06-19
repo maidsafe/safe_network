@@ -77,11 +77,11 @@ jobs:
         run: | 
           cargo criterion --message-format=json 2>&1 | tee -a output.txt
           cat output.txt | rg benchmark-complete | jq -s 'map({
-            name: (.id | split("/"))[-1],
-            unit: "MiB/s",
-            value: (if .throughput[0].unit == "KiB/s" then .throughput[0].per_iteration / (1024*1024*1024) else .throughput[0].per_iteration / (1024*1024) end) / (.mean.estimate / 1e9)
+          name: (.id | split("/"))[-1],
+          unit: "MiB/s",
+          value: ((if .throughput[0].unit == "KiB/s" then (.throughput[0].per_iteration / (1024*1024*1024)) else (.throughput[0].per_iteration / (1024*1024)) end) / (.mean.estimate / 1e9))
           })' > files-benchmark.json
-    
+
 
       - name: Check for Client heaptrack file
         shell: bash
