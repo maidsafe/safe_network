@@ -87,10 +87,12 @@ jobs:
         run: | 
           cargo criterion --message-format=json 2>&1 | tee -a output.txt
           cat output.txt | rg benchmark-complete | jq -s 'map({
-              name: (.id | split("/")[-1]),
-              unit: "MiB/s",
-              value: if .throughput[0].unit == "KiB/s" then ((.throughput[0].per_iteration / (1024*1024)) / (.mean.estimate / 1e9)) else ((.throughput[0].per_iteration / (1024*1024)) / (.mean.estimate / 1e9)) end
+            name: (.id | split("/")[-1]),
+            unit: "MiB/s",
+            value: (if .throughput[0].unit == "KiB/s" then .throughput[0].per_iteration / (1024*1024*1024) else .throughput[0].per_iteration / (1024*1024) end) / (.mean.estimate / 1e9)
           })' > files-benchmark.json
+
+
 
       - name: Remove git hooks so gh-pages git commits will work
         shell: bash
@@ -164,7 +166,6 @@ jobs:
         run: |
           HEAPTRACK_FILE=$(ls -t heaptrack.safenode.*.zst | head -1)
           heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safenode.txt
-        if: always()
 
       - name: Upload Node Heaptrack
         uses: actions/upload-artifact@main
@@ -172,7 +173,6 @@ jobs:
           name: heaptrack_safenode
           path: heaptrack.safenode.*
         continue-on-error: true
-        if: always()
 
       - name: Check node memory usage
         id: node-memory-usage-check
@@ -194,7 +194,6 @@ jobs:
                   "unit": "MB"
               }
           ]' > node_memory_usage.json
-        if: always()
 
       - name: check node_memory_usage.json
         shell: bash
@@ -224,7 +223,6 @@ jobs:
         run: |
           HEAPTRACK_FILE=$(ls -t heaptrack.safe.*.zst | head -1)
           heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safe.txt
-        if: always()
 
       - name: Upload Client Heaptrack
         uses: actions/upload-artifact@main
@@ -232,7 +230,6 @@ jobs:
           name: heaptrack_safe
           path: heaptrack.safe.*
         continue-on-error: true
-        if: always()
 
       - run: ll ./heaptrack.safe.txt 
         shell: bash
@@ -271,7 +268,6 @@ jobs:
                   "unit": "MB"
               }
           ]' > client_memory_usage.json
-        if: always()
 
       - name: check client_memory_usage.json
         shell: bash
