@@ -74,7 +74,7 @@ jobs:
         shell: bash
         # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
         # passes to tee which displays it in the terminal and writes to output.txt
-        run: | 
+        run: |
           cargo criterion --message-format=json 2>&1 | tee -a output.txt
           cat output.txt | rg benchmark-complete | jq -s 'map({
           name: (.id | split("/"))[-1],
@@ -85,7 +85,7 @@ jobs:
 
       - name: Check for Client heaptrack file
         shell: bash
-        run: | 
+        run: |
           ls -la  
           cat files-benchmark.json        
      
@@ -244,19 +244,40 @@ jobs:
         id: client-memory-usage-check
         shell: bash
         env:
-          CLIENT_MEM_LIMIT_MB: "1000" # mb
+          CLIENT_PEAK_MEM_LIMIT_MB: "1000" # mb
+          CLIENT_AVG_MEM_LIMIT_MB: "600" # mb
         run: |
-          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r "")
-          echo "Memory usage: $MEMORY_USAGE MB"
-          if (( $(echo "$MEMORY_USAGE > $CLIENT_MEM_LIMIT_MB" | bc -l) )); then
-            echo "Client memory usage exceeded threshold: $MEMORY_USAGE MB"
+          peak_mem_usage=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r "")
+          echo "Peak memory usage: $peak_mem_usage MB"
+          if (( $(echo "$peak_mem_usage > $CLIENT_PEAK_MEM_LIMIT_MB" | bc -l) )); then
+            echo "Client peak memory usage exceeded threshold: $CLIENT_PEAK_MEM_LIMIT_MB MB"
+            exit 1
+          fi
+          mem_reads=($(rg "\"memory_used_mb\":\d+" /tmp/safe-client/safenode.* -o --no-line-number --no-filename | rg "\d+" -o))
+          total_mem=$(ls heaptrack.safe.txt | wc -l)
+          echo "Total memory initial value is: $total_mem"
+          for mem in "${mem_reads[@]}"; do
+            total_mem=$((total_mem+$(($mem))))
+          done
+          num_of_times=$(rg "\"memory_used_mb\"" /tmp/safe-client/safenode.* -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "num_of_times: $num_of_times"
+          echo "Total memory is: $total_mem"
+          average_mem=$(($total_mem/$(($num_of_times))))
+          echo "Average memory is: $average_mem"
+          if (( $(echo "$average_mem > $CLIENT_AVG_MEM_LIMIT_MB" | bc -l) )); then
+            echo "Client average memory usage exceeded threshold: $CLIENT_AVG_MEM_LIMIT_MB MB"
             exit 1
           fi
           # Write the client memory usage to a file
           echo '[
               {
-                  "name": "client-memory-usage-through-safe-benchmark",
-                  "value": '$MEMORY_USAGE',
+                  "name": "client-peak-memory-usage-during-upload",
+                  "value": '$peak_mem_usage',
+                  "unit": "MB"
+              },
+              {
+                  "name": "client-average-memory-usage-during-upload",
+                  "value": '$average_mem',
                   "unit": "MB"
               }
           ]' > client_memory_usage.json
