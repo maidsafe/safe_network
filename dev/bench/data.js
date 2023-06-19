@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687176677400,
+  "lastUpdate": 1687181327515,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe `files` benchmarks": [
@@ -138,6 +138,40 @@ window.BENCHMARK_DATA = {
             "unit": "MiB/s"
           }
         ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d6223ee3453a70c26e74fbdb948d1fb6beb65fa4",
+          "message": "fix(CI): correct client mem usage in the graph",
+          "timestamp": "2023-06-19T22:10:48+09:00",
+          "tree_id": "d889ce0fd14dee415c3dd3ca279e96c67a5e9803",
+          "url": "https://github.com/maidsafe/safe_network/commit/d6223ee3453a70c26e74fbdb948d1fb6beb65fa4"
+        },
+        "date": 1687181326348,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5418745092670142,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 2.9514069795635898,
+            "unit": "MiB/s"
+          }
+        ]
       }
     ],
     "Node memory usage": [
@@ -258,8 +292,6 @@ window.BENCHMARK_DATA = {
         ]
       }
     ],
-    "Client memory during upload": [
-      
-    ]
+    "Client memory during upload": []
   }
 }
