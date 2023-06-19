@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1686882223984,
+  "lastUpdate": 1687151491148,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -1003,6 +1003,42 @@ window.BENCHMARK_DATA = {
             "name": "node-memory-usage-through-safe-benchmark",
             "value": 9.69,
             "unit": "MB"
+          }
+        ]
+      }
+    ],
+    "Safe `files` benchmarks": [
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "31c4e717fa22d96a1956fc48e83aa990739ce6c8",
+          "message": "ci: fix escaping on benchmark prs",
+          "timestamp": "2023-06-19T13:54:13+09:00",
+          "tree_id": "47aacf3288cc89b4a6160c58a6c3aedb556ae590",
+          "url": "https://github.com/maidsafe/safe_network/commit/31c4e717fa22d96a1956fc48e83aa990739ce6c8"
+        },
+        "date": 1687151490105,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5436252522185475,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 2.88777892701517,
+            "unit": "MiB/s"
           }
         ]
       }
