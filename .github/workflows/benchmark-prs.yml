@@ -113,7 +113,6 @@ jobs:
           summary-always: true
 
 
-      # Start a heaptracked client instance to compare memory usage
       # The generated large single file (around 450MB) may vary little bit along the releases
       - name: zip up release
         shell: bash
@@ -121,8 +120,7 @@ jobs:
           tar -czvf release_zip.tar.gz ./target/release
           ls -la
 
-        # Start a heaptracked client instance to compare memory usage
-      # The generated large single file (around 450MB) may vary little bit along the releases
+      # Start a heaptracked client instance to compare memory usage
       - name: Start client with heaptrack
         shell: bash
         run: heaptrack ./target/release/safe files upload release_zip.tar.gz
