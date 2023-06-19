@@ -232,7 +232,7 @@ jobs:
       - run: cat ./heaptrack.safe.txt 
         shell: bash
 
-      - run: MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "K" -r "")
+      - run: rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "K" -r ""
         shell: bash
 
       - name: Check client memory usage
@@ -243,9 +243,9 @@ jobs:
         env:
           CLIENT_MEM_LIMIT_KB: "1024" # ~1mb (unit is kilobytes)
         run: |
-          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r "")
+          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "K" -r "")
           echo "Memory usage: $MEMORY_USAGE KB"
-          if (( $(echo "$MEMORY_USAGE > $CLIENT_MEM_LIMIT_UNIT" | bc -l) )); then
+          if (( $(echo "$MEMORY_USAGE > $CLIENT_MEM_LIMIT_KB" | bc -l) )); then
             echo "Client memory usage exceeded threshold: $CLIENT_MEM_LIMIT_KB KB"
             exit 1
           fi
