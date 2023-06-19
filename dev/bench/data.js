@@ -259,35 +259,7 @@ window.BENCHMARK_DATA = {
       }
     ],
     "Client memory during upload": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f81acd200128e520dbe643d051da39211b32dc22",
-          "message": "ci: fix missing mb->kb change for client mem measurements",
-          "timestamp": "2023-06-19T20:48:01+09:00",
-          "tree_id": "40192d2d04a315192f3f1bc21ac6b5b431a49c59",
-          "url": "https://github.com/maidsafe/safe_network/commit/f81acd200128e520dbe643d051da39211b32dc22"
-        },
-        "date": 1687176677053,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "safe-cli-memory-usage",
-            "value": 166.31,
-            "unit": "KB"
-          }
-        ]
-      }
+      
     ]
   }
 }
