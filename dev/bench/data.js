@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687156543992,
+  "lastUpdate": 1687156631616,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe Network Benchmarks": [
@@ -1166,6 +1166,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "node-memory-usage-through-safe-benchmark",
             "value": 11.38,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "93f9b3e4019f6acd31ca096c672f72a9f08c3ee6",
+          "message": "fix: unit for client chart",
+          "timestamp": "2023-06-19T15:19:57+09:00",
+          "tree_id": "aec68c8f6a2176adf213840249ac5c6726d1e61e",
+          "url": "https://github.com/maidsafe/safe_network/commit/93f9b3e4019f6acd31ca096c672f72a9f08c3ee6"
+        },
+        "date": 1687156631175,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "node-memory-usage-through-safe-benchmark",
+            "value": 10.13,
             "unit": "MB"
           }
         ]
