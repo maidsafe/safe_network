@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687181327515,
+  "lastUpdate": 1687181432550,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe `files` benchmarks": [
@@ -287,6 +287,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "node-memory-usage-through-safe-benchmark",
             "value": 10.13,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d6223ee3453a70c26e74fbdb948d1fb6beb65fa4",
+          "message": "fix(CI): correct client mem usage in the graph",
+          "timestamp": "2023-06-19T22:10:48+09:00",
+          "tree_id": "d889ce0fd14dee415c3dd3ca279e96c67a5e9803",
+          "url": "https://github.com/maidsafe/safe_network/commit/d6223ee3453a70c26e74fbdb948d1fb6beb65fa4"
+        },
+        "date": 1687181431764,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "node-memory-usage-through-safe-benchmark",
+            "value": 11.54,
             "unit": "MB"
           }
         ]
