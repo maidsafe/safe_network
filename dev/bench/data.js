@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687176590008,
+  "lastUpdate": 1687176675576,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe `files` benchmarks": [
@@ -219,6 +219,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/93f9b3e4019f6acd31ca096c672f72a9f08c3ee6"
         },
         "date": 1687156631175,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "node-memory-usage-through-safe-benchmark",
+            "value": 10.13,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f81acd200128e520dbe643d051da39211b32dc22",
+          "message": "ci: fix missing mb->kb change for client mem measurements",
+          "timestamp": "2023-06-19T20:48:01+09:00",
+          "tree_id": "40192d2d04a315192f3f1bc21ac6b5b431a49c59",
+          "url": "https://github.com/maidsafe/safe_network/commit/f81acd200128e520dbe643d051da39211b32dc22"
+        },
+        "date": 1687176675200,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
