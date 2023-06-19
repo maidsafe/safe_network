@@ -119,7 +119,7 @@ jobs:
         shell: bash
         run: |
           tar -czvf release_zip.tar.gz ./target/release
-          heaptrack ./target/release/safe --files upload -- "./release_zip.tar.gz" &
+          heaptrack ./target/release/safe --files upload -- "./release_zip.tar.gz"
         env:
           SN_LOG: "all"
 
@@ -241,12 +241,12 @@ jobs:
         # remove once this is not bugging out
         continue-on-error: true
         env:
-          CLIENT_MEM_LIMIT_KB: "1024" # ~1mb (unit is kilobytes)
+          CLIENT_MEM_LIMIT_MB: "1024" # ~1GB (unit is megabytes)
         run: |
           MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "K" -r "")
-          echo "Memory usage: $MEMORY_USAGE KB"
-          if (( $(echo "$MEMORY_USAGE > $CLIENT_MEM_LIMIT_KB" | bc -l) )); then
-            echo "Client memory usage exceeded threshold: $CLIENT_MEM_LIMIT_KB KB"
+          echo "Memory usage: $MEMORY_USAGE MB"
+          if (( $(echo "$MEMORY_USAGE > $CLIENT_MEM_LIMIT_MB" | bc -l) )); then
+            echo "Client memory usage exceeded threshold: $CLIENT_MEM_LIMIT_MB MB"
             exit 1
           fi
           # Write the client memory usage to a JSON file
@@ -254,7 +254,7 @@ jobs:
               {
                   "name": "safe-cli-memory-usage",
                   "value": '$MEMORY_USAGE',
-                  "unit": "KB"
+                  "unit": "MB"
               }
           ]' > client_memory_usage.json
 
