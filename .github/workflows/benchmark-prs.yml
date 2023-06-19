@@ -77,11 +77,10 @@ jobs:
         run: | 
           cargo criterion --message-format=json 2>&1 | tee -a output.txt
           cat output.txt | rg benchmark-complete | jq -s 'map({
-              name: (.id | split("/")[-1]),
-              unit: "MiB/s",
-              value: if .throughput[0].unit == "KiB/s" then ((.throughput[0].per_iteration / (1024*1024)) / (.mean.estimate / 1e9)) else ((.throughput[0].per_iteration / (1024*1024)) / (.mean.estimate / 1e9)) end
+            name: (.id | split("/")[-1]),
+            unit: "MiB/s",
+            value: (if .throughput[0].unit == "KiB/s" then .throughput[0].per_iteration / (1024*1024*1024) else .throughput[0].per_iteration / (1024*1024) end) / (.mean.estimate / 1e9)
           })' > files-benchmark.json
-
 
 
       - name: Check for Client heaptrack file
@@ -116,11 +115,17 @@ jobs:
 
       # Start a heaptracked client instance to compare memory usage
       # The generated large single file (around 450MB) may vary little bit along the releases
-      - name: Start client with heaptrack
+      - name: zip up release
         shell: bash
         run: |
           tar -czvf release_zip.tar.gz ./target/release
-          heaptrack ./target/release/safe files upload -- "./release_zip.tar.gz"
+          ls -la
+
+        # Start a heaptracked client instance to compare memory usage
+      # The generated large single file (around 450MB) may vary little bit along the releases
+      - name: Start client with heaptrack
+        shell: bash
+        run: heaptrack ./target/release/safe files upload release_zip.tar.gz
         env:
           SN_LOG: "all"
 
@@ -143,14 +148,14 @@ jobs:
           find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
           find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
           find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure()
+        if: always()
 
       - name: Upload Logs
         uses: actions/upload-artifact@main
         with:
           name: sn_node_logs_benchmark_prs
           path: log_files.tar.gz
-        if: failure()
+        if: always()
         continue-on-error: true
       
       #########################
@@ -166,7 +171,6 @@ jobs:
         run: |
           HEAPTRACK_FILE=$(ls -t heaptrack.safenode.*.zst | head -1)
           heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safenode.txt
-        if: always()
 
       - name: Upload Node Heaptrack
         uses: actions/upload-artifact@main
@@ -174,7 +178,6 @@ jobs:
           name: heaptrack_safenode
           path: heaptrack.safenode.*
         continue-on-error: true
-        if: always()
 
       # The large file uploaded will increase node's peak mem usage a lot
       - name: Check node memory usage
@@ -197,7 +200,6 @@ jobs:
                   "unit": "MB"
               }
           ]' > node_memory_usage.json
-        if: always()
 
       - name: Alert for node memory usage
         uses: benchmark-action/github-action-benchmark@v1
@@ -232,7 +234,6 @@ jobs:
         run: |
           HEAPTRACK_FILE=$(ls -t heaptrack.safe.*.zst | head -1)
           heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safe.txt
-        if: always()
 
       - name: Upload Client Heaptrack
         uses: actions/upload-artifact@main
@@ -240,7 +241,6 @@ jobs:
           name: heaptrack_safe
           path: heaptrack.safe.*
         continue-on-error: true
-        if: always()
 
       - name: Check client memory usage
         id: client-memory-usage-check
@@ -262,7 +262,6 @@ jobs:
                   "unit": "MB"
               }
           ]' > client_memory_usage.json
-        if: always()
 
       - name: Alert for client memory usage
         uses: benchmark-action/github-action-benchmark@v1
