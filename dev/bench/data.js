@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687181435822,
+  "lastUpdate": 1687220849361,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe `files` benchmarks": [
@@ -169,6 +169,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 2.9514069795635898,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8260565a50e20365d0718492282f4196299724a7",
+          "message": "feat(CI): check client average memory usage during upload large file",
+          "timestamp": "2023-06-20T09:11:32+09:00",
+          "tree_id": "ef5d96d98b1e3cf36e327c5d44f1e066e974746a",
+          "url": "https://github.com/maidsafe/safe_network/commit/8260565a50e20365d0718492282f4196299724a7"
+        },
+        "date": 1687220848476,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5459711400724478,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.0499356648393197,
             "unit": "MiB/s"
           }
         ]
