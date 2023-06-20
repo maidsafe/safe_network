@@ -550,6 +550,17 @@ impl Network {
         Ok(())
     }
 
+    /// Send `Request` to the closest peers to self
+    pub async fn send_req_no_reply_to_self_closest(&self, request: &Request) -> Result<()> {
+        info!("Sending {request:?} to self closest peers.");
+        // Using `client_get_closest_peers` to filter self out.
+        let closest_peers = self.client_get_closest_peers(&request.dst()).await?;
+        for peer in closest_peers {
+            self.send_req_ignore_reply(request.clone(), peer).await?;
+        }
+        Ok(())
+    }
+
     /// Send `Request` to the closest peers. `Self` is not present among the recipients.
     pub async fn client_send_to_closest(
         &self,

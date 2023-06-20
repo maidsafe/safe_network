@@ -111,6 +111,12 @@ impl Node {
                         if let Ok(closest) = network_clone.node_get_closest_peers(&random_target).await {
                             debug!("Network inactivity: get_closest returned {closest:?}");
                         }
+
+                        // Currently trigger the replication query once inactivity detected.
+                        // Could reduce the frequence further say `after X times of inactivity`.
+                        debug!("No network activity in the past {inactivity_timeout:?}, performing a replication query");
+                        let request = Request::Cmd(Cmd::RequestReplication(NetworkAddress::from_peer(network_clone.peer_id)));
+                        let _ = network_clone.send_req_no_reply_to_self_closest(&request).await;
                     }
                 }
             }
@@ -347,6 +353,17 @@ impl Node {
                 // todo: error is not propagated to the caller here
                 let _ = self.replication_keys_to_fetch(holder, keys).await;
                 // if we do not send a response, we can cause connection failures.
+                CmdResponse::Replicate(Ok(()))
+            }
+            Cmd::RequestReplication(sender) => {
+                debug!("RequestReplication received from {sender:?}");
+                if let Some(peer_id) = sender.as_peer_id() {
+                    let _ = self.try_trigger_replication(&peer_id, false).await;
+                } else {
+                    warn!("Failed to parse peer_id for RequestReplication from {sender:?}");
+                };
+
+                // if we do not send a response, we can cause conneciton failures.
                 CmdResponse::Replicate(Ok(()))
             }
             Cmd::Register(cmd) => {

@@ -52,6 +52,10 @@ pub enum Cmd {
         #[debug(skip)]
         keys: Vec<NetworkAddress>,
     },
+    /// Notify peer to send back a replication list
+    ///
+    /// [`NetworkAddress`]: crate::NetworkAddress
+    RequestReplication(NetworkAddress),
 }
 
 impl Cmd {
@@ -66,6 +70,7 @@ impl Cmd {
                 NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
             }
             Cmd::Replicate { holder, .. } => holder.clone(),
+            Cmd::RequestReplication(sender) => sender.clone(),
         }
     }
 }
@@ -89,6 +94,9 @@ impl std::fmt::Display for Cmd {
                     holder.as_peer_id(),
                     keys.len()
                 )
+            }
+            Cmd::RequestReplication(sender) => {
+                write!(f, "Cmd::RequestReplication({:?})", sender.as_peer_id(),)
             }
         }
     }
