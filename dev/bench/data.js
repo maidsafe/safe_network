@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687220937244,
+  "lastUpdate": 1687228014448,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe `files` benchmarks": [
@@ -411,6 +411,42 @@ window.BENCHMARK_DATA = {
             "name": "safe-cli-memory-usage",
             "value": 166.31,
             "unit": "MB"
+          }
+        ]
+      }
+    ],
+    "`safe files` benchmarks": [
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d85556c948073a533ae7783af1d061f51c5ea2c1",
+          "message": "ci: readd nohup for node.\n\nUps, That was removed thinking it was the client. That was wrong, and this would now hold up\nci",
+          "timestamp": "2023-06-20T11:10:56+09:00",
+          "tree_id": "55d48324cf1a850d368030c1c2e14d3da5adda60",
+          "url": "https://github.com/maidsafe/safe_network/commit/d85556c948073a533ae7783af1d061f51c5ea2c1"
+        },
+        "date": 1687228013881,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.595654015898579,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.0563393995717476,
+            "unit": "MiB/s"
           }
         ]
       }
