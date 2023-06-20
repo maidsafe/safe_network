@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.15](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.14...sn_client-v0.85.15) - 2023-06-20
+
+### Added
+- *(network)* validate `Record` on GET
+- *(network)* validate and store `ReplicatedData`
+- *(node)* perform proper validations on PUT
+- *(network)* validate and store `Record`
+
+### Fixed
+- *(node)* store parent tx along with `SignedSpend`
+
+### Other
+- *(docs)* add more docs and comments
+
 ## [0.85.14](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.13...sn_client-v0.85.14) - 2023-06-20
 
 ### Other

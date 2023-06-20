@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.14](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.1.13...sn_networking-v0.1.14) - 2023-06-20
+
+### Added
+- *(network)* validate `Record` on GET
+- *(network)* validate and store `ReplicatedData`
+- *(node)* perform proper validations on PUT
+- *(network)* validate and store `Record`
+- *(kad)* impl `RecordHeader` to store the record kind
+
+### Fixed
+- *(network)* use `rmp_serde` for `RecordHeader` ser/de
+- *(network)* Send `Request` without awaiting for `Response`
+
+### Other
+- *(docs)* add more docs and comments
+
 ## [0.1.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.1.12...sn_networking-v0.1.13) - 2023-06-20
 
 ### Added

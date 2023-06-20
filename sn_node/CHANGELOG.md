@@ -229,6 +229,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(sn_networking)* Make it possible to pass in a keypair for PeerID
 
+## [0.83.41](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.40...sn_node-v0.83.41) - 2023-06-20
+
+### Added
+- *(network)* validate `Record` on GET
+- *(network)* validate and store `ReplicatedData`
+- *(node)* perform proper validations on PUT
+- *(network)* store `Chunk` along with `PaymentProof`
+- *(network)* validate and store `Record`
+- *(kad)* impl `RecordHeader` to store the record kind
+
+### Fixed
+- *(network)* use safe operations when dealing with Vec
+- *(node)* store parent tx along with `SignedSpend`
+- *(network)* Send `Request` without awaiting for `Response`
+
+### Other
+- *(workflow)* fix data replication script
+- *(docs)* add more docs and comments
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

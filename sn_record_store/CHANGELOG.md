@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8](https://github.com/maidsafe/safe_network/compare/sn_record_store-v0.1.7...sn_record_store-v0.1.8) - 2023-06-20
+
+### Added
+- *(network)* validate and store `ReplicatedData`
+- *(network)* validate and store `Record`
+
+### Other
+- *(docs)* add more docs and comments
+
 ## [0.1.7](https://github.com/maidsafe/safe_network/compare/sn_record_store-v0.1.6...sn_record_store-v0.1.7) - 2023-06-20
 
 ### Other
