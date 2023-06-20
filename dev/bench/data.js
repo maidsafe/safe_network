@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687267437795,
+  "lastUpdate": 1687267442442,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -827,6 +827,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ ~450mb upload",
             "value": 467,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "780c79cecb26ac81659401f1d3232cd1a6237db3",
+          "message": "refactor: specific error types for different payment proof verification scenarios",
+          "timestamp": "2023-06-20T12:03:27Z",
+          "tree_id": "6b8957c92010aafe53a57e9289e522f449acb02d",
+          "url": "https://github.com/maidsafe/safe_network/commit/780c79cecb26ac81659401f1d3232cd1a6237db3"
+        },
+        "date": 1687267441950,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ ~450mb upload",
+            "value": 924.36,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ ~450mb upload",
+            "value": 441,
             "unit": "MB"
           }
         ]
