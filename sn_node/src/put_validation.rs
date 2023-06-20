@@ -114,7 +114,7 @@ impl Node {
             })?;
 
         // validate the signed spends against the network and the local copy
-        let spends_with_parent = match self
+        let validated_spends = match self
             .signed_spend_validation(spends_with_parent, dbc_id, present_locally)
             .await?
         {
@@ -128,7 +128,7 @@ impl Node {
         // store the record into the local storage
         let record = Record {
             key,
-            value: try_serialize_record(&spends_with_parent, RecordKind::DbcSpend)?,
+            value: try_serialize_record(&validated_spends, RecordKind::DbcSpend)?,
             publisher: None,
             expires: None,
         };
@@ -139,9 +139,9 @@ impl Node {
         })?;
 
         // Notify the sender of any double spend
-        if spends_with_parent.len() > 1 {
+        if validated_spends.len() > 1 {
             warn!("Got a double spend for the SpendDbc PUT with dbc_id {dbc_id:?}",);
-            let mut proof = spends_with_parent.iter();
+            let mut proof = validated_spends.iter();
             if let (Some(spend_one), Some(spend_two)) = (proof.next(), proof.next()) {
                 return Err(ProtocolError::DoubleSpendAttempt(
                     Box::new(spend_one.to_owned()),
@@ -224,7 +224,12 @@ impl Node {
                 }
                 // Since spends_with_parent is not empty and they contain the same DbcId (RecordKeys are
                 // the same), get the DbcId
-                let dbc_id = *spends_with_parent[0].signed_spend.dbc_id();
+                let dbc_id = if let Some(spend) = spends_with_parent.first() {
+                    *spend.signed_spend.dbc_id()
+                } else {
+                    return Ok(());
+                };
+
                 match self
                     .signed_spend_validation(spends_with_parent, dbc_id, present_locally)
                     .await?
@@ -374,7 +379,7 @@ impl Node {
     /// - If the SpendWithParent for the provided DbcId is present locally, check for new spends by
     /// comparing it with the local copy.
     /// - If incoming spends_with_parent.len() > 1, aggregate store them directly as they are a double spent.
-    /// - If incoming spends_with_parent.len() == 1, then check for parent_inputs and the closet(dbc_id)
+    /// - If incoming spends_with_parent.len() == 1, then check for parent_inputs and the closest(dbc_id)
     /// for any double spend, which are then aggregated and returned.
     async fn signed_spend_validation(
         &self,
@@ -388,8 +393,6 @@ impl Node {
 
         if present_locally {
             debug!("DbcSpend with DbcId {dbc_id:?} already exists, checking if it's the same spend/double spend",);
-            // fetch the locally stored record; should be present
-            //
             let local_record = self
                 .network
                 .get_local_record(&record_key)
@@ -446,52 +449,68 @@ impl Node {
 
         // Check the parent spends and check the closest(dbc_id) for any double spend
         // if so aggregate the spends and return just 2 spends.
-        let spends_with_parent = if spends_with_parent.len() == 1 {
-            debug!(
+        let spends_with_parent = match spends_with_parent.len() {
+            0 => {
+                let err = ProtocolError::SpendNotStored("No valid Spend found".to_string());
+                debug!("No valid spends found while validating Spend PUT {err}");
+
+                return Err(err);
+            }
+            1 => {
+                debug!(
                 "Received a single SpendWithParent, verifying the parent and checking for double spend"
             );
-            let spends_with_parent = spends_with_parent.remove(0);
+                let spends_with_parent = match spends_with_parent.pop() {
+                    Some(spends_with_parent) => spends_with_parent,
+                    None => {
+                        return Err(ProtocolError::SpendNotStored(
+                            "No valid Spend found".to_string(),
+                        ));
+                    }
+                };
 
-            // check the spend
-            if let Err(e) = spends_with_parent
-                .signed_spend
-                .verify(spends_with_parent.signed_spend.spent_tx_hash())
-            {
-                return Err(ProtocolError::InvalidSpendSignature(format!(
-                    "while verifying spend for {:?}: {e:?}",
-                    spends_with_parent.signed_spend.dbc_id()
-                )));
-            }
+                // check the spend
+                if let Err(e) = spends_with_parent
+                    .signed_spend
+                    .verify(spends_with_parent.signed_spend.spent_tx_hash())
+                {
+                    return Err(ProtocolError::InvalidSpendSignature(format!(
+                        "while verifying spend for {:?}: {e:?}",
+                        spends_with_parent.signed_spend.dbc_id()
+                    )));
+                }
 
-            // check parent tx hash
-            if spends_with_parent.parent_tx.hash()
-                != spends_with_parent.signed_spend.dbc_creation_tx_hash()
-            {
-                return Err(ProtocolError::InvalidSpendParents(format!(
+                // check parent tx hash
+                if spends_with_parent.parent_tx.hash()
+                    != spends_with_parent.signed_spend.dbc_creation_tx_hash()
+                {
+                    return Err(ProtocolError::InvalidSpendParents(format!(
                     "parent tx hash does not match the parent tx in the DBC we're trying to spend: {:?} != {:?}",
                     spends_with_parent.signed_spend.dbc_creation_tx_hash(),
                     spends_with_parent.parent_tx.hash(),
                 )));
-            }
+                }
 
-            // Check parents
-            if let Err(e) = check_parent_spends(&self.network, &spends_with_parent).await {
-                return Err(ProtocolError::InvalidSpendParents(format!("{e:?}")));
-            }
+                // Check parents
+                if let Err(e) = check_parent_spends(&self.network, &spends_with_parent).await {
+                    return Err(ProtocolError::InvalidSpendParents(format!("{e:?}")));
+                }
 
-            // check the network if any spend has happened for the same dbc_id
-            // Does not return an error, instead the Vec<SpendWithParent> is returned.
-            let mut spends = get_aggregated_spends_from_peers(&self.network, dbc_id).await?;
-            // aggregate the spends from the network with our own
-            spends.push(spends_with_parent);
-            aggregate_spends(spends, dbc_id)
-        } else {
-            debug!("Received >1 spends with parent. Aggregating the spends to check for double spend. Not performing parent check or querying the network for double spend");
-            // if we got 2 or more, then it is a double spend for sure.
-            // We don't have to check parent/ ask network for extra spend.
-            // Validate and store just 2 of them.
-            // The nodes will be synced up during replication.
-            aggregate_spends(spends_with_parent, dbc_id)
+                // check the network if any spend has happened for the same dbc_id
+                // Does not return an error, instead the Vec<SpendWithParent> is returned.
+                let mut spends = get_aggregated_spends_from_peers(&self.network, dbc_id).await?;
+                // aggregate the spends from the network with our own
+                spends.push(spends_with_parent);
+                aggregate_spends(spends, dbc_id)
+            }
+            _ => {
+                debug!("Received >1 spends with parent. Aggregating the spends to check for double spend. Not performing parent check or querying the network for double spend");
+                // if we got 2 or more, then it is a double spend for sure.
+                // We don't have to check parent/ ask network for extra spend.
+                // Validate and store just 2 of them.
+                // The nodes will be synced up during replication.
+                aggregate_spends(spends_with_parent, dbc_id)
+            }
         };
 
         Ok(Some(spends_with_parent))

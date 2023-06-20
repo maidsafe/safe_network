@@ -55,8 +55,13 @@ impl Node {
         } else {
             return Ok(());
         };
-        let distance_bar =
-            NetworkAddress::from_peer(sorted_peers[CLOSE_GROUP_SIZE]).distance(&our_address);
+        let distance_bar = match sorted_peers.get(CLOSE_GROUP_SIZE) {
+            Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
+            None => {
+                debug!("could not obtain distance_bar as sorted_peers.len() <= CLOSE_GROUP_SIZE ");
+                return Ok(());
+            }
+        };
         self.network.set_record_distance_range(distance_bar).await?;
 
         all_peers.push(self.network.peer_id);
@@ -73,8 +78,13 @@ impl Node {
             return Ok(());
         };
 
-        let distance_bar = NetworkAddress::from_peer(sorted_peers[CLOSE_GROUP_SIZE])
-            .distance(&churned_peer_address);
+        let distance_bar = match sorted_peers.get(CLOSE_GROUP_SIZE) {
+            Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
+            None => {
+                debug!("could not obtain distance_bar as sorted_peers.len() <= CLOSE_GROUP_SIZE ");
+                return Ok(());
+            }
+        };
 
         // The fetched entries are records that supposed to be held by the churned_peer.
         let entries_to_be_replicated = self
@@ -94,7 +104,14 @@ impl Node {
             };
 
             // Only carry out replication when self within REPLICATION_RANGE
-            let replicate_range = NetworkAddress::from_peer(closest_peers[REPLICATION_RANGE]);
+            let replicate_range = match closest_peers.get(REPLICATION_RANGE) {
+                Some(peer) => NetworkAddress::from_peer(*peer),
+                None => {
+                    debug!("could not obtain replicate_range as closest_peers.len() <= REPLICATION_RANGE");
+                    continue;
+                }
+            };
+
             if our_address.as_kbucket_key().distance(&record_key)
                 >= replicate_range.as_kbucket_key().distance(&record_key)
             {
