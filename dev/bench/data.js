@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687283410227,
+  "lastUpdate": 1687283574790,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -825,6 +825,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57.01,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "1cf66abde5fab4015338f1b6b3744ba5370d45f6",
+          "message": "fix(network): use safe operations when dealing with Vec",
+          "timestamp": "2023-06-20T16:41:41Z",
+          "tree_id": "a0a5450e5034ea202a5db28fa30f0f3b6463d5b2",
+          "url": "https://github.com/maidsafe/safe_network/commit/1cf66abde5fab4015338f1b6b3744ba5370d45f6"
+        },
+        "date": 1687283574401,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 12.97,
             "unit": "MB"
           }
         ]
