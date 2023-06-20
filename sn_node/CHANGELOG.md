@@ -224,6 +224,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - creating a storage payment e2e test and run it in CI
 - include the Tx instead of output DBCs as part of storage payment proofs
 
+## [0.83.40](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.39...sn_node-v0.83.40) - 2023-06-20
+
+### Added
+- *(sn_networking)* Make it possible to pass in a keypair for PeerID
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
