@@ -104,7 +104,7 @@ jobs:
       - name: Store cli files benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: Safe `files` benchmarks
+          name: "`safe files` benchmarks"
           tool: 'customBiggerIsBetter'
           output-file-path: files-benchmark.json
           # Access token to deploy GitHub Pages branch
@@ -187,7 +187,7 @@ jobs:
           # Write the node memory usage to a JSON file
           echo '[
               {
-                  "name": "node-memory-usage-through-safe-benchmark",
+                  "name": Peak memory w/ `safe` benchmarks",
                   "value": '$MEMORY_USAGE',
                   "unit": "MB"
               }
@@ -200,7 +200,7 @@ jobs:
       - name: Upload Node Memory Usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'Node memory usage'
+          name: 'Node memory'
           tool: 'customSmallerIsBetter'
           output-file-path: node_memory_usage.json
           # Access token to deploy GitHub Pages branch
@@ -268,12 +268,12 @@ jobs:
           # Write the client memory usage to a file
           echo '[
               {
-                  "name": "safe-cli-peak-memory-usage-during-upload",
+                  "name": "Peak memory usage w/ ~1gb upload",
                   "value": '$peak_mem_usage',
                   "unit": "MB"
               },
               {
-                  "name": "safe-cli-average-memory-usage-during-upload",
+                  "name": "Average memory usage w/ ~1gb upload",
                   "value": '$average_mem',
                   "unit": "MB"
               }
@@ -286,7 +286,7 @@ jobs:
       - name: Upload Client Memory Usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'Client memory during upload'
+          name: 'Client memory'
           tool: 'customSmallerIsBetter'
           output-file-path: client_memory_usage.json
           # Access token to deploy GitHub Pages branch
