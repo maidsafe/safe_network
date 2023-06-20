@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.13](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.12...sn_client-v0.85.13) - 2023-06-20
+
+### Added
+- pay 1 nano per Chunk as temporary approach till net-invoices are implemented
+- committing storage payment SignedSpends to the network
+- nodes to verify input DBCs of Chunk payment proof were spent
+
+### Other
+- specific error types for different payment proof verification scenarios
+- include the Tx instead of output DBCs as part of storage payment proofs
+
 ## [0.85.12](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.11...sn_client-v0.85.12) - 2023-06-20
 
 ### Other
