@@ -10,6 +10,7 @@ use super::{error::Result, event::NodeEventsChannel, Network, Node, NodeEvent};
 use crate::spendbook::SpendBook;
 use libp2p::{
     autonat::NatStatus,
+    identity::Keypair,
     kad::{Record, RecordKey},
     Multiaddr, PeerId,
 };
@@ -72,13 +73,14 @@ impl Node {
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
     pub async fn run(
+        keypair: Option<Keypair>,
         addr: SocketAddr,
         initial_peers: Vec<(PeerId, Multiaddr)>,
         local: bool,
         root_dir: &Path,
     ) -> Result<RunningNode> {
         let (network, mut network_event_receiver, swarm_driver) =
-            SwarmDriver::new(addr, local, root_dir)?;
+            SwarmDriver::new(keypair, addr, local, root_dir)?;
         let node_events_channel = NodeEventsChannel::default();
 
         let mut node = Self {

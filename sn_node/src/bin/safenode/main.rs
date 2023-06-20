@@ -168,8 +168,13 @@ async fn start_node(
 ) -> Result<()> {
     let started_instant = std::time::Instant::now();
 
+    // TODO: Pull this keypair from _somewhere_.
+    // This is used for our PeerId...
+    // where/how should we store this on disk?
+    let keypair = None;
+
     info!("Starting node ...");
-    let running_node = Node::run(node_socket_addr, peers, local, root_dir).await?;
+    let running_node = Node::run(keypair, node_socket_addr, peers, local, root_dir).await?;
 
     // write the PID to the root dir
     let pid = std::process::id();
