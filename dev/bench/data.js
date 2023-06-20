@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687240535308,
+  "lastUpdate": 1687267076681,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -373,6 +373,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 3.0361996430880938,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "780c79cecb26ac81659401f1d3232cd1a6237db3",
+          "message": "refactor: specific error types for different payment proof verification scenarios",
+          "timestamp": "2023-06-20T12:03:27Z",
+          "tree_id": "6b8957c92010aafe53a57e9289e522f449acb02d",
+          "url": "https://github.com/maidsafe/safe_network/commit/780c79cecb26ac81659401f1d3232cd1a6237db3"
+        },
+        "date": 1687267076010,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5522028953857447,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.068859748394474,
             "unit": "MiB/s"
           }
         ]
