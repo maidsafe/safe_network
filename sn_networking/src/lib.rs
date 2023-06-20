@@ -40,7 +40,7 @@ use libp2p::{
 };
 
 use libp2p::{
-    identity,
+    identity::Keypair,
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
@@ -126,6 +126,7 @@ impl SwarmDriver {
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
     pub fn new(
+        keypair: Option<Keypair>,
         addr: SocketAddr,
         local: bool,
         root_dir: &Path,
@@ -158,6 +159,7 @@ impl SwarmDriver {
             .set_provider_publication_interval(None);
 
         let (network, events_receiver, mut swarm_driver) = Self::with(
+            keypair,
             kad_cfg,
             local,
             false,
@@ -198,6 +200,8 @@ impl SwarmDriver {
             );
 
         Self::with(
+            // clients use signer for transactions, but the network keypair is not used
+            None,
             kad_cfg,
             local,
             true,
@@ -213,6 +217,7 @@ impl SwarmDriver {
     #[allow(clippy::too_many_arguments)]
     /// Private helper to create the network components with the provided config and req/res behaviour
     fn with(
+        keypair: Option<Keypair>,
         kad_cfg: KademliaConfig,
         local: bool,
         is_client: bool,
@@ -222,8 +227,21 @@ impl SwarmDriver {
         req_res_protocol: ProtocolSupport,
         identify_version: String,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
-        // Create a random key for ourself.
-        let keypair = identity::Keypair::generate_ed25519();
+        // Create a random key for ourself if none provided
+        let keypair = match keypair {
+            Some(keypair) => {
+                info!("Using provided keypair: {:?}", keypair.public());
+                keypair
+            }
+            None => {
+                info!("Generating a new keypair");
+                Keypair::generate_ed25519()
+
+                // TODO: store this somewhere? or just regenerate on every run?
+                // How would we validate storage location + what to do if one exists?
+            }
+        };
+
         let peer_id = PeerId::from(keypair.public());
 
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
@@ -708,6 +726,7 @@ mod tests {
     async fn msg_to_self_should_not_error_out() -> Result<()> {
         init_test_logger();
         let (net, mut event_rx, driver) = SwarmDriver::new(
+            None,
             "0.0.0.0:0"
                 .parse::<SocketAddr>()
                 .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
