@@ -213,6 +213,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.83.39](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.38...sn_node-v0.83.39) - 2023-06-20
+
+### Added
+- pay 1 nano per Chunk as temporary approach till net-invoices are implemented
+- nodes to verify input DBCs of Chunk payment proof were spent
+
+### Other
+- specific error types for different payment proof verification scenarios
+- creating a storage payment e2e test and run it in CI
+- include the Tx instead of output DBCs as part of storage payment proofs
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
