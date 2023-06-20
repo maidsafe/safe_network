@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.1.6...sn_protocol-v0.1.7) - 2023-06-20
+
+### Added
+- *(network)* validate `Record` on GET
+- *(network)* validate and store `ReplicatedData`
+- *(node)* perform proper validations on PUT
+- *(network)* store `Chunk` along with `PaymentProof`
+- *(kad)* impl `RecordHeader` to store the record kind
+
+### Fixed
+- *(record_header)* encode unit enum as u32
+- *(node)* store parent tx along with `SignedSpend`
+- *(network)* use `rmp_serde` for `RecordHeader` ser/de
+
+### Other
+- *(docs)* add more docs and comments
+
 ## [0.1.6](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.1.5...sn_protocol-v0.1.6) - 2023-06-20
 
 ### Added
