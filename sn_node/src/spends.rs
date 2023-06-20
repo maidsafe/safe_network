@@ -126,7 +126,7 @@ pub(crate) async fn check_parent_spends(
         )));
     }
 
-    // get the parent spends form the network
+    // get the parent spends from the network
     trace!(
         "Getting parent_spends for {:?}",
         spend_with_parent.signed_spend.dbc_id()

@@ -220,16 +220,22 @@ impl Node {
                         addr
                     }
                     ReplicatedData::DbcSpend(spends_with_parent) => {
-                        // Put validations make sure that we have >= 1 spends and with the same
-                        // dbc_id
-                        let dbc_addr =
-                            DbcAddress::from_dbc_id(spends_with_parent[0].signed_spend.dbc_id());
-                        debug!("DbcSpend received for replication: {:?}", dbc_addr.name());
-                        let addr = NetworkAddress::from_record_key(RecordKey::new(dbc_addr.name()));
+                        if let Some(spend) = spends_with_parent.first() {
+                            let dbc_addr = DbcAddress::from_dbc_id(spend.signed_spend.dbc_id());
+                            debug!("DbcSpend received for replication: {:?}", dbc_addr.name());
+                            let addr =
+                                NetworkAddress::from_record_key(RecordKey::new(dbc_addr.name()));
 
-                        let success = self.validate_and_store_spends(spends_with_parent).await?;
-                        trace!("ReplicatedData::Chunk with {addr:?} has been validated and stored. {success:?}");
-                        addr
+                            let success =
+                                self.validate_and_store_spends(spends_with_parent).await?;
+                            trace!("ReplicatedData::Chunk with {addr:?} has been validated and stored. {success:?}");
+                            addr
+                        } else {
+                            // Put validations make sure that we have >= 1 spends and with the same
+                            // dbc_id
+                            error!("Got ReplicatedData::DbcSpend with zero elements");
+                            return Ok(());
+                        }
                     }
                     other => {
                         warn!("Not support other type of replicated data {:?}", other);
