@@ -368,7 +368,7 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "node-memory-usage-through-safe-benchmark",
+            "name": "Peak memory w/ `safe` benchmarks",
             "value": 10.16,
             "unit": "MB"
           }
@@ -397,7 +397,7 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "node-memory-usage-through-safe-benchmark",
+            "name": "Peak memory w/ `safe` benchmarks",
             "value": 11.38,
             "unit": "MB"
           }
@@ -426,7 +426,7 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "node-memory-usage-through-safe-benchmark",
+            "name": "Peak memory w/ `safe` benchmarks",
             "value": 10.13,
             "unit": "MB"
           }
@@ -455,7 +455,7 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "node-memory-usage-through-safe-benchmark",
+            "name": "Peak memory w/ `safe` benchmarks",
             "value": 10.13,
             "unit": "MB"
           }
@@ -484,7 +484,7 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "node-memory-usage-through-safe-benchmark",
+            "name": "Peak memory w/ `safe` benchmarks",
             "value": 11.54,
             "unit": "MB"
           }
@@ -513,7 +513,7 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "node-memory-usage-through-safe-benchmark",
+            "name": "Peak memory w/ `safe` benchmarks",
             "value": 11.24,
             "unit": "MB"
           }
@@ -631,7 +631,7 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "safe-cli-memory-usage",
+            "name": "Peak memory usage w/ ~450mb upload",
             "value": 166.31,
             "unit": "MB"
           }
