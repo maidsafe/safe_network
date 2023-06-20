@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687274291782,
+  "lastUpdate": 1687274801149,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -762,6 +762,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 77.26,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "ba96bef407a89e4136b890e5ce9812d4773dbab9",
+          "message": "feat(sn_networking): Make it possible to pass in a keypair for PeerID\n\nmakes changes up the stack so nodes could restart and maintain peerId,\nclients simply ignore this and provide None as they have a separate Signer\nused for client ops. Their PeerId is not relevant or used in kad at all",
+          "timestamp": "2023-06-20T14:07:06Z",
+          "tree_id": "37262bc3fcb2f1ea40abf0b0919d5e685178e187",
+          "url": "https://github.com/maidsafe/safe_network/commit/ba96bef407a89e4136b890e5ce9812d4773dbab9"
+        },
+        "date": 1687274800205,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57.01,
             "unit": "MB"
           }
         ]
