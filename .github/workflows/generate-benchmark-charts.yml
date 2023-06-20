@@ -119,7 +119,7 @@ jobs:
         shell: bash
         run: |
           tar -czvf release_zip.tar.gz ./target/release
-          heaptrack ./target/release/safe --files upload -- "./release_zip.tar.gz"
+          heaptrack ./target/release/safe --files upload ./release_zip.tar.gz
         env:
           SN_LOG: "all"
 
