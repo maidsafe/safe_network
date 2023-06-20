@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_cli"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.77.37"
+version = "0.77.38"
 
 [[bin]]
 path="src/main.rs"
