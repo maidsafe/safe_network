@@ -109,7 +109,8 @@ async fn data_availability_during_churn() -> Result<()> {
         ("sn_networking".to_string(), Level::TRACE),
         ("sn_node".to_string(), Level::TRACE),
     ];
-    let log_appender_guard = init_logging(logging_targets, &Some(tmp_dir.join("safe-client")))?;
+    let log_appender_guard =
+        init_logging(logging_targets, &Some(tmp_dir.join("safe-client")), false)?;
 
     println!("Creating a client...");
     let client = get_client().await;
