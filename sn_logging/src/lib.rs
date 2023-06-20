@@ -77,6 +77,7 @@ impl TracingLayers {
         &mut self,
         default_logging_targets: Vec<(String, Level)>,
         optional_log_dir: &Option<PathBuf>,
+        json_output: bool,
     ) -> Result<()> {
         let layer = if let Some(log_dir) = optional_log_dir {
             if fs::remove_dir_all(log_dir).is_ok() {
@@ -89,14 +90,23 @@ impl TracingLayers {
             let logs_uncompressed = 100;
             let logs_max_files = 1000;
 
-            let (non_blocking, worker_guard) =
+            let (file_rotation, worker_guard) =
                 appender::file_rotater(log_dir, logs_max_lines, logs_uncompressed, logs_max_files);
             self.guard = Some(worker_guard);
 
-            let fmt_layer = tracing_fmt::layer()
-                .with_ansi(false)
-                .with_writer(non_blocking);
-            fmt_layer.event_format(LogFormatter::default()).boxed()
+            if json_output {
+                tracing_fmt::layer()
+                    .json()
+                    .flatten_event(true)
+                    .with_writer(file_rotation)
+                    .boxed()
+            } else {
+                tracing_fmt::layer()
+                    .with_ansi(false)
+                    .with_writer(file_rotation)
+                    .event_format(LogFormatter::default())
+                    .boxed()
+            }
         } else {
             println!("Logging to stdout");
             tracing_fmt::layer()
@@ -176,15 +186,16 @@ impl TracingLayers {
 pub fn init_logging(
     default_logging_targets: Vec<(String, Level)>,
     log_dir: &Option<PathBuf>,
+    json_output: bool,
 ) -> Result<Option<WorkerGuard>> {
     let mut layers = TracingLayers::default();
 
     #[cfg(not(feature = "otlp"))]
-    layers.fmt_layer(default_logging_targets, log_dir)?;
+    layers.fmt_layer(default_logging_targets, log_dir, json_output)?;
 
     #[cfg(feature = "otlp")]
     {
-        layers.fmt_layer(default_logging_targets.clone(), log_dir)?;
+        layers.fmt_layer(default_logging_targets.clone(), log_dir, json_output)?;
 
         match std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
             Ok(_) => layers.otlp_layer(default_logging_targets)?,

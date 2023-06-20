@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = init_logging(logging_targets, &None)?;
+    let _log_appender_guard = init_logging(logging_targets, &None, false)?;
 
     let opt = Opt::parse();
 

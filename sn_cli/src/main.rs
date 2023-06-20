@@ -35,7 +35,8 @@ async fn main() -> Result<()> {
         ("sn_client".to_string(), Level::INFO),
         ("sn_networking".to_string(), Level::INFO),
     ];
-    let log_appender_guard = init_logging(logging_targets, &Some(tmp_dir.join("safe-client")))?;
+    let log_appender_guard =
+        init_logging(logging_targets, &Some(tmp_dir.join("safe-client")), false)?;
     #[cfg(feature = "metrics")]
     tokio::spawn(init_metrics(std::process::id()));
 
