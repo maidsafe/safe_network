@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687231350791,
+  "lastUpdate": 1687232424147,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe `files` benchmarks": [
@@ -514,6 +514,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 3.0048798848448857,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6cca14f594d844bfe254132bc6d44cf4385209f9",
+          "message": "fix: update the safe files upload cmd removing more nonsense",
+          "timestamp": "2023-06-20T12:24:43+09:00",
+          "tree_id": "78c7d29c5edc80b7cd8efe19b7c2167d776f3308",
+          "url": "https://github.com/maidsafe/safe_network/commit/6cca14f594d844bfe254132bc6d44cf4385209f9"
+        },
+        "date": 1687232423688,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5783569224493454,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.167899168178601,
             "unit": "MiB/s"
           }
         ]
