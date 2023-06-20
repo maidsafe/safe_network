@@ -610,7 +610,7 @@ impl Network {
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// If `client` is false, then include `self` among the `closest_peers`
     async fn get_closest_peers(&self, key: &NetworkAddress, client: bool) -> Result<Vec<PeerId>> {
-        debug!("Getting the closest peers to {key:?}");
+        trace!("Getting the closest peers to {key:?}");
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
             key: key.clone(),

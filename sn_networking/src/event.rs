@@ -150,7 +150,7 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
-                        info!(%peer_id, ?info, "identify: received info");
+                        debug!(%peer_id, ?info, "identify: received info");
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if (self.local || self.dialed_peers.contains(&peer_id))
@@ -173,7 +173,7 @@ impl SwarmDriver {
                                 .unique()
                                 .collect();
 
-                            info!(%peer_id, ?addrs, "identify: adding addresses to routing table");
+                            debug!(%peer_id, ?addrs, "identify: adding addresses to routing table");
                             for multiaddr in addrs.clone() {
                                 let _routing_update = self
                                     .swarm
@@ -198,9 +198,9 @@ impl SwarmDriver {
                             }
                         }
                     }
-                    libp2p::identify::Event::Sent { .. } => info!("identify: {iden:?}"),
-                    libp2p::identify::Event::Pushed { .. } => info!("identify: {iden:?}"),
-                    libp2p::identify::Event::Error { .. } => info!("identify: {iden:?}"),
+                    libp2p::identify::Event::Sent { .. } => trace!("identify: {iden:?}"),
+                    libp2p::identify::Event::Pushed { .. } => trace!("identify: {iden:?}"),
+                    libp2p::identify::Event::Error { .. } => trace!("identify: {iden:?}"),
                 }
             }
             #[cfg(feature = "local-discovery")]
@@ -300,7 +300,7 @@ impl SwarmDriver {
                 }
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
-            SwarmEvent::Dialing(peer_id) => info!("Dialing {peer_id}"),
+            SwarmEvent::Dialing(peer_id) => trace!("Dialing {peer_id}"),
 
             SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
                 autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
@@ -410,7 +410,7 @@ impl SwarmDriver {
                 }
             }
             other => {
-                debug!("KademliaEvent ignored: {other:?}");
+                trace!("KademliaEvent ignored: {other:?}");
             }
         }
 
