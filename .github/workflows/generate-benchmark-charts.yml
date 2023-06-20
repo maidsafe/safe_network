@@ -71,7 +71,7 @@ jobs:
       - name: Start safenode with heaptrack
         run: |
           mkdir -p ~/.safe/heapnode
-          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode &
+          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode
           sleep 10
         env:
           SN_LOG: "all"
@@ -232,7 +232,7 @@ jobs:
       - run: cat ./heaptrack.safe.txt 
         shell: bash
 
-      - run: rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "K" -r ""
+      - run: rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r ""
         shell: bash
 
       - name: Check client memory usage
