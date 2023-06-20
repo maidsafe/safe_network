@@ -187,7 +187,7 @@ jobs:
           # Write the node memory usage to a JSON file
           echo '[
               {
-                  "name": Peak memory w/ `safe` benchmarks",
+                  "name": "Peak memory w/ `safe` benchmarks",
                   "value": '$MEMORY_USAGE',
                   "unit": "MB"
               }
