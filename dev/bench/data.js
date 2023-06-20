@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687274808127,
+  "lastUpdate": 1687283410227,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -441,6 +441,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 2.7185433357837496,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "1cf66abde5fab4015338f1b6b3744ba5370d45f6",
+          "message": "fix(network): use safe operations when dealing with Vec",
+          "timestamp": "2023-06-20T16:41:41Z",
+          "tree_id": "a0a5450e5034ea202a5db28fa30f0f3b6463d5b2",
+          "url": "https://github.com/maidsafe/safe_network/commit/1cf66abde5fab4015338f1b6b3744ba5370d45f6"
+        },
+        "date": 1687283409755,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6060487206554941,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.2550041045959643,
             "unit": "MiB/s"
           }
         ]
