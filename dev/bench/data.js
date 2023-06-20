@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687232771128,
+  "lastUpdate": 1687232775622,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "Safe `files` benchmarks": [
@@ -637,6 +637,42 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 92.9,
+            "unit": "MB"
+          }
+        ]
+      }
+    ],
+    "Client memory": [
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6cca14f594d844bfe254132bc6d44cf4385209f9",
+          "message": "fix: update the safe files upload cmd removing more nonsense",
+          "timestamp": "2023-06-20T12:24:43+09:00",
+          "tree_id": "78c7d29c5edc80b7cd8efe19b7c2167d776f3308",
+          "url": "https://github.com/maidsafe/safe_network/commit/6cca14f594d844bfe254132bc6d44cf4385209f9"
+        },
+        "date": 1687232775276,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ ~450mb upload",
+            "value": 925.6,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ ~450mb upload",
+            "value": 487,
             "unit": "MB"
           }
         ]
