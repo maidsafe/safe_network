@@ -13,11 +13,12 @@ use crate::{
     messages::ReplicatedData,
     storage::{
         registers::{Entry, EntryHash, Permissions, Policy, Register, User},
-        Chunk, SpendWithParent,
+        Chunk,
     },
     NetworkAddress,
 };
 use serde::{Deserialize, Serialize};
+use sn_dbc::SignedSpend;
 use std::{collections::BTreeSet, fmt::Debug};
 
 /// The response to a query, containing the query result.
@@ -33,7 +34,7 @@ pub enum QueryResponse {
     /// Response to [`GetDbcSpend`]
     ///
     /// [`GetDbcSpend`]: crate::messages::Query::GetSpend
-    GetDbcSpend(Result<SpendWithParent>),
+    GetDbcSpend(Result<SignedSpend>),
     //
     // ===== Chunk =====
     //
@@ -99,12 +100,8 @@ pub enum CmdOk {
 impl std::fmt::Display for QueryResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            QueryResponse::GetDbcSpend(Ok(spend_with_parent)) => {
-                write!(
-                    f,
-                    "GetDbcSpend(Ok({:?}))",
-                    spend_with_parent.signed_spend.dbc_id()
-                )
+            QueryResponse::GetDbcSpend(Ok(signed_spend)) => {
+                write!(f, "GetDbcSpend(Ok({:?}))", signed_spend.dbc_id())
             }
             _ => write!(f, "{:?}", self),
         }
