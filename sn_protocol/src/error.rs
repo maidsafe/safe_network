@@ -82,10 +82,10 @@ pub enum Error {
     #[error("Provided PublicKey could not validate signature: {0:?}")]
     InvalidSignature(bls::PublicKey),
 
-    /// Received a empty Vec<SignedSpend>
+    /// Received a empty `Vec<SignedSpend>`
     #[error("Operation received no SignedSpends")]
     MinNumberOfSpendsNotMet,
-    /// Received a Vec<SignedSpend> with more than two spends
+    /// Received a `Vec<SignedSpend>` with more than two spends
     #[error("Incoming SpendDbc PUT with incorrect number of SignedSpend")]
     MaxNumberOfSpendsExceeded,
     /// Spend not found.
@@ -112,9 +112,6 @@ pub enum Error {
     /// One or more parent spends of a requested spend has an invalid hash
     #[error("Invalid parent spend hash: {0}")]
     BadParentSpendHash(String),
-    /// The provided source tx did not check out when verified with all supposed inputs to it (i.e. our spends parents).
-    #[error("The provided source tx is invalid: {0}")]
-    InvalidSourceTxProvided(String),
 
     /// Replication not found.
     #[error("Peer {holder:?} cannot find ReplicatedData {address:?}")]
