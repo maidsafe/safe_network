@@ -17,7 +17,7 @@ use itertools::Itertools;
 use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
-    kad::{GetRecordOk, InboundRequest, Kademlia, KademliaEvent, QueryResult, Record, K_VALUE},
+    kad::{GetRecordOk, InboundRequest, Kademlia, KademliaEvent, QueryResult, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
     swarm::{behaviour::toggle::Toggle, DialError, NetworkBehaviour, SwarmEvent},
@@ -106,11 +106,6 @@ pub enum NetworkEvent {
     ResponseReceived {
         /// Response
         res: Response,
-    },
-    /// Incoming PUT record from a peer
-    PutRequest {
-        peer: PeerId,
-        record: Record,
     },
     /// Peer has been added to the Routing Table
     PeerAdded(PeerId),
@@ -406,13 +401,10 @@ impl SwarmDriver {
             KademliaEvent::InboundRequest {
                 request: InboundRequest::PutRecord { source, record, .. },
             } => {
-                if let Some(record) = record {
-                    self.event_sender
-                        .send(NetworkEvent::PutRequest {
-                            peer: source,
-                            record,
-                        })
-                        .await?
+                if record.is_some() {
+                    // Currently we do not perform `kad.put_record()` or use `kad's replication` in our codebase,
+                    // hence we should not receive any inbound PutRecord.
+                    warn!("Kad's PutRecord handling is not implemented yet. {source:?} has triggerd kad.put_record or has enabled kad's replication flow");
                 } else {
                     // If the Record filtering is not enabled at the kad cfg, a malicious node
                     // can just call `kad.put_record()` which would store that record at the
