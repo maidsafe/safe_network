@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.1.7...sn_protocol-v0.1.8) - 2023-06-21
+
+### Fixed
+- *(protocol)* remove unsafe indexing
+
+### Other
+- remove unused error variants
+- *(node)* obtain parent_tx from SignedSpend
+
 ## [0.1.7](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.1.6...sn_protocol-v0.1.7) - 2023-06-20
 
 ### Added
