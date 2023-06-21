@@ -24,29 +24,35 @@ use walkdir::WalkDir;
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
-    /// Print the address of the wallet.
+    /// Print the wallet address.
     Address,
-    /// Print the balance of the wallet.
+    /// Print the wallet balance.
     Balance,
-    /// Deposit DBCs to the local wallet.
+    /// Deposit DBCs from the received directory to the local wallet.
     ///
-    /// Tries to load DBCs from the received DBCs path in the wallet directory and deposit them to
-    /// the wallet.
+    /// The default received directory is platform specific:
+    ///  - Linux: $HOME/.local/share/safe/wallet/received_dbcs
+    ///  - macOS: $HOME/Library/Application Support/safe/wallet/received_dbcs
+    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\wallet\received_dbcs
     ///
-    /// Received DBCs must be placed in this directory manually.
+    /// If you find the default path unwieldy, you can also set the RECEIVED_DBCS_PATH environment
+    /// variable to a path you would prefer to work with.
+    #[clap(verbatim_doc_comment)]
     Deposit,
+    /// Send a DBC.
     Send {
         /// The number of nanos to send.
-        ///
-        /// Necessary if the `to` argument is used.
         #[clap(name = "amount")]
         amount: String,
-        /// The hex-encoded public address for the recipient of the DBC.
+        /// Hex-encoded public address of the recipient.
         #[clap(name = "to")]
         to: String,
     },
+    /// Make a payment for chunk storage based on files to be stored.
+    ///
+    /// Right now this command is highly experimental and doesn't really do anything functional.
     Pay {
-        /// The location of the files to pay the storage for.
+        /// Location of the files to be stored.
         #[clap(name = "path", value_name = "DIRECTORY")]
         path: PathBuf,
     },
