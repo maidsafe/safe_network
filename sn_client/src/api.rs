@@ -28,7 +28,7 @@ use sn_protocol::{
     messages::{Cmd, CmdResponse, PaymentProof, Query, QueryResponse, Request, Response},
     storage::{
         try_deserialize_record, Chunk, ChunkAddress, ChunkWithPayment, DbcAddress, RecordHeader,
-        RecordKind, SpendWithParent,
+        RecordKind,
     },
     NetworkAddress,
 };
@@ -340,11 +340,7 @@ impl Client {
             .client_get_closest_peers(&network_address)
             .await?;
 
-        let spend_with_parent = SpendWithParent {
-            signed_spend: spend.signed_spend,
-            parent_tx: spend.parent_tx,
-        };
-        let cmd = Cmd::SpendDbc(spend_with_parent);
+        let cmd = Cmd::SpendDbc(spend.signed_spend);
 
         trace!(
             "Sending {:?} to the closest peers to store spend for {dbc_id:?}.",
@@ -420,18 +416,15 @@ impl Client {
         while !list_of_futures.is_empty() {
             match select_all(list_of_futures).await {
                 (
-                    Ok(Response::Query(QueryResponse::GetDbcSpend(Ok(spend_with_parent)))),
+                    Ok(Response::Query(QueryResponse::GetDbcSpend(Ok(signed_spend)))),
                     _,
                     remaining_futures,
                 ) => {
-                    if dbc_id == spend_with_parent.signed_spend.dbc_id() {
-                        match spend_with_parent
-                            .signed_spend
-                            .verify(spend_with_parent.signed_spend.spent_tx_hash())
-                        {
+                    if dbc_id == signed_spend.dbc_id() {
+                        match signed_spend.verify(signed_spend.spent_tx_hash()) {
                             Ok(_) => {
                                 trace!("Verified signed spend got from network while getting Spend for {dbc_id:?}");
-                                ok_responses.push(spend_with_parent);
+                                ok_responses.push(signed_spend);
                             }
                             Err(err) => {
                                 warn!("Invalid signed spend got from network while getting Spend for {dbc_id:?}: {err:?}.");
@@ -445,7 +438,7 @@ impl Client {
                         let resp_count_by_spend: BTreeMap<SignedSpend, usize> = ok_responses
                             .clone()
                             .into_iter()
-                            .map(|x| (x.signed_spend, 1))
+                            .map(|x| (x, 1))
                             .into_group_map()
                             .into_iter()
                             .map(|(spend, vec_of_ones)| (spend, vec_of_ones.len()))

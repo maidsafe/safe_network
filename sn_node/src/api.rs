@@ -219,15 +219,14 @@ impl Node {
                         trace!("ReplicatedData::Chunk with {chunk_addr:?} has been validated and stored. {success:?}");
                         addr
                     }
-                    ReplicatedData::DbcSpend(spends_with_parent) => {
-                        if let Some(spend) = spends_with_parent.first() {
-                            let dbc_addr = DbcAddress::from_dbc_id(spend.signed_spend.dbc_id());
+                    ReplicatedData::DbcSpend(signed_spend) => {
+                        if let Some(spend) = signed_spend.first() {
+                            let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
                             debug!("DbcSpend received for replication: {:?}", dbc_addr.name());
                             let addr =
                                 NetworkAddress::from_record_key(RecordKey::new(dbc_addr.name()));
 
-                            let success =
-                                self.validate_and_store_spends(spends_with_parent).await?;
+                            let success = self.validate_and_store_spends(signed_spend).await?;
                             trace!("ReplicatedData::Chunk with {addr:?} has been validated and stored. {success:?}");
                             addr
                         } else {
@@ -367,13 +366,10 @@ impl Node {
                     }
                 }
             }
-            Cmd::SpendDbc(spend_with_parent) => {
-                let dbc_id = *spend_with_parent.signed_spend.dbc_id();
+            Cmd::SpendDbc(signed_spend) => {
+                let dbc_id = *signed_spend.dbc_id();
                 let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
-                match self
-                    .validate_and_store_spends(vec![spend_with_parent])
-                    .await
-                {
+                match self.validate_and_store_spends(vec![signed_spend]).await {
                     Ok(cmd_ok) => {
                         debug!("Broadcasting valid spend: {dbc_id:?} at: {dbc_addr:?}");
                         self.events_channel

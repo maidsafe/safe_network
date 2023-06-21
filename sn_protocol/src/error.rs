@@ -9,11 +9,12 @@
 use crate::{
     storage::{
         registers::{EntryHash, User},
-        ChunkAddress, DbcAddress, RecordKind, RegisterAddress, SpendWithParent,
+        ChunkAddress, DbcAddress, RecordKind, RegisterAddress,
     },
     NetworkAddress,
 };
 use serde::{Deserialize, Serialize};
+use sn_dbc::SignedSpend;
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -81,7 +82,7 @@ pub enum Error {
     #[error("Provided PublicKey could not validate signature: {0:?}")]
     InvalidSignature(bls::PublicKey),
 
-    #[error("Incoming SpendDbc PUT with incorrect number of SpendWithParent")]
+    #[error("Incoming SpendDbc PUT with incorrect number of SignedSpend")]
     MaxNumberOfSpendsExceeded,
     /// Spend not found.
     #[error("Spend not found: {0:?}")]
@@ -94,7 +95,7 @@ pub enum Error {
     InsufficientValidSpendsFound(DbcAddress),
     /// A double spend was detected.
     #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
-    DoubleSpendAttempt(Box<SpendWithParent>, Box<SpendWithParent>),
+    DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
     /// Cannot verify a Spend signature.
     #[error("Spend signature is invalid: {0}")]
     InvalidSpendSignature(String),

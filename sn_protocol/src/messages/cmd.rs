@@ -8,7 +8,7 @@
 
 use super::RegisterCmd;
 use crate::{
-    storage::{Chunk, ChunkAddress, DbcAddress, SpendWithParent},
+    storage::{Chunk, ChunkAddress, DbcAddress},
     NetworkAddress,
 };
 use serde::{Deserialize, Serialize};
@@ -37,11 +37,11 @@ pub enum Cmd {
     ///
     /// [`Register`]: crate::storage::Register
     Register(RegisterCmd),
-    /// [`SpendWithParent`] write operation.
+    /// [`SignedSpend`] write operation.
     ///
-    /// [`SpendWithParent`]: crate::storage::SpendWithParent
-    /// The spend to be recorded wrapped together with the transaction this DBC was created in
-    SpendDbc(SpendWithParent),
+    /// [`SignedSpend`]: sn_dbc::SignedSpend
+    /// The spend to be recorded
+    SpendDbc(SignedSpend),
     /// Write operation to notify peer fetch a list of [`NetworkAddress`] from the holder.
     ///
     /// [`NetworkAddress`]: crate::NetworkAddress
@@ -62,9 +62,9 @@ impl Cmd {
                 NetworkAddress::from_chunk_address(ChunkAddress::new(*chunk.name()))
             }
             Cmd::Register(cmd) => NetworkAddress::from_register_address(cmd.dst()),
-            Cmd::SpendDbc(spend_with_parent) => NetworkAddress::from_dbc_address(
-                DbcAddress::from_dbc_id(spend_with_parent.signed_spend.dbc_id()),
-            ),
+            Cmd::SpendDbc(signed_spend) => {
+                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
+            }
             Cmd::Replicate { holder, .. } => holder.clone(),
         }
     }
@@ -79,12 +79,8 @@ impl std::fmt::Display for Cmd {
             Cmd::Register(cmd) => {
                 write!(f, "Cmd::Register({:?})", cmd.name()) // more qualification needed
             }
-            Cmd::SpendDbc(spend_with_parent) => {
-                write!(
-                    f,
-                    "Cmd::SpendDbc({:?})",
-                    spend_with_parent.signed_spend.dbc_id()
-                )
+            Cmd::SpendDbc(signed_spend) => {
+                write!(f, "Cmd::SpendDbc({:?})", signed_spend.dbc_id())
             }
             Cmd::Replicate { holder, keys } => {
                 write!(
