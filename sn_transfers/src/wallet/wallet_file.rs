@@ -13,7 +13,7 @@ use super::{
 
 use sn_dbc::Dbc;
 use sn_protocol::storage::DbcAddress;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tokio::fs;
 
 // Filename for storing a wallet.
@@ -73,10 +73,12 @@ pub(super) async fn store_created_dbcs(created_dbcs: Vec<Dbc>, wallet_dir: &Path
 
 /// Loads all the dbcs found in the received dbcs dir.
 pub(super) async fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
-    // The new dbcs dir within the wallet dir.
-    let received_dbcs_path = wallet_dir.join(RECEIVED_DBCS_DIR_NAME);
-    let mut deposits = vec![];
+    let received_dbcs_path = match std::env::var("RECEIVED_DBCS_PATH") {
+        Ok(path) => PathBuf::from(path),
+        Err(_) => wallet_dir.join(RECEIVED_DBCS_DIR_NAME),
+    };
 
+    let mut deposits = vec![];
     for entry in walkdir::WalkDir::new(received_dbcs_path)
         .into_iter()
         .flatten()

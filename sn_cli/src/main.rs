@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
     println!("Instantiating a SAFE client...");
 
     let secret_key = bls::SecretKey::random();
-    let root_dir = get_client_dir().await?;
+    let client_data_dir_path = get_client_data_dir_path().await?;
 
     if opt.peers.peers.is_empty() {
         if !cfg!(feature = "local-discovery") {
@@ -61,8 +61,8 @@ async fn main() -> Result<()> {
     let client = Client::new(secret_key, Some(opt.peers.peers), opt.timeout).await?;
 
     match opt.cmd {
-        SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client, &root_dir).await?,
-        SubCmd::Files(cmds) => files_cmds(cmds, client.clone(), &root_dir).await?,
+        SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client, &client_data_dir_path).await?,
+        SubCmd::Files(cmds) => files_cmds(cmds, client.clone(), &client_data_dir_path).await?,
         SubCmd::Register(cmds) => register_cmds(cmds, &client).await?,
     };
 
@@ -70,9 +70,9 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn get_client_dir() -> Result<PathBuf> {
-    let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
-    home_dirs.push(".safe");
+async fn get_client_data_dir_path() -> Result<PathBuf> {
+    let mut home_dirs = dirs_next::data_dir().expect("Data directory is obtainable");
+    home_dirs.push("safe");
     home_dirs.push("client");
     tokio::fs::create_dir_all(home_dirs.as_path()).await?;
     Ok(home_dirs)
