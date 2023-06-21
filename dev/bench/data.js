@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687343305045,
+  "lastUpdate": 1687343309603,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -1215,6 +1215,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ ~450mb upload",
             "value": 471,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "0e07e753bb9470b703969fcb83100a00f82b06a4",
+          "message": "fix(sn_transfers): hardcode new genesis DBC for tests",
+          "timestamp": "2023-06-21T09:21:08Z",
+          "tree_id": "653136b50154f8d1031b3b1359777ddfb4e89a7f",
+          "url": "https://github.com/maidsafe/safe_network/commit/0e07e753bb9470b703969fcb83100a00f82b06a4"
+        },
+        "date": 1687343309209,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ ~450mb upload",
+            "value": 933.82,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ ~450mb upload",
+            "value": 469,
             "unit": "MB"
           }
         ]
