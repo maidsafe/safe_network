@@ -8,15 +8,10 @@
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
-use sn_protocol::storage::{
-    registers::{Entry, EntryHash},
-    ChunkAddress,
-};
-use std::collections::BTreeSet;
-use std::time::Duration;
-use thiserror::Error;
-
 use super::ClientEvent;
+use sn_protocol::storage::registers::{Entry, EntryHash};
+use std::collections::BTreeSet;
+use thiserror::Error;
 
 /// Internal error.
 #[derive(Debug, Error)]
@@ -45,10 +40,6 @@ pub enum Error {
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
 
-    /// After attempting to dial, the client received no network activity for a given duration.
-    #[error("Client received no network activity for {0:?}")]
-    InactiveClient(Duration),
-
     #[error("Chunks error {0}.")]
     Chunks(#[from] super::chunks::Error),
 
@@ -60,7 +51,4 @@ pub enum Error {
         Entries hashes of branches are: {0:?}"
     )]
     ContentBranchDetected(BTreeSet<(EntryHash, Entry)>),
-
-    #[error("Payment proof not provided for uploading Chunk: {0:?}")]
-    MissingPaymentProof(ChunkAddress),
 }
