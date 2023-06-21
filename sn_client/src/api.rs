@@ -185,8 +185,6 @@ impl Client {
             NetworkEvent::RequestReceived { .. } => {}
             // Clients do not handle responses
             NetworkEvent::ResponseReceived { .. } => {}
-            // Clients do not store Records
-            NetworkEvent::PutRequest { .. } => {}
             // We do not listen on sockets.
             NetworkEvent::NewListenAddr(_) => {}
             // We are not doing AutoNAT and don't care about our status.
