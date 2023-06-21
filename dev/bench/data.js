@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687370498272,
+  "lastUpdate": 1687370665561,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -1014,6 +1014,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 12.72,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "e6e6b77a75b133787fe1e253d7e4d5b570fb2e7a",
+          "message": "chore(network): remove `NetworkEvent::PutRecord` dead code\n- since we do not use `kad.put_record` or `kad's replication flow`, we\n  should not get any inbound `PutRecord` from the swarm.",
+          "timestamp": "2023-06-21T16:40:25Z",
+          "tree_id": "028b176e59484ab5e1bfd7cfd1a3c5246944395f",
+          "url": "https://github.com/maidsafe/safe_network/commit/e6e6b77a75b133787fe1e253d7e4d5b570fb2e7a"
+        },
+        "date": 1687370664708,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 12.68,
             "unit": "MB"
           }
         ]
