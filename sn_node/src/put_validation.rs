@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    error::Error,
     spends::{aggregate_spends, check_parent_spends, get_aggregated_spends_from_peers},
     Node,
 };
@@ -151,120 +150,6 @@ impl Node {
         }
 
         Ok(CmdOk::StoredSuccessfully)
-    }
-
-    /// Validate and store a `Record` directly. This is used to fall back to KAD's PUT flow instead
-    /// of using our custom Cmd flow.
-    /// Also prevents Record overwrite through `malicious_node.kademlia.put_record()` which would trigger
-    /// trigger a SwarmEvent that is propagated to here to be handled.
-    /// Note: KAD's PUT does not support error propagation. Only the error variants inside
-    /// `RecordStore` are propagated.
-    pub(crate) async fn validate_and_store_record(&self, mut record: Record) -> Result<(), Error> {
-        let header = RecordHeader::from_record(&record)?;
-        let present_locally = self.network.is_key_present_locally(&record.key).await?;
-
-        match header.kind {
-            RecordKind::Chunk => {
-                // return early without deserializing
-                if present_locally {
-                    // We outright short circuit if the Record::key is present locally;
-                    // Hence we don't have to verify if the local_header::kind == Chunk
-                    debug!(
-                        "Chunk with key {:?} already exists, not overwriting",
-                        record.key
-                    );
-                    return Ok(());
-                }
-
-                let chunk_with_payment: ChunkWithPayment = try_deserialize_record(&record)?;
-                let addr = chunk_with_payment.chunk.name();
-                // check if the deserialized value's ChunkAddress matches the record's key
-                if record.key != RecordKey::new(&addr) {
-                    error!(
-                        "Record's key does not match with the value's ChunkAddress, ignoring PUT."
-                    );
-                    return Err(ProtocolError::RecordKeyMismatch.into());
-                }
-
-                // Common validation logic. Can ignore the new_data_present as we already have a
-                // check for it earlier in the code that allows us to bail out early without
-                // deserializing the `Record`
-                let _new_data_present = self
-                    .chunk_validation(&chunk_with_payment, present_locally)
-                    .await?;
-            }
-            RecordKind::DbcSpend => {
-                let signed_spends: Vec<SignedSpend> = try_deserialize_record(&record)?;
-                // Prevents someone from crafting large Vec and slowing down nodes
-                if signed_spends.len() > 2 {
-                    warn!(
-                        "Discarding incoming DbcSpend PUT as it contains more than 2 SignedSpends"
-                    );
-                    return Err(ProtocolError::MaxNumberOfSpendsExceeded.into());
-                }
-
-                // filter out the spends whose DbcAddress does not match with Record::key
-                let signed_spends = signed_spends.into_iter().filter(|spend| {
-                    let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-                    if record.key != RecordKey::new(dbc_addr.name()) {
-                        warn!(
-                        "Record's key {:?} does not match with the value's DbcAddress {dbc_addr:?}. Filtering it out.",
-                            record.key,
-                    );
-                        false
-                    } else {
-                        true
-                    }
-
-                }).collect::<Vec<_>>();
-
-                if signed_spends.is_empty() {
-                    warn!("No spend with valid Record key found. Ignoring DbcSpend PUT request");
-                    return Err(ProtocolError::RecordKeyMismatch.into());
-                }
-                // Since signed_spends is not empty and they contain the same DbcId (RecordKeys are
-                // the same), get the DbcId
-                let dbc_id = if let Some(spend) = signed_spends.first() {
-                    *spend.dbc_id()
-                } else {
-                    return Ok(());
-                };
-
-                match self
-                    .signed_spend_validation(signed_spends, dbc_id, present_locally)
-                    .await?
-                {
-                    Some(signed_spends) => {
-                        // Just log the double spent attempt as it cannot be propagated back
-                        if signed_spends.len() > 1 {
-                            warn!(
-                                "Got a double spend for the SignedSpend PUT with dbc_id {dbc_id:?}",
-                            );
-                        }
-
-                        // replace the Record's value with the new one
-                        let signed_spends =
-                            try_serialize_record(&signed_spends, RecordKind::DbcSpend)?;
-                        record.value = signed_spends;
-                    }
-                    None => {
-                        // data already present
-                        return Ok(());
-                    }
-                };
-            }
-            RecordKind::Register => {
-                if present_locally {
-                    warn!("Overwrite attempt handling for Registers has not been implemented yet. key {:?}", record.key);
-                    return Ok(());
-                }
-            }
-        }
-
-        // finally store the Record directly into the local storage
-        self.network.put_local_record(record).await?;
-
-        Ok(())
     }
 
     /// Perform validations on the provided `ChunkWithPayment`. Returns `Some(())>` if the Chunk has to be
