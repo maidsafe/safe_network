@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687313027372,
+  "lastUpdate": 1687343139071,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -509,6 +509,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 3.2839740215478743,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "0e07e753bb9470b703969fcb83100a00f82b06a4",
+          "message": "fix(sn_transfers): hardcode new genesis DBC for tests",
+          "timestamp": "2023-06-21T09:21:08Z",
+          "tree_id": "653136b50154f8d1031b3b1359777ddfb4e89a7f",
+          "url": "https://github.com/maidsafe/safe_network/commit/0e07e753bb9470b703969fcb83100a00f82b06a4"
+        },
+        "date": 1687343138556,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5809306848326806,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.2260886010447813,
             "unit": "MiB/s"
           }
         ]
