@@ -14,7 +14,6 @@ use sn_dbc::{
 };
 
 use std::collections::BTreeMap;
-use tiny_keccak::{Hasher, Sha3};
 
 /// A function for creating an offline transfer of tokens.
 /// This is done by creating new dbcs to the recipients (and a change dbc if any)
@@ -70,18 +69,16 @@ pub fn create_storage_payment_transfer(
 
     // We build the recipients to contain just a single output which is for the network-owned-DBC.
     // This is a special output that spendbook peers validating the signed (input) spends will be verifying
-    // before accepting them as valid spends for a storage payment. This special outut is
-    // expected to be built from hashing: inputs + reason_hash
-    let mut sha3 = Sha3::v256();
-    sha3.update(reason_hash.slice());
+    // before accepting them as valid spends for a storage payment. This special output is
+    // expected to be built from hashing: input DBCs ids + reason_hash
+    let mut fee_id_bytes = Vec::<u8>::new();
+    fee_id_bytes.extend(reason_hash.slice());
     dbcs_to_spend
         .iter()
-        .for_each(|(dbc, _)| sha3.update(&dbc.id().to_bytes()));
-    let mut hash = [0u8; 32];
-    sha3.finalize(&mut hash);
+        .for_each(|(dbc, _)| fee_id_bytes.extend(&dbc.id().to_bytes()));
 
     let fee = FeeOutput {
-        id: hash.into(),
+        id: Hash::hash(&fee_id_bytes),
         amount: storage_cost.as_nano(),
     };
 
