@@ -248,6 +248,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(workflow)* fix data replication script
 - *(docs)* add more docs and comments
 
+## [0.83.42](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.41...sn_node-v0.83.42) - 2023-06-21
+
+### Added
+- provide option for log output in json
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
