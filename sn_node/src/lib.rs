@@ -47,6 +47,7 @@ mod api;
 mod error;
 mod event;
 mod get_validation;
+mod log_markers;
 mod put_validation;
 mod replication;
 mod spends;
@@ -54,6 +55,7 @@ mod spends;
 pub use self::{
     api::RunningNode,
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
+    log_markers::Marker,
 };
 
 use libp2p::{Multiaddr, PeerId};

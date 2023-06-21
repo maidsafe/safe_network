@@ -14,7 +14,7 @@ mod rpc;
 use sn_logging::init_logging;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
-use sn_node::{Node, NodeEvent, NodeEventsReceiver};
+use sn_node::{Marker, Node, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::PeersArgs;
 
 use clap::Parser;
@@ -235,7 +235,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
     let _handle = tokio::spawn(async move {
         loop {
             match node_events_rx.recv().await {
-                Ok(NodeEvent::ConnectedToNetwork) => info!("Connected to the Network"),
+                Ok(NodeEvent::ConnectedToNetwork) => Marker::NodeConnectedToNetwork.log(),
                 Ok(NodeEvent::ChannelClosed) | Err(RecvError::Closed) => {
                     if let Err(err) = ctrl_tx
                         .send(NodeCtrl::Stop {

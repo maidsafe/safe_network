@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{error::Result, event::NodeEventsChannel, Network, Node, NodeEvent};
+use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, NodeEvent};
 use libp2p::{autonat::NatStatus, identity::Keypair, kad::RecordKey, Multiaddr, PeerId};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_networking::{
@@ -107,6 +107,7 @@ impl Node {
                     _ = tokio::time::sleep(inactivity_timeout) => {
                         let random_target = NetworkAddress::from_peer(PeerId::random());
 
+                        Marker::NoNetworkActivity( inactivity_timeout ).log();
                         debug!("No network activity in the past {inactivity_timeout:?}, performing a random get_closest query to target: {random_target:?}");
                         if let Ok(closest) = network_clone.node_get_closest_peers(&random_target).await {
                             debug!("Network inactivity: get_closest returned {closest:?}");
@@ -154,7 +155,7 @@ impl Node {
                 });
             }
             NetworkEvent::PeerAdded(peer_id) => {
-                debug!("PeerAdded: {peer_id}");
+                Marker::PeerAddedToRoutingTable(peer_id).log();
                 // perform a get_closest query to self on node join. This should help populate the node's RT
                 // since this only runs once, we don't need to make it run in a background task
                 if !*initial_join_flows_done {
@@ -321,6 +322,7 @@ impl Node {
     }
 
     async fn handle_node_cmd(&mut self, cmd: Cmd) -> Response {
+        Marker::NodeCmdReceived(&cmd).log();
         let resp = match cmd {
             Cmd::StoreChunk { chunk, payment } => {
                 let addr = *chunk.address();
@@ -394,6 +396,8 @@ impl Node {
                 }
             }
         };
+
+        Marker::NodeCmdResponded(&resp).log();
 
         Response::Cmd(resp)
     }
