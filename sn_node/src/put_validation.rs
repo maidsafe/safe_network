@@ -12,13 +12,13 @@ use crate::{
     Node,
 };
 use libp2p::kad::{Record, RecordKey};
-use sn_dbc::{DbcId, Hash};
+use sn_dbc::{DbcId, Hash, SignedSpend};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{CmdOk, PaymentProof},
     storage::{
         try_deserialize_record, try_serialize_record, ChunkWithPayment, DbcAddress, RecordHeader,
-        RecordKind, SpendWithParent,
+        RecordKind,
     },
 };
 use sn_transfers::payment_proof::validate_payment_proof;
@@ -69,22 +69,22 @@ impl Node {
         Ok(CmdOk::StoredSuccessfully)
     }
 
-    /// Validate and store `Vec<SpendWithParent>` to the RecordStore
+    /// Validate and store `Vec<SignedSpend>` to the RecordStore
     pub(crate) async fn validate_and_store_spends(
         &mut self,
-        spends_with_parent: Vec<SpendWithParent>,
+        signed_spends: Vec<SignedSpend>,
     ) -> Result<CmdOk, ProtocolError> {
         // make sure that the dbc_ids match
-        let dbc_id = if let Some((first, elements)) = spends_with_parent.split_first() {
-            let common_dbc_id = *first.signed_spend.dbc_id();
+        let dbc_id = if let Some((first, elements)) = signed_spends.split_first() {
+            let common_dbc_id = *first.dbc_id();
             if elements
                 .iter()
-                .all(|spend_with_parent| spend_with_parent.signed_spend.dbc_id() == &common_dbc_id)
+                .all(|spend| spend.dbc_id() == &common_dbc_id)
             {
                 common_dbc_id
             } else {
                 let err = Err(ProtocolError::SpendNotStored(
-                    "The dbc_id of the provided Vec<SpendWithParent> does not match".to_string(),
+                    "The dbc_id of the provided Vec<SignedSpend> does not match".to_string(),
                 ));
                 error!("{err:?}");
                 return err;
@@ -115,10 +115,10 @@ impl Node {
 
         // validate the signed spends against the network and the local copy
         let validated_spends = match self
-            .signed_spend_validation(spends_with_parent, dbc_id, present_locally)
+            .signed_spend_validation(signed_spends, dbc_id, present_locally)
             .await?
         {
-            Some(spends_with_parent) => spends_with_parent,
+            Some(spends) => spends,
             None => {
                 // data is already present
                 return Ok(CmdOk::DataAlreadyPresent);
@@ -194,9 +194,9 @@ impl Node {
                     .await?;
             }
             RecordKind::DbcSpend => {
-                let spends_with_parent: Vec<SpendWithParent> = try_deserialize_record(&record)?;
+                let signed_spends: Vec<SignedSpend> = try_deserialize_record(&record)?;
                 // Prevents someone from crafting large Vec and slowing down nodes
-                if spends_with_parent.len() > 2 {
+                if signed_spends.len() > 2 {
                     warn!(
                         "Discarding incoming DbcSpend PUT as it contains more than 2 SignedSpends"
                     );
@@ -204,8 +204,8 @@ impl Node {
                 }
 
                 // filter out the spends whose DbcAddress does not match with Record::key
-                let spends_with_parent = spends_with_parent.into_iter().filter(|s| {
-                    let dbc_addr = DbcAddress::from_dbc_id(s.signed_spend.dbc_id());
+                let signed_spends = signed_spends.into_iter().filter(|spend| {
+                    let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
                     if record.key != RecordKey::new(dbc_addr.name()) {
                         warn!(
                         "Record's key {:?} does not match with the value's DbcAddress {dbc_addr:?}. Filtering it out.",
@@ -218,34 +218,34 @@ impl Node {
 
                 }).collect::<Vec<_>>();
 
-                if spends_with_parent.is_empty() {
+                if signed_spends.is_empty() {
                     warn!("No spend with valid Record key found. Ignoring DbcSpend PUT request");
                     return Err(ProtocolError::RecordKeyMismatch.into());
                 }
-                // Since spends_with_parent is not empty and they contain the same DbcId (RecordKeys are
+                // Since signed_spends is not empty and they contain the same DbcId (RecordKeys are
                 // the same), get the DbcId
-                let dbc_id = if let Some(spend) = spends_with_parent.first() {
-                    *spend.signed_spend.dbc_id()
+                let dbc_id = if let Some(spend) = signed_spends.first() {
+                    *spend.dbc_id()
                 } else {
                     return Ok(());
                 };
 
                 match self
-                    .signed_spend_validation(spends_with_parent, dbc_id, present_locally)
+                    .signed_spend_validation(signed_spends, dbc_id, present_locally)
                     .await?
                 {
-                    Some(spends_with_parent) => {
+                    Some(signed_spends) => {
                         // Just log the double spent attempt as it cannot be propagated back
-                        if spends_with_parent.len() > 1 {
+                        if signed_spends.len() > 1 {
                             warn!(
-                                "Got a double spend for the SpendWithParent PUT with dbc_id {dbc_id:?}",
+                                "Got a double spend for the SignedSpend PUT with dbc_id {dbc_id:?}",
                             );
                         }
 
                         // replace the Record's value with the new one
-                        let spends_with_parent =
-                            try_serialize_record(&spends_with_parent, RecordKind::DbcSpend)?;
-                        record.value = spends_with_parent;
+                        let signed_spends =
+                            try_serialize_record(&signed_spends, RecordKind::DbcSpend)?;
+                        record.value = signed_spends;
                     }
                     None => {
                         // data already present
@@ -316,13 +316,13 @@ impl Node {
                                     Some(signed_spend) => {
                                         // TODO: self-verification of the signed spend?
 
-                                        if &signed_spend.signed_spend.spent_tx() != tx {
+                                        if &signed_spend.spent_tx() != tx {
                                             return Err(ProtocolError::PaymentProofTxMismatch(
                                                 addr_name,
                                             ));
                                         }
 
-                                        reasons.push(signed_spend.signed_spend.reason());
+                                        reasons.push(signed_spend.reason());
                                     }
                                     None => return Err(ProtocolError::SpendNotFound(addr)),
                                 }
@@ -370,23 +370,23 @@ impl Node {
         Ok(Some(()))
     }
 
-    /// Perform validations on the provided `Vec<SpendWithParent>`. Returns `Some<Vec<SpendWithParent>>` if
-    /// the spends has to be stored to the `RecordStore` where the spends are aggregated and can
+    /// Perform validations on the provided `Vec<SignedSpend>`. Returns `Some<Vec<SignedSpend>>` if
+    /// the spends has to be stored to the `RecordStore`. The resultant spends are aggregated and can
     /// have a max of only 2 elements. Any double spend error has to be thrown by the caller.
     ///
-    /// The Vec<SpendWithParent> must all have the same dbc_id.
+    /// The Vec<SignedSpend> must all have the same dbc_id.
     ///
-    /// - If the SpendWithParent for the provided DbcId is present locally, check for new spends by
+    /// - If the SignedSpend for the provided DbcId is present locally, check for new spends by
     /// comparing it with the local copy.
-    /// - If incoming spends_with_parent.len() > 1, aggregate store them directly as they are a double spent.
-    /// - If incoming spends_with_parent.len() == 1, then check for parent_inputs and the closest(dbc_id)
+    /// - If incoming signed_spends.len() > 1, aggregate store them directly as they are a double spent.
+    /// - If incoming signed_spends.len() == 1, then check for parent_inputs and the closest(dbc_id)
     /// for any double spend, which are then aggregated and returned.
     async fn signed_spend_validation(
         &self,
-        mut spends_with_parent: Vec<SpendWithParent>,
+        mut signed_spends: Vec<SignedSpend>,
         dbc_id: DbcId,
         present_locally: bool,
-    ) -> Result<Option<Vec<SpendWithParent>>, ProtocolError> {
+    ) -> Result<Option<Vec<SignedSpend>>, ProtocolError> {
         // get the DbcId; used for validation
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
         let record_key = RecordKey::new(dbc_addr.name());
@@ -419,28 +419,25 @@ impl Node {
                 return Err(ProtocolError::RecordKindMismatch(RecordKind::DbcSpend));
             }
 
-            let local_spends_with_parent: Vec<SpendWithParent> =
-                try_deserialize_record(&local_record)?;
+            let local_signed_spends: Vec<SignedSpend> = try_deserialize_record(&local_record)?;
 
             // spends that are not present locally
-            let newly_seen_spends = spends_with_parent
+            let newly_seen_spends = signed_spends
                 .iter()
-                .filter(|s| !local_spends_with_parent.contains(s))
+                .filter(|s| !local_signed_spends.contains(s))
                 .cloned()
                 .collect::<HashSet<_>>();
 
             // return early if the PUT is for the same local copy
             if newly_seen_spends.is_empty() {
-                debug!(
-                    "Vec<SpendWithParent> with addr {dbc_addr:?} already exists, not overwriting!",
-                );
+                debug!("Vec<SignedSpend> with addr {dbc_addr:?} already exists, not overwriting!",);
                 return Ok(None);
             } else {
                 debug!(
                     "Seen new spends that are not part of the local copy. Mostly a double spend, checking for it"
                 );
                 // continue with local_spends + new_ones
-                spends_with_parent = local_spends_with_parent
+                signed_spends = local_signed_spends
                     .into_iter()
                     .chain(newly_seen_spends)
                     .collect();
@@ -449,7 +446,7 @@ impl Node {
 
         // Check the parent spends and check the closest(dbc_id) for any double spend
         // if so aggregate the spends and return just 2 spends.
-        let spends_with_parent = match spends_with_parent.len() {
+        let signed_spends = match signed_spends.len() {
             0 => {
                 let err = ProtocolError::SpendNotStored("No valid Spend found".to_string());
                 debug!("No valid spends found while validating Spend PUT {err}");
@@ -458,10 +455,10 @@ impl Node {
             }
             1 => {
                 debug!(
-                "Received a single SpendWithParent, verifying the parent and checking for double spend"
+                "Received a single SignedSpend, verifying the parent and checking for double spend"
             );
-                let spends_with_parent = match spends_with_parent.pop() {
-                    Some(spends_with_parent) => spends_with_parent,
+                let signed_spend = match signed_spends.pop() {
+                    Some(signed_spends) => signed_spends,
                     None => {
                         return Err(ProtocolError::SpendNotStored(
                             "No valid Spend found".to_string(),
@@ -470,37 +467,23 @@ impl Node {
                 };
 
                 // check the spend
-                if let Err(e) = spends_with_parent
-                    .signed_spend
-                    .verify(spends_with_parent.signed_spend.spent_tx_hash())
-                {
+                if let Err(e) = signed_spend.verify(signed_spend.spent_tx_hash()) {
                     return Err(ProtocolError::InvalidSpendSignature(format!(
                         "while verifying spend for {:?}: {e:?}",
-                        spends_with_parent.signed_spend.dbc_id()
+                        signed_spend.dbc_id()
                     )));
                 }
 
-                // check parent tx hash
-                if spends_with_parent.parent_tx.hash()
-                    != spends_with_parent.signed_spend.dbc_creation_tx_hash()
-                {
-                    return Err(ProtocolError::InvalidSpendParents(format!(
-                    "parent tx hash does not match the parent tx in the DBC we're trying to spend: {:?} != {:?}",
-                    spends_with_parent.signed_spend.dbc_creation_tx_hash(),
-                    spends_with_parent.parent_tx.hash(),
-                )));
-                }
-
                 // Check parents
-                if let Err(e) = check_parent_spends(&self.network, &spends_with_parent).await {
+                if let Err(e) = check_parent_spends(&self.network, &signed_spend).await {
                     return Err(ProtocolError::InvalidSpendParents(format!("{e:?}")));
                 }
 
                 // check the network if any spend has happened for the same dbc_id
-                // Does not return an error, instead the Vec<SpendWithParent> is returned.
+                // Does not return an error, instead the Vec<SignedSpend> is returned.
                 let mut spends = get_aggregated_spends_from_peers(&self.network, dbc_id).await?;
                 // aggregate the spends from the network with our own
-                spends.push(spends_with_parent);
+                spends.push(signed_spend);
                 aggregate_spends(spends, dbc_id)
             }
             _ => {
@@ -509,10 +492,10 @@ impl Node {
                 // We don't have to check parent/ ask network for extra spend.
                 // Validate and store just 2 of them.
                 // The nodes will be synced up during replication.
-                aggregate_spends(spends_with_parent, dbc_id)
+                aggregate_spends(signed_spends, dbc_id)
             }
         };
 
-        Ok(Some(spends_with_parent))
+        Ok(Some(signed_spends))
     }
 }
