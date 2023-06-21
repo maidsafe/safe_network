@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687283579210,
+  "lastUpdate": 1687312854076,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -475,6 +475,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 3.2550041045959643,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "9fd5908d809199826b40cbf6e776c899ff27bb3a",
+          "message": "feat: provide option for log output in json\n\nSome users who had been interacting with the InstallNet testnet requested output in this form. It\ndoesn't give us any more elaborate data, like say what comes from an Open Telemetry trace, but might\nfunction as a starting point.",
+          "timestamp": "2023-06-21T01:03:54Z",
+          "tree_id": "4a305c262b77e2cd29286cea444566e4e230d936",
+          "url": "https://github.com/maidsafe/safe_network/commit/9fd5908d809199826b40cbf6e776c899ff27bb3a"
+        },
+        "date": 1687312853508,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5550441028712185,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.2839740215478743,
             "unit": "MiB/s"
           }
         ]
