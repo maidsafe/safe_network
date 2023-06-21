@@ -25,7 +25,10 @@ pub use self::{
 };
 
 use super::NetworkAddress;
-use crate::storage::{ChunkWithPayment, DbcAddress};
+use crate::{
+    error::{Error, Result},
+    storage::{ChunkWithPayment, DbcAddress},
+};
 use serde::{Deserialize, Serialize};
 use sn_dbc::SignedSpend;
 use xor_name::XorName;
@@ -72,25 +75,37 @@ impl Request {
 
 impl ReplicatedData {
     /// Return the name.
-    pub fn name(&self) -> XorName {
-        match self {
+    pub fn name(&self) -> Result<XorName> {
+        let name = match self {
             Self::Chunk(chunk) => *chunk.chunk.name(),
-            Self::DbcSpend(spends) => *DbcAddress::from_dbc_id(spends[0].dbc_id()).name(),
+            Self::DbcSpend(spends) => {
+                if let Some(spend) = spends.first() {
+                    *DbcAddress::from_dbc_id(spend.dbc_id()).name()
+                } else {
+                    return Err(Error::MinNumberOfSpendsNotMet);
+                }
+            }
             Self::RegisterLog(log) => *log.address.name(),
             Self::RegisterWrite(cmd) => *cmd.dst().name(),
-        }
+        };
+        Ok(name)
     }
 
     /// Return the dst.
-    pub fn dst(&self) -> NetworkAddress {
-        match self {
+    pub fn dst(&self) -> Result<NetworkAddress> {
+        let dst = match self {
             Self::Chunk(chunk) => NetworkAddress::from_chunk_address(*chunk.chunk.address()),
             Self::DbcSpend(spends) => {
-                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(spends[0].dbc_id()))
+                if let Some(spend) = spends.first() {
+                    NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(spend.dbc_id()))
+                } else {
+                    return Err(Error::MinNumberOfSpendsNotMet);
+                }
             }
             Self::RegisterLog(log) => NetworkAddress::from_register_address(log.address),
             Self::RegisterWrite(cmd) => NetworkAddress::from_register_address(cmd.dst()),
-        }
+        };
+        Ok(dst)
     }
 }
 
