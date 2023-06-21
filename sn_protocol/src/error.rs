@@ -82,6 +82,10 @@ pub enum Error {
     #[error("Provided PublicKey could not validate signature: {0:?}")]
     InvalidSignature(bls::PublicKey),
 
+    /// Received a empty Vec<SignedSpend>
+    #[error("Operation received no SignedSpends")]
+    MinNumberOfSpendsNotMet,
+    /// Received a Vec<SignedSpend> with more than two spends
     #[error("Incoming SpendDbc PUT with incorrect number of SignedSpend")]
     MaxNumberOfSpendsExceeded,
     /// Spend not found.
