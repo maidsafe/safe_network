@@ -258,6 +258,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(node)* obtain parent_tx from SignedSpend
 
+## [0.83.44](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.43...sn_node-v0.83.44) - 2023-06-21
+
+### Other
+- *(network)* remove `NetworkEvent::PutRecord` dead code
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
