@@ -16,7 +16,6 @@ use sn_transfers::{
     wallet::{Error, LocalWallet, Result},
 };
 
-use bls::SecretKey;
 use futures::future::join_all;
 use std::{collections::BTreeMap, iter::Iterator};
 use xor_name::XorName;
@@ -83,12 +82,13 @@ impl WalletClient {
         // TODO: request an invoice to network which provides the amount to pay.
         // For now, we just pay 1 nano per Chunk.
         let num_of_addrs = audit_trail_info.len() as u64;
-        let amount = Token::from_nano(num_of_addrs);
+        // We need to just "burn" the amount that corresponds for storage payment.
+        let storage_cost = Token::from_nano(num_of_addrs);
 
-        // FIXME: calculate closest nodes to pay for storage, we are now just burning the output amount.
-        let to = vec![(amount, PublicAddress::new(SecretKey::random().public_key()))];
-
-        let transfer = self.wallet.local_send(to, Some(reason_hash)).await?;
+        let transfer = self
+            .wallet
+            .local_send_storage_payment(storage_cost, reason_hash)
+            .await?;
 
         // send to network
         trace!("Sending transfer to the network: {transfer:#?}");

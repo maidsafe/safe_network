@@ -123,10 +123,7 @@ pub(crate) fn create_first_dbc_from_key(first_dbc_key: &MainKey) -> GenesisResul
     // The src tx is empty as this is the first DBC.
     let genesis_input = InputHistory {
         input: RevealedInput::new(derived_key, revealed_amount),
-        input_src_tx: DbcTransaction {
-            inputs: vec![],
-            outputs: vec![],
-        },
+        input_src_tx: DbcTransaction::empty(),
     };
 
     let reason = Hash::hash(b"GENESIS");

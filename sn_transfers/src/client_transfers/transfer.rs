@@ -9,11 +9,12 @@
 use super::{CreatedDbc, Error, Inputs, Result, SpendRequest, TransferOutputs};
 
 use sn_dbc::{
-    rng, Dbc, DbcIdSource, DerivedKey, Hash, InputHistory, PublicAddress, RevealedInput, Token,
-    TransactionBuilder,
+    rng, Dbc, DbcIdSource, DerivedKey, FeeOutput, Hash, InputHistory, PublicAddress, RevealedInput,
+    Token, TransactionBuilder,
 };
 
 use std::collections::BTreeMap;
+use tiny_keccak::{Hasher, Sha3};
 
 /// A function for creating an offline transfer of tokens.
 /// This is done by creating new dbcs to the recipients (and a change dbc if any)
@@ -31,19 +32,6 @@ pub fn create_transfer(
     change_to: PublicAddress,
     reason_hash: Hash,
 ) -> Result<TransferOutputs> {
-    // We need to select the necessary number of dbcs from those that we were passed.
-    let selected_inputs = select_inputs(available_dbcs, recipients, change_to)?;
-    create_transfer_with(selected_inputs, reason_hash)
-}
-
-/// Select the necessary number of dbcs from those that we were passed.
-fn select_inputs(
-    available_dbcs: Vec<(Dbc, DerivedKey)>,
-    recipients: Vec<(Token, DbcIdSource)>,
-    change_to: PublicAddress,
-) -> Result<Inputs> {
-    let mut dbcs_to_spend = Vec::new();
-    let mut total_input_amount = Token::zero();
     let total_output_amount = recipients
         .iter()
         .fold(Some(Token::zero()), |total, (amount, _)| {
@@ -55,6 +43,64 @@ fn select_inputs(
             )
         })?;
 
+    // We need to select the necessary number of dbcs from those that we were passed.
+    let (dbcs_to_spend, change_amount) = select_inputs(available_dbcs, total_output_amount)?;
+
+    let selected_inputs = Inputs {
+        dbcs_to_spend,
+        recipients,
+        change: (change_amount, change_to),
+    };
+
+    create_transfer_with(selected_inputs, reason_hash, None)
+}
+
+/// A function for creating an offline transfer of tokens for a storage payment.
+/// This is done by creating a new network-owned-DBC (and a change dbc if any)
+/// by selecting from the available input dbcs, and creating the necessary
+/// spends to do so.
+pub fn create_storage_payment_transfer(
+    available_dbcs: Vec<(Dbc, DerivedKey)>,
+    storage_cost: Token,
+    change_to: PublicAddress,
+    reason_hash: Hash,
+) -> Result<TransferOutputs> {
+    // We need to select the necessary number of dbcs from those that we were passed.
+    let (dbcs_to_spend, change_amount) = select_inputs(available_dbcs, storage_cost)?;
+
+    // We build the recipients to contain just a single output which is for the network-owned-DBC.
+    // This is a special output that spendbook peers validating the signed (input) spends will be verifying
+    // before accepting them as valid spends for a storage payment. This special outut is
+    // expected to be built from hashing: inputs + reason_hash
+    let mut sha3 = Sha3::v256();
+    sha3.update(reason_hash.slice());
+    dbcs_to_spend
+        .iter()
+        .for_each(|(dbc, _)| sha3.update(&dbc.id().to_bytes()));
+    let mut hash = [0u8; 32];
+    sha3.finalize(&mut hash);
+
+    let fee = FeeOutput {
+        id: hash.into(),
+        amount: storage_cost.as_nano(),
+    };
+
+    let selected_inputs = Inputs {
+        dbcs_to_spend,
+        recipients: vec![],
+        change: (change_amount, change_to),
+    };
+
+    create_transfer_with(selected_inputs, reason_hash, Some(fee))
+}
+
+/// Select the necessary number of dbcs from those that we were passed.
+fn select_inputs(
+    available_dbcs: Vec<(Dbc, DerivedKey)>,
+    total_output_amount: Token,
+) -> Result<(Vec<(Dbc, DerivedKey)>, Token)> {
+    let mut dbcs_to_spend = Vec::new();
+    let mut total_input_amount = Token::zero();
     let mut change_amount = total_output_amount;
 
     for (dbc, derived_key) in available_dbcs {
@@ -98,11 +144,7 @@ fn select_inputs(
     // If not enough spendable was found, this check will return an error.
     verify_amounts(total_input_amount, total_output_amount)?;
 
-    Ok(Inputs {
-        dbcs_to_spend,
-        recipients,
-        change: (change_amount, change_to),
-    })
+    Ok((dbcs_to_spend, change_amount))
 }
 
 // Make sure total input amount gathered with input DBCs are enough for the output amount
@@ -119,7 +161,11 @@ fn verify_amounts(total_input_amount: Token, total_output_amount: Token) -> Resu
 /// To do that, the `signed_spends` of each new dbc, has to be uploaded
 /// to the network. When those same signed spends can be retrieved from
 /// enough peers in the network, the transaction will be completed.
-fn create_transfer_with(selected_inputs: Inputs, reason_hash: Hash) -> Result<TransferOutputs> {
+fn create_transfer_with(
+    selected_inputs: Inputs,
+    reason_hash: Hash,
+    fee: Option<FeeOutput>,
+) -> Result<TransferOutputs> {
     let Inputs {
         dbcs_to_spend,
         recipients,
@@ -148,6 +194,10 @@ fn create_transfer_with(selected_inputs: Inputs, reason_hash: Hash) -> Result<Tr
     let mut tx_builder = TransactionBuilder::default()
         .add_inputs(inputs)
         .add_outputs(recipients);
+
+    if let Some(fee_output) = fee {
+        tx_builder = tx_builder.set_fee_output(fee_output);
+    }
 
     let mut rng = rng::thread_rng();
 

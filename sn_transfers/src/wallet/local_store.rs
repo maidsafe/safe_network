@@ -13,7 +13,7 @@ use super::{
     },
     KeyLessWallet, Result,
 };
-use crate::client_transfers::{create_transfer, TransferOutputs};
+use crate::client_transfers::{create_storage_payment_transfer, create_transfer, TransferOutputs};
 
 use sn_dbc::{Dbc, DbcIdSource, DerivedKey, Hash, MainKey, PublicAddress, Token};
 
@@ -188,6 +188,32 @@ impl LocalWallet {
         let transfer =
             create_transfer(available_dbcs, to_unique_keys, self.address(), reason_hash)?;
 
+        self.update_local_wallet(&transfer);
+
+        Ok(transfer)
+    }
+
+    pub async fn local_send_storage_payment(
+        &mut self,
+        storage_cost: Token,
+        reason_hash: Hash,
+    ) -> Result<TransferOutputs> {
+        let available_dbcs = self.available_dbcs();
+        trace!("Available DBCs: {:#?}", available_dbcs);
+
+        let transfer = create_storage_payment_transfer(
+            available_dbcs,
+            storage_cost,
+            self.address(),
+            reason_hash,
+        )?;
+
+        self.update_local_wallet(&transfer);
+
+        Ok(transfer)
+    }
+
+    fn update_local_wallet(&mut self, transfer: &TransferOutputs) {
         let TransferOutputs {
             change_dbc,
             created_dbcs,
@@ -211,8 +237,6 @@ impl LocalWallet {
         self.wallet
             .dbcs_created_for_others
             .extend(created_dbcs.clone());
-
-        Ok(transfer)
     }
 }
 
