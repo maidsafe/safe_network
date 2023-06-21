@@ -263,6 +263,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(network)* remove `NetworkEvent::PutRecord` dead code
 
+## [0.83.45](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.44...sn_node-v0.83.45) - 2023-06-21
+
+### Added
+- *(node)* trigger replication when inactivity
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
