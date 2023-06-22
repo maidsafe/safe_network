@@ -23,7 +23,7 @@ use tracing::trace;
 use xor_name::XorName;
 
 // Maximum number of concurrent chunks to be uploaded/retrieved for a file
-const CHUNKS_BATCH_MAX_SIZE: usize = 32;
+const CHUNKS_BATCH_MAX_SIZE: usize = 5;
 
 /// File APIs.
 pub struct Files {
@@ -165,10 +165,8 @@ impl Files {
         let payment = payment_proofs.get(&address.name().0).cloned();
         // TODO: re-enable requirement to always provide payment proof
         //.ok_or(super::Error::MissingPaymentProof(address))?;
-        let closest_peers = self.client.get_closest_local_peers().await?;
-        self.client
-            .store_chunk(chunk, payment, closest_peers)
-            .await?;
+
+        self.client.store_chunk(chunk, payment).await?;
 
         if verify {
             self.verify_chunk_is_stored(address).await?;
@@ -186,26 +184,21 @@ impl Files {
         payment_proofs: &PaymentProofsMap,
         verify: bool,
     ) -> Result<ChunkAddress> {
-        let closest_peers = self.client.get_closest_local_peers().await?;
         let (head_address, mut all_chunks) = encrypt_large(large)?;
         trace!("Client upload started");
         while !all_chunks.is_empty() {
             let chop_size = std::cmp::min(CHUNKS_BATCH_MAX_SIZE, all_chunks.len());
             let next_batch: Vec<Chunk> = all_chunks.drain(..chop_size).collect();
-
             let mut tasks = vec![];
             for chunk in next_batch {
                 let client = self.client.clone();
-                let closest_peers_clone = closest_peers.clone();
                 let chunk_addr = *chunk.address();
                 let payment = payment_proofs.get(&chunk_addr.name().0).cloned();
                 // TODO: re-enable requirement to always provide payment proof
                 //.ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
 
                 tasks.push(task::spawn(async move {
-                    client
-                        .store_chunk(chunk, payment, closest_peers_clone)
-                        .await?;
+                    client.store_chunk(chunk, payment).await?;
                     if verify {
                         let _ = client.get_chunk(chunk_addr).await?;
                     }
@@ -225,6 +218,7 @@ impl Files {
             }
         }
         trace!("Client upload completed");
+
         Ok(ChunkAddress::new(head_address))
     }
 
