@@ -131,6 +131,7 @@ impl Node {
 
     // **** Private helpers *****
 
+    #[instrument(skip(self))]
     async fn handle_network_event(
         &mut self,
         event: NetworkEvent,
@@ -206,6 +207,7 @@ impl Node {
     }
 
     // Handle the response that was not awaited at the call site
+    #[instrument(skip(self))]
     async fn handle_response(&mut self, response: Response) -> Result<()> {
         match response {
             Response::Query(QueryResponse::GetReplicatedData(Ok((holder, replicated_data)))) => {
@@ -279,6 +281,7 @@ impl Node {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     async fn handle_request(&mut self, request: Request, response_channel: MsgResponder) {
         trace!("Handling request: {request:?}");
         let response = match request {
@@ -288,6 +291,7 @@ impl Node {
         self.send_response(response, response_channel).await;
     }
 
+    #[instrument(skip(self))]
     async fn handle_query(&self, query: Query) -> Response {
         let resp = match query {
             Query::Register(query) => self.registers.read(&query, User::Anyone).await,
@@ -321,6 +325,7 @@ impl Node {
         Response::Query(resp)
     }
 
+    #[instrument(skip(self))]
     async fn handle_node_cmd(&mut self, cmd: Cmd) -> Response {
         Marker::NodeCmdReceived(&cmd).log();
         let resp = match cmd {
@@ -402,6 +407,7 @@ impl Node {
         Response::Cmd(resp)
     }
 
+    #[instrument(skip(self))]
     async fn send_response(&self, resp: Response, response_channel: MsgResponder) {
         if let Err(err) = self.network.send_response(resp, response_channel).await {
             warn!("Error while sending response: {err:?}");

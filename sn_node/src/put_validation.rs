@@ -26,6 +26,7 @@ use xor_name::XorName;
 
 impl Node {
     /// Validate and store a `ChunkWithPayment` to the RecordStore
+    #[instrument(skip(self))]
     pub(crate) async fn validate_and_store_chunk(
         &self,
         chunk_with_payment: ChunkWithPayment,
@@ -83,6 +84,7 @@ impl Node {
     }
 
     /// Validate and store `Vec<SignedSpend>` to the RecordStore
+    #[instrument(skip(self))]
     pub(crate) async fn validate_and_store_spends(
         &mut self,
         signed_spends: Vec<SignedSpend>,
@@ -170,6 +172,7 @@ impl Node {
     /// stored stored to the RecordStore
     /// - Return early if overwrite attempt
     /// - Validate the provided payment proof
+    #[instrument(skip(self))]
     async fn chunk_validation(
         &self,
         chunk_with_payment: &ChunkWithPayment,
@@ -280,6 +283,7 @@ impl Node {
     /// - If incoming signed_spends.len() > 1, aggregate store them directly as they are a double spent.
     /// - If incoming signed_spends.len() == 1, then check for parent_inputs and the closest(dbc_id)
     /// for any double spend, which are then aggregated and returned.
+    #[instrument(skip(self))]
     async fn signed_spend_validation(
         &self,
         mut signed_spends: Vec<SignedSpend>,

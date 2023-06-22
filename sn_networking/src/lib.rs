@@ -446,6 +446,7 @@ pub struct Network {
 
 impl Network {
     ///  Listen for incoming connections on the given address.
+    #[instrument(skip(self))]
     pub async fn start_listening(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::StartListening { addr, sender })
@@ -454,6 +455,7 @@ impl Network {
     }
 
     /// Dial the given peer at the given address.
+    #[instrument(skip(self))]
     pub async fn add_to_routing_table(&self, peer_id: PeerId, peer_addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::AddToRoutingTable {
@@ -466,6 +468,7 @@ impl Network {
     }
 
     /// Dial the given peer at the given address.
+    #[instrument(skip(self))]
     pub async fn dial(&self, peer_id: PeerId, peer_addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::Dial {
@@ -479,6 +482,7 @@ impl Network {
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// Excludes the client's `PeerId` while calculating the closest peers.
+    #[instrument(skip(self))]
     pub async fn client_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
         self.get_closest_peers(key, true).await
     }
@@ -486,6 +490,7 @@ impl Network {
     /// Returns the closest peers to the given `NetworkAddress`, sorted by their distance to the key.
     ///
     /// Includes our node's `PeerId` while calculating the closest peers.
+    #[instrument(skip(self))]
     pub async fn node_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
         self.get_closest_peers(key, false).await
     }
@@ -493,6 +498,7 @@ impl Network {
     /// Returns the closest peers to the given `NetworkAddress` that is fetched from the local
     /// Routing Table. It is ordered by increasing distance of the peers
     /// Note self peer_id is not included in the result.
+    #[instrument(skip(self))]
     pub async fn get_closest_local_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetClosestLocalPeers {
@@ -508,6 +514,7 @@ impl Network {
 
     /// Returns all the PeerId from all the KBuckets from our local Routing Table
     /// Also contains our own PeerId.
+    #[instrument(skip(self))]
     pub async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetAllLocalPeers { sender })
@@ -522,6 +529,7 @@ impl Network {
     /// forwarded to itself and handled. Then a corresponding `Response` is created and is
     /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
+    #[instrument(skip(self))]
     pub async fn node_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
         info!(
             "Sending {request:?} with dst {:?} to the closest peers.",
@@ -539,6 +547,7 @@ impl Network {
     /// forwarded to itself and handled. Then a corresponding `Response` is created and is
     /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
+    #[instrument(skip(self))]
     pub async fn send_req_no_reply_to_closest(&self, request: &Request) -> Result<()> {
         info!(
             "Sending {request:?} with dst {:?} to the closest peers.",
@@ -552,6 +561,7 @@ impl Network {
     }
 
     /// Send `Request` to the closest peers to self
+    #[instrument(skip(self))]
     pub async fn send_req_no_reply_to_self_closest(&self, request: &Request) -> Result<()> {
         info!("Sending {request:?} to self closest peers.");
         // Using `client_get_closest_peers` to filter self out.
@@ -563,6 +573,7 @@ impl Network {
     }
 
     /// Send `Request` to the closest peers. `Self` is not present among the recipients.
+    #[instrument(skip(self))]
     pub async fn client_send_to_closest(
         &self,
         request: &Request,
@@ -579,6 +590,7 @@ impl Network {
     }
 
     /// Returns the list of keys that are within the provided distance to the target
+    #[instrument(skip(self))]
     pub async fn get_record_keys_closest_to_target(
         &self,
         target: &NetworkAddress,
@@ -598,6 +610,7 @@ impl Network {
     }
 
     /// Get the Record from the network
+    #[instrument(skip(self))]
     pub async fn get_record_from_network(&self, key: RecordKey) -> Result<Record> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetNetworkRecord { key, sender })
@@ -609,6 +622,7 @@ impl Network {
     }
 
     /// Get `Record` from the local RecordStore
+    #[instrument(skip(self))]
     pub async fn get_local_record(&self, key: &RecordKey) -> Result<Option<Record>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetLocalRecord {
@@ -624,6 +638,7 @@ impl Network {
 
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
+    #[instrument(skip(self))]
     pub async fn put_local_record(&self, record: Record) -> Result<()> {
         debug!(
             "Writing Record locally, for {:?} - length {:?}",
@@ -635,6 +650,7 @@ impl Network {
     }
 
     /// Get the RecordAddress of all the Records stored locally
+    #[instrument(skip(self))]
     pub async fn get_all_local_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetAllRecordAddress { sender })
@@ -646,6 +662,7 @@ impl Network {
     }
 
     /// Returns true if a RecordKey is present locally in the RecordStore
+    #[instrument(skip(self))]
     pub async fn is_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::RecordStoreHasKey {
@@ -660,6 +677,7 @@ impl Network {
     }
 
     // Add a list of keys of a holder to RecordFetcher.  Return with a list of keys to fetch, if present.
+    #[instrument(skip(self))]
     pub async fn add_keys_to_replication_fetcher(
         &self,
         peer: PeerId,
@@ -675,6 +693,7 @@ impl Network {
     }
 
     // Notify the fetch result of a key from a holder. Return with a list of keys to fetch, if present.
+    #[instrument(skip(self))]
     pub async fn notify_fetch_result(
         &self,
         peer: PeerId,
@@ -697,6 +716,7 @@ impl Network {
 
     /// Set the acceptable range of record entry. A record is removed from the storage if the
     /// distance between the record and the node is greater than the provided `distance`.
+    #[instrument(skip(self))]
     pub async fn set_record_distance_range(&self, distance: Distance) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SetRecordDistanceRange { distance })
             .await
@@ -706,6 +726,7 @@ impl Network {
     /// then the `Request` is forwarded to itself and handled, and a corresponding `Response` is created
     /// and returned to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
+    #[instrument(skip(self))]
     pub async fn send_request(&self, req: Request, peer: PeerId) -> Result<Response> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::SendRequest {
@@ -719,6 +740,7 @@ impl Network {
 
     /// Send `Request` to the the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
+    #[instrument(skip(self))]
     pub async fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let swarm_cmd = SwarmCmd::SendRequest {
             req,
@@ -729,12 +751,14 @@ impl Network {
     }
 
     /// Send a `Response` through the channel opened by the requester.
+    #[instrument(skip(self))]
     pub async fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
             .await
     }
 
     /// Return a `SwarmLocalState` with some information obtained from swarm's local state.
+    #[instrument(skip(self))]
     pub async fn get_swarm_local_state(&self) -> Result<SwarmLocalState> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetSwarmLocalState(sender))
@@ -744,6 +768,7 @@ impl Network {
     }
 
     // Helper to send SwarmCmd
+    #[instrument(skip(self))]
     async fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
         self.swarm_cmd_sender.send(cmd).await?;
         Ok(())
@@ -751,6 +776,7 @@ impl Network {
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// If `client` is false, then include `self` among the `closest_peers`
+    #[instrument(skip(self))]
     async fn get_closest_peers(&self, key: &NetworkAddress, client: bool) -> Result<Vec<PeerId>> {
         trace!("Getting the closest peers to {key:?}");
         let (sender, receiver) = oneshot::channel();
@@ -773,6 +799,7 @@ impl Network {
     /// If `get_all_responses` is true, we wait for the responses from all the peers.
     /// NB TODO: Will return an error if the request timeouts.
     /// If `get_all_responses` is false, we return the first successful response that we get
+    #[instrument(skip(self))]
     pub async fn send_and_get_responses(
         &self,
         peers: Vec<PeerId>,
