@@ -16,12 +16,13 @@ use sn_protocol::{
     error::Error as ProtocolError,
     messages::{CmdOk, PaymentProof},
     storage::{
-        try_deserialize_record, try_serialize_record, ChunkWithPayment, DbcAddress, RecordHeader,
-        RecordKind,
+        try_deserialize_record, try_serialize_record, ChunkAddress, ChunkWithPayment, DbcAddress,
+        RecordHeader, RecordKind,
     },
 };
 use sn_transfers::payment_proof::validate_payment_proof;
 use std::collections::HashSet;
+use xor_name::XorName;
 
 impl Node {
     /// Validate and store a `ChunkWithPayment` to the RecordStore
@@ -29,7 +30,20 @@ impl Node {
         &self,
         chunk_with_payment: ChunkWithPayment,
     ) -> Result<CmdOk, ProtocolError> {
-        let chunk_name = *chunk_with_payment.chunk.name();
+        debug!("checking chunk integrity");
+        // make sure the chunk is valid
+        let chunk_name = {
+            let address =
+                ChunkAddress::new(XorName::from_content(chunk_with_payment.chunk.value()));
+            if chunk_with_payment.chunk.address() != &address {
+                warn!("ChunkAddress did not match");
+                return Err(ProtocolError::ChunkNotStored(
+                    *chunk_with_payment.chunk.name(),
+                ));
+            };
+            *address.name()
+        };
+
         debug!("validating and storing chunk {chunk_name:?}");
 
         let key = RecordKey::new(&chunk_name);
