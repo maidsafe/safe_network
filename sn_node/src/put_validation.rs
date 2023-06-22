@@ -59,7 +59,7 @@ impl Node {
         };
 
         // finally store the Record directly into the local storage
-        debug!("Storing chunk as Record locally");
+        debug!("Storing chunk {chunk_name:?} as Record locally");
         self.network.put_local_record(record).await.map_err(|err| {
             warn!("Error while locally storing Chunk as a Record{err}");
             ProtocolError::ChunkNotStored(chunk_name)
