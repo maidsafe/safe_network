@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687417199401,
+  "lastUpdate": 1687417372691,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -1329,6 +1329,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 20.28,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "21dd4dea96c458a6c48edbcb1727bab5bee9524f",
+          "message": "feat(node): expose log markers in public api\n\nStart using them for some more crucial log messages, which we'll treat\nas an API and have to version accordingly.",
+          "timestamp": "2023-06-22T15:47:56+09:00",
+          "tree_id": "7140bc560623b9cf1818913bf16bbf574824ae84",
+          "url": "https://github.com/maidsafe/safe_network/commit/21dd4dea96c458a6c48edbcb1727bab5bee9524f"
+        },
+        "date": 1687417371957,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 21.65,
             "unit": "MB"
           }
         ]
