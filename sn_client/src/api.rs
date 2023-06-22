@@ -297,12 +297,9 @@ impl Client {
         Err(Error::UnexpectedResponses)
     }
 
-    /// Return the closest_peers to self, fetched from local.
-    pub(super) async fn get_closest_local_peers(&self) -> Result<Vec<PeerId>> {
-        Ok(self
-            .network
-            .get_closest_local_peers(&NetworkAddress::from_peer(self.network.peer_id))
-            .await?)
+    /// Return all the peers from the local network knowledge.
+    pub(super) async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
+        Ok(self.network.get_all_local_peers().await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.
