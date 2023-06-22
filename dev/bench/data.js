@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687393961129,
+  "lastUpdate": 1687394035652,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -645,6 +645,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 6.610144345049613,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bf5808d3a159a147a3819a1db6e99fb77455f968",
+          "message": "feat: use standarised directories for files/wallet commands\n\nBREAKING CHANGE: use `~/.local/share/safe/wallet` as the root directory for wallet storage and\n`~/.local/share/safe/client` for files related to downloads/uploads.\n\nThe previous directories were `~/.safe/wallet` and `~/.safe/client`, which we can phase out in\npreference of using directories in the XDG standard.\n\nUsage of a `RECEIVED_DBCS_PATH` environment variable was added for users who may feel the default\ndirectory a bit unwieldy for working with the `wallet deposit` command, especially on Windows, where\nthe `AppData` directory is marked as hidden and so will only be shown by Windows Explorer if users\nhave viewing hidden files enabled.\n\nAlso provided and/or clarified documentation for other commands.",
+          "timestamp": "2023-06-22T09:19:11+09:00",
+          "tree_id": "625485846f58bc29312ebcd36f868e0fb401fee7",
+          "url": "https://github.com/maidsafe/safe_network/commit/bf5808d3a159a147a3819a1db6e99fb77455f968"
+        },
+        "date": 1687394035154,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.8332028930492699,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 6.57560832646883,
             "unit": "MiB/s"
           }
         ]
