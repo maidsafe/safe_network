@@ -73,7 +73,7 @@ impl Node {
             SwarmDriver::new(keypair, addr, local, root_dir)?;
         let node_events_channel = NodeEventsChannel::default();
 
-        let mut node = Self {
+        let node = Self {
             network: network.clone(),
             registers: RegisterStorage::new(root_dir),
             events_channel: node_events_channel.clone(),
@@ -96,7 +96,11 @@ impl Node {
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
-                            Some(event) => node.handle_network_event(event, &mut initial_join_flows_done).await,
+                            Some(event) => {
+                                let mut stateless_node_copy = node.clone();
+                                let _handle =
+                                    spawn(async move { stateless_node_copy.handle_network_event(event, &mut initial_join_flows_done).await });
+                            }
                             None => {
                                 error!("The `NetworkEvent` channel is closed");
                                 node_event_sender.broadcast(NodeEvent::ChannelClosed);
@@ -136,23 +140,16 @@ impl Node {
         event: NetworkEvent,
         initial_join_flows_done: &mut bool,
     ) {
-        let mut stateless_node_copy = self.clone();
-
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
-                trace!("RequestReceived: {req:?}, spawning a new task to handle it");
-                // requests are network intensive so we run them in a background task
-                let _handle =
-                    spawn(async move { stateless_node_copy.handle_request(req, channel).await });
+                trace!("RequestReceived: {req:?}");
+                self.handle_request(req, channel).await;
             }
             NetworkEvent::ResponseReceived { res } => {
-                trace!("NetworkEvent::ResponseReceived that was not awaited at call site. {res:?}");
-                // requests are network intensive so we run them in a background task
-                let _handle = spawn(async move {
-                    if let Err(err) = stateless_node_copy.handle_response(res).await {
-                        error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
-                    }
-                });
+                trace!("NetworkEvent::ResponseReceived {res:?}");
+                if let Err(err) = self.handle_response(res).await {
+                    error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
+                }
             }
             NetworkEvent::PeerAdded(peer_id) => {
                 Marker::PeerAddedToRoutingTable(peer_id).log();
@@ -179,6 +176,13 @@ impl Node {
             NetworkEvent::PeerRemoved(peer_id) => {
                 if let Err(err) = self.try_trigger_replication(&peer_id, true).await {
                     error!("Error while triggering replication {err:?}");
+                }
+            }
+            NetworkEvent::LostRecordDetected(peer_ids) => {
+                for peer_id in peer_ids.iter() {
+                    if let Err(err) = self.try_trigger_replication(peer_id, false).await {
+                        error!("Error while triggering replication to {peer_id:?} {err:?}");
+                    }
                 }
             }
             NetworkEvent::NewListenAddr(_) => {
