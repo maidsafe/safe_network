@@ -9,9 +9,7 @@
 use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, NodeEvent};
 use libp2p::{autonat::NatStatus, identity::Keypair, kad::RecordKey, Multiaddr, PeerId};
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sn_networking::{
-    multiaddr_strip_p2p, MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState,
-};
+use sn_networking::{MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{
@@ -77,7 +75,7 @@ impl Node {
     pub async fn run(
         keypair: Option<Keypair>,
         addr: SocketAddr,
-        initial_peers: Vec<(PeerId, Multiaddr)>,
+        initial_peers: Vec<Multiaddr>,
         local: bool,
         root_dir: Option<PathBuf>,
     ) -> Result<RunningNode> {
@@ -202,11 +200,9 @@ impl Node {
                     let network = self.network.clone();
                     let peers = self.initial_peers.clone();
                     let _handle = spawn(async move {
-                        for (peer_id, addr) in &peers {
-                            // The addresses passed might contain the peer_id, which we already pass separately.
-                            let addr = multiaddr_strip_p2p(addr);
-                            if let Err(err) = network.dial(*peer_id, addr.clone()).await {
-                                tracing::error!("Failed to dial {peer_id}: {err:?}");
+                        for addr in &peers {
+                            if let Err(err) = network.dial(addr.clone()).await {
+                                tracing::error!("Failed to dial {addr}: {err:?}");
                             };
                         }
                     });

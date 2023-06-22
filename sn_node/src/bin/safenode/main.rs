@@ -19,7 +19,7 @@ use sn_peers_acquisition::PeersArgs;
 
 use clap::Parser;
 use eyre::{eyre, Error, Result};
-use libp2p::{Multiaddr, PeerId};
+use libp2p::Multiaddr;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -167,7 +167,7 @@ fn main() -> Result<()> {
 
 async fn start_node(
     node_socket_addr: SocketAddr,
-    peers: Vec<(PeerId, Multiaddr)>,
+    peers: Vec<Multiaddr>,
     rpc: Option<SocketAddr>,
     local: bool,
     log_dir: &str,
