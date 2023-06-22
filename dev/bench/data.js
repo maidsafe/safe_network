@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687379356383,
+  "lastUpdate": 1687393961129,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -611,6 +611,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 3.187316728899634,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a8285202e2807a64c9642a5050dee22175fffc54",
+          "message": "fix: improve client upload speed\n\nImprove client upload speed by:\n1, Only using local network knowledge one\n2, Reduce network nodes to contact",
+          "timestamp": "2023-06-22T09:18:54+09:00",
+          "tree_id": "7c33a7c96194cac397e2e32333ce33b4ec2d6043",
+          "url": "https://github.com/maidsafe/safe_network/commit/a8285202e2807a64c9642a5050dee22175fffc54"
+        },
+        "date": 1687393960605,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.755935491185008,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 6.610144345049613,
             "unit": "MiB/s"
           }
         ]
