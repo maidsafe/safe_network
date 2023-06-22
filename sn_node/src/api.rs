@@ -72,11 +72,11 @@ impl Node {
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
     pub async fn run(
-        keypair: Option<Keypair>,
+        keypair: Keypair,
         addr: SocketAddr,
         initial_peers: Vec<Multiaddr>,
         local: bool,
-        root_dir: Option<PathBuf>,
+        root_dir: PathBuf,
     ) -> Result<RunningNode> {
         let (network, mut network_event_receiver, swarm_driver) =
             SwarmDriver::new(keypair, addr, local, root_dir)?;

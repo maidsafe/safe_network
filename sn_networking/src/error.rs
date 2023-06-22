@@ -79,9 +79,6 @@ pub enum Error {
     #[error("Record was not found locally")]
     RecordNotFound,
 
-    #[error("Could not configure root directory: {0}")]
-    RootDirConfigError(String),
-
     #[error("No SwarmCmd channel capacity")]
     NoSwarmCmdChannelCapacity,
 }

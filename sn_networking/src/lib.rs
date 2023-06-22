@@ -125,10 +125,10 @@ impl SwarmDriver {
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
     pub fn new(
-        keypair: Option<Keypair>,
+        keypair: Keypair,
         addr: SocketAddr,
         local: bool,
-        root_dir: Option<PathBuf>,
+        root_dir: PathBuf,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // get a random integer between REPLICATION_INTERVAL_LOWER_BOUND and REPLICATION_INTERVAL_UPPER_BOUND
         let replication_interval = rand::thread_rng()
@@ -202,8 +202,8 @@ impl SwarmDriver {
             );
 
         Self::with(
-            Some(std::env::temp_dir()),
-            None, // clients use signer for transactions; network keypair is not used
+            std::env::temp_dir(),
+            Keypair::generate_ed25519(),
             kad_cfg,
             local,
             true,
@@ -230,8 +230,8 @@ impl SwarmDriver {
     #[allow(clippy::too_many_arguments)]
     /// Private helper to create the network components with the provided config and req/res behaviour
     fn with(
-        initial_root_dir_path: Option<PathBuf>,
-        keypair: Option<Keypair>,
+        root_dir_path: PathBuf,
+        keypair: Keypair,
         kad_cfg: KademliaConfig,
         local: bool,
         is_client: bool,
@@ -240,25 +240,9 @@ impl SwarmDriver {
         req_res_protocol: ProtocolSupport,
         identify_version: String,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
-        // Create a random key for ourself if none provided
-        let keypair = match keypair {
-            Some(keypair) => {
-                info!("Using provided keypair: {:?}", keypair.public());
-                keypair
-            }
-            None => {
-                info!("Generating a new keypair");
-                Keypair::generate_ed25519()
-
-                // TODO: store this somewhere? or just regenerate on every run?
-                // How would we validate storage location + what to do if one exists?
-            }
-        };
-
         let peer_id = PeerId::from(keypair.public());
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
         info!("PeerId: {peer_id} has replication interval of {replication_interval:?}");
-        let root_dir_path = Self::get_root_dir_path(initial_root_dir_path, peer_id)?;
 
         // RequestResponse Behaviour
         let request_response = {
@@ -412,22 +396,6 @@ impl SwarmDriver {
                 },
             }
         }
-    }
-
-    fn get_root_dir_path(root_dir_path: Option<PathBuf>, peer_id: PeerId) -> Result<PathBuf> {
-        let path = if let Some(path) = root_dir_path {
-            path
-        } else {
-            dirs_next::data_dir()
-                .ok_or_else(|| {
-                    Error::RootDirConfigError("could not obtain root directory path".to_string())
-                })?
-                .join("safe")
-                .join("node")
-                .join(peer_id.to_string())
-        };
-        std::fs::create_dir_all(path.clone())?;
-        Ok(path)
     }
 }
 
@@ -876,6 +844,7 @@ mod tests {
     use assert_matches::assert_matches;
     use bytes::Bytes;
     use eyre::{eyre, Result};
+    use libp2p::identity::Keypair;
     use rand::{thread_rng, Rng};
     use sn_logging::init_test_logger;
     use sn_protocol::{
@@ -888,12 +857,12 @@ mod tests {
     async fn msg_to_self_should_not_error_out() -> Result<()> {
         init_test_logger();
         let (net, mut event_rx, driver) = SwarmDriver::new(
-            None,
+            Keypair::generate_ed25519(),
             "0.0.0.0:0"
                 .parse::<SocketAddr>()
                 .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
             true,
-            Some(PathBuf::from("")),
+            PathBuf::from(""),
         )?;
         let _driver_handle = tokio::spawn(driver.run());
 

@@ -19,10 +19,10 @@ use sn_peers_acquisition::PeersArgs;
 
 use clap::Parser;
 use eyre::{eyre, Error, Result};
-use libp2p::Multiaddr;
+use libp2p::{identity::Keypair, Multiaddr, PeerId};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::Duration,
 };
 use tokio::{
@@ -175,10 +175,7 @@ async fn start_node(
 ) -> Result<()> {
     let started_instant = std::time::Instant::now();
 
-    // TODO: Pull this keypair from _somewhere_.
-    // This is used for our PeerId...
-    // where/how should we store this on disk?
-    let keypair = None;
+    let (root_dir, keypair) = get_root_dir_and_keypair(root_dir).await?;
 
     info!("Starting node ...");
     let running_node = Node::run(keypair, node_socket_addr, peers, local, root_dir).await?;
@@ -275,4 +272,88 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
             }
         }
     });
+}
+
+async fn create_secret_key_file(path: impl AsRef<Path>) -> Result<tokio::fs::File, std::io::Error> {
+    let mut opt = tokio::fs::OpenOptions::new();
+    opt.write(true).create_new(true);
+
+    // On Unix systems, make sure only the current user can read/write.
+    #[cfg(unix)]
+    let opt = opt.mode(0o600);
+
+    opt.open(path).await
+}
+
+async fn keypair_from_path(path: impl AsRef<Path>) -> Result<Keypair> {
+    let keypair = match std::fs::read(&path) {
+        // If the file is opened successfully, read the key from it
+        Ok(key) => {
+            let keypair = Keypair::ed25519_from_bytes(key)
+                .map_err(|err| eyre!("could not read ed25519 key from file: {err}"))?;
+
+            info!("loaded secret key from file: {:?}", path.as_ref());
+
+            keypair
+        }
+        // In case the file is not found, generate a new keypair and write it to the file
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+            let secret_key = libp2p::identity::ed25519::SecretKey::generate();
+            let mut file = create_secret_key_file(&path)
+                .await
+                .map_err(|err| eyre!("could not create secret key file: {err}"))?;
+            file.write_all(secret_key.as_ref()).await?;
+
+            info!("generated new key and stored to file: {:?}", path.as_ref());
+
+            libp2p::identity::ed25519::Keypair::from(secret_key).into()
+        }
+        // Else the file can't be opened, for whatever reason (e.g. permissions).
+        Err(err) => {
+            return Err(eyre!("failed to read secret key file: {err}"));
+        }
+    };
+
+    Ok(keypair)
+}
+
+fn get_root_dir(peer_id: PeerId) -> Result<PathBuf> {
+    let dir = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("could not obtain root directory path".to_string()))?
+        .join("safe")
+        .join("node")
+        .join(peer_id.to_string());
+
+    Ok(dir)
+}
+
+/// The keypair is located inside the root directory. At the same time, when no dir is specified,
+/// the dir name is derived from the keypair used in the application: the peer ID is used as the directory name.
+async fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf, Keypair)> {
+    match root_dir {
+        Some(dir) => {
+            tokio::fs::create_dir_all(&dir).await?;
+
+            let secret_key_path = dir.join("secret-key");
+            Ok((dir, keypair_from_path(secret_key_path).await?))
+        }
+        None => {
+            let secret_key = libp2p::identity::ed25519::SecretKey::generate();
+            let keypair: Keypair =
+                libp2p::identity::ed25519::Keypair::from(secret_key.clone()).into();
+            let peer_id = keypair.public().to_peer_id();
+
+            let dir = get_root_dir(peer_id)?;
+            tokio::fs::create_dir_all(&dir).await?;
+
+            let secret_key_path = dir.join("secret-key");
+
+            let mut file = create_secret_key_file(&secret_key_path)
+                .await
+                .map_err(|err| eyre!("could not create secret key file: {err}"))?;
+            file.write_all(secret_key.as_ref()).await?;
+
+            Ok((dir, keypair))
+        }
+    }
 }
