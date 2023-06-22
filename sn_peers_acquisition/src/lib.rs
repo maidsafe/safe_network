@@ -8,7 +8,7 @@
 
 use clap::Args;
 use eyre::{eyre, Result};
-use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
+use libp2p::{multiaddr::Protocol, Multiaddr};
 
 /// The name of the environment variable that can be used to pass peers to the node.
 pub const SAFE_PEERS_ENV: &str = "SAFE_PEERS";
@@ -22,25 +22,22 @@ pub struct PeersArgs {
     ///
     /// This argument can be provided multiple times to connect to multiple peers.
     #[clap(long = "peer", value_name = "multiaddr", env = SAFE_PEERS_ENV, value_delimiter = ',', value_parser = parse_peer_addr)]
-    pub peers: Vec<(PeerId, Multiaddr)>,
+    pub peers: Vec<Multiaddr>,
 }
 
-/// Split a `Multiaddr` into the `PeerId` and the rest of the `Multiaddr`.
-pub fn parse_peer_addr(addr: &str) -> Result<(PeerId, Multiaddr)> {
-    let mut multiaddr = addr
-        .parse::<Multiaddr>()
-        .map_err(|err| eyre!("address is not a valid multiaddr: {err}"))?;
+/// Parse strings like `1.2.3.4:1234` and `/ip4/1.2.3.4/tcp/1234` into a (TCP) multiaddr.
+pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
+    // Parse valid IPv4 socket address, e.g. `1.2.3.4:1234`.
+    if let Ok(addr) = addr.parse::<std::net::SocketAddrV4>() {
+        // Turn the address into a `/ip4/<ip>/tcp/<port>` multiaddr.
+        let multiaddr = Multiaddr::from(*addr.ip()).with(Protocol::Tcp(addr.port()));
+        return Ok(multiaddr);
+    }
 
-    let protocol = multiaddr.pop().ok_or_else(|| eyre!("address is empty"))?;
+    // Parse any valid multiaddr string, e.g. `/ip4/1.2.3.4/tcp/1234/p2p/<peer_id>`.
+    if let Ok(addr) = addr.parse::<Multiaddr>() {
+        return Ok(addr);
+    }
 
-    let p2p_multihash = match protocol {
-        Protocol::P2p(hash) => hash,
-        _ => return Err(eyre!("address does not end on `/p2p/<PeerId>`")),
-    };
-
-    // Parse the multihash into the `PeerId`.
-    let peer_id = PeerId::from_multihash(p2p_multihash)
-        .map_err(|_| eyre!("address contains invalid multihash"))?;
-
-    Ok((peer_id, multiaddr))
+    Err(eyre!("invalid multiaddr or socket address"))
 }

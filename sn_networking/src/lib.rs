@@ -100,7 +100,6 @@ pub struct SwarmDriver {
     swarm: Swarm<NodeBehaviour>,
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>,
-    pending_dial: HashMap<PeerId, oneshot::Sender<Result<()>>>,
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
     pending_query: HashMap<QueryId, oneshot::Sender<Result<Record>>>,
@@ -355,7 +354,6 @@ impl SwarmDriver {
             swarm,
             cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,
-            pending_dial: Default::default(),
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
             pending_query: Default::default(),
@@ -484,14 +482,9 @@ impl Network {
     }
 
     /// Dial the given peer at the given address.
-    pub async fn dial(&self, peer_id: PeerId, peer_addr: Multiaddr) -> Result<()> {
+    pub async fn dial(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::Dial {
-            peer_id,
-            peer_addr,
-            sender,
-        })
-        .await?;
+        self.send_swarm_cmd(SwarmCmd::Dial { addr, sender }).await?;
         receiver.await?
     }
 
@@ -841,8 +834,22 @@ pub fn multiaddr_is_global(multiaddr: &Multiaddr) -> bool {
     })
 }
 
-// Strip out the p2p protocol from a multiaddr.
-pub fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
+/// Pop off the `/p2p/<peer_id>`. This mutates the `Multiaddr` and returns the `PeerId` if it exists.
+pub(crate) fn multiaddr_pop_p2p(multiaddr: &mut Multiaddr) -> Option<PeerId> {
+    let id = match multiaddr.iter().last() {
+        Some(Protocol::P2p(hash)) => PeerId::from_multihash(hash).ok(),
+        _ => None,
+    };
+
+    // Mutate the `Multiaddr` to remove the `/p2p/<peer_id>`.
+    if id.is_some() {
+        let _ = multiaddr.pop();
+    }
+
+    id
+}
+/// Build a `Multiaddr` with the p2p protocol filtered out.
+pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
     multiaddr
         .iter()
         .filter(|p| !matches!(p, Protocol::P2p(_)))
