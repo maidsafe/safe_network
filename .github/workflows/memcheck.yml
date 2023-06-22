@@ -144,8 +144,8 @@ jobs:
       - name: Start a client to download files
         run: |
           cargo run --bin safe --release -- files download
-          ls -l ~/.safe/client/downloaded_files
-          downloaded_files=$(ls ~/.safe/client/downloaded_files | wc -l)
+          ls -l ~/.local/share/safe/client/downloaded_files
+          downloaded_files=$(ls ~/.local/share/safe/client/downloaded_files | wc -l)
           if [ $downloaded_files -lt 4 ]; then
             echo "Only downloaded $downloaded_files files, less than the 4 files uploaded"
             exit 1
