@@ -32,10 +32,7 @@ impl Node {
         is_dead_peer: bool,
     ) -> Result<()> {
         let our_address = NetworkAddress::from_peer(self.network.peer_id);
-        trace!(
-            "Self peer id {:?} converted to {our_address:?}",
-            self.network.peer_id
-        );
+
         // Fetch from local shall be enough.
         let closest_peers = self.network.get_closest_local_peers(&our_address).await?;
         if !closest_peers.iter().any(|key| key == peer) {

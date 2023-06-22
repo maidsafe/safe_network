@@ -11,7 +11,7 @@ use super::{
     msg::MsgCodec,
     SwarmDriver,
 };
-use crate::{multiaddr_is_global, multiaddr_strip_p2p, IDENTIFY_AGENT_STR};
+use crate::{multiaddr_is_global, multiaddr_strip_p2p, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR};
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
@@ -115,6 +115,8 @@ pub enum NetworkEvent {
     NewListenAddr(Multiaddr),
     /// AutoNAT status changed
     NatStatusChanged(NatStatus),
+    /// Report peers that lost a record
+    LostRecordDetected(Vec<PeerId>),
 }
 
 impl SwarmDriver {
@@ -373,6 +375,21 @@ impl SwarmDriver {
                 }
             }
             KademliaEvent::OutboundQueryProgressed {
+                result:
+                    QueryResult::GetRecord(Ok(GetRecordOk::FinishedWithNoAdditionalRecord {
+                        cache_candidates,
+                    })),
+                ..
+            } => {
+                // The candidates are nodes supposed to hold a copy however failed to do so.
+                // In that case, we can try to trigger a replication to it.
+                let peer_ids: Vec<PeerId> = cache_candidates.values().copied().collect();
+                trace!("Candidates {peer_ids:?} failed to respond a record query request.");
+                self.event_sender
+                    .send(NetworkEvent::LostRecordDetected(peer_ids))
+                    .await?;
+            }
+            KademliaEvent::OutboundQueryProgressed {
                 id,
                 result: QueryResult::GetRecord(Err(err)),
                 stats,
@@ -413,6 +430,17 @@ impl SwarmDriver {
                     // Enable it to instead get the above `PutRequest` event which is then
                     // handled separately
                     warn!("The PutRecord KademliaEvent should include a Record. Enable record filtering via the kad config")
+                }
+            }
+            KademliaEvent::InboundRequest {
+                request:
+                    InboundRequest::GetRecord {
+                        num_closer_peers,
+                        present_locally,
+                    },
+            } => {
+                if !present_locally && num_closer_peers < CLOSE_GROUP_SIZE {
+                    trace!("InboundRequest::GetRecord doesn't have local record, with {num_closer_peers:?} closer_peers");
                 }
             }
             other => {
