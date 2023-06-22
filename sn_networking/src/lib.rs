@@ -135,6 +135,7 @@ impl SwarmDriver {
 
         let mut kad_cfg = KademliaConfig::default();
         let _ = kad_cfg
+            .set_kbucket_inserts(libp2p::kad::KademliaBucketInserts::Manual)
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
             // this is a heavier operation than publication, so it is done less frequently
             // Set to `None` to ensure periodic replication disabled.
