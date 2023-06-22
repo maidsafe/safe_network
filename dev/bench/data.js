@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687394035652,
+  "lastUpdate": 1687394133051,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -1174,6 +1174,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 13.21,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a8285202e2807a64c9642a5050dee22175fffc54",
+          "message": "fix: improve client upload speed\n\nImprove client upload speed by:\n1, Only using local network knowledge one\n2, Reduce network nodes to contact",
+          "timestamp": "2023-06-22T09:18:54+09:00",
+          "tree_id": "7c33a7c96194cac397e2e32333ce33b4ec2d6043",
+          "url": "https://github.com/maidsafe/safe_network/commit/a8285202e2807a64c9642a5050dee22175fffc54"
+        },
+        "date": 1687394132502,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 20.34,
             "unit": "MB"
           }
         ]
