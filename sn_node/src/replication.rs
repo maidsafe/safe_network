@@ -32,6 +32,7 @@ impl Node {
         peer: &PeerId,
         is_dead_peer: bool,
     ) -> Result<()> {
+        trace!("Try to trigger replication for {peer:?}, dead: {is_dead_peer:?}");
         let our_address = NetworkAddress::from_peer(self.network.peer_id);
         trace!(
             "Self peer id {:?} converted to {our_address:?}",
@@ -40,11 +41,13 @@ impl Node {
         // Fetch from local shall be enough.
         let closest_peers = self.network.get_closest_local_peers(&our_address).await?;
         if !closest_peers.iter().any(|key| key == peer) {
+            trace!("peer {peer:?} not part of our closest_local_peers");
             return Ok(());
         }
 
         let mut all_peers = self.network.get_all_local_peers().await?;
         if all_peers.len() <= CLOSE_GROUP_SIZE {
+            trace!("We don't have enough local_peers to trigger replication");
             return Ok(());
         }
 
@@ -54,6 +57,7 @@ impl Node {
         {
             sorted_peers
         } else {
+            trace!("Could not sort peers by address");
             return Ok(());
         };
         let distance_bar = match sorted_peers.get(CLOSE_GROUP_SIZE) {
@@ -76,6 +80,7 @@ impl Node {
         {
             sorted_peers
         } else {
+            trace!("Could not sort all_peers + self by address");
             return Ok(());
         };
 
@@ -219,10 +224,10 @@ impl Node {
             holder: our_address.clone(),
             keys,
         });
+        trace!("Sending a replication list with {len:?} keys to {peer_id:?}");
         self.network
             .send_req_ignore_reply(request, *peer_id)
             .await?;
-        trace!("Sending a replication list with {len:?} keys to {peer_id:?}");
         Ok(())
     }
 }

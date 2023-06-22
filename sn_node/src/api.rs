@@ -272,6 +272,9 @@ impl Node {
                     warn!("Cannot parse PeerId from {holder:?}");
                 }
             }
+            Response::Cmd(CmdResponse::Replicate(resp)) => {
+                trace!("Received Response from CmdResponse: {resp:?}");
+            }
             other => {
                 error!("handle_response not implemented for {other:?}");
                 return Ok(());
