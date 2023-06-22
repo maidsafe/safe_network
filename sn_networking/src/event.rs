@@ -28,8 +28,6 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_record_store::DiskBackedRecordStore;
-#[cfg(feature = "local-discovery")]
-use std::collections::hash_map;
 use std::collections::HashSet;
 use tokio::sync::oneshot;
 use tracing::{info, warn};
@@ -199,30 +197,14 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
                 mdns::Event::Discovered(list) => {
                     if self.local {
-                        for (peer_id, multiaddr) in list {
-                            info!("Node discovered and dialing: {multiaddr:?}");
+                        for (peer_id, addr) in list {
+                            // The multiaddr does not contain the peer ID, so add it.
+                            let addr = addr.with(Protocol::P2p(peer_id.into()));
 
-                            let mut dial_failed = None;
-                            // TODO: Deduplicate this functionality by calling in on SwarmCmd::Dial
-                            if let hash_map::Entry::Vacant(dial_entry) =
-                                self.pending_dial.entry(peer_id)
-                            {
-                                let (sender, _receiver) = oneshot::channel();
-                                let _ = dial_entry.insert(sender);
-                                // TODO: Dropping the receiver immediately might get logged as error later.
-                                if let Err(error) = self
-                                    .swarm
-                                    .dial(multiaddr.with(Protocol::P2p(peer_id.into())))
-                                {
-                                    dial_failed = Some(error);
-                                }
-                            }
+                            info!(%addr, "mDNS node discovered and dialing");
 
-                            // if we error'd out, send the error back
-                            if let Some(error) = dial_failed {
-                                if let Some(sender) = self.pending_dial.remove(&peer_id) {
-                                    let _ = sender.send(Err(error.into()));
-                                }
+                            if let Err(err) = self.dial(addr.clone()) {
+                                warn!(%addr, "mDNS node dial error: {err:?}");
                             }
                         }
                     }
@@ -241,16 +223,15 @@ impl SwarmDriver {
             }
             SwarmEvent::IncomingConnection { .. } => {}
             SwarmEvent::ConnectionEstablished {
-                peer_id, endpoint, ..
+                peer_id,
+                endpoint,
+                num_established,
+                ..
             } => {
+                debug!(%peer_id, num_established, "ConnectionEstablished: {}", endpoint_str(&endpoint));
+
                 if endpoint.is_dialer() {
-                    debug!("Connected with {peer_id:?}");
-
                     self.dialed_peers.push(peer_id);
-
-                    if let Some(sender) = self.pending_dial.remove(&peer_id) {
-                        let _ = sender.send(Ok(()));
-                    }
                 }
             }
             SwarmEvent::ConnectionClosed {
@@ -259,7 +240,7 @@ impl SwarmDriver {
                 cause,
                 num_established,
             } => {
-                debug!("Connection closed to Peer {peer_id}({num_established:?}) - {endpoint:?} - {cause:?}");
+                debug!(%peer_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
             }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 error!("OutgoingConnectionError to {peer_id:?} - {error:?}");
@@ -286,12 +267,6 @@ impl SwarmDriver {
                             .await;
                         let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
                         self.log_kbuckets(&peer_id);
-                    }
-
-                    if let Some(sender) = self.pending_dial.remove(&peer_id) {
-                        let _ = sender.send(Err(error.into()));
-                    } else {
-                        error!("OutgoingConnectionError is due to non pending_dial to {peer_id}");
                     }
                 }
             }
@@ -475,5 +450,17 @@ impl SwarmDriver {
             index += 1;
         }
         info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}");
+    }
+}
+
+/// Helper function to print formatted connection role info.
+fn endpoint_str(endpoint: &libp2p::core::ConnectedPoint) -> String {
+    match endpoint {
+        libp2p::core::ConnectedPoint::Dialer { address, .. } => {
+            format!("outgoing ({address})")
+        }
+        libp2p::core::ConnectedPoint::Listener { send_back_addr, .. } => {
+            format!("incoming ({send_back_addr})")
+        }
     }
 }

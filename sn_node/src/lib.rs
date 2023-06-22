@@ -58,7 +58,7 @@ pub use self::{
     log_markers::Marker,
 };
 
-use libp2p::{Multiaddr, PeerId};
+use libp2p::Multiaddr;
 use sn_networking::Network;
 use sn_registers::RegisterStorage;
 
@@ -71,5 +71,5 @@ pub struct Node {
     registers: RegisterStorage,
     events_channel: NodeEventsChannel,
     /// Peers that are dialed at startup of node.
-    initial_peers: Vec<(PeerId, Multiaddr)>,
+    initial_peers: Vec<Multiaddr>,
 }

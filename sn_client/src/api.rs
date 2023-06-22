@@ -49,15 +49,14 @@ impl Client {
     /// Instantiate a new client.
     pub async fn new(
         signer: SecretKey,
-        peers: Option<Vec<(PeerId, Multiaddr)>>,
+        peers: Option<Vec<Multiaddr>>,
         req_response_timeout: Option<Duration>,
     ) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
-        let local = !peers
-            .clone()
-            .unwrap_or(vec![])
-            .iter()
-            .any(|(_, multiaddr)| multiaddr_is_global(multiaddr));
+        let local = match peers {
+            Some(ref peers) => !peers.iter().any(multiaddr_is_global),
+            None => true,
+        };
 
         info!("Starting Kad swarm in client mode...");
 
@@ -94,11 +93,11 @@ impl Client {
                     if must_dial_network {
                         let network = network.clone();
                         let _handle = spawn(async move {
-                            for (peer_id, addr) in peers {
-                                trace!("Client dialing network peer {peer_id} at {addr:?}");
-                                let _ = network.add_to_routing_table(peer_id, addr.clone()).await;
-                                if let Err(err) = network.dial(peer_id, addr.clone()).await {
-                                    tracing::error!("Failed to dial {peer_id}: {err:?}");
+                            for addr in peers {
+                                trace!(%addr, "dialing initial peer");
+
+                                if let Err(err) = network.dial(addr.clone()).await {
+                                    tracing::error!(%addr, "Failed to dial: {err:?}");
                                 };
                             }
                         });
