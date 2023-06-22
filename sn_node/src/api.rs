@@ -228,7 +228,7 @@ impl Node {
                                 NetworkAddress::from_record_key(RecordKey::new(dbc_addr.name()));
 
                             let success = self.validate_and_store_spends(signed_spend).await?;
-                            trace!("ReplicatedData::Chunk with {addr:?} has been validated and stored. {success:?}");
+                            trace!("ReplicatedData::Dbc with {addr:?} has been validated and stored. {success:?}");
                             addr
                         } else {
                             // Put validations make sure that we have >= 1 spends and with the same
