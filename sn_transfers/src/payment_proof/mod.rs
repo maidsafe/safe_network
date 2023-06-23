@@ -80,6 +80,7 @@ pub type PaymentProofsTrailInfoMap = BTreeMap<XorName, (Vec<MerkleTreeNodesType>
 type BinaryMerkletreeProofType = Proof<MerkleTreeNodesType, UInt<UInt<UTerm, B1>, B0>>;
 
 /// Build a Merkletree to generate the audit trail and path for each of the content addresses provided.
+/// The order of the addresses will be kept thus their corresponding leaves in the built tree will be at the same index.
 pub fn build_payment_proofs<'a>(
     content_addrs: impl Iterator<Item = &'a XorName>,
 ) -> Result<(Hash, PaymentProofsTrailInfoMap)> {
@@ -157,7 +158,7 @@ pub fn validate_payment_proof(
 
     // The root-hash should match the root of the Merkletree
     if *root_hash != proof.root().into() {
-        return Err(Error::RootHashMismatch(root_hash.to_hex()));
+        return Err(Error::RootHashMismatch(*root_hash));
     }
 
     if !proof
@@ -169,17 +170,25 @@ pub fn validate_payment_proof(
         ));
     }
 
+    let leaf_index = leaf_index(path);
+
+    Ok(leaf_index)
+}
+
+// Return the leaf index realised from the provided auth trail path
+fn leaf_index(path: &[usize]) -> usize {
     let mut leaf_index = 0;
     path.iter().rev().for_each(|p| {
         leaf_index = (leaf_index << 1) + p;
     });
-
-    Ok(leaf_index)
+    leaf_index
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
+
     use eyre::{eyre, Result};
     use tiny_keccak::{Hasher, Sha3};
     use xor_name::XorName;
@@ -199,6 +208,10 @@ mod tests {
 
     #[test]
     fn test_payment_proof_basic() -> Result<()> {
+        assert!(
+            matches!(build_payment_proofs(vec![].iter()), Err(Error::ProofTree(err)) if err == "Cannot build payment proofs with an empty list of addresses")
+        );
+
         let name0 = XorName([11; 32]);
         let name1 = XorName([22; 32]);
         let name2 = XorName([33; 32]);
@@ -222,27 +235,6 @@ mod tests {
     }
 
     #[test]
-    fn test_payment_proof_non_power_of_2_input() -> Result<()> {
-        assert!(
-            matches!(build_payment_proofs(vec![].iter()), Err(Error::ProofTree(err)) if err == "Cannot build payment proofs with an empty list of addresses")
-        );
-
-        let addrs = [
-            [11; 32], [22; 32], [33; 32], [44; 32], [55; 32], [66; 32], [77; 32], [88; 32],
-        ]
-        .into_iter()
-        .map(XorName)
-        .collect::<Vec<_>>();
-
-        for i in 1..addrs.len() {
-            let (_, payment_proofs) = build_payment_proofs(addrs.iter().take(i))?;
-            assert_eq!(payment_proofs.len(), i);
-        }
-
-        Ok(())
-    }
-
-    #[test]
     fn test_payment_proof_validation() -> Result<()> {
         let name0 = XorName([11; 32]);
         let name1 = XorName([22; 32]);
@@ -255,13 +247,19 @@ mod tests {
         assert_eq!(payment_proofs.len(), addrs.len());
 
         assert!(
-            matches!(payment_proofs.get(&name0), Some((audit_trail, path)) if validate_payment_proof(name0, &root_hash, audit_trail, path).is_ok())
+            matches!(payment_proofs.get(&name0), Some((audit_trail, path))
+                if matches!(validate_payment_proof(name0, &root_hash, audit_trail, path), Ok(0))
+            )
         );
         assert!(
-            matches!(payment_proofs.get(&name1), Some((audit_trail, path)) if validate_payment_proof(name1, &root_hash, audit_trail, path).is_ok())
+            matches!(payment_proofs.get(&name1), Some((audit_trail, path))
+                if matches!(validate_payment_proof(name1, &root_hash, audit_trail, path), Ok(1))
+            )
         );
         assert!(
-            matches!(payment_proofs.get(&name2), Some(( audit_trail, path)) if validate_payment_proof(name2, &root_hash, audit_trail, path).is_ok())
+            matches!(payment_proofs.get(&name2), Some(( audit_trail, path))
+                if matches!(validate_payment_proof(name2, &root_hash, audit_trail, path), Ok(2))
+            )
         );
 
         let (audit_trail, path) = payment_proofs
@@ -291,9 +289,26 @@ mod tests {
         let invalid_root_hash: Hash = [66; 32].into();
         assert!(matches!(
             validate_payment_proof(name2, &invalid_root_hash, &audit_trail, &path),
-            Err(Error::RootHashMismatch(hex)) if hex == invalid_root_hash.to_hex()
+            Err(Error::RootHashMismatch(root_hash)) if root_hash == invalid_root_hash
         ));
 
         Ok(())
+    }
+
+    proptest! {
+        #[test]
+        fn test_payment_proof_non_power_of_2_input(num_of_addrs in 1..1000) {
+            let mut rng = rand::thread_rng();
+            let random_names = (0..num_of_addrs).map(|_| XorName::random(&mut rng)).collect::<Vec<_>>();
+
+            let (root_hash, payment_proofs) = build_payment_proofs(random_names.iter())?;
+            assert_eq!(payment_proofs.len(), num_of_addrs as usize);
+
+            for (index, xorname) in random_names.into_iter().enumerate() {
+                let (audit_trail, path) = payment_proofs.get(&xorname).expect("Missing payment proof for addr: {addr:?}");
+                assert_eq!(leaf_index(path), index);
+                matches!(validate_payment_proof(xorname, &root_hash, audit_trail, path), Ok(leaf_index) if leaf_index == index);
+            }
+        }
     }
 }
