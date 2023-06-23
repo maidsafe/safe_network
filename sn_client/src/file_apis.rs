@@ -169,9 +169,9 @@ impl Files {
         let payment = payment_proofs.get(&address.name().0).cloned();
         // TODO: re-enable requirement to always provide payment proof
         //.ok_or(super::Error::MissingPaymentProof(address))?;
-        let all_peers = self.client.get_all_local_peers().await?;
+
         let dst = NetworkAddress::from_chunk_address(address);
-        let closest_peers = sort_peers_by_address(all_peers, &dst, CLOSE_GROUP_SIZE)?;
+        let closest_peers = self.client.get_closest_local_peers(&dst).await?;
         self.client
             .store_chunk(chunk, payment, closest_peers)
             .await?;
