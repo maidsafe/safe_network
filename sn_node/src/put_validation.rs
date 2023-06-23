@@ -11,7 +11,7 @@ use crate::{
     Node,
 };
 use libp2p::kad::{Record, RecordKey};
-use sn_dbc::{DbcId, Hash, SignedSpend};
+use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{CmdOk, PaymentProof},
@@ -223,13 +223,9 @@ impl Node {
             path,
         }) = &chunk_with_payment.payment
         {
-            // TODO: check the expected amount of tokens was paid by the Tx, i.e. the amount one of the
-            // outputs sent (unblinded) is the expected, and the paid address is the predefined "burning address"
-
-            // We need to fetch the inputs of the DBC tx in order to obtain the reason-hash and
+            // We need to fetch the inputs of the DBC tx in order to obtain the root-hash and
             // other info for verifications of valid payment.
             // TODO: perform verifications in multiple concurrent tasks
-            let mut reasons = Vec::<Hash>::new();
             for input in &tx.inputs {
                 let dbc_id = input.dbc_id();
                 let addr = DbcAddress::from_dbc_id(&dbc_id);
@@ -250,8 +246,6 @@ impl Node {
                                                 addr_name,
                                             ));
                                         }
-
-                                        reasons.push(signed_spend.reason());
                                     }
                                     None => return Err(ProtocolError::SpendNotFound(addr)),
                                 }
@@ -277,21 +271,27 @@ impl Node {
                 }
             }
 
-            match reasons.first() {
-                None => return Err(ProtocolError::PaymentProofWithoutInputs(addr_name)),
-                Some(reason_hash) => {
-                    // check all reasons are the same
-                    if !reasons.iter().all(|r| r == reason_hash) {
-                        return Err(ProtocolError::PaymentProofInconsistentReason(addr_name));
-                    }
+            // check the root hash verifies the merkle-tree audit trail and path against the content address name
+            let leaf_index =
+                validate_payment_proof(addr_name, &tx.fee.root_hash, audit_trail, path).map_err(
+                    |err| ProtocolError::InvalidPaymentProof {
+                        addr_name,
+                        reason: err.to_string(),
+                    },
+                )?;
 
-                    // check the reason hash verifies the merkle-tree audit trail and path against the content address name
-                    let _ = validate_payment_proof(addr_name, reason_hash, audit_trail, path)
-                        .map_err(|err| ProtocolError::InvalidPaymentProof {
-                            addr_name,
-                            reason: err.to_string(),
-                        })?;
-                }
+            // Check if the fee output id is correct
+            verify_fee_output(tx)?;
+
+            // Check the expected amount of tokens was paid by the Tx, i.e. the amount of
+            // the fee output is the expected, and the output id correct.
+            let paid = tx.fee.amount as usize;
+            if paid <= leaf_index {
+                // the payment amount is not enough, we expect 1 nano per adddress
+                return Err(ProtocolError::PaymentProofInsufficientAmount {
+                    paid,
+                    expected: leaf_index + 1,
+                });
             }
         }
 
@@ -451,6 +451,9 @@ impl Node {
                     )));
                 }
 
+                // If this is a storage payment, then verify FeeOutput's id is the expected.
+                verify_fee_output(&signed_spend.spent_tx())?;
+
                 // Check parents
                 if let Err(e) = check_parent_spends(&self.network, &signed_spend).await {
                     return Err(ProtocolError::InvalidSpendParents(format!("{e:?}")));
@@ -475,4 +478,25 @@ impl Node {
 
         Ok(Some(signed_spends))
     }
+}
+
+// If the given TX is a storage payment, i.e. contains a fee output, then verify FeeOutput's id is
+// the expected. The fee output id is expected to be built from hashing: root_hash + input DBCs ids.
+// This requirement makes it possible for this output to be used as an input in a network
+// rewards (farming) reclaiming TX, since the location for spending it it's deterministic and linked from this tx.
+fn verify_fee_output(spent_tx: &DbcTransaction) -> Result<(), ProtocolError> {
+    let fee = &spent_tx.fee;
+    if !fee.is_free() {
+        let mut fee_id_bytes = fee.root_hash.slice().to_vec();
+        spent_tx
+            .inputs
+            .iter()
+            .for_each(|input| fee_id_bytes.extend(&input.dbc_id().to_bytes()));
+
+        if fee.id != Hash::hash(&fee_id_bytes) {
+            return Err(ProtocolError::PaymentProofInvalidFeeOutput(fee.id));
+        }
+    }
+
+    Ok(())
 }

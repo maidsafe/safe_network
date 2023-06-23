@@ -11,7 +11,7 @@ use crate::{
     NetworkAddress,
 };
 use serde::{Deserialize, Serialize};
-use sn_dbc::SignedSpend;
+use sn_dbc::{Hash, SignedSpend};
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -38,15 +38,19 @@ pub enum Error {
     #[error("Register is Invalid: {0}")]
     RegisterError(#[from] sn_registers::Error),
 
+    /// The amount paid by payment proof is not the required for the received content
+    #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
+    PaymentProofInsufficientAmount { paid: usize, expected: usize },
     /// At least one input of payment proof provided has a mismatching spend Tx
     #[error("At least one input of payment proof provided for {0:?} has a mismatching spend Tx")]
     PaymentProofTxMismatch(XorName),
     /// Payment proof received has no inputs
     #[error("Payment proof received for {0:?} has no inputs in its transaction")]
     PaymentProofWithoutInputs(XorName),
-    /// Not all inputs in payment proof have the same 'reason' hash value
-    #[error("Not all inputs in payment proof for {0:?} have the same 'reason' hash value")]
-    PaymentProofInconsistentReason(XorName),
+    /// The id of the fee output found in a storage payment proof is invalid
+    #[error("The id of the fee output found in a storage payment proof is invalid: {}", .0.to_hex())]
+    PaymentProofInvalidFeeOutput(Hash),
+
     /// Cannot add another entry since the register entry cap has been reached.
     #[error("Cannot add another entry since the register entry cap has been reached: {0}")]
     TooManyEntries(usize),
