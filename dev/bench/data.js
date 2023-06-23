@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687489913287,
+  "lastUpdate": 1687490088740,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -1455,6 +1455,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 28.56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7ce6d64ab4635b89d233f07c548c679a5a3ae933",
+          "message": "feat(node): only add to routing table after Identify success\n\nKademliaBucketInserts::Manual",
+          "timestamp": "2023-06-23T11:57:40+09:00",
+          "tree_id": "208cf9f7a15b5c221379586efbc7ac089175c00d",
+          "url": "https://github.com/maidsafe/safe_network/commit/7ce6d64ab4635b89d233f07c548c679a5a3ae933"
+        },
+        "date": 1687490088284,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 23.69,
             "unit": "MB"
           }
         ]
