@@ -77,7 +77,7 @@ impl WalletClient {
         content_addrs: impl Iterator<Item = &XorName>,
     ) -> Result<PaymentProofsMap> {
         // Let's build the payment proofs for list of content addresses
-        let (reason_hash, audit_trail_info) = build_payment_proofs(content_addrs)?;
+        let (root_hash, audit_trail_info) = build_payment_proofs(content_addrs)?;
 
         // TODO: request an invoice to network which provides the amount to pay.
         // For now, we just pay 1 nano per Chunk.
@@ -87,7 +87,7 @@ impl WalletClient {
 
         let transfer = self
             .wallet
-            .local_send_storage_payment(storage_cost, reason_hash)
+            .local_send_storage_payment(storage_cost, root_hash, None)
             .await?;
 
         // send to network
