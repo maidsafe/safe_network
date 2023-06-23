@@ -4861,6 +4861,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "merkletree",
+ "proptest",
  "rand 0.8.5",
  "serde",
  "sn_dbc",
