@@ -79,7 +79,7 @@ pub(super) async fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
     };
 
     let mut deposits = vec![];
-    for entry in walkdir::WalkDir::new(received_dbcs_path)
+    for entry in walkdir::WalkDir::new(&received_dbcs_path)
         .into_iter()
         .flatten()
     {
@@ -104,7 +104,7 @@ pub(super) async fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
     }
 
     if deposits.is_empty() {
-        println!("No deposits found.");
+        println!("No deposits found at {}.", received_dbcs_path.display());
     }
 
     Ok(deposits)
