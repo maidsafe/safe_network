@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.22](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.21...sn_client-v0.85.22) - 2023-06-23
+
+### Added
+- forward chunk when not being the closest
+- repliate to peers lost record
+
+### Fixed
+- client upload to peers closer to chunk
+
 ## [0.85.21](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.20...sn_client-v0.85.21) - 2023-06-23
 
 ### Other
