@@ -154,6 +154,12 @@ impl Node {
                     }
                 });
             }
+            NetworkEvent::PutRequest { peer, record } => {
+                debug!("Got a Record PutRequest from {peer:?}");
+                if let Err(err) = self.validate_and_store_record(record).await {
+                    error!("Error while validating PutRequest {err:?}");
+                }
+            }
             NetworkEvent::PeerAdded(peer_id) => {
                 Marker::PeerAddedToRoutingTable(peer_id).log();
                 // perform a get_closest query to self on node join. This should help populate the node's RT
