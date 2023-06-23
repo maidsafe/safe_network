@@ -98,7 +98,7 @@ impl TestnetBuilder {
     /// Construct a `Testnet` instance using the options specified.
     ///
     /// The testnet instance and the path to the network contacts will be returned.
-    pub fn build(&self) -> Result<(Testnet, PathBuf)> {
+    pub fn build(&self) -> Result<Testnet> {
         let default_node_dir_path = dirs_next::data_dir()
             .ok_or_else(|| eyre!("Failed to obtain data directory path"))?
             .join("safe")
@@ -124,10 +124,7 @@ impl TestnetBuilder {
             self.flamegraph_mode,
             Box::new(node_launcher),
         )?;
-        let network_contacts_path = nodes_dir_path
-            .join(GENESIS_NODE_DIR_NAME)
-            .join("section_tree");
-        Ok((testnet, network_contacts_path))
+        Ok(testnet)
     }
 }
 
@@ -217,7 +214,7 @@ impl Testnet {
 
         let rpc_address = "127.0.0.1:12001".parse()?;
         let mut launch_args =
-            self.get_launch_args("safenode-1".to_string(), Some(rpc_address), None, node_args)?;
+            self.get_launch_args("safenode-1".to_string(), Some(rpc_address), node_args)?;
 
         let genesis_port: u16 = 11101;
         // Let's start gen on a different port
@@ -273,7 +270,6 @@ impl Testnet {
     /// # Arguments
     ///
     /// * `number_of_nodes` - The number of nodes to launch.
-    /// * `network_contacts_path` - The path to the network contacts file.
     /// * `node_args` - Additional arguments to pass to the node process, e.g., --json-logs.
     ///
     /// # Errors
@@ -281,12 +277,7 @@ impl Testnet {
     /// Returns an error if:
     /// * The node data directories cannot be created
     /// * The node process fails
-    pub fn launch_nodes(
-        &mut self,
-        number_of_nodes: usize,
-        network_contacts_path: &Path,
-        node_args: Vec<String>,
-    ) -> Result<()> {
+    pub fn launch_nodes(&mut self, number_of_nodes: usize, node_args: Vec<String>) -> Result<()> {
         let start = self.node_count + 2;
         let end = self.node_count + number_of_nodes;
         for i in start..=end {
@@ -304,7 +295,6 @@ impl Testnet {
             let launch_args = self.get_launch_args(
                 format!("safenode-{i}"),
                 Some(rpc_address),
-                Some(network_contacts_path),
                 node_args.clone(),
             )?;
             let launch_bin = self.get_launch_bin();
@@ -326,7 +316,6 @@ impl Testnet {
         &self,
         node_name: String,
         rpc_address: Option<SocketAddr>,
-        _network_contacts_path: Option<&Path>,
         node_args: Vec<String>,
     ) -> Result<Vec<String>> {
         let node_data_dir_path = self.nodes_dir_path.join(node_name.clone());
@@ -725,8 +714,6 @@ mod test {
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
         nodes_dir.create_dir_all()?;
-        let network_contacts_file = tmp_data_dir.child("network-contacts");
-        network_contacts_file.write_str("section tree content")?;
 
         let mut node_launcher = MockNodeLauncher::new();
         for i in 1..=20 {
@@ -741,8 +728,6 @@ mod test {
                 .with(
                     eq(node_bin_path.path().to_path_buf()),
                     eq(vec![
-                        "--network-contacts-file".to_string(),
-                        network_contacts_file.path().to_str().unwrap().to_string(),
                         "--root-dir".to_string(),
                         node_data_dir.clone(),
                         "--log-dir".to_string(),
@@ -760,11 +745,7 @@ mod test {
             false,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_nodes(
-            20,
-            network_contacts_file.path(),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet.launch_nodes(20, vec!["--json-logs".to_string()]);
 
         assert!(result.is_ok());
         assert_eq!(testnet.node_count, 20);
@@ -778,8 +759,6 @@ mod test {
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
         nodes_dir.create_dir_all()?;
-        let network_contacts_file = tmp_data_dir.child("network-contacts");
-        network_contacts_file.write_str("section tree content")?;
 
         let mut node_launcher = MockNodeLauncher::new();
         node_launcher.expect_launch().returning(|_, _| Ok(()));
@@ -790,11 +769,7 @@ mod test {
             false,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_nodes(
-            20,
-            network_contacts_file.path(),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet.launch_nodes(20, vec!["--json-logs".to_string()]);
 
         assert!(result.is_ok());
         for i in 1..=20 {
@@ -811,8 +786,6 @@ mod test {
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
-        let network_contacts_file = tmp_data_dir.child("network-contacts");
-        network_contacts_file.write_str("section tree content")?;
 
         let mut node_launcher = MockNodeLauncher::new();
         node_launcher.expect_launch().returning(|_, _| Ok(()));
@@ -823,11 +796,7 @@ mod test {
             false,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_nodes(
-            20,
-            network_contacts_file.path(),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet.launch_nodes(20, vec!["--json-logs".to_string()]);
 
         assert!(result.is_ok());
         for i in 2..=20 {
@@ -845,8 +814,6 @@ mod test {
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
         nodes_dir.create_dir_all()?;
-        let network_contacts_file = tmp_data_dir.child("network-contacts");
-        network_contacts_file.write_str("section tree content")?;
 
         let mut node_launcher = MockNodeLauncher::new();
         for i in 1..=20 {
@@ -873,8 +840,6 @@ mod test {
                         "--bin".to_string(),
                         SAFENODE_BIN_NAME.to_string(),
                         "--".to_string(),
-                        "--network-contacts-file".to_string(),
-                        network_contacts_file.path().to_str().unwrap().to_string(),
                         "--root-dir".to_string(),
                         node_data_dir.clone(),
                         "--log-dir".to_string(),
@@ -892,11 +857,7 @@ mod test {
             true,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_nodes(
-            20,
-            network_contacts_file.path(),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet.launch_nodes(20, vec!["--json-logs".to_string()]);
 
         assert!(result.is_ok());
         Ok(())
@@ -909,8 +870,6 @@ mod test {
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
         nodes_dir.create_dir_all()?;
-        let network_contacts_file = tmp_data_dir.child("network-contacts");
-        network_contacts_file.write_str("section tree content")?;
 
         let mut node_launcher = MockNodeLauncher::new();
         for i in 1..=30 {
@@ -925,8 +884,6 @@ mod test {
                 .with(
                     eq(node_bin_path.path().to_path_buf()),
                     eq(vec![
-                        "--network-contacts-file".to_string(),
-                        network_contacts_file.path().to_str().unwrap().to_string(),
                         "--root-dir".to_string(),
                         node_data_dir.clone(),
                         "--log-dir".to_string(),
@@ -944,19 +901,11 @@ mod test {
             false,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_nodes(
-            20,
-            network_contacts_file.path(),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet.launch_nodes(20, vec!["--json-logs".to_string()]);
         assert!(result.is_ok());
         assert_eq!(testnet.node_count, 20);
 
-        let result = testnet.launch_nodes(
-            10,
-            network_contacts_file.path(),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet.launch_nodes(10, vec!["--json-logs".to_string()]);
         assert!(result.is_ok());
         assert_eq!(testnet.node_count, 30);
         for i in 1..=30 {
