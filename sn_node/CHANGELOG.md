@@ -283,6 +283,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(node)* expose log markers in public api
 
+## [0.83.49](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.48...sn_node-v0.83.49) - 2023-06-23
+
+### Fixed
+- trival log correction
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
