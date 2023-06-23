@@ -299,6 +299,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - forward chunk when not being the closest
 - repliate to peers lost record
 
+## [0.83.52](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.51...sn_node-v0.83.52) - 2023-06-23
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
