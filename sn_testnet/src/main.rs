@@ -51,17 +51,6 @@ struct Cmd {
     #[clap(long = "join", short = 'j', value_parser)]
     join_network: bool,
 
-    /// Location for the network contacts file.
-    ///
-    /// This should only be used in conjunction with the 'join' command. You can supply it if you
-    /// have an existing network contacts path and you want to launch nodes perhaps on another
-    /// machine in your local network and have them join an existing testnet on the same network.
-    ///
-    /// If the value is not supplied, we will use the default location for the contacts file, which
-    /// will be at node-data-dir/local-test-network/sn-genesis-node/section_tree.
-    #[clap(long = "network-contacts-path", short = 'n', value_name = "FILE_PATH")]
-    network_contacts_path: Option<PathBuf>,
-
     /// Interval between node launches in milliseconds. Defaults to 5000.
     #[clap(long = "interval", short = 'i')]
     node_launch_interval: Option<u64>,
@@ -137,7 +126,6 @@ async fn main() -> Result<()> {
             args.node_launch_interval
                 .unwrap_or(DEFAULT_NODE_LAUNCH_INTERVAL),
             node_count,
-            args.network_contacts_path,
             args.node_args,
         )
         .await?;
@@ -229,7 +217,7 @@ async fn run_network(
     mut node_args: Vec<String>,
     flamegraph_mode: bool,
 ) -> Result<()> {
-    let (mut testnet, network_contacts_path) = Testnet::configure()
+    let mut testnet = Testnet::configure()
         .node_bin_path(node_bin_path)
         .node_launch_interval(node_launch_interval)
         .clear_nodes_dir()
@@ -240,9 +228,8 @@ async fn run_network(
 
     node_args.push("--peer".to_string());
     node_args.push(gen_multi_addr);
-    testnet.launch_nodes(node_count as usize, &network_contacts_path, node_args)?;
+    testnet.launch_nodes(node_count as usize, node_args)?;
 
-    // Perform a verification on the nodes launched (if requested) as a last step
     #[cfg(feature = "verify-nodes")]
     check_testnet::run(&testnet.nodes_dir_path, node_count).await?;
 
@@ -253,22 +240,19 @@ async fn join_network(
     node_bin_path: PathBuf,
     node_launch_interval: u64,
     node_count: u32,
-    network_contacts_path: Option<PathBuf>,
     node_args: Vec<String>,
 ) -> Result<()> {
-    let (mut testnet, default_network_contacts_path) = Testnet::configure()
+    let mut testnet = Testnet::configure()
         .node_bin_path(node_bin_path)
         .node_launch_interval(node_launch_interval)
         .build()?;
-    let network_contacts_path = network_contacts_path.unwrap_or(default_network_contacts_path);
     // The testnet::node_count is set to total_count - 1 to offset for the genesis.
     // Then plus 2 for start. Hence need an offset 1 here.
-    testnet.launch_nodes(node_count as usize + 1, &network_contacts_path, node_args)?;
+    testnet.launch_nodes(node_count as usize + 1, node_args)?;
     Ok(())
 }
 
 fn init_tracing() -> Result<()> {
     tracing_subscriber::fmt().init();
-
     Ok(())
 }
