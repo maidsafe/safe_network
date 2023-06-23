@@ -9,7 +9,7 @@
 use super::Client;
 
 use sn_dbc::{Dbc, PublicAddress, Token};
-use sn_protocol::messages::{MerkleTreeNodesType, PaymentProof};
+use sn_protocol::messages::PaymentProof;
 use sn_transfers::{
     client_transfers::TransferOutputs,
     payment_proof::build_payment_proofs,
@@ -22,7 +22,7 @@ use std::{collections::BTreeMap, iter::Iterator};
 use xor_name::XorName;
 
 /// Map from content address name to its corresponding PaymentProof.
-pub type PaymentProofsMap = BTreeMap<MerkleTreeNodesType, PaymentProof>;
+pub type PaymentProofsMap = BTreeMap<XorName, PaymentProof>;
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.

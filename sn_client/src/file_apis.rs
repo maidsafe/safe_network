@@ -166,7 +166,7 @@ impl Files {
     ) -> Result<ChunkAddress> {
         let chunk = package_small(small)?;
         let address = *chunk.address();
-        let payment = payment_proofs.get(&address.name().0).cloned();
+        let payment = payment_proofs.get(address.name()).cloned();
         // TODO: re-enable requirement to always provide payment proof
         //.ok_or(super::Error::MissingPaymentProof(address))?;
 
@@ -204,7 +204,7 @@ impl Files {
                 let client = self.client.clone();
                 let all_peers_clone = all_peers.clone();
                 let chunk_addr = *chunk.address();
-                let payment = payment_proofs.get(&chunk_addr.name().0).cloned();
+                let payment = payment_proofs.get(chunk_addr.name()).cloned();
                 // TODO: re-enable requirement to always provide payment proof
                 //.ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
 
