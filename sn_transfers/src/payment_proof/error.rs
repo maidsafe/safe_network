@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use sn_dbc::Hash;
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -31,6 +32,9 @@ pub enum Error {
     #[error("The leaf data for which proof was generated doesn't match the given item: {0:?}")]
     AuditTrailItemMismatch(XorName),
     /// The root data of the proof doesn't match the given hash
-    #[error("The root data of the proof doesn't match the given hash: {0}")]
-    RootHashMismatch(String),
+    #[error(
+        "The root data of the proof doesn't match the given hash: {}",
+        .0.to_hex()
+    )]
+    RootHashMismatch(Hash),
 }
