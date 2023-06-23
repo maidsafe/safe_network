@@ -302,6 +302,14 @@ impl Client {
         Ok(self.network.get_all_local_peers().await?)
     }
 
+    /// Returns the closest peers to the given `NetworkAddress`
+    /// that is fetched from the local Routing Table.
+    /// It is ordered by increasing distance of the peers.
+    /// Note self peer_id is not included in the result.
+    pub async fn get_closest_local_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
+        Ok(self.network.get_closest_local_peers(key).await?)
+    }
+
     /// Retrieve a `Chunk` from the kad network.
     pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
