@@ -74,8 +74,7 @@ use typenum::{UInt, UTerm, B0, B1};
 use xor_name::XorName;
 
 /// Map from content address name to its corresponding audit trail and trail path.
-pub type PaymentProofsTrailInfoMap =
-    BTreeMap<MerkleTreeNodesType, (Vec<MerkleTreeNodesType>, Vec<usize>)>;
+pub type PaymentProofsTrailInfoMap = BTreeMap<XorName, (Vec<MerkleTreeNodesType>, Vec<usize>)>;
 
 // We use a binary Merkle-tree to build payment proofs
 type BinaryMerkletreeProofType = Proof<MerkleTreeNodesType, UInt<UInt<UTerm, B1>, B0>>;
@@ -125,7 +124,10 @@ pub fn build_payment_proofs<'a>(
                 reason: err.to_string(),
             })?;
 
-        payment_proofs.insert(addr, (proof.lemma().to_vec(), proof.path().to_vec()));
+        payment_proofs.insert(
+            XorName(addr),
+            (proof.lemma().to_vec(), proof.path().to_vec()),
+        );
     }
 
     Ok((root_hash, payment_proofs))
@@ -253,17 +255,17 @@ mod tests {
         assert_eq!(payment_proofs.len(), addrs.len());
 
         assert!(
-            matches!(payment_proofs.get(&name0.0), Some((audit_trail, path)) if validate_payment_proof(name0, &root_hash, audit_trail, path).is_ok())
+            matches!(payment_proofs.get(&name0), Some((audit_trail, path)) if validate_payment_proof(name0, &root_hash, audit_trail, path).is_ok())
         );
         assert!(
-            matches!(payment_proofs.get(&name1.0), Some((audit_trail, path)) if validate_payment_proof(name1, &root_hash, audit_trail, path).is_ok())
+            matches!(payment_proofs.get(&name1), Some((audit_trail, path)) if validate_payment_proof(name1, &root_hash, audit_trail, path).is_ok())
         );
         assert!(
-            matches!(payment_proofs.get(&name2.0), Some(( audit_trail, path)) if validate_payment_proof(name2, &root_hash, audit_trail, path).is_ok())
+            matches!(payment_proofs.get(&name2), Some(( audit_trail, path)) if validate_payment_proof(name2, &root_hash, audit_trail, path).is_ok())
         );
 
         let (audit_trail, path) = payment_proofs
-            .get(&name2.0)
+            .get(&name2)
             .cloned()
             .ok_or_else(|| eyre!("Failed to obtain valid payment proof"))?;
         let invalid_name = XorName([99; 32]);
