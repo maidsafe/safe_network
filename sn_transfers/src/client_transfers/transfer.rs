@@ -55,32 +55,29 @@ pub fn create_transfer(
 }
 
 /// A function for creating an offline transfer of tokens for a storage payment.
-/// This is done by creating a new network-owned-DBC (and a change dbc if any)
+/// This is done by creating a new network owned output (and a change dbc if any)
 /// by selecting from the available input dbcs, and creating the necessary
 /// spends to do so.
 pub fn create_storage_payment_transfer(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
-    storage_cost: Token,
     change_to: PublicAddress,
+    storage_cost: Token,
+    root_hash: Hash,
     reason_hash: Hash,
 ) -> Result<TransferOutputs> {
     // We need to select the necessary number of dbcs from those that we were passed.
     let (dbcs_to_spend, change_amount) = select_inputs(available_dbcs, storage_cost)?;
 
-    // We build the recipients to contain just a single output which is for the network-owned-DBC.
-    // This is a special output that spendbook peers validating the signed (input) spends will be verifying
-    // before accepting them as valid spends for a storage payment. This special output is
-    // expected to be built from hashing: input DBCs ids + reason_hash
-    let mut fee_id_bytes = Vec::<u8>::new();
-    fee_id_bytes.extend(reason_hash.slice());
+    // We build the recipients to contain just a single output which is for the network owned output.
+    // This is a special output that spendbook peers validating the signed spends (inputs) will be
+    // verifying before accepting them as valid spends for a storage payment. This special output is
+    // expected to be built from hashing: root_hash + input DBCs ids
+    let mut fee_id_bytes = root_hash.slice().to_vec();
     dbcs_to_spend
         .iter()
         .for_each(|(dbc, _)| fee_id_bytes.extend(&dbc.id().to_bytes()));
 
-    let fee = FeeOutput {
-        id: Hash::hash(&fee_id_bytes),
-        amount: storage_cost.as_nano(),
-    };
+    let fee = FeeOutput::new(Hash::hash(&fee_id_bytes), storage_cost.as_nano(), root_hash);
 
     let selected_inputs = Inputs {
         dbcs_to_spend,
@@ -138,18 +135,12 @@ fn select_inputs(
         }
     }
 
-    // If not enough spendable was found, this check will return an error.
-    verify_amounts(total_input_amount, total_output_amount)?;
-
-    Ok((dbcs_to_spend, change_amount))
-}
-
-// Make sure total input amount gathered with input DBCs are enough for the output amount
-fn verify_amounts(total_input_amount: Token, total_output_amount: Token) -> Result<()> {
+    // Make sure total input amount gathered with input DBCs are enough for the output amount
     if total_output_amount > total_input_amount {
         return Err(Error::NotEnoughBalance(total_input_amount.to_string()));
     }
-    Ok(())
+
+    Ok((dbcs_to_spend, change_amount))
 }
 
 /// The tokens of the input dbcs will be transfered to the

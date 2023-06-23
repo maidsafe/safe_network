@@ -295,7 +295,7 @@ impl Node {
                 // exit early, potentially logging false connection woes
             }
             other => {
-                error!("handle_response not implemented for {other:?}");
+                warn!("handle_response not implemented for {other:?}");
                 return Ok(());
             }
         };
