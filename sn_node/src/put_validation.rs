@@ -242,12 +242,11 @@ impl Node {
                     }
 
                     // check the reason hash verifies the merkle-tree audit trail and path against the content address name
-                    validate_payment_proof(addr_name, reason_hash, audit_trail, path).map_err(
-                        |err| ProtocolError::InvalidPaymentProof {
+                    let _ = validate_payment_proof(addr_name, reason_hash, audit_trail, path)
+                        .map_err(|err| ProtocolError::InvalidPaymentProof {
                             addr_name,
                             reason: err.to_string(),
-                        },
-                    )?
+                        })?;
                 }
             }
         }

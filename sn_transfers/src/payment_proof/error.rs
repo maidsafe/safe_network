@@ -30,7 +30,7 @@ pub enum Error {
     /// The leaf data for which proof was generated doesn't match the given item
     #[error("The leaf data for which proof was generated doesn't match the given item: {0:?}")]
     AuditTrailItemMismatch(XorName),
-    /// The root data of the proof doesn't match the given reason hash
-    #[error("The root data of the proof doesn't match the given reason hash: {0}")]
-    ReasonHashMismatch(String),
+    /// The root data of the proof doesn't match the given hash
+    #[error("The root data of the proof doesn't match the given hash: {0}")]
+    RootHashMismatch(String),
 }
