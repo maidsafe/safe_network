@@ -225,7 +225,7 @@ impl SwarmDriver {
                     }
                 }
                 mdns::Event::Expired(peer) => {
-                    info!("mdns peer {peer:?} expired");
+                    debug!("mdns peer {peer:?} expired");
                 }
             },
             SwarmEvent::NewListenAddr { address, .. } => {
@@ -241,7 +241,7 @@ impl SwarmDriver {
                 peer_id, endpoint, ..
             } => {
                 if endpoint.is_dialer() {
-                    info!("Connected with {peer_id:?}");
+                    debug!("Connected with {peer_id:?}");
 
                     self.dialed_peers.push(peer_id);
 
@@ -256,7 +256,7 @@ impl SwarmDriver {
                 cause,
                 num_established,
             } => {
-                info!("Connection closed to Peer {peer_id}({num_established:?}) - {endpoint:?} - {cause:?}");
+                debug!("Connection closed to Peer {peer_id}({num_established:?}) - {endpoint:?} - {cause:?}");
             }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 trace!("OutgoingConnectionError to {peer_id:?} - {error:?}");
@@ -287,7 +287,7 @@ impl SwarmDriver {
                     if let Some(sender) = self.pending_dial.remove(&peer_id) {
                         let _ = sender.send(Err(error.into()));
                     } else {
-                        info!("OutgoingConnectionError is due to non pending_dial to {peer_id}");
+                        debug!("OutgoingConnectionError is due to non pending_dial to {peer_id}");
                     }
                 }
             }

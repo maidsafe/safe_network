@@ -524,7 +524,7 @@ impl Network {
     /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
     pub async fn node_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
-        info!(
+        debug!(
             "Sending {request:?} with dst {:?} to the closest peers.",
             request.dst()
         );
@@ -541,7 +541,7 @@ impl Network {
     /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
     pub async fn send_req_no_reply_to_closest(&self, request: &Request) -> Result<()> {
-        info!(
+        debug!(
             "Sending {request:?} with dst {:?} to the closest peers.",
             request.dst()
         );
@@ -554,7 +554,7 @@ impl Network {
 
     /// Send `Request` to the closest peers to self
     pub async fn send_req_no_reply_to_self_closest(&self, request: &Request) -> Result<()> {
-        info!("Sending {request:?} to self closest peers.");
+        debug!("Sending {request:?} to self closest peers.");
         // Using `client_get_closest_peers` to filter self out.
         let closest_peers = self.client_get_closest_peers(&request.dst()).await?;
         for peer in closest_peers {
@@ -569,7 +569,7 @@ impl Network {
         request: &Request,
         expect_all_responses: bool,
     ) -> Result<Vec<Result<Response>>> {
-        info!(
+        debug!(
             "Sending {request:?} with dst {:?} to the closest peers.",
             request.dst()
         );
@@ -898,7 +898,7 @@ mod tests {
                 let res = res
                     .remove(0)
                     .expect("There should be at least one response!");
-                info!("Got response {:?}", res);
+                debug!("Got response {:?}", res);
                 assert_matches!(
                     res,
                     Response::Cmd(CmdResponse::StoreChunk(Ok(CmdOk::StoredSuccessfully)))
