@@ -21,7 +21,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::RegisterStorage;
-use std::{net::SocketAddr, path::Path, time::Duration};
+use std::{net::SocketAddr, path::PathBuf, time::Duration};
 use tokio::task::spawn;
 
 /// Once a node is started and running, the user obtains
@@ -35,6 +35,18 @@ impl RunningNode {
     /// Returns this node's `PeerId`
     pub fn peer_id(&self) -> PeerId {
         self.network.peer_id
+    }
+
+    /// Returns the root directory path for the node.
+    ///
+    /// This will either be a value defined by the user, or a default location, plus the peer ID
+    /// appended. The default location is platform specific:
+    ///  - Linux: $HOME/.local/share/safe/node/<peer-id>
+    ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>
+    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\node\<peer-id>
+    #[allow(rustdoc::invalid_html_tags)]
+    pub fn root_dir_path(&self) -> PathBuf {
+        self.network.root_dir_path.clone()
     }
 
     /// Returns a `SwarmLocalState` with some information obtained from swarm's local state.
@@ -67,7 +79,7 @@ impl Node {
         addr: SocketAddr,
         initial_peers: Vec<(PeerId, Multiaddr)>,
         local: bool,
-        root_dir: &Path,
+        root_dir: Option<PathBuf>,
     ) -> Result<RunningNode> {
         let (network, mut network_event_receiver, swarm_driver) =
             SwarmDriver::new(keypair, addr, local, root_dir)?;
@@ -75,7 +87,7 @@ impl Node {
 
         let node = Self {
             network: network.clone(),
-            registers: RegisterStorage::new(root_dir),
+            registers: RegisterStorage::new(&network.root_dir_path),
             events_channel: node_events_channel.clone(),
             initial_peers,
         };
