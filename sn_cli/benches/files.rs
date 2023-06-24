@@ -19,6 +19,18 @@ fn safe_files_upload(dir: &str) {
     }
 }
 
+fn safe_files_download() {
+    let output = Command::new("./target/release/safe")
+        .arg("files")
+        .arg("download")
+        .output()
+        .expect("Failed to execute command");
+
+    if !output.status.success() {
+        panic!("Download command executed with failing error code");
+    }
+}
+
 fn create_file(size_mb: u64) -> tempfile::TempDir {
     let dir = tempdir().expect("Failed to create temporary directory");
     let file_path = dir.path().join("tempfile");
@@ -39,8 +51,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let sizes = vec![1, 10]; // File sizes in MB. Add more sizes as needed
 
-    for size in sizes {
-        let dir = create_file(size);
+    for size in sizes.iter() {
+        let dir = create_file(*size);
         let dir_path = dir.path().to_str().unwrap();
 
         let mut group = c.benchmark_group(format!("Upload Benchmark {}MB", size));
@@ -54,6 +66,24 @@ fn criterion_benchmark(c: &mut Criterion) {
         group.bench_function(bench_id, |b| b.iter(|| safe_files_upload(dir_path)));
         group.finish();
     }
+
+    let mut group = c.benchmark_group("Download Benchmark".to_string());
+    group.sampling_mode(criterion::SamplingMode::Flat);
+    group.measurement_time(Duration::from_secs(120));
+    group.warm_up_time(Duration::from_secs(5));
+
+    // The download will download all uploaded files during bench.
+    // That will then be around 1.1GB in total, and may take around 40s for each iteratioin.
+    // Hence we have to reduce the number of iterations from the default 100 to 10,
+    // To avoid the benchmark test taking over one hour to complete.
+    let total_size: u64 = sizes.iter().map(|size| 100 * size).sum();
+    group.sample_size(10);
+
+    // Set the throughput to be reported in terms of bytes
+    group.throughput(Throughput::Bytes(total_size * 1024 * 1024));
+    let bench_id = "safe files download".to_string();
+    group.bench_function(bench_id, |b| b.iter(safe_files_download));
+    group.finish();
 }
 
 criterion_group!(benches, criterion_benchmark);
