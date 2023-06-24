@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(feature = "verify-nodes")]
     tonic_build::compile_protos("../sn_protocol/src/safenode_proto/safenode.proto")?;
 
     Ok(())
