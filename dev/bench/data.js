@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687546163163,
+  "lastUpdate": 1687646883083,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -883,6 +883,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 6.8680750646226825,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4d10bf30422453ca2aedd7f33706338f321d596e",
+          "message": "chore: log detailed peer distance and kBucketTable stats",
+          "timestamp": "2023-06-24T21:57:10Z",
+          "tree_id": "ffbc9a75a6d1c57837a7be973dc9ef22cf6b55bf",
+          "url": "https://github.com/maidsafe/safe_network/commit/4d10bf30422453ca2aedd7f33706338f321d596e"
+        },
+        "date": 1687646881996,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6529956272335624,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 6.216894149637318,
             "unit": "MiB/s"
           }
         ]
