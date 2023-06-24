@@ -59,7 +59,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
+        run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
         env:
           SN_LOG: "all"
         timeout-minutes: 10

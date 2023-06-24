@@ -5,6 +5,9 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
+
+pub mod check_testnet;
+
 use color_eyre::{eyre::eyre, Result};
 #[cfg(test)]
 use mockall::automock;
@@ -199,7 +202,7 @@ impl Testnet {
     /// * The node data directory cannot be created
     /// * The node process fails
     /// * The network has already been launched previously
-    pub fn launch_genesis(
+    pub async fn launch_genesis(
         &self,
         _address: Option<SocketAddr>,
         node_args: Vec<String>,
@@ -210,14 +213,11 @@ impl Testnet {
             ));
         }
 
-        // info!("Launching genesis node using address {address}...");
-
         let rpc_address = "127.0.0.1:12001".parse()?;
         let mut launch_args =
             self.get_launch_args("safenode-1".to_string(), Some(rpc_address), node_args)?;
 
         let genesis_port: u16 = 11101;
-        // Let's start gen on a different port
         launch_args.push("--port".to_string());
         launch_args.push(genesis_port.to_string());
 
@@ -233,36 +233,9 @@ impl Testnet {
         );
         std::thread::sleep(std::time::Duration::from_millis(self.node_launch_interval));
 
-        // Now lets grab the genesis peer id.
-        let gen_id_query_args = vec![
-            "run",
-            "--release",
-            "--example",
-            "safenode_rpc_client",
-            "--",
-            "127.0.0.1:12001",
-            "info",
-        ];
-
-        let result = Command::new("cargo").args(gen_id_query_args).output()?;
-
-        use regex::Regex;
-        let re = Regex::new(r"Peer Id: ([^\n]+)").unwrap();
-        let stdout = String::from_utf8(result.stdout).unwrap();
-        if let Some(captures) = re.captures(&stdout) {
-            let peer_id = captures.get(1).unwrap().as_str();
-            info!("Peer Id: {}", peer_id);
-
-            let genesis_multi_addr =
-                format!("/ip4/127.0.0.1/tcp/{:?}/p2p/{}", genesis_port, peer_id);
-
-            Ok(genesis_multi_addr)
-        } else {
-            let err = String::from_utf8(result.stderr)?;
-            Err(eyre!(
-                "Genesis node PeerId could not be determined: {err:?}"
-            ))
-        }
+        let peer_id = check_testnet::obtain_peer_id(rpc_address).await?;
+        let genesis_multi_addr = format!("/ip4/127.0.0.1/tcp/{:?}/p2p/{}", genesis_port, peer_id);
+        Ok(genesis_multi_addr)
     }
 
     /// Launches a number of new nodes, either for a new network or an existing network.
@@ -453,8 +426,8 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn launch_genesis_should_launch_the_genesis_node() -> Result<()> {
+    #[tokio::test]
+    async fn launch_genesis_should_launch_the_genesis_node() -> Result<()> {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
         node_bin_path.write_binary(b"fake safenode code")?;
@@ -493,17 +466,19 @@ mod test {
             false,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_genesis(
-            Some("10.0.0.1:12000".parse()?),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet
+            .launch_genesis(
+                Some("10.0.0.1:12000".parse()?),
+                vec!["--json-logs".to_string()],
+            )
+            .await;
 
         assert!(result.is_ok());
         Ok(())
     }
 
-    #[test]
-    fn launch_genesis_should_launch_the_genesis_node_as_a_local_network() -> Result<()> {
+    #[tokio::test]
+    async fn launch_genesis_should_launch_the_genesis_node_as_a_local_network() -> Result<()> {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
         node_bin_path.write_binary(b"fake safenode code")?;
@@ -542,14 +517,16 @@ mod test {
             false,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_genesis(None, vec!["--json-logs".to_string()]);
+        let result = testnet
+            .launch_genesis(None, vec!["--json-logs".to_string()])
+            .await;
 
         assert!(result.is_ok());
         Ok(())
     }
 
-    #[test]
-    fn launch_genesis_should_create_the_genesis_data_directory() -> Result<()> {
+    #[tokio::test]
+    async fn launch_genesis_should_create_the_genesis_data_directory() -> Result<()> {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
         node_bin_path.write_binary(b"fake safenode code")?;
@@ -565,10 +542,12 @@ mod test {
             false,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_genesis(
-            Some("10.0.0.1:12000".parse()?),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet
+            .launch_genesis(
+                Some("10.0.0.1:12000".parse()?),
+                vec!["--json-logs".to_string()],
+            )
+            .await;
 
         assert!(result.is_ok());
         let genesis_data_dir = nodes_dir.child(GENESIS_NODE_DIR_NAME);
@@ -576,8 +555,8 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn launch_genesis_should_create_the_genesis_data_directory_when_parents_are_missing(
+    #[tokio::test]
+    async fn launch_genesis_should_create_the_genesis_data_directory_when_parents_are_missing(
     ) -> Result<()> {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
@@ -593,10 +572,12 @@ mod test {
             false,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_genesis(
-            Some("10.0.0.1:12000".parse()?),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet
+            .launch_genesis(
+                Some("10.0.0.1:12000".parse()?),
+                vec!["--json-logs".to_string()],
+            )
+            .await;
 
         assert!(result.is_ok());
         let genesis_data_dir = nodes_dir.child(GENESIS_NODE_DIR_NAME);
@@ -604,8 +585,8 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn launch_genesis_with_flamegraph_mode_should_launch_the_genesis_node() -> Result<()> {
+    #[tokio::test]
+    async fn launch_genesis_with_flamegraph_mode_should_launch_the_genesis_node() -> Result<()> {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
         node_bin_path.write_binary(b"fake safenode code")?;
@@ -658,17 +639,20 @@ mod test {
             true,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_genesis(
-            Some("10.0.0.1:12000".parse()?),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet
+            .launch_genesis(
+                Some("10.0.0.1:12000".parse()?),
+                vec!["--json-logs".to_string()],
+            )
+            .await;
 
         assert!(result.is_ok());
         Ok(())
     }
 
-    #[test]
-    fn launch_genesis_should_return_error_if_we_are_using_an_existing_network() -> Result<()> {
+    #[tokio::test]
+    async fn launch_genesis_should_return_error_if_we_are_using_an_existing_network() -> Result<()>
+    {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
         node_bin_path.write_binary(b"fake safenode code")?;
@@ -690,10 +674,12 @@ mod test {
             false,
             Box::new(node_launcher),
         )?;
-        let result = testnet.launch_genesis(
-            Some("10.0.0.1:12000".parse()?),
-            vec!["--json-logs".to_string()],
-        );
+        let result = testnet
+            .launch_genesis(
+                Some("10.0.0.1:12000".parse()?),
+                vec!["--json-logs".to_string()],
+            )
+            .await;
 
         match result {
             Ok(_) => Err(eyre!("This test should return an error")),

@@ -173,6 +173,18 @@ pub async fn run(logs_path: &Path, node_count: u32) -> Result<()> {
     Ok(())
 }
 
+pub async fn obtain_peer_id(address: SocketAddr) -> Result<PeerId> {
+    let endpoint = format!("https://{address}");
+    println!("Connecting to node's RPC service at {endpoint} ...");
+    let mut client = SafeNodeClient::connect(endpoint).await?;
+
+    let request = Request::new(NodeInfoRequest {});
+    let response = client.node_info(request).await?;
+    let node_info = response.get_ref();
+    let peer_id = PeerId::from_bytes(&node_info.peer_id)?;
+    Ok(peer_id)
+}
+
 // Parse node logs files and extract info for each of them
 fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
     let mut nodes = BTreeMap::<PathBuf, NodeInfo>::new();
