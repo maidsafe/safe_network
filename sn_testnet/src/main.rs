@@ -27,9 +27,6 @@
     unused_results
 )]
 
-#[cfg(feature = "verify-nodes")]
-mod check_testnet;
-
 use sn_testnet::{Testnet, DEFAULT_NODE_LAUNCH_INTERVAL, SAFENODE_BIN_NAME};
 
 use clap::Parser;
@@ -224,14 +221,13 @@ async fn run_network(
         .flamegraph_mode(flamegraph_mode)
         .build()?;
 
-    let gen_multi_addr = testnet.launch_genesis(None, node_args.clone())?;
+    let gen_multi_addr = testnet.launch_genesis(None, node_args.clone()).await?;
 
     node_args.push("--peer".to_string());
     node_args.push(gen_multi_addr);
     testnet.launch_nodes(node_count as usize, node_args)?;
 
-    #[cfg(feature = "verify-nodes")]
-    check_testnet::run(&testnet.nodes_dir_path, node_count).await?;
+    sn_testnet::check_testnet::run(&testnet.nodes_dir_path, node_count).await?;
 
     Ok(())
 }
