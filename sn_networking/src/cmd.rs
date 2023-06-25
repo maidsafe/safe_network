@@ -9,7 +9,7 @@
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 use crate::{error::Result, multiaddr_pop_p2p, CLOSE_GROUP_SIZE};
 use libp2p::{
-    kad::{kbucket::Distance, store::RecordStore, Quorum, Record, RecordKey},
+    kad::{store::RecordStore, KBucketDistance as Distance, Quorum, Record, RecordKey},
     swarm::{
         dial_opts::{DialOpts, PeerCondition},
         DialError,

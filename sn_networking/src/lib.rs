@@ -28,7 +28,6 @@ use self::{
     cmd::SwarmCmd,
     error::Result,
     event::NodeBehaviour,
-    msg::{MsgCodec, MsgProtocol},
     record_store::{
         DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
         REPLICATION_INTERVAL_UPPER_BOUND,
@@ -41,12 +40,12 @@ use libp2p::mdns;
 use libp2p::{
     identity::Keypair,
     kad::{
-        kbucket::Distance, kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
+        KBucketDistance as Distance, KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
         RecordKey,
     },
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
-    swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
+    swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
 use rand::Rng;
@@ -56,7 +55,6 @@ use sn_protocol::{
 };
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
-    iter,
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
@@ -256,9 +254,8 @@ impl SwarmDriver {
                 .set_request_timeout(request_response_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S))
                 .set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
-            request_response::Behaviour::new(
-                MsgCodec(),
-                iter::once((MsgProtocol(), req_res_protocol)),
+            request_response::cbor::Behaviour::new(
+                [(StreamProtocol::new("/safe/2"), req_res_protocol)],
                 cfg,
             )
         };
@@ -310,9 +307,7 @@ impl SwarmDriver {
         let identify = {
             let cfg =
                 libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                    .with_agent_version(identify_version)
-                    // Default in future libp2p version. (TODO: check if default already)
-                    .with_initial_delay(Duration::from_secs(0));
+                    .with_agent_version(identify_version);
             libp2p::identify::Behaviour::new(cfg)
         };
 
@@ -846,18 +841,14 @@ pub fn multiaddr_is_global(multiaddr: &Multiaddr) -> bool {
 
 /// Pop off the `/p2p/<peer_id>`. This mutates the `Multiaddr` and returns the `PeerId` if it exists.
 pub(crate) fn multiaddr_pop_p2p(multiaddr: &mut Multiaddr) -> Option<PeerId> {
-    let id = match multiaddr.iter().last() {
-        Some(Protocol::P2p(hash)) => PeerId::from_multihash(hash).ok(),
-        _ => None,
-    };
-
     // Mutate the `Multiaddr` to remove the `/p2p/<peer_id>`.
-    if id.is_some() {
-        let _ = multiaddr.pop();
+    let protocol = multiaddr.pop();
+    match protocol {
+        Some(Protocol::P2p(peer_id)) => Some(peer_id),
+        _ => None,
     }
-
-    id
 }
+
 /// Build a `Multiaddr` with the p2p protocol filtered out.
 pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
     multiaddr

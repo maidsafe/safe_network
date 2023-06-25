@@ -8,7 +8,6 @@
 
 use super::{
     error::{Error, Result},
-    msg::MsgCodec,
     record_store::DiskBackedRecordStore,
     SwarmDriver,
 };
@@ -33,9 +32,9 @@ use tokio::sync::oneshot;
 use tracing::{info, warn};
 
 #[derive(NetworkBehaviour)]
-#[behaviour(out_event = "NodeEvent")]
+#[behaviour(to_swarm = "NodeEvent")]
 pub(super) struct NodeBehaviour {
-    pub(super) request_response: request_response::Behaviour<MsgCodec>,
+    pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
     pub(super) kademlia: Kademlia<DiskBackedRecordStore>,
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
@@ -175,11 +174,9 @@ impl SwarmDriver {
                             }
 
                             // If the peer supports AutoNAT, add it as server
-                            if info
-                                .protocols
-                                .iter()
-                                .any(|protocol| protocol.starts_with("/libp2p/autonat/"))
-                            {
+                            if info.protocols.iter().any(|protocol| {
+                                protocol.to_string().starts_with("/libp2p/autonat/")
+                            }) {
                                 let a = &mut self.swarm.behaviour_mut().autonat;
                                 // It could be that we are on a local network and have AutoNAT disabled.
                                 if let Some(autonat) = a.as_mut() {
@@ -239,8 +236,9 @@ impl SwarmDriver {
                 endpoint,
                 cause,
                 num_established,
+                connection_id,
             } => {
-                debug!(%peer_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
+                debug!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
             }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 error!("OutgoingConnectionError to {peer_id:?} - {error:?}");
@@ -271,7 +269,10 @@ impl SwarmDriver {
                 }
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
-            SwarmEvent::Dialing(peer_id) => trace!("Dialing {peer_id}"),
+            SwarmEvent::Dialing {
+                peer_id,
+                connection_id,
+            } => trace!("Dialing {peer_id:?} on {connection_id:?}"),
 
             SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
                 autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
