@@ -221,7 +221,7 @@ async fn run_network(
         .flamegraph_mode(flamegraph_mode)
         .build()?;
 
-    let gen_multi_addr = testnet.launch_genesis(None, node_args.clone()).await?;
+    let gen_multi_addr = testnet.launch_genesis(node_args.clone()).await?;
 
     node_args.push("--peer".to_string());
     node_args.push(gen_multi_addr);
