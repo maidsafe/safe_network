@@ -9,10 +9,13 @@
 pub mod check_testnet;
 
 use color_eyre::{eyre::eyre, Result};
+use libp2p::identity::PeerId;
 #[cfg(test)]
 use mockall::automock;
+use std::future::Future;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::process::{Command, Stdio};
 use tracing::{debug, info};
 
@@ -32,6 +35,17 @@ pub trait NodeLauncher {
     fn launch(&self, node_bin_path: &Path, args: Vec<String>) -> Result<()>;
 }
 
+/// This trait exists for unit testing.
+///
+/// It allows us to return a dummy PeerId during a test without making a real RPC call.
+#[cfg_attr(test, automock)]
+pub trait RpcClient {
+    fn obtain_peer_id(
+        &self,
+        rpc_address: SocketAddr,
+    ) -> Pin<Box<dyn Future<Output = Result<PeerId>> + 'static>>;
+}
+
 #[derive(Default)]
 pub struct SafeNodeLauncher {}
 impl NodeLauncher for SafeNodeLauncher {
@@ -43,6 +57,21 @@ impl NodeLauncher for SafeNodeLauncher {
             .stderr(Stdio::inherit())
             .spawn()?;
         Ok(())
+    }
+}
+
+#[derive(Default)]
+pub struct SafeRpcClient {}
+impl RpcClient for SafeRpcClient {
+    fn obtain_peer_id(
+        &self,
+        rpc_address: SocketAddr,
+    ) -> Pin<Box<dyn Future<Output = Result<PeerId>> + 'static>> {
+        Box::pin(async move {
+            let peer_id = crate::check_testnet::obtain_peer_id(rpc_address).await?;
+            info!("Obtained peer ID {}", peer_id.to_string());
+            Ok(peer_id)
+        })
     }
 }
 
@@ -115,7 +144,6 @@ impl TestnetBuilder {
             std::fs::remove_dir_all(nodes_dir_path.clone())?;
         }
 
-        let node_launcher = SafeNodeLauncher::default();
         let testnet = Testnet::new(
             self.node_bin_path
                 .as_ref()
@@ -125,7 +153,8 @@ impl TestnetBuilder {
                 .unwrap_or(DEFAULT_NODE_LAUNCH_INTERVAL),
             nodes_dir_path.clone(),
             self.flamegraph_mode,
-            Box::new(node_launcher),
+            Box::default() as Box<SafeNodeLauncher>,
+            Box::default() as Box<SafeRpcClient>,
         )?;
         Ok(testnet)
     }
@@ -138,6 +167,7 @@ pub struct Testnet {
     pub flamegraph_mode: bool,
     pub node_count: usize,
     pub launcher: Box<dyn NodeLauncher>,
+    pub rpc_client: Box<dyn RpcClient>,
 }
 
 impl Testnet {
@@ -151,6 +181,7 @@ impl Testnet {
         nodes_dir_path: PathBuf,
         flamegraph_mode: bool,
         launcher: Box<dyn NodeLauncher>,
+        rpc_client: Box<dyn RpcClient>,
     ) -> Result<Self> {
         let mut node_count = 0;
         if nodes_dir_path.exists() {
@@ -178,6 +209,7 @@ impl Testnet {
             flamegraph_mode,
             node_count,
             launcher,
+            rpc_client,
         })
     }
 
@@ -186,15 +218,15 @@ impl Testnet {
         TestnetBuilder::default()
     }
 
-    /// Launches a genesis node at the specified address.
+    /// Launches a genesis node at 127.0.0.1:11101.
     ///
-    /// Returns the multiaddress of the genesis node.
+    /// The RPC service is launched along with the node, on port 12001.
+    ///
+    /// Returns the MultiAdrr of the genesis node, including the peer ID.
     ///
     /// # Arguments
     ///
-    /// * `address` - Optional address for where the genesis node will listen for connections. If
-    /// not specified, the 127.0.0.1:12000 local address will be used.
-    /// * `node_args` - Additional arguments to pass to the node process, e.g., --json-logs.
+    /// * `node_args` - Additional arguments to pass to the node process, e.g., --json-log-output.
     ///
     /// # Errors
     ///
@@ -202,11 +234,7 @@ impl Testnet {
     /// * The node data directory cannot be created
     /// * The node process fails
     /// * The network has already been launched previously
-    pub async fn launch_genesis(
-        &self,
-        _address: Option<SocketAddr>,
-        node_args: Vec<String>,
-    ) -> Result<String> {
+    pub async fn launch_genesis(&self, node_args: Vec<String>) -> Result<String> {
         if self.node_count != 0 {
             return Err(eyre!(
                 "A genesis node cannot be launched for an existing network"
@@ -225,7 +253,6 @@ impl Testnet {
         std::fs::create_dir_all(node_data_dir_path)?;
 
         let launch_bin = self.get_launch_bin();
-
         self.launcher.launch(&launch_bin, launch_args)?;
         info!(
             "Delaying for {} seconds before launching other nodes",
@@ -233,7 +260,7 @@ impl Testnet {
         );
         std::thread::sleep(std::time::Duration::from_millis(self.node_launch_interval));
 
-        let peer_id = check_testnet::obtain_peer_id(rpc_address).await?;
+        let peer_id = self.rpc_client.obtain_peer_id(rpc_address).await?;
         let genesis_multi_addr = format!("/ip4/127.0.0.1/tcp/{:?}/p2p/{}", genesis_port, peer_id);
         Ok(genesis_multi_addr)
     }
@@ -251,7 +278,11 @@ impl Testnet {
     /// * The node data directories cannot be created
     /// * The node process fails
     pub fn launch_nodes(&mut self, number_of_nodes: usize, node_args: Vec<String>) -> Result<()> {
-        let start = self.node_count + 2;
+        let start = if self.node_count == 0 {
+            self.node_count + 2
+        } else {
+            self.node_count + 1
+        };
         let end = self.node_count + number_of_nodes;
         for i in start..=end {
             info!("Launching node {i} of {end}...");
@@ -264,7 +295,6 @@ impl Testnet {
             std::fs::create_dir_all(&node_data_dir_path)?;
 
             let rpc_address = format!("127.0.0.1:{}", 12000 + i).parse()?;
-
             let launch_args = self.get_launch_args(
                 format!("safenode-{i}"),
                 Some(rpc_address),
@@ -334,22 +364,38 @@ mod test {
     use super::*;
     use assert_fs::prelude::*;
     use color_eyre::Result;
+    use libp2p::identity::Keypair;
     use mockall::predicate::*;
 
     const NODE_LAUNCH_INTERVAL: u64 = 0;
     const TESTNET_DIR_NAME: &str = "local-test-network";
 
-    #[test]
-    fn new_should_create_a_testnet_with_zero_nodes_when_no_previous_network_exists() -> Result<()> {
+    fn setup_default_mocks() -> (MockNodeLauncher, MockRpcClient) {
         let mut node_launcher = MockNodeLauncher::new();
         node_launcher.expect_launch().returning(|_, _| Ok(()));
+        let rpc_client = setup_default_rpc_client_mock();
+        (node_launcher, rpc_client)
+    }
 
+    fn setup_default_rpc_client_mock() -> MockRpcClient {
+        let mut rpc_client = MockRpcClient::new();
+        rpc_client.expect_obtain_peer_id().returning(move |_| {
+            let peer_id = PeerId::from_public_key(&Keypair::generate_ed25519().public());
+            Box::pin(async move { Ok(peer_id) })
+        });
+        rpc_client
+    }
+
+    #[test]
+    fn new_should_create_a_testnet_with_zero_nodes_when_no_previous_network_exists() -> Result<()> {
+        let (node_launcher, rpc_client) = setup_default_mocks();
         let testnet = Testnet::new(
             PathBuf::from(SAFENODE_BIN_NAME),
             30000,
             PathBuf::from(TESTNET_DIR_NAME),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
 
         assert_eq!(testnet.node_bin_path, PathBuf::from(SAFENODE_BIN_NAME));
@@ -373,21 +419,21 @@ mod test {
             node_dir.create_dir_all()?;
         }
 
-        let mut node_launcher = MockNodeLauncher::new();
-        node_launcher.expect_launch().returning(|_, _| Ok(()));
+        let (node_launcher, rpc_client) = setup_default_mocks();
         let testnet = Testnet::new(
             PathBuf::from(SAFENODE_BIN_NAME),
             30000,
             nodes_dir.to_path_buf(),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
 
         assert_eq!(testnet.node_bin_path, PathBuf::from(SAFENODE_BIN_NAME));
         assert_eq!(testnet.node_launch_interval, 30000);
         assert_eq!(testnet.nodes_dir_path, nodes_dir.to_path_buf());
         assert!(!testnet.flamegraph_mode);
-        assert_eq!(testnet.node_count, 20);
+        assert_eq!(testnet.node_count, 19);
 
         Ok(())
     }
@@ -406,22 +452,21 @@ mod test {
         let random_dir = nodes_dir.child("user-created-random-dir");
         random_dir.create_dir_all()?;
 
-        let mut node_launcher = MockNodeLauncher::new();
-        node_launcher.expect_launch().returning(|_, _| Ok(()));
-
+        let (node_launcher, rpc_client) = setup_default_mocks();
         let testnet = Testnet::new(
             PathBuf::from(SAFENODE_BIN_NAME),
             30000,
             nodes_dir.to_path_buf(),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
 
         assert_eq!(testnet.node_bin_path, PathBuf::from(SAFENODE_BIN_NAME));
         assert_eq!(testnet.node_launch_interval, 30000);
         assert_eq!(testnet.nodes_dir_path, nodes_dir.to_path_buf());
         assert!(!testnet.flamegraph_mode);
-        assert_eq!(testnet.node_count, 20);
+        assert_eq!(testnet.node_count, 19);
 
         Ok(())
     }
@@ -439,6 +484,7 @@ mod test {
             .ok_or_else(|| eyre!("Unable to obtain path"))?
             .to_string();
 
+        let rpc_address: SocketAddr = "127.0.0.1:12001".parse()?;
         let mut node_launcher = MockNodeLauncher::new();
         node_launcher
             .expect_launch()
@@ -446,82 +492,44 @@ mod test {
             .with(
                 eq(node_bin_path.path().to_path_buf()),
                 eq(vec![
-                    "--first".to_string(),
-                    "10.0.0.1:12000".to_string(),
-                    "--local-addr".to_string(),
-                    "0.0.0.0:12000".to_string(),
+                    "--log-dir".to_string(),
+                    genesis_data_dir.clone(),
                     "--root-dir".to_string(),
                     genesis_data_dir.clone(),
-                    "--log-dir".to_string(),
-                    genesis_data_dir,
-                    "--json-logs".to_string(),
+                    "--local".to_string(),
+                    "--rpc".to_string(),
+                    rpc_address.to_string(),
+                    "--json-log-output".to_string(),
+                    "--port".to_string(),
+                    "11101".to_string(),
                 ]),
             )
             .returning(|_, _| Ok(()));
-
-        let testnet = Testnet::new(
-            node_bin_path.path().to_path_buf(),
-            NODE_LAUNCH_INTERVAL,
-            nodes_dir.path().to_path_buf(),
-            false,
-            Box::new(node_launcher),
-        )?;
-        let result = testnet
-            .launch_genesis(
-                Some("10.0.0.1:12000".parse()?),
-                vec!["--json-logs".to_string()],
-            )
-            .await;
-
-        assert!(result.is_ok());
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn launch_genesis_should_launch_the_genesis_node_as_a_local_network() -> Result<()> {
-        let tmp_data_dir = assert_fs::TempDir::new()?;
-        let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
-        node_bin_path.write_binary(b"fake safenode code")?;
-        let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
-        nodes_dir.create_dir_all()?;
-        let genesis_data_dir = nodes_dir
-            .child(GENESIS_NODE_DIR_NAME)
-            .to_str()
-            .ok_or_else(|| eyre!("Unable to obtain path"))?
-            .to_string();
-
-        let mut node_launcher = MockNodeLauncher::new();
-        node_launcher
-            .expect_launch()
+        let peer_id = PeerId::from_public_key(&Keypair::generate_ed25519().public());
+        let mut rpc_client = MockRpcClient::new();
+        rpc_client
+            .expect_obtain_peer_id()
             .times(1)
-            .with(
-                eq(node_bin_path.path().to_path_buf()),
-                eq(vec![
-                    "--first".to_string(),
-                    "127.0.0.1:12000".to_string(),
-                    "--local-addr".to_string(),
-                    "0.0.0.0:12000".to_string(),
-                    "--root-dir".to_string(),
-                    genesis_data_dir.clone(),
-                    "--log-dir".to_string(),
-                    genesis_data_dir,
-                    "--json-logs".to_string(),
-                ]),
-            )
-            .returning(|_, _| Ok(()));
-
+            .with(eq(rpc_address))
+            .returning(move |_| Box::pin(async move { Ok(peer_id) }));
         let testnet = Testnet::new(
             node_bin_path.path().to_path_buf(),
             NODE_LAUNCH_INTERVAL,
             nodes_dir.path().to_path_buf(),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
-        let result = testnet
-            .launch_genesis(None, vec!["--json-logs".to_string()])
-            .await;
 
-        assert!(result.is_ok());
+
+        let multiaddr = testnet
+            .launch_genesis(vec!["--json-log-output".to_string()])
+            .await?;
+
+        assert_eq!(
+            format!("/ip4/127.0.0.1/tcp/11101/p2p/{}", peer_id),
+            multiaddr
+        );
         Ok(())
     }
 
@@ -533,20 +541,17 @@ mod test {
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
         nodes_dir.create_dir_all()?;
 
-        let mut node_launcher = MockNodeLauncher::new();
-        node_launcher.expect_launch().returning(|_, _| Ok(()));
+        let (node_launcher, rpc_client) = setup_default_mocks();
         let testnet = Testnet::new(
             node_bin_path.path().to_path_buf(),
             NODE_LAUNCH_INTERVAL,
             nodes_dir.path().to_path_buf(),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
         let result = testnet
-            .launch_genesis(
-                Some("10.0.0.1:12000".parse()?),
-                vec!["--json-logs".to_string()],
-            )
+            .launch_genesis(vec!["--json-log-output".to_string()])
             .await;
 
         assert!(result.is_ok());
@@ -563,20 +568,17 @@ mod test {
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
 
-        let mut node_launcher = MockNodeLauncher::new();
-        node_launcher.expect_launch().returning(|_, _| Ok(()));
+        let (node_launcher, rpc_client) = setup_default_mocks();
         let testnet = Testnet::new(
             node_bin_path.path().to_path_buf(),
             NODE_LAUNCH_INTERVAL,
             nodes_dir.path().to_path_buf(),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
         let result = testnet
-            .launch_genesis(
-                Some("10.0.0.1:12000".parse()?),
-                vec!["--json-logs".to_string()],
-            )
+            .launch_genesis(vec!["--json-log-output".to_string()])
             .await;
 
         assert!(result.is_ok());
@@ -601,6 +603,7 @@ mod test {
             .ok_or_else(|| eyre!("Unable to obtain path"))?
             .to_string();
 
+        let rpc_address: SocketAddr = "127.0.0.1:12001".parse()?;
         let mut node_launcher = MockNodeLauncher::new();
         node_launcher
             .expect_launch()
@@ -619,18 +622,26 @@ mod test {
                     "--bin".to_string(),
                     SAFENODE_BIN_NAME.to_string(),
                     "--".to_string(),
-                    "--first".to_string(),
-                    "10.0.0.1:12000".to_string(),
-                    "--local-addr".to_string(),
-                    "0.0.0.0:12000".to_string(),
+                    "--log-dir".to_string(),
+                    genesis_data_dir_str.clone(),
                     "--root-dir".to_string(),
                     genesis_data_dir_str.clone(),
-                    "--log-dir".to_string(),
-                    genesis_data_dir_str,
-                    "--json-logs".to_string(),
+                    "--local".to_string(),
+                    "--rpc".to_string(),
+                    rpc_address.to_string(),
+                    "--json-log-output".to_string(),
+                    "--port".to_string(),
+                    "11101".to_string(),
                 ]),
             )
             .returning(|_, _| Ok(()));
+        let peer_id = PeerId::from_public_key(&Keypair::generate_ed25519().public());
+        let mut rpc_client = MockRpcClient::new();
+        rpc_client
+            .expect_obtain_peer_id()
+            .times(1)
+            .with(eq(rpc_address))
+            .returning(move |_| Box::pin(async move { Ok(peer_id) }));
 
         let testnet = Testnet::new(
             node_bin_path.path().to_path_buf(),
@@ -638,15 +649,16 @@ mod test {
             nodes_dir.path().to_path_buf(),
             true,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
-        let result = testnet
-            .launch_genesis(
-                Some("10.0.0.1:12000".parse()?),
-                vec!["--json-logs".to_string()],
-            )
-            .await;
+        let multiaddr = testnet
+            .launch_genesis(vec!["--json-log-output".to_string()])
+            .await?;
 
-        assert!(result.is_ok());
+        assert_eq!(
+            format!("/ip4/127.0.0.1/tcp/11101/p2p/{}", peer_id),
+            multiaddr
+        );
         Ok(())
     }
 
@@ -664,21 +676,17 @@ mod test {
             node_dir.create_dir_all()?;
         }
 
-        let mut node_launcher = MockNodeLauncher::new();
-        node_launcher.expect_launch().returning(|_, _| Ok(()));
-
+        let (node_launcher, rpc_client) = setup_default_mocks();
         let testnet = Testnet::new(
             node_bin_path.path().to_path_buf(),
             NODE_LAUNCH_INTERVAL,
             nodes_dir.path().to_path_buf(),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
         let result = testnet
-            .launch_genesis(
-                Some("10.0.0.1:12000".parse()?),
-                vec!["--json-logs".to_string()],
-            )
+            .launch_genesis(vec!["--json-log-output".to_string()])
             .await;
 
         match result {
@@ -699,10 +707,12 @@ mod test {
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
-        nodes_dir.create_dir_all()?;
+        let genesis_node_dir = tmp_data_dir.child("safenode-1");
+        genesis_node_dir.create_dir_all()?;
 
         let mut node_launcher = MockNodeLauncher::new();
-        for i in 1..=20 {
+        for i in 2..=20 {
+            let rpc_port = 12000 + i;
             let node_data_dir = nodes_dir
                 .join(&format!("safenode-{i}"))
                 .to_str()
@@ -714,15 +724,19 @@ mod test {
                 .with(
                     eq(node_bin_path.path().to_path_buf()),
                     eq(vec![
+                        "--log-dir".to_string(),
+                        node_data_dir.clone(),
                         "--root-dir".to_string(),
                         node_data_dir.clone(),
-                        "--log-dir".to_string(),
-                        node_data_dir,
-                        "--json-logs".to_string(),
+                        "--local".to_string(),
+                        "--rpc".to_string(),
+                        format!("127.0.0.1:{}", rpc_port),
+                        "--json-log-output".to_string(),
                     ]),
                 )
                 .returning(|_, _| Ok(()));
         }
+        let rpc_client = setup_default_rpc_client_mock();
 
         let mut testnet = Testnet::new(
             node_bin_path.path().to_path_buf(),
@@ -730,8 +744,9 @@ mod test {
             nodes_dir.path().to_path_buf(),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
-        let result = testnet.launch_nodes(20, vec!["--json-logs".to_string()]);
+        let result = testnet.launch_nodes(20, vec!["--json-log-output".to_string()]);
 
         assert!(result.is_ok());
         assert_eq!(testnet.node_count, 20);
@@ -745,20 +760,22 @@ mod test {
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
         nodes_dir.create_dir_all()?;
+        let genesis_node_dir = tmp_data_dir.child("safenode-1");
+        genesis_node_dir.create_dir_all()?;
 
-        let mut node_launcher = MockNodeLauncher::new();
-        node_launcher.expect_launch().returning(|_, _| Ok(()));
+        let (node_launcher, rpc_client) = setup_default_mocks();
         let mut testnet = Testnet::new(
             node_bin_path.path().to_path_buf(),
             NODE_LAUNCH_INTERVAL,
             nodes_dir.path().to_path_buf(),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
-        let result = testnet.launch_nodes(20, vec!["--json-logs".to_string()]);
+        let result = testnet.launch_nodes(20, vec!["--json-log-output".to_string()]);
 
         assert!(result.is_ok());
-        for i in 1..=20 {
+        for i in 2..=20 {
             let node_dir = nodes_dir.child(format!("safenode-{i}"));
             node_dir.assert(predicates::path::is_dir());
         }
@@ -772,15 +789,17 @@ mod test {
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
+        let genesis_node_dir = tmp_data_dir.child("safenode-1");
+        genesis_node_dir.create_dir_all()?;
 
-        let mut node_launcher = MockNodeLauncher::new();
-        node_launcher.expect_launch().returning(|_, _| Ok(()));
+        let (node_launcher, rpc_client) = setup_default_mocks();
         let mut testnet = Testnet::new(
             node_bin_path.path().to_path_buf(),
             NODE_LAUNCH_INTERVAL,
             nodes_dir.path().to_path_buf(),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
         let result = testnet.launch_nodes(20, vec!["--json-logs".to_string()]);
 
@@ -799,10 +818,12 @@ mod test {
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
-        nodes_dir.create_dir_all()?;
+        let genesis_node_dir = tmp_data_dir.child("safenode-1");
+        genesis_node_dir.create_dir_all()?;
 
         let mut node_launcher = MockNodeLauncher::new();
-        for i in 1..=20 {
+        for i in 2..=20 {
+            let rpc_port = 12000 + i;
             let node_data_dir = nodes_dir.join(&format!("safenode-{i}"));
             let graph_output_file_path = node_data_dir
                 .join(format!("safenode-{i}-flame.svg"))
@@ -826,15 +847,19 @@ mod test {
                         "--bin".to_string(),
                         SAFENODE_BIN_NAME.to_string(),
                         "--".to_string(),
+                        "--log-dir".to_string(),
+                        node_data_dir.clone(),
                         "--root-dir".to_string(),
                         node_data_dir.clone(),
-                        "--log-dir".to_string(),
-                        node_data_dir,
-                        "--json-logs".to_string(),
+                        "--local".to_string(),
+                        "--rpc".to_string(),
+                        format!("127.0.0.1:{}", rpc_port),
+                        "--json-log-output".to_string(),
                     ]),
                 )
                 .returning(|_, _| Ok(()));
         }
+        let rpc_client = setup_default_rpc_client_mock();
 
         let mut testnet = Testnet::new(
             node_bin_path.path().to_path_buf(),
@@ -842,8 +867,9 @@ mod test {
             nodes_dir.path().to_path_buf(),
             true,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
-        let result = testnet.launch_nodes(20, vec!["--json-logs".to_string()]);
+        let result = testnet.launch_nodes(20, vec!["--json-log-output".to_string()]);
 
         assert!(result.is_ok());
         Ok(())
@@ -855,10 +881,12 @@ mod test {
         let node_bin_path = tmp_data_dir.child(SAFENODE_BIN_NAME);
         node_bin_path.write_binary(b"fake safenode code")?;
         let nodes_dir = tmp_data_dir.child(TESTNET_DIR_NAME);
-        nodes_dir.create_dir_all()?;
+        let genesis_node_dir = tmp_data_dir.child("safenode-1");
+        genesis_node_dir.create_dir_all()?;
 
         let mut node_launcher = MockNodeLauncher::new();
-        for i in 1..=30 {
+        for i in 2..=30 {
+            let rpc_port = 12000 + i;
             let node_data_dir = nodes_dir
                 .join(&format!("safenode-{i}"))
                 .to_str()
@@ -870,15 +898,19 @@ mod test {
                 .with(
                     eq(node_bin_path.path().to_path_buf()),
                     eq(vec![
+                        "--log-dir".to_string(),
+                        node_data_dir.clone(),
                         "--root-dir".to_string(),
                         node_data_dir.clone(),
-                        "--log-dir".to_string(),
-                        node_data_dir,
-                        "--json-logs".to_string(),
+                        "--local".to_string(),
+                        "--rpc".to_string(),
+                        format!("127.0.0.1:{}", rpc_port),
+                        "--json-log-output".to_string(),
                     ]),
                 )
                 .returning(|_, _| Ok(()));
         }
+        let rpc_client = setup_default_rpc_client_mock();
 
         let mut testnet = Testnet::new(
             node_bin_path.path().to_path_buf(),
@@ -886,15 +918,16 @@ mod test {
             nodes_dir.path().to_path_buf(),
             false,
             Box::new(node_launcher),
+            Box::new(rpc_client),
         )?;
-        let result = testnet.launch_nodes(20, vec!["--json-logs".to_string()]);
+        let result = testnet.launch_nodes(20, vec!["--json-log-output".to_string()]);
         assert!(result.is_ok());
         assert_eq!(testnet.node_count, 20);
 
-        let result = testnet.launch_nodes(10, vec!["--json-logs".to_string()]);
+        let result = testnet.launch_nodes(10, vec!["--json-log-output".to_string()]);
         assert!(result.is_ok());
         assert_eq!(testnet.node_count, 30);
-        for i in 1..=30 {
+        for i in 2..=30 {
             let node_dir = nodes_dir.child(format!("safenode-{i}"));
             node_dir.assert(predicates::path::is_dir());
         }
