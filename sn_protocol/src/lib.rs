@@ -15,7 +15,7 @@ pub mod storage;
 
 use self::storage::{ChunkAddress, DbcAddress, RegisterAddress};
 use libp2p::{
-    kad::{kbucket::Distance, record::Key as RecordKey, KBucketKey as Key},
+    kad::{record::Key as RecordKey, KBucketDistance as Distance, KBucketKey as Key},
     PeerId,
 };
 use serde::{Deserialize, Serialize};
@@ -121,7 +121,7 @@ impl NetworkAddress {
     // /// This implements the following equivalence:
     // ///
     // /// `self xor other = distance <==> other = self xor distance`
-    // pub fn for_distance(&self, d: Distance) -> libp2p::kad::kbucket::KeyBytes {
+    // pub fn for_distance(&self, d:  ) -> libp2p::kad::kbucket::KeyBytes {
     //     self.as_kbucket_key().for_distance(d)
     // }
 }
