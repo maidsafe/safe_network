@@ -33,14 +33,10 @@ pub fn parse_peer_addr(addr: &str) -> Result<(PeerId, Multiaddr)> {
 
     let protocol = multiaddr.pop().ok_or_else(|| eyre!("address is empty"))?;
 
-    let p2p_multihash = match protocol {
+    let peer_id = match protocol {
         Protocol::P2p(hash) => hash,
         _ => return Err(eyre!("address does not end on `/p2p/<PeerId>`")),
     };
-
-    // Parse the multihash into the `PeerId`.
-    let peer_id = PeerId::from_multihash(p2p_multihash)
-        .map_err(|_| eyre!("address contains invalid multihash"))?;
 
     Ok((peer_id, multiaddr))
 }

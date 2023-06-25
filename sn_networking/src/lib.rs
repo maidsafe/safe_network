@@ -27,21 +27,21 @@ use self::{
     cmd::SwarmCmd,
     error::Result,
     event::NodeBehaviour,
-    msg::{MsgCodec, MsgProtocol},
+    // msg::{MsgCodec, MsgProtocol},
     replication_fetcher::ReplicationFetcher,
 };
 use futures::{future::select_all, StreamExt};
 use libp2p::{
     identity::Keypair,
-    kad::{kbucket::Distance, KademliaStoreInserts},
+    kad::{KBucketDistance as Distance, KademliaStoreInserts},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
-    swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
+    swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
 #[cfg(feature = "local-discovery")]
 use libp2p::{
-    kad::{kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
+    kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     mdns,
 };
 use rand::Rng;
@@ -55,7 +55,6 @@ use sn_record_store::{
 };
 use std::{
     collections::{HashMap, HashSet},
-    iter,
     net::SocketAddr,
     num::NonZeroUsize,
     path::{Path, PathBuf},
@@ -255,9 +254,8 @@ impl SwarmDriver {
                 .set_request_timeout(request_response_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S))
                 .set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
-            request_response::Behaviour::new(
-                MsgCodec(),
-                iter::once((MsgProtocol(), req_res_protocol)),
+            request_response::cbor::Behaviour::new(
+                [(StreamProtocol::new("/safe/2"), req_res_protocol)],
                 cfg,
             )
         };
@@ -303,9 +301,7 @@ impl SwarmDriver {
         let identify = {
             let cfg =
                 libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                    .with_agent_version(identify_version)
-                    // Default in future libp2p version. (TODO: check if default already)
-                    .with_initial_delay(Duration::from_secs(0));
+                    .with_agent_version(identify_version);
             libp2p::identify::Behaviour::new(cfg)
         };
 

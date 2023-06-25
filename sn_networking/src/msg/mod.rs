@@ -6,10 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod codec;
-
-pub(crate) use codec::{MsgCodec, MsgProtocol};
-
 use crate::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 
 use libp2p::request_response::{self, Message};

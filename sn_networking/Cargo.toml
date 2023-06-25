@@ -20,7 +20,7 @@ bytes = { version = "1.0.1", features = ["serde"] }
 eyre = "0.6.8"
 futures = "~0.3.13"
 itertools = "~0.10.1"
-libp2p = { version="0.51", features = ["tokio", "dns", "kad", "macros", "request-response", "identify", "autonat", "mplex", "noise", "tcp", "yamux"] }
+libp2p = { path="../../rust-libp2p/libp2p", version="0.52", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux"] }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}

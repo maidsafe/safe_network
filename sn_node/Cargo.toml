@@ -39,7 +39,7 @@ futures = "~0.3.13"
 hex = "~0.4.3"
 itertools = "~0.10.1"
 lazy_static = "~1.4.0"
-libp2p = { version="0.51", features = ["tokio", "dns", "kad", "macros", "autonat"] }
+libp2p = { path="../../rust-libp2p/libp2p", version="0.52", features = ["tokio", "dns", "kad", "macros", "autonat"] }
 prost = { version = "0.9" }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
