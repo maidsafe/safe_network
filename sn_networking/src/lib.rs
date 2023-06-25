@@ -28,7 +28,6 @@ use self::{
     cmd::SwarmCmd,
     error::Result,
     event::NodeBehaviour,
-    msg::{MsgCodec, MsgProtocol},
     record_store::{
         DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
         REPLICATION_INTERVAL_UPPER_BOUND,
@@ -41,12 +40,12 @@ use libp2p::mdns;
 use libp2p::{
     identity::Keypair,
     kad::{
-        kbucket::Distance, kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
+        KBucketDistance as Distance, KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
         RecordKey,
     },
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
-    swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
+    swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
 use rand::Rng;
@@ -56,7 +55,6 @@ use sn_protocol::{
 };
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
-    iter,
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
@@ -79,7 +77,10 @@ const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(30);
 pub const IDENTIFY_AGENT_STR: &str = "safe/node/";
 
 /// The suffix is the version of the node.
-const IDENTIFY_AGENT_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
+const SN_NODE_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
+/// / first version for the req/response protocol
+const REQ_RESPONSE_VERSION_STR: &str = concat!("/safe/node/", env!("CARGO_PKG_VERSION"));
+
 /// The suffix is the version of the client.
 const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PKG_VERSION"));
 const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
@@ -112,6 +113,7 @@ pub struct SwarmDriver {
     /// A list of the most recent peers we have dialed ourselves.
     dialed_peers: CircularVec<PeerId>,
     dead_peers: BTreeSet<PeerId>,
+    is_client: bool,
 }
 
 impl SwarmDriver {
@@ -174,7 +176,7 @@ impl SwarmDriver {
             replication_interval,
             None,
             ProtocolSupport::Full,
-            IDENTIFY_AGENT_VERSION_STR.to_string(),
+            SN_NODE_VERSION_STR.to_string(),
         )?;
 
         // Listen on the provided address
@@ -256,9 +258,11 @@ impl SwarmDriver {
                 .set_request_timeout(request_response_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S))
                 .set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
-            request_response::Behaviour::new(
-                MsgCodec(),
-                iter::once((MsgProtocol(), req_res_protocol)),
+            request_response::cbor::Behaviour::new(
+                [(
+                    StreamProtocol::new(REQ_RESPONSE_VERSION_STR),
+                    req_res_protocol,
+                )],
                 cfg,
             )
         };
@@ -310,14 +314,12 @@ impl SwarmDriver {
         let identify = {
             let cfg =
                 libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                    .with_agent_version(identify_version)
-                    // Default in future libp2p version. (TODO: check if default already)
-                    .with_initial_delay(Duration::from_secs(0));
+                    .with_agent_version(identify_version);
             libp2p::identify::Behaviour::new(cfg)
         };
 
         // Transport
-        let transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+        let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(
                 libp2p::noise::Config::new(&keypair)
@@ -325,6 +327,12 @@ impl SwarmDriver {
             )
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
+
+        if !local {
+            debug!("Preventing non-global dials");
+            // Wrap TCP in a transport that prevents dialing local addresses.
+            transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
+        }
 
         // Disable AutoNAT if we are either running locally or a client.
         let autonat = if !local && !is_client {
@@ -374,6 +382,7 @@ impl SwarmDriver {
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             dead_peers: Default::default(),
+            is_client,
         };
 
         Ok((
@@ -836,18 +845,14 @@ pub fn multiaddr_is_global(multiaddr: &Multiaddr) -> bool {
 
 /// Pop off the `/p2p/<peer_id>`. This mutates the `Multiaddr` and returns the `PeerId` if it exists.
 pub(crate) fn multiaddr_pop_p2p(multiaddr: &mut Multiaddr) -> Option<PeerId> {
-    let id = match multiaddr.iter().last() {
-        Some(Protocol::P2p(hash)) => PeerId::from_multihash(hash).ok(),
-        _ => None,
-    };
-
     // Mutate the `Multiaddr` to remove the `/p2p/<peer_id>`.
-    if id.is_some() {
-        let _ = multiaddr.pop();
+    let protocol = multiaddr.pop();
+    match protocol {
+        Some(Protocol::P2p(peer_id)) => Some(peer_id),
+        _ => None,
     }
-
-    id
 }
+
 /// Build a `Multiaddr` with the p2p protocol filtered out.
 pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
     multiaddr
