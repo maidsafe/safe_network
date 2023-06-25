@@ -26,7 +26,7 @@ color-eyre = "~0.6.0"
 eyre = "~0.6.5"
 clap = { version = "3.0.0", features = ["derive", "env"]}
 dirs-next = "2.0.0"
-libp2p = { version="0.51" }
+libp2p = { version="0.52" }
 prost = { version = "0.9" }
 regex = "1.7.1"
 tonic = { version = "0.6.2" }

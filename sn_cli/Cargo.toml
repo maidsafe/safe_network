@@ -32,7 +32,7 @@ clap = { version = "4.2.1", features = ["derive"]}
 color-eyre = "~0.6"
 dirs-next = "~2.0.0"
 hex = "~0.4.3"
-libp2p = { version="0.51", features = ["identify", "kad"] }
+ libp2p = { version="0.52", features = ["identify", "kad"] }
 sn_build_info = { path="../sn_build_info", version = "0.1.2" }
 sn_client = { path = "../sn_client", version = "0.85.47" }
 sn_dbc = { version = "19.1.1", features = ["serdes"] }
