@@ -14,7 +14,7 @@ bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
 crdts = { version = "7.3", default-features = false, features = ["merkle"] }
 custom_debug = "~0.5.0"
-libp2p = { version="0.51", features = ["identify", "kad"] }
+libp2p = { path="../../rust-libp2p/libp2p", version="0.52", features = ["identify", "kad"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_dbc = { version = "19.1.0", features = ["serdes"] }

@@ -11,9 +11,9 @@ extern crate tracing;
 use libp2p::{
     identity::PeerId,
     kad::{
-        kbucket::{Distance, Key as KBucketKey},
         record::{Key, ProviderRecord, Record},
         store::{Error, RecordStore, Result},
+        KBucketDistance as Distance, KBucketKey,
     },
 };
 use rand::Rng;

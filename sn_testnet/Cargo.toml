@@ -28,7 +28,7 @@ color-eyre = "~0.6.0"
 eyre = "~0.6.5"
 clap = { version = "3.0.0", features = ["derive", "env"]}
 dirs-next = "2.0.0"
-libp2p = { version="0.51", optional = true }
+libp2p = { path="../../rust-libp2p/libp2p", version="0.52", optional = true }
 prost = { version = "0.9", optional = true }
 regex = "1.7.1"
 tonic = { version = "0.6.2", optional = true }
