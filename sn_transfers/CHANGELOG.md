@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.0...sn_transfers-v0.10.1) - 2023-06-26
+
+### Added
+- display path when no deposits were found upon wallet deposit failure
+
+### Other
+- adding proptests for payment proofs merkletree utilities
+- payment proof map to use xorname as index instead of merkletree nodes type
+- having the payment proof validation util to return the item's leaf index
+
 ## [0.10.0](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.9.8...sn_transfers-v0.10.0) - 2023-06-22
 
 ### Added

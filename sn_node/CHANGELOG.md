@@ -309,6 +309,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.83.54](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.53...sn_node-v0.83.54) - 2023-06-26
+
+### Other
+- having the payment proof validation util to return the item's leaf index
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
