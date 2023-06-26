@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
-use crate::error::Result;
+use crate::{error::Result, CLOSE_GROUP_SIZE};
 use libp2p::{
     kad::{kbucket::Distance, store::RecordStore, Record, RecordKey},
     multiaddr::Protocol,
@@ -267,12 +267,14 @@ impl SwarmDriver {
                 let key = key.as_kbucket_key();
                 // calls `kbuckets.closest_keys(key)` internally, which orders the peers by
                 // increasing distance
+                // Note it will return all peers, heance a chop down is required.
                 let closest_peers = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .get_closest_local_peers(&key)
                     .map(|peer| peer.into_preimage())
+                    .take(CLOSE_GROUP_SIZE)
                     .collect();
 
                 let _ = sender.send(closest_peers);
