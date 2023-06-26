@@ -324,6 +324,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - append peer id to node's default root dir
 
+## [0.84.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.84.0...sn_node-v0.84.1) - 2023-06-26
+
+### Other
+- Revert "feat: append peer id to node's default root dir"
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
