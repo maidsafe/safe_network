@@ -70,14 +70,8 @@ impl Node {
     ) -> Result<()> {
         let our_address = NetworkAddress::from_peer(self.network.peer_id);
 
-        // Fetch from local shall be enough.
-        let closest_peers = self.network.get_closest_local_peers(&our_address).await?;
-        if !closest_peers.iter().any(|key| key == peer) {
-            return Ok(());
-        }
-
         let mut all_peers = self.network.get_all_local_peers().await?;
-        if all_peers.len() <= CLOSE_GROUP_SIZE {
+        if all_peers.len() < CLOSE_GROUP_SIZE {
             return Ok(());
         }
 
@@ -96,10 +90,16 @@ impl Node {
                 return Ok(());
             }
         };
+
+        let churned_peer_address = NetworkAddress::from_peer(*peer);
+        // Do nothing if self is not among the closest range.
+        if our_address.distance(&churned_peer_address) > distance_bar {
+            return Ok(());
+        }
+
         self.network.set_record_distance_range(distance_bar).await?;
 
         all_peers.push(self.network.peer_id);
-        let churned_peer_address = NetworkAddress::from_peer(*peer);
         // Only nearby peers (two times of the CLOSE_GROUP_SIZE) may affect the later on
         // calculation of `closest peers to each entry`.
         // Hence to reduce the computation work, no need to take all peers.
