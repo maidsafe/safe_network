@@ -71,6 +71,7 @@ strum = { version = "0.25.0", features = ["derive"] }
 
 [dev-dependencies]
 assert_fs = "1.0.0"
+proptest = { version = "1.0.0" }
 
 [build-dependencies]
 tonic-build = { version = "0.6.2" }
