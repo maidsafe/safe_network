@@ -15,10 +15,9 @@ use sn_protocol::{
     messages::{
         Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, ReplicatedData, Request, Response,
     },
-    storage::{registers::User, ChunkWithPayment, DbcAddress},
+    storage::{ChunkWithPayment, DbcAddress},
     NetworkAddress,
 };
-use sn_registers::RegisterStorage;
 use std::{net::SocketAddr, path::PathBuf, time::Duration};
 use tokio::task::spawn;
 
@@ -85,7 +84,6 @@ impl Node {
 
         let node = Self {
             network: network.clone(),
-            registers: RegisterStorage::new(&network.root_dir_path),
             events_channel: node_events_channel.clone(),
             initial_peers,
         };
@@ -249,9 +247,18 @@ impl Node {
                             return Ok(());
                         }
                     }
-                    other => {
-                        warn!("Not support other type of replicated data {:?}", other);
-                        return Ok(());
+                    ReplicatedData::Register(register) => {
+                        let register_addr = *register.address();
+                        debug!(
+                            "Register received for replication: {:?}",
+                            register_addr.name()
+                        );
+                        let addr =
+                            NetworkAddress::from_record_key(RecordKey::new(register_addr.name()));
+
+                        let success = self.validate_and_store_register(register).await?;
+                        trace!("ReplicatedData::Register with {register_addr:?} has been validated and stored. {success:?}");
+                        addr
                     }
                 };
 
@@ -307,7 +314,7 @@ impl Node {
 
     async fn handle_query(&self, query: Query) -> Response {
         let resp = match query {
-            Query::Register(query) => self.registers.read(&query, User::Anyone).await,
+            Query::Register(reg_query) => self.handle_register_query(&reg_query).await,
             Query::GetChunk(address) => {
                 trace!("Got GetChunk query for {address:?}");
                 let result = self.get_chunk_from_network(address).await;
@@ -384,7 +391,7 @@ impl Node {
                 CmdResponse::Replicate(Ok(()))
             }
             Cmd::Register(cmd) => {
-                let result = self.registers.write(&cmd).await;
+                let result = self.handle_register_cmd(&cmd).await;
 
                 let xorname = cmd.dst();
                 match cmd {

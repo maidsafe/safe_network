@@ -11,15 +11,14 @@ use super::RegisterQuery;
 use crate::{
     error::Result,
     messages::ReplicatedData,
-    storage::{
-        registers::{Entry, EntryHash, Permissions, Policy, Register, User},
-        Chunk,
-    },
+    storage::Chunk,
     NetworkAddress,
 };
 use serde::{Deserialize, Serialize};
 use sn_dbc::SignedSpend;
 use std::{collections::BTreeSet, fmt::Debug};
+
+use sn_registers::{Entry, EntryHash, Permissions, Policy, Register, User};
 
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]

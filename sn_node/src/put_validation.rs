@@ -20,6 +20,7 @@ use sn_protocol::{
         RecordKind,
     },
 };
+use sn_registers::Register;
 use sn_transfers::payment_proof::validate_payment_proof;
 use std::collections::HashSet;
 
@@ -63,6 +64,49 @@ impl Node {
         self.network.put_local_record(record).await.map_err(|err| {
             warn!("Error while locally storing Chunk as a Record{err}");
             ProtocolError::ChunkNotStored(chunk_name)
+        })?;
+
+        Ok(CmdOk::StoredSuccessfully)
+    }
+
+    /// Validate and store a `Register` to the RecordStore
+    pub(crate) async fn validate_and_store_register(
+        &self,
+        register: Register,
+    ) -> Result<CmdOk, ProtocolError> {
+        let reg_addr = register.address();
+        debug!("Validating and storing register {reg_addr:?}");
+
+        // check if the Register is present locally
+        let key = RecordKey::new(reg_addr.name());
+        let present_locally = self
+            .network
+            .is_key_present_locally(&key)
+            .await
+            .map_err(|err| {
+                warn!("Error while checking if register's key is present locally {err}");
+                ProtocolError::RegisterNotStored(*reg_addr.name())
+            })?;
+
+        // check register and merge if needed
+        let updated_register = match self.register_validation(&register, present_locally).await? {
+            Some(reg) => reg,
+            None => {
+                return Ok(CmdOk::DataAlreadyPresent);
+            }
+        };
+
+        // store in kad
+        let record = Record {
+            key: RecordKey::new(reg_addr.name()),
+            value: try_serialize_record(&updated_register, RecordKind::Register)?,
+            publisher: None,
+            expires: None,
+        };
+        debug!("Storing register {reg_addr:?} as Record locally");
+        self.network.put_local_record(record).await.map_err(|err| {
+            warn!("Error while locally storing register as a Record {err}");
+            ProtocolError::RegisterNotStored(*reg_addr.name())
         })?;
 
         Ok(CmdOk::StoredSuccessfully)
@@ -150,6 +194,137 @@ impl Node {
         }
 
         Ok(CmdOk::StoredSuccessfully)
+    }
+
+    /// Validate and store a `Record` directly. This is used to fall back to KAD's PUT flow instead
+    /// of using our custom Cmd flow.
+    /// Also prevents Record overwrite through `malicious_node.kademlia.put_record()` which would trigger
+    /// trigger a SwarmEvent that is propagated to here to be handled.
+    /// Note: KAD's PUT does not support error propagation. Only the error variants inside
+    /// `RecordStore` are propagated.
+    pub(crate) async fn validate_and_store_record(&self, mut record: Record) -> Result<(), Error> {
+        let header = RecordHeader::from_record(&record)?;
+        let present_locally = self.network.is_key_present_locally(&record.key).await?;
+
+        match header.kind {
+            RecordKind::Chunk => {
+                // return early without deserializing
+                if present_locally {
+                    // We outright short circuit if the Record::key is present locally;
+                    // Hence we don't have to verify if the local_header::kind == Chunk
+                    debug!(
+                        "Chunk with key {:?} already exists, not overwriting",
+                        record.key
+                    );
+                    return Ok(());
+                }
+
+                let chunk_with_payment: ChunkWithPayment = try_deserialize_record(&record)?;
+                let addr = chunk_with_payment.chunk.name();
+                // check if the deserialized value's ChunkAddress matches the record's key
+                if record.key != RecordKey::new(&addr) {
+                    error!(
+                        "Record's key does not match with the value's ChunkAddress, ignoring PUT."
+                    );
+                    return Err(ProtocolError::RecordKeyMismatch.into());
+                }
+
+                // Common validation logic. Can ignore the new_data_present as we already have a
+                // check for it earlier in the code that allows us to bail out early without
+                // deserializing the `Record`
+                let _new_data_present = self
+                    .chunk_validation(&chunk_with_payment, present_locally)
+                    .await?;
+            }
+            RecordKind::DbcSpend => {
+                let spends_with_parent: Vec<SpendWithParent> = try_deserialize_record(&record)?;
+                // Prevents someone from crafting large Vec and slowing down nodes
+                if spends_with_parent.len() > 2 {
+                    warn!(
+                        "Discarding incoming DbcSpend PUT as it contains more than 2 SignedSpends"
+                    );
+                    return Err(ProtocolError::MaxNumberOfSpendsExceeded.into());
+                }
+
+                // filter out the spends whose DbcAddress does not match with Record::key
+                let spends_with_parent = spends_with_parent.into_iter().filter(|s| {
+                    let dbc_addr = DbcAddress::from_dbc_id(s.signed_spend.dbc_id());
+                    if record.key != RecordKey::new(dbc_addr.name()) {
+                        warn!(
+                        "Record's key {:?} does not match with the value's DbcAddress {dbc_addr:?}. Filtering it out.",
+                            record.key,
+                    );
+                        false
+                    } else {
+                        true
+                    }
+
+                }).collect::<Vec<_>>();
+
+                if spends_with_parent.is_empty() {
+                    warn!("No spend with valid Record key found. Ignoring DbcSpend PUT request");
+                    return Err(ProtocolError::RecordKeyMismatch.into());
+                }
+                // Since spends_with_parent is not empty and they contain the same DbcId (RecordKeys are
+                // the same), get the DbcId
+                let dbc_id = if let Some(spend) = spends_with_parent.first() {
+                    *spend.signed_spend.dbc_id()
+                } else {
+                    return Ok(());
+                };
+
+                match self
+                    .signed_spend_validation(spends_with_parent, dbc_id, present_locally)
+                    .await?
+                {
+                    Some(spends_with_parent) => {
+                        // Just log the double spent attempt as it cannot be propagated back
+                        if spends_with_parent.len() > 1 {
+                            warn!(
+                                "Got a double spend for the SpendWithParent PUT with dbc_id {dbc_id:?}",
+                            );
+                        }
+
+                        // replace the Record's value with the new one
+                        let spends_with_parent =
+                            try_serialize_record(&spends_with_parent, RecordKind::DbcSpend)?;
+                        record.value = spends_with_parent;
+                    }
+                    None => {
+                        // data already present
+                        return Ok(());
+                    }
+                };
+            }
+            RecordKind::Register => {
+                let register: Register = try_deserialize_record(&record)?;
+                let addr = register.address();
+                // check if the deserialized value's RegisterAddress matches the record's key
+                if record.key != RecordKey::new(addr.name()) {
+                    error!(
+                        "Record's key does not match with the value's RegisterAddress, ignoring PUT."
+                    );
+                    return Err(ProtocolError::RecordKeyMismatch.into());
+                }
+
+                match self.register_validation(&register, present_locally).await? {
+                    Some(register) => {
+                        // replace the Record's value with the new one
+                        let register = try_serialize_record(&register, RecordKind::Register)?;
+                        record.value = register;
+                    }
+                    None => {
+                        // data already present
+                        return Ok(());
+                    }
+                };
+            }
+        }
+
+        // finally store the Record directly into the local storage
+        self.network.put_local_record(record).await?;
+
+        Ok(())
     }
 
     /// Perform validations on the provided `ChunkWithPayment`. Returns `Some(())>` if the Chunk has to be
@@ -252,6 +427,55 @@ impl Node {
         }
 
         Ok(Some(()))
+    }
+
+    async fn register_validation(
+        &self,
+        register: &Register,
+        present_locally: bool,
+    ) -> Result<Option<Register>, ProtocolError> {
+        // check if register is valid
+        let reg_addr = register.address();
+        if let Err(e) = register.verify() {
+            error!("Register with addr {reg_addr:?} is invalid: {e:?}");
+            return Err(ProtocolError::InvalidRegister(*reg_addr));
+        }
+
+        // if we don't have it locally return it
+        if !present_locally {
+            debug!("Register with addr {reg_addr:?} is valid and doesn't exist locally");
+            return Ok(Some(register.to_owned()));
+        }
+        debug!("Register with addr {reg_addr:?} exists locally, comparing with local version");
+
+        // get local register
+        let maybe_record = self
+            .network
+            .get_local_record(&RecordKey::new(reg_addr.name()))
+            .await
+            .map_err(|err| {
+                warn!("Error while fetching local record {err}");
+                ProtocolError::RegisterNotStored(*reg_addr.name())
+            })?;
+        let record = match maybe_record {
+            Some(r) => r,
+            None => {
+                error!("Register with addr {reg_addr:?} already exists locally, but not found in local storage");
+                return Err(ProtocolError::RecordKeyMismatch);
+            }
+        };
+        let local_register: Register = try_deserialize_record(&record)?;
+
+        // merge the two registers
+        let mut merged_register = local_register.clone();
+        merged_register.merge(register.to_owned());
+        if merged_register == local_register {
+            debug!("Register with addr {reg_addr:?} is the same as the local version");
+            Ok(None)
+        } else {
+            debug!("Register with addr {reg_addr:?} is different from the local version");
+            Ok(Some(merged_register))
+        }
     }
 
     /// Perform validations on the provided `Vec<SignedSpend>`. Returns `Some<Vec<SignedSpend>>` if

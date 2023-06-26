@@ -33,7 +33,7 @@ pub enum Query {
     GetChunk(ChunkAddress),
     /// [`Register`] read operation.
     ///
-    /// [`Register`]: crate::storage::Register
+    /// [`Register`]: sn_registers::Register
     Register(RegisterQuery),
     /// Retrieve a [`SignedSpend`] at the given address.
     ///

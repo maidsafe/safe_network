@@ -6,15 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_protocol::{
-    error::Error,
-    storage::{
-        registers::{CrdtOperation, Entry, EntryHash, RegisterCrdt, User},
-        RegisterAddress,
-    },
-};
-
-use super::Result;
+use crate::{error::Result, Entry, EntryHash, Error, RegisterAddress, RegisterOp, User};
 
 use crdts::{merkle_reg::MerkleReg, CmRDT, CvRDT};
 use serde::{Deserialize, Serialize};
@@ -26,34 +18,14 @@ use std::{
 
 /// Register data type as a CRDT with Access Control
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd)]
-pub(crate) struct RegisterCrdtImpl {
+pub(crate) struct RegisterCrdt {
     /// Address on the network of this piece of data
     address: RegisterAddress,
     /// CRDT to store the actual data, i.e. the items of the Register.
     data: MerkleReg<Entry>,
 }
 
-impl From<RegisterCrdt> for RegisterCrdtImpl {
-    fn from(crdt: RegisterCrdt) -> Self {
-        Self {
-            address: crdt.address,
-            data: crdt.data,
-        }
-    }
-}
-
-// We allow from_over_into since the `RegisterCrdt` is not parrt of this crate or implementation.
-#[allow(clippy::from_over_into)]
-impl Into<RegisterCrdt> for RegisterCrdtImpl {
-    fn into(self) -> RegisterCrdt {
-        RegisterCrdt {
-            address: self.address,
-            data: self.data,
-        }
-    }
-}
-
-impl Display for RegisterCrdtImpl {
+impl Display for RegisterCrdt {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "(")?;
         for (i, entry) in self.data.read().values().enumerate() {
@@ -66,7 +38,7 @@ impl Display for RegisterCrdtImpl {
     }
 }
 
-impl RegisterCrdtImpl {
+impl RegisterCrdt {
     /// Constructs a new '`RegisterCrdtImpl`'.
     pub(crate) fn new(address: RegisterAddress) -> Self {
         Self {
@@ -97,7 +69,7 @@ impl RegisterCrdtImpl {
         entry: Entry,
         children: BTreeSet<EntryHash>,
         source: User,
-    ) -> Result<(EntryHash, CrdtOperation<Entry>)> {
+    ) -> Result<(EntryHash, RegisterOp<Entry>)> {
         let address = *self.address();
 
         let children_array: BTreeSet<[u8; 32]> = children.iter().map(|itr| itr.0).collect();
@@ -106,7 +78,7 @@ impl RegisterCrdtImpl {
         let hash = crdt_op.hash();
 
         // We return the operation as it may need to be broadcasted to other replicas
-        let op = CrdtOperation {
+        let op = RegisterOp {
             address,
             crdt_op,
             source,
@@ -117,7 +89,7 @@ impl RegisterCrdtImpl {
     }
 
     /// Apply a remote data CRDT operation to this replica of the `RegisterCrdtImpl`.
-    pub(crate) fn apply_op(&mut self, op: CrdtOperation<Entry>) -> Result<()> {
+    pub(crate) fn apply_op(&mut self, op: RegisterOp<Entry>) -> Result<()> {
         // Let's first check the op is validly signed.
         // Note: Perms and valid sig for the op are checked at the upper Register layer.
 
@@ -168,8 +140,8 @@ mod tests {
             tag: 0,
         };
 
-        let mut crdt_1 = RegisterCrdtImpl::new(address_1);
-        let mut crdt_2 = RegisterCrdtImpl::new(address_2);
+        let mut crdt_1 = RegisterCrdt::new(address_1);
+        let mut crdt_2 = RegisterCrdt::new(address_2);
         let mut parents = BTreeSet::new();
 
         let entry_1 = vec![0x1, 0x1];

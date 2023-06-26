@@ -8,6 +8,6 @@
 
 mod chunk;
 mod dbc;
-mod register;
 
-pub use self::{chunk::ChunkAddress, dbc::DbcAddress, register::RegisterAddress};
+pub use self::{chunk::ChunkAddress, dbc::DbcAddress};
+pub use sn_registers::RegisterAddress;

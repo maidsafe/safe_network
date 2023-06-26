@@ -54,11 +54,11 @@ async fn main() -> Result<()> {
                 register.name(),
                 register.tag(),
             );
-            register.offline()
+            register
         }
         Err(_) => {
             println!("Register '{reg_nickname}' not found, creating it at {xorname}, {tag}",);
-            client.create_register(xorname, tag).await?.offline()
+            client.create_register(xorname, tag).await?
         }
     };
     println!("Register owned by: {:?}", reg_replica.policy().owner);

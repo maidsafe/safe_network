@@ -7,10 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    storage::{
-        registers::{EntryHash, User},
-        ChunkAddress, DbcAddress, RecordKind, RegisterAddress,
-    },
+    storage::{ChunkAddress, DbcAddress, RecordKind, RegisterAddress},
     NetworkAddress,
 };
 use serde::{Deserialize, Serialize};
@@ -25,30 +22,22 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Error, Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// Chunk not found.
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
-    /// We failed to store chunk
-    #[error("Chunk was not stored w/ xorname {0:?}")]
+    #[error("Chunk was not stored, xorname: {0:?}")]
     ChunkNotStored(XorName),
 
-    /// Register not found.
+    #[error("Register was not stored, xorname: {0:?}")]
+    RegisterNotStored(XorName),
     #[error("Register not found: {0:?}")]
     RegisterNotFound(RegisterAddress),
-    /// Register operation was not stored.
     #[error("Register operation was not stored: {0:?}")]
     RegisterCmdNotStored(RegisterAddress),
-    /// Register operation destination address mismatch
-    #[error(
-        "The CRDT operation cannot be applied since the Register operation destination address ({dst_addr:?}) \
-         doesn't match the targeted Register's address: {reg_addr:?}"
-    )]
-    RegisterAddrMismatch {
-        /// Register operation destination address
-        dst_addr: RegisterAddress,
-        /// Targeted Register's address
-        reg_addr: RegisterAddress,
-    },
+    #[error("Register is Invalid: {0:?}")]
+    InvalidRegister(RegisterAddress),
+    #[error("Register is Invalid: {0}")]
+    RegisterError(#[from] sn_registers::Error),
+
     /// At least one input of payment proof provided has a mismatching spend Tx
     #[error("At least one input of payment proof provided for {0:?} has a mismatching spend Tx")]
     PaymentProofTxMismatch(XorName),
@@ -58,26 +47,9 @@ pub enum Error {
     /// Not all inputs in payment proof have the same 'reason' hash value
     #[error("Not all inputs in payment proof for {0:?} have the same 'reason' hash value")]
     PaymentProofInconsistentReason(XorName),
-    /// Access denied for user
-    #[error("Access denied for user: {0:?}")]
-    AccessDenied(User),
-    /// Entry is too big to fit inside a register
-    #[error("Entry is too big to fit inside a register: {size}, max: {max}")]
-    EntryTooBig {
-        /// Size of the entry
-        size: usize,
-        /// Maximum entry size allowed
-        max: usize,
-    },
     /// Cannot add another entry since the register entry cap has been reached.
     #[error("Cannot add another entry since the register entry cap has been reached: {0}")]
     TooManyEntries(usize),
-    /// Entry could not be found on the data
-    #[error("Requested entry not found {0}")]
-    NoSuchEntry(EntryHash),
-    /// User entry could not be found on the data
-    #[error("Requested user not found {0:?}")]
-    NoSuchUser(User),
     /// Data authority provided is invalid.
     #[error("Provided PublicKey could not validate signature: {0:?}")]
     InvalidSignature(bls::PublicKey),
@@ -88,25 +60,19 @@ pub enum Error {
     /// Received a `Vec<SignedSpend>` with more than two spends
     #[error("Incoming SpendDbc PUT with incorrect number of SignedSpend")]
     MaxNumberOfSpendsExceeded,
-    /// Spend not found.
     #[error("Spend not found: {0:?}")]
     SpendNotFound(DbcAddress),
-    /// Node failed to store spend
     #[error("Failed to store spend: {0:?}")]
     SpendNotStored(String),
-    /// Insufficient valid spends found to make it valid, less that majority of closest peers
     #[error("Insufficient valid spends found: {0:?}")]
     InsufficientValidSpendsFound(DbcAddress),
-    /// A double spend was detected.
     #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
     DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
     /// Cannot verify a Spend signature.
     #[error("Spend signature is invalid: {0}")]
     InvalidSpendSignature(String),
-    /// Cannot verify a Spend's parents.
     #[error("Spend parents are invalid: {0}")]
     InvalidSpendParents(String),
-    /// The DBC we're trying to Spend came with an invalid parent Tx
     #[error("Invalid Parent Tx: {0}")]
     InvalidParentTx(String),
     /// One or more parent spends of a requested spend has an invalid hash
