@@ -22,7 +22,7 @@ use eyre::{eyre, Error, Result};
 use libp2p::{Multiaddr, PeerId};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::Duration,
 };
 use tokio::{
@@ -129,6 +129,7 @@ fn main() -> Result<()> {
         }
     }
 
+    let root_dir = get_root_dir_path(opt.root_dir)?;
     let log_dir = if let Some(path) = opt.log_dir {
         format!("{}", path.display())
     } else {
@@ -156,7 +157,7 @@ fn main() -> Result<()> {
             opt.rpc,
             opt.local,
             &log_dir,
-            opt.root_dir.clone(),
+            &root_dir,
         ))?;
 
         // actively shut down the runtime
@@ -170,7 +171,7 @@ async fn start_node(
     rpc: Option<SocketAddr>,
     local: bool,
     log_dir: &str,
-    root_dir: Option<PathBuf>,
+    root_dir: &Path,
 ) -> Result<()> {
     let started_instant = std::time::Instant::now();
 
@@ -184,7 +185,7 @@ async fn start_node(
 
     // write the PID to the root dir
     let pid = std::process::id();
-    let pid_file = running_node.root_dir_path().join("safenode.pid");
+    let pid_file = root_dir.join("safenode.pid");
     let mut file = File::create(&pid_file).await?;
     file.write_all(pid.to_string().as_bytes()).await?;
 
@@ -274,4 +275,17 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
             }
         }
     });
+}
+
+fn get_root_dir_path(root_dir_path: Option<PathBuf>) -> Result<PathBuf> {
+    let path = if let Some(path) = root_dir_path {
+        path
+    } else {
+        dirs_next::data_dir()
+            .ok_or_else(|| eyre!("Could not obtain data directory"))?
+            .join("safe")
+            .join("node")
+    };
+    std::fs::create_dir_all(path.clone())?;
+    Ok(path)
 }

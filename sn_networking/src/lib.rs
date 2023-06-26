@@ -58,7 +58,7 @@ use std::{
     iter,
     net::SocketAddr,
     num::NonZeroUsize,
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::Duration,
 };
 use tokio::sync::{mpsc, oneshot};
@@ -127,7 +127,7 @@ impl SwarmDriver {
         keypair: Option<Keypair>,
         addr: SocketAddr,
         local: bool,
-        root_dir: Option<PathBuf>,
+        root_dir: &Path,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // get a random integer between REPLICATION_INTERVAL_LOWER_BOUND and REPLICATION_INTERVAL_UPPER_BOUND
         let replication_interval = rand::thread_rng()
@@ -160,13 +160,13 @@ impl SwarmDriver {
             .set_provider_publication_interval(None);
 
         let (network, events_receiver, mut swarm_driver) = Self::with(
-            root_dir,
             keypair,
             kad_cfg,
             local,
             false,
             replication_interval,
             None,
+            Some(root_dir.join("record_store")),
             ProtocolSupport::Full,
             IDENTIFY_AGENT_VERSION_STR.to_string(),
         )?;
@@ -201,14 +201,15 @@ impl SwarmDriver {
             );
 
         Self::with(
-            Some(std::env::temp_dir()),
-            None, // clients use signer for transactions; network keypair is not used
+            // clients use signer for transactions, but the network keypair is not used
+            None,
             kad_cfg,
             local,
             true,
             // Nonsense interval for the client which never replicates
             Duration::from_secs(1000),
             request_timeout,
+            None,
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
         )
@@ -217,13 +218,13 @@ impl SwarmDriver {
     #[allow(clippy::too_many_arguments)]
     /// Private helper to create the network components with the provided config and req/res behaviour
     fn with(
-        initial_root_dir_path: Option<PathBuf>,
         keypair: Option<Keypair>,
         kad_cfg: KademliaConfig,
         local: bool,
         is_client: bool,
         replication_interval: Duration,
         request_response_timeout: Option<Duration>,
+        disk_store_path: Option<PathBuf>,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
@@ -243,9 +244,9 @@ impl SwarmDriver {
         };
 
         let peer_id = PeerId::from(keypair.public());
+
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
         info!("PeerId: {peer_id} has replication interval of {replication_interval:?}");
-        let root_dir_path = Self::get_root_dir_path(initial_root_dir_path, peer_id)?;
 
         // RequestResponse Behaviour
         let request_response = {
@@ -264,17 +265,17 @@ impl SwarmDriver {
         // Kademlia Behaviour
         let kademlia = {
             // Configures the disk_store to store records under the provided path and increase the max record size
-            let storage_dir_path = root_dir_path.join("record_store");
-            if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
+            let storage_dir = disk_store_path.unwrap_or(std::env::temp_dir());
+            if let Err(error) = std::fs::create_dir_all(&storage_dir) {
                 return Err(Error::FailedToCreateRecordStoreDir {
-                    path: storage_dir_path,
+                    path: storage_dir,
                     source: error,
                 });
             }
 
             let store_cfg = DiskBackedRecordStoreConfig {
                 max_value_bytes: 1024 * 1024,
-                storage_dir: storage_dir_path,
+                storage_dir,
                 replication_interval,
                 ..Default::default()
             };
@@ -368,7 +369,6 @@ impl SwarmDriver {
             Network {
                 swarm_cmd_sender,
                 peer_id,
-                root_dir_path,
             },
             network_event_receiver,
             swarm_driver,
@@ -400,22 +400,6 @@ impl SwarmDriver {
                 },
             }
         }
-    }
-
-    fn get_root_dir_path(root_dir_path: Option<PathBuf>, peer_id: PeerId) -> Result<PathBuf> {
-        let path = if let Some(path) = root_dir_path {
-            path
-        } else {
-            dirs_next::data_dir()
-                .ok_or_else(|| {
-                    Error::RootDirConfigError("could not obtain root directory path".to_string())
-                })?
-                .join("safe")
-                .join("node")
-                .join(peer_id.to_string())
-        };
-        std::fs::create_dir_all(path.clone())?;
-        Ok(path)
     }
 }
 
@@ -459,7 +443,6 @@ pub fn sort_peers_by_key<T>(
 pub struct Network {
     pub swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
     pub peer_id: PeerId,
-    pub root_dir_path: PathBuf,
 }
 
 impl Network {
@@ -862,7 +845,7 @@ mod tests {
         messages::{CmdOk, CmdResponse, Query, Request, Response},
         storage::Chunk,
     };
-    use std::{net::SocketAddr, path::PathBuf, time::Duration};
+    use std::{net::SocketAddr, path::Path, time::Duration};
 
     #[tokio::test]
     async fn msg_to_self_should_not_error_out() -> Result<()> {
@@ -873,7 +856,7 @@ mod tests {
                 .parse::<SocketAddr>()
                 .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
             true,
-            Some(PathBuf::from("")),
+            Path::new(""),
         )?;
         let _driver_handle = tokio::spawn(driver.run());
 
