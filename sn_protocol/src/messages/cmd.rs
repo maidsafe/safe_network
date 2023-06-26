@@ -35,7 +35,7 @@ pub enum Cmd {
     },
     /// [`Register`] write operation.
     ///
-    /// [`Register`]: crate::storage::Register
+    /// [`Register`]: sn_registers::Register
     Register(RegisterCmd),
     /// [`SignedSpend`] write operation.
     ///

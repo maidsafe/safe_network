@@ -10,8 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::hash::Hash;
 use xor_name::XorName;
 
-/// Address of a Register, different from
-/// a `ChunkAddress` in that it also includes a tag.
+/// Address of a Register on the SAFE Network
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub struct RegisterAddress {
     /// Name.

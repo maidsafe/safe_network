@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
+pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 use super::ClientEvent;
-use sn_protocol::storage::registers::{Entry, EntryHash};
+use sn_registers::{Entry, EntryHash};
 use std::collections::BTreeSet;
 use thiserror::Error;
 
@@ -22,6 +22,9 @@ pub enum Error {
 
     #[error("Protocol error {0}.")]
     Protocol(#[from] sn_protocol::error::Error),
+
+    #[error("Register error {0}.")]
+    Register(#[from] sn_registers::Error),
 
     #[error("Events receiver error {0}.")]
     EventsReceiver(#[from] tokio::sync::broadcast::error::RecvError),

@@ -6,20 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Client, Error, Register, Result};
+use crate::{Client, Error, Result};
 
 use bincode::serialize;
-use sn_protocol::{
-    messages::{
-        Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
-        RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
-    },
-    storage::{
-        registers::{Action, DataAuthority, Entry, EntryHash, Permissions, Policy, User},
-        RegisterAddress,
-    },
+use sn_protocol::messages::{
+    Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
+    RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
 };
-use sn_registers::RegisterReplica;
+use sn_registers::{
+    Action, DataAuthority, Entry, EntryHash, Permissions, Policy, Register, RegisterAddress, User,
+};
+
 use std::{
     collections::{BTreeSet, LinkedList},
     convert::From,
@@ -29,14 +26,14 @@ use xor_name::XorName;
 /// Ops made to an offline Register instance are applied locally only,
 /// and accumulated till the user explicitly calls 'sync'. The user can
 /// switch back to sync with the network for every op by invoking `online` API.
-pub struct RegisterOffline {
+pub struct ClientRegister {
     client: Client,
-    register: RegisterReplica,
+    register: Register,
     ops: LinkedList<RegisterCmd>, // Cached operations.
 }
 
-impl RegisterOffline {
-    /// Create a new Register offline.
+impl ClientRegister {
+    /// Create a new Register.
     pub fn create(client: Client, name: XorName, tag: u64) -> Result<Self> {
         Self::new(client, name, tag)
     }
@@ -50,21 +47,6 @@ impl RegisterOffline {
             register,
             ops: LinkedList::new(),
         })
-    }
-
-    /// Instantiate a ReplicaOffline from a given Register instance.
-    pub(super) fn from(replica: Register) -> Self {
-        Self {
-            client: replica.offline_reg.client,
-            register: replica.offline_reg.register,
-            ops: LinkedList::new(),
-        }
-    }
-
-    /// Switch to 'online' mode where each op made locally is immediatelly pushed to the network.
-    pub async fn online(mut self) -> Result<Register> {
-        self.push().await?;
-        Ok(Register { offline_reg: self })
     }
 
     /// Return the Policy of the Register.
@@ -152,6 +134,8 @@ impl RegisterOffline {
         Ok(())
     }
 
+    // ********* Online methods  *********
+
     /// Sync this Register with the replicas on the network.
     pub async fn sync(&mut self) -> Result<()> {
         debug!("Syncing Register at {}, {}!", self.name(), self.tag(),);
@@ -190,9 +174,40 @@ impl RegisterOffline {
         Ok(())
     }
 
+    /// Write a new value onto the Register atop latest value.
+    /// It returns an error if it finds branches in the content/entries; if it is
+    /// required to merge/resolve the branches, invoke the `write_merging_branches` API.
+    pub async fn write_online(&mut self, entry: &[u8]) -> Result<()> {
+        self.write(entry)?;
+        self.push().await
+    }
+
+    /// Write a new value onto the Register atop latest value.
+    /// If there are branches of content/entries, it automatically merges them
+    /// all leaving the new value as a single latest value of the Register.
+    /// Note you can use `write` API instead if you need to handle
+    /// content/entries branches in a diffeerent way.
+    pub async fn write_merging_branches_online(&mut self, entry: &[u8]) -> Result<()> {
+        self.write_merging_branches(entry)?;
+        self.push().await
+    }
+
+    /// Write a new value onto the Register atop the set of braches/entries
+    /// referenced by the provided list of their corresponding entry hash.
+    /// Note you can use `write_merging_branches` API instead if you
+    /// want to write atop all exiting branches/entries.
+    pub async fn write_atop_online(
+        &mut self,
+        entry: &[u8],
+        children: BTreeSet<EntryHash>,
+    ) -> Result<()> {
+        self.write_atop(entry, children)?;
+        self.push().await
+    }
+
     // ********* Private helpers  *********
 
-    // Create a new RegisterOffline instance with the given name and tag.
+    // Create a new `ClientRegister` instance with the given name and tag.
     fn new(client: Client, name: XorName, tag: u64) -> Result<Self> {
         let public_key = client.signer_pk();
         let owner = User::Key(public_key);
@@ -214,7 +229,7 @@ impl RegisterOffline {
         };
         let create_cmd = RegisterCmd::Create(SignedRegisterCreate { op, auth });
 
-        let register = RegisterReplica::new(owner, name, tag, policy);
+        let register = Register::new(owner, name, tag, policy);
         let reg = Self {
             client,
             register,
@@ -285,7 +300,7 @@ impl RegisterOffline {
     }
 
     // Retrieve a `Register` from the closest peers.
-    async fn get_register(client: &Client, name: XorName, tag: u64) -> Result<RegisterReplica> {
+    async fn get_register(client: &Client, name: XorName, tag: u64) -> Result<Register> {
         let address = RegisterAddress { name, tag };
         debug!("Retrieving Register from: {address:?}");
         let request = Request::Query(Query::Register(RegisterQuery::Get(address)));
@@ -294,7 +309,7 @@ impl RegisterOffline {
         // We will return the first register we get.
         for resp in responses.iter().flatten() {
             if let Response::Query(QueryResponse::GetRegister(Ok(register))) = resp {
-                return Ok(register.clone().into());
+                return Ok(register.clone());
             };
         }
 

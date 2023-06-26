@@ -14,10 +14,11 @@ use sn_protocol::{
     messages::ReplicatedData,
     storage::{
         try_deserialize_record, Chunk, ChunkAddress, ChunkWithPayment, DbcAddress, RecordHeader,
-        RecordKind,
+        RecordKind, RegisterAddress,
     },
     NetworkAddress,
 };
+use sn_registers::Register;
 
 impl Node {
     pub(crate) async fn get_chunk_from_network(&self, address: ChunkAddress) -> Result<Chunk> {
@@ -37,6 +38,29 @@ impl Node {
         } else {
             error!("RecordKind mismatch while trying to retrieve a chunk");
             Err(Error::RecordKindMismatch(RecordKind::Chunk))
+        }
+    }
+
+    pub(crate) async fn get_register_from_network(
+        &self,
+        address: RegisterAddress,
+    ) -> Result<Register> {
+        let record = self
+            .network
+            .get_record_from_network(RecordKey::new(address.name()))
+            .await
+            .map_err(|_| Error::RegisterNotFound(address))?;
+        debug!("Got record from the network, {:?}", record.key);
+        let header =
+            RecordHeader::from_record(&record).map_err(|_| Error::RegisterNotFound(address))?;
+
+        if let RecordKind::Register = header.kind {
+            let register = try_deserialize_record::<Register>(&record)
+                .map_err(|_| Error::RegisterNotFound(address))?;
+            Ok(register)
+        } else {
+            error!("RecordKind mismatch while trying to retrieve a chunk");
+            Err(Error::RecordKindMismatch(RecordKind::Register))
         }
     }
 
@@ -112,8 +136,8 @@ impl Node {
                 Ok(ReplicatedData::DbcSpend(spends))
             }
             RecordKind::Register => {
-                warn!("Query::GetReplicatedData not implemented for RecordKind::Register");
-                Err(error)
+                let register = try_deserialize_record::<Register>(&record).map_err(|_| error)?;
+                Ok(ReplicatedData::Register(register))
             }
         }
     }

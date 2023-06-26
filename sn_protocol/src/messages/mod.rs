@@ -31,6 +31,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use sn_dbc::SignedSpend;
+use sn_registers::Register;
 use xor_name::XorName;
 
 /// A request to peers in the network
@@ -57,10 +58,8 @@ pub enum ReplicatedData {
     Chunk(ChunkWithPayment),
     /// A set of SignedSpends
     DbcSpend(Vec<SignedSpend>),
-    /// A single cmd for a register.
-    RegisterWrite(RegisterCmd),
     /// An entire op log of a register.
-    RegisterLog(ReplicatedRegisterLog),
+    Register(Register),
 }
 
 impl Request {
@@ -85,10 +84,8 @@ impl ReplicatedData {
                     return Err(Error::MinNumberOfSpendsNotMet);
                 }
             }
-            Self::RegisterLog(log) => *log.address.name(),
-            Self::RegisterWrite(cmd) => *cmd.dst().name(),
-        };
-        Ok(name)
+            Self::Register(register) => *register.address().name(),
+        }
     }
 
     /// Return the dst.
@@ -102,8 +99,7 @@ impl ReplicatedData {
                     return Err(Error::MinNumberOfSpendsNotMet);
                 }
             }
-            Self::RegisterLog(log) => NetworkAddress::from_register_address(log.address),
-            Self::RegisterWrite(cmd) => NetworkAddress::from_register_address(cmd.dst()),
+            Self::Register(register) => NetworkAddress::from_register_address(*register.address()),
         };
         Ok(dst)
     }

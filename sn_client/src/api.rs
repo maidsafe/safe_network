@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 
 use super::{
     error::{Error, Result},
-    Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, Register, RegisterOffline,
+    Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, ClientRegister,
 };
 
 use bls::{PublicKey, SecretKey, Signature};
@@ -239,23 +239,15 @@ impl Client {
     }
 
     /// Retrieve a Register from the network.
-    pub async fn get_register(&self, xorname: XorName, tag: u64) -> Result<Register> {
+    pub async fn get_register(&self, xorname: XorName, tag: u64) -> Result<ClientRegister> {
         info!("Retrieving a Register replica with name {xorname} and tag {tag}");
-        Register::retrieve(self.clone(), xorname, tag).await
+        ClientRegister::retrieve(self.clone(), xorname, tag).await
     }
 
     /// Create a new Register.
-    pub async fn create_register(&self, xorname: XorName, tag: u64) -> Result<Register> {
+    pub async fn create_register(&self, xorname: XorName, tag: u64) -> Result<ClientRegister> {
         info!("Instantiating a new Register replica with name {xorname} and tag {tag}");
-        Register::create(self.clone(), xorname, tag).await
-    }
-
-    /// Create a new offline Register instance.
-    /// It returns a Register instance which can be used to apply operations offline,
-    /// and publish them all to the network on a ad hoc basis.
-    pub fn create_register_offline(&self, xorname: XorName, tag: u64) -> Result<RegisterOffline> {
-        info!("Instantiating a new (offline) Register replica with name {xorname} and tag {tag}");
-        RegisterOffline::create(self.clone(), xorname, tag)
+        ClientRegister::create(self.clone(), xorname, tag)
     }
 
     /// Store `Chunk` to spcified target.
