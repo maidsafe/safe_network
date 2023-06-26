@@ -314,6 +314,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - having the payment proof validation util to return the item's leaf index
 
+## [0.83.55](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.54...sn_node-v0.83.55) - 2023-06-26
+
+### Added
+- *(node)* add handle for Cmd::Response(Ok)
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
