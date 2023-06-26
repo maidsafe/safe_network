@@ -130,7 +130,7 @@ pub async fn init_metrics(pid: u32) {
             process,
         };
         match serde_json::to_string(&metrics) {
-            Ok(metrics) => debug!("PID: {} {metrics}, ", std::process::id()),
+            Ok(metrics) => debug!("{metrics}"),
             Err(err) => error!("Metrics error, could not serialize to JSON {err}"),
         }
 
