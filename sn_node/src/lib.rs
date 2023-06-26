@@ -49,6 +49,7 @@ mod event;
 mod get_validation;
 mod log_markers;
 mod put_validation;
+mod register_handlers;
 mod replication;
 mod spends;
 
@@ -60,7 +61,6 @@ pub use self::{
 
 use libp2p::Multiaddr;
 use sn_networking::Network;
-use sn_registers::RegisterStorage;
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
@@ -68,7 +68,6 @@ use sn_registers::RegisterStorage;
 #[derive(Clone)]
 pub struct Node {
     network: Network,
-    registers: RegisterStorage,
     events_channel: NodeEventsChannel,
     /// Peers that are dialed at startup of node.
     initial_peers: Vec<Multiaddr>,

@@ -18,12 +18,14 @@ mod file_apis;
 mod register;
 mod wallet;
 
+pub(crate) use error::Result;
+
 pub use self::{
     error::Error,
     event::{ClientEvent, ClientEventsReceiver},
     faucet::{get_tokens_from_faucet, load_faucet_wallet},
     file_apis::Files,
-    register::{Register, RegisterOffline},
+    register::ClientRegister,
     wallet::{send, PaymentProofsMap, WalletClient},
 };
 

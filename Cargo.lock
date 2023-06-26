@@ -4788,6 +4788,7 @@ dependencies = [
  "rmp-serde",
  "serde",
  "sn_dbc",
+ "sn_registers",
  "thiserror",
  "xor_name",
 ]
@@ -4817,7 +4818,7 @@ dependencies = [
  "rand 0.8.5",
  "self_encryption",
  "serde",
- "sn_protocol",
+ "thiserror",
  "tiny-keccak",
  "tokio",
  "tracing",

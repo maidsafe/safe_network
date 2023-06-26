@@ -66,14 +66,16 @@ async fn edit_register(name: String, entry: String, client: &Client) -> Result<(
                 register.tag()
             );
             println!("Editing Register '{name}' with: {entry}");
-            match register.write(entry.as_bytes()).await {
+            match register.write_online(entry.as_bytes()).await {
                 Ok(()) => {}
                 Err(ref err @ ClientError::ContentBranchDetected(ref branches)) => {
                     println!(
                         "We need to merge {} branches in Register entries: {err}",
                         branches.len()
                     );
-                    register.write_merging_branches(entry.as_bytes()).await?;
+                    register
+                        .write_merging_branches_online(entry.as_bytes())
+                        .await?;
                 }
                 Err(err) => return Err(err.into()),
             }
