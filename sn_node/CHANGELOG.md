@@ -319,6 +319,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(node)* add handle for Cmd::Response(Ok)
 
+## [0.84.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.55...sn_node-v0.84.0) - 2023-06-26
+
+### Added
+- append peer id to node's default root dir
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

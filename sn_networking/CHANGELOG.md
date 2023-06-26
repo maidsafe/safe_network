@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.1.24...sn_networking-v0.2.0) - 2023-06-26
+
+### Added
+- append peer id to node's default root dir
+
 ## [0.1.24](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.1.23...sn_networking-v0.1.24) - 2023-06-26
 
 ### Other
