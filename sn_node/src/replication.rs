@@ -55,7 +55,14 @@ impl Node {
             None => return,
         };
         trace!("Being out of closest range, replicating {addr:?} to {close_peers:?}");
+        let mut peers_updated = 0;
         for peer in close_peers.iter() {
+            peers_updated += 1;
+
+            if peers_updated > CLOSE_GROUP_SIZE {
+                // Sent to enough peers
+                break;
+            }
             let _ = self
                 .send_replicate_cmd_without_wait(&our_address, peer, vec![chunk_address.clone()])
                 .await;
