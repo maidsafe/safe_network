@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687647024188,
+  "lastUpdate": 1687738851756,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -917,6 +917,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files upload 10mb",
             "value": 6.216894149637318,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "1983c3dcae4fe777900d1a467d2b4feaffdb0ee6",
+          "message": "test: adding proptests for payment proofs merkletree utilities",
+          "timestamp": "2023-06-25T23:23:41Z",
+          "tree_id": "96d87cceef8a36402b635a9f296ebe94d3aead84",
+          "url": "https://github.com/maidsafe/safe_network/commit/1983c3dcae4fe777900d1a467d2b4feaffdb0ee6"
+        },
+        "date": 1687738850828,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6915687499413323,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 6.330697608359262,
             "unit": "MiB/s"
           }
         ]
