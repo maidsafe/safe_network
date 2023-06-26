@@ -17,5 +17,5 @@ local-discovery=[]
 [dependencies]
 clap = { version = "4.2.1", features = ["derive", "env"] }
 eyre = "0.6.8"
-libp2p = { path="../../rust-libp2p/libp2p", version="0.52", features = [] }
+libp2p = { git = "https://github.com/joshuef/rust-libp2p.git", branch = "Fix-ExportKbucketDistance", version="0.52", features = [] }
 tracing = { version = "~0.1.26" }

@@ -1996,6 +1996,7 @@ checksum = "f7012b1bbb0719e1097c47611d3898568c546d597c2e74d66f6087edd5233ff4"
 [[package]]
 name = "libp2p"
 version = "0.52.1"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "bytes",
  "futures",
@@ -2024,6 +2025,7 @@ dependencies = [
 [[package]]
 name = "libp2p-allow-block-list"
 version = "0.2.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "libp2p-core",
  "libp2p-identity",
@@ -2034,6 +2036,7 @@ dependencies = [
 [[package]]
 name = "libp2p-autonat"
 version = "0.11.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "async-trait",
  "futures",
@@ -2051,6 +2054,7 @@ dependencies = [
 [[package]]
 name = "libp2p-connection-limits"
 version = "0.2.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "libp2p-core",
  "libp2p-identity",
@@ -2061,6 +2065,7 @@ dependencies = [
 [[package]]
 name = "libp2p-core"
 version = "0.40.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "either",
  "fnv",
@@ -2087,6 +2092,7 @@ dependencies = [
 [[package]]
 name = "libp2p-dns"
 version = "0.40.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "futures",
  "libp2p-core",
@@ -2100,6 +2106,7 @@ dependencies = [
 [[package]]
 name = "libp2p-identify"
 version = "0.43.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "asynchronous-codec",
  "either",
@@ -2137,6 +2144,7 @@ dependencies = [
 [[package]]
 name = "libp2p-kad"
 version = "0.44.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "arrayvec",
  "asynchronous-codec",
@@ -2163,6 +2171,7 @@ dependencies = [
 [[package]]
 name = "libp2p-mdns"
 version = "0.44.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "data-encoding",
  "futures",
@@ -2182,6 +2191,7 @@ dependencies = [
 [[package]]
 name = "libp2p-metrics"
 version = "0.13.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "instant",
  "libp2p-core",
@@ -2196,6 +2206,7 @@ dependencies = [
 [[package]]
 name = "libp2p-noise"
 version = "0.43.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "bytes",
  "curve25519-dalek 3.2.0",
@@ -2219,6 +2230,7 @@ dependencies = [
 [[package]]
 name = "libp2p-request-response"
 version = "0.25.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "async-trait",
  "futures",
@@ -2237,6 +2249,7 @@ dependencies = [
 [[package]]
 name = "libp2p-swarm"
 version = "0.43.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "either",
  "fnv",
@@ -2258,6 +2271,7 @@ dependencies = [
 [[package]]
 name = "libp2p-swarm-derive"
 version = "0.33.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "heck 0.4.1",
  "proc-macro-warning",
@@ -2269,6 +2283,7 @@ dependencies = [
 [[package]]
 name = "libp2p-tcp"
 version = "0.40.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "futures",
  "futures-timer",
@@ -2284,6 +2299,7 @@ dependencies = [
 [[package]]
 name = "libp2p-yamux"
 version = "0.44.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "futures",
  "libp2p-core",
@@ -2523,6 +2539,7 @@ checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
 [[package]]
 name = "multistream-select"
 version = "0.13.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "bytes",
  "futures",
@@ -3183,6 +3200,7 @@ dependencies = [
 [[package]]
 name = "quick-protobuf-codec"
 version = "0.2.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "asynchronous-codec",
  "bytes",
@@ -3494,6 +3512,7 @@ dependencies = [
 [[package]]
 name = "rw-stream-sink"
 version = "0.4.0"
+source = "git+https://github.com/joshuef/rust-libp2p.git?branch=Fix-ExportKbucketDistance#0567395ac8ee11150672129b8caa4dcfa781451f"
 dependencies = [
  "futures",
  "pin-project",
