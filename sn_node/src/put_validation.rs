@@ -510,3 +510,77 @@ fn verify_fee_output_and_proof(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+    use sn_dbc::FeeOutput;
+    use sn_transfers::payment_proof::build_payment_proofs;
+
+    proptest! {
+        #[test]
+        fn test_verify_payment_proof(num_of_addrs in 1..1000) {
+            let mut rng = rand::thread_rng();
+            let random_names = (0..num_of_addrs).map(|_| XorName::random(&mut rng)).collect::<Vec<_>>();
+            let (root_hash, proofs) = build_payment_proofs(random_names.iter())?;
+            let total_cost = num_of_addrs as u64;
+
+            for (leaf_index, name) in random_names.into_iter().enumerate() {
+                // TODO: populate with random inputs to make the test more complete.
+                let mut tx = DbcTransaction {
+                    inputs: vec![],
+                    outputs: vec![],
+                    fee: FeeOutput {
+                        id: Hash::hash(root_hash.slice()),
+                        amount: total_cost,
+                        root_hash,
+                    },
+                };
+
+                let (audit_trail, path) = proofs.get(&name).expect(
+                    "Failed to obtain payment proof for test content address at index #{leaf_index}"
+                );
+
+                // verification should pass since we provide the correct audit trail info
+                assert!(matches!(
+                    verify_fee_output_and_proof(name, &tx, audit_trail, path),
+                    Ok(())
+                ));
+
+                // verification should fail if we pass invalid payment proof audit trail or path
+                assert!(matches!(
+                    verify_fee_output_and_proof(name, &tx, &[], path),
+                    Err(ProtocolError::InvalidPaymentProof {addr_name, ..}) if addr_name == name
+                ));
+                assert!(matches!(
+                    verify_fee_output_and_proof(name, &tx, audit_trail, &[]),
+                    Err(ProtocolError::InvalidPaymentProof {addr_name, ..}) if addr_name == name
+                ));
+
+                // verification should fail if the amount paid is not enough for the content
+                tx.fee.amount = leaf_index as u64; // it should fail with an amount less or equal to this value
+                assert!(matches!(
+                    verify_fee_output_and_proof(name, &tx, audit_trail, path),
+                    Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected })
+                        if paid == leaf_index && expected == leaf_index + 1
+                ));
+
+                // verification should pass if the amount is more than enough for the content
+                tx.fee.amount = total_cost + 1;
+                assert!(matches!(
+                    verify_fee_output_and_proof(name, &tx, audit_trail, path),
+                    Ok(())
+                ));
+
+                // test that verification fails when the fee output id is incorrect
+                let invalid_fee_id = [123; 32].into();
+                tx.fee.id = invalid_fee_id;
+                assert!(matches!(
+                    verify_fee_output_and_proof(name, &tx, audit_trail, &[]),
+                    Err(err) if err == ProtocolError::PaymentProofInvalidFeeOutput(invalid_fee_id)));
+
+            }
+        }
+    }
+}

@@ -4654,6 +4654,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "libp2p",
+ "proptest",
  "prost",
  "rand 0.8.5",
  "rayon",
