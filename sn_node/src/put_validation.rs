@@ -14,7 +14,7 @@ use libp2p::kad::{Record, RecordKey};
 use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{CmdOk, PaymentProof},
+    messages::{CmdOk, MerkleTreeNodesType, PaymentProof},
     storage::{
         try_deserialize_record, try_serialize_record, ChunkWithPayment, DbcAddress, RecordHeader,
         RecordKind,
@@ -23,6 +23,7 @@ use sn_protocol::{
 use sn_registers::Register;
 use sn_transfers::payment_proof::validate_payment_proof;
 use std::collections::HashSet;
+use xor_name::XorName;
 
 impl Node {
     /// Validate and store a `ChunkWithPayment` to the RecordStore
@@ -43,14 +44,18 @@ impl Node {
                 ProtocolError::ChunkNotStored(chunk_name)
             })?;
 
-        if self
-            .chunk_validation(&chunk_with_payment, present_locally)
-            .await?
-            .is_none()
-        {
-            // data is already present
+        // If data is already present return early without validation
+        if present_locally {
+            // We outright short circuit if the Record::key is present locally;
+            // Hence we don't have to verify if the local_header::kind == Chunk
+            debug!(
+                "Chunk with addr {:?} already exists, not overwriting",
+                chunk_with_payment.chunk.address()
+            );
             return Ok(CmdOk::DataAlreadyPresent);
         }
+
+        self.chunk_payment_validation(&chunk_with_payment).await?;
 
         let record = Record {
             key: RecordKey::new(chunk_with_payment.chunk.name()),
@@ -196,26 +201,11 @@ impl Node {
         Ok(CmdOk::StoredSuccessfully)
     }
 
-    /// Perform validations on the provided `ChunkWithPayment`. Returns `Some(())>` if the Chunk has to be
-    /// stored stored to the RecordStore
-    /// - Return early if overwrite attempt
-    /// - Validate the provided payment proof
-    async fn chunk_validation(
+    /// Perform validations on the provided `ChunkWithPayment`.
+    async fn chunk_payment_validation(
         &self,
         chunk_with_payment: &ChunkWithPayment,
-        present_locally: bool,
-    ) -> Result<Option<()>, ProtocolError> {
-        let addr = *chunk_with_payment.chunk.address();
-        let addr_name = *addr.name();
-
-        // return early without validation
-        if present_locally {
-            // We outright short circuit if the Record::key is present locally;
-            // Hence we don't have to verify if the local_header::kind == Chunk
-            debug!("Chunk with addr {addr:?} already exists, not overwriting",);
-            return Ok(None);
-        }
-
+    ) -> Result<(), ProtocolError> {
         // TODO: temporarily payment proof is optional
         if let Some(PaymentProof {
             tx,
@@ -223,6 +213,11 @@ impl Node {
             path,
         }) = &chunk_with_payment.payment
         {
+            let addr_name = *chunk_with_payment.chunk.name();
+            if tx.inputs.is_empty() {
+                return Err(ProtocolError::PaymentProofWithoutInputs(addr_name));
+            }
+
             // We need to fetch the inputs of the DBC tx in order to obtain the root-hash and
             // other info for verifications of valid payment.
             // TODO: perform verifications in multiple concurrent tasks
@@ -271,31 +266,12 @@ impl Node {
                 }
             }
 
-            // check the root hash verifies the merkle-tree audit trail and path against the content address name
-            let leaf_index =
-                validate_payment_proof(addr_name, &tx.fee.root_hash, audit_trail, path).map_err(
-                    |err| ProtocolError::InvalidPaymentProof {
-                        addr_name,
-                        reason: err.to_string(),
-                    },
-                )?;
-
-            // Check if the fee output id is correct
-            verify_fee_output(tx)?;
-
-            // Check the expected amount of tokens was paid by the Tx, i.e. the amount of
-            // the fee output is the expected, and the output id correct.
-            let paid = tx.fee.amount as usize;
-            if paid <= leaf_index {
-                // the payment amount is not enough, we expect 1 nano per adddress
-                return Err(ProtocolError::PaymentProofInsufficientAmount {
-                    paid,
-                    expected: leaf_index + 1,
-                });
-            }
+            // Check if the fee output id and amount are correct, as well as verify
+            // the payment proof corresponds to the fee output.
+            verify_fee_output_and_proof(addr_name, tx, audit_trail, path)?;
         }
 
-        Ok(Some(()))
+        Ok(())
     }
 
     async fn register_validation(
@@ -452,7 +428,7 @@ impl Node {
                 }
 
                 // If this is a storage payment, then verify FeeOutput's id is the expected.
-                verify_fee_output(&signed_spend.spent_tx())?;
+                verify_fee_output_id(&signed_spend.spent_tx())?;
 
                 // Check parents
                 if let Err(e) = check_parent_spends(&self.network, &signed_spend).await {
@@ -483,8 +459,9 @@ impl Node {
 // If the given TX is a storage payment, i.e. contains a fee output, then verify FeeOutput's id is
 // the expected. The fee output id is expected to be built from hashing: root_hash + input DBCs ids.
 // This requirement makes it possible for this output to be used as an input in a network
-// rewards (farming) reclaiming TX, since the location for spending it it's deterministic and linked from this tx.
-fn verify_fee_output(spent_tx: &DbcTransaction) -> Result<(), ProtocolError> {
+// rewards/farming reclaiming TX, by making its spend location deterministic, analogous to
+// how an output DBC Id works for regular outputs.
+fn verify_fee_output_id(spent_tx: &DbcTransaction) -> Result<(), ProtocolError> {
     let fee = &spent_tx.fee;
     if !fee.is_free() {
         let mut fee_id_bytes = fee.root_hash.slice().to_vec();
@@ -496,6 +473,39 @@ fn verify_fee_output(spent_tx: &DbcTransaction) -> Result<(), ProtocolError> {
         if fee.id != Hash::hash(&fee_id_bytes) {
             return Err(ProtocolError::PaymentProofInvalidFeeOutput(fee.id));
         }
+    }
+
+    Ok(())
+}
+
+// Check if the fee output id and amount are correct, as well as verify the payment proof audit
+// trail info corresponds to the fee output, i.e. the fee output's root-hash is derived from
+// the proof's audit trail info.
+fn verify_fee_output_and_proof(
+    addr_name: XorName,
+    tx: &DbcTransaction,
+    audit_trail: &[MerkleTreeNodesType],
+    path: &[usize],
+) -> Result<(), ProtocolError> {
+    // Check if the fee output id is correct
+    verify_fee_output_id(tx)?;
+
+    // Check the root hash verifies the merkle-tree audit trail and path against the content address name
+    let leaf_index = validate_payment_proof(addr_name, &tx.fee.root_hash, audit_trail, path)
+        .map_err(|err| ProtocolError::InvalidPaymentProof {
+            addr_name,
+            reason: err.to_string(),
+        })?;
+
+    // Check the expected amount of tokens was paid by the Tx, i.e. the amount of
+    // the fee output the expected 1 nano per Chunk/address.
+    let paid = tx.fee.amount as usize;
+    if paid <= leaf_index {
+        // the payment amount is not enough, we expect 1 nano per adddress
+        return Err(ProtocolError::PaymentProofInsufficientAmount {
+            paid,
+            expected: leaf_index + 1,
+        });
     }
 
     Ok(())
