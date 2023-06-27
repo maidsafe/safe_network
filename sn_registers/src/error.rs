@@ -47,6 +47,12 @@ pub enum Error {
     /// Serialisation Failed
     #[error("Serialisation failed")]
     SerialisationFailed,
+    /// Invalid Signature found in register op
+    #[error("Invalid signature")]
+    InvalidSignature,
+    /// Missing Signature when expecting one in register op
+    #[error("Missing signature")]
+    MissingSignature,
 }
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;

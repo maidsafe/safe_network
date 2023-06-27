@@ -61,11 +61,8 @@ async fn main() -> Result<()> {
             client.create_register(xorname, tag).await?
         }
     };
-    println!("Register owned by: {:?}", reg_replica.policy().owner);
-    println!(
-        "Register permissios: {:?}",
-        reg_replica.policy().permissions
-    );
+    println!("Register owned by: {:?}", reg_replica.owner());
+    println!("Register permissios: {:?}", reg_replica.permissions());
 
     // We'll loop asking for new msg to write onto the Register offline,
     // then we'll be syncing the offline Register with the network, i.e.

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_registers::{DataAuthority, Entry, EntryHash, Policy, RegisterAddress, RegisterOp, User};
+use sn_registers::{EntryHash, Permissions, RegisterAddress, RegisterOp, User};
 
 #[allow(unused_imports)] // needed by rustdocs links
 use crate::messages::QueryResponse;
@@ -15,15 +15,6 @@ use sn_registers::Register;
 
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;
-
-/// Register data exchange among replicas on the network.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ReplicatedRegisterLog {
-    /// Register address
-    pub address: RegisterAddress,
-    /// Register ops log
-    pub op_log: Vec<RegisterCmd>,
-}
 
 /// [`Register`] read operations.
 #[derive(Hash, Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
@@ -52,18 +43,18 @@ pub enum RegisterQuery {
         /// The hash of the entry.
         hash: EntryHash,
     },
-    /// Retrieve the policy of the [`Register`] at the given address.
+    /// Retrieve the permissions of the [`Register`] at the given address.
     ///
-    /// This should eventually lead to a [`GetRegisterPolicy`] response.
+    /// This should eventually lead to a [`GetRegisterPermissions`] response.
     ///
-    /// [`GetRegisterPolicy`]: QueryResponse::GetRegisterPolicy
-    GetPolicy(RegisterAddress),
+    /// [`GetRegisterPermissions`]: QueryResponse::GetRegisterPermissions
+    GetPermissions(RegisterAddress),
     /// Retrieve the permissions of a given user for the [`Register`] at the given address.
     ///
-    /// This should eventually lead to a [`GetRegisterUserPermissions`] response.
+    /// This should eventually lead to a [`GetUserRights`] response.
     ///
-    /// [`GetRegisterUserPermissions`]: QueryResponse::GetRegisterUserPermissions
-    GetUserPermissions {
+    /// [`GetUserRights`]: QueryResponse::GetRegisterUserRights
+    GetUserRights {
         /// Register address.
         address: RegisterAddress,
         /// User to get permissions for.
@@ -82,80 +73,18 @@ pub enum RegisterQuery {
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
 pub enum RegisterCmd {
     /// Create a new [`Register`] on the network.
-    Create(SignedRegisterCreate),
+    Create {
+        /// The owner of the register
+        owner: User,
+        /// The name of the register
+        name: XorName,
+        /// The tag on the register
+        tag: u64,
+        /// The permissions of the register
+        permissions: Permissions,
+    },
     /// Edit the [`Register`].
-    Edit(SignedRegisterEdit),
-}
-
-///
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub struct CreateRegister {
-    /// The name of the [`Register`].
-    pub name: XorName,
-    /// The tag on the [`Register`].
-    pub tag: u64,
-    /// The policy of the [`Register`].
-    pub policy: Policy,
-}
-
-impl CreateRegister {
-    /// Returns the owner of the register.
-    pub fn owner(&self) -> User {
-        self.policy.owner
-    }
-
-    /// Returns the address of the register.
-    pub fn dst(&self) -> RegisterAddress {
-        RegisterAddress {
-            name: self.name,
-            tag: self.tag,
-        }
-    }
-}
-
-///
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub struct EditRegister {
-    /// The address of the [`Register`] to edit.
-    pub address: RegisterAddress,
-    /// The operation to perform.
-    pub edit: RegisterOp<Entry>,
-}
-
-/// A signed cmd to create a [`Register`].
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub struct SignedRegisterCreate {
-    /// Create a [`Register`].
-    pub op: CreateRegister,
-    /// A signature carrying authority to perform the operation.
-    ///
-    /// This will be verified against the Register's owner and permissions.
-    pub auth: DataAuthority,
-}
-
-/// A [`Register`] write operation signed by the requester.
-#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
-pub struct SignedRegisterEdit {
-    /// The operation to perform.
-    pub op: EditRegister,
-    /// A signature carrying authority to perform the operation.
-    ///
-    /// This will be verified against the Register's owner and permissions.
-    pub auth: DataAuthority,
-}
-
-impl SignedRegisterCreate {
-    /// Returns the dst address of the register.
-    pub fn dst(&self) -> RegisterAddress {
-        self.op.dst()
-    }
-}
-
-impl SignedRegisterEdit {
-    /// Returns the dst address of the register.
-    pub fn dst(&self) -> RegisterAddress {
-        self.op.address
-    }
+    Edit(RegisterOp),
 }
 
 impl RegisterQuery {
@@ -164,8 +93,8 @@ impl RegisterQuery {
         match self {
             Self::Get(ref address)
             | Self::Read(ref address)
-            | Self::GetPolicy(ref address)
-            | Self::GetUserPermissions { ref address, .. }
+            | Self::GetPermissions(ref address)
+            | Self::GetUserRights { ref address, .. }
             | Self::GetEntry { ref address, .. }
             | Self::GetOwner(ref address) => *address,
         }
@@ -182,8 +111,11 @@ impl RegisterCmd {
     /// Returns the dst address of the register.
     pub fn dst(&self) -> RegisterAddress {
         match self {
-            Self::Create(cmd) => cmd.dst(),
-            Self::Edit(cmd) => cmd.dst(),
+            Self::Create { name, tag, .. } => RegisterAddress {
+                name: *name,
+                tag: *tag,
+            },
+            Self::Edit(op) => op.address(),
         }
     }
 }
