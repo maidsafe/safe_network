@@ -153,19 +153,25 @@ pub(super) async fn pay_for_storage(
 
     // Get the list of Chunks addresses from the files found at 'files_path'
     let mut chunks_addrs = BTreeSet::new();
+    let mut num_of_files = 0;
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
             let file = fs::read(entry.path())?;
             let bytes = Bytes::from(file);
             // we need all chunks addresses not just the data-map addr
             let (_, chunks) = file_api.chunk_bytes(bytes)?;
+            num_of_files += 1;
             chunks.iter().for_each(|c| {
                 let _ = chunks_addrs.insert(*c.name());
             });
         }
     }
 
-    println!("Making payment for {} Chunks...", chunks_addrs.len());
+    println!(
+        "Making payment for {} Chunks (belonging to {} files)...",
+        chunks_addrs.len(),
+        num_of_files
+    );
     let proofs = wallet_client.pay_for_storage(chunks_addrs.iter()).await?;
 
     let wallet = wallet_client.into_wallet();
