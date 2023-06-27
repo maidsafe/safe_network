@@ -395,7 +395,7 @@ impl Node {
 
                 let xorname = cmd.dst();
                 match cmd {
-                    RegisterCmd::Create(_) => {
+                    RegisterCmd::Create { .. } => {
                         self.events_channel
                             .broadcast(NodeEvent::RegisterCreated(xorname));
                         CmdResponse::CreateRegister(result)

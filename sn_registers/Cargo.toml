@@ -17,16 +17,11 @@ crdts = { version = "7.3", default-features = false, features = ["merkle"] }
 hex = "~0.4.3"
 self_encryption = "~0.28.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_protocol = { path = "../sn_protocol", version = "0.1.9" }
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"
-tokio = { version = "1.17.0", features = ["fs"] }
-tracing = { version = "~0.1.26" }
-walkdir = "2.3.1"
 xor_name = "5.0.0"
 
 [dev-dependencies]
 rand = { version = "~0.8.5", features = ["small_rng"] }
-assert_fs = "1.0.0"
 proptest = { version = "1.0.0" }
 eyre = "0.6.8"

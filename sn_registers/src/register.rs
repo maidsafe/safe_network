@@ -6,12 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crdts::merkle_reg::Node as MerkleDagEntry;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::Result, reg_crdt::RegisterCrdt, Action, Entry, EntryHash, Error, Permissions, Policy,
-    RegisterAddress, User,
+    error::Result, reg_crdt::RegisterCrdt, Action, Entry, EntryHash, Error, Permissions,
+    RegisterAddress, RegisterOp, User, UserRights,
 };
 
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
@@ -28,56 +27,37 @@ const MAX_REG_NUM_ENTRIES: u16 = 1024;
 #[derive(Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub struct Register {
     /// Owner of the Register
-    authority: User,
+    owner: User,
     /// CRDT data of the Register
     crdt: RegisterCrdt,
     /// Permissions of the Register
-    policy: Policy,
-}
-
-/// Register mutation operation to apply to Register.
-/// CRDT Data operation applicable to other Register replica.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct RegisterOp<T> {
-    /// Address of a Register object on the network.
-    pub(crate) address: RegisterAddress,
-    /// The data operation to apply.
-    pub(crate) crdt_op: MerkleDagEntry<T>,
-    /// The PublicKey of the entity that generated the operation
-    pub(crate) source: User,
-    /// The signature of source on the crdt_top, required to apply the op
-    pub(crate) signature: Option<bls::Signature>,
+    /// Depending on the permissions, the owner can write to the register
+    /// And allow other users to write to the register
+    /// Everyone can always read the Register because all data is public
+    permissions: Permissions,
 }
 
 impl Register {
     /// Create a new Register
-    pub fn new(authority: User, name: XorName, tag: u64, policy: Policy) -> Self {
+    pub fn new(owner: User, name: XorName, tag: u64, permissions: Permissions) -> Self {
         let address = RegisterAddress { name, tag };
         Self {
-            authority,
+            owner,
             crdt: RegisterCrdt::new(address),
-            policy,
+            permissions,
         }
     }
 
     #[cfg(test)]
-    pub fn new_owned(authority: User, name: XorName, tag: u64) -> Self {
-        Self::new(
-            authority,
-            name,
-            tag,
-            Policy {
-                owner: authority,
-                permissions: Default::default(),
-            },
-        )
+    pub fn new_owned(owner: User, name: XorName, tag: u64) -> Self {
+        let permissions = Default::default();
+        Self::new(owner, name, tag, permissions)
     }
 
     /// Verifies the integrity of the Register.
     pub fn verify(&self) -> Result<()> {
         // NB TODO, add op log to reg and verify capability
-        // regs on the network will probably just be a log of ops instead of a whole unverifiable Register
-        // this will allow for verification
+        // regs on the network could probably just be a log of ops instead of a whole unverifiable Register
         Ok(())
     }
 
@@ -98,13 +78,7 @@ impl Register {
 
     /// Return the owner of the data.
     pub fn owner(&self) -> User {
-        self.policy.owner
-    }
-
-    /// Return the pubkey which the messages are expected to be signed with
-    #[cfg(test)]
-    pub fn authority(&self) -> User {
-        self.authority
+        self.owner
     }
 
     /// Return the number of items held in the register
@@ -128,24 +102,23 @@ impl Register {
     }
 
     /// Return user permissions, if applicable.
-    pub fn permissions(&self, user: User) -> Result<Permissions> {
-        if user == self.policy.owner {
+    pub fn user_rights(&self, user: User) -> Result<UserRights> {
+        if user == self.owner {
             // i.e. it won't be possible to circumvent the semantics of `owner`
             // by setting some other permissions for the user.
             // the permissions can still be kept in the state though, so that switching owners gives an immediate permission update as well
-            Ok(Permissions::new(true))
+            Ok(UserRights::new(true))
         } else {
-            self.policy
-                .permissions
+            self.permissions
                 .get(&user)
                 .copied()
                 .ok_or(Error::NoSuchUser(user))
         }
     }
 
-    /// Return the policy.
-    pub fn policy(&self) -> &Policy {
-        &self.policy
+    /// Return the permission.
+    pub fn permissions(&self) -> &Permissions {
+        &self.permissions
     }
 
     /// Write an entry to the Register, returning the generated unsigned
@@ -155,14 +128,15 @@ impl Register {
         &mut self,
         entry: Entry,
         children: BTreeSet<EntryHash>,
-    ) -> Result<(EntryHash, RegisterOp<Entry>)> {
+    ) -> Result<(EntryHash, RegisterOp)> {
         self.check_entry_and_reg_sizes(&entry)?;
-        self.crdt.write(entry, children, self.authority)
+        self.crdt.write(entry, children, self.owner)
     }
 
     /// Apply a signed data CRDT operation.
-    pub fn apply_op(&mut self, op: RegisterOp<Entry>) -> Result<()> {
+    pub fn apply_op(&mut self, op: RegisterOp) -> Result<()> {
         self.check_entry_and_reg_sizes(&op.crdt_op.value)?;
+        self.check_register_op(&op)?;
         self.crdt.apply_op(op)
     }
 
@@ -171,16 +145,25 @@ impl Register {
         self.crdt.merge(other.crdt);
     }
 
+    /// Check if a register op is valid for our current register
+    pub fn check_register_op(&self, op: &RegisterOp) -> Result<()> {
+        self.check_user_rights(Action::Write, op.source)?;
+
+        match op.source {
+            User::Anyone => Ok(()),
+            User::Key(pk) => op.verify_signature(&pk),
+        }
+    }
+
     /// Helper to check permissions for given `action`
     /// for the given requester's public key.
     ///
     /// Returns:
     /// `Ok(())` if the permissions are valid,
     /// `Err::AccessDenied` if the action is not allowed.
-    pub fn check_permissions(&self, action: Action, requester: Option<User>) -> Result<()> {
-        let requester = requester.unwrap_or(self.authority);
+    pub fn check_user_rights(&self, action: Action, requester: User) -> Result<()> {
         // First checks if the requester is the owner.
-        if action == Action::Read || requester == self.policy.owner {
+        if action == Action::Read || requester == self.owner {
             Ok(())
         } else {
             match self
@@ -216,18 +199,17 @@ impl Register {
     // Returns `Some(true)` if `action` is allowed for the provided user and `Some(false)` if it's
     // not permitted. `None` means that default permissions should be applied.
     fn is_action_allowed_by_user(&self, user: &User, action: Action) -> Option<bool> {
-        self.policy
-            .permissions
+        self.permissions
             .get(user)
-            .and_then(|perms| perms.is_allowed(action))
+            .and_then(|rights| rights.is_allowed(action))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        Entry, EntryHash, Error, Permissions, Policy, Register, RegisterAddress, RegisterOp,
-        Result, User, MAX_REG_NUM_ENTRIES,
+        EntryHash, Error, Permissions, Register, RegisterAddress, Result, User, UserRights,
+        MAX_REG_NUM_ENTRIES,
     };
 
     use bls::SecretKey;
@@ -238,7 +220,6 @@ mod tests {
         collections::{BTreeMap, BTreeSet},
         sync::Arc,
     };
-    use tracing::warn;
     use xor_name::XorName;
 
     #[test]
@@ -252,7 +233,7 @@ mod tests {
 
         let authority = User::Key(authority_sk.public_key());
         assert_eq!(register.owner(), authority);
-        assert_eq!(register.authority(), authority);
+        assert_eq!(register.owner(), authority);
 
         let address = RegisterAddress::new(name, tag);
         assert_eq!(*register.address(), address);
@@ -305,33 +286,18 @@ mod tests {
         // We'll have 'authority1' as the owner in both replicas and
         // grant permissions for Write to 'authority2' in both replicas too
         let mut perms = BTreeMap::default();
-        let user_perms = Permissions::new(true);
+        let user_perms = UserRights::new(true);
         let _prev = perms.insert(authority2, user_perms);
 
         // Instantiate the same Register on two replicas with the two diff authorities
-        let mut replica1 = Register::new(
-            authority1,
-            name,
-            tag,
-            Policy {
-                owner: authority1,
-                permissions: perms.clone(),
-            },
-        );
-        let mut replica2 = Register::new(
-            authority2,
-            name,
-            tag,
-            Policy {
-                owner: authority1,
-                permissions: perms,
-            },
-        );
+        let mut replica1 = Register::new(authority1, name, tag, perms.clone());
+        let mut replica2 = Register::new(authority2, name, tag, perms);
 
         // And let's write an item to replica1 with autority1
         let item1 = random_register_entry();
         let (_, op1) = replica1.write(item1, BTreeSet::new())?;
-        let signed_write_op1 = sign_register_op(op1, &authority_sk1)?;
+        let mut signed_write_op1 = op1;
+        signed_write_op1.add_signature(&authority_sk1)?;
 
         // Let's assert current state on both replicas
         assert_eq!(replica1.size(), 1);
@@ -340,7 +306,8 @@ mod tests {
         // Concurrently write another item with authority2 on replica2
         let item2 = random_register_entry();
         let (_, op2) = replica2.write(item2, BTreeSet::new())?;
-        let signed_write_op2 = sign_register_op(op2, &authority_sk2)?;
+        let mut signed_write_op2 = op2;
+        signed_write_op2.add_signature(&authority_sk2)?;
 
         // Item should be writeed on replica2
         assert_eq!(replica2.size(), 1);
@@ -393,7 +360,7 @@ mod tests {
     }
 
     #[test]
-    fn register_query_public_policy() -> eyre::Result<()> {
+    fn register_query_public_perms() -> eyre::Result<()> {
         let name = xor_name::rand::random();
         let tag = 43_666;
 
@@ -401,49 +368,33 @@ mod tests {
         let authority_sk1 = SecretKey::random();
         let owner1 = User::Key(authority_sk1.public_key());
         let mut perms1 = BTreeMap::default();
-        let _prev = perms1.insert(User::Anyone, Permissions::new(true));
-        let replica1 = create_reg_replica_with(
-            name,
-            tag,
-            Some(authority_sk1),
-            Some(Policy {
-                owner: owner1,
-                permissions: perms1,
-            }),
-        );
+        let _prev = perms1.insert(User::Anyone, UserRights::new(true));
+        let replica1 = create_reg_replica_with(name, tag, Some(authority_sk1), Some(perms1));
 
         // the other replica will allow write ops to 'owner1' and 'authority2' only
         let authority_sk2 = SecretKey::random();
         let authority2 = User::Key(authority_sk2.public_key());
         let mut perms2 = BTreeMap::default();
-        let _prev = perms2.insert(owner1, Permissions::new(true));
-        let replica2 = create_reg_replica_with(
-            name,
-            tag,
-            Some(authority_sk2),
-            Some(Policy {
-                owner: authority2,
-                permissions: perms2,
-            }),
-        );
+        let _prev = perms2.insert(owner1, UserRights::new(true));
+        let replica2 = create_reg_replica_with(name, tag, Some(authority_sk2), Some(perms2));
 
         assert_eq!(replica1.owner(), owner1);
-        assert_eq!(replica1.authority(), owner1);
+        assert_eq!(replica1.owner(), owner1);
         assert_eq!(
-            replica1.permissions(User::Anyone),
-            Ok(Permissions::new(true)),
+            replica1.user_rights(User::Anyone),
+            Ok(UserRights::new(true)),
         );
-        assert_eq!(replica1.permissions(User::Anyone)?, Permissions::new(true),);
+        assert_eq!(replica1.user_rights(User::Anyone)?, UserRights::new(true),);
 
         assert_eq!(replica2.owner(), authority2);
-        assert_eq!(replica2.authority(), authority2);
-        assert_eq!(replica2.permissions(owner1), Ok(Permissions::new(true)),);
-        assert_eq!(replica2.permissions(owner1)?, Permissions::new(true),);
+        assert_eq!(replica2.owner(), authority2);
+        assert_eq!(replica2.user_rights(owner1), Ok(UserRights::new(true)),);
+        assert_eq!(replica2.user_rights(owner1)?, UserRights::new(true),);
 
         let random_sk = SecretKey::random();
         let random_user = User::Key(random_sk.public_key());
         assert_eq!(
-            replica2.permissions(random_user),
+            replica2.user_rights(random_user),
             Err(Error::NoSuchUser(random_user))
         );
 
@@ -457,18 +408,9 @@ mod tests {
 
         // one replica will allow write ops to anyone
         let authority_sk1 = SecretKey::random();
-        let owner1 = User::Key(authority_sk1.public_key());
         let mut perms1 = BTreeMap::default();
-        let _prev = perms1.insert(User::Anyone, Permissions::new(true));
-        let mut replica = create_reg_replica_with(
-            name,
-            tag,
-            Some(authority_sk1),
-            Some(Policy {
-                owner: owner1,
-                permissions: perms1,
-            }),
-        );
+        let _prev = perms1.insert(User::Anyone, UserRights::new(true));
+        let mut replica = create_reg_replica_with(name, tag, Some(authority_sk1), Some(perms1));
 
         for _ in 0..MAX_REG_NUM_ENTRIES {
             let (_hash, _op) = replica
@@ -492,32 +434,19 @@ mod tests {
     }
 
     // Helpers for tests
-    fn sign_register_op(mut op: RegisterOp<Entry>, sk: &SecretKey) -> Result<RegisterOp<Entry>> {
-        let bytes = bincode::serialize(&op.crdt_op).map_err(|err| {
-            warn!("We couldn't serialise the Register cmd: {err:?}");
-            Error::SerialisationFailed
-        })?;
-        let signature = sk.sign(bytes);
-        op.signature = Some(signature);
-        Ok(op)
-    }
-
     fn gen_reg_replicas(
         authority_sk: Option<SecretKey>,
         name: XorName,
         tag: u64,
-        policy: Option<Policy>,
+        perms: Option<Permissions>,
         count: usize,
     ) -> Vec<(SecretKey, Register)> {
         let replicas: Vec<(SecretKey, Register)> = (0..count)
             .map(|_| {
                 let authority_sk = authority_sk.clone().unwrap_or_else(SecretKey::random);
                 let authority = User::Key(authority_sk.public_key());
-                let policy = policy.clone().unwrap_or_else(|| Policy {
-                    owner: authority,
-                    permissions: BTreeMap::new(),
-                });
-                let register = Register::new(authority, name, tag, policy);
+                let perms = perms.clone().unwrap_or_default();
+                let register = Register::new(authority, name, tag, perms);
                 (authority_sk, register)
             })
             .collect();
@@ -537,9 +466,9 @@ mod tests {
         name: XorName,
         tag: u64,
         authority_sk: Option<SecretKey>,
-        policy: Option<Policy>,
+        perms: Option<Permissions>,
     ) -> Register {
-        let replicas = gen_reg_replicas(authority_sk, name, tag, policy, 1);
+        let replicas = gen_reg_replicas(authority_sk, name, tag, perms, 1);
         replicas[0].1.clone()
     }
 
@@ -568,15 +497,12 @@ mod tests {
 
         let owner_sk = Arc::new(SecretKey::random());
         let owner = User::Key(owner_sk.public_key());
-        let policy = Policy {
-            owner,
-            permissions: BTreeMap::default(),
-        };
+        let perms = BTreeMap::default();
 
         (1..max_quantity + 1).prop_map(move |quantity| {
             let mut replicas = Vec::with_capacity(quantity);
             for _ in 0..quantity {
-                let replica = Register::new(owner, xorname, tag, policy.clone());
+                let replica = Register::new(owner, xorname, tag, perms.clone());
 
                 replicas.push(replica);
             }
@@ -612,23 +538,21 @@ mod tests {
             let name = xor_name::rand::random();
             let tag = 45_000u64;
             let owner_sk = SecretKey::random();
-            let policy = Policy {
-                owner: User::Key(owner_sk.public_key()),
-                permissions: BTreeMap::default(),
-            };
+            let perms = BTreeMap::default();
 
             let mut replicas = gen_reg_replicas(
                 Some(owner_sk.clone()),
                 name,
                 tag,
-                Some(policy),
+                Some(perms),
                 2);
             let (_, mut replica1) = replicas.remove(0);
             let (_, mut replica2) = replicas.remove(0);
 
             // Write an item on replicas
             let (_, op) = replica1.write(random_register_entry(), BTreeSet::new())?;
-            let write_op = sign_register_op(op, &owner_sk)?;
+            let mut write_op = op;
+            write_op.add_signature(&owner_sk)?;
             replica2.apply_op(write_op)?;
 
             verify_data_convergence(vec![replica1, replica2], 1)?;
@@ -642,17 +566,14 @@ mod tests {
             let name = xor_name::rand::random();
             let tag = 43_000u64;
             let owner_sk = SecretKey::random();
-            let policy = Policy {
-                owner: User::Key(owner_sk.public_key()),
-                permissions: BTreeMap::default(),
-            };
+            let perms = BTreeMap::default();
 
             // Instantiate the same Register on two replicas
             let mut replicas = gen_reg_replicas(
                 Some(owner_sk.clone()),
                 name,
                 tag,
-                Some(policy),
+                Some(perms),
                 2);
             let (_, mut replica1) = replicas.remove(0);
             let (_, mut replica2) = replicas.remove(0);
@@ -664,7 +585,8 @@ mod tests {
             for _data in dataset {
                 // Write an item on replica1
                 let (hash, op) = replica1.write(random_register_entry(), children.clone())?;
-                let write_op = sign_register_op(op, &owner_sk)?;
+                let mut write_op = op;
+                write_op.add_signature(&owner_sk)?;
                 // now apply that op to replica 2
                 replica2.apply_op(write_op)?;
                 children = vec![hash].into_iter().collect();
@@ -681,17 +603,14 @@ mod tests {
             let name = xor_name::rand::random();
             let tag = 43_000u64;
             let owner_sk = SecretKey::random();
-            let policy = Policy {
-                owner: User::Key(owner_sk.public_key()),
-                permissions: BTreeMap::default(),
-            };
+            let perms = BTreeMap::default();
 
             // Instantiate the same Register on two replicas
             let mut replicas = gen_reg_replicas(
                 Some(owner_sk.clone()),
                 name,
                 tag,
-                Some(policy),
+                Some(perms),
                 2);
             let (_, mut replica1) = replicas.remove(0);
             let (_, mut replica2) = replicas.remove(0);
@@ -708,7 +627,8 @@ mod tests {
 
                 // Write an item on replica1 using the randomly generated set of children
                 let (hash, op) = replica1.write(random_register_entry(), children)?;
-                let write_op = sign_register_op(op, &owner_sk)?;
+                let mut write_op = op;
+                write_op.add_signature(&owner_sk)?;
 
                 // now apply that op to replica 2
                 replica2.apply_op(write_op)?;
@@ -731,7 +651,8 @@ mod tests {
             for _data in dataset {
                 // first generate an op from one replica...
                 let (hash, op)= replicas[0].write(random_register_entry(), children)?;
-                let signed_op = sign_register_op(op, &owner_sk)?;
+                let mut signed_op = op;
+                signed_op.add_signature(&owner_sk)?;
 
                 // then apply this to all replicas
                 for replica in &mut replicas {
@@ -758,7 +679,8 @@ mod tests {
             let mut children = BTreeSet::new();
             for _data in dataset {
                 let (hash, op) = replicas[0].write(random_register_entry(), children)?;
-                let signed_op = sign_register_op(op, &owner_sk)?;
+                let mut signed_op = op;
+                signed_op.add_signature(&owner_sk)?;
                 ops.push(signed_op);
                 children = vec![hash].into_iter().collect();
             }
@@ -791,7 +713,8 @@ mod tests {
                 if let Some(replica) = replicas.choose_mut(&mut OsRng)
                 {
                     let (hash, op) = replica.write(random_register_entry(), children)?;
-                    let signed_op = sign_register_op(op, &owner_sk)?;
+                    let mut signed_op = op;
+                    signed_op.add_signature(&owner_sk)?;
                     ops.push(signed_op);
                     children = vec![hash].into_iter().collect();
                 }
@@ -821,17 +744,14 @@ mod tests {
             let name = xor_name::rand::random();
             let tag = 43_000u64;
             let owner_sk = SecretKey::random();
-            let policy = Policy {
-                owner: User::Key(owner_sk.public_key()),
-                permissions: BTreeMap::default(),
-            };
+            let perms = BTreeMap::default();
 
             // Instantiate the same Register on two replicas
             let mut replicas = gen_reg_replicas(
                 Some(owner_sk.clone()),
                 name,
                 tag,
-                Some(policy),
+                Some(perms),
                 2);
             let (_, mut replica1) = replicas.remove(0);
             let (_, mut replica2) = replicas.remove(0);
@@ -842,7 +762,8 @@ mod tests {
             let mut children = BTreeSet::new();
             for (_data, delivery_chance) in dataset {
                 let (hash, op)= replica1.write(random_register_entry(), children)?;
-                let signed_op = sign_register_op(op, &owner_sk)?;
+                let mut signed_op = op;
+                signed_op.add_signature(&owner_sk)?;
 
                 ops.push((signed_op, delivery_chance));
                 children = vec![hash].into_iter().collect();
@@ -885,7 +806,8 @@ mod tests {
                 let replica = &mut replicas[index];
 
                 let (hash, op)=replica.write(random_register_entry(), children)?;
-                let signed_op = sign_register_op(op, &owner_sk)?;
+                let mut signed_op = op;
+                signed_op.add_signature(&owner_sk)?;
                 ops.push((signed_op, delivery_chance));
                 children = vec![hash].into_iter().collect();
             }
@@ -932,7 +854,8 @@ mod tests {
                 if let Some(replica) = replicas.choose_mut(&mut OsRng)
                 {
                     let (hash, op)=replica.write(random_register_entry(), children)?;
-                    let signed_op = sign_register_op(op, &owner_sk)?;
+                    let mut signed_op = op;
+                    signed_op.add_signature(&owner_sk)?;
                     ops.push(signed_op);
                     children = vec![hash].into_iter().collect();
                 }
@@ -948,7 +871,8 @@ mod tests {
             let mut children = BTreeSet::new();
             for _data in bogus_dataset {
                 let (hash, op)=bogus_replica.write(random_register_entry(), children)?;
-                let bogus_op = sign_register_op(op, &random_owner_sk)?;
+                let mut bogus_op = op;
+                bogus_op.add_signature(&random_owner_sk)?;
                 bogus_replica.apply_op(bogus_op.clone())?;
                 ops.push(bogus_op);
                 children = vec![hash].into_iter().collect();

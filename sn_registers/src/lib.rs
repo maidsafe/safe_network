@@ -7,18 +7,18 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod address;
-mod authority;
 pub(crate) mod error;
 mod metadata;
-mod policy;
+mod permissions;
 pub(crate) mod reg_crdt;
 pub(crate) mod register;
+pub mod register_op;
 
 pub use self::{
     address::RegisterAddress,
-    authority::DataAuthority,
     error::Error,
     metadata::{Action, Entry, EntryHash},
-    policy::{Permissions, Policy, User},
-    register::{Register, RegisterOp},
+    permissions::{Permissions, User, UserRights},
+    register::Register,
+    register_op::RegisterOp,
 };

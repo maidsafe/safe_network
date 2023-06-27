@@ -4808,7 +4808,6 @@ dependencies = [
 name = "sn_registers"
 version = "0.1.8"
 dependencies = [
- "assert_fs",
  "bincode",
  "blsttc",
  "crdts",
@@ -4820,9 +4819,6 @@ dependencies = [
  "serde",
  "thiserror",
  "tiny-keccak",
- "tokio",
- "tracing",
- "walkdir",
  "xor_name",
 ]
 
