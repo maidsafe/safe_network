@@ -214,8 +214,24 @@ impl SwarmDriver {
             },
             SwarmEvent::NewListenAddr { address, .. } => {
                 let local_peer_id = *self.swarm.local_peer_id();
-                let address = address.with(Protocol::P2p(local_peer_id.into()));
+                let address = address.with(Protocol::P2p(local_peer_id));
+
+                // Trigger server mode if we're not a client
+                if !self.is_client {
+                    if self.local {
+                        // all addresses are effectively external here...
+                        // this is needed for Kad Mode::Server
+                        self.swarm.add_external_address(address.clone());
+                    } else {
+                        // only add our global addresses
+                        if multiaddr_is_global(&address) {
+                            self.swarm.add_external_address(address.clone());
+                        }
+                    }
+                }
+
                 self.send_event(NetworkEvent::NewListenAddr(address.clone()));
+
                 info!("Local node is listening on {address:?}");
             }
             SwarmEvent::IncomingConnection { .. } => {}

@@ -110,6 +110,7 @@ pub struct SwarmDriver {
     /// A list of the most recent peers we have dialed ourselves.
     dialed_peers: CircularVec<PeerId>,
     dead_peers: BTreeSet<PeerId>,
+    is_client: bool,
 }
 
 impl SwarmDriver {
@@ -369,6 +370,7 @@ impl SwarmDriver {
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             dead_peers: Default::default(),
+            is_client,
         };
 
         Ok((
