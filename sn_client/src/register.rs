@@ -8,19 +8,14 @@
 
 use crate::{Client, Error, Result};
 
-use bincode::serialize;
 use sn_protocol::messages::{
-    Cmd, CmdResponse, CreateRegister, EditRegister, Query, QueryResponse, RegisterCmd,
-    RegisterQuery, Request, Response, SignedRegisterCreate, SignedRegisterEdit,
+    Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, RegisterQuery, Request, Response,
 };
 use sn_registers::{
-    Action, DataAuthority, Entry, EntryHash, Permissions, Policy, Register, RegisterAddress, User,
+    Action, Entry, EntryHash, Permissions, Register, RegisterAddress, User, UserRights,
 };
 
-use std::{
-    collections::{BTreeSet, LinkedList},
-    convert::From,
-};
+use std::collections::{BTreeSet, LinkedList};
 use xor_name::XorName;
 
 /// Ops made to an offline Register instance are applied locally only,
@@ -49,9 +44,14 @@ impl ClientRegister {
         })
     }
 
-    /// Return the Policy of the Register.
-    pub fn policy(&self) -> &Policy {
-        self.register.policy()
+    /// Return the Owner of the Register.
+    pub fn owner(&self) -> User {
+        self.register.owner()
+    }
+
+    /// Return the Permissions of the Register.
+    pub fn permissions(&self) -> &Permissions {
+        self.register.permissions()
     }
 
     /// Return the XorName of the Register.
@@ -116,18 +116,10 @@ impl ClientRegister {
         // we need to check permissions first
         let public_key = self.client.signer_pk();
         self.register
-            .check_permissions(Action::Write, Some(User::Key(public_key)))?;
+            .check_user_rights(Action::Write, User::Key(public_key))?;
 
-        let (_hash, edit) = self.register.write(entry.into(), children)?;
-        let op = EditRegister {
-            address: *self.register.address(),
-            edit,
-        };
-        let auth = DataAuthority {
-            public_key,
-            signature: self.client.sign(&serialize(&op)?),
-        };
-        let cmd = RegisterCmd::Edit(SignedRegisterEdit { op, auth });
+        let (_hash, op) = self.register.write(entry.into(), children)?;
+        let cmd = RegisterCmd::Edit(op);
 
         self.ops.push_front(cmd);
 
@@ -211,29 +203,15 @@ impl ClientRegister {
     fn new(client: Client, name: XorName, tag: u64) -> Result<Self> {
         let public_key = client.signer_pk();
         let owner = User::Key(public_key);
-        let policy = Policy {
-            owner,
-            permissions: [(User::Anyone, Permissions::new(true))]
-                .into_iter()
-                .collect(),
-        };
+        let perms = [(User::Anyone, UserRights::new(true))]
+            .into_iter()
+            .collect();
 
-        let op = CreateRegister {
-            name,
-            tag,
-            policy: policy.clone(),
-        };
-        let auth = DataAuthority {
-            public_key,
-            signature: client.sign(&serialize(&op)?),
-        };
-        let create_cmd = RegisterCmd::Create(SignedRegisterCreate { op, auth });
-
-        let register = Register::new(owner, name, tag, policy);
+        let register = Register::new(owner, name, tag, perms);
         let reg = Self {
             client,
             register,
-            ops: LinkedList::from([create_cmd]),
+            ops: LinkedList::new(),
         };
 
         Ok(reg)

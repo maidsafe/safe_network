@@ -11,17 +11,17 @@ use super::Action;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, hash::Hash};
 
-/// Set of public permissions for a user.
+/// The rights of an user
 #[derive(Copy, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Hash, Debug)]
-pub struct Permissions {
+pub struct UserRights {
     /// `Some(true)` if the user can write.
-    /// `Some(false)` explicitly denies this permission (even if `Anyone` has permissions).
-    /// Use permissions for `Anyone` if `None`.
+    /// `Some(false)` explicitly denies writes (even if `Anyone` has the right to write).
+    /// `None` use default: the rights for `Anyone`
     write: Option<bool>,
 }
 
-impl Permissions {
-    /// Constructs a new public permission set.
+impl UserRights {
+    /// Constructs a new set of user rights.
     pub fn new(write: impl Into<Option<bool>>) -> Self {
         Self {
             write: write.into(),
@@ -47,12 +47,6 @@ pub enum User {
     Key(bls::PublicKey),
 }
 
-/// Register permissions.
-#[derive(Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Hash, Debug)]
-pub struct Policy {
-    /// An owner could represent an individual user, or a group of users,
-    /// depending on the `public_key` type.
-    pub owner: User,
-    /// Map of users to their public permission set.
-    pub permissions: BTreeMap<User, Permissions>,
-}
+/// Register permissions
+/// Map of users to their public permission set.
+pub type Permissions = BTreeMap<User, UserRights>;

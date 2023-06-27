@@ -8,17 +8,12 @@
 
 #[allow(unused_imports)] // needed by rustdocs links
 use super::RegisterQuery;
-use crate::{
-    error::Result,
-    messages::ReplicatedData,
-    storage::Chunk,
-    NetworkAddress,
-};
+use crate::{error::Result, messages::ReplicatedData, storage::Chunk, NetworkAddress};
 use serde::{Deserialize, Serialize};
 use sn_dbc::SignedSpend;
 use std::{collections::BTreeSet, fmt::Debug};
 
-use sn_registers::{Entry, EntryHash, Permissions, Policy, Register, User};
+use sn_registers::{Entry, EntryHash, Permissions, Register, User, UserRights};
 
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]
@@ -59,10 +54,10 @@ pub enum QueryResponse {
     GetRegisterOwner(Result<User>),
     /// Response to [`RegisterQuery::Read`].
     ReadRegister(Result<BTreeSet<(EntryHash, Entry)>>),
-    /// Response to [`RegisterQuery::GetPolicy`].
-    GetRegisterPolicy(Result<Policy>),
-    /// Response to [`RegisterQuery::GetUserPermissions`].
-    GetRegisterUserPermissions(Result<Permissions>),
+    /// Response to [`RegisterQuery::GetPermissions`].
+    GetRegisterPermissions(Result<Permissions>),
+    /// Response to [`RegisterQuery::GetUserRights`].
+    GetRegisterUserRights(Result<UserRights>),
 }
 
 /// The response to a Cmd, containing the query result.

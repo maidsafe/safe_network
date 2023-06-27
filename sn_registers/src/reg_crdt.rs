@@ -69,7 +69,7 @@ impl RegisterCrdt {
         entry: Entry,
         children: BTreeSet<EntryHash>,
         source: User,
-    ) -> Result<(EntryHash, RegisterOp<Entry>)> {
+    ) -> Result<(EntryHash, RegisterOp)> {
         let address = *self.address();
 
         let children_array: BTreeSet<[u8; 32]> = children.iter().map(|itr| itr.0).collect();
@@ -78,18 +78,13 @@ impl RegisterCrdt {
         let hash = crdt_op.hash();
 
         // We return the operation as it may need to be broadcasted to other replicas
-        let op = RegisterOp {
-            address,
-            crdt_op,
-            source,
-            signature: None,
-        };
+        let op = RegisterOp::new(address, crdt_op, source, None);
 
         Ok((EntryHash(hash), op))
     }
 
     /// Apply a remote data CRDT operation to this replica of the `RegisterCrdtImpl`.
-    pub(crate) fn apply_op(&mut self, op: RegisterOp<Entry>) -> Result<()> {
+    pub(crate) fn apply_op(&mut self, op: RegisterOp) -> Result<()> {
         // Let's first check the op is validly signed.
         // Note: Perms and valid sig for the op are checked at the upper Register layer.
 

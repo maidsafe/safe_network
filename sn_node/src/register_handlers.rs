@@ -8,6 +8,7 @@
 
 use sn_protocol::error::Result;
 use sn_protocol::messages::{QueryResponse, RegisterCmd, RegisterQuery};
+use sn_registers::Register;
 
 use crate::Node;
 
@@ -33,21 +34,41 @@ impl Node {
                 let entries = register.read();
                 QueryResponse::ReadRegister(Ok(entries))
             }
-            RegisterQuery::GetPolicy(_) => {
-                let policy = register.policy().clone();
-                QueryResponse::GetRegisterPolicy(Ok(policy))
+            RegisterQuery::GetPermissions(_) => {
+                let perm = register.permissions().clone();
+                QueryResponse::GetRegisterPermissions(Ok(perm))
             }
-            RegisterQuery::GetUserPermissions { address: _, user } => {
-                let permissions = register.permissions(*user).map_err(|e| e.into());
-                QueryResponse::GetRegisterUserPermissions(permissions)
+            RegisterQuery::GetUserRights { address: _, user } => {
+                let permissions = register.user_rights(*user).map_err(|e| e.into());
+                QueryResponse::GetRegisterUserRights(permissions)
             }
         }
     }
 
     /// Handle a RegisterCmd
     pub async fn handle_register_cmd(&self, cmd: &RegisterCmd) -> Result<()> {
-        let _res = self.get_register_from_network(cmd.dst()).await;
-
-        Ok(())
+        match cmd {
+            RegisterCmd::Create {
+                owner,
+                name,
+                tag,
+                permissions,
+            } => {
+                let maybe_register = self.get_register_from_network(cmd.dst()).await;
+                if maybe_register.is_ok() {
+                    // no op, since already created
+                    return Ok(());
+                }
+                let register = Register::new(*owner, *name, *tag, permissions.clone());
+                let _ok = self.validate_and_store_register(register).await?;
+                Ok(())
+            }
+            RegisterCmd::Edit(op) => {
+                let mut register = self.get_register_from_network(cmd.dst()).await?;
+                register.apply_op(op.clone())?;
+                let _ok = self.validate_and_store_register(register).await?;
+                Ok(())
+            }
+        }
     }
 }

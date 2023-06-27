@@ -17,10 +17,7 @@ pub use self::{
     cmd::{Cmd, Hash, MerkleTreeNodesType, PaymentProof},
     node_id::NodeId,
     query::Query,
-    register::{
-        CreateRegister, EditRegister, RegisterCmd, RegisterQuery, ReplicatedRegisterLog,
-        SignedRegisterCreate, SignedRegisterEdit,
-    },
+    register::{RegisterCmd, RegisterQuery},
     response::{CmdOk, CmdResponse, QueryResponse},
 };
 
@@ -58,7 +55,7 @@ pub enum ReplicatedData {
     Chunk(ChunkWithPayment),
     /// A set of SignedSpends
     DbcSpend(Vec<SignedSpend>),
-    /// An entire op log of a register.
+    /// An entire register
     Register(Register),
 }
 
@@ -85,7 +82,8 @@ impl ReplicatedData {
                 }
             }
             Self::Register(register) => *register.address().name(),
-        }
+        };
+        Ok(name)
     }
 
     /// Return the dst.
