@@ -262,7 +262,7 @@ impl SwarmDriver {
                 debug!("Connection closed to Peer {peer_id}({num_established:?}) - {endpoint:?} - {cause:?}");
             }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
-                trace!("OutgoingConnectionError to {peer_id:?} - {error:?}");
+                error!("OutgoingConnectionError to {peer_id:?} - {error:?}");
                 if let Some(peer_id) = peer_id {
                     // Related errors are: WrongPeerId, ConnectionRefused(TCP), HandshakeTimedOut(QUIC)
                     let err_string = format!("{error:?}");
@@ -291,7 +291,7 @@ impl SwarmDriver {
                     if let Some(sender) = self.pending_dial.remove(&peer_id) {
                         let _ = sender.send(Err(error.into()));
                     } else {
-                        debug!("OutgoingConnectionError is due to non pending_dial to {peer_id}");
+                        error!("OutgoingConnectionError is due to non pending_dial to {peer_id}");
                     }
                 }
             }
