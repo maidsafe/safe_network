@@ -9,7 +9,7 @@
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 use crate::{error::Result, CLOSE_GROUP_SIZE};
 use libp2p::{
-    kad::{kbucket::Distance, store::RecordStore, Record, RecordKey},
+    kad::{store::RecordStore, KBucketDistance as Distance, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
@@ -233,10 +233,7 @@ impl SwarmDriver {
                     // immediately write to the pending dial hashmap, as dials can take time,
                     // if we wait until its done more may be in flight
                     let _ = dial_entry.insert(sender);
-                    match self
-                        .swarm
-                        .dial(peer_addr.with(Protocol::P2p(peer_id.into())))
-                    {
+                    match self.swarm.dial(peer_addr.with(Protocol::P2p(peer_id))) {
                         Ok(()) => {}
                         Err(e) => {
                             dial_error = Some(e);

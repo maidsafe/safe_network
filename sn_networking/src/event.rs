@@ -8,7 +8,7 @@
 
 use super::{
     error::{Error, Result},
-    msg::MsgCodec,
+    // msg::MsgCodec,
     SwarmDriver,
 };
 use crate::{multiaddr_is_global, multiaddr_strip_p2p, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR};
@@ -35,9 +35,9 @@ use tokio::sync::oneshot;
 use tracing::{info, warn};
 
 #[derive(NetworkBehaviour)]
-#[behaviour(out_event = "NodeEvent")]
+#[behaviour(to_swarm = "NodeEvent")]
 pub(super) struct NodeBehaviour {
-    pub(super) request_response: request_response::Behaviour<MsgCodec>,
+    pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
     pub(super) kademlia: Kademlia<DiskBackedRecordStore>,
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
@@ -175,11 +175,9 @@ impl SwarmDriver {
                             }
 
                             // If the peer supports AutoNAT, add it as server
-                            if info
-                                .protocols
-                                .iter()
-                                .any(|protocol| protocol.starts_with("/libp2p/autonat/"))
-                            {
+                            if info.protocols.iter().any(|protocol| {
+                                protocol.to_string().starts_with("/libp2p/autonat/")
+                            }) {
                                 let a = &mut self.swarm.behaviour_mut().autonat;
                                 // It could be that we are on a local network and have AutoNAT disabled.
                                 if let Some(autonat) = a.as_mut() {
@@ -210,9 +208,8 @@ impl SwarmDriver {
                                 let (sender, _receiver) = oneshot::channel();
                                 let _ = dial_entry.insert(sender);
                                 // TODO: Dropping the receiver immediately might get logged as error later.
-                                if let Err(error) = self
-                                    .swarm
-                                    .dial(multiaddr.with(Protocol::P2p(peer_id.into())))
+                                if let Err(error) =
+                                    self.swarm.dial(multiaddr.with(Protocol::P2p(peer_id)))
                                 {
                                     dial_failed = Some(error);
                                 }
@@ -233,7 +230,7 @@ impl SwarmDriver {
             },
             SwarmEvent::NewListenAddr { address, .. } => {
                 let local_peer_id = *self.swarm.local_peer_id();
-                let address = address.with(Protocol::P2p(local_peer_id.into()));
+                let address = address.with(Protocol::P2p(local_peer_id));
                 self.event_sender
                     .send(NetworkEvent::NewListenAddr(address.clone()))
                     .await?;
@@ -258,8 +255,9 @@ impl SwarmDriver {
                 endpoint,
                 cause,
                 num_established,
+                connection_id,
             } => {
-                debug!("Connection closed to Peer {peer_id}({num_established:?}) - {endpoint:?} - {cause:?}");
+                debug!("Connection closed to Peer {peer_id}({num_established:?} / {connection_id:?}) - {endpoint:?} - {cause:?}");
             }
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 trace!("OutgoingConnectionError to {peer_id:?} - {error:?}");
@@ -296,7 +294,10 @@ impl SwarmDriver {
                 }
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
-            SwarmEvent::Dialing(peer_id) => trace!("Dialing {peer_id}"),
+            SwarmEvent::Dialing {
+                peer_id,
+                connection_id,
+            } => trace!("Dialing {peer_id:?} on {connection_id:?}"),
 
             SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
                 autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
