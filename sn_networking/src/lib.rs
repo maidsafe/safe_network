@@ -306,7 +306,7 @@ impl SwarmDriver {
         };
 
         // Transport
-        let transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+        let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(
                 libp2p::noise::Config::new(&keypair)
@@ -314,6 +314,11 @@ impl SwarmDriver {
             )
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
+
+        if !local {
+            // Wrap TCP in a transport that prevents dialing local addresses.
+            transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
+        }
 
         // Disable AutoNAT if we are either running locally or a client.
         let autonat = if !local && !is_client {
