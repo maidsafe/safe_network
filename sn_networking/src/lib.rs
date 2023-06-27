@@ -108,6 +108,7 @@ pub struct SwarmDriver {
     local: bool,
     dialed_peers: CircularVec<PeerId>,
     dead_peers: BTreeSet<PeerId>,
+    is_client: bool,
 }
 
 impl SwarmDriver {
@@ -356,6 +357,7 @@ impl SwarmDriver {
             local,
             dialed_peers: CircularVec::new(63),
             dead_peers: Default::default(),
+            is_client,
         };
 
         Ok((
