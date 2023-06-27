@@ -296,8 +296,8 @@ mod tests {
         // We'll have 'authority1' as the owner in both replicas and
         // grant permissions for Write to 'authority2' in both replicas too
         let mut perms = BTreeMap::default();
-        let user_perms = UserRights::new(true);
-        let _prev = perms.insert(authority2, user_perms);
+        let _prev = perms.insert(authority1, UserRights::new(true));
+        let _prev = perms.insert(authority2, UserRights::new(true));
 
         // Instantiate the same Register on two replicas with the two diff authorities
         let mut replica1 = Register::new(authority1, name, tag, perms.clone());
