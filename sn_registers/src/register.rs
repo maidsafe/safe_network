@@ -148,6 +148,9 @@ impl Register {
     /// Check if a register op is valid for our current register
     pub fn check_register_op(&self, op: &RegisterOp) -> Result<()> {
         self.check_user_rights(Action::Write, op.source)?;
+        if self.everyone_can_write() {
+            return Ok(()); // anyone can write, so no need to check the signature
+        }
 
         match op.source {
             User::Anyone => Ok(()),
@@ -202,6 +205,13 @@ impl Register {
         self.permissions
             .get(user)
             .and_then(|rights| rights.is_allowed(action))
+    }
+
+    fn everyone_can_write(&self) -> bool {
+        self.permissions
+            .get(&User::Anyone)
+            .map(|rights| rights.is_allowed(Action::Write).unwrap_or(false))
+            .unwrap_or(false)
     }
 }
 
