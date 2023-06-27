@@ -507,7 +507,7 @@ mod tests {
 
         let owner_sk = Arc::new(SecretKey::random());
         let owner = User::Key(owner_sk.public_key());
-        let perms = BTreeMap::default();
+        let perms = BTreeMap::from([(User::Anyone, UserRights::new(true))]);
 
         (1..max_quantity + 1).prop_map(move |quantity| {
             let mut replicas = Vec::with_capacity(quantity);
