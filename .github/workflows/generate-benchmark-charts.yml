@@ -107,9 +107,12 @@ jobs:
           auto-push: true
           max-items-in-chart: 300
 
+      # Start a heaptracked client instance to compare memory usage
+      # The generated large single file (around 300MB) may vary little bit along the releases
       - name: Start a heaptracked client instance to compare memory usage
         shell: bash
-        run: heaptrack ./target/release/safe --log-output-dest data-dir files upload the-test-data.zip
+        run: heaptrack ./target/release/safe --log-output-dest data-dir files upload ./the-test-data.zip
+
         env:
           SN_LOG: "all"
 
