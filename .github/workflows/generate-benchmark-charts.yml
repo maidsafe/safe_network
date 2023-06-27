@@ -114,11 +114,11 @@ jobs:
           max-items-in-chart: 300
 
       # Start a heaptracked client instance to compare memory usage
-      # The generated large single file (around 450MB) may vary little bit along the releases
+      # The generated large single file (around 300MB) may vary little bit along the releases
       - name: Start client with heaptrack
         shell: bash
         run: |
-          tar -czvf release_zip.tar.gz ./target/release
+          tar -czvf release_zip.tar.gz ./target/release/deps
           heaptrack ./target/release/safe files upload ./release_zip.tar.gz
         env:
           SN_LOG: "all"
@@ -268,12 +268,12 @@ jobs:
           # Write the client memory usage to a file
           echo '[
               {
-                  "name": "Peak memory usage w/ ~450mb upload",
+                  "name": "Peak memory usage w/ ~300mb upload",
                   "value": '$peak_mem_usage',
                   "unit": "MB"
               },
               {
-                  "name": "Average memory usage w/ ~450mb upload",
+                  "name": "Average memory usage w/ ~300mb upload",
                   "value": '$average_mem',
                   "unit": "MB"
               }
