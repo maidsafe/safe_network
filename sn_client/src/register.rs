@@ -130,9 +130,27 @@ impl ClientRegister {
 
     /// Sync this Register with the replicas on the network.
     pub async fn sync(&mut self) -> Result<()> {
-        debug!("Syncing Register at {}, {}!", self.name(), self.tag(),);
-        // FIXME: handle the scenario where the Register doesn't exist on the network yet
-        let remote_replica = Self::get_register(&self.client, *self.name(), self.tag()).await?;
+        debug!("Syncing Register at {}, {}!", self.name(), self.tag());
+        let remote_replica = match Self::get_register(&self.client, *self.name(), self.tag()).await
+        {
+            Ok(r) => r,
+            Err(err) => {
+                debug!("Failed to fetch register: {err:?}");
+                debug!(
+                    "Creating Register as it doesn't exist at {}, {}!",
+                    self.name(),
+                    self.tag()
+                );
+                let cmd = RegisterCmd::Create {
+                    owner: self.owner(),
+                    permissions: self.permissions().clone(),
+                    name: self.name().to_owned(),
+                    tag: self.tag(),
+                };
+                self.publish_register_create(cmd).await?;
+                self.register.clone()
+            }
+        };
         self.register.merge(remote_replica);
         self.push().await
     }

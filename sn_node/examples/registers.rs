@@ -62,7 +62,7 @@ async fn main() -> Result<()> {
         }
     };
     println!("Register owned by: {:?}", reg_replica.owner());
-    println!("Register permissios: {:?}", reg_replica.permissions());
+    println!("Register permissions: {:?}", reg_replica.permissions());
 
     // We'll loop asking for new msg to write onto the Register offline,
     // then we'll be syncing the offline Register with the network, i.e.
@@ -100,9 +100,8 @@ async fn main() -> Result<()> {
         // Sync with network after a delay
         println!("Syncing with SAFE in {delay:?}...");
         sleep(delay).await;
-        println!("synced!");
-
         reg_replica.sync().await?;
+        println!("synced!");
     }
 }
 
