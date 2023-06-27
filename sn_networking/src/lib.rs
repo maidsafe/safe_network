@@ -239,7 +239,7 @@ impl SwarmDriver {
         identify_version: String,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         let peer_id = PeerId::from(keypair.public());
-        info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
+        info!("Node (PID: {}) with PeerId: {peer_id}. Is running as local? {local}", std::process::id());
         info!("PeerId: {peer_id} has replication interval of {replication_interval:?}");
 
         // RequestResponse Behaviour
@@ -304,7 +304,7 @@ impl SwarmDriver {
         };
 
         // Transport
-        let transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+        let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(
                 libp2p::noise::Config::new(&keypair)
@@ -312,6 +312,12 @@ impl SwarmDriver {
             )
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
+
+        if !local {
+            debug!("Preventing non-global dials");
+            // Wrap TCP in a transport that prevents dialing local addresses.
+            transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
+        }
 
         // Disable AutoNAT if we are either running locally or a client.
         let autonat = if !local && !is_client {
