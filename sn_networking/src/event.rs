@@ -8,7 +8,6 @@
 
 use super::{
     error::{Error, Result},
-    // msg::MsgCodec,
     SwarmDriver,
 };
 use crate::{multiaddr_is_global, multiaddr_strip_p2p, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR};

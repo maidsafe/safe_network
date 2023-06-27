@@ -121,7 +121,7 @@ impl NetworkAddress {
     // /// This implements the following equivalence:
     // ///
     // /// `self xor other = distance <==> other = self xor distance`
-    // pub fn for_distance(&self, d:  ) -> libp2p::kad::kbucket::KeyBytes {
+    // pub fn for_distance(&self, d: Distance) -> libp2p::kad::kbucket::KeyBytes {
     //     self.as_kbucket_key().for_distance(d)
     // }
 }
