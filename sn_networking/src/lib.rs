@@ -31,18 +31,18 @@ use self::{
     replication_fetcher::ReplicationFetcher,
 };
 use futures::{future::select_all, StreamExt};
+#[cfg(feature = "local-discovery")]
+use libp2p::mdns;
 use libp2p::{
     identity::Keypair,
-    kad::{kbucket::Distance, KademliaStoreInserts},
+    kad::{
+        kbucket::Distance, kbucket::Key as KBucketKey, Kademlia, KademliaConfig,
+        KademliaStoreInserts, QueryId, Record, RecordKey,
+    },
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
-};
-#[cfg(feature = "local-discovery")]
-use libp2p::{
-    kad::{kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
-    mdns,
 };
 use rand::Rng;
 use sn_protocol::{
