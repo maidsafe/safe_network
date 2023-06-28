@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687928898980,
+  "lastUpdate": 1687928902839,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3010,6 +3010,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ ~450mb upload",
             "value": 505,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "dbf94c7ffc226bb900ee217875264dedf970bac9",
+          "message": "ci: check local-discovery is not a default feature in any crate",
+          "timestamp": "2023-06-28T12:52:29+09:00",
+          "tree_id": "16302ca77f4653b7ef6a4d0f6dcb95f4adfa1144",
+          "url": "https://github.com/maidsafe/safe_network/commit/dbf94c7ffc226bb900ee217875264dedf970bac9"
+        },
+        "date": 1687928902012,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ ~450mb upload",
+            "value": 936.36,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ ~450mb upload",
+            "value": 471,
             "unit": "MB"
           }
         ]
