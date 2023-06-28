@@ -11,7 +11,7 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.3.1"
 
 [features]
-default=["local-discovery"]
+default=[]
 local-discovery=["libp2p/mdns"]
 
 [dependencies]
