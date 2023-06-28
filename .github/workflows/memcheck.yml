@@ -43,7 +43,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build churn tests 
-        run: cargo test --release -p sn_node --no-run
+        run: cargo test --release --features=local-discovery -p sn_node --no-run
         timeout-minutes: 30
 
       - name: Start a local network
@@ -86,7 +86,7 @@ jobs:
         timeout-minutes: 10
 
       - name: Chunks data integrity during nodes churn (during 10min)
-        run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 
+        run: cargo test --release --features=local-discovery -p sn_node --test data_with_churn -- --nocapture 
         env:
           CHUNKS_ONLY: true
           TEST_DURATION_MINS: 10
@@ -143,7 +143,7 @@ jobs:
 
       - name: Start a client to download files
         run: |
-          cargo run --bin safe --release -- files download
+          cargo run --bin safe --features=local-discovery --release -- files download
           ls -l ~/.local/share/safe/client/downloaded_files
           downloaded_files=$(ls ~/.local/share/safe/client/downloaded_files | wc -l)
           if [ $downloaded_files -lt 4 ]; then
