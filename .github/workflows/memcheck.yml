@@ -85,6 +85,15 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
+      - name: Reset contact env var node.
+        shell: bash
+        # get all listen ports of the heap_node, as it is the only one not restarted during the test
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/heapnode -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+
+      - name: Check reset contact peer
+        shell: bash
+        run: echo "Peer is reset to $SAFE_PEERS"
+
       - name: Chunks data integrity during nodes churn (during 10min)
         run: cargo test --release --features=local-discovery -p sn_node --test data_with_churn -- --nocapture 
         env:
@@ -154,7 +163,6 @@ jobs:
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
-        if: always()
 
       - name: Kill all nodes
         shell: bash
