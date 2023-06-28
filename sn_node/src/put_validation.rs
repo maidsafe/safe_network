@@ -330,7 +330,7 @@ impl Node {
             Some(r) => r,
             None => {
                 error!("Register with addr {reg_addr:?} already exists locally, but not found in local storage");
-                return Err(ProtocolError::RecordKeyMismatch);
+                return Err(ProtocolError::RegisterNotStored(*reg_addr.name()));
             }
         };
         let local_register: Register = try_deserialize_record(&record)?;
