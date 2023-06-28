@@ -128,6 +128,18 @@ jobs:
         env:
           SN_LOG: "all"
 
+      - name: Confirm the heapnode connected to the network
+        shell: bash
+        timeout-minutes: 1
+        run : |
+          discovered_count=$(rg "PeerAddedToRoutingTable" ~/.safe/heapnode -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          echo "Heapnode discovered $restart_count nodes"
+          node_count=$(ls $log_dir | wc -l)
+          if [ $discovered_count -lt $node_count ]; then
+            echo "Discovered count of: $discovered_count is less than the node count of: $node_count"
+            exit 1
+          fi
+        if: always()
 
       ### CLEANUP ###
       - name: Kill all nodes

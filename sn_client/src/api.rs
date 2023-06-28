@@ -58,6 +58,7 @@ impl Client {
             None => true,
         };
 
+        info!("Startup a client with peers {peers:?} and local {local:?} flag");
         info!("Starting Kad swarm in client mode...");
 
         let (network, mut network_event_receiver, swarm_driver) =
