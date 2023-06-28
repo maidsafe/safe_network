@@ -321,6 +321,9 @@ impl Files {
             // This swallowing of errors is basically a compaction into a single
             // error saying "didn't get all chunks".
             retrieved_chunks.extend(join_all(tasks).await.into_iter().flatten().flatten());
+
+            info!("Client download progress retrieved_chunks.len()/expected_count");
+            println!("Client download progress retrieved_chunks.len()/expected_count");
         }
 
         if expected_count > retrieved_chunks.len() {
