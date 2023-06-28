@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.1.8...sn_registers-v0.1.9) - 2023-06-28
+
+### Added
+- make the example work, fix sync when reg doesnt exist
+- rework permissions, implement register cmd handlers
+- register refactor, kad reg without cmds
+
+### Fixed
+- rename UserRights to UserPermissions
+- permission in test
+
+### Other
+- bypass crypto in test with lax permissions
+
 ## [0.1.8](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.1.7...sn_registers-v0.1.8) - 2023-06-21
 
 ### Other
