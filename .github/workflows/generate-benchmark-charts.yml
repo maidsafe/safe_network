@@ -41,9 +41,8 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - uses: Swatinem/rust-cache@v1
-        with:
-          cache-on-failure: true
+      - uses: Swatinem/rust-cache@v2
+        continue-on-error: true
 
       - run: cargo install cargo-criterion
 
