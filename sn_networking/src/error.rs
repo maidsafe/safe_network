@@ -84,4 +84,7 @@ pub enum Error {
 
     #[error("No SwarmCmd channel capacity")]
     NoSwarmCmdChannelCapacity,
+
+    #[error("No NetworkEvent channel capacity")]
+    NoNetworkEventChannelCapacity,
 }

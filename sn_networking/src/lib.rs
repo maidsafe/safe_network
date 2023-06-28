@@ -226,6 +226,18 @@ impl SwarmDriver {
     /// this is a wrapper around the `mpsc::Sender::send` call
     fn send_event(&self, event: NetworkEvent) {
         let event_sender = self.event_sender.clone();
+        let capacity = event_sender.capacity();
+
+        if capacity == 0 {
+            warn!(
+                "NetworkEvent channel is full. Dropping NetworkEvent: {:?}",
+                event
+            );
+
+            // Lets error out just now.
+            return;
+        }
+
         // push the event off thread so as to be non-blocking
         let _handle = tokio::spawn(async move {
             if let Err(error) = event_sender.send(event).await {
