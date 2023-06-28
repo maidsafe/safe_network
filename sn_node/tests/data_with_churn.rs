@@ -13,6 +13,7 @@ use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files};
 use sn_logging::init_logging;
+use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress},
     NetworkAddress,
@@ -485,7 +486,20 @@ async fn query_content(client: &Client, net_addr: &NetworkAddress) -> Result<(),
 
 async fn get_client() -> Client {
     let secret_key = bls::SecretKey::random();
-    Client::new(secret_key, None, None)
+
+    let bootstrap_peers = if !cfg!(feature = "local-discovery") {
+        match std::env::var("SAFE_PEERS") {
+            Ok(str) => match parse_peer_addr(&str) {
+                Ok(peer) => Some(vec![peer]),
+                Err(err) => panic!("Cann't parse SAFE_PEERS {str:?} with error {err:?}"),
+            },
+            Err(err) => panic!("Cann't get env var SAFE_PEERS with error {err:?}"),
+        }
+    } else {
+        None
+    };
+    println!("Client bootstrap with peer {bootstrap_peers:?}");
+    Client::new(secret_key, bootstrap_peers, None)
         .await
         .expect("Client shall be successfully created.")
 }
