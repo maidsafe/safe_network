@@ -73,7 +73,8 @@ const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(30);
 pub const IDENTIFY_AGENT_STR: &str = "safe/node/";
 
 /// The suffix is the version of the node.
-const SN_NODE_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
+const IDENTIFY_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
+const REQ_RESPONSE_VERSION_STR: &str = concat!("/safe/node/", env!("CARGO_PKG_VERSION"));
 /// The suffix is the version of the client.
 const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PKG_VERSION"));
 const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
@@ -165,7 +166,7 @@ impl SwarmDriver {
             replication_interval,
             None,
             ProtocolSupport::Full,
-            SN_NODE_VERSION_STR.to_string(),
+            IDENTIFY_VERSION_STR.to_string(),
         )?;
 
         // Listen on the provided address
@@ -264,7 +265,10 @@ impl SwarmDriver {
                 .set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
             request_response::cbor::Behaviour::new(
-                [(StreamProtocol::new(SN_NODE_VERSION_STR), req_res_protocol)],
+                [(
+                    StreamProtocol::new(REQ_RESPONSE_VERSION_STR),
+                    req_res_protocol,
+                )],
                 cfg,
             )
         };
