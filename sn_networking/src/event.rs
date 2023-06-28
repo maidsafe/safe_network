@@ -259,7 +259,10 @@ impl SwarmDriver {
                     };
                     if is_wrong_id || is_all_connection_failed {
                         info!("Detected dead peer {peer_id:?}");
-                        self.send_event(NetworkEvent::PeerRemoved(peer_id));
+                        if !self.dead_peers.contains(&peer_id) {
+                            let _ = self.dead_peers.insert(peer_id);
+                            self.send_event(NetworkEvent::PeerRemoved(peer_id));
+                        }
                         let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
                         self.log_kbuckets(&peer_id);
                     }
@@ -380,6 +383,9 @@ impl SwarmDriver {
                 peer, is_new_peer, ..
             } => {
                 if is_new_peer {
+                    if self.dead_peers.remove(&peer) {
+                        info!("A dead peer {peer:?} joined back with the same ID");
+                    }
                     self.log_kbuckets(&peer);
                     self.send_event(NetworkEvent::PeerAdded(peer));
                 }
