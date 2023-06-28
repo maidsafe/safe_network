@@ -15,7 +15,7 @@ use sn_logging::init_logging;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_node::{Marker, Node, NodeEvent, NodeEventsReceiver};
-use sn_peers_acquisition::PeersArgs;
+use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
 
 use clap::Parser;
 use eyre::{eyre, Error, Result};
@@ -138,6 +138,8 @@ fn main() -> Result<()> {
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
 
+    let mut initial_peers = opt.peers.peers.clone();
+
     loop {
         let msg = format!(
             "Running {} v{}",
@@ -145,6 +147,7 @@ fn main() -> Result<()> {
             env!("CARGO_PKG_VERSION")
         );
         info!("\n{}\n{}", msg, "=".repeat(msg.len()));
+        info!("Node started with initial_peers {initial_peers:?}");
 
         // Create a tokio runtime per `start_node` attempt, this ensures
         // any spawned tasks are closed before this would be run again.
@@ -153,7 +156,7 @@ fn main() -> Result<()> {
         rt.spawn(init_metrics(std::process::id()));
         rt.block_on(start_node(
             node_socket_addr,
-            opt.peers.peers.clone(),
+            initial_peers.clone(),
             opt.rpc,
             opt.local,
             &log_dir,
@@ -162,6 +165,26 @@ fn main() -> Result<()> {
 
         // actively shut down the runtime
         rt.shutdown_timeout(Duration::from_secs(2));
+
+        // The original passed in peers may got restarted as well.
+        // Hence, try to parse from env_var and add as initial peers,
+        // if not presented yet.
+        if !cfg!(feature = "local-discovery") {
+            match std::env::var("SAFE_PEERS") {
+                Ok(str) => match parse_peer_addr(&str) {
+                    Ok(peer) => {
+                        if !initial_peers
+                            .iter()
+                            .any(|existing_peer| *existing_peer == peer)
+                        {
+                            initial_peers.push(peer);
+                        }
+                    }
+                    Err(err) => panic!("Cann't parse SAFE_PEERS {str:?} with error {err:?}"),
+                },
+                Err(err) => panic!("Cann't get env var SAFE_PEERS with error {err:?}"),
+            }
+        }
     }
 }
 
