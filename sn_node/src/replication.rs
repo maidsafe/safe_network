@@ -65,24 +65,28 @@ impl Node {
     /// Replication is triggered when the newly added peer or the dead peer was among our closest.
     pub(crate) async fn try_trigger_replication(
         &mut self,
-        peer: &PeerId,
+        churned_peer: &PeerId,
         is_dead_peer: bool,
     ) -> Result<()> {
         let our_address = NetworkAddress::from_peer(self.network.peer_id);
+        let churned_peer_address = NetworkAddress::from_peer(*churned_peer);
 
-        let mut all_peers = self.network.get_all_local_peers().await?;
-        if all_peers.len() < CLOSE_GROUP_SIZE {
+        let all_peers = self.network.get_all_local_peers().await?;
+        if all_peers.len() < 2 * CLOSE_GROUP_SIZE {
             return Ok(());
         }
 
-        // Setup the record storage distance range.
+        // Only nearby peers (two times of the CLOSE_GROUP_SIZE) may affect the later on
+        // calculation of `closest peers to each entry`.
+        // Hence to reduce the computation work, no need to take all peers.
         let sorted_peers: Vec<PeerId> = if let Ok(sorted_peers) =
-            sort_peers_by_address(all_peers.clone(), &our_address, CLOSE_GROUP_SIZE + 1)
+            sort_peers_by_address(all_peers, &churned_peer_address, 2 * CLOSE_GROUP_SIZE)
         {
             sorted_peers
         } else {
             return Ok(());
         };
+
         let distance_bar = match sorted_peers.get(CLOSE_GROUP_SIZE) {
             Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
             None => {
@@ -91,34 +95,13 @@ impl Node {
             }
         };
 
-        let churned_peer_address = NetworkAddress::from_peer(*peer);
         // Do nothing if self is not among the closest range.
         if our_address.distance(&churned_peer_address) > distance_bar {
             return Ok(());
         }
 
+        // Setup the record storage distance range.
         self.network.set_record_distance_range(distance_bar).await?;
-
-        all_peers.push(self.network.peer_id);
-        // Only nearby peers (two times of the CLOSE_GROUP_SIZE) may affect the later on
-        // calculation of `closest peers to each entry`.
-        // Hence to reduce the computation work, no need to take all peers.
-        // Plus 1 because the result contains self.
-        let sorted_peers: Vec<PeerId> = if let Ok(sorted_peers) =
-            sort_peers_by_address(all_peers, &churned_peer_address, 2 * CLOSE_GROUP_SIZE + 1)
-        {
-            sorted_peers
-        } else {
-            return Ok(());
-        };
-
-        let distance_bar = match sorted_peers.get(CLOSE_GROUP_SIZE) {
-            Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
-            None => {
-                debug!("could not obtain distance_bar as sorted_peers.len() <= CLOSE_GROUP_SIZE ");
-                return Ok(());
-            }
-        };
 
         // The fetched entries are records that supposed to be held by the churned_peer.
         let entries_to_be_replicated = self
@@ -158,7 +141,7 @@ impl Node {
                 // This can be reduced depends on the performance.
                 closest_peers
             } else {
-                vec![*peer]
+                vec![*churned_peer]
             };
 
             for peer in dsts {
@@ -167,9 +150,10 @@ impl Node {
             }
         }
 
+        // Avoid replicate to self or to a dead peer
         let _ = replications.remove(&self.network.peer_id);
         if is_dead_peer {
-            let _ = replications.remove(peer);
+            let _ = replications.remove(churned_peer);
         }
 
         for (peer_id, keys) in replications {
