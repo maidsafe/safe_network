@@ -259,10 +259,7 @@ impl SwarmDriver {
                     };
                     if is_wrong_id || is_all_connection_failed {
                         info!("Detected dead peer {peer_id:?}");
-                        let _ = self
-                            .event_sender
-                            .send(NetworkEvent::PeerRemoved(peer_id))
-                            .await;
+                        self.send_event(NetworkEvent::PeerRemoved(peer_id));
                         let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
                         self.log_kbuckets(&peer_id);
                     }
@@ -360,9 +357,7 @@ impl SwarmDriver {
                 // In that case, we can try to trigger a replication to it.
                 let peer_ids: Vec<PeerId> = cache_candidates.values().copied().collect();
                 trace!("Candidates {peer_ids:?} failed to respond a record query request.");
-                self.event_sender
-                    .send(NetworkEvent::LostRecordDetected(peer_ids))
-                    .await?;
+                self.send_event(NetworkEvent::LostRecordDetected(peer_ids));
             }
             KademliaEvent::OutboundQueryProgressed {
                 id,

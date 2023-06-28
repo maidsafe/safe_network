@@ -53,9 +53,7 @@ impl SwarmDriver {
                             None => {
                                 // responses that are not awaited at the call site must be handled
                                 // separately
-                                self.event_sender
-                                    .send(NetworkEvent::ResponseReceived { res: response })
-                                    .await?;
+                                self.send_event(NetworkEvent::ResponseReceived { res: response });
                             }
                         }
                     } else {
