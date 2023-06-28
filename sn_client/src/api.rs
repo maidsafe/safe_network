@@ -106,7 +106,6 @@ impl Client {
                     }
                 }
 
-                info!("Client waiting for a network event");
                 match tokio::time::timeout(INACTIVITY_TIMEOUT, network_event_receiver.recv()).await
                 {
                     Ok(event) => {
@@ -123,6 +122,7 @@ impl Client {
                         }
                     }
                     Err(_elapse_err) => {
+                        info!("Client experienced inactivity when waiting for a network event");
                         if let Err(error) = client_clone
                             .events_channel
                             .broadcast(ClientEvent::InactiveClient(INACTIVITY_TIMEOUT))
@@ -134,6 +134,8 @@ impl Client {
             }
         });
 
+        let mut is_connected = false;
+
         loop {
             let mut rng = rand::thread_rng();
             // Carry out 5 rounds of random get to fill up the RT at the beginning.
@@ -143,13 +145,19 @@ impl Client {
             }
             match client_events_rx.recv().await {
                 Ok(ClientEvent::ConnectedToNetwork) => {
-                    info!("Client connected to the Network.");
+                    is_connected = true;
+                    info!("Client connected to the Network {is_connected:?}.");
+                    println!("Client connected to the Network");
                     break;
                 }
                 Ok(ClientEvent::InactiveClient(timeout)) => {
                     let random_target = ChunkAddress::new(XorName::random(&mut rng));
                     debug!("No ClientEvent activity in the past {timeout:?}, performing a random get_chunk query to target: {random_target:?}");
-                    println!("The client still does not know enough network nodes.");
+                    if is_connected {
+                        println!("The client experienced inactivity in the past {timeout:?}.");
+                    } else {
+                        println!("The client still does not know enough network nodes.");
+                    }
                     let _ = client.get_chunk(random_target).await;
                     continue;
                 }
