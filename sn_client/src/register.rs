@@ -12,7 +12,7 @@ use sn_protocol::messages::{
     Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, RegisterQuery, Request, Response,
 };
 use sn_registers::{
-    Action, Entry, EntryHash, Permissions, Register, RegisterAddress, User, UserRights,
+    Action, Entry, EntryHash, Permissions, Register, RegisterAddress, User, UserPermissions,
 };
 
 use std::collections::{BTreeSet, LinkedList};
@@ -116,7 +116,7 @@ impl ClientRegister {
         // we need to check permissions first
         let public_key = self.client.signer_pk();
         self.register
-            .check_user_rights(Action::Write, User::Key(public_key))?;
+            .check_user_permissions(Action::Write, User::Key(public_key))?;
 
         let (_hash, op) = self.register.write(entry.into(), children)?;
         let cmd = RegisterCmd::Edit(op);
@@ -221,7 +221,7 @@ impl ClientRegister {
     fn new(client: Client, name: XorName, tag: u64) -> Result<Self> {
         let public_key = client.signer_pk();
         let owner = User::Key(public_key);
-        let perms = [(User::Anyone, UserRights::new(true))]
+        let perms = [(User::Anyone, UserPermissions::new(true))]
             .into_iter()
             .collect();
 

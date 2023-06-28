@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use sn_dbc::SignedSpend;
 use std::{collections::BTreeSet, fmt::Debug};
 
-use sn_registers::{Entry, EntryHash, Permissions, Register, User, UserRights};
+use sn_registers::{Entry, EntryHash, Permissions, Register, User, UserPermissions};
 
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]
@@ -56,8 +56,8 @@ pub enum QueryResponse {
     ReadRegister(Result<BTreeSet<(EntryHash, Entry)>>),
     /// Response to [`RegisterQuery::GetPermissions`].
     GetRegisterPermissions(Result<Permissions>),
-    /// Response to [`RegisterQuery::GetUserRights`].
-    GetRegisterUserRights(Result<UserRights>),
+    /// Response to [`RegisterQuery::GetUserPermissions`].
+    GetRegisterUserPermissions(Result<UserPermissions>),
 }
 
 /// The response to a Cmd, containing the query result.

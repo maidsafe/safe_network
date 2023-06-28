@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Result, reg_crdt::RegisterCrdt, Action, Entry, EntryHash, Error, Permissions,
-    RegisterAddress, RegisterOp, User, UserRights,
+    RegisterAddress, RegisterOp, User, UserPermissions,
 };
 
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
@@ -31,8 +31,7 @@ pub struct Register {
     /// CRDT data of the Register
     crdt: RegisterCrdt,
     /// Permissions of the Register
-    /// Depending on the permissions, the owner can write to the register
-    /// And allow other users to write to the register
+    /// Depending on the permissions, the owner can allow other users to write to the register
     /// Everyone can always read the Register because all data is public
     permissions: Permissions,
 }
@@ -102,12 +101,12 @@ impl Register {
     }
 
     /// Return user permissions, if applicable.
-    pub fn user_rights(&self, user: User) -> Result<UserRights> {
+    pub fn user_permissions(&self, user: User) -> Result<UserPermissions> {
         if user == self.owner {
             // i.e. it won't be possible to circumvent the semantics of `owner`
             // by setting some other permissions for the user.
             // the permissions can still be kept in the state though, so that switching owners gives an immediate permission update as well
-            Ok(UserRights::new(true))
+            Ok(UserPermissions::new(true))
         } else {
             self.permissions
                 .get(&user)
@@ -147,7 +146,7 @@ impl Register {
 
     /// Check if a register op is valid for our current register
     pub fn check_register_op(&self, op: &RegisterOp) -> Result<()> {
-        self.check_user_rights(Action::Write, op.source)?;
+        self.check_user_permissions(Action::Write, op.source)?;
         if self.everyone_can_write() {
             return Ok(()); // anyone can write, so no need to check the signature
         }
@@ -164,9 +163,9 @@ impl Register {
     /// Returns:
     /// `Ok(())` if the permissions are valid,
     /// `Err::AccessDenied` if the action is not allowed.
-    pub fn check_user_rights(&self, action: Action, requester: User) -> Result<()> {
+    pub fn check_user_permissions(&self, action: Action, requester: User) -> Result<()> {
         // First checks if the requester is the owner.
-        if action == Action::Read || requester == self.owner {
+        if requester == self.owner {
             Ok(())
         } else {
             match self
@@ -204,13 +203,13 @@ impl Register {
     fn is_action_allowed_by_user(&self, user: &User, action: Action) -> Option<bool> {
         self.permissions
             .get(user)
-            .and_then(|rights| rights.is_allowed(action))
+            .and_then(|perm| perm.is_allowed(action))
     }
 
     fn everyone_can_write(&self) -> bool {
         self.permissions
             .get(&User::Anyone)
-            .map(|rights| rights.is_allowed(Action::Write).unwrap_or(false))
+            .map(|perm| perm.is_allowed(Action::Write).unwrap_or(false))
             .unwrap_or(false)
     }
 }
@@ -218,7 +217,7 @@ impl Register {
 #[cfg(test)]
 mod tests {
     use super::{
-        EntryHash, Error, Permissions, Register, RegisterAddress, Result, User, UserRights,
+        EntryHash, Error, Permissions, Register, RegisterAddress, Result, User, UserPermissions,
         MAX_REG_NUM_ENTRIES,
     };
 
@@ -296,8 +295,8 @@ mod tests {
         // We'll have 'authority1' as the owner in both replicas and
         // grant permissions for Write to 'authority2' in both replicas too
         let mut perms = BTreeMap::default();
-        let _prev = perms.insert(authority1, UserRights::new(true));
-        let _prev = perms.insert(authority2, UserRights::new(true));
+        let _prev = perms.insert(authority1, UserPermissions::new(true));
+        let _prev = perms.insert(authority2, UserPermissions::new(true));
 
         // Instantiate the same Register on two replicas with the two diff authorities
         let mut replica1 = Register::new(authority1, name, tag, perms.clone());
@@ -378,33 +377,42 @@ mod tests {
         let authority_sk1 = SecretKey::random();
         let owner1 = User::Key(authority_sk1.public_key());
         let mut perms1 = BTreeMap::default();
-        let _prev = perms1.insert(User::Anyone, UserRights::new(true));
+        let _prev = perms1.insert(User::Anyone, UserPermissions::new(true));
         let replica1 = create_reg_replica_with(name, tag, Some(authority_sk1), Some(perms1));
 
         // the other replica will allow write ops to 'owner1' and 'authority2' only
         let authority_sk2 = SecretKey::random();
         let authority2 = User::Key(authority_sk2.public_key());
         let mut perms2 = BTreeMap::default();
-        let _prev = perms2.insert(owner1, UserRights::new(true));
+        let _prev = perms2.insert(owner1, UserPermissions::new(true));
         let replica2 = create_reg_replica_with(name, tag, Some(authority_sk2), Some(perms2));
 
         assert_eq!(replica1.owner(), owner1);
         assert_eq!(replica1.owner(), owner1);
         assert_eq!(
-            replica1.user_rights(User::Anyone),
-            Ok(UserRights::new(true)),
+            replica1.user_permissions(User::Anyone),
+            Ok(UserPermissions::new(true)),
         );
-        assert_eq!(replica1.user_rights(User::Anyone)?, UserRights::new(true),);
+        assert_eq!(
+            replica1.user_permissions(User::Anyone)?,
+            UserPermissions::new(true),
+        );
 
         assert_eq!(replica2.owner(), authority2);
         assert_eq!(replica2.owner(), authority2);
-        assert_eq!(replica2.user_rights(owner1), Ok(UserRights::new(true)),);
-        assert_eq!(replica2.user_rights(owner1)?, UserRights::new(true),);
+        assert_eq!(
+            replica2.user_permissions(owner1),
+            Ok(UserPermissions::new(true)),
+        );
+        assert_eq!(
+            replica2.user_permissions(owner1)?,
+            UserPermissions::new(true),
+        );
 
         let random_sk = SecretKey::random();
         let random_user = User::Key(random_sk.public_key());
         assert_eq!(
-            replica2.user_rights(random_user),
+            replica2.user_permissions(random_user),
             Err(Error::NoSuchUser(random_user))
         );
 
@@ -419,7 +427,7 @@ mod tests {
         // one replica will allow write ops to anyone
         let authority_sk1 = SecretKey::random();
         let mut perms1 = BTreeMap::default();
-        let _prev = perms1.insert(User::Anyone, UserRights::new(true));
+        let _prev = perms1.insert(User::Anyone, UserPermissions::new(true));
         let mut replica = create_reg_replica_with(name, tag, Some(authority_sk1), Some(perms1));
 
         for _ in 0..MAX_REG_NUM_ENTRIES {
@@ -507,7 +515,7 @@ mod tests {
 
         let owner_sk = Arc::new(SecretKey::random());
         let owner = User::Key(owner_sk.public_key());
-        let perms = BTreeMap::from([(User::Anyone, UserRights::new(true))]);
+        let perms = BTreeMap::from([(User::Anyone, UserPermissions::new(true))]);
 
         (1..max_quantity + 1).prop_map(move |quantity| {
             let mut replicas = Vec::with_capacity(quantity);
