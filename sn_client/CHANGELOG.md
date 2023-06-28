@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.33](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.32...sn_client-v0.85.33) - 2023-06-28
+
+### Added
+- make the example work, fix sync when reg doesnt exist
+- rework permissions, implement register cmd handlers
+- register refactor, kad reg without cmds
+
+### Fixed
+- rename UserRights to UserPermissions
+
 ## [0.85.32](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.31...sn_client-v0.85.32) - 2023-06-28
 
 ### Other
