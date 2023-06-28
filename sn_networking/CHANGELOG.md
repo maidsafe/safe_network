@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.3...sn_networking-v0.3.4) - 2023-06-28
+
+### Added
+- *(node)* add missing send_event calls
+- *(node)* non blocking channels
+
 ## [0.3.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.2...sn_networking-v0.3.3) - 2023-06-28
 
 ### Other
