@@ -269,31 +269,18 @@ impl Client {
         info!("Store chunk: {:?}", address);
         let request = Request::Cmd(Cmd::StoreChunk { chunk, payment });
 
-        // Result will be: just one with `StoreChunk(Ok(_))` response;
-        // or a vector of error responses, which only take the first into account.
-        let mut responses = self
+        let responses = self
             .network
-            .send_and_get_responses(closest_peers, &request, false)
+            .send_and_complete(closest_peers, &request)
             .await
             .into_iter()
             .map(|res| res.map_err(Error::Network))
             .collect_vec();
-        let response = if let Some(response) = responses.pop() {
-            response?
-        } else {
-            return Err(Error::UnexpectedResponses);
-        };
-
-        if matches!(response, Response::Cmd(CmdResponse::StoreChunk(Ok(_)))) {
-            return Ok(());
+        // Return with the first error if has.
+        for resp in responses {
+            resp?
         }
-
-        if let Response::Cmd(CmdResponse::StoreChunk(result)) = response {
-            result?;
-        };
-
-        // If there were no store chunk errors, then we had unexpected responses.
-        Err(Error::UnexpectedResponses)
+        Ok(())
     }
 
     /// Return all the peers from the local network knowledge.

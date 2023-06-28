@@ -797,6 +797,25 @@ impl Network {
         trace!("got all responses for {req:?}");
         responses
     }
+
+    /// Send a `Request` to the provided set of peers.
+    pub async fn send_and_complete(&self, peers: Vec<PeerId>, req: &Request) -> Vec<Result<()>> {
+        trace!("send_and_get_responses for {req:?}");
+        let mut list_of_futures = peers
+            .iter()
+            .map(|peer| Box::pin(self.send_req_ignore_reply(req.clone(), *peer)))
+            .collect::<Vec<_>>();
+
+        let mut responses = Vec::new();
+        while !list_of_futures.is_empty() {
+            let (res, _, remaining_futures) = select_all(list_of_futures).await;
+            responses.push(res);
+            list_of_futures = remaining_futures;
+        }
+
+        trace!("got all responses for {req:?}");
+        responses
+    }
 }
 
 /// Verifies if `Multiaddr` contains IPv4 address that is not global.
