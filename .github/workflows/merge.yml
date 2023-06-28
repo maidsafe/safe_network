@@ -81,6 +81,12 @@ jobs:
       - name: Check the whole workspace can build
         run: cargo build --all-targets --all-features
 
+      - name: Check we could publish sn_node
+        run: cargo publish --dry-run -p sn_node
+      
+      - name: Check we could publish sn_cli
+        run: cargo publish --dry-run -p sn_cli
+
   unit:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
     name: Unit Tests
