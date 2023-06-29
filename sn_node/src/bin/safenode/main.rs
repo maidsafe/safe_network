@@ -13,7 +13,7 @@ mod rpc;
 
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
-use sn_logging::LogOutputDest;
+use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
 use sn_node::{Marker, Node, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
 
@@ -43,7 +43,7 @@ pub enum LogOutputDestArg {
     Path(PathBuf),
 }
 
-pub fn parse_logs_output(val: &str) -> Result<LogOutputDestArg> {
+pub fn parse_log_output(val: &str) -> Result<LogOutputDestArg> {
     match val {
         "stdout" => Ok(LogOutputDestArg::Stdout),
         "default" => Ok(LogOutputDestArg::Default),
@@ -67,8 +67,16 @@ struct Opt {
     ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>\logs
     #[allow(rustdoc::invalid_html_tags)]
-    #[clap(long, value_parser = parse_logs_output, verbatim_doc_comment)]
+    #[clap(long, value_parser = parse_log_output, verbatim_doc_comment)]
     log_output_dest: Option<LogOutputDestArg>,
+
+    /// Specify the logging format.
+    ///
+    /// Valid values are "default" or "json".
+    ///
+    /// If the argument is not used, the default format will be applied.
+    #[clap(long, value_parser = parse_log_format, verbatim_doc_comment)]
+    log_format: Option<LogFormat>,
 
     /// Specify the node's data directory.
     ///
@@ -106,12 +114,6 @@ struct Opt {
     /// When this flag is set, we will not filter out local addresses that we observe.
     #[clap(long)]
     local: bool,
-
-    /// Use JSON for logging output.
-    ///
-    /// Only applies when --log-dir is also set to output logs to file.
-    #[clap(long)]
-    json_log_output: bool,
 }
 
 #[derive(Debug)]
@@ -132,7 +134,7 @@ fn main() -> Result<()> {
     let (log_output_dest, _log_appender_guard) = init_logging(
         opt.log_output_dest,
         keypair.public().to_peer_id(),
-        opt.json_log_output,
+        opt.log_format,
     )?;
 
     if opt.peers.peers.is_empty() {
@@ -318,7 +320,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
 fn init_logging(
     log_output_dest: Option<LogOutputDestArg>,
     peer_id: PeerId,
-    json_log_output: bool,
+    format: Option<LogFormat>,
 ) -> Result<(String, Option<WorkerGuard>)> {
     let logging_targets = vec![
         ("safenode".to_string(), Level::INFO),
@@ -346,14 +348,21 @@ fn init_logging(
     };
 
     #[cfg(not(feature = "otlp"))]
-    let log_appender_guard =
-        sn_logging::init_logging(logging_targets, output_dest.clone(), json_log_output)?;
+    let log_appender_guard = sn_logging::init_logging(
+        logging_targets,
+        output_dest.clone(),
+        format.unwrap_or(LogFormat::Default),
+    )?;
     #[cfg(feature = "otlp")]
     let (_rt, log_appender_guard) = {
         // init logging in a separate runtime if we are sending traces to an opentelemetry server
         let rt = Runtime::new()?;
         let guard = rt.block_on(async {
-            sn_logging::init_logging(logging_targets, output_dest.clone(), json_log_output)
+            sn_logging::init_logging(
+                logging_targets,
+                output_dest.clone(),
+                format.unwrap_or(LogFormat::Default),
+            )
         })?;
         (rt, guard)
     };

@@ -12,10 +12,10 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::subcommands::SubCmd;
-use sn_logging::LogOutputDest;
+use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
 
-pub fn parse_logs_output(val: &str) -> Result<LogOutputDest> {
+pub fn parse_log_output(val: &str) -> Result<LogOutputDest> {
     match val {
         "stdout" => Ok(LogOutputDest::Stdout),
         "default" => {
@@ -46,8 +46,16 @@ pub(crate) struct Opt {
     ///  - macOS: $HOME/Library/Application Support/safe/client/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
     #[allow(rustdoc::invalid_html_tags)]
-    #[clap(long, value_parser = parse_logs_output, verbatim_doc_comment)]
+    #[clap(long, value_parser = parse_log_output, verbatim_doc_comment)]
     pub log_output_dest: Option<LogOutputDest>,
+
+    /// Specify the logging format.
+    ///
+    /// Valid values are "default" or "json".
+    ///
+    /// If the argument is not used, the default format will be applied.
+    #[clap(long, value_parser = parse_log_format, verbatim_doc_comment)]
+    pub log_format: Option<LogFormat>,
 
     #[command(flatten)]
     pub(crate) peers: PeersArgs,

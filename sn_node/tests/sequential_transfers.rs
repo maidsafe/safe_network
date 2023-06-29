@@ -13,7 +13,7 @@ use std::path::Path;
 use sn_client::{get_tokens_from_faucet, send, Client, WalletClient};
 
 use sn_dbc::Token;
-use sn_logging::{init_logging, LogOutputDest};
+use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_transfers::{client_transfers::create_transfer, wallet::LocalWallet};
 use tracing_core::Level;
 
@@ -44,7 +44,8 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = init_logging(logging_targets, LogOutputDest::Stdout, false)?;
+    let _log_appender_guard =
+        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
 
     let first_wallet_dir = TempDir::new()?;
     let first_wallet_balance = Token::from_nano(1_000_000_000);
@@ -97,7 +98,8 @@ async fn double_spend_transfers_fail() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = init_logging(logging_targets, LogOutputDest::Stdout, false)?;
+    let _log_appender_guard =
+        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
 
     // create 1 wallet add money from faucet
     let first_wallet_dir = TempDir::new()?;
@@ -174,7 +176,8 @@ async fn storage_payment_succeeds() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = init_logging(logging_targets, LogOutputDest::Stdout, false)?;
+    let _log_appender_guard =
+        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
 
     let paying_wallet_dir = TempDir::new()?;
     let paying_wallet_balance = Token::from_nano(500_000);
