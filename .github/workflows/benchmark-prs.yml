@@ -61,7 +61,7 @@ jobs:
       - name: Start safenode with heaptrack
         run: |
           mkdir -p ~/.safe/heapnode
-          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode &
+          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode --local &
           sleep 10
         env:
           SN_LOG: "all"
