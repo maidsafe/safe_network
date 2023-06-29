@@ -183,6 +183,14 @@ fn main() -> Result<()> {
             root_dir.clone(),
         ))?;
 
+        let msg = format!(
+            "Running {} v{}",
+            env!("CARGO_BIN_NAME"),
+            env!("CARGO_PKG_VERSION")
+        );
+        info!("\n{}\n{}", msg, "=".repeat(msg.len()));
+        debug!("Built with git version: {}", sn_build_info::git_info());
+
         // actively shut down the runtime
         rt.shutdown_timeout(Duration::from_secs(2));
 
