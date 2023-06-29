@@ -122,18 +122,12 @@ fn main() -> Result<()> {
 
     debug!("Built with git version: {}", sn_build_info::git_info());
 
-    for (key, value) in std::env::vars() {
-        info!("{key}: {value}");
-    }
-
     if opt.peers.peers.is_empty() {
         if !cfg!(feature = "local-discovery") {
             warn!("No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.");
         } else {
             info!("No peers given. As `local-discovery` feature is enabled, we will attempt to connect to the network using mDNS.");
         }
-    } else {
-        info!("Initial peers are {:?}", opt.peers.peers);
     }
 
     let log_dir = if let Some(path) = opt.log_dir {
