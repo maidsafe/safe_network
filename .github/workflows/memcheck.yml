@@ -66,7 +66,7 @@ jobs:
       - name: Start safenode with heaptrack
         run: |
           mkdir -p ~/.safe/heapnode
-          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode &
+          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode --local &
           sleep 10
         env:
           SN_LOG: "all"
@@ -150,19 +150,19 @@ jobs:
           fi
         if: always()
 
-      # - name: Start a client to download files
-      #   run: |
-      #     cargo run --bin safe --release -- files download
-      #     ls -l ~/.local/share/safe/client/downloaded_files
-      #     downloaded_files=$(ls ~/.local/share/safe/client/downloaded_files | wc -l)
-      #     if [ $downloaded_files -lt 4 ]; then
-      #       echo "Only downloaded $downloaded_files files, less than the 4 files uploaded"
-      #       exit 1
-      #     fi
-      #   id: client-file-download
-      #   env:
-      #     RUST_LOG: "safenode,safe=trace"
-      #   timeout-minutes: 10
+      - name: Start a client to download files
+        run: |
+          cargo run --bin safe --release -- files download
+          ls -l ~/.local/share/safe/client/downloaded_files
+          downloaded_files=$(ls ~/.local/share/safe/client/downloaded_files | wc -l)
+          if [ $downloaded_files -lt 4 ]; then
+            echo "Only downloaded $downloaded_files files, less than the 4 files uploaded"
+            exit 1
+          fi
+        id: client-file-download
+        env:
+          RUST_LOG: "safenode,safe=trace"
+        timeout-minutes: 10
 
       - name: Kill all nodes
         shell: bash
