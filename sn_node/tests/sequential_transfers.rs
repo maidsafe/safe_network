@@ -13,7 +13,7 @@ use common::{get_client_and_wallet, get_wallet};
 use sn_client::send;
 
 use sn_dbc::{random_derivation_index, rng, Token};
-use sn_logging::{init_logging, LogOutputDest};
+use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_transfers::client_transfers::create_transfer;
 use tracing_core::Level;
 
@@ -29,7 +29,8 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = init_logging(logging_targets, LogOutputDest::Stdout, false)?;
+    let _log_appender_guard =
+        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
 
     let first_wallet_balance = 1_000_000_000;
     let first_wallet_dir = TempDir::new()?;
@@ -73,7 +74,8 @@ async fn double_spend_transfers_fail() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = init_logging(logging_targets, LogOutputDest::Stdout, false)?;
+    let _log_appender_guard =
+        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
 
     // create 1 wallet add money from faucet
     let first_wallet_balance = 1_000_000_000;

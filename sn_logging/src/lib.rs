@@ -36,6 +36,22 @@ pub enum LogOutputDest {
     Path(PathBuf),
 }
 
+#[derive(Debug, Clone)]
+pub enum LogFormat {
+    Default,
+    Json,
+}
+
+pub fn parse_log_format(val: &str) -> Result<LogFormat> {
+    match val {
+        "default" => Ok(LogFormat::Default),
+        "json" => Ok(LogFormat::Json),
+        _ => Err(Error::LoggingConfigurationError(
+            "The only valid values for this argument are \"default\" or \"json\"".to_string(),
+        )),
+    }
+}
+
 impl fmt::Display for LogOutputDest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -92,7 +108,7 @@ impl TracingLayers {
         &mut self,
         default_logging_targets: Vec<(String, Level)>,
         output_dest: LogOutputDest,
-        json_output: bool,
+        format: LogFormat,
     ) -> Result<()> {
         let layer = match output_dest {
             LogOutputDest::Stdout => {
@@ -115,18 +131,17 @@ impl TracingLayers {
                     appender::file_rotater(path, logs_max_lines, logs_uncompressed, logs_max_files);
                 self.guard = Some(worker_guard);
 
-                if json_output {
-                    tracing_fmt::layer()
+                match format {
+                    LogFormat::Json => tracing_fmt::layer()
                         .json()
                         .flatten_event(true)
                         .with_writer(file_rotation)
-                        .boxed()
-                } else {
-                    tracing_fmt::layer()
+                        .boxed(),
+                    LogFormat::Default => tracing_fmt::layer()
                         .with_ansi(false)
                         .with_writer(file_rotation)
                         .event_format(LogFormatter::default())
-                        .boxed()
+                        .boxed(),
                 }
             }
         };
@@ -200,16 +215,16 @@ impl TracingLayers {
 pub fn init_logging(
     default_logging_targets: Vec<(String, Level)>,
     output_dest: LogOutputDest,
-    json_output: bool,
+    format: LogFormat,
 ) -> Result<Option<WorkerGuard>> {
     let mut layers = TracingLayers::default();
 
     #[cfg(not(feature = "otlp"))]
-    layers.fmt_layer(default_logging_targets, output_dest, json_output)?;
+    layers.fmt_layer(default_logging_targets, output_dest, format)?;
 
     #[cfg(feature = "otlp")]
     {
-        layers.fmt_layer(default_logging_targets.clone(), output_dest, json_output)?;
+        layers.fmt_layer(default_logging_targets.clone(), output_dest, format)?;
 
         match std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
             Ok(_) => layers.otlp_layer(default_logging_targets)?,
