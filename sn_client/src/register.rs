@@ -11,9 +11,7 @@ use crate::{Client, Error, Result};
 use sn_protocol::messages::{
     Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, RegisterQuery, Request, Response,
 };
-use sn_registers::{
-    Action, Entry, EntryHash, Permissions, Register, RegisterAddress, User, UserPermissions,
-};
+use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, User};
 
 use std::collections::{BTreeSet, LinkedList};
 use xor_name::XorName;
@@ -113,10 +111,10 @@ impl ClientRegister {
     /// Note you can use `write_merging_branches` API instead if you
     /// want to write atop all exiting branches/entries.
     pub fn write_atop(&mut self, entry: &[u8], children: BTreeSet<EntryHash>) -> Result<()> {
-        // we need to check permissions first
+        // check permissions first
         let public_key = self.client.signer_pk();
         self.register
-            .check_user_permissions(Action::Write, User::Key(public_key))?;
+            .check_user_permissions(User::Key(public_key))?;
 
         let (_hash, op) = self.register.write(entry.into(), children)?;
         let cmd = RegisterCmd::Edit(op);
@@ -221,9 +219,7 @@ impl ClientRegister {
     fn new(client: Client, name: XorName, tag: u64) -> Result<Self> {
         let public_key = client.signer_pk();
         let owner = User::Key(public_key);
-        let perms = [(User::Anyone, UserPermissions::new(true))]
-            .into_iter()
-            .collect();
+        let perms = Permissions::new_anyone_can_write();
 
         let register = Register::new(owner, name, tag, perms);
         let reg = Self {

@@ -12,13 +12,13 @@ mod metadata;
 mod permissions;
 pub(crate) mod reg_crdt;
 pub(crate) mod register;
-pub mod register_op;
+mod register_op;
 
 pub use self::{
     address::RegisterAddress,
     error::Error,
-    metadata::{Action, Entry, EntryHash},
-    permissions::{Permissions, User, UserPermissions},
+    metadata::{Entry, EntryHash},
+    permissions::{Permissions, User},
     register::Register,
     register_op::RegisterOp,
 };
