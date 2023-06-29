@@ -12,6 +12,7 @@ use common::get_client_and_wallet;
 
 use sn_client::WalletClient;
 use sn_dbc::{Hash, Token};
+use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_transfers::wallet::Error;
 
 use assert_fs::TempDir;
@@ -29,7 +30,8 @@ async fn storage_payment_succeeds() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = sn_logging::init_logging(logging_targets, &None, false)?;
+    let _log_appender_guard =
+        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
 
     let paying_wallet_balance = 500_000;
     let paying_wallet_dir = TempDir::new()?;
@@ -74,7 +76,8 @@ async fn storage_payment_fails() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard = sn_logging::init_logging(logging_targets, &None, false)?;
+    let _log_appender_guard =
+        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
 
     let wallet_dir = TempDir::new()?;
     let (client, mut wallet_client) = get_client_and_wallet(wallet_dir.path(), 15_000).await?;
