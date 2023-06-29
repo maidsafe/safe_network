@@ -39,11 +39,11 @@ jobs:
         run: sudo apt-get install ripgrep
 
       - name: Build sn bins
-        run: cargo build --release --features=local-discovery --bins 
+        run: cargo build --release --bins 
         timeout-minutes: 30
 
       - name: Build churn tests 
-        run: cargo test --release --features=local-discovery -p sn_node --no-run
+        run: cargo test --release -p sn_node --no-run
         timeout-minutes: 30
 
       - name: Start a local network
@@ -76,10 +76,10 @@ jobs:
       - name: Start a client to upload files
         run: |
           ls -l ./target/release
-          cargo run --bin safe --features=local-discovery --release -- files upload -- "./target/release/faucet"
-          cargo run --bin safe --features=local-discovery --release -- files upload -- "./target/release/safe"
-          cargo run --bin safe --features=local-discovery --release -- files upload -- "./target/release/safenode"
-          cargo run --bin safe --features=local-discovery --release -- files upload -- "./target/release/testnet"
+          cargo run --bin safe --release -- files upload -- "./target/release/faucet"
+          cargo run --bin safe --release -- files upload -- "./target/release/safe"
+          cargo run --bin safe --release -- files upload -- "./target/release/safenode"
+          cargo run --bin safe --release -- files upload -- "./target/release/testnet"
         id: client-file-upload
         env:
           SN_LOG: "all"
@@ -95,7 +95,7 @@ jobs:
         run: echo "Peer is reset to $SAFE_PEERS"
 
       - name: Chunks data integrity during nodes churn (during 10min)
-        run: cargo test --release --features=local-discovery -p sn_node --test data_with_churn -- --nocapture 
+        run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 
         env:
           CHUNKS_ONLY: true
           TEST_DURATION_MINS: 10
