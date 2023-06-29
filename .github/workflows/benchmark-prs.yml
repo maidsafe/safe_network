@@ -132,11 +132,8 @@ jobs:
         shell: bash
         timeout-minutes: 1
         run : |
-          echo "Directory of log_dir is $log_dir"
-          ls $log_dir
           discovered_count=$(rg "PeerAddedToRoutingTable" ~/.safe/heapnode -c --stats | rg "(\d+) matches" | rg "\d+" -o)
-          echo "Heapnode discovered $restart_count nodes"
-          node_count=$(ls $log_dir | wc -l)
+          node_count=$(ls ~/.safe/node/local-test-network | wc -l)
           if [ $discovered_count -lt $node_count ]; then
             echo "Discovered count of: $discovered_count is less than the node count of: $node_count"
             exit 1

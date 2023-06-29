@@ -148,7 +148,6 @@ impl Client {
                 Ok(ClientEvent::ConnectedToNetwork) => {
                     is_connected = true;
                     info!("Client connected to the Network {is_connected:?}.");
-                    println!("Client connected to the Network");
                     break;
                 }
                 Ok(ClientEvent::InactiveClient(timeout)) => {

@@ -180,9 +180,9 @@ fn main() -> Result<()> {
                             initial_peers.push(peer);
                         }
                     }
-                    Err(err) => panic!("Cann't parse SAFE_PEERS {str:?} with error {err:?}"),
+                    Err(err) => error!("Cann't parse SAFE_PEERS {str:?} with error {err:?}"),
                 },
-                Err(err) => panic!("Cann't get env var SAFE_PEERS with error {err:?}"),
+                Err(err) => error!("Cann't get env var SAFE_PEERS with error {err:?}"),
             }
         }
     }
