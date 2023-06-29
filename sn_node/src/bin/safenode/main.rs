@@ -341,18 +341,73 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
     });
 }
 
-async fn create_secret_key_file(path: impl AsRef<Path>) -> Result<tokio::fs::File, std::io::Error> {
-    let mut opt = tokio::fs::OpenOptions::new();
+fn init_logging(
+    log_output_dest: Option<LogOutputDestArg>,
+    peer_id: PeerId,
+    format: Option<LogFormat>,
+) -> Result<(String, Option<WorkerGuard>)> {
+    let logging_targets = vec![
+        ("safenode".to_string(), Level::INFO),
+        ("sn_transfers".to_string(), Level::INFO),
+        ("sn_networking".to_string(), Level::INFO),
+        ("sn_node".to_string(), Level::INFO),
+    ];
+
+    let output_dest = if let Some(log_output_dest) = log_output_dest {
+        match log_output_dest {
+            LogOutputDestArg::Stdout => LogOutputDest::Stdout,
+            LogOutputDestArg::Default => {
+                let path = dirs_next::data_dir()
+                    .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+                    .join("safe")
+                    .join("node")
+                    .join(peer_id.to_string())
+                    .join("logs");
+                LogOutputDest::Path(path)
+            }
+            LogOutputDestArg::Path(path) => LogOutputDest::Path(path),
+        }
+    } else {
+        LogOutputDest::Stdout
+    };
+
+    #[cfg(not(feature = "otlp"))]
+    let log_appender_guard = sn_logging::init_logging(
+        logging_targets,
+        output_dest.clone(),
+        format.unwrap_or(LogFormat::Default),
+    )?;
+    #[cfg(feature = "otlp")]
+    let (_rt, log_appender_guard) = {
+        // init logging in a separate runtime if we are sending traces to an opentelemetry server
+        let rt = Runtime::new()?;
+        let guard = rt.block_on(async {
+            sn_logging::init_logging(
+                logging_targets,
+                output_dest.clone(),
+                format.unwrap_or(LogFormat::Default),
+            )
+        })?;
+        (rt, guard)
+    };
+    Ok((output_dest.to_string(), log_appender_guard))
+}
+
+fn create_secret_key_file(path: impl AsRef<Path>) -> Result<std::fs::File, std::io::Error> {
+    let mut opt = std::fs::OpenOptions::new();
     opt.write(true).create_new(true);
 
     // On Unix systems, make sure only the current user can read/write.
     #[cfg(unix)]
-    let opt = opt.mode(0o600);
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        opt.mode(0o600);
+    }
 
-    opt.open(path).await
+    opt.open(path)
 }
 
-async fn keypair_from_path(path: impl AsRef<Path>) -> Result<Keypair> {
+fn keypair_from_path(path: impl AsRef<Path>) -> Result<Keypair> {
     let keypair = match std::fs::read(&path) {
         // If the file is opened successfully, read the key from it
         Ok(key) => {
@@ -367,9 +422,8 @@ async fn keypair_from_path(path: impl AsRef<Path>) -> Result<Keypair> {
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
             let secret_key = libp2p::identity::ed25519::SecretKey::generate();
             let mut file = create_secret_key_file(&path)
-                .await
                 .map_err(|err| eyre!("could not create secret key file: {err}"))?;
-            file.write_all(secret_key.as_ref()).await?;
+            file.write_all(secret_key.as_ref())?;
 
             info!("generated new key and stored to file: {:?}", path.as_ref());
 
@@ -396,13 +450,13 @@ fn get_root_dir(peer_id: PeerId) -> Result<PathBuf> {
 
 /// The keypair is located inside the root directory. At the same time, when no dir is specified,
 /// the dir name is derived from the keypair used in the application: the peer ID is used as the directory name.
-async fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf, Keypair)> {
+fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf, Keypair)> {
     match root_dir {
         Some(dir) => {
-            tokio::fs::create_dir_all(&dir).await?;
+            std::fs::create_dir_all(&dir)?;
 
             let secret_key_path = dir.join("secret-key");
-            Ok((dir, keypair_from_path(secret_key_path).await?))
+            Ok((dir, keypair_from_path(secret_key_path)?))
         }
         None => {
             let secret_key = libp2p::identity::ed25519::SecretKey::generate();
@@ -411,14 +465,13 @@ async fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf,
             let peer_id = keypair.public().to_peer_id();
 
             let dir = get_root_dir(peer_id)?;
-            tokio::fs::create_dir_all(&dir).await?;
+            std::fs::create_dir_all(&dir)?;
 
             let secret_key_path = dir.join("secret-key");
 
-            let mut file = create_secret_key_file(&secret_key_path)
-                .await
+            let mut file = create_secret_key_file(secret_key_path)
                 .map_err(|err| eyre!("could not create secret key file: {err}"))?;
-            file.write_all(secret_key.as_ref()).await?;
+            file.write_all(secret_key.as_ref())?;
 
             Ok((dir, keypair))
         }
