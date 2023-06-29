@@ -49,17 +49,6 @@ pub enum RegisterQuery {
     ///
     /// [`GetRegisterPermissions`]: QueryResponse::GetRegisterPermissions
     GetPermissions(RegisterAddress),
-    /// Retrieve the permissions of a given user for the [`Register`] at the given address.
-    ///
-    /// This should eventually lead to a [`GetUserPermissions`] response.
-    ///
-    /// [`GetUserPermissions`]: QueryResponse::GetRegisterUserPermissions
-    GetUserPermissions {
-        /// Register address.
-        address: RegisterAddress,
-        /// User to get permissions for.
-        user: User,
-    },
     /// Retrieve the owner of the [`Register`] at the given address.
     ///
     /// This should eventually lead to a [`GetRegisterOwner`] response.
@@ -94,7 +83,6 @@ impl RegisterQuery {
             Self::Get(ref address)
             | Self::Read(ref address)
             | Self::GetPermissions(ref address)
-            | Self::GetUserPermissions { ref address, .. }
             | Self::GetEntry { ref address, .. }
             | Self::GetOwner(ref address) => *address,
         }

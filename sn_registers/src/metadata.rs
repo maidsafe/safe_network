@@ -9,15 +9,6 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-/// An action on Register data type.
-#[derive(Clone, Debug, Copy, Eq, PartialEq)]
-pub enum Action {
-    /// Read from the data.
-    Read,
-    /// Write to the data.
-    Write,
-}
-
 /// An entry in a Register (note that the `vec<u8>` is size limited: `MAX_REG_ENTRY_SIZE`)
 pub type Entry = Vec<u8>;
 

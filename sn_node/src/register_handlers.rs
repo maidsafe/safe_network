@@ -38,10 +38,6 @@ impl Node {
                 let perm = register.permissions().clone();
                 QueryResponse::GetRegisterPermissions(Ok(perm))
             }
-            RegisterQuery::GetUserPermissions { address: _, user } => {
-                let permissions = register.user_permissions(*user).map_err(|e| e.into());
-                QueryResponse::GetRegisterUserPermissions(permissions)
-            }
         }
     }
 
