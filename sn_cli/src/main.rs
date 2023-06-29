@@ -15,16 +15,26 @@ mod subcommands;
 use crate::cli::Opt;
 use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wallet_cmds, SubCmd};
 use sn_client::Client;
+use sn_logging::init_logging;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 
 use clap::Parser;
 use color_eyre::Result;
 use std::path::PathBuf;
+use tracing::Level;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
+    if let Some(log_output_dest) = opt.log_output_dest {
+        let logging_targets = vec![
+            ("safe".to_string(), Level::INFO),
+            ("sn_client".to_string(), Level::INFO),
+            ("sn_networking".to_string(), Level::INFO),
+        ];
+        let _log_appender_guard = init_logging(logging_targets, log_output_dest, false)?;
+    }
     #[cfg(feature = "metrics")]
     tokio::spawn(init_metrics(std::process::id()));
 

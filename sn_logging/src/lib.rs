@@ -13,7 +13,6 @@ pub mod metrics;
 
 use self::error::{Error, Result};
 use std::fmt;
-use std::fs;
 use std::path::PathBuf;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::{Event, Level, Subscriber};
@@ -105,10 +104,7 @@ impl TracingLayers {
                     .boxed()
             }
             LogOutputDest::Path(ref path) => {
-                if fs::remove_dir_all(path).is_ok() {
-                    println!("Removed old logs from directory: {path:?}");
-                }
-
+                std::fs::create_dir_all(path)?;
                 println!("Logging to directory: {path:?}");
 
                 let logs_max_lines = 5000;
