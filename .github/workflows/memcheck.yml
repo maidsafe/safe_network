@@ -108,7 +108,7 @@ jobs:
             echo "Detected dead peer times of: $detected_dead_peer is less than the restart count of: $restart_count"
             exit 1
           fi
-          node_count=$(ls $log_dir | wc -l)
+          node_count=$(ls ~/.safe/node/local-test-network | wc -l)
           if [ $restart_count -lt $node_count ]; then
             echo "Restart count of: $restart_count is less than the node count of: $node_count"
             exit 1
@@ -134,7 +134,7 @@ jobs:
           echo "Sent $replication_attempt_count chunk copies"
           replication_count=$(rg "Chunk received for replication" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Received $replication_count chunk copies"
-          node_count=$(ls $log_dir | wc -l)
+          node_count=$(ls ~/.safe/node/local-test-network | wc -l)
           if [ $replication_count -lt $node_count ]; then
             echo "Replication count of: $replication_count is less than the node count of: $node_count"
             exit 1
@@ -182,7 +182,10 @@ jobs:
           # resources and node locatin in the network, but hopefully low enough to catch 
           # any wild memory issues 
           # Any changes to this value should be carefully considered and tested!
-          MEM_LIMIT_MB: "45" # mb
+          # As the heap_node also acting as a bootstrap access point for churning nodes and client,
+          # The memory usage here will be sinificantly higher here than in the benchmark test,
+          # where the heap_node only act as a normal network member.
+          MEM_LIMIT_MB: "160" # mb
         run: |
           MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{print $5}' | rg "M" -r "")
           echo "Memory usage: $MEMORY_USAGE MB"
@@ -200,7 +203,7 @@ jobs:
           find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
           find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
           find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
-        if: always()
+        if: failure()
 
 
       - name: Upload Heaptrack
@@ -216,6 +219,6 @@ jobs:
         with:
           name: sn_node_logs_memcheck
           path: log_files.tar.gz
-        if: always()
+        if: failure()
         continue-on-error: true
 
