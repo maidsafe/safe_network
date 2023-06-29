@@ -15,34 +15,21 @@ mod subcommands;
 use crate::cli::Opt;
 use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wallet_cmds, SubCmd};
 use sn_client::Client;
-use sn_logging::init_logging;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 
 use clap::Parser;
 use color_eyre::Result;
 use std::path::PathBuf;
-use tracing_core::Level;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
-    // For client, default to log to std::out
-    // This is ruining the log output for the CLI. Needs to be fixed.
-    let tmp_dir = std::env::temp_dir();
-    let logging_targets = vec![
-        ("safe".to_string(), Level::INFO),
-        ("sn_client".to_string(), Level::INFO),
-        ("sn_networking".to_string(), Level::INFO),
-    ];
-    let log_appender_guard =
-        init_logging(logging_targets, &Some(tmp_dir.join("safe-client")), false)?;
     #[cfg(feature = "metrics")]
     tokio::spawn(init_metrics(std::process::id()));
 
     debug!("Built with git version: {}", sn_build_info::git_info());
     println!("Built with git version: {}", sn_build_info::git_info());
-    info!("Full client logs will be written to {:?}", tmp_dir);
     println!("Instantiating a SAFE client...");
 
     let secret_key = bls::SecretKey::random();
@@ -66,7 +53,6 @@ async fn main() -> Result<()> {
         SubCmd::Register(cmds) => register_cmds(cmds, &client).await?,
     };
 
-    drop(log_appender_guard);
     Ok(())
 }
 
