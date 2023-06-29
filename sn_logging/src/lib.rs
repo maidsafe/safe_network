@@ -145,6 +145,7 @@ impl TracingLayers {
                 }
             }
         };
+
         let targets = match std::env::var("SN_LOG") {
             Ok(sn_log_val) => {
                 println!("Using SN_LOG={sn_log_val}");
