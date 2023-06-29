@@ -15,9 +15,9 @@ mod subcommands;
 use crate::cli::Opt;
 use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wallet_cmds, SubCmd};
 use sn_client::Client;
-use sn_logging::init_logging;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
+use sn_logging::{init_logging, LogFormat};
 
 use clap::Parser;
 use color_eyre::Result;
@@ -33,7 +33,11 @@ async fn main() -> Result<()> {
             ("sn_client".to_string(), Level::INFO),
             ("sn_networking".to_string(), Level::INFO),
         ];
-        let _log_appender_guard = init_logging(logging_targets, log_output_dest, false)?;
+        let _log_appender_guard = init_logging(
+            logging_targets,
+            log_output_dest,
+            opt.log_format.unwrap_or(LogFormat::Default),
+        )?;
     }
     #[cfg(feature = "metrics")]
     tokio::spawn(init_metrics(std::process::id()));

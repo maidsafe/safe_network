@@ -12,7 +12,7 @@ use bytes::Bytes;
 use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files};
-use sn_logging::{init_logging, LogOutputDest};
+use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress},
@@ -113,7 +113,7 @@ async fn data_availability_during_churn() -> Result<()> {
     let log_appender_guard = init_logging(
         logging_targets,
         LogOutputDest::Path(tmp_dir.join("safe-client")),
-        false,
+        LogFormat::Default,
     )?;
 
     println!("Creating a client...");
