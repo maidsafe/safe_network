@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688054580039,
+  "lastUpdate": 1688054583696,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3418,6 +3418,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ ~450mb upload",
             "value": 454,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "9efdfea08f0581c820bbc6f356c8292fb8a05de1",
+          "message": "feat(node): write secret key to disk and re-use",
+          "timestamp": "2023-06-29T15:45:30+01:00",
+          "tree_id": "3346b28f54b45fe9fd433cb7702ebfce65824676",
+          "url": "https://github.com/maidsafe/safe_network/commit/9efdfea08f0581c820bbc6f356c8292fb8a05de1"
+        },
+        "date": 1688054582935,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ ~450mb upload",
+            "value": 926.41,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ ~450mb upload",
+            "value": 482,
             "unit": "MB"
           }
         ]
