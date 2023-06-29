@@ -66,7 +66,6 @@ jobs:
         env:
           SN_LOG: "all"
 
-
       ########################
       ### Benchmark itself ###
       ########################
@@ -128,13 +127,15 @@ jobs:
         env:
           SN_LOG: "all"
 
+      # Set the threshold slightly less than the real node number
+      # as libp2p kad doesn't guarantee a node knowing full knowledge of the network.
       - name: Confirm the heapnode connected to the network
         shell: bash
         timeout-minutes: 1
         run : |
           discovered_count=$(rg "PeerAddedToRoutingTable" ~/.safe/heapnode -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           node_count=$(ls ~/.safe/node/local-test-network | wc -l)
-          if [ $discovered_count -lt $node_count ]; then
+          if [ $discovered_count -lt 23 ]; then
             echo "Discovered count of: $discovered_count is less than the node count of: $node_count"
             exit 1
           fi
