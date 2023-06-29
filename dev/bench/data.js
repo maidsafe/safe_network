@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1687999039671,
+  "lastUpdate": 1688004545212,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -1360,6 +1360,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 19.27575544450177,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0916891426253ce05266a6538e5fcc4f74a280e3",
+          "message": "fix(memcheck): add missing local-discovery feats",
+          "timestamp": "2023-06-29T10:00:38+09:00",
+          "tree_id": "6b8dbfa294fa29a65bb5b4d90a8c00af9e3cc19e",
+          "url": "https://github.com/maidsafe/safe_network/commit/0916891426253ce05266a6538e5fcc4f74a280e3"
+        },
+        "date": 1688004543668,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.07304515685491841,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.7204652021802284,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 18.748634041635313,
             "unit": "MiB/s"
           }
         ]
