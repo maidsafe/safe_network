@@ -37,9 +37,13 @@ jobs:
       - name: ubuntu install ripgrep
         run: sudo apt-get -y install ripgrep
 
-     
+      # As normal user won't care much about initial client startup,
+      # but be more alerted on communication speed during transmission.
+      # Meanwhile the criterion testing code includes the client startup as well,
+      # it will be better to execute bench test with `local-discovery`,
+      # to make the measurement results reflect speed improvement or regression more accurately.
       - name: Build sn bins
-        run: cargo build --release --bins
+        run: cargo build --release --bins --features local-discovery
         timeout-minutes: 30
 
       - name: Start a local network
@@ -47,15 +51,6 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 10
-
-      - name: Set contact env var node.
-        shell: bash
-        # get all nodes listen ports
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
-
-      - name: Check contact peer
-        shell: bash
-        run: echo "Peer is $SAFE_PEERS"
 
       # Start a heaptracked node instance to compare memory usage
       - name: Start safenode with heaptrack
@@ -75,7 +70,7 @@ jobs:
         # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
         # passes to tee which displays it in the terminal and writes to output.txt
         run: |
-          cargo criterion --message-format=json 2>&1 | tee -a output.txt
+          cargo criterion --features=local-discovery --message-format=json 2>&1 | tee -a output.txt
           cat output.txt | rg benchmark-complete | jq -s 'map({
           name: (.id | split("/"))[-1],
           unit: "MiB/s",
