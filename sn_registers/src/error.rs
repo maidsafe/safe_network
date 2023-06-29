@@ -41,9 +41,6 @@ pub enum Error {
     /// Entry could not be found on the data
     #[error("Requested entry not found {0}")]
     NoSuchEntry(EntryHash),
-    /// User entry could not be found on the data
-    #[error("Requested user not found {0:?}")]
-    NoSuchUser(User),
     /// Serialisation Failed
     #[error("Serialisation failed")]
     SerialisationFailed,
