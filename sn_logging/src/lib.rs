@@ -12,6 +12,7 @@ pub mod error;
 pub mod metrics;
 
 use self::error::{Error, Result};
+use std::fmt;
 use std::fs;
 use std::path::PathBuf;
 use tracing_appender::non_blocking::WorkerGuard;
@@ -29,6 +30,21 @@ use tracing_subscriber::{
     registry::LookupSpan,
     Layer, Registry,
 };
+
+#[derive(Debug, Clone)]
+pub enum LogOutputDest {
+    Stdout,
+    Path(PathBuf),
+}
+
+impl fmt::Display for LogOutputDest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            LogOutputDest::Stdout => write!(f, "stdout"),
+            LogOutputDest::Path(p) => write!(f, "{}", p.to_string_lossy()),
+        }
+    }
+}
 
 const ALL_SN_LOGS: &str = "all";
 
@@ -76,46 +92,48 @@ impl TracingLayers {
     fn fmt_layer(
         &mut self,
         default_logging_targets: Vec<(String, Level)>,
-        optional_log_dir: &Option<PathBuf>,
+        output_dest: LogOutputDest,
         json_output: bool,
     ) -> Result<()> {
-        let layer = if let Some(log_dir) = optional_log_dir {
-            if fs::remove_dir_all(log_dir).is_ok() {
-                println!("Removed old logs from directory: {log_dir:?}");
-            }
-
-            println!("Logging to directory: {log_dir:?}");
-
-            let logs_max_lines = 5000;
-            let logs_uncompressed = 100;
-            let logs_max_files = 1000;
-
-            let (file_rotation, worker_guard) =
-                appender::file_rotater(log_dir, logs_max_lines, logs_uncompressed, logs_max_files);
-            self.guard = Some(worker_guard);
-
-            if json_output {
-                tracing_fmt::layer()
-                    .json()
-                    .flatten_event(true)
-                    .with_writer(file_rotation)
-                    .boxed()
-            } else {
+        let layer = match output_dest {
+            LogOutputDest::Stdout => {
+                println!("Logging to stdout");
                 tracing_fmt::layer()
                     .with_ansi(false)
-                    .with_writer(file_rotation)
+                    .with_target(false)
                     .event_format(LogFormatter::default())
                     .boxed()
             }
-        } else {
-            println!("Logging to stdout");
-            tracing_fmt::layer()
-                .with_ansi(false)
-                .with_target(false)
-                .event_format(LogFormatter::default())
-                .boxed()
-        };
+            LogOutputDest::Path(ref path) => {
+                if fs::remove_dir_all(path).is_ok() {
+                    println!("Removed old logs from directory: {path:?}");
+                }
 
+                println!("Logging to directory: {path:?}");
+
+                let logs_max_lines = 5000;
+                let logs_uncompressed = 100;
+                let logs_max_files = 1000;
+
+                let (file_rotation, worker_guard) =
+                    appender::file_rotater(path, logs_max_lines, logs_uncompressed, logs_max_files);
+                self.guard = Some(worker_guard);
+
+                if json_output {
+                    tracing_fmt::layer()
+                        .json()
+                        .flatten_event(true)
+                        .with_writer(file_rotation)
+                        .boxed()
+                } else {
+                    tracing_fmt::layer()
+                        .with_ansi(false)
+                        .with_writer(file_rotation)
+                        .event_format(LogFormatter::default())
+                        .boxed()
+                }
+            }
+        };
         let targets = match std::env::var("SN_LOG") {
             Ok(sn_log_val) => {
                 println!("Using SN_LOG={sn_log_val}");
@@ -185,17 +203,17 @@ impl TracingLayers {
 /// Logging should be instantiated only once.
 pub fn init_logging(
     default_logging_targets: Vec<(String, Level)>,
-    log_dir: &Option<PathBuf>,
+    output_dest: LogOutputDest,
     json_output: bool,
 ) -> Result<Option<WorkerGuard>> {
     let mut layers = TracingLayers::default();
 
     #[cfg(not(feature = "otlp"))]
-    layers.fmt_layer(default_logging_targets, log_dir, json_output)?;
+    layers.fmt_layer(default_logging_targets, output_dest, json_output)?;
 
     #[cfg(feature = "otlp")]
     {
-        layers.fmt_layer(default_logging_targets.clone(), log_dir, json_output)?;
+        layers.fmt_layer(default_logging_targets.clone(), output_dest, json_output)?;
 
         match std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
             Ok(_) => layers.otlp_layer(default_logging_targets)?,
