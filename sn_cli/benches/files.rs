@@ -6,6 +6,8 @@ use std::process::{exit, Command};
 use std::time::Duration;
 use tempfile::tempdir;
 
+const SAMPLE_SIZE: usize = 50;
+
 fn safe_files_upload(dir: &str) {
     let output = Command::new("./target/release/safe")
         .arg("files")
@@ -59,6 +61,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         group.sampling_mode(criterion::SamplingMode::Flat);
         group.measurement_time(Duration::from_secs(120));
         group.warm_up_time(Duration::from_secs(5));
+        group.sample_size(SAMPLE_SIZE);
 
         // Set the throughput to be reported in terms of bytes
         group.throughput(Throughput::Bytes(size * 1024 * 1024));
@@ -73,11 +76,12 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(5));
 
     // The download will download all uploaded files during bench.
-    // That will then be around 1.1GB in total, and may take around 40s for each iteratioin.
+    // If the previous bench executed with the default 100 sample size,
+    // there will then be around 1.1GB in total, and may take around 40s for each iteratioin.
     // Hence we have to reduce the number of iterations from the default 100 to 10,
     // To avoid the benchmark test taking over one hour to complete.
-    let total_size: u64 = sizes.iter().map(|size| 100 * size).sum();
-    group.sample_size(10);
+    let total_size: u64 = sizes.iter().map(|size| SAMPLE_SIZE as u64 * size).sum();
+    group.sample_size(SAMPLE_SIZE / 5);
 
     // Set the throughput to be reported in terms of bytes
     group.throughput(Throughput::Bytes(total_size * 1024 * 1024));
