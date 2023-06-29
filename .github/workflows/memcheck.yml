@@ -46,22 +46,6 @@ jobs:
         run: cargo test --release -p sn_node --no-run
         timeout-minutes: 30
 
-      - name: Start a local network
-        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
-        id: section-startup
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
-
-      - name: Set contact env var node.
-        shell: bash
-        # get all listen ports of the genesis node
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/node/local-test-network/safenode-1 -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
-
-      - name: Check contact peer
-        shell: bash
-        run: echo "Peer is $SAFE_PEERS"
-
       # Start a heaptracked node instance to compare memory usage
       - name: Start safenode with heaptrack
         run: |
@@ -70,6 +54,22 @@ jobs:
           sleep 10
         env:
           SN_LOG: "all"
+
+      - name: Set contact env var node.
+        shell: bash
+        # get all listen ports of the heap_node, as it is the only one not restarted during the test
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/heapnode -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+
+      - name: Check contact peer
+        shell: bash
+        run: echo "Contact peer is set to $SAFE_PEERS"
+
+      - name: Start a local network
+        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
+        id: section-startup
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
 
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
@@ -84,15 +84,6 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 10
-
-      - name: Reset contact env var node.
-        shell: bash
-        # get all listen ports of the heap_node, as it is the only one not restarted during the test
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/heapnode -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
-
-      - name: Check reset contact peer
-        shell: bash
-        run: echo "Peer is reset to $SAFE_PEERS"
 
       - name: Chunks data integrity during nodes churn (during 10min)
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 
@@ -209,7 +200,7 @@ jobs:
           find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
           find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
           find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure()
+        if: always()
 
 
       - name: Upload Heaptrack
@@ -225,6 +216,6 @@ jobs:
         with:
           name: sn_node_logs_memcheck
           path: log_files.tar.gz
-        if: failure()
+        if: always()
         continue-on-error: true
 
