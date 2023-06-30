@@ -19,7 +19,6 @@ pub const SAFENODE_BIN_NAME: &str = "safenode";
 #[cfg(target_os = "windows")]
 pub const SAFENODE_BIN_NAME: &str = "safenode.exe";
 const GENESIS_NODE_DIR_NAME: &str = "safenode-1";
-const TESTNET_DIR_NAME: &str = "local-test-network";
 
 /// This trait exists for unit testing.
 ///
@@ -100,11 +99,10 @@ impl TestnetBuilder {
     ///
     /// The testnet instance and the path to the network contacts will be returned.
     pub fn build(&self) -> Result<(Testnet, PathBuf)> {
-        let default_node_dir_path = dirs_next::home_dir()
-            .ok_or_else(|| eyre!("Failed to obtain user's home path"))?
-            .join(".safe")
-            .join("node")
-            .join(TESTNET_DIR_NAME);
+        let default_node_dir_path = dirs_next::data_dir()
+            .ok_or_else(|| eyre!("Failed to obtain data directory path"))?
+            .join("safe")
+            .join("node");
         let nodes_dir_path = self
             .nodes_dir_path
             .as_ref()
@@ -348,15 +346,8 @@ impl Testnet {
             launch_args.push("safenode".to_string());
             launch_args.push("--".to_string());
         }
-
-        let node_data_dir_path = node_data_dir_path
-            .to_str()
-            .ok_or_else(|| eyre!("Unable to obtain node data directory path"))?
-            .to_string();
-        launch_args.push("--log-dir".to_string());
-        launch_args.push(node_data_dir_path.clone());
-        launch_args.push("--root-dir".to_string());
-        launch_args.push(node_data_dir_path);
+        launch_args.push("--log-output-dest".to_string());
+        launch_args.push("root-dir".to_string());
         launch_args.push("--local".to_string());
         if let Some(addr) = rpc_address {
             launch_args.push("--rpc".to_string());
@@ -384,6 +375,7 @@ mod test {
     use mockall::predicate::*;
 
     const NODE_LAUNCH_INTERVAL: u64 = 0;
+    const TESTNET_DIR_NAME: &str = "local-test-network";
 
     #[test]
     fn new_should_create_a_testnet_with_zero_nodes_when_no_previous_network_exists() -> Result<()> {
