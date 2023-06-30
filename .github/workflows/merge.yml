@@ -11,6 +11,7 @@ on:
 
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
+  NODE_DATA_PATH: /home/runner/.local/share/safe/node
 
 jobs:
   cargo-udeps:
@@ -132,17 +133,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
+        include:
+          - os: ubuntu-latest
+            node_data_path: /home/runner/.local/share/safe/node
+          - os: windows-latest
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+          - os: macos-latest
+            node_data_path: /Users/runner/Library/Application Support/safe/node
     steps:
       - uses: actions/checkout@v3
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         id: rust-toolchain
         with:
           toolchain: stable
-
       - uses: Swatinem/rust-cache@v2
 
       - name: install ripgrep ubuntu
@@ -167,10 +171,21 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      - name: Set contact env var node.
-        shell: bash
-        # get all nodes listen ports
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+      - name: Set SAFE_PEERS (unix)
+        run: |
+          safe_peers=$(rg "listening on \".+\"" "${{ matrix.node_data_path }}" -u | \
+            rg '/ip4.*$' -m1 -o | rg '"' -r '')
+          echo "SAFE_PEERS=$safe_peers" >> $GITHUB_ENV
+        if: matrix.os != 'windows-latest'
+
+      - name: Set SAFE_PEERS (windows)
+        shell: pwsh
+        run: |
+          $safe_peers = rg 'listening on ".+"' "${{ matrix.node_data_path }}" -u | `
+              rg '/ip4.*$' -m1 -o
+          $env:SAFE_PEERS = $safe_peers.Trim('"')
+          Add-Content -Path $env:GITHUB_ENV -Value "SAFE_PEERS=$env:SAFE_PEERS"
+        if: matrix.os == 'windows-latest'
 
       - name: Check contact peer
         shell: bash
@@ -212,29 +227,44 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 2
 
-      - name: Kill all nodes
+      - name: Kill all nodes (unix)
         shell: bash
         timeout-minutes: 1
-        if: failure()
         continue-on-error: true
         run: |
           pkill safenode
           echo "$(pgrep safenode | wc -l) nodes still running"
+        if: failure() && matrix.os != 'windows-latest'
 
-      - name: Tar log files
+      - name: Kill all nodes (windows)
+        shell: pwsh
+        timeout-minutes: 1
+        continue-on-error: true
+        run: Get-Process safenode | Stop-Process -Force
+        if: failure() && matrix.os == 'windows-latest'
+
+      - name: Tar log files (unix)
         shell: bash
         continue-on-error: true
         run: |
-          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure()
+          find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
+        if: failure() && matrix.os == 'windows-latest'
+
+      - name: Tar log files (windows)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File | `
+            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
+        if: failure() && matrix.os == 'windows-latest'
 
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
           name: safe_test_logs_e2e_${{matrix.os}}
           path: log_files.tar.gz
-        if: failure()
         continue-on-error: true
+        if: failure()
 
   spend_test:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
@@ -242,7 +272,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            node_data_path: /home/runner/.local/share/safe/node
+          - os: windows-latest
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+          - os: macos-latest
+            node_data_path: /Users/runner/Library/Application Support/safe/node
 
     steps:
       - uses: actions/checkout@v3
@@ -297,29 +333,44 @@ jobs:
           CARGO_TARGET_DIR: "./transfer-target"
         timeout-minutes: 10
 
-      - name: Kill all nodes
+      - name: Kill all nodes (unix)
         shell: bash
         timeout-minutes: 1
-        if: failure()
         continue-on-error: true
         run: |
           pkill safenode
           echo "$(pgrep safenode | wc -l) nodes still running"
+        if: failure() && matrix.os != 'windows-latest'
 
-      - name: Tar log files
+      - name: Kill all nodes (windows)
+        shell: pwsh
+        timeout-minutes: 1
+        continue-on-error: true
+        run: Get-Process safenode | Stop-Process -Force
+        if: failure() && matrix.os == 'windows-latest'
+
+      - name: Tar log files (unix)
         shell: bash
         continue-on-error: true
         run: |
-          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure()
+          find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
+        if: failure() && matrix.os == 'windows-latest'
+
+      - name: Tar log files (windows)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File | `
+            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
+        if: failure() && matrix.os == 'windows-latest'
 
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: safe_test_logs_dbc_${{matrix.os}}
+          name: safe_test_logs_e2e_${{matrix.os}}
           path: log_files.tar.gz
-        if: failure()
         continue-on-error: true
+        if: failure()
 
   churn:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
@@ -383,9 +434,11 @@ jobs:
         # then check we have an expected level of restarts
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          restart_count=$(rg "Node is wiping data and restarting in" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          restart_count=$(rg "Node is wiping data and restarting in" "$NODE_DATA_PATH" -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
           echo "Restart $restart_count nodes"
-          detected_dead_peer=$(rg "Detected dead peer" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          detected_dead_peer=$(rg "Detected dead peer" "$NODE_DATA_PATH" -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
           echo "Detected dead peer $detected_dead_peer times"
           if [ $detected_dead_peer -lt $restart_count ]; then
             echo "Detected dead peer times of: $detected_dead_peer is less than the restart count of: $restart_count"
@@ -404,7 +457,8 @@ jobs:
         # then check we have an expected level of replication
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          replication_count=$(rg "Chunk received for replication" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          replication_count=$(rg "Chunk received for replication" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
           echo "Replicated $replication_count copies"
           node_count=$(ls ~/.safe/node/local-test-network | wc -l)
           if [ $replication_count -lt $node_count ]; then
@@ -412,36 +466,41 @@ jobs:
             exit 1
           fi
 
-      - name: Kill all nodes on Windows
+      - name: Kill all nodes (unix)
         shell: bash
         timeout-minutes: 1
-        if: always() && matrix.os == 'windows-latest'
-        continue-on-error: true
-        run: |
-          taskkill /?
-          taskkill /IM safenode.exe /T
-          echo "$(tasklist | rg "safenode" | wc -l) nodes still running"
-
-      - name: Kill all nodes on non-Windows OS
-        shell: bash
-        timeout-minutes: 1
-        if: always() && matrix.os != 'windows-latest'
         continue-on-error: true
         run: |
           pkill safenode
           echo "$(pgrep safenode | wc -l) nodes still running"
+        if: failure() && matrix.os != 'windows-latest'
 
-      - name: Tar log files
+      - name: Kill all nodes (windows)
+        shell: pwsh
+        timeout-minutes: 1
+        continue-on-error: true
+        run: Get-Process safenode | Stop-Process -Force
+        if: failure() && matrix.os == 'windows-latest'
+
+      - name: Tar log files (unix)
         shell: bash
         continue-on-error: true
         run: |
-          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure()
+          find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
+        if: failure() && matrix.os == 'windows-latest'
+
+      - name: Tar log files (windows)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File | `
+            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
+        if: failure() && matrix.os == 'windows-latest'
 
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: safe_test_logs_churn_${{matrix.os}}
+          name: safe_test_logs_e2e_${{matrix.os}}
           path: log_files.tar.gz
-        if: failure()
         continue-on-error: true
+        if: failure()
