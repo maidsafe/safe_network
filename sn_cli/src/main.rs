@@ -27,18 +27,20 @@ use tracing::Level;
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
-    if let Some(log_output_dest) = opt.log_output_dest {
+    let _log_appender_guard = if let Some(log_output_dest) = opt.log_output_dest {
         let logging_targets = vec![
             ("safe".to_string(), Level::INFO),
             ("sn_client".to_string(), Level::INFO),
             ("sn_networking".to_string(), Level::INFO),
         ];
-        let _log_appender_guard = init_logging(
+        init_logging(
             logging_targets,
             log_output_dest,
             opt.log_format.unwrap_or(LogFormat::Default),
-        )?;
-    }
+        )?
+    } else {
+        None
+    };
     #[cfg(feature = "metrics")]
     tokio::spawn(init_metrics(std::process::id()));
 

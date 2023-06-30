@@ -39,7 +39,7 @@ use tracing_core::Level;
 #[derive(Debug, Clone)]
 pub enum LogOutputDestArg {
     Stdout,
-    Default,
+    RootDir,
     Path(PathBuf),
 }
 
@@ -47,7 +47,7 @@ impl std::fmt::Display for LogOutputDestArg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             LogOutputDestArg::Stdout => write!(f, "stdout"),
-            LogOutputDestArg::Default => write!(f, "default"),
+            LogOutputDestArg::RootDir => write!(f, "root-dir"),
             LogOutputDestArg::Path(path) => write!(f, "{}", path.display()),
         }
     }
@@ -56,7 +56,7 @@ impl std::fmt::Display for LogOutputDestArg {
 pub fn parse_log_output(val: &str) -> Result<LogOutputDestArg> {
     match val {
         "stdout" => Ok(LogOutputDestArg::Stdout),
-        "default" => Ok(LogOutputDestArg::Default),
+        "root-dir" => Ok(LogOutputDestArg::RootDir),
         // The path should be a directory, but we can't use something like `is_dir` to check
         // because the path doesn't need to exist. We can create it for the user.
         value => Ok(LogOutputDestArg::Path(PathBuf::from(value))),
@@ -70,9 +70,9 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDestArg> {
 struct Opt {
     /// Specify the logging output destination.
     ///
-    /// Valid values are "stdout", "default", or a custom path.
+    /// Valid values are "stdout", "root-dir", or a custom path.
     ///
-    /// The default location is platform specific:
+    /// The root directory location is platform specific:
     ///  - Linux: $HOME/.local/share/safe/node/<peer-id>/logs
     ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>\logs
@@ -341,13 +341,8 @@ fn init_logging(
 
     let output_dest = match log_output_dest {
         LogOutputDestArg::Stdout => LogOutputDest::Stdout,
-        LogOutputDestArg::Default => {
-            let path = dirs_next::data_dir()
-                .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
-                .join("safe")
-                .join("node")
-                .join(peer_id.to_string())
-                .join("logs");
+        LogOutputDestArg::RootDir => {
+            let path = get_root_dir(peer_id)?.join("logs");
             LogOutputDest::Path(path)
         }
         LogOutputDestArg::Path(path) => LogOutputDest::Path(path),

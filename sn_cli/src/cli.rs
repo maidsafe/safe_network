@@ -20,7 +20,7 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDest> {
         "stdout" => Ok(LogOutputDest::Stdout),
         "default" => {
             let dir = dirs_next::data_dir()
-                .ok_or_else(|| eyre!("could not obtain root directory path".to_string()))?
+                .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
                 .join("safe")
                 .join("client")
                 .join("logs");
@@ -39,9 +39,9 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDest> {
 pub(crate) struct Opt {
     /// Specify the logging output destination.
     ///
-    /// Valid values are "stdout", "default", or a custom path.
+    /// Valid values are "stdout", "root-dir", or a custom path.
     ///
-    /// The default location is platform specific:
+    /// The root directory location is platform specific:
     ///  - Linux: $HOME/.local/share/safe/client/logs
     ///  - macOS: $HOME/Library/Application Support/safe/client/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
