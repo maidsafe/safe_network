@@ -43,6 +43,16 @@ pub enum LogOutputDestArg {
     Path(PathBuf),
 }
 
+impl std::fmt::Display for LogOutputDestArg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LogOutputDestArg::Stdout => write!(f, "stdout"),
+            LogOutputDestArg::Default => write!(f, "default"),
+            LogOutputDestArg::Path(path) => write!(f, "{}", path.display()),
+        }
+    }
+}
+
 pub fn parse_log_output(val: &str) -> Result<LogOutputDestArg> {
     match val {
         "stdout" => Ok(LogOutputDestArg::Stdout),
@@ -67,8 +77,8 @@ struct Opt {
     ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>\logs
     #[allow(rustdoc::invalid_html_tags)]
-    #[clap(long, value_parser = parse_log_output, verbatim_doc_comment)]
-    log_output_dest: Option<LogOutputDestArg>,
+    #[clap(long, default_value_t = LogOutputDestArg::Stdout, value_parser = parse_log_output, verbatim_doc_comment)]
+    log_output_dest: LogOutputDestArg,
 
     /// Specify the logging format.
     ///
@@ -318,7 +328,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
 }
 
 fn init_logging(
-    log_output_dest: Option<LogOutputDestArg>,
+    log_output_dest: LogOutputDestArg,
     peer_id: PeerId,
     format: Option<LogFormat>,
 ) -> Result<(String, Option<WorkerGuard>)> {
@@ -329,22 +339,18 @@ fn init_logging(
         ("sn_node".to_string(), Level::INFO),
     ];
 
-    let output_dest = if let Some(log_output_dest) = log_output_dest {
-        match log_output_dest {
-            LogOutputDestArg::Stdout => LogOutputDest::Stdout,
-            LogOutputDestArg::Default => {
-                let path = dirs_next::data_dir()
-                    .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
-                    .join("safe")
-                    .join("node")
-                    .join(peer_id.to_string())
-                    .join("logs");
-                LogOutputDest::Path(path)
-            }
-            LogOutputDestArg::Path(path) => LogOutputDest::Path(path),
+    let output_dest = match log_output_dest {
+        LogOutputDestArg::Stdout => LogOutputDest::Stdout,
+        LogOutputDestArg::Default => {
+            let path = dirs_next::data_dir()
+                .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+                .join("safe")
+                .join("node")
+                .join(peer_id.to_string())
+                .join("logs");
+            LogOutputDest::Path(path)
         }
-    } else {
-        LogOutputDest::Stdout
+        LogOutputDestArg::Path(path) => LogOutputDest::Path(path),
     };
 
     #[cfg(not(feature = "otlp"))]
