@@ -6,6 +6,8 @@ on: pull_request
 env:
   CARGO_INCREMENTAL: '0'
   RUST_BACKTRACE: 1
+  CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  NODE_DATA_PATH: /home/runner/.local/share/safe/node
 
 jobs:
   benchmark:
@@ -18,7 +20,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install dependencies
         run: |
-          sudo apt-get update
+          sudo apt-get update -y
           sudo apt-get install -y heaptrack
       - uses: actions-rs/toolchain@v1
         id: toolchain
@@ -32,9 +34,12 @@ jobs:
         with:
           cache-on-failure: true
 
+      ########################
+      ### Setup            ###
+      ########################
       - run: cargo install cargo-criterion
 
-      - name: ubuntu install ripgrep
+      - name: install ripgrep
         run: sudo apt-get -y install ripgrep
 
       # A consistent file with a size of 95MB.
@@ -63,15 +68,14 @@ jobs:
       - name: Start safenode with heaptrack
         run: |
           mkdir -p ~/.safe/heapnode
-          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode --local &
+          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-output-dest ~/.safe/heapnode --local &
           sleep 10
         env:
           SN_LOG: "all"
 
       ########################
-      ### Benchmark itself ###
+      ### Benchmark        ###
       ########################
-
       - name: Bench `safe`
         shell: bash
         # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
@@ -85,7 +89,7 @@ jobs:
           })' > files-benchmark.json
 
 
-      - name: Check for Client heaptrack file
+      - name: Check for client heaptrack file
         shell: bash
         run: |
           ls -la  
@@ -94,7 +98,6 @@ jobs:
       #################################
       ### Log any regression alerts ###
       #################################
-      # Run `github-action-benchmark` action
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -114,10 +117,16 @@ jobs:
           # Enable Job Summary for PRs
           summary-always: true
 
-      # Start a heaptracked client instance to compare memory usage
-      - name: Start client with heaptrack
+      # The generated large single file (around 450MB) may vary little bit along the releases
+      - name: zip up release
         shell: bash
-        run: heaptrack ./target/release/safe files upload the-test-data.zip
+        run: |
+          tar -czvf release_zip.tar.gz ./target/release
+          ls -la
+
+      - name: Start a heaptracked client instance to compare memory usage
+        shell: bash
+        run: heaptrack ./target/release/safe files upload the-test-data.zip --log-output-dest data-dir
         env:
           SN_LOG: "all"
 
@@ -128,14 +137,16 @@ jobs:
         timeout-minutes: 1
         run : |
           discovered_count=$(rg "PeerAddedToRoutingTable" ~/.safe/heapnode -c --stats | rg "(\d+) matches" | rg "\d+" -o)
-          node_count=$(ls ~/.safe/node/local-test-network | wc -l)
+          node_count=$(ls $NODE_DATA_PATH | wc -l)
           if [ $discovered_count -lt 23 ]; then
             echo "Discovered count of: $discovered_count is less than the node count of: $node_count"
             exit 1
           fi
         if: always()
 
-      ### CLEANUP ###
+      ########################
+      ### Clean            ###
+      ########################
       - name: Kill all nodes
         shell: bash
         timeout-minutes: 1
@@ -150,8 +161,8 @@ jobs:
         continue-on-error: true
         run: |
           find ~/.safe/heapnode -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
-          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
-          find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
+          find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
+          find $CLIENT_DATA_PATH -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
           find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
         if: always()
 
@@ -169,7 +180,6 @@ jobs:
       - name: Check for Node heaptrack file
         run: ls -la
         shell: bash
-
 
       - name: Analyze node memory usage
         shell: bash
@@ -191,7 +201,8 @@ jobs:
         env:
           NODE_MEM_LIMIT_MB: "100" # mb
         run: |
-          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{print $5}' | rg "M" -r "")
+          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | \
+            awk '{print $5}' | rg "M" -r "")
           echo "Memory usage: $MEMORY_USAGE MB"
           if (( $(echo "$MEMORY_USAGE > $NODE_MEM_LIMIT_MB" | bc -l) )); then
             echo "Node memory usage exceeded threshold: $MEMORY_USAGE MB"
@@ -233,7 +244,6 @@ jobs:
         run: ls -la
         shell: bash
 
-
       - name: Analyze client memory usage
         shell: bash
         run: |
@@ -258,19 +268,22 @@ jobs:
           CLIENT_PEAK_MEM_LIMIT_MB: "1000" # mb
           CLIENT_AVG_MEM_LIMIT_MB: "700" # mb
         run: |
-          peak_mem_usage=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' | rg "M" -r "")
+          peak_mem_usage=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | \
+            awk '{print $5}' | rg "M" -r "")
           echo "Peak memory usage: $peak_mem_usage MB"
           if (( $(echo "$peak_mem_usage > $CLIENT_PEAK_MEM_LIMIT_MB" | bc -l) )); then
             echo "Client peak memory usage exceeded threshold: $CLIENT_PEAK_MEM_LIMIT_MB MB"
             exit 1
           fi
-          mem_reads=($(rg "\"memory_used_mb\":\d+" /tmp/safe-client/safenode.* -o --no-line-number --no-filename | rg "\d+" -o))
+          mem_reads=($(rg "\"memory_used_mb\":\d+" $CLIENT_DATA_PATH/safenode.* \
+            -o --no-line-number --no-filename | rg "\d+" -o))
           total_mem=$(ls heaptrack.safe.txt | wc -l)
           echo "Total memory initial value is: $total_mem"
           for mem in "${mem_reads[@]}"; do
             total_mem=$((total_mem+$(($mem))))
           done
-          num_of_times=$(rg "\"memory_used_mb\"" /tmp/safe-client/safenode.* -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          num_of_times=$(rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/safenode.* \
+            -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "num_of_times: $num_of_times"
           echo "Total memory is: $total_mem"
           average_mem=$(($total_mem/$(($num_of_times))))

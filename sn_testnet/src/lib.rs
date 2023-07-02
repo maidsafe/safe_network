@@ -347,7 +347,7 @@ impl Testnet {
             launch_args.push("--".to_string());
         }
         launch_args.push("--log-output-dest".to_string());
-        launch_args.push("root-dir".to_string());
+        launch_args.push("data-dir".to_string());
         launch_args.push("--local".to_string());
         if let Some(addr) = rpc_address {
             launch_args.push("--rpc".to_string());

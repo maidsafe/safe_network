@@ -12,6 +12,7 @@ on:
 env:
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
+  RG_URL: https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep-13.0.0-x86_64-unknown-linux-musl.tar.gz
 
 jobs:
   memory-check:
@@ -38,8 +39,15 @@ jobs:
           cache-on-failure: true
           sharedKey: ${{github.run_id}}
 
-      - name: install ripgrep ubuntu
-        run: sudo apt-get install ripgrep
+      # I've seen intermittent errors when trying to install rg via apt.
+      # The 'cargo install' mechanism is too slow, so just grab a binary.
+      - name: install ripgrep
+        shell: bash
+        run: |
+          curl -L -O $RG_URL
+          tar xvf ripgrep-13.0.0-x86_64-unknown-linux-musl.tar.gz
+          rm ripgrep-13.0.0-x86_64-unknown-linux-musl.tar.gz
+          sudo mv ripgrep-13.0.0-x86_64-unknown-linux-musl/rg /usr/local/bin
 
       - name: Build sn bins
         run: cargo build --release --bins 
@@ -57,12 +65,13 @@ jobs:
         env:
           SN_LOG: "all"
 
-      - name: Set contact env var node.
-        shell: bash
-        # get all listen ports of the heap_node, as it is the only one not restarted during the test
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/heapnode -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+      - name: Set SAFE_PEERS
+        run: |
+          safe_peers=$(rg "listening on \".+\"" ~/.safe/heapnode -u | \
+            rg '/ip4.*$' -m1 -o | rg '"' -r '')
+          echo "SAFE_PEERS=$safe_peers" >> $GITHUB_ENV
 
-      - name: Check contact peer
+      - name: Check SAFE_PEERS
         shell: bash
         run: echo "Contact peer is set to $SAFE_PEERS"
 
