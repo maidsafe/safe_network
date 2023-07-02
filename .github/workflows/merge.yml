@@ -158,8 +158,8 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v2
 
-      - name: install ripgrep ubuntu
-        run: sudo apt-get install ripgrep
+      - name: install ripgrep
+        run: sudo apt-get -y install ripgrep
         if: matrix.os == 'ubuntu-latest'
 
       - name: install ripgrep mac
@@ -196,7 +196,7 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "SAFE_PEERS=$env:SAFE_PEERS"
         if: matrix.os == 'windows-latest'
 
-      - name: Check contact peer
+      - name: Check SAFE_PEERS
         shell: bash
         run: echo "Peer is $SAFE_PEERS"
 
@@ -300,8 +300,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: install ripgrep ubuntu
-        run: sudo apt-get install ripgrep
+      - name: install ripgrep
+        run: sudo apt-get -y install ripgrep
         if: matrix.os == 'ubuntu-latest'
 
       - name: install ripgrep mac
@@ -397,8 +397,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: install ripgrep ubuntu
-        run: sudo apt-get install ripgrep
+      - name: install ripgrep
+        run: sudo apt-get -y install ripgrep
         if: matrix.os == 'ubuntu-latest'
 
       - name: install ripgrep mac
