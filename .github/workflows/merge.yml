@@ -63,7 +63,6 @@ jobs:
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
-
       
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -79,7 +78,6 @@ jobs:
       - name: Check local-discovery is not a default feature
         shell: bash
         run: if [[ ! $(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].features.default[]? | select(. == "local-discovery")') ]]; then echo "local-discovery is not a default feature in any package."; else echo "local-discovery is a default feature in at least one package." && exit 1; fi
-
 
       - name: Check the whole workspace can build
         run: cargo build --all-targets --all-features
