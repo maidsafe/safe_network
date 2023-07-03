@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.36](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.35...sn_client-v0.85.36) - 2023-07-03
+
+### Added
+- append SAFE_PEERS to initial_peers after restart
+
+### Fixed
+- *(text)* data_churn_test creates clients parsing SAFE_PEERS env
+
+### Other
+- reduce SAMPLE_SIZE for the data_with_churn test
+- some client log tidy up
+
 ## [0.85.35](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.34...sn_client-v0.85.35) - 2023-06-29
 
 ### Other
