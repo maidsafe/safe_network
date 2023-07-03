@@ -352,15 +352,15 @@ fn get_root_dir(peer_id: PeerId) -> Result<PathBuf> {
 
 /// The keypair is located inside the root directory. At the same time, when no dir is specified,
 /// the dir name is derived from the keypair used in the application: the peer ID is used as the directory name.
-async fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf, Keypair)> {
-    match root_dir {
-        Some(dir) => {
-            tokio::fs::create_dir_all(&dir).await?;
+async fn get_root_dir_and_keypair(_root_dir: Option<PathBuf>) -> Result<(PathBuf, Keypair)> {
+    // match root_dir {
+    //     Some(dir) => {
+    //         tokio::fs::create_dir_all(&dir).await?;
 
-            let secret_key_path = dir.join("secret-key");
-            Ok((dir, keypair_from_path(secret_key_path).await?))
-        }
-        None => {
+    //         let secret_key_path = dir.join("secret-key");
+    //         Ok((dir, keypair_from_path(secret_key_path).await?))
+    //     }
+    //     None => {
             let secret_key = libp2p::identity::ed25519::SecretKey::generate();
             let keypair: Keypair =
                 libp2p::identity::ed25519::Keypair::from(secret_key.clone()).into();
@@ -377,6 +377,6 @@ async fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf,
             file.write_all(secret_key.as_ref()).await?;
 
             Ok((dir, keypair))
-        }
-    }
+        // }
+    // }
 }
