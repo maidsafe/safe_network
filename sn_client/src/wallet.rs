@@ -98,13 +98,15 @@ impl WalletClient {
             return Err(error);
         }
 
+        let spent_ids: Vec<_> = transfer.tx.inputs.iter().map(|i| i.dbc_id()).collect();
+
         let payment_proofs = audit_trail_info
             .into_iter()
             .map(|(addr, (audit_trail, path))| {
                 (
                     addr,
                     PaymentProof {
-                        tx: transfer.tx.clone(),
+                        spent_ids: spent_ids.clone(),
                         audit_trail,
                         path,
                     },

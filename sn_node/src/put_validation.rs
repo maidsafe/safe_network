@@ -208,57 +208,55 @@ impl Node {
     ) -> Result<(), ProtocolError> {
         // TODO: temporarily payment proof is optional
         if let Some(PaymentProof {
-            tx,
+            spent_ids,
             audit_trail,
             path,
         }) = &chunk_with_payment.payment
         {
             let addr_name = *chunk_with_payment.chunk.name();
-            if tx.inputs.is_empty() {
-                return Err(ProtocolError::PaymentProofWithoutInputs(addr_name));
-            }
 
             // We need to fetch the inputs of the DBC tx in order to obtain the root-hash and
             // other info for verifications of valid payment.
             // TODO: perform verifications in multiple concurrent tasks
-            for input in &tx.inputs {
-                let dbc_id = input.dbc_id();
-                let addr = DbcAddress::from_dbc_id(&dbc_id);
-                match get_aggregated_spends_from_peers(&self.network, dbc_id).await {
-                    Ok(mut signed_spends) => {
-                        match signed_spends.len() {
-                            0 => {
-                                error!("Could not get spends from the network");
+            let mut payment_tx = None;
+            for dbc_id in spent_ids.iter() {
+                let addr = DbcAddress::from_dbc_id(dbc_id);
+                match get_aggregated_spends_from_peers(&self.network, *dbc_id).await {
+                    Ok(mut signed_spends) => match signed_spends.len() {
+                        0 => {
+                            error!("Could not get spends from the network");
+                            return Err(ProtocolError::SpendNotFound(addr));
+                        }
+                        1 => {
+                            if let Some(signed_spend) = signed_spends.pop() {
+                                let spent_tx = signed_spend.spent_tx();
+                                match payment_tx {
+                                    Some(tx) if spent_tx != tx => {
+                                        return Err(ProtocolError::PaymentProofTxMismatch(
+                                            addr_name,
+                                        ));
+                                    }
+                                    Some(_) => {}
+                                    None => payment_tx = Some(spent_tx),
+                                }
+                            } else {
                                 return Err(ProtocolError::SpendNotFound(addr));
                             }
-                            1 => {
-                                match signed_spends.pop() {
-                                    Some(signed_spend) => {
-                                        // TODO: self-verification of the signed spend?
-
-                                        if &signed_spend.spent_tx() != tx {
-                                            return Err(ProtocolError::PaymentProofTxMismatch(
-                                                addr_name,
-                                            ));
-                                        }
-                                    }
-                                    None => return Err(ProtocolError::SpendNotFound(addr)),
-                                }
-                            }
-                            _ => {
-                                warn!("Got a double spend for during chunk payment validation {dbc_id:?}",);
-                                let mut proof = signed_spends.iter();
-                                if let (Some(spend_one), Some(spend_two)) =
-                                    (proof.next(), proof.next())
-                                {
-                                    return Err(ProtocolError::DoubleSpendAttempt(
-                                        Box::new(spend_one.to_owned()),
-                                        Box::new(spend_two.to_owned()),
-                                    ))?;
-                                }
+                        }
+                        _ => {
+                            warn!(
+                                "Got a double spend for during chunk payment validation {dbc_id:?}",
+                            );
+                            let mut proof = signed_spends.iter();
+                            if let (Some(spend_one), Some(spend_two)) = (proof.next(), proof.next())
+                            {
+                                return Err(ProtocolError::DoubleSpendAttempt(
+                                    Box::new(spend_one.to_owned()),
+                                    Box::new(spend_two.to_owned()),
+                                ))?;
                             }
                         }
-                    }
+                    },
                     Err(err) => {
                         error!("Error getting payment's input DBC {dbc_id:?} from network: {err}");
                         return Err(ProtocolError::SpendNotFound(addr));
@@ -266,9 +264,13 @@ impl Node {
                 }
             }
 
-            // Check if the fee output id and amount are correct, as well as verify
-            // the payment proof corresponds to the fee output.
-            verify_fee_output_and_proof(addr_name, tx, audit_trail, path)?;
+            if let Some(tx) = payment_tx {
+                // Check if the fee output id and amount are correct, as well as verify
+                // the payment proof corresponds to the fee output.
+                verify_fee_output_and_proof(addr_name, &tx, audit_trail, path)?;
+            } else {
+                return Err(ProtocolError::PaymentProofWithoutInputs(addr_name));
+            }
         }
 
         Ok(())
