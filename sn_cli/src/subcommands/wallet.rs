@@ -90,17 +90,14 @@ async fn deposit(root_dir: &Path) -> Result<()> {
 
     wallet.try_load_deposits().await?;
 
-    let new_balance = wallet.balance();
-    let deposited = previous_balance.as_nano() - new_balance.as_nano();
-
-    if deposited > 0 {
-        if let Err(err) = wallet.store().await {
-            println!("Failed to store deposited amount: {:?}", err);
-        } else {
-            println!("Deposited {:?}.", sn_dbc::Token::from_nano(deposited));
-        }
-    } else {
+    let deposited =
+        sn_dbc::Token::from_nano(wallet.balance().as_nano() - previous_balance.as_nano());
+    if deposited.is_zero() {
         println!("Nothing deposited.");
+    } else if let Err(err) = wallet.store().await {
+        println!("Failed to store deposited ({deposited}) amount: {:?}", err);
+    } else {
+        println!("Deposited {deposited}.");
     }
 
     Ok(())
@@ -128,7 +125,7 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
             if let Err(err) = wallet.store().await {
                 println!("Failed to store wallet: {err:?}");
             } else {
-                println!("Successfully stored wallet with new balance {new_balance:?}.");
+                println!("Successfully stored wallet with new balance {new_balance}.");
             }
 
             wallet.store_created_dbc(new_dbc).await?;
@@ -180,7 +177,7 @@ pub(super) async fn pay_for_storage(
     if let Err(err) = wallet.store().await {
         println!("Failed to store wallet: {err:?}");
     } else {
-        println!("Successfully stored wallet with new balance {new_balance:?}.");
+        println!("Successfully stored wallet with new balance {new_balance}.");
     }
 
     println!("Successfully paid for storage and generated the proofs. They can now be sent to the storage nodes when uploading paid chunks.");

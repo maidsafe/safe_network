@@ -9,9 +9,7 @@
 use super::wallet::LocalWallet;
 
 #[cfg(test)]
-use sn_dbc::{
-    rng, DbcIdSource, Hash, InputHistory, RevealedAmount, RevealedInput, TransactionBuilder,
-};
+use sn_dbc::{random_derivation_index, rng, Hash, Input, Token, TransactionBuilder};
 
 use sn_dbc::{Dbc, DbcTransaction, Error as DbcError, MainKey};
 
@@ -109,29 +107,27 @@ async fn create_genesis_wallet() -> LocalWallet {
 /// This is useful in tests.
 #[cfg(test)]
 pub(crate) fn create_first_dbc_from_key(first_dbc_key: &MainKey) -> GenesisResult<Dbc> {
-    let dbc_id_src = DbcIdSource {
-        public_address: first_dbc_key.public_address(),
-        derivation_index: [0u8; 32],
-    };
-    let derived_key = first_dbc_key.derive_key(&dbc_id_src.derivation_index);
-    let revealed_amount = RevealedAmount {
-        value: GENESIS_DBC_AMOUNT,
-        blinding_factor: sn_dbc::BlindingFactor::from_bits([0u8; 32]),
-    };
+    let public_address = first_dbc_key.public_address();
+    let derivation_index = [0u8; 32];
+    let derived_key = first_dbc_key.derive_key(&derivation_index);
 
     // Use the same key as the input and output of Genesis Tx.
     // The src tx is empty as this is the first DBC.
-    let genesis_input = InputHistory {
-        input: RevealedInput::new(derived_key, revealed_amount),
-        input_src_tx: DbcTransaction::empty(),
+    let genesis_input = Input {
+        dbc_id: derived_key.dbc_id(),
+        token: Token::from_nano(GENESIS_DBC_AMOUNT),
     };
 
     let reason = Hash::hash(b"GENESIS");
 
     let dbc_builder = TransactionBuilder::default()
-        .add_input(genesis_input)
-        .add_output(sn_dbc::Token::from_nano(GENESIS_DBC_AMOUNT), dbc_id_src)
-        .build(reason, rng::thread_rng())
+        .add_input(genesis_input, derived_key, DbcTransaction::empty())
+        .add_output(
+            Token::from_nano(GENESIS_DBC_AMOUNT),
+            public_address,
+            derivation_index,
+        )
+        .build(reason)
         .map_err(|err| {
             Error::GenesisDbcError(format!(
                 "Failed to build the DBC transaction for genesis DBC: {err}",
@@ -162,32 +158,35 @@ pub(super) fn split(
     dbc: &Dbc,
     main_key: &MainKey,
     number: usize,
-) -> GenesisResult<Vec<(Dbc, RevealedAmount)>> {
+) -> GenesisResult<Vec<(Dbc, Token)>> {
     let rng = &mut rng::thread_rng();
 
     let derived_key = dbc
         .derived_key(main_key)
         .map_err(|e| Error::FailedToParseReason(Box::new(e)))?;
-    let revealed_amount = dbc
-        .revealed_amount(&derived_key)
+    let token = dbc
+        .token()
         .map_err(|e| Error::FailedToParseReason(Box::new(e)))?;
-    let input = InputHistory {
-        input: RevealedInput::new(derived_key, revealed_amount),
-        input_src_tx: dbc.src_tx.clone(),
+    let input = Input {
+        dbc_id: dbc.id(),
+        token,
     };
 
     let recipients: Vec<_> = (0..number)
         .map(|_| {
-            let dbc_id_src = main_key.random_dbc_id_src(rng);
-            let amount = revealed_amount.value() / number as u64;
-            (sn_dbc::Token::from_nano(amount), dbc_id_src)
+            let amount = token.as_nano() / number as u64;
+            (
+                sn_dbc::Token::from_nano(amount),
+                main_key.public_address(),
+                random_derivation_index(rng),
+            )
         })
         .collect();
 
     let dbc_builder = TransactionBuilder::default()
-        .add_input(input)
+        .add_input(input, derived_key, dbc.src_tx.clone())
         .add_outputs(recipients)
-        .build(Hash::default(), rng::thread_rng())
+        .build(Hash::default())
         .map_err(|err| {
             Error::GenesisDbcError(format!(
                 "Failed to build the DBC transaction for genesis DBC: {err}",
