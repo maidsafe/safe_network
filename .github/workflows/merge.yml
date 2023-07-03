@@ -30,7 +30,10 @@ jobs:
           components: rustfmt
 
       - name: Install cargo-udeps
-        run: cargo install cargo-udeps --locked
+        # TODO: (2023-07-03) This is a non-released version from udeps, which includes a bug fix:
+        # https://github.com/est31/cargo-udeps/issues/180
+        # Change this when this is released.
+        run: cargo install --git=https://github.com/est31/cargo-udeps.git --rev=f7a4705 --locked
       - name: Run cargo-udeps
         run: cargo +nightly udeps --all-targets
 
