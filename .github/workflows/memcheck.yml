@@ -12,7 +12,7 @@ on:
 env:
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
-  RG_URL: https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep-13.0.0-x86_64-unknown-linux-musl.tar.gz
+  HEAPNODE_DATA_PATH: /home/runner/.local/share/safe/heapnode
 
 jobs:
   memory-check:
@@ -39,15 +39,9 @@ jobs:
           cache-on-failure: true
           sharedKey: ${{github.run_id}}
 
-      # I've seen intermittent errors when trying to install rg via apt.
-      # The 'cargo install' mechanism is too slow, so just grab a binary.
       - name: install ripgrep
         shell: bash
-        run: |
-          curl -L -O $RG_URL
-          tar xvf ripgrep-13.0.0-x86_64-unknown-linux-musl.tar.gz
-          rm ripgrep-13.0.0-x86_64-unknown-linux-musl.tar.gz
-          sudo mv ripgrep-13.0.0-x86_64-unknown-linux-musl/rg /usr/local/bin
+        run: sudo apt-get install -y ripgrep
 
       - name: Build sn bins
         run: cargo build --release --bins 
@@ -59,15 +53,16 @@ jobs:
 
       - name: Start a heaptracked node instance to compare memory usage
         run: |
-          mkdir -p ~/.safe/heapnode
-          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode --local &
+          mkdir -p $HEAPNODE_DATA_PATH
+          heaptrack ./target/release/safenode \
+            --root-dir $HEAPNODE_DATA_PATH --log-output-dest $HEAPNODE_DATA_PATH --local &
           sleep 10
         env:
           SN_LOG: "all"
 
       - name: Set SAFE_PEERS
         run: |
-          safe_peers=$(rg "listening on \".+\"" ~/.safe/heapnode -u | \
+          safe_peers=$(rg "listening on \".+\"" $HEAPNODE_DATA_PATH -u | \
             rg '/ip4.*$' -m1 -o | rg '"' -r '')
           echo "SAFE_PEERS=$safe_peers" >> $GITHUB_ENV
 
@@ -224,9 +219,9 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
-          find ~/.safe/heapnode -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
+          find $HEAPNODE_DATA_PATH -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
           find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
-          find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
+          find $CLIENT_DATA_PATH -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
           find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
         if: failure()
 
