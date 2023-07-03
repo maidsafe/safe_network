@@ -9,7 +9,7 @@
 use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
 
 use bytes::Bytes;
-use eyre::{bail, Result};
+use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
@@ -442,16 +442,19 @@ async fn node_restart(addr: SocketAddr) -> Result<()> {
 
     let response = client.node_info(Request::new(NodeInfoRequest {})).await?;
     let log_dir = Path::new(&response.get_ref().log_dir);
+    let root_dir = log_dir
+        .parent()
+        .ok_or_else(|| eyre!("could not obtain parent from logging directory"))?;
 
     // remove Chunks records
-    let chunks_records = log_dir.join("record_store");
+    let chunks_records = root_dir.join("record_store");
     if let Ok(true) = chunks_records.try_exists() {
         println!("Removing Chunks records from {}", chunks_records.display());
         remove_dir_all(chunks_records).await?;
     }
 
     // remove Registers records
-    let registers_records = log_dir.join("registers");
+    let registers_records = root_dir.join("registers");
     if let Ok(true) = registers_records.try_exists() {
         println!(
             "Removing Registers records from {}",
