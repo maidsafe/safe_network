@@ -9,8 +9,8 @@
 use super::{CreatedDbc, Error, Inputs, Result, SpendRequest, TransferOutputs};
 
 use sn_dbc::{
-    rng, Dbc, DbcIdSource, DerivedKey, FeeOutput, Hash, InputHistory, PublicAddress, RevealedInput,
-    Token, TransactionBuilder,
+    random_derivation_index, rng, Dbc, DerivationIndex, DerivedKey, FeeOutput, Hash, Input,
+    PublicAddress, Token, TransactionBuilder,
 };
 
 use std::collections::BTreeMap;
@@ -27,13 +27,13 @@ use std::collections::BTreeMap;
 /// them upon request, the transaction will be completed.
 pub fn create_transfer(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
-    recipients: Vec<(Token, DbcIdSource)>,
+    recipients: Vec<(Token, PublicAddress, DerivationIndex)>,
     change_to: PublicAddress,
     reason_hash: Hash,
 ) -> Result<TransferOutputs> {
     let total_output_amount = recipients
         .iter()
-        .fold(Some(Token::zero()), |total, (amount, _)| {
+        .fold(Some(Token::zero()), |total, (amount, _, _)| {
             total.and_then(|t| t.checked_add(*amount))
         })
         .ok_or_else(|| {
@@ -100,8 +100,8 @@ fn select_inputs(
     for (dbc, derived_key) in available_dbcs {
         let input_key = dbc.id();
 
-        let dbc_balance = match dbc.revealed_amount(&derived_key) {
-            Ok(revealed_amount) => Token::from_nano(revealed_amount.value()),
+        let dbc_balance = match dbc.token() {
+            Ok(token) => token,
             Err(err) => {
                 warn!("Ignoring input Dbc (id: {input_key:?}) due to not having correct derived key: {err:?}");
                 continue;
@@ -164,18 +164,18 @@ fn create_transfer_with(
     let mut inputs = vec![];
     let mut src_txs = BTreeMap::new();
     for (dbc, derived_key) in dbcs_to_spend {
-        let revealed_amount = match dbc.revealed_amount(&derived_key) {
-            Ok(amount) => amount,
+        let token = match dbc.token() {
+            Ok(token) => token,
             Err(err) => {
                 warn!("Ignoring dbc, as it didn't have the correct derived key: {err}");
                 continue;
             }
         };
-        let input = InputHistory {
-            input: RevealedInput::new(derived_key, revealed_amount),
-            input_src_tx: dbc.src_tx.clone(),
+        let input = Input {
+            dbc_id: dbc.id(),
+            token,
         };
-        inputs.push(input);
+        inputs.push((input, derived_key, dbc.src_tx.clone()));
         let _ = src_txs.insert(dbc.id(), dbc.src_tx);
     }
 
@@ -188,20 +188,19 @@ fn create_transfer_with(
     }
 
     let mut rng = rng::thread_rng();
-
-    let dbc_id_src = change_to.random_dbc_id_src(&mut rng);
-    let change_id = dbc_id_src.dbc_id();
-    if change.as_nano() > 0 {
-        tx_builder = tx_builder.add_output(change, dbc_id_src);
+    let derivation_index = random_derivation_index(&mut rng);
+    let change_id = change_to.new_dbc_id(&derivation_index);
+    if !change.is_zero() {
+        tx_builder = tx_builder.add_output(change, change_to, derivation_index);
     }
 
     // Finalize the tx builder to get the dbc builder.
     let dbc_builder = tx_builder
-        .build(reason_hash, &mut rng)
+        .build(reason_hash)
         .map_err(Box::new)
         .map_err(Error::Dbcs)?;
 
-    let tx_hash = dbc_builder.spent_tx.hash();
+    let tx = dbc_builder.spent_tx.clone();
 
     let signed_spends: BTreeMap<_, _> = dbc_builder
         .signed_spends()
@@ -255,7 +254,7 @@ fn create_transfer_with(
     });
 
     Ok(TransferOutputs {
-        tx_hash,
+        tx,
         created_dbcs,
         change_dbc,
         all_spend_requests,

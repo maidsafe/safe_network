@@ -14,7 +14,7 @@ use super::{
     KeyLessWallet, Result,
 };
 use crate::client_transfers::{create_storage_payment_transfer, create_transfer, TransferOutputs};
-use sn_dbc::{Dbc, DbcIdSource, DerivedKey, Hash, MainKey, PublicAddress, Token};
+use sn_dbc::{random_derivation_index, Dbc, DerivedKey, Hash, MainKey, PublicAddress, Token};
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -125,8 +125,8 @@ impl KeyLessWallet {
             .available_dbcs
             .iter()
             .flat_map(|(_, dbc)| dbc.derived_key(key).map(|derived_key| (dbc, derived_key)))
-            .flat_map(|(dbc, derived_key)| dbc.revealed_input(&derived_key))
-            .fold(0, |total, amount| total + amount.revealed_amount().value());
+            .flat_map(|(dbc, _)| dbc.token())
+            .fold(0, |total, token| total + token.as_nano());
 
         self.balance = Token::from_nano(new_balance);
     }
@@ -143,10 +143,6 @@ impl LocalWallet {
 
     pub fn sign(&self, msg: &[u8]) -> bls::Signature {
         self.key.sign(msg)
-    }
-
-    pub fn new_dbc_address(&self) -> DbcIdSource {
-        self.key.random_dbc_id_src(&mut rand::thread_rng())
     }
 
     pub fn deposit(&mut self, dbcs: Vec<Dbc>) {
@@ -173,10 +169,12 @@ impl LocalWallet {
         to: Vec<(Token, PublicAddress)>,
         reason_hash: Option<Hash>,
     ) -> Result<TransferOutputs> {
+        let mut rng = &mut rand::thread_rng();
+
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| (amount, address.random_dbc_id_src(&mut rand::thread_rng())))
+            .map(|(amount, address)| (amount, address, random_derivation_index(&mut rng)))
             .collect();
 
         let available_dbcs = self.available_dbcs();
@@ -218,26 +216,21 @@ impl LocalWallet {
         let TransferOutputs {
             change_dbc,
             created_dbcs,
+            tx,
             ..
         } = transfer.clone();
 
         // First of all, update client local state.
-        let spent_dbc_ids: BTreeSet<_> = created_dbcs
-            .iter()
-            .flat_map(|created| &created.dbc.signed_spends)
-            .map(|spend| spend.dbc_id())
-            .collect();
+        let spent_dbc_ids: BTreeSet<_> = tx.inputs.iter().map(|input| input.dbc_id()).collect();
 
         let mut spent_dbcs = spent_dbc_ids
             .into_iter()
-            .filter_map(|id| self.wallet.available_dbcs.remove(id).map(|dbc| (*id, dbc)))
+            .filter_map(|id| self.wallet.available_dbcs.remove(&id).map(|dbc| (id, dbc)))
             .collect();
 
         self.deposit(change_dbc.into_iter().collect());
         self.wallet.spent_dbcs.append(&mut spent_dbcs);
-        self.wallet
-            .dbcs_created_for_others
-            .extend(created_dbcs.clone());
+        self.wallet.dbcs_created_for_others.extend(created_dbcs);
     }
 }
 
@@ -304,10 +297,6 @@ mod tests {
         };
 
         assert_eq!(public_address, deposit_only.address());
-        assert_eq!(
-            public_address,
-            deposit_only.new_dbc_address().public_address
-        );
         assert_eq!(Token::zero(), deposit_only.balance());
 
         assert!(deposit_only.wallet.available_dbcs.is_empty());
@@ -475,7 +464,7 @@ mod tests {
         assert_eq!(GENESIS_DBC_AMOUNT - send_amount, sender.balance().as_nano());
 
         let recipient_dbc = &created_dbcs[0];
-        assert_eq!(send_amount, recipient_dbc.amount.value());
+        assert_eq!(Token::from_nano(send_amount), recipient_dbc.amount);
         assert_eq!(
             &recipient_public_address,
             recipient_dbc.dbc.public_address()
@@ -537,14 +526,7 @@ mod tests {
         let a_created_for_others = &sender.wallet.dbcs_created_for_others[0];
         let b_created_for_others = &deserialized.wallet.dbcs_created_for_others[0];
         assert_eq!(a_created_for_others.dbc, b_created_for_others.dbc);
-        assert_eq!(
-            a_created_for_others.amount.value,
-            b_created_for_others.amount.value
-        );
-        assert_eq!(
-            a_created_for_others.amount.blinding_factor,
-            b_created_for_others.amount.blinding_factor
-        );
+        assert_eq!(a_created_for_others.amount, b_created_for_others.amount);
 
         let a_spent = sender
             .wallet
