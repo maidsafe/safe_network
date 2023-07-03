@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use itertools::Itertools;
-use sn_dbc::{DbcId, DbcTransaction, SignedSpend, TransactionVerifier};
+use sn_dbc::{DbcId, DbcTransaction, SignedSpend};
 use sn_networking::Network;
 use sn_protocol::{
     error::{Error, Result},
@@ -157,7 +157,10 @@ fn validate_parent_spends(
     }
 
     // Here we check that the DBC we're trying to spend was created in a valid tx
-    if let Err(e) = TransactionVerifier::verify(&signed_spend.spend.dbc_creation_tx, &parent_spends)
+    if let Err(e) = signed_spend
+        .spend
+        .dbc_creation_tx
+        .verify_against_inputs_spent(&parent_spends)
     {
         return Err(Error::InvalidParentTx(format!(
             "verification failed for parent tx for {:?}: {e:?}",

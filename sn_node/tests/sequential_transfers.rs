@@ -12,7 +12,7 @@ use std::path::Path;
 
 use sn_client::{get_tokens_from_faucet, send, Client, WalletClient};
 
-use sn_dbc::Token;
+use sn_dbc::{random_derivation_index, rng, Token};
 use sn_transfers::{client_transfers::create_transfer, wallet::LocalWallet};
 use tracing_core::Level;
 
@@ -129,8 +129,11 @@ async fn double_spend_transfers_fail() -> Result<()> {
 
     let some_dbcs = first_wallet.available_dbcs();
     let same_dbcs = some_dbcs.clone();
-    let to2_unique_key = (amount, to2.random_dbc_id_src(&mut rand::thread_rng()));
-    let to3_unique_key = (amount, to3.random_dbc_id_src(&mut rand::thread_rng()));
+
+    let mut rng = rng::thread_rng();
+
+    let to2_unique_key = (amount, to2, random_derivation_index(&mut rng));
+    let to3_unique_key = (amount, to3, random_derivation_index(&mut rng));
     let reason_hash: sn_dbc::Hash = None.unwrap_or_default();
 
     let transfer_to_2 = create_transfer(some_dbcs, vec![to2_unique_key], to1, reason_hash).unwrap();

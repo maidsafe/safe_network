@@ -98,37 +98,30 @@ impl WalletClient {
             return Err(error);
         }
 
-        match &transfer.created_dbcs[..] {
-            [info, ..] => {
-                let src_tx = &info.dbc.src_tx;
-                let payment_proofs = audit_trail_info
-                    .into_iter()
-                    .map(|(addr, (audit_trail, path))| {
-                        (
-                            addr,
-                            PaymentProof {
-                                tx: src_tx.clone(),
-                                audit_trail,
-                                path,
-                            },
-                        )
-                    })
-                    .collect();
+        let payment_proofs = audit_trail_info
+            .into_iter()
+            .map(|(addr, (audit_trail, path))| {
+                (
+                    addr,
+                    PaymentProof {
+                        tx: transfer.tx.clone(),
+                        audit_trail,
+                        path,
+                    },
+                )
+            })
+            .collect();
 
-                Ok(payment_proofs)
-            }
-            [] => Err(Error::CouldNotSendTokens(
-                "No DBCs were returned from the wallet.".into(),
-            )),
-        }
+        Ok(payment_proofs)
     }
 
     /// Resend failed txs
     async fn resend_pending_txs(&mut self) {
         for (index, transfer) in self.unconfirmed_txs.clone().into_iter().enumerate() {
-            println!("Trying to republish pending tx: {:?}..", transfer.tx_hash);
+            let tx_hash = transfer.tx.hash();
+            println!("Trying to republish pending tx: {tx_hash:?}..");
             if self.client.send(transfer.clone()).await.is_ok() {
-                println!("Tx {:?} was successfully republished!", transfer.tx_hash);
+                println!("Tx {tx_hash:?} was successfully republished!");
                 let _ = self.unconfirmed_txs.remove(index);
                 // We might want to be _really_ sure and do the below
                 // as well, but it's not necessary.

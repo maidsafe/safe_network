@@ -18,7 +18,7 @@ pub async fn load_faucet_wallet(client: &Client) -> LocalWallet {
     let mut faucet_wallet = create_faucet_wallet().await;
 
     let faucet_balance = faucet_wallet.balance();
-    if faucet_balance.as_nano() > 0 {
+    if !faucet_balance.is_zero() {
         println!("Faucet wallet balance: {faucet_balance}");
         return faucet_wallet;
     }
@@ -26,7 +26,7 @@ pub async fn load_faucet_wallet(client: &Client) -> LocalWallet {
     // Transfer to faucet. We will transfer almost all of the genesis wallet's
     // balance to the faucet,.
 
-    let faucet_balance = Token::from_nano(genesis_wallet.balance().as_nano());
+    let faucet_balance = genesis_wallet.balance();
     println!("Sending {faucet_balance} from genesis to faucet wallet..");
     let tokens = send(
         genesis_wallet,

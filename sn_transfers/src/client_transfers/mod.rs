@@ -33,9 +33,7 @@ mod transfer;
 pub(crate) use self::error::{Error, Result};
 pub use self::transfer::{create_storage_payment_transfer, create_transfer};
 
-use sn_dbc::{
-    Dbc, DbcIdSource, DbcTransaction, DerivedKey, PublicAddress, RevealedAmount, SignedSpend, Token,
-};
+use sn_dbc::{Dbc, DbcTransaction, DerivationIndex, DerivedKey, PublicAddress, SignedSpend, Token};
 
 /// The input details necessary to
 /// carry out a transfer of tokens.
@@ -45,7 +43,7 @@ pub struct Inputs {
     /// to transfer the below specified amount of tokens to each recipients.
     pub dbcs_to_spend: Vec<(Dbc, DerivedKey)>,
     /// The amounts and dbc ids for the dbcs that will be created to hold the transferred tokens.
-    pub recipients: Vec<(Token, DbcIdSource)>,
+    pub recipients: Vec<(Token, PublicAddress, DerivationIndex)>,
     /// Any surplus amount after spending the necessary input dbcs.
     pub change: (Token, PublicAddress),
 }
@@ -54,10 +52,9 @@ pub struct Inputs {
 /// of tokens from one or more dbcs, into one or more new dbcs.
 #[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TransferOutputs {
-    /// This is the hash of the transaction
-    /// where all the below spends were made
-    /// and dbcs created.
-    pub tx_hash: sn_dbc::Hash,
+    /// This is the transaction where all the below
+    /// spends were made and dbcs created.
+    pub tx: sn_dbc::DbcTransaction,
     /// The dbcs that were created containing
     /// the tokens sent to respective recipient.
     #[debug(skip)]
@@ -87,5 +84,5 @@ pub struct CreatedDbc {
     pub dbc: Dbc,
     /// This is useful for the sender to know how much they sent to each recipient.
     /// They can't know this from the dbc itself, as the amount is encrypted.
-    pub amount: RevealedAmount,
+    pub amount: Token,
 }

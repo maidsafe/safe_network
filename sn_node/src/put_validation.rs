@@ -499,7 +499,7 @@ fn verify_fee_output_and_proof(
 
     // Check the expected amount of tokens was paid by the Tx, i.e. the amount of
     // the fee output the expected 1 nano per Chunk/address.
-    let paid = tx.fee.amount as usize;
+    let paid = tx.fee.token.as_nano() as usize;
     if paid <= leaf_index {
         // the payment amount is not enough, we expect 1 nano per adddress
         return Err(ProtocolError::PaymentProofInsufficientAmount {
@@ -515,7 +515,7 @@ fn verify_fee_output_and_proof(
 mod tests {
     use super::*;
     use proptest::prelude::*;
-    use sn_dbc::FeeOutput;
+    use sn_dbc::{FeeOutput, Token};
     use sn_transfers::payment_proof::build_payment_proofs;
 
     proptest! {
@@ -533,7 +533,7 @@ mod tests {
                     outputs: vec![],
                     fee: FeeOutput {
                         id: Hash::hash(root_hash.slice()),
-                        amount: total_cost,
+                        token: Token::from_nano(total_cost),
                         root_hash,
                     },
                 };
@@ -559,7 +559,7 @@ mod tests {
                 ));
 
                 // verification should fail if the amount paid is not enough for the content
-                tx.fee.amount = leaf_index as u64; // it should fail with an amount less or equal to this value
+                tx.fee.token = Token::from_nano(leaf_index as u64); // it should fail with an amount less or equal to this value
                 assert!(matches!(
                     verify_fee_output_and_proof(name, &tx, audit_trail, path),
                     Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected })
@@ -567,7 +567,7 @@ mod tests {
                 ));
 
                 // verification should pass if the amount is more than enough for the content
-                tx.fee.amount = total_cost + 1;
+                tx.fee.token = Token::from_nano(total_cost + 1);
                 assert!(matches!(
                     verify_fee_output_and_proof(name, &tx, audit_trail, path),
                     Ok(())
