@@ -333,34 +333,36 @@ mod tests {
         let authority_sk1 = SecretKey::random();
         let owner1 = User::Key(authority_sk1.public_key());
         let perms1 = Permissions::new_anyone_can_write();
-
         let replica1 = create_reg_replica_with(name, tag, Some(authority_sk1), Some(perms1));
 
-        // the other replica will allow write ops to 'owner1' and 'authority2' only
+        // the other replica will allow write ops to 'owner1' and 'owner2' only
         let authority_sk2 = SecretKey::random();
-        let authority2 = User::Key(authority_sk2.public_key());
-        let perms2 = Permissions::new_owner_only();
+        let owner2 = User::Key(authority_sk2.public_key());
+        let perms2 = Permissions::new_with([owner1]);
         let replica2 = create_reg_replica_with(name, tag, Some(authority_sk2), Some(perms2));
 
-        assert_eq!(replica1.owner(), owner1);
-        assert_eq!(replica1.check_user_permissions(User::Anyone), Ok(()),);
+        // dummy owner
+        let sk_rand = SecretKey::random();
+        let random_user = User::Key(sk_rand.public_key());
 
-        assert_eq!(replica2.owner(), authority2);
-        assert_eq!(replica2.check_user_permissions(owner1), Ok(()),);
+        // check replica 1 is public
+        assert_eq!(replica1.owner(), owner1);
+        assert_eq!(replica1.check_user_permissions(User::Anyone), Ok(()));
+        assert_eq!(replica1.check_user_permissions(owner1), Ok(()));
+        assert_eq!(replica1.check_user_permissions(owner2), Ok(()));
+        assert_eq!(replica1.check_user_permissions(random_user), Ok(()));
+
+        // check replica 2 has only owner1 and owner2 write allowed
+        assert_eq!(replica2.owner(), owner2);
         assert_eq!(
             replica2.check_user_permissions(User::Anyone),
-            Err(Error::AccessDenied(User::Anyone)),
+            Err(Error::AccessDenied(User::Anyone))
         );
-        assert_eq!(
-            replica2.check_user_permissions(owner1),
-            Err(Error::AccessDenied(owner1)),
-        );
-
-        let random_sk = SecretKey::random();
-        let random_user = User::Key(random_sk.public_key());
+        assert_eq!(replica2.check_user_permissions(owner1), Ok(()));
+        assert_eq!(replica2.check_user_permissions(owner2), Ok(()));
         assert_eq!(
             replica2.check_user_permissions(random_user),
-            Err(Error::AccessDenied(owner1)),
+            Err(Error::AccessDenied(random_user))
         );
 
         Ok(())
