@@ -13,7 +13,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
-pub use sn_dbc::{DbcTransaction, Hash, SignedSpend};
+pub use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend};
 
 /// Data and Dbc cmds - recording spends or creating, updating, and removing data.
 ///
@@ -107,9 +107,9 @@ pub type MerkleTreeNodesType = [u8; 32];
 
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
 pub struct PaymentProof {
-    // DBC transaction for nodes to check the storage payment is valid and inputs have
+    // Ids of the DBCs spent, for nodes to check the storage payment is valid and inputs have
     // been effectivelly spent on the network.
-    pub tx: DbcTransaction,
+    pub spent_ids: Vec<DbcId>,
     // Merkletree audit trail to prove the content storage has been paid by the
     // given DBC (using DBC's parent/s 'reason' field)
     pub audit_trail: Vec<MerkleTreeNodesType>,
