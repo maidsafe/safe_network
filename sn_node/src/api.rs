@@ -60,6 +60,20 @@ impl RunningNode {
 }
 
 impl Node {
+    #[cfg(test)]
+    /// Creates a new instance of Node to be used in tests
+    pub fn new(
+        network: Network,
+        events_channel: NodeEventsChannel,
+        initial_peers: Vec<Multiaddr>,
+    ) -> Self {
+        Self {
+            network,
+            events_channel,
+            initial_peers,
+        }
+    }
+
     /// Asynchronously runs a new node instance, setting up the swarm driver,
     /// creating a data storage, and handling network events. Returns the
     /// created node and a `NodeEventsChannel` for listening to node-related

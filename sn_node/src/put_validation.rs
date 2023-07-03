@@ -576,14 +576,27 @@ fn verify_fee_output_and_proof(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{Node, NodeEventsChannel};
+    use assert_fs::TempDir;
+    use bytes::Bytes;
+    use eyre::Result;
+    use libp2p::{identity::Keypair, PeerId};
     use proptest::prelude::*;
+    use rand::{thread_rng, Rng};
     use sn_dbc::{FeeOutput, Token};
+    use sn_logging::init_test_logger;
+    use sn_networking::{Network, SwarmCmd, TestSwarm};
+    use sn_protocol::{
+        messages::CmdOk,
+        storage::{Chunk, ChunkWithPayment},
+    };
     use sn_transfers::payment_proof::build_payment_proofs;
+    use tokio::sync::mpsc;
 
     proptest! {
         #[test]
         fn test_verify_payment_proof(num_of_addrs in 1..1000) {
-            let mut rng = rand::thread_rng();
+            let mut rng = thread_rng();
             let random_names = (0..num_of_addrs).map(|_| XorName::random(&mut rng)).collect::<Vec<_>>();
             let (root_hash, proofs) = build_payment_proofs(random_names.iter())?;
             let total_cost = num_of_addrs as u64;
@@ -644,5 +657,59 @@ mod tests {
 
             }
         }
+    }
+
+    #[tokio::test]
+    async fn chunk_should_not_be_overwritten_if_present_locally() -> Result<()> {
+        init_test_logger();
+        let (node, mut swarm_cmd_receiver) = gen_node()?;
+        let mut mock_network = TestSwarm::new(node.network.peer_id);
+        let _handle = tokio::spawn(async move {
+            loop {
+                let cmd = swarm_cmd_receiver
+                    .recv()
+                    .await
+                    .expect("Swarm cmd channel has been closed");
+
+                if let Err(err) = mock_network.handle_swarm_cmd(cmd).await {
+                    panic!("MockNetwork failed with {err:?}");
+                };
+            }
+        });
+        let mut random_data = [0u8; 128];
+        thread_rng().fill(&mut random_data);
+        let chunk = ChunkWithPayment {
+            chunk: Chunk::new(Bytes::copy_from_slice(&random_data)),
+            payment: None,
+        };
+
+        // the chunk should be stored locally
+        assert_eq!(
+            node.validate_and_store_chunk(chunk.clone()).await?,
+            CmdOk::StoredSuccessfully
+        );
+        // We should not overwrite the same chunk
+        assert_eq!(
+            node.validate_and_store_chunk(chunk).await?,
+            CmdOk::DataAlreadyPresent
+        );
+        Ok(())
+    }
+
+    fn gen_node() -> Result<(Node, mpsc::Receiver<SwarmCmd>)> {
+        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(1000);
+        let keypair = Keypair::generate_ed25519();
+        let peer_id = PeerId::from(keypair.public());
+        let root_dir_path = TempDir::new()?;
+        let network = Network {
+            swarm_cmd_sender,
+            peer_id,
+            root_dir_path: root_dir_path.to_path_buf(),
+        };
+
+        let events_channel = NodeEventsChannel::default();
+        let node = Node::new(network, events_channel, vec![]);
+
+        Ok((node, swarm_cmd_receiver))
     }
 }
