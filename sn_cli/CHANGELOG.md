@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.78.22](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.78.21...sn_cli-v0.78.22) - 2023-07-03
+
+### Other
+- reduce SAMPLE_SIZE for the data_with_churn test
+
 ## [0.78.21](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.78.20...sn_cli-v0.78.21) - 2023-06-29
 
 ### Other

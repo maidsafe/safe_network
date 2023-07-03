@@ -384,6 +384,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(node)* write secret key to disk and re-use
 
+## [0.85.7](https://github.com/maidsafe/safe_network/compare/sn_node-v0.85.6...sn_node-v0.85.7) - 2023-07-03
+
+### Added
+- append SAFE_PEERS to initial_peers after restart
+
+### Fixed
+- *(CI)* setup stable SAFE_PEERS for testnet nodes
+- *(text)* data_churn_test creates clients parsing SAFE_PEERS env
+
+### Other
+- various tidy up
+- reduce SAMPLE_SIZE for the data_with_churn test
+- tidy up try_trigger_replication function
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
