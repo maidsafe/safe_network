@@ -58,16 +58,16 @@ impl Display for NodeInfo {
 pub async fn run(logs_path: &Path, node_count: u32) -> Result<()> {
     let mut delay_secs = 10;
     while delay_secs > 0 {
-        println!("We'll be verifying testnet nodes info in {delay_secs}secs ...");
+        println!("Verifying nodes in {delay_secs} seconds...");
         sleep(Duration::from_secs(1)).await;
         delay_secs -= 1;
     }
     println!();
-    println!("======== Verifying testnet nodes ========");
+    println!("======== Verifying Nodes ========");
 
     let expected_node_count = node_count as usize;
     println!(
-        "Checking nodes log files to verify all ({expected_node_count}) nodes \
+        "Checking log files to verify all ({expected_node_count}) nodes \
         have joined. Logs path: {}",
         logs_path.display()
     );
@@ -168,7 +168,7 @@ pub async fn run(logs_path: &Path, node_count: u32) -> Result<()> {
     }
 
     println!();
-    println!("PeerIds and network knowledge of nodes are the expected!");
+    println!("Peer IDs and node network knowledge are as expected!");
 
     Ok(())
 }
