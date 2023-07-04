@@ -465,6 +465,7 @@ impl Node {
 // how an output DBC Id works for regular outputs.
 fn verify_fee_output_id(spent_tx: &DbcTransaction) -> Result<(), ProtocolError> {
     let fee = &spent_tx.fee;
+    info!(">>>> FEE: {fee:?}");
     if !fee.is_free() {
         let mut fee_id_bytes = fee.root_hash.slice().to_vec();
         spent_tx

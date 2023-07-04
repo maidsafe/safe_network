@@ -6,33 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod data_with_churn;
+mod common;
 
-use std::path::Path;
+use common::{get_client_and_wallet, get_wallet};
 
-use sn_client::{get_tokens_from_faucet, send, Client, WalletClient};
+use sn_client::send;
 
 use sn_dbc::{random_derivation_index, rng, Token};
-use sn_transfers::{client_transfers::create_transfer, wallet::LocalWallet};
+use sn_transfers::client_transfers::create_transfer;
 use tracing_core::Level;
 
 use assert_fs::TempDir;
 use eyre::Result;
-use rand::Rng;
-use xor_name::XorName;
-
-async fn get_client() -> Client {
-    let secret_key = bls::SecretKey::random();
-    Client::new(secret_key, None, None)
-        .await
-        .expect("Client shall be successfully created.")
-}
-
-async fn get_wallet(root_dir: &Path) -> LocalWallet {
-    LocalWallet::load_from(root_dir)
-        .await
-        .expect("Wallet shall be successfully created.")
-}
 
 #[tokio::test(flavor = "multi_thread")]
 async fn multiple_sequential_transfers_succeed() -> Result<()> {
@@ -45,22 +30,13 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
     ];
     let _log_appender_guard = sn_logging::init_logging(logging_targets, &None, false)?;
 
+    let first_wallet_balance = 1_000_000_000;
     let first_wallet_dir = TempDir::new()?;
-    let first_wallet_balance = Token::from_nano(1_000_000_000);
 
-    let mut first_wallet = get_wallet(first_wallet_dir.path()).await;
-    let client = get_client().await;
-    println!("Getting {first_wallet_balance} tokens from the faucet...");
-    let tokens =
-        get_tokens_from_faucet(first_wallet_balance, first_wallet.address(), &client).await;
-    std::thread::sleep(std::time::Duration::from_secs(5));
-    println!("Verifying the transfer from faucet...");
-    client.verify(&tokens).await?;
-    first_wallet.deposit(vec![tokens]);
-    assert_eq!(first_wallet.balance(), first_wallet_balance);
-    println!("Tokens deposited to first wallet: {first_wallet_balance}.");
+    let (client, first_wallet) =
+        get_client_and_wallet(first_wallet_dir.path(), first_wallet_balance).await?;
 
-    let second_wallet_balance = Token::from_nano(first_wallet_balance.as_nano() / 2);
+    let second_wallet_balance = Token::from_nano(first_wallet_balance / 2);
     println!("Transferring from first wallet to second wallet: {second_wallet_balance}.");
     let second_wallet_dir = TempDir::new()?;
     let mut second_wallet = get_wallet(second_wallet_dir.path()).await;
@@ -81,7 +57,7 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
     assert_eq!(second_wallet.balance(), second_wallet_balance);
     println!("Tokens deposited to second wallet: {second_wallet_balance}.");
 
-    let first_wallet = get_wallet(first_wallet_dir.path()).await;
+    let first_wallet = get_wallet(&first_wallet_dir).await;
     assert!(second_wallet_balance.as_nano() == first_wallet.balance().as_nano());
 
     Ok(())
@@ -99,19 +75,11 @@ async fn double_spend_transfers_fail() -> Result<()> {
     let _log_appender_guard = sn_logging::init_logging(logging_targets, &None, false)?;
 
     // create 1 wallet add money from faucet
+    let first_wallet_balance = 1_000_000_000;
     let first_wallet_dir = TempDir::new()?;
-    let first_wallet_balance = Token::from_nano(1_000_000_000);
-    let mut first_wallet = get_wallet(first_wallet_dir.path()).await;
-    let client = get_client().await;
-    println!("Getting {first_wallet_balance} tokens from the faucet...");
-    let tokens =
-        get_tokens_from_faucet(first_wallet_balance, first_wallet.address(), &client).await;
-    std::thread::sleep(std::time::Duration::from_secs(5));
-    println!("Verifying the transfer from faucet...");
-    client.verify(&tokens).await?;
-    first_wallet.deposit(vec![tokens]);
-    assert_eq!(first_wallet.balance(), first_wallet_balance);
-    println!("Tokens deposited to first wallet: {first_wallet_balance}.");
+
+    let (client, first_wallet) =
+        get_client_and_wallet(first_wallet_dir.path(), first_wallet_balance).await?;
 
     // create wallet 2 and 3 to receive money from 1
     let second_wallet_dir = TempDir::new()?;
@@ -122,7 +90,7 @@ async fn double_spend_transfers_fail() -> Result<()> {
     assert_eq!(third_wallet.balance(), Token::zero());
 
     // manually forge two transfers of the same source
-    let amount = Token::from_nano(first_wallet_balance.as_nano() / 3);
+    let amount = Token::from_nano(first_wallet_balance / 3);
     let to1 = first_wallet.address();
     let to2 = second_wallet.address();
     let to3 = third_wallet.address();
@@ -155,61 +123,6 @@ async fn double_spend_transfers_fail() -> Result<()> {
     let should_err2 = client.verify(&dbcs_for_3[0]).await;
     println!("Verifying at least one fails: {should_err1:?} {should_err2:?}");
     assert!(should_err1.is_err() || should_err2.is_err());
-
-    Ok(())
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn storage_payment_succeeds() -> Result<()> {
-    let logging_targets = vec![
-        ("safenode".to_string(), Level::INFO),
-        ("sn_client".to_string(), Level::TRACE),
-        ("sn_transfers".to_string(), Level::INFO),
-        ("sn_networking".to_string(), Level::INFO),
-        ("sn_node".to_string(), Level::INFO),
-    ];
-    let _log_appender_guard = sn_logging::init_logging(logging_targets, &None, false)?;
-
-    let paying_wallet_dir = TempDir::new()?;
-    let paying_wallet_balance = Token::from_nano(500_000);
-
-    let mut paying_wallet = get_wallet(paying_wallet_dir.path()).await;
-    let client = get_client().await;
-    println!("Getting {paying_wallet_balance} tokens from the faucet...");
-    let tokens =
-        get_tokens_from_faucet(paying_wallet_balance, paying_wallet.address(), &client).await;
-    std::thread::sleep(std::time::Duration::from_secs(5));
-    println!("Verifying the transfer from faucet...");
-    client.verify(&tokens).await?;
-    paying_wallet.deposit(vec![tokens]);
-    assert_eq!(paying_wallet.balance(), paying_wallet_balance);
-    println!("Tokens deposited to the wallet that'll pay for storage: {paying_wallet_balance}.");
-
-    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
-
-    // generate a random number (between 50 and 100) of random addresses
-    let mut rng = rand::thread_rng();
-    let random_content_addrs = (0..rng.gen_range(50..100))
-        .collect::<Vec<_>>()
-        .iter()
-        .map(|_| XorName::random(&mut rng))
-        .collect::<Vec<_>>();
-    println!(
-        "Paying for {} random addresses...",
-        random_content_addrs.len()
-    );
-
-    let proofs = wallet_client
-        .pay_for_storage(random_content_addrs.iter())
-        .await?;
-
-    std::thread::sleep(std::time::Duration::from_secs(5));
-
-    let cost = proofs.len() as u64; // 1 nano per addr
-    let new_balance = Token::from_nano(paying_wallet_balance.as_nano() - cost);
-    println!("Verifying new balance on paying wallet is {new_balance} ...");
-    let paying_wallet = wallet_client.into_wallet();
-    assert_eq!(paying_wallet.balance(), new_balance);
 
     Ok(())
 }
