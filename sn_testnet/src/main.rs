@@ -80,6 +80,22 @@ struct Cmd {
     #[clap(short = 'c', long, env = "NODE_COUNT")]
     node_count: Option<u32>,
 
+    /// Clean the node data directory.
+    ///
+    /// The data directory location is platform specific:
+    ///  - Linux: $HOME/.local/share/safe/node
+    ///  - macOS: $HOME/Library/Application Support/safe/node
+    ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node
+    ///
+    ///  When the `safenode` binary is launched, it creates a 'root' directory under here for each
+    ///  particular node that is launched. This directory corresponds to the peer ID that the node
+    ///  is assigned.
+    ///
+    ///  Using this flag will clear all the previous node directories that exist under the data
+    ///  directory.
+    #[clap(long, verbatim_doc_comment)]
+    clean: bool,
+
     /// Specify any additional arguments to pass to safenode on launch, e.g., --json-logs.
     ///
     /// Any arguments must be valid safenode arguments.
@@ -93,6 +109,15 @@ async fn main() -> Result<()> {
     init_tracing()?;
 
     let args = Cmd::from_args();
+
+    if args.clean {
+        let node_data_dir = dirs_next::data_dir()
+            .ok_or_else(|| eyre!("could not obtain root directory path".to_string()))?
+            .join("safe")
+            .join("node");
+        println!("Cleaning previous node directories under {node_data_dir:?}");
+        std::fs::remove_dir_all(node_data_dir)?;
+    }
 
     if args.flame {
         #[cfg(not(target_os = "windows"))]
@@ -217,7 +242,6 @@ async fn run_network(
     let mut testnet = Testnet::configure()
         .node_bin_path(node_bin_path)
         .node_launch_interval(node_launch_interval)
-        .clear_nodes_dir()
         .flamegraph_mode(flamegraph_mode)
         .build()?;
 
