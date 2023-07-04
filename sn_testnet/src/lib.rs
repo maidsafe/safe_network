@@ -8,7 +8,7 @@
 
 pub mod check_testnet;
 
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{eyre::eyre, Help, Result};
 use libp2p::identity::PeerId;
 #[cfg(test)]
 use mockall::automock;
@@ -108,12 +108,6 @@ impl TestnetBuilder {
     /// will be a directory for each node.
     pub fn nodes_dir_path(&mut self, nodes_dir_path: PathBuf) -> &mut Self {
         self.nodes_dir_path = Some(nodes_dir_path);
-        self
-    }
-
-    /// Set this to clear out the existing node data directory for a new network.
-    pub fn clear_nodes_dir(&mut self) -> &mut Self {
-        self.clear_nodes_dir = true;
         self
     }
 
@@ -222,14 +216,14 @@ impl Testnet {
     /// # Errors
     ///
     /// Returns an error if:
-    /// * The node data directory cannot be created
+    /// * The node data directory is already populated with previous node root directories
     /// * The node process fails
-    /// * The network has already been launched previously
     pub async fn launch_genesis(&self, node_args: Vec<String>) -> Result<String> {
         if self.node_count != 0 {
             return Err(eyre!(
-                "A genesis node cannot be launched for an existing network"
-            ));
+                "A new testnet cannot be launched until the data directory is cleared"
+            )
+            .suggestion("Try again using the `--clean` argument"));
         }
 
         let rpc_address = "127.0.0.1:12001".parse()?;
@@ -573,7 +567,7 @@ mod test {
             Err(e) => {
                 assert_eq!(
                     e.to_string(),
-                    "A genesis node cannot be launched for an existing network"
+                    "A new testnet cannot be launched until the data directory is cleared"
                 );
                 Ok(())
             }
