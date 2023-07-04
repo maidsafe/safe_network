@@ -4697,7 +4697,6 @@ dependencies = [
  "async-trait",
  "blsttc",
  "bytes",
- "dirs-next",
  "eyre",
  "futures",
  "itertools",
