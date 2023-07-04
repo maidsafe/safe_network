@@ -14,6 +14,7 @@ mod cmd;
 mod error;
 mod event;
 mod msg;
+mod record_store;
 mod replication_fetcher;
 
 pub use self::{
@@ -28,6 +29,10 @@ use self::{
     error::Result,
     event::NodeBehaviour,
     msg::{MsgCodec, MsgProtocol},
+    record_store::{
+        DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
+        REPLICATION_INTERVAL_UPPER_BOUND,
+    },
     replication_fetcher::ReplicationFetcher,
 };
 use futures::{future::select_all, StreamExt};
@@ -48,10 +53,6 @@ use rand::Rng;
 use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress,
-};
-use sn_record_store::{
-    DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
-    REPLICATION_INTERVAL_UPPER_BOUND,
 };
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
@@ -259,6 +260,8 @@ impl SwarmDriver {
             )
         };
 
+        let (network_event_sender, network_event_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
+
         // Kademlia Behaviour
         let kademlia = {
             // Configures the disk_store to store records under the provided path and increase the max record size
@@ -279,7 +282,11 @@ impl SwarmDriver {
 
             Kademlia::with_config(
                 peer_id,
-                DiskBackedRecordStore::with_config(peer_id, store_cfg),
+                DiskBackedRecordStore::with_config(
+                    peer_id,
+                    store_cfg,
+                    Some(network_event_sender.clone()),
+                ),
                 kad_cfg,
             )
         };
@@ -347,7 +354,6 @@ impl SwarmDriver {
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
         let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
-        let (network_event_sender, network_event_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
         let swarm_driver = Self {
             self_peer_id: peer_id,
             swarm,

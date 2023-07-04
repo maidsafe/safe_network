@@ -213,6 +213,13 @@ impl Node {
                     self.events_channel.broadcast(NodeEvent::BehindNat);
                 }
             }
+            NetworkEvent::UnverifiedRecord(record) => {
+                let key = record.key.clone();
+                match self.validate_and_store_record(record).await {
+                    Ok(cmdok) => trace!("UnverifiedRecord {key:?} stored with {cmdok:?}."),
+                    Err(err) => trace!("UnverifiedRecord {key:?} stored with error {err:?}."),
+                }
+            }
         }
     }
 

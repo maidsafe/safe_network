@@ -43,12 +43,6 @@ git_release_enable = false
 publish = true
 
 [[package]]
-name = "sn_record_store"
-changelog_update = true
-git_release_enable = false
-publish = true
-
-[[package]]
 name = "sn_registers"
 changelog_update = true
 git_release_enable = false

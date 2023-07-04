@@ -225,7 +225,9 @@ impl Client {
                 }
                 self.peers_added += 1;
             }
-            NetworkEvent::PeerRemoved(_) | NetworkEvent::LostRecordDetected(_) => {}
+            NetworkEvent::PeerRemoved(_)
+            | NetworkEvent::LostRecordDetected(_)
+            | NetworkEvent::UnverifiedRecord(_) => {}
         }
 
         Ok(())

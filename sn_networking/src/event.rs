@@ -9,6 +9,7 @@
 use super::{
     error::{Error, Result},
     msg::MsgCodec,
+    record_store::DiskBackedRecordStore,
     SwarmDriver,
 };
 use crate::{multiaddr_is_global, multiaddr_strip_p2p, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR};
@@ -17,7 +18,7 @@ use itertools::Itertools;
 use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
-    kad::{GetRecordOk, InboundRequest, Kademlia, KademliaEvent, QueryResult, K_VALUE},
+    kad::{GetRecordOk, InboundRequest, Kademlia, KademliaEvent, QueryResult, Record, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
     swarm::{behaviour::toggle::Toggle, DialError, NetworkBehaviour, SwarmEvent},
@@ -27,7 +28,6 @@ use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress,
 };
-use sn_record_store::DiskBackedRecordStore;
 use std::collections::HashSet;
 use tokio::sync::oneshot;
 use tracing::{info, warn};
@@ -118,6 +118,8 @@ pub enum NetworkEvent {
     NatStatusChanged(NatStatus),
     /// Report peers that lost a record
     LostRecordDetected(Vec<PeerId>),
+    /// Report unverified record
+    UnverifiedRecord(Record),
 }
 
 impl SwarmDriver {

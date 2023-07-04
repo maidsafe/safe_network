@@ -4637,12 +4637,12 @@ dependencies = [
  "futures",
  "itertools",
  "libp2p",
+ "quickcheck",
  "rand 0.8.5",
  "rmp-serde",
  "serde",
  "sn_logging",
  "sn_protocol",
- "sn_record_store",
  "thiserror",
  "tokio",
  "tracing",
@@ -4727,17 +4727,6 @@ dependencies = [
  "sn_registers",
  "thiserror",
  "xor_name",
-]
-
-[[package]]
-name = "sn_record_store"
-version = "0.1.13"
-dependencies = [
- "libp2p",
- "quickcheck",
- "rand 0.8.5",
- "sn_protocol",
- "tracing",
 ]
 
 [[package]]

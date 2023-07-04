@@ -26,6 +26,28 @@ use std::collections::HashSet;
 use xor_name::XorName;
 
 impl Node {
+    /// Validate and store a record to the RecordStore
+    pub(crate) async fn validate_and_store_record(
+        &mut self,
+        record: Record,
+    ) -> Result<CmdOk, ProtocolError> {
+        let record_header = RecordHeader::from_record(&record)?;
+        match record_header.kind {
+            RecordKind::Chunk => {
+                let chunk_with_payment = try_deserialize_record::<ChunkWithPayment>(&record)?;
+                self.validate_and_store_chunk(chunk_with_payment).await
+            }
+            RecordKind::DbcSpend => {
+                let register = try_deserialize_record::<Register>(&record)?;
+                self.validate_and_store_register(register).await
+            }
+            RecordKind::Register => {
+                let signed_spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
+                self.validate_and_store_spends(signed_spends).await
+            }
+        }
+    }
+
     /// Validate and store a `ChunkWithPayment` to the RecordStore
     pub(crate) async fn validate_and_store_chunk(
         &self,

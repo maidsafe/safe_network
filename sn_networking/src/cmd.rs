@@ -194,7 +194,7 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .put(record)?;
+                    .put_verified(record)?;
             }
             SwarmCmd::RecordStoreHasKey { key, sender } => {
                 let has_key = self
