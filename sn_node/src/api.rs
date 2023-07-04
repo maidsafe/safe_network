@@ -23,6 +23,7 @@ use tokio::task::spawn;
 
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
+#[derive(Clone)]
 pub struct RunningNode {
     network: Network,
     node_events_channel: NodeEventsChannel,
