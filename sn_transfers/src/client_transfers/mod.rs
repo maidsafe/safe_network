@@ -58,7 +58,7 @@ pub struct TransferOutputs {
     /// The dbcs that were created containing
     /// the tokens sent to respective recipient.
     #[debug(skip)]
-    pub created_dbcs: Vec<CreatedDbc>,
+    pub created_dbcs: Vec<Dbc>,
     /// The dbc holding surplus tokens after
     /// spending the necessary input dbcs.
     #[debug(skip)]
@@ -75,14 +75,4 @@ pub struct SpendRequest {
     /// The dbc transaction that the spent dbc was created in.
     #[debug(skip)]
     pub parent_tx: DbcTransaction,
-}
-
-/// A resulting dbc from a token transfer.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct CreatedDbc {
-    /// The dbc that was created.
-    pub dbc: Dbc,
-    /// This is useful for the sender to know how much they sent to each recipient.
-    /// They can't know this from the dbc itself, as the amount is encrypted.
-    pub amount: Token,
 }

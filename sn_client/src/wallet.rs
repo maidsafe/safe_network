@@ -64,7 +64,7 @@ impl WalletClient {
 
         // return created DBCs even if network part failed???
         match &dbcs[..] {
-            [info, ..] => Ok(info.dbc.clone()),
+            [info, ..] => Ok(info.clone()),
             [] => Err(Error::CouldNotSendTokens(
                 "No DBCs were returned from the wallet.".into(),
             )),

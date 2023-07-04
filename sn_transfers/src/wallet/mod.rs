@@ -63,8 +63,6 @@ pub use self::{
     local_store::LocalWallet,
 };
 
-use super::client_transfers::CreatedDbc;
-
 use sn_dbc::{Dbc, DbcId, PublicAddress, Token};
 
 use std::collections::BTreeMap;
@@ -83,7 +81,7 @@ pub(super) struct KeyLessWallet {
     /// They are not owned by us, but we
     /// keep them here so we can track our
     /// transfer history.
-    dbcs_created_for_others: Vec<CreatedDbc>,
+    dbcs_created_for_others: Vec<Dbc>,
 }
 
 /// Return the name of a PublicAddress.
