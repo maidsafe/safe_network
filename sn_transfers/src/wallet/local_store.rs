@@ -66,73 +66,7 @@ impl LocalWallet {
             wallet_dir: wallet_dir.to_path_buf(),
         })
     }
-}
 
-/// Loads a serialized wallet from a path.
-async fn load_from_path(wallet_dir: &Path) -> Result<(MainKey, KeyLessWallet)> {
-    let key = match get_main_key(wallet_dir).await? {
-        Some(key) => key,
-        None => {
-            let key = MainKey::random();
-            store_new_keypair(wallet_dir, &key).await?;
-            key
-        }
-    };
-    let wallet = match get_wallet(wallet_dir).await? {
-        Some(wallet) => wallet,
-        None => {
-            let wallet = KeyLessWallet::new();
-            store_wallet(wallet_dir, &wallet).await?;
-            create_received_dbcs_dir(wallet_dir).await?;
-            wallet
-        }
-    };
-
-    Ok((key, wallet))
-}
-
-impl KeyLessWallet {
-    fn new() -> Self {
-        Self {
-            balance: Token::zero(),
-            spent_dbcs: BTreeMap::new(),
-            available_dbcs: BTreeMap::new(),
-            dbcs_created_for_others: vec![],
-        }
-    }
-
-    fn balance(&self) -> Token {
-        self.balance
-    }
-
-    fn deposit(&mut self, dbcs: Vec<Dbc>, key: &MainKey) {
-        if dbcs.is_empty() {
-            return;
-        }
-
-        let mut received_dbcs = dbcs
-            .into_iter()
-            .filter_map(|dbc| {
-                let id = dbc.id();
-                (!self.spent_dbcs.contains_key(&id)).then_some((id, dbc))
-            })
-            .filter_map(|(id, dbc)| dbc.derived_key(key).is_ok().then_some((id, dbc)))
-            .collect();
-
-        self.available_dbcs.append(&mut received_dbcs);
-
-        let new_balance = self
-            .available_dbcs
-            .iter()
-            .flat_map(|(_, dbc)| dbc.derived_key(key).map(|derived_key| (dbc, derived_key)))
-            .flat_map(|(dbc, _)| dbc.token())
-            .fold(0, |total, token| total + token.as_nano());
-
-        self.balance = Token::from_nano(new_balance);
-    }
-}
-
-impl LocalWallet {
     pub fn address(&self) -> PublicAddress {
         self.key.public_address()
     }
@@ -231,6 +165,70 @@ impl LocalWallet {
         self.deposit(change_dbc.into_iter().collect());
         self.wallet.spent_dbcs.append(&mut spent_dbcs);
         self.wallet.dbcs_created_for_others.extend(created_dbcs);
+    }
+}
+
+/// Loads a serialized wallet from a path.
+async fn load_from_path(wallet_dir: &Path) -> Result<(MainKey, KeyLessWallet)> {
+    let key = match get_main_key(wallet_dir).await? {
+        Some(key) => key,
+        None => {
+            let key = MainKey::random();
+            store_new_keypair(wallet_dir, &key).await?;
+            key
+        }
+    };
+    let wallet = match get_wallet(wallet_dir).await? {
+        Some(wallet) => wallet,
+        None => {
+            let wallet = KeyLessWallet::new();
+            store_wallet(wallet_dir, &wallet).await?;
+            create_received_dbcs_dir(wallet_dir).await?;
+            wallet
+        }
+    };
+
+    Ok((key, wallet))
+}
+
+impl KeyLessWallet {
+    fn new() -> Self {
+        Self {
+            balance: Token::zero(),
+            spent_dbcs: BTreeMap::new(),
+            available_dbcs: BTreeMap::new(),
+            dbcs_created_for_others: vec![],
+        }
+    }
+
+    fn balance(&self) -> Token {
+        self.balance
+    }
+
+    fn deposit(&mut self, dbcs: Vec<Dbc>, key: &MainKey) {
+        if dbcs.is_empty() {
+            return;
+        }
+
+        let mut received_dbcs = dbcs
+            .into_iter()
+            .filter_map(|dbc| {
+                let id = dbc.id();
+                (!self.spent_dbcs.contains_key(&id)).then_some((id, dbc))
+            })
+            .filter_map(|(id, dbc)| dbc.derived_key(key).is_ok().then_some((id, dbc)))
+            .collect();
+
+        self.available_dbcs.append(&mut received_dbcs);
+
+        let new_balance = self
+            .available_dbcs
+            .iter()
+            .flat_map(|(_, dbc)| dbc.derived_key(key).map(|derived_key| (dbc, derived_key)))
+            .flat_map(|(dbc, _)| dbc.token())
+            .fold(0, |total, token| total + token.as_nano());
+
+        self.balance = Token::from_nano(new_balance);
     }
 }
 
