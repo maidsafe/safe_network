@@ -398,6 +398,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - reduce SAMPLE_SIZE for the data_with_churn test
 - tidy up try_trigger_replication function
 
+## [0.85.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.85.7...sn_node-v0.85.8) - 2023-07-04
+
+### Other
+- demystify permissions
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
