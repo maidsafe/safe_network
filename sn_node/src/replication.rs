@@ -26,7 +26,7 @@ const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
 // Defines how close that a node will trigger replication.
 // That is, the node has to be among the REPLICATION_RANGE closest to data,
 // to carry out the replication.
-const REPLICATION_RANGE: usize = 8;
+const REPLICATION_RANGE: usize = 12;
 
 impl Node {
     /// In case self is not among the closest to the chunk,
@@ -87,7 +87,7 @@ impl Node {
             return Ok(());
         };
 
-        let distance_bar = match sorted_peers.get(CLOSE_GROUP_SIZE) {
+        let distance_bar = match sorted_peers.get(REPLICATION_RANGE) {
             Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
             None => {
                 debug!("could not obtain distance_bar as sorted_peers.len() <= CLOSE_GROUP_SIZE ");

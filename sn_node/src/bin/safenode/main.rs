@@ -139,27 +139,27 @@ enum NodeCtrl {
 }
 
 fn main() -> Result<()> {
-    let opt = Opt::parse();
-    let (root_dir, keypair) = get_root_dir_and_keypair(opt.root_dir)?;
-    let (log_output_dest, _log_appender_guard) = init_logging(
-        opt.log_output_dest,
-        keypair.public().to_peer_id(),
-        opt.log_format,
-    )?;
-
-    if opt.peers.peers.is_empty() {
-        if !cfg!(feature = "local-discovery") {
-            warn!("No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.");
-        } else {
-            info!("No peers given. As `local-discovery` feature is enabled, we will attempt to connect to the network using mDNS.");
-        }
-    }
-
-    let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
-
-    let mut initial_peers = opt.peers.peers.clone();
-
     loop {
+        let opt = Opt::parse();
+
+        let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
+        let (root_dir, keypair) = get_root_dir_and_keypair(opt.root_dir)?;
+
+        let (log_output_dest, _log_appender_guard) = init_logging(
+            opt.log_output_dest,
+            keypair.public().to_peer_id(),
+            opt.log_format,
+        )?;
+
+        if opt.peers.peers.is_empty() {
+            if !cfg!(feature = "local-discovery") {
+                warn!("No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.");
+            } else {
+                info!("No peers given. As `local-discovery` feature is enabled, we will attempt to connect to the network using mDNS.");
+            }
+        }
+        let mut initial_peers = opt.peers.peers.clone();
+
         let msg = format!(
             "Running {} v{}",
             env!("CARGO_BIN_NAME"),
