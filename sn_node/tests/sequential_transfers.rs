@@ -149,16 +149,8 @@ async fn double_spend_transfers_fail() -> Result<()> {
     // check the DBCs, it should fail
     std::thread::sleep(std::time::Duration::from_secs(5));
     println!("Verifying the transfers from first wallet...");
-    let dbcs_for_2: Vec<_> = transfer_to_2
-        .created_dbcs
-        .iter()
-        .map(|d| d.dbc.clone())
-        .collect();
-    let dbcs_for_3: Vec<_> = transfer_to_3
-        .created_dbcs
-        .iter()
-        .map(|d| d.dbc.clone())
-        .collect();
+    let dbcs_for_2: Vec<_> = transfer_to_2.created_dbcs.clone();
+    let dbcs_for_3: Vec<_> = transfer_to_3.created_dbcs.clone();
     let should_err1 = client.verify(&dbcs_for_2[0]).await;
     let should_err2 = client.verify(&dbcs_for_3[0]).await;
     println!("Verifying at least one fails: {should_err1:?} {should_err2:?}");

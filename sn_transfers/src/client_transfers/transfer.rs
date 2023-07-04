@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{CreatedDbc, Error, Inputs, Result, SpendRequest, TransferOutputs};
+use super::{Error, Inputs, Result, SpendRequest, TransferOutputs};
 
 use sn_dbc::{
     random_derivation_index, rng, Dbc, DerivationIndex, DerivedKey, FeeOutput, Hash, Input,
@@ -103,7 +103,7 @@ fn select_inputs(
         let dbc_balance = match dbc.token() {
             Ok(token) => token,
             Err(err) => {
-                warn!("Ignoring input Dbc (id: {input_key:?}) due to not having correct derived key: {err:?}");
+                warn!("Ignoring input Dbc (id: {input_key:?}) due to missing an output: {err:?}");
                 continue;
             }
         };
@@ -240,13 +240,13 @@ fn create_transfer_with(
         .map_err(Box::new)
         .map_err(Error::Dbcs)?
         .into_iter()
-        .map(|(dbc, amount)| CreatedDbc { dbc, amount })
+        .map(|(dbc, _)| dbc)
         .collect();
 
     let mut change_dbc = None;
     created_dbcs.retain(|created| {
-        if created.dbc.id() == change_id {
-            change_dbc = Some(created.dbc.clone());
+        if created.id() == change_id {
+            change_dbc = Some(created.clone());
             false
         } else {
             true

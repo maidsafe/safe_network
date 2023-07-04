@@ -464,11 +464,8 @@ mod tests {
         assert_eq!(GENESIS_DBC_AMOUNT - send_amount, sender.balance().as_nano());
 
         let recipient_dbc = &created_dbcs[0];
-        assert_eq!(Token::from_nano(send_amount), recipient_dbc.amount);
-        assert_eq!(
-            &recipient_public_address,
-            recipient_dbc.dbc.public_address()
-        );
+        assert_eq!(Token::from_nano(send_amount), recipient_dbc.token()?);
+        assert_eq!(&recipient_public_address, recipient_dbc.public_address());
 
         Ok(())
     }
@@ -525,8 +522,8 @@ mod tests {
 
         let a_created_for_others = &sender.wallet.dbcs_created_for_others[0];
         let b_created_for_others = &deserialized.wallet.dbcs_created_for_others[0];
-        assert_eq!(a_created_for_others.dbc, b_created_for_others.dbc);
-        assert_eq!(a_created_for_others.amount, b_created_for_others.amount);
+        assert_eq!(a_created_for_others, b_created_for_others);
+        assert_eq!(a_created_for_others.token()?, b_created_for_others.token()?);
 
         let a_spent = sender
             .wallet
@@ -566,7 +563,7 @@ mod tests {
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
         let transfer = sender.local_send(to, None).await?;
         let created_dbcs = transfer.created_dbcs;
-        let dbc = created_dbcs[0].dbc.clone();
+        let dbc = created_dbcs[0].clone();
         let dbc_id = dbc.id();
         sender.store_created_dbc(dbc).await?;
 
