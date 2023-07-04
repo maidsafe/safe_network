@@ -15,7 +15,7 @@ pub mod storage;
 
 use self::storage::{ChunkAddress, DbcAddress, RegisterAddress};
 use libp2p::{
-    kad::{kbucket::Distance, record::Key as RecordKey, KBucketKey as Key},
+    kad::{kbucket::Distance, KBucketKey as Key, RecordKey},
     PeerId,
 };
 use serde::{Deserialize, Serialize};

@@ -5,9 +5,7 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-#[macro_use]
-extern crate tracing;
-
+use crate::event::NetworkEvent;
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -26,6 +24,7 @@ use std::{
     time::Duration,
     vec,
 };
+use tokio::sync::mpsc;
 
 // Each node will have a replication interval between these bounds
 // This should serve to stagger the intense replication activity across the network
@@ -46,6 +45,8 @@ pub struct DiskBackedRecordStore {
     /// Distance range specify the acceptable range of record entry.
     /// `None` means accept all.
     distance_range: Option<Distance>,
+    /// Currently only used to notify the record received via network put to be validated.
+    event_sender: Option<mpsc::Sender<NetworkEvent>>,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -78,18 +79,18 @@ impl Default for DiskBackedRecordStoreConfig {
 }
 
 impl DiskBackedRecordStore {
-    /// Creates a new `DiskBackedStore` with a default configuration.
-    pub fn new(local_id: PeerId) -> Self {
-        Self::with_config(local_id, Default::default())
-    }
-
     /// Creates a new `DiskBackedStore` with the given configuration.
-    pub fn with_config(local_id: PeerId, config: DiskBackedRecordStoreConfig) -> Self {
+    pub fn with_config(
+        local_id: PeerId,
+        config: DiskBackedRecordStoreConfig,
+        event_sender: Option<mpsc::Sender<NetworkEvent>>,
+    ) -> Self {
         DiskBackedRecordStore {
             local_key: KBucketKey::from(local_id),
             config,
             records: Default::default(),
             distance_range: None,
+            event_sender,
         }
     }
 
@@ -144,10 +145,6 @@ impl DiskBackedRecordStore {
         hex_string
     }
 
-    pub fn storage_dir(&self) -> PathBuf {
-        self.config.storage_dir.clone()
-    }
-
     pub fn record_addresses(&self) -> HashSet<NetworkAddress> {
         self.records
             .iter()
@@ -173,6 +170,42 @@ impl DiskBackedRecordStore {
             Err(err) => {
                 error!("Error while reading file. filename: {filename}, error: {err:?}");
                 None
+            }
+        }
+    }
+
+    pub fn put_verified(&mut self, r: Record) -> Result<()> {
+        trace!("PUT a verified Record: {:?}", r.key);
+        if r.value.len() >= self.config.max_value_bytes {
+            warn!(
+                "Record not stored. Value too large: {} bytes",
+                r.value.len()
+            );
+            return Err(Error::ValueTooLarge);
+        }
+
+        let num_records = self.records.len();
+        if num_records >= self.config.max_records {
+            self.storage_pruning();
+            let new_num_records = self.records.len();
+            trace!("A pruning reduced number of record in hold from {num_records} to {new_num_records}");
+            if new_num_records >= self.config.max_records {
+                warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
+                return Err(Error::MaxRecords);
+            }
+        }
+
+        let filename = Self::key_to_hex(&r.key);
+        let file_path = self.config.storage_dir.join(&filename);
+        match fs::write(file_path, r.value) {
+            Ok(_) => {
+                trace!("Wrote record to disk! filename: {filename}");
+                let _ = self.records.insert(r.key);
+                Ok(())
+            }
+            Err(err) => {
+                error!("Error writing file. filename: {filename}, error: {err:?}");
+                Ok(())
             }
         }
     }
@@ -208,40 +241,29 @@ impl RecordStore for DiskBackedRecordStore {
         Self::read_from_disk(k, &self.config.storage_dir)
     }
 
-    fn put(&mut self, r: Record) -> Result<()> {
-        trace!("PUT request for Record key: {:?}", r.key);
-        if r.value.len() >= self.config.max_value_bytes {
-            warn!(
-                "Record not stored. Value too large: {} bytes",
-                r.value.len()
-            );
-            return Err(Error::ValueTooLarge);
+    fn put(&mut self, record: Record) -> Result<()> {
+        if self.records.contains(&record.key) {
+            trace!("Unverified Record {:?} already exists.", record.key);
+            return Ok(());
         }
-
-        let num_records = self.records.len();
-        if num_records >= self.config.max_records {
-            self.storage_pruning();
-            let new_num_records = self.records.len();
-            trace!("A pruning reduced number of record in hold from {num_records} to {new_num_records}");
-            if new_num_records >= self.config.max_records {
-                warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
-                return Err(Error::MaxRecords);
-            }
+        trace!(
+            "Unverified Record {:?} try to validate and store",
+            record.key
+        );
+        if let Some(event_sender) = self.event_sender.clone() {
+            // push the event off thread so as to be non-blocking
+            let _handle = tokio::spawn(async move {
+                if let Err(error) = event_sender
+                    .send(NetworkEvent::UnverifiedRecord(record))
+                    .await
+                {
+                    error!("SwarmDriver failed to send event: {}", error);
+                }
+            });
+        } else {
+            error!("Record store doesn't have event_sender setup");
         }
-
-        let filename = Self::key_to_hex(&r.key);
-        let file_path = self.config.storage_dir.join(&filename);
-        match fs::write(file_path, r.value) {
-            Ok(_) => {
-                trace!("Wrote record to disk! filename: {filename}");
-                let _ = self.records.insert(r.key);
-                Ok(())
-            }
-            Err(err) => {
-                error!("Error writing file. filename: {filename}, error: {err:?}");
-                Ok(())
-            }
-        }
+        Ok(())
     }
 
     fn remove(&mut self, k: &Key) {
@@ -315,6 +337,7 @@ mod tests {
     use super::*;
     use libp2p::{core::multihash::Multihash, kad::kbucket::Key as KBucketKey};
     use quickcheck::*;
+    use tokio::runtime::Runtime;
 
     const MULITHASH_CODE: u64 = 0x12;
 
@@ -382,13 +405,39 @@ mod tests {
     #[test]
     fn put_get_remove_record() {
         fn prop(r: ArbitraryRecord) {
-            let r = r.0;
-            let mut store = DiskBackedRecordStore::new(PeerId::random());
-            assert!(store.put(r.clone()).is_ok());
-            assert_eq!(Some(Cow::Borrowed(&r)), store.get(&r.key));
-            store.remove(&r.key);
-            assert!(store.get(&r.key).is_none());
+            let rt = if let Ok(rt) = Runtime::new() {
+                rt
+            } else {
+                panic!("Cannot create runtime");
+            };
+            rt.block_on(testing_thread(r));
         }
         quickcheck(prop as fn(_))
+    }
+
+    async fn testing_thread(r: ArbitraryRecord) {
+        let r = r.0;
+        let (network_event_sender, mut network_event_receiver) = mpsc::channel(1);
+        let mut store = DiskBackedRecordStore::with_config(
+            PeerId::random(),
+            Default::default(),
+            Some(network_event_sender),
+        );
+        assert!(store.put(r.clone()).is_ok());
+        assert!(store.get(&r.key).is_none());
+
+        let returned_record = if let Some(event) = network_event_receiver.recv().await {
+            if let NetworkEvent::UnverifiedRecord(record) = event {
+                record
+            } else {
+                panic!("Unexpected network event {event:?}");
+            }
+        } else {
+            panic!("Failed recevied the record for further verification");
+        };
+        assert!(store.put_verified(returned_record).is_ok());
+        assert_eq!(Some(Cow::Borrowed(&r)), store.get(&r.key));
+        store.remove(&r.key);
+        assert!(store.get(&r.key).is_none());
     }
 }
