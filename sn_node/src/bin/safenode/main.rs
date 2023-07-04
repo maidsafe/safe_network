@@ -218,7 +218,13 @@ async fn start_node(
 
     // Start up gRPC interface if enabled by user
     if let Some(addr) = rpc {
-        rpc::start_rpc_service(addr, log_dir, running_node, ctrl_tx, started_instant);
+        rpc::start_rpc_service(
+            addr,
+            log_dir,
+            running_node.clone(),
+            ctrl_tx,
+            started_instant,
+        );
     }
 
     // Keep the node and gRPC service (if enabled) running.
@@ -226,10 +232,14 @@ async fn start_node(
     loop {
         match ctrl_rx.recv().await {
             Some(NodeCtrl::Restart(delay)) => {
-                let msg = format!("Node is restarting in {delay:?}...");
+                let msg = format!("Node is wiping data and restarting in {delay:?}...");
                 info!("{msg}");
-                println!("{msg} Node log path: {log_dir}");
+                println!("{msg} Node path: {log_dir}");
+                println!("Wiping node root dir: {:?}", running_node.root_dir_path());
                 sleep(delay).await;
+
+                // remove the whole node dir
+                let _ = tokio::fs::remove_dir_all(running_node.root_dir_path()).await;
                 break Ok(());
             }
             Some(NodeCtrl::Stop { delay, cause }) => {
