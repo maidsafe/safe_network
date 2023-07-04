@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.10](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.1.9...sn_registers-v0.1.10) - 2023-07-04
+
+### Fixed
+- perm test
+
+### Other
+- demystify permissions
+
 ## [0.1.9](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.1.8...sn_registers-v0.1.9) - 2023-06-28
 
 ### Added
