@@ -239,7 +239,8 @@ async fn start_node(
                 sleep(delay).await;
 
                 // remove the whole node dir
-                let _ = tokio::fs::remove_dir_all(running_node.root_dir_path()).await;
+                let _ =
+                    tokio::fs::remove_file(running_node.root_dir_path().join("secret-key")).await;
                 break Ok(());
             }
             Some(NodeCtrl::Stop { delay, cause }) => {
