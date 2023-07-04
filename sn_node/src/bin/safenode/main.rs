@@ -239,6 +239,8 @@ async fn start_node(
     let started_instant = std::time::Instant::now();
 
     info!("Starting node ...");
+    debug!("Built with git version: {}", sn_build_info::git_info());
+
     let running_node = Node::run(keypair, node_socket_addr, peers, local, root_dir).await?;
 
     // write the PID to the root dir
