@@ -32,7 +32,7 @@ use std::{
     time::Duration,
 };
 use tokio::{
-    fs::File,
+    fs::{remove_dir_all, File},
     io::AsyncWriteExt,
     runtime::Runtime,
     sync::{broadcast::error::RecvError, mpsc},
@@ -342,7 +342,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
 }
 
 fn init_logging(
-    log_output_dest: Option<LogOutputDestArg>,
+    log_output_dest: LogOutputDestArg,
     peer_id: PeerId,
     format: Option<LogFormat>,
 ) -> Result<(String, Option<WorkerGuard>)> {
@@ -353,22 +353,13 @@ fn init_logging(
         ("sn_node".to_string(), Level::INFO),
     ];
 
-    let output_dest = if let Some(log_output_dest) = log_output_dest {
-        match log_output_dest {
-            LogOutputDestArg::Stdout => LogOutputDest::Stdout,
-            LogOutputDestArg::Default => {
-                let path = dirs_next::data_dir()
-                    .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
-                    .join("safe")
-                    .join("node")
-                    .join(peer_id.to_string())
-                    .join("logs");
-                LogOutputDest::Path(path)
-            }
-            LogOutputDestArg::Path(path) => LogOutputDest::Path(path),
+    let output_dest = match log_output_dest {
+        LogOutputDestArg::Stdout => LogOutputDest::Stdout,
+        LogOutputDestArg::DataDir => {
+            let path = get_root_dir(peer_id)?.join("logs");
+            LogOutputDest::Path(path)
         }
-    } else {
-        LogOutputDest::Stdout
+        LogOutputDestArg::Path(path) => LogOutputDest::Path(path),
     };
 
     #[cfg(not(feature = "otlp"))]
