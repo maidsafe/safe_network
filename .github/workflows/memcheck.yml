@@ -100,7 +100,7 @@ jobs:
         # then check we have an expected level of restarts
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          restart_count=$(rg "Node is restarting in" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          restart_count=$(rg "Node is wiping data and restarting in" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Restart $restart_count nodes"
           detected_dead_peer=$(rg "Detected dead peer" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Detected dead peer $detected_dead_peer times"
