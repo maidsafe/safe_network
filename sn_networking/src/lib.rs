@@ -41,8 +41,8 @@ use libp2p::mdns;
 use libp2p::{
     identity::Keypair,
     kad::{
-        kbucket::Distance, kbucket::Key as KBucketKey, Kademlia, KademliaConfig,
-        KademliaStoreInserts, QueryId, Record, RecordKey,
+        kbucket::Distance, kbucket::Key as KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
+        RecordKey,
     },
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
@@ -158,7 +158,8 @@ impl SwarmDriver {
             // Records never expire
             .set_record_ttl(None)
             // Emit PUT events for validation prior to insertion into the RecordStore.
-            .set_record_filtering(KademliaStoreInserts::FilterBoth)
+            // This is no longer needed as the record_storage::put now can carry out validation.
+            // .set_record_filtering(KademliaStoreInserts::FilterBoth)
             // Disable provider records publication job
             .set_provider_publication_interval(None);
 
