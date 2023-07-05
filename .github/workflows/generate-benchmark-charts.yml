@@ -47,6 +47,12 @@ jobs:
       - name: ubuntu install ripgrep
         run: sudo apt-get -y install ripgrep
 
+      # A consistent file with a size of 95MB.
+      - name: download the testing file
+        shell: bash
+        run: |
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
+          ls -la
      
       - name: Build sn bins
         run: cargo build --release --bins --features local-discovery
@@ -109,8 +115,7 @@ jobs:
       - name: Start client with heaptrack
         shell: bash
         run: |
-          tar -czvf release_zip.tar.gz ./target/release
-          heaptrack ./target/release/safe files upload ./release_zip.tar.gz
+          heaptrack ./target/release/safe files upload ./the-test-data.zip
         env:
           SN_LOG: "all"
 
