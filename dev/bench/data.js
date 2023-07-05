@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688547133640,
+  "lastUpdate": 1688553349754,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -1711,6 +1711,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 8.756004046508677,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "504137b0e6fd1121828438bb77d6906f4f616da9",
+          "message": "feat: disable record filter; send duplicated record to validation for doube spend detection",
+          "timestamp": "2023-07-05T12:10:49+02:00",
+          "tree_id": "32f44156516462036b8472a3080ae5355689ebb9",
+          "url": "https://github.com/maidsafe/safe_network/commit/504137b0e6fd1121828438bb77d6906f4f616da9"
+        },
+        "date": 1688553349162,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.9107842875133956,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 18.583470888089444,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 8.729175264015149,
             "unit": "MiB/s"
           }
         ]
