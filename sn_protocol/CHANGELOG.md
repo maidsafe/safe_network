@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.2.0...sn_protocol-v0.2.1) - 2023-07-05
+
+### Added
+- carry out validation for record_store::put
+
 ## [0.2.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.1.11...sn_protocol-v0.2.0) - 2023-07-05
 
 ### Added
