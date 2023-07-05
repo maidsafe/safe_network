@@ -25,6 +25,9 @@ use sn_transfers::payment_proof::validate_payment_proof;
 use std::collections::HashSet;
 use xor_name::XorName;
 
+// The max length of `Vec<SignedSpend>` that is permitted
+const MAX_SIGNED_SPENDS_LENGTH: usize = 2;
+
 impl Node {
     /// Validate and store a record to the RecordStore
     pub(crate) async fn validate_and_store_record(
@@ -32,18 +35,46 @@ impl Node {
         record: Record,
     ) -> Result<CmdOk, ProtocolError> {
         let record_header = RecordHeader::from_record(&record)?;
+
         match record_header.kind {
             RecordKind::Chunk => {
                 let chunk_with_payment = try_deserialize_record::<ChunkWithPayment>(&record)?;
+
+                // check if the deserialized value's ChunkAddress matches the record's key
+                if record.key != RecordKey::new(&chunk_with_payment.chunk.name()) {
+                    warn!(
+                        "Record's key does not match with the value's ChunkAddress, ignoring PUT."
+                    );
+                    return Err(ProtocolError::RecordKeyMismatch);
+                }
+
                 self.validate_and_store_chunk(chunk_with_payment).await
             }
             RecordKind::DbcSpend => {
-                let register = try_deserialize_record::<Register>(&record)?;
-                self.validate_and_store_register(register).await
+                let signed_spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
+
+                // check if all the DbcAddresses matches with Record::key
+                if !signed_spends.iter().all(|spend| {
+                    let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
+                    record.key == RecordKey::new(dbc_addr.name())
+                }) {
+                    warn!("Record's key does not match with the value's DbcAddress, ignoring PUT.");
+                    return Err(ProtocolError::RecordKeyMismatch);
+                }
+
+                self.validate_and_store_spends(signed_spends).await
             }
             RecordKind::Register => {
-                let signed_spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
-                self.validate_and_store_spends(signed_spends).await
+                let register = try_deserialize_record::<Register>(&record)?;
+
+                // check if the deserialized value's RegisterAddress matches the record's key
+                if record.key != RecordKey::new(&register.name()) {
+                    warn!(
+                        "Record's key does not match with the value's RegisterAddress, ignoring PUT."
+                    );
+                    return Err(ProtocolError::RecordKeyMismatch);
+                }
+                self.validate_and_store_register(register).await
             }
         }
     }
@@ -144,6 +175,12 @@ impl Node {
         &mut self,
         signed_spends: Vec<SignedSpend>,
     ) -> Result<CmdOk, ProtocolError> {
+        // Prevents someone from crafting large Vec and slowing down nodes.
+        if signed_spends.len() > MAX_SIGNED_SPENDS_LENGTH {
+            warn!("Discarding incoming DbcSpend PUT as it contains more than {MAX_SIGNED_SPENDS_LENGTH} SignedSpends");
+            return Err(ProtocolError::MaxNumberOfSpendsExceeded);
+        }
+
         // make sure that the dbc_ids match
         let dbc_id = if let Some((first, elements)) = signed_spends.split_first() {
             let common_dbc_id = *first.dbc_id();
