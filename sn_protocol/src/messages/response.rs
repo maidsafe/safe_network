@@ -67,18 +67,16 @@ pub enum CmdResponse {
     /// Response to DbcCmd::Spend.
     Spend(Result<CmdOk>),
     //
-    // ===== Chunk =====
-    //
-    /// Response to Cmd::StoreChunk
-    StoreChunk(Result<CmdOk>),
-    //
     // ===== Register Data =====
     //
     /// Response to RegisterCmd::Create.
     CreateRegister(Result<()>),
     /// Response to RegisterCmd::Edit.
     EditRegister(Result<()>),
-    /// Response to ReplicateCmd
+    //
+    // ===== Replication =====
+    //
+    /// Response to replication cmd
     Replicate(Result<()>),
 }
 

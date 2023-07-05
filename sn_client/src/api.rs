@@ -18,8 +18,8 @@ use futures::future::select_all;
 use indicatif::ProgressBar;
 use itertools::Itertools;
 use libp2p::{
-    kad::{RecordKey, K_VALUE},
-    Multiaddr, PeerId,
+    kad::{Record, RecordKey, K_VALUE},
+    Multiaddr,
 };
 use sn_dbc::{DbcId, SignedSpend};
 use sn_networking::{close_group_majority, multiaddr_is_global, NetworkEvent, SwarmDriver};
@@ -27,8 +27,8 @@ use sn_protocol::{
     error::Error as ProtocolError,
     messages::{Cmd, CmdResponse, PaymentProof, Query, QueryResponse, Request, Response},
     storage::{
-        try_deserialize_record, Chunk, ChunkAddress, ChunkWithPayment, DbcAddress, RecordHeader,
-        RecordKind,
+        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, ChunkWithPayment,
+        DbcAddress, RecordHeader, RecordKind,
     },
     NetworkAddress,
 };
@@ -260,55 +260,22 @@ impl Client {
         ClientRegister::create(self.clone(), xorname, tag)
     }
 
-    /// Store `Chunk` to spcified target.
+    /// Store `Chunk` as a record.
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
         payment: Option<PaymentProof>,
-        closest_peers: Vec<PeerId>,
     ) -> Result<()> {
-        let address = *chunk.name();
-        info!("Store chunk: {:?}", address);
-        let request = Request::Cmd(Cmd::StoreChunk { chunk, payment });
-
-        // Result will be: just one with `StoreChunk(Ok(_))` response;
-        // or a vector of error responses, which only take the first into account.
-        let mut responses = self
-            .network
-            .send_and_get_responses(closest_peers, &request, false)
-            .await
-            .into_iter()
-            .map(|res| res.map_err(Error::Network))
-            .collect_vec();
-        let response = if let Some(response) = responses.pop() {
-            response?
-        } else {
-            return Err(Error::UnexpectedResponses);
+        info!("Store chunk: {:?}", chunk.address());
+        let chunk_with_payment = ChunkWithPayment { chunk, payment };
+        let record = Record {
+            key: RecordKey::new(chunk_with_payment.chunk.name()),
+            value: try_serialize_record(&chunk_with_payment, RecordKind::Chunk)?,
+            publisher: None,
+            expires: None,
         };
 
-        if matches!(response, Response::Cmd(CmdResponse::StoreChunk(Ok(_)))) {
-            return Ok(());
-        }
-
-        if let Response::Cmd(CmdResponse::StoreChunk(result)) = response {
-            result?;
-        };
-
-        // If there were no store chunk errors, then we had unexpected responses.
-        Err(Error::UnexpectedResponses)
-    }
-
-    /// Return all the peers from the local network knowledge.
-    pub(super) async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
-        Ok(self.network.get_all_local_peers().await?)
-    }
-
-    /// Returns the closest peers to the given `NetworkAddress`
-    /// that is fetched from the local Routing Table.
-    /// It is ordered by increasing distance of the peers.
-    /// Note self peer_id is not included in the result.
-    pub async fn get_closest_local_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
-        Ok(self.network.get_closest_local_peers(key).await?)
+        Ok(self.network.put_record(record).await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.

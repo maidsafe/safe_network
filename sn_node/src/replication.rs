@@ -8,14 +8,10 @@
 
 use crate::error::Result;
 use crate::Node;
-use libp2p::{
-    kad::{KBucketKey, RecordKey},
-    PeerId,
-};
+use libp2p::{kad::KBucketKey, PeerId};
 use sn_networking::{sort_peers_by_address, sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, Request},
-    storage::ChunkAddress,
     NetworkAddress,
 };
 use std::collections::{BTreeMap, HashSet};
@@ -29,39 +25,6 @@ const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
 const REPLICATION_RANGE: usize = 8;
 
 impl Node {
-    /// In case self is not among the closest to the chunk,
-    /// replicate the chunk to its closest peers
-    pub(crate) async fn try_replicate_an_entry(&mut self, addr: ChunkAddress) {
-        let our_address = NetworkAddress::from_peer(self.network.peer_id);
-        // The address may need to be put into the `ReplicationList`,
-        // hence have to use the form deduced from `RecordKey`.
-        let chunk_address = NetworkAddress::from_record_key(RecordKey::new(addr.name()));
-        let close_peers =
-            if let Ok(peers) = self.network.get_closest_local_peers(&chunk_address).await {
-                peers
-            } else {
-                return;
-            };
-
-        // Only carry out replication when self is out of the closest range
-        match close_peers.get(CLOSE_GROUP_SIZE - 1) {
-            Some(peer) => {
-                if our_address.distance(&chunk_address)
-                    <= NetworkAddress::from_peer(*peer).distance(&chunk_address)
-                {
-                    return;
-                }
-            }
-            None => return,
-        };
-        trace!("Being out of closest range, replicating {addr:?} to {close_peers:?}");
-        for peer in close_peers.iter() {
-            let _ = self
-                .send_replicate_cmd_without_wait(&our_address, peer, vec![chunk_address.clone()])
-                .await;
-        }
-    }
-
     /// Replication is triggered when the newly added peer or the dead peer was among our closest.
     pub(crate) async fn try_trigger_replication(
         &mut self,

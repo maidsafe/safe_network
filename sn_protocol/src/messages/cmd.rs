@@ -7,10 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::RegisterCmd;
-use crate::{
-    storage::{Chunk, ChunkAddress, DbcAddress},
-    NetworkAddress,
-};
+use crate::{storage::DbcAddress, NetworkAddress};
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
 pub use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend};
@@ -24,15 +21,6 @@ pub use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend};
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
 pub enum Cmd {
-    /// [`Chunk`] write operation.
-    ///
-    /// [`Chunk`]: crate::storage::Chunk
-    StoreChunk {
-        chunk: Chunk,
-        // Storage payment proof
-        // TODO: temporarily payment proof is optional
-        payment: Option<PaymentProof>,
-    },
     /// [`Register`] write operation.
     ///
     /// [`Register`]: sn_registers::Register
@@ -62,9 +50,6 @@ impl Cmd {
     /// Used to send a cmd to the close group of the address.
     pub fn dst(&self) -> NetworkAddress {
         match self {
-            Cmd::StoreChunk { chunk, .. } => {
-                NetworkAddress::from_chunk_address(ChunkAddress::new(*chunk.name()))
-            }
             Cmd::Register(cmd) => NetworkAddress::from_register_address(cmd.dst()),
             Cmd::SpendDbc(signed_spend) => {
                 NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
@@ -78,9 +63,6 @@ impl Cmd {
 impl std::fmt::Display for Cmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Cmd::StoreChunk { chunk, .. } => {
-                write!(f, "Cmd::StoreChunk({:?})", chunk.name())
-            }
             Cmd::Register(cmd) => {
                 write!(f, "Cmd::Register({:?})", cmd.name()) // more qualification needed
             }
