@@ -248,6 +248,10 @@ jobs:
           path: heaptrack.safe.*
         continue-on-error: true
 
+      - name: Print heaptrack
+        run: rg "peak heap memory consumption" ./heaptrack.safe.txt
+        shell: bash
+
       - name: Check client memory usage
         id: client-memory-usage-check
         shell: bash
