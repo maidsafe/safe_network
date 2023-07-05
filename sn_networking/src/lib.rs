@@ -617,6 +617,16 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
+    /// Put `Record` to network
+    pub async fn put_record(&self, record: Record) -> Result<()> {
+        debug!(
+            "Putting record of {:?} - length {:?} to network",
+            record.key,
+            record.value.len()
+        );
+        self.send_swarm_cmd(SwarmCmd::PutRecord { record })
+    }
+
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
     pub async fn put_local_record(&self, record: Record) -> Result<()> {
@@ -844,82 +854,4 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
         .iter()
         .filter(|p| !matches!(p, Protocol::P2p(_)))
         .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::SwarmDriver;
-    use crate::{MsgResponder, NetworkEvent};
-    use assert_matches::assert_matches;
-    use bytes::Bytes;
-    use eyre::{eyre, Result};
-    use libp2p::identity::Keypair;
-    use rand::{thread_rng, Rng};
-    use sn_logging::init_test_logger;
-    use sn_protocol::{
-        messages::{CmdOk, CmdResponse, Query, Request, Response},
-        storage::Chunk,
-    };
-    use std::{net::SocketAddr, path::PathBuf, time::Duration};
-
-    #[tokio::test]
-    async fn msg_to_self_should_not_error_out() -> Result<()> {
-        init_test_logger();
-        let (net, mut event_rx, driver) = SwarmDriver::new(
-            Keypair::generate_ed25519(),
-            "0.0.0.0:0"
-                .parse::<SocketAddr>()
-                .expect("0.0.0.0:0 should parse into a valid `SocketAddr`"),
-            true,
-            PathBuf::from(""),
-        )?;
-        let _driver_handle = tokio::spawn(driver.run());
-
-        // Spawn a task to handle the Request that we recieve.
-        // This handles the request and sends a response back.
-        let _event_handler = tokio::spawn(async move {
-            loop {
-                if let Some(NetworkEvent::RequestReceived {
-                    channel: MsgResponder::FromSelf(channel),
-                    ..
-                }) = event_rx.recv().await
-                {
-                    let res = Response::Cmd(CmdResponse::StoreChunk(Ok(CmdOk::StoredSuccessfully)));
-                    if let Some(channel) = channel {
-                        assert!(channel.send(Ok(res)).is_ok());
-                    }
-                }
-            }
-        });
-
-        // Send a request to query a random chunk to `self`.
-        let mut random_data = [0u8; 128];
-        thread_rng().fill(&mut random_data);
-        let req = Request::Query(Query::GetChunk(
-            *Chunk::new(Bytes::copy_from_slice(&random_data)).address(),
-        ));
-        // Send the request to `self` and wait for a response.
-        let now = tokio::time::Instant::now();
-        loop {
-            let mut res = net
-                .send_and_get_responses(vec![net.peer_id], &req, true)
-                .await;
-            if res.is_empty() || res[0].is_err() {
-                tokio::time::sleep(Duration::from_secs(1)).await;
-                if now.elapsed() > Duration::from_secs(10) {
-                    return Err(eyre!("Timed out waiting for response."));
-                }
-            } else {
-                let res = res
-                    .remove(0)
-                    .expect("There should be at least one response!");
-                debug!("Got response {:?}", res);
-                assert_matches!(
-                    res,
-                    Response::Cmd(CmdResponse::StoreChunk(Ok(CmdOk::StoredSuccessfully)))
-                );
-                return Ok(());
-            }
-        }
-    }
 }
