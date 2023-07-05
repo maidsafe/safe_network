@@ -172,7 +172,7 @@ impl Node {
 
     /// Validate and store `Vec<SignedSpend>` to the RecordStore
     pub(crate) async fn validate_and_store_spends(
-        &mut self,
+        &self,
         signed_spends: Vec<SignedSpend>,
     ) -> Result<CmdOk, ProtocolError> {
         // Prevents someone from crafting large Vec and slowing down nodes.
@@ -576,21 +576,26 @@ fn verify_fee_output_and_proof(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Node, NodeEventsChannel};
+    use crate::{test_utils::TestSwarm, Node, NodeEventsChannel};
     use assert_fs::TempDir;
+    use bls::SecretKey;
     use bytes::Bytes;
-    use eyre::Result;
+    use eyre::{eyre, Result};
+    use itertools::Itertools;
     use libp2p::{identity::Keypair, PeerId};
     use proptest::prelude::*;
     use rand::{thread_rng, Rng};
-    use sn_dbc::{FeeOutput, Token};
+    use sn_dbc::{FeeOutput, Input, MainKey, Token, TransactionBuilder};
     use sn_logging::init_test_logger;
-    use sn_networking::{Network, SwarmCmd, TestSwarm};
+    use sn_networking::{Network, SwarmCmd};
     use sn_protocol::{
         messages::CmdOk,
         storage::{Chunk, ChunkWithPayment},
     };
-    use sn_transfers::payment_proof::build_payment_proofs;
+    use sn_transfers::{
+        dbc_genesis::{GENESIS_DBC, GENESIS_DBC_AMOUNT, GENESIS_DBC_SK},
+        payment_proof::build_payment_proofs,
+    };
     use tokio::sync::mpsc;
 
     proptest! {
@@ -663,7 +668,7 @@ mod tests {
     async fn chunk_should_not_be_overwritten_if_present_locally() -> Result<()> {
         init_test_logger();
         let (node, mut swarm_cmd_receiver) = gen_node()?;
-        let mut mock_network = TestSwarm::new(node.network.peer_id);
+        let mut mock_network = TestSwarm::new(node.peer_id());
         let _handle = tokio::spawn(async move {
             loop {
                 let cmd = swarm_cmd_receiver
@@ -671,7 +676,7 @@ mod tests {
                     .await
                     .expect("Swarm cmd channel has been closed");
 
-                if let Err(err) = mock_network.handle_swarm_cmd(cmd).await {
+                if let Err(err) = mock_network.handle_swarm_cmd(cmd) {
                     panic!("MockNetwork failed with {err:?}");
                 };
             }
@@ -693,6 +698,90 @@ mod tests {
             node.validate_and_store_chunk(chunk).await?,
             CmdOk::DataAlreadyPresent
         );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn spend() -> Result<()> {
+        init_test_logger();
+
+        // let genesis_main_key = MainKey::random(;
+        let genesis_main_key = SecretKey::from_hex(GENESIS_DBC_SK).map(MainKey::new)?;
+        let derivation_index = [0u8; 32];
+        let genesis_derived_key = genesis_main_key.derive_key(&derivation_index);
+
+        // Use the same key as the input and output of Genesis Tx.
+        // The src tx is empty as this is the first DBC.
+        let genesis_input = Input {
+            dbc_id: genesis_derived_key.dbc_id(),
+            token: Token::from_nano(GENESIS_DBC_AMOUNT),
+        };
+
+        let reason = Hash::hash(b"GENESIS");
+
+        let dbc_builder = TransactionBuilder::default()
+            .add_input(
+                genesis_input,
+                genesis_derived_key.clone(),
+                DbcTransaction::empty(),
+            )
+            .add_output(
+                Token::from_nano(GENESIS_DBC_AMOUNT),
+                genesis_main_key.public_address(),
+                derivation_index,
+            )
+            .build(reason)?;
+
+        let genesis_signed_spends = dbc_builder
+            .signed_spends()
+            .into_iter()
+            .cloned()
+            .collect_vec();
+        // build the output DBCs
+        let output_dbcs = dbc_builder.build_without_verifying()?;
+
+        // just one output DBC is expected which is the genesis DBC
+        let (genesis_dbc, _) = output_dbcs
+            .into_iter()
+            .next()
+            .ok_or_else(|| eyre!("One output should be present"))?;
+
+        // ////////
+        let main_key = MainKey::random();
+        let derivation_index = [0u8; 32];
+        // let derived_key = main_key.derive_key(&derivation_index);
+        let dbc_builder = TransactionBuilder::default()
+            .add_input_dbc(&GENESIS_DBC, &genesis_derived_key)?
+            .add_output(
+                Token::from_nano(GENESIS_DBC_AMOUNT),
+                main_key.public_address(),
+                derivation_index,
+            )
+            .build(reason)?;
+        let signed_spends = dbc_builder
+            .signed_spends()
+            .into_iter()
+            .cloned()
+            .collect_vec();
+
+        let (node, mut swarm_cmd_receiver) = gen_node()?;
+        let mut mock_network = TestSwarm::new(node.peer_id());
+        mock_network.add_nodes(10);
+        let _handle = tokio::spawn(async move {
+            loop {
+                let cmd = swarm_cmd_receiver
+                    .recv()
+                    .await
+                    .expect("Swarm cmd channel has been closed");
+
+                if let Err(err) = mock_network.handle_swarm_cmd(cmd) {
+                    panic!("MockNetwork failed with {err:?}");
+                };
+            }
+        });
+
+        let gg = node.validate_and_store_spends(signed_spends).await?;
+        info!("gg {gg:?}");
         Ok(())
     }
 

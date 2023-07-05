@@ -16,11 +16,9 @@ mod event;
 mod msg;
 mod record_store;
 mod replication_fetcher;
-#[cfg(feature = "test-utils")]
-mod test_utils;
 
 #[cfg(feature = "test-utils")]
-pub use self::{cmd::SwarmCmd, test_utils::TestSwarm};
+pub use self::cmd::SwarmCmd;
 pub use self::{
     cmd::SwarmLocalState,
     error::Error,

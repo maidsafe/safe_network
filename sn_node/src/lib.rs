@@ -52,6 +52,8 @@ mod put_validation;
 mod register_handlers;
 mod replication;
 mod spends;
+#[cfg(test)]
+mod test_utils;
 
 pub use self::{
     api::RunningNode,
