@@ -126,17 +126,6 @@ Node successfully received the request to stop in 6s
 $ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 update 7000
 Node successfully received the request to try to update in 7s
 ```
-### Notes
-
-- Currently we've pulled in testnet bin from the main `sn` repo for ease of spinning up nodes.
-- Logs are output to the standard `~/.safe/node/local-test-network` dir.
-
-
-### TODO
-
-- [ ] Add RPC for simplest node/net interaction (do libp2p CLIs help here?)
-
-
 
 ### Archive
 

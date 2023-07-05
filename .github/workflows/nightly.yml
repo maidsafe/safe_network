@@ -7,6 +7,8 @@ on:
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
   WORKFLOW_URL: https://github.com/maidsafe/stableset_net/actions/runs
+  NODE_DATA_PATH: /home/runner/.local/share/safe/node
+  CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
 
 jobs:
   e2e:
@@ -117,7 +119,7 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
-          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
+          find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
         if: failure()
 
       - name: Upload Node Logs
@@ -261,7 +263,7 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
-          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
+          find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
         if: failure()
 
       - name: Upload Node Logs
@@ -353,15 +355,15 @@ jobs:
         # then check we have an expected level of restarts
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          restart_count=$(rg "Node is wiping data and restarting in" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          restart_count=$(rg "Node is restarting in" $NODE_DATA_PATH -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Restart $restart_count nodes"
-          detected_dead_peer=$(rg "Detected dead peer" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          detected_dead_peer=$(rg "Detected dead peer" $NODE_DATA_PATH -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Detected dead peer $detected_dead_peer times"
           if [ $detected_dead_peer -lt $restart_count ]; then
             echo "Detected dead peer times of: $detected_dead_peer is less than the restart count of: $restart_count"
             exit 1
           fi
-          node_count=$(ls ~/.safe/node/local-test-network | wc -l)
+          node_count=$(ls $NODE_DATA_PATH | wc -l)
           if [ $restart_count -lt $node_count ]; then
             echo "Restart count of: $restart_count is less than the node count of: $node_count"
             exit 1
@@ -374,9 +376,9 @@ jobs:
         # then check we have an expected level of replication
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          replication_count=$(rg "Chunk received for replication" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          replication_count=$(rg "Chunk received for replication" $NODE_DATA_PATH -c --stats | rg "(\d+) matches" | rg "\d+" -o)
           echo "Replicated $replication_count copies"
-          node_count=$(ls ~/.safe/node/local-test-network | wc -l)
+          node_count=$(ls $NODE_DATA_PATH | wc -l)
           if [ $replication_count -lt $node_count ]; then
             echo "Replication count of: $replication_count is less than the node count of: $node_count"
             exit 1
@@ -404,7 +406,7 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
-          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
+          find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
         if: failure()
 
       - name: Upload Node Logs
