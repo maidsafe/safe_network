@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688570176135,
+  "lastUpdate": 1688570292885,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3222,6 +3222,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 23.03,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "d2f85950923c915f9797e5f6bfb9da953f87f8aa",
+          "message": "fix(node): verify incoming `Record::key`\n- The `Record::key` should be the same one obtained from the data inside\n  `Record::value`\n- This prevents someone from storing data to the wrong part of the\n  network or prevents overwriting of valid data.",
+          "timestamp": "2023-07-05T13:57:06Z",
+          "tree_id": "1adb69636217b7791f284eff8dde29703362cac8",
+          "url": "https://github.com/maidsafe/safe_network/commit/d2f85950923c915f9797e5f6bfb9da953f87f8aa"
+        },
+        "date": 1688570292220,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 21.2,
             "unit": "MB"
           }
         ]
