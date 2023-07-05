@@ -195,7 +195,6 @@ impl SwarmDriver {
                 let _ = sender.send(record);
             }
             SwarmCmd::PutRecord { record, sender } => {
-                // TODO: shall we wait for the response?
                 let request_id = self
                     .swarm
                     .behaviour_mut()

@@ -349,12 +349,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "assert_matches"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b34d609dfbaf33d6889b2b7106d3ca345eacad44200913df5ba02bfd31d2ba9"
-
-[[package]]
 name = "async-io"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4629,11 +4623,9 @@ dependencies = [
 name = "sn_networking"
 version = "0.3.11"
 dependencies = [
- "assert_matches",
  "async-trait",
  "blsttc",
  "bytes",
- "eyre",
  "futures",
  "itertools",
  "libp2p",
@@ -4641,7 +4633,6 @@ dependencies = [
  "rand 0.8.5",
  "rmp-serde",
  "serde",
- "sn_logging",
  "sn_protocol",
  "thiserror",
  "tokio",
