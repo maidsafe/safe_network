@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688534452868,
+  "lastUpdate": 1688534596515,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -2979,6 +2979,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 21.45,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4598ca7c336ceaf8f4fbe8fca13938dbb04272d2",
+          "message": "ci: print peak client mem consumption in CI",
+          "timestamp": "2023-07-05T06:54:38+02:00",
+          "tree_id": "49b2291b2c9086fb7dc63648bae5d915a12dd07f",
+          "url": "https://github.com/maidsafe/safe_network/commit/4598ca7c336ceaf8f4fbe8fca13938dbb04272d2"
+        },
+        "date": 1688534595510,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 19.21,
             "unit": "MB"
           }
         ]
