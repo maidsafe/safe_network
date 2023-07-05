@@ -11,15 +11,14 @@ extern crate tracing;
 
 mod rpc;
 
+use clap::Parser;
+use eyre::{eyre, Error, Result};
+use libp2p::{identity::Keypair, Multiaddr, PeerId};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
 use sn_node::{Marker, Node, NodeEvent, NodeEventsReceiver};
-use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
-
-use clap::Parser;
-use eyre::{eyre, Error, Result};
-use libp2p::{identity::Keypair, Multiaddr, PeerId};
+use sn_peers_acquisition::PeersArgs;
 use std::{
     env,
     io::Write,
@@ -141,83 +140,62 @@ enum NodeCtrl {
 }
 
 fn main() -> Result<()> {
-    loop {
-        let opt = Opt::parse();
+    let opt = Opt::parse();
 
-        let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
-        let (root_dir, keypair) = get_root_dir_and_keypair(opt.root_dir)?;
+    let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
+    let (root_dir, keypair) = get_root_dir_and_keypair(opt.root_dir)?;
 
-        let (log_output_dest, _log_appender_guard) = init_logging(
-            opt.log_output_dest,
-            keypair.public().to_peer_id(),
-            opt.log_format,
-        )?;
+    let (log_output_dest, _log_appender_guard) = init_logging(
+        opt.log_output_dest,
+        keypair.public().to_peer_id(),
+        opt.log_format,
+    )?;
 
-        if opt.peers.peers.is_empty() {
-            if !cfg!(feature = "local-discovery") {
-                warn!("No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.");
-            } else {
-                info!("No peers given. As `local-discovery` feature is enabled, we will attempt to connect to the network using mDNS.");
-            }
-        }
-        let mut initial_peers = opt.peers.peers.clone();
-
-        let msg = format!(
-            "Running {} v{}",
-            env!("CARGO_BIN_NAME"),
-            env!("CARGO_PKG_VERSION")
-        );
-        info!("\n{}\n{}", msg, "=".repeat(msg.len()));
-        info!("Node started with initial_peers {initial_peers:?}");
-
-        // Create a tokio runtime per `start_node` attempt, this ensures
-        // any spawned tasks are closed before this would be run again.
-        let rt = Runtime::new()?;
-        #[cfg(feature = "metrics")]
-        rt.spawn(init_metrics(std::process::id()));
-        rt.block_on(start_node(
-            keypair.clone(),
-            node_socket_addr,
-            initial_peers.clone(),
-            opt.rpc,
-            opt.local,
-            &log_output_dest,
-            root_dir.clone(),
-        ))?;
-
-        let msg = format!(
-            "Running {} v{}",
-            env!("CARGO_BIN_NAME"),
-            env!("CARGO_PKG_VERSION")
-        );
-        info!("\n{}\n{}", msg, "=".repeat(msg.len()));
-        debug!("Built with git version: {}", sn_build_info::git_info());
-
-        // actively shut down the runtime
-        rt.shutdown_timeout(Duration::from_secs(2));
-
-        // The original passed in peers may got restarted as well.
-        // Hence, try to parse from env_var and add as initial peers,
-        // if not presented yet.
+    if opt.peers.peers.is_empty() {
         if !cfg!(feature = "local-discovery") {
-            match env::var("SAFE_PEERS") {
-                Ok(str) => match parse_peer_addr(&str) {
-                    Ok(peer) => {
-                        if !initial_peers
-                            .iter()
-                            .any(|existing_peer| *existing_peer == peer)
-                        {
-                            initial_peers.push(peer);
-                        }
-                    }
-                    Err(err) => error!("Cann't parse SAFE_PEERS {str:?} with error {err:?}"),
-                },
-                Err(err) => error!("Cann't get env var SAFE_PEERS with error {err:?}"),
-            }
+            warn!("No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.");
+        } else {
+            info!("No peers given. As `local-discovery` feature is enabled, we will attempt to connect to the network using mDNS.");
         }
     }
+    let initial_peers = opt.peers.peers.clone();
+
+    let msg = format!(
+        "Running {} v{}",
+        env!("CARGO_BIN_NAME"),
+        env!("CARGO_PKG_VERSION")
+    );
+    info!("\n{}\n{}", msg, "=".repeat(msg.len()));
+    debug!("Built with git version: {}", sn_build_info::git_info());
+
+    info!("Node started with initial_peers {initial_peers:?}");
+
+    // Create a tokio runtime per `start_node` attempt, this ensures
+    // any spawned tasks are closed before this would be run again.
+    let rt = Runtime::new()?;
+    #[cfg(feature = "metrics")]
+    rt.spawn(init_metrics(std::process::id()));
+    rt.block_on(start_node(
+        keypair,
+        node_socket_addr,
+        initial_peers,
+        opt.rpc,
+        opt.local,
+        &log_output_dest,
+        root_dir,
+    ))?;
+
+    // actively shut down the runtime
+    rt.shutdown_timeout(Duration::from_secs(2));
+
+    // we got this far without error, which means (so far) the only thing we should be doing
+    // is restarting the node
+    hard_restart();
+
+    Ok(())
 }
 
+/// Start a node with the given configuration.
 async fn start_node(
     keypair: Keypair,
     node_socket_addr: SocketAddr,
@@ -286,7 +264,7 @@ async fn start_node(
             }
             None => {
                 info!("Internal node ctrl cmds channel has been closed, restarting node");
-                break Ok(());
+                break Err(eyre!("Internal node ctrl cmds channel has been closed"));
             }
         }
     }
