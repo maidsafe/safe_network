@@ -209,14 +209,18 @@ jobs:
         run: |
           MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{
             if ($5 ~ /K/) {
-                sub(/K/, "", $5);
-                $5 = $5 / 1024;
+              sub(/K/, "", $5);
+              $5 = $5 / 1024;
             } else if ($5 ~ /G/) {
                 sub(/G/, "", $5);
                 $5 = $5 * 1024;
             }
+              else if ($5 ~ /M/) {
+                sub(/M/, "", $5);
+                $5 = $5;
+            }
             print $5;
-          }'  | rg "M" -r "" )
+          }' )
           echo "Memory usage: $MEMORY_USAGE MB"
           if (( $(echo "$MEMORY_USAGE > $MEM_LIMIT_MB" | bc -l) )); then
             echo "Memory usage exceeded threshold: $MEMORY_USAGE MB"
