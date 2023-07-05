@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688546898987,
+  "lastUpdate": 1688547133640,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3047,6 +3047,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 19.21,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "954625187ce324734fbfc21c18f2bed64ff14944",
+          "message": "test: refactoring node integration test and adding a test for failed payment case",
+          "timestamp": "2023-07-05T10:19:30+02:00",
+          "tree_id": "65f4f68b5da062eb22d6746e6bde42585372bf32",
+          "url": "https://github.com/maidsafe/safe_network/commit/954625187ce324734fbfc21c18f2bed64ff14944"
+        },
+        "date": 1688547133035,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 19.26,
             "unit": "MB"
           }
         ]
