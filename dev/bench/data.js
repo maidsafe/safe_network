@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688553349754,
+  "lastUpdate": 1688553584273,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3115,6 +3115,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 19.26,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "504137b0e6fd1121828438bb77d6906f4f616da9",
+          "message": "feat: disable record filter; send duplicated record to validation for doube spend detection",
+          "timestamp": "2023-07-05T12:10:49+02:00",
+          "tree_id": "32f44156516462036b8472a3080ae5355689ebb9",
+          "url": "https://github.com/maidsafe/safe_network/commit/504137b0e6fd1121828438bb77d6906f4f616da9"
+        },
+        "date": 1688553583808,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 23.03,
             "unit": "MB"
           }
         ]
