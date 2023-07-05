@@ -117,7 +117,6 @@ impl Client {
                                 continue;
                             }
                         };
-                        trace!("Client received a network event {the_event:?}");
                         if let Err(err) = client_clone.handle_network_event(the_event) {
                             warn!("Error handling network event: {err}");
                         }

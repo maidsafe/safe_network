@@ -90,6 +90,7 @@ pub enum SwarmCmd {
     /// Put record to network
     PutRecord {
         record: Record,
+        sender: oneshot::Sender<Result<()>>,
     },
     /// Put record to the local RecordStore
     PutLocalRecord {
@@ -193,13 +194,15 @@ impl SwarmDriver {
                     .map(|rec| rec.into_owned());
                 let _ = sender.send(record);
             }
-            SwarmCmd::PutRecord { record } => {
+            SwarmCmd::PutRecord { record, sender } => {
                 // TODO: shall we wait for the response?
-                let _query_id = self
+                let request_id = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .put_record(record, Quorum::All)?;
+                trace!("Sending record {request_id:?} to network");
+                let _ = self.pending_record_put.insert(request_id, sender);
             }
             SwarmCmd::PutLocalRecord { record } => {
                 self.swarm

@@ -106,6 +106,7 @@ pub struct SwarmDriver {
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
     pending_query: HashMap<QueryId, oneshot::Sender<Result<Record>>>,
+    pending_record_put: HashMap<QueryId, oneshot::Sender<Result<()>>>,
     replication_fetcher: ReplicationFetcher,
     local: bool,
     dialed_peers: CircularVec<PeerId>,
@@ -363,6 +364,7 @@ impl SwarmDriver {
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
             pending_query: Default::default(),
+            pending_record_put: Default::default(),
             replication_fetcher: Default::default(),
             local,
             dialed_peers: CircularVec::new(63),
@@ -624,7 +626,10 @@ impl Network {
             record.key,
             record.value.len()
         );
-        self.send_swarm_cmd(SwarmCmd::PutRecord { record })
+        // Waiting for a response to avoid flushing to network too quick that causing choke
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::PutRecord { record, sender })?;
+        receiver.await?
     }
 
     /// Put `Record` to the local RecordStore

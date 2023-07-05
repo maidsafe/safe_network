@@ -79,6 +79,9 @@ pub enum Error {
     #[error("Record was not found locally")]
     RecordNotFound,
 
+    #[error("Record not put to network properly")]
+    RecordNotPut,
+
     #[error("No SwarmCmd channel capacity")]
     NoSwarmCmdChannelCapacity,
 }
