@@ -85,13 +85,13 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      - name: Chunks data integrity during nodes churn (during 10min)
+      - name: Chunks data integrity during nodes churn
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 
         env:
           CHUNKS_ONLY: true
-          TEST_DURATION_MINS: 10
+          TEST_DURATION_MINS: 15
           SN_LOG: "all"
-        timeout-minutes: 15
+        timeout-minutes: 20
 
       - name: Verify restart of nodes using rg
         shell: bash
@@ -155,12 +155,20 @@ jobs:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
 
+      - name: Check nodes running
+        shell: bash
+        timeout-minutes: 1
+        continue-on-error: true
+        run: pgrep safenode | wc -l
+        if: always()
+
+
       - name: Kill all nodes
         shell: bash
         timeout-minutes: 1
         continue-on-error: true
         run: |
-          pkill safenode
+          killall safenode
           echo "$(pgrep safenode | wc -l) nodes still running"
         if: always()
 
