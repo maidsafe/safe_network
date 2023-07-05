@@ -71,7 +71,7 @@ jobs:
         run: echo "Contact peer is set to $SAFE_PEERS"
 
       - name: Start a local network
-        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
+        run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -174,7 +174,6 @@ jobs:
         run: pgrep safenode | wc -l
         if: always()
 
-
       - name: Kill all nodes
         shell: bash
         timeout-minutes: 1
@@ -190,40 +189,39 @@ jobs:
       - name: Analyze memory usage
         shell: bash
         run: |
-          HEAPTRACK_FILE=$(ls -t heaptrack.safenode.*.zst | head -1)
-          heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safenode.txt
+          heaptrack_file=$(ls -t heaptrack.safenode.*.zst | head -1)
+          heaptrack --analyze $heaptrack_file > heaptrack.safenode.txt
         if: always()
      
       - name: Check memory usage
         shell: bash
-        env:
-          # The resources file and churning chunk_size we upload may change, and with it mem consumption.
-          # This is set to a value high enough to allow for some variation depending on 
-          # resources and node locatin in the network, but hopefully low enough to catch 
-          # any wild memory issues 
-          # Any changes to this value should be carefully considered and tested!
-          # As the heap_node also acting as a bootstrap access point for churning nodes and client,
-          # The memory usage here will be sinificantly higher here than in the benchmark test,
-          # where the heap_node only act as a normal network member.
-          MEM_LIMIT_MB: "160" # mb
+        # The resources file and churning chunk_size we upload may change, and with it mem consumption.
+        # This is set to a value high enough to allow for some variation depending on 
+        # resources and node locatin in the network, but hopefully low enough to catch 
+        # any wild memory issues 
+        # Any changes to this value should be carefully considered and tested!
+        # As the heap_node also acting as a bootstrap access point for churning nodes and client,
+        # The memory usage here will be sinificantly higher here than in the benchmark test,
+        # where the heap_node only act as a normal network member.
         run: |
-          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{
+          mem_limit_mb="160" # mb
+          memory_usage=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{
             if ($5 ~ /K/) {
               sub(/K/, "", $5);
               $5 = $5 / 1024;
             } else if ($5 ~ /G/) {
-                sub(/G/, "", $5);
-                $5 = $5 * 1024;
+              sub(/G/, "", $5);
+              $5 = $5 * 1024;
             }
-              else if ($5 ~ /M/) {
-                sub(/M/, "", $5);
-                $5 = $5;
+            else if ($5 ~ /M/) {
+              sub(/M/, "", $5);
+              $5 = $5;
             }
             print $5;
-          }' )
-          echo "Memory usage: $MEMORY_USAGE MB"
-          if (( $(echo "$MEMORY_USAGE > $MEM_LIMIT_MB" | bc -l) )); then
-            echo "Memory usage exceeded threshold: $MEMORY_USAGE MB"
+          }')
+          echo "Memory usage: $memory_usage MB"
+          if (( $(echo "$memory_usage > $mem_limit_mb" | bc -l) )); then
+            echo "Memory usage exceeded threshold: $memory_usage MB"
             exit 1
           fi
         if: always()
