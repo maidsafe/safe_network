@@ -21,9 +21,11 @@ use clap::Parser;
 use eyre::{eyre, Error, Result};
 use libp2p::{identity::Keypair, Multiaddr, PeerId};
 use std::{
+    env,
     io::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
+    process::{exit, Command},
     time::Duration,
 };
 use tokio::{
@@ -198,7 +200,7 @@ fn main() -> Result<()> {
         // Hence, try to parse from env_var and add as initial peers,
         // if not presented yet.
         if !cfg!(feature = "local-discovery") {
-            match std::env::var("SAFE_PEERS") {
+            match env::var("SAFE_PEERS") {
                 Ok(str) => match parse_peer_addr(&str) {
                     Ok(peer) => {
                         if !initial_peers
@@ -462,4 +464,56 @@ fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf, Keypa
             Ok((dir, keypair))
         }
     }
+}
+
+/// Performs a hard restart, running the binary in a fresh process
+/// and terminating the current process.
+///
+/// This function will log errors if the new process fails to start,
+/// but no errors are returned and the current process will continue
+fn hard_restart() {
+    // Retrieve the current executable's path
+    let current_exe = env::current_exe().unwrap();
+
+    // Retrieve the command-line arguments passed to this process
+    let args: Vec<String> = env::args().collect();
+
+    info!("Original args are: {args:?}");
+
+    // Create a new Command instance to run the current executable
+    let mut cmd = Command::new(current_exe);
+
+    // Set the arguments for the new Command
+    cmd.args(&args[1..]); // Exclude the first argument (binary path)
+
+    warn!(
+        "Attempting to start a new process as node process loop has been broken: {:?}",
+        cmd
+    );
+    // Execute the command
+    let exit_status = match cmd.status() {
+        Ok(status) => status,
+        Err(e) => {
+            // Do not return an error as this isn't a critical failure.
+            // The current node can continue.
+            eprintln!("Failed to execute hard-restart command: {}", e);
+            eprintln!("The current node process will continue running after a soft-restart.");
+
+            return;
+        }
+    };
+
+    // Check the exit status of the command
+    if !exit_status.success() {
+        // Do not return an error as this isn't a critical failure.
+        // The current node can continue.
+        eprintln!("Failed to run the node process: {:?}", exit_status);
+        eprintln!("The current node process will continue running after a soft-restart.");
+
+        return;
+    }
+
+    // Command was successful, so we shut down the process
+    println!("A new node process has been restarted successfully.");
+    exit(exit_status.code().unwrap_or(0));
 }
