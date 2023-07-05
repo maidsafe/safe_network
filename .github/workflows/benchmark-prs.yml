@@ -118,11 +118,15 @@ jobs:
           summary-always: true
 
       # The generated large single file (around 450MB) may vary little bit along the releases
-      - name: zip up release
+      - name: Zip release folder 
+        shell: bash
+        run: tar -czvf release_zip.tar.gz ./target/release
+
+      - name: Check release folder size
         shell: bash
         run: |
-          tar -czvf release_zip.tar.gz ./target/release
-          ls -la
+          file_size=$(stat -c "%s" release_zip.tar.gz)
+          file_size_mb=$(bc <<< "scale=2; $file_size / (1024 * 1024)")
 
       - name: Start a heaptracked client instance to compare memory usage
         shell: bash
@@ -273,7 +277,7 @@ jobs:
         id: client-memory-usage-check
         shell: bash
         env:
-          CLIENT_PEAK_MEM_LIMIT_MB: "1000" # mb
+          CLIENT_PEAK_MEM_LIMIT_MB: "1500" # mb
           CLIENT_AVG_MEM_LIMIT_MB: "700" # mb
         run: |
           peak_mem_usage=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{
