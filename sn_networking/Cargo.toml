@@ -17,14 +17,12 @@ local-discovery=["libp2p/mdns"]
 [dependencies]
 async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
-eyre = "0.6.8"
 futures = "~0.3.13"
 itertools = "~0.10.1"
 libp2p = { version="0.51", features = ["tokio", "dns", "kad", "macros", "request-response", "identify", "autonat", "mplex", "noise", "tcp", "yamux"] }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_logging = { path = "../sn_logging", features = ["test-utils"], version = "0.2.0" }
 sn_protocol = { path = "../sn_protocol", version = "0.2.1" }
 thiserror = "1.0.23"
 tokio = { version = "1.17.0", features = ["fs", "io-util", "macros", "parking_lot", "rt", "sync", "time"] }
@@ -32,6 +30,5 @@ tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
 
 [dev-dependencies]
-assert_matches = "1.5.0"
 bls = { package = "blsttc", version = "8.0.1" }
 quickcheck = "1.0.3"

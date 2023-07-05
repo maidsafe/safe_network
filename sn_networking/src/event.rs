@@ -421,21 +421,10 @@ impl SwarmDriver {
                 }
             }
             KademliaEvent::InboundRequest {
-                request: InboundRequest::PutRecord { source, record, .. },
+                request: InboundRequest::PutRecord { .. },
             } => {
-                if record.is_some() {
-                    // Currently we do not perform `kad.put_record()` or use `kad's replication` in our codebase,
-                    // hence we should not receive any inbound PutRecord.
-                    warn!("Kad's PutRecord handling is not implemented yet. {source:?} has triggerd kad.put_record or has enabled kad's replication flow");
-                } else {
-                    // If the Record filtering is not enabled at the kad cfg, a malicious node
-                    // can just call `kad.put_record()` which would store that record at the
-                    // closest nodes without any validations
-                    //
-                    // Enable it to instead get the above `PutRequest` event which is then
-                    // handled separately
-                    warn!("The PutRecord KademliaEvent should include a Record. Enable record filtering via the kad config")
-                }
+                // Ignored to reduce logging. When `Record filtering` is enabled,
+                // the `record` variable will contain the content for further validation before put.
             }
             KademliaEvent::InboundRequest {
                 request:
