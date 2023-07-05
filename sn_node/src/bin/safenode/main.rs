@@ -27,7 +27,7 @@ use std::{
     time::Duration,
 };
 use tokio::{
-    fs::{remove_dir_all, File},
+    fs::{remove_file, File},
     io::AsyncWriteExt,
     runtime::Runtime,
     sync::{broadcast::error::RecvError, mpsc},
@@ -268,8 +268,7 @@ async fn start_node(
                 println!("Wiping node root dir: {:?}", running_node.root_dir_path());
                 sleep(delay).await;
 
-                let _ =
-                    tokio::fs::remove_file(running_node.root_dir_path().join("secret-key")).await;
+                let _ = remove_file(running_node.root_dir_path().join("secret-key")).await;
                 break Ok(());
             }
             Some(NodeCtrl::Stop { delay, cause }) => {
