@@ -26,7 +26,7 @@ const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
 // Defines how close that a node will trigger replication.
 // That is, the node has to be among the REPLICATION_RANGE closest to data,
 // to carry out the replication.
-const REPLICATION_RANGE: usize = 8;
+const REPLICATION_RANGE: usize = 4;
 
 impl Node {
     /// In case self is not among the closest to the chunk,
