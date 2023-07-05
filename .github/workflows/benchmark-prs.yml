@@ -37,6 +37,13 @@ jobs:
       - name: ubuntu install ripgrep
         run: sudo apt-get -y install ripgrep
 
+      # A consistent file with a size of 95MB.
+      - name: download the testing file
+        shell: bash
+        run: |
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
+          ls -la
+
       # As normal user won't care much about initial client startup,
       # but be more alerted on communication speed during transmission.
       # Meanwhile the criterion testing code includes the client startup as well,
@@ -107,18 +114,10 @@ jobs:
           # Enable Job Summary for PRs
           summary-always: true
 
-
-      # The generated large single file (around 450MB) may vary little bit along the releases
-      - name: zip up release
-        shell: bash
-        run: |
-          tar -czvf release_zip.tar.gz ./target/release
-          ls -la
-
       # Start a heaptracked client instance to compare memory usage
       - name: Start client with heaptrack
         shell: bash
-        run: heaptrack ./target/release/safe files upload release_zip.tar.gz
+        run: heaptrack ./target/release/safe files upload the-test-data.zip
         env:
           SN_LOG: "all"
 
