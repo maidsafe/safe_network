@@ -17,11 +17,7 @@ use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
-use sn_networking::{sort_peers_by_address, CLOSE_GROUP_SIZE};
-use sn_protocol::{
-    storage::{Chunk, ChunkAddress},
-    NetworkAddress,
-};
+use sn_protocol::storage::{Chunk, ChunkAddress};
 use tokio::task;
 use tracing::trace;
 use xor_name::XorName;
@@ -170,11 +166,7 @@ impl Files {
         // TODO: re-enable requirement to always provide payment proof
         //.ok_or(super::Error::MissingPaymentProof(address))?;
 
-        let dst = NetworkAddress::from_chunk_address(address);
-        let closest_peers = self.client.get_closest_local_peers(&dst).await?;
-        self.client
-            .store_chunk(chunk, payment, closest_peers)
-            .await?;
+        self.client.store_chunk(chunk, payment).await?;
 
         if verify {
             self.verify_chunk_is_stored(address).await?;
@@ -192,7 +184,6 @@ impl Files {
         payment_proofs: &PaymentProofsMap,
         verify: bool,
     ) -> Result<ChunkAddress> {
-        let all_peers = self.client.get_all_local_peers().await?;
         let (head_address, mut all_chunks) = encrypt_large(large)?;
         trace!("Client upload started");
         while !all_chunks.is_empty() {
@@ -202,17 +193,13 @@ impl Files {
             let mut tasks = vec![];
             for chunk in next_batch {
                 let client = self.client.clone();
-                let all_peers_clone = all_peers.clone();
                 let chunk_addr = *chunk.address();
                 let payment = payment_proofs.get(chunk_addr.name()).cloned();
                 // TODO: re-enable requirement to always provide payment proof
                 //.ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
 
                 tasks.push(task::spawn(async move {
-                    let dst = NetworkAddress::from_chunk_address(chunk_addr);
-                    let closest_peers =
-                        sort_peers_by_address(all_peers_clone, &dst, CLOSE_GROUP_SIZE)?;
-                    client.store_chunk(chunk, payment, closest_peers).await?;
+                    client.store_chunk(chunk, payment).await?;
                     if verify {
                         let _ = client.get_chunk(chunk_addr).await?;
                     }

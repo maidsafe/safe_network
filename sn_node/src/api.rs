@@ -15,7 +15,7 @@ use sn_protocol::{
     messages::{
         Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, ReplicatedData, Request, Response,
     },
-    storage::{ChunkWithPayment, DbcAddress},
+    storage::DbcAddress,
     NetworkAddress,
 };
 use std::{net::SocketAddr, path::PathBuf, time::Duration};
@@ -356,25 +356,6 @@ impl Node {
     async fn handle_node_cmd(&mut self, cmd: Cmd) -> Response {
         Marker::NodeCmdReceived(&cmd).log();
         let resp = match cmd {
-            Cmd::StoreChunk { chunk, payment } => {
-                let addr = *chunk.address();
-                let chunk_with_payment = ChunkWithPayment { chunk, payment };
-
-                match self.validate_and_store_chunk(chunk_with_payment).await {
-                    Ok(cmd_ok) => {
-                        self.events_channel.broadcast(NodeEvent::ChunkStored(addr));
-                        let mut stateless_node_copy = self.clone();
-                        let _handle = spawn(async move {
-                            stateless_node_copy.try_replicate_an_entry(addr).await;
-                        });
-                        CmdResponse::StoreChunk(Ok(cmd_ok))
-                    }
-                    Err(err) => {
-                        error!("Failed to StoreChunk: {err:?}");
-                        CmdResponse::StoreChunk(Err(err))
-                    }
-                }
-            }
             Cmd::Replicate { holder, keys } => {
                 debug!(
                     "Replicate list received from {:?} of {} keys",
