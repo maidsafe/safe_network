@@ -201,8 +201,16 @@ jobs:
         env:
           NODE_MEM_LIMIT_MB: "100" # mb
         run: |
-          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | \
-            awk '{print $5}' | rg "M" -r "")
+          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{
+            if ($5 ~ /K/) {
+                sub(/K/, "", $5);
+                $5 = $5 / 1024;
+            } else if ($5 ~ /G/) {
+                sub(/G/, "", $5);
+                $5 = $5 * 1024;
+            }
+            print $5;
+          }'  | rg "M" -r "" )
           echo "Memory usage: $MEMORY_USAGE MB"
           if (( $(echo "$MEMORY_USAGE > $NODE_MEM_LIMIT_MB" | bc -l) )); then
             echo "Node memory usage exceeded threshold: $MEMORY_USAGE MB"
@@ -268,8 +276,16 @@ jobs:
           CLIENT_PEAK_MEM_LIMIT_MB: "1000" # mb
           CLIENT_AVG_MEM_LIMIT_MB: "700" # mb
         run: |
-          peak_mem_usage=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | \
-            awk '{print $5}' | rg "M" -r "")
+          peak_mem_usage=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{
+              if ($5 ~ /K/) {
+                  sub(/K/, "", $5);
+                  $5 = $5 / 1024;
+              } else if ($5 ~ /G/) {
+                  sub(/G/, "", $5);
+                  $5 = $5 * 1024;
+              }
+              print $5;
+          }' | rg "M" -r "")
           echo "Peak memory usage: $peak_mem_usage MB"
           if (( $(echo "$peak_mem_usage > $CLIENT_PEAK_MEM_LIMIT_MB" | bc -l) )); then
             echo "Client peak memory usage exceeded threshold: $CLIENT_PEAK_MEM_LIMIT_MB MB"
