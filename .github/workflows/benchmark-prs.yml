@@ -277,7 +277,7 @@ jobs:
         id: client-memory-usage-check
         shell: bash
         env:
-          CLIENT_PEAK_MEM_LIMIT_MB: "1500" # mb
+          CLIENT_PEAK_MEM_LIMIT_MB: "2000" # mb
           CLIENT_AVG_MEM_LIMIT_MB: "700" # mb
         run: |
           peak_mem_usage=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{

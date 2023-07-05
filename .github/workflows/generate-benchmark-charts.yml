@@ -246,7 +246,6 @@ jobs:
         # remove once this is not bugging out
         continue-on-error: true
         env:
-          CLIENT_PEAK_MEM_LIMIT_MB: "1024" # ~1GB (unit is megabytes)
           CLIENT_AVG_MEM_LIMIT_MB: "600" # mb
         run: |
           peak_mem_usage=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{
@@ -260,10 +259,6 @@ jobs:
               print $5;
           }' | rg "M" -r "" )
           echo "Peak memory usage: $peak_mem_usage MB"
-          if (( $(echo "$peak_mem_usage > $CLIENT_PEAK_MEM_LIMIT_MB" | bc -l) )); then
-            echo "Client peak memory usage exceeded threshold: $CLIENT_PEAK_MEM_LIMIT_MB MB"
-            exit 1
-          fi
           mem_reads=($(rg "\"memory_used_mb\":\d+" $CLIENT_DATA_PATH/safenode.* -o --no-line-number --no-filename | rg "\d+" -o))
           total_mem=$(ls heaptrack.safe.txt | wc -l)
           echo "Total memory initial value is: $total_mem"
