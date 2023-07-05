@@ -89,9 +89,9 @@ jobs:
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 
         env:
           CHUNKS_ONLY: true
-          TEST_DURATION_MINS: 10
+          TEST_DURATION_MINS: 15
           SN_LOG: "all"
-        timeout-minutes: 15
+        timeout-minutes: 20
 
       - name: Verify restart of nodes using rg
         shell: bash
