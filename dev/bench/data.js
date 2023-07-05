@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688534278220,
+  "lastUpdate": 1688534394335,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -1633,6 +1633,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 8.528574597029532,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4598ca7c336ceaf8f4fbe8fca13938dbb04272d2",
+          "message": "ci: print peak client mem consumption in CI",
+          "timestamp": "2023-07-05T06:54:38+02:00",
+          "tree_id": "49b2291b2c9086fb7dc63648bae5d915a12dd07f",
+          "url": "https://github.com/maidsafe/safe_network/commit/4598ca7c336ceaf8f4fbe8fca13938dbb04272d2"
+        },
+        "date": 1688534393213,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.8683793328145717,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 17.79260060792162,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 8.646095183162464,
             "unit": "MiB/s"
           }
         ]
