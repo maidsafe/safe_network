@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.9...sn_networking-v0.3.10) - 2023-07-05
+
+### Added
+- disable record filter; send duplicated record to validation for doube spend detection
+- carry out validation for record_store::put
+
 ## [0.3.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.8...sn_networking-v0.3.9) - 2023-07-05
 
 ### Other
