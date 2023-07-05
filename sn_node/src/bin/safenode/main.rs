@@ -11,23 +11,24 @@ extern crate tracing;
 
 mod rpc;
 
+use clap::Parser;
+use eyre::{eyre, Error, Result};
+use libp2p::{identity::Keypair, Multiaddr, PeerId};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
 use sn_node::{Marker, Node, NodeEvent, NodeEventsReceiver};
-use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
-
-use clap::Parser;
-use eyre::{eyre, Error, Result};
-use libp2p::{identity::Keypair, Multiaddr, PeerId};
+use sn_peers_acquisition::PeersArgs;
 use std::{
+    env,
     io::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
+    process::Command,
     time::Duration,
 };
 use tokio::{
-    fs::{remove_file, File},
+    fs::File,
     io::AsyncWriteExt,
     runtime::Runtime,
     sync::{broadcast::error::RecvError, mpsc},
@@ -140,7 +141,10 @@ enum NodeCtrl {
 
 fn main() -> Result<()> {
     let opt = Opt::parse();
+
+    let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(opt.root_dir)?;
+
     let (log_output_dest, _log_appender_guard) = init_logging(
         opt.log_output_dest,
         keypair.public().to_peer_id(),
@@ -154,60 +158,47 @@ fn main() -> Result<()> {
             info!("No peers given. As `local-discovery` feature is enabled, we will attempt to connect to the network using mDNS.");
         }
     }
+    let initial_peers = opt.peers.peers.clone();
 
-    let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
+    let msg = format!(
+        "Running {} v{}",
+        env!("CARGO_BIN_NAME"),
+        env!("CARGO_PKG_VERSION")
+    );
+    info!("\n{}\n{}", msg, "=".repeat(msg.len()));
+    debug!("Built with git version: {}", sn_build_info::git_info());
 
-    let mut initial_peers = opt.peers.peers.clone();
+    info!("Node started with initial_peers {initial_peers:?}");
 
-    loop {
-        let msg = format!(
-            "Running {} v{}",
-            env!("CARGO_BIN_NAME"),
-            env!("CARGO_PKG_VERSION")
-        );
-        info!("\n{}\n{}", msg, "=".repeat(msg.len()));
-        info!("Node started with initial_peers {initial_peers:?}");
+    // Create a tokio runtime per `start_node` attempt, this ensures
+    // any spawned tasks are closed before we would attempt to run
+    // another process with these args.
+    let rt = Runtime::new()?;
+    #[cfg(feature = "metrics")]
+    rt.spawn(init_metrics(std::process::id()));
+    rt.block_on(start_node(
+        keypair,
+        node_socket_addr,
+        initial_peers,
+        opt.rpc,
+        opt.local,
+        &log_output_dest,
+        root_dir,
+    ))?;
 
-        // Create a tokio runtime per `start_node` attempt, this ensures
-        // any spawned tasks are closed before this would be run again.
-        let rt = Runtime::new()?;
-        #[cfg(feature = "metrics")]
-        rt.spawn(init_metrics(std::process::id()));
-        rt.block_on(start_node(
-            keypair.clone(),
-            node_socket_addr,
-            initial_peers.clone(),
-            opt.rpc,
-            opt.local,
-            &log_output_dest,
-            root_dir.clone(),
-        ))?;
+    // actively shut down the runtime
+    rt.shutdown_timeout(Duration::from_secs(2));
 
-        // actively shut down the runtime
-        rt.shutdown_timeout(Duration::from_secs(2));
+    // we got this far without error, which means (so far) the only thing we should be doing
+    // is restarting the node
+    start_new_node_process();
 
-        // The original passed in peers may got restarted as well.
-        // Hence, try to parse from env_var and add as initial peers,
-        // if not presented yet.
-        if !cfg!(feature = "local-discovery") {
-            match std::env::var("SAFE_PEERS") {
-                Ok(str) => match parse_peer_addr(&str) {
-                    Ok(peer) => {
-                        if !initial_peers
-                            .iter()
-                            .any(|existing_peer| *existing_peer == peer)
-                        {
-                            initial_peers.push(peer);
-                        }
-                    }
-                    Err(err) => error!("Cann't parse SAFE_PEERS {str:?} with error {err:?}"),
-                },
-                Err(err) => error!("Cann't get env var SAFE_PEERS with error {err:?}"),
-            }
-        }
-    }
+    // Command was successful, so we shut down the process
+    println!("A new node process has been started successfully.");
+    Ok(())
 }
 
+/// Start a node with the given configuration.
 async fn start_node(
     keypair: Keypair,
     node_socket_addr: SocketAddr,
@@ -251,13 +242,11 @@ async fn start_node(
     loop {
         match ctrl_rx.recv().await {
             Some(NodeCtrl::Restart(delay)) => {
-                let msg = format!("Node is wiping data and restarting in {delay:?}...");
+                let msg = format!("Node is restarting in {delay:?}...");
                 info!("{msg}");
                 println!("{msg} Node path: {log_output_dest}");
-                println!("Wiping node root dir: {:?}", running_node.root_dir_path());
                 sleep(delay).await;
 
-                let _ = remove_file(running_node.root_dir_path().join("secret-key")).await;
                 break Ok(());
             }
             Some(NodeCtrl::Stop { delay, cause }) => {
@@ -273,7 +262,7 @@ async fn start_node(
             }
             None => {
                 info!("Internal node ctrl cmds channel has been closed, restarting node");
-                break Ok(());
+                break Err(eyre!("Internal node ctrl cmds channel has been closed"));
             }
         }
     }
@@ -451,4 +440,39 @@ fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf, Keypa
             Ok((dir, keypair))
         }
     }
+}
+
+/// Starts a new process running the binary with the same args as
+/// the current process
+fn start_new_node_process() {
+    // Retrieve the current executable's path
+    let current_exe = env::current_exe().unwrap();
+
+    // Retrieve the command-line arguments passed to this process
+    let args: Vec<String> = env::args().collect();
+
+    info!("Original args are: {args:?}");
+
+    // Create a new Command instance to run the current executable
+    let mut cmd = Command::new(current_exe);
+
+    // Set the arguments for the new Command
+    cmd.args(&args[1..]); // Exclude the first argument (binary path)
+
+    warn!(
+        "Attempting to start a new process as node process loop has been broken: {:?}",
+        cmd
+    );
+    // Execute the command
+    let _handle = match cmd.spawn() {
+        Ok(status) => status,
+        Err(e) => {
+            // Do not return an error as this isn't a critical failure.
+            // The current node can continue.
+            eprintln!("Failed to execute hard-restart command: {}", e);
+            error!("Failed to execute hard-restart command: {}", e);
+
+            return;
+        }
+    };
 }
