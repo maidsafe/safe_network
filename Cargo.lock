@@ -4627,7 +4627,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.3.8"
+version = "0.3.9"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -4714,7 +4714,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.1.11"
+version = "0.2.0"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4731,7 +4731,7 @@ dependencies = [
 
 [[package]]
 name = "sn_record_store"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "libp2p",
  "quickcheck",

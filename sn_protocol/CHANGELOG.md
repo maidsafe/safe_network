@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.1.11...sn_protocol-v0.2.0) - 2023-07-05
+
+### Added
+- [**breaking**] send the list of spent dbc ids instead of whole tx within payment proof
+- check fee output id when spending inputs and check paid fee amount when storing Chunks
+
+### Other
+- adapting codebase to new sn_dbc
+
 ## [0.1.11](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.1.10...sn_protocol-v0.1.11) - 2023-07-04
 
 ### Other
