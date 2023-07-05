@@ -11,7 +11,6 @@ on:
 
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
-  NODE_DATA_PATH: /home/runner/.local/share/safe/node
 
 jobs:
   cargo-udeps:
@@ -376,7 +375,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            node_data_path: /home/runner/.local/share/safe/node
+          - os: windows-latest
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+          - os: macos-latest
+            node_data_path: /Users/runner/Library/Application Support/safe/node
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -432,17 +437,17 @@ jobs:
         # then check we have an expected level of restarts
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          restart_count=$(rg "Node is restarting in" "$NODE_DATA_PATH" -c --stats | \
+          restart_count=$(rg "Node is restarting in" "${{ matrix.node_data_path }}" -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Restart $restart_count nodes"
-          detected_dead_peer=$(rg "Detected dead peer" "$NODE_DATA_PATH" -c --stats | \
+          detected_dead_peer=$(rg "Detected dead peer" "${{ matrix.node_data_path }}" -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Detected dead peer $detected_dead_peer times"
           if [ $detected_dead_peer -lt $restart_count ]; then
             echo "Detected dead peer times of: $detected_dead_peer is less than the restart count of: $restart_count"
             exit 1
           fi
-          node_count=$(ls $NODE_DATA_PATH | wc -l)
+          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
           echo "Node dir count is $node_count"
          
         # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
@@ -458,10 +463,10 @@ jobs:
         # then check we have an expected level of replication
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          replication_count=$(rg "Chunk received for replication" $NODE_DATA_PATH -c --stats | \
+          replication_count=$(rg "Chunk received for replication" "${{ matrix.node_data_path }}" -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Replicated $replication_count copies"
-          node_count=$(ls $NODE_DATA_PATH | wc -l)
+          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
           if [ $replication_count -lt $node_count ]; then
             echo "Replication count of: $replication_count is less than the node count of: $node_count"
             exit 1
