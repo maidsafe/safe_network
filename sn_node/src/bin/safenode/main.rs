@@ -18,7 +18,7 @@ use libp2p::{identity::Keypair, Multiaddr, PeerId};
 use sn_logging::metrics::init_metrics;
 use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
 use sn_node::{Marker, Node, NodeEvent, NodeEventsReceiver};
-use sn_peers_acquisition::PeersArgs;
+use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
 use std::{
     env,
     io::Write,
@@ -140,7 +140,7 @@ enum NodeCtrl {
 }
 
 fn main() -> Result<()> {
-    let opt = Opt::parse();
+    let mut opt = Opt::parse();
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(opt.root_dir)?;
@@ -150,6 +150,30 @@ fn main() -> Result<()> {
         keypair.public().to_peer_id(),
         opt.log_format,
     )?;
+
+    // The original passed in peers may got restarted as well.
+    // Hence, try to parse from env_var and add as initial peers,
+    // if not presented yet.
+    // This is only used for non-local-discocery,
+    // i.e. make SAFE_PEERS always being a fall back option for initial peers.
+    if !cfg!(feature = "local-discovery") {
+        match std::env::var("SAFE_PEERS") {
+            Ok(str) => match parse_peer_addr(&str) {
+                Ok(peer) => {
+                    if !opt
+                        .peers
+                        .peers
+                        .iter()
+                        .any(|existing_peer| *existing_peer == peer)
+                    {
+                        opt.peers.peers.push(peer);
+                    }
+                }
+                Err(err) => error!("Cann't parse SAFE_PEERS {str:?} with error {err:?}"),
+            },
+            Err(err) => error!("Cann't get env var SAFE_PEERS with error {err:?}"),
+        }
+    }
 
     if opt.peers.peers.is_empty() {
         if !cfg!(feature = "local-discovery") {
