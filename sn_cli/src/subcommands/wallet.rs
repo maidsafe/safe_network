@@ -119,6 +119,7 @@ async fn read(root_dir: &Path) -> Result<()> {
     let old_balance = wallet.balance();
     wallet.deposit(vec![dbc]);
     let new_balance = wallet.balance();
+    wallet.store().await?;
 
     println!("Successfully stored dbc to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
 
