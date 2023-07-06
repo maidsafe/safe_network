@@ -16,6 +16,7 @@ use color_eyre::Result;
 use std::{
     collections::BTreeSet,
     fs,
+    io::Read,
     path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
@@ -39,6 +40,8 @@ pub enum WalletCmds {
     /// variable to a path you would prefer to work with.
     #[clap(verbatim_doc_comment)]
     Deposit,
+    /// Read a DBC from stdin and deposit it to the local wallet.
+    Read,
     /// Send a DBC.
     Send {
         /// The number of nanos to send.
@@ -63,6 +66,7 @@ pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Pa
         WalletCmds::Address => address(root_dir).await?,
         WalletCmds::Balance => balance(root_dir).await?,
         WalletCmds::Deposit => deposit(root_dir).await?,
+        WalletCmds::Read => read(root_dir).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
         WalletCmds::Pay { path } => pay_for_storage(client, root_dir, &path).await.map(|_| ())?,
     }
@@ -99,6 +103,24 @@ async fn deposit(root_dir: &Path) -> Result<()> {
     } else {
         println!("Deposited {deposited}.");
     }
+
+    Ok(())
+}
+
+async fn read(root_dir: &Path) -> Result<()> {
+    let mut wallet = LocalWallet::load_from(root_dir).await?;
+
+    println!("Please paste your DBC below:");
+    let mut input = String::new();
+    std::io::stdin().read_to_string(&mut input)?;
+
+    let dbc = sn_dbc::Dbc::from_hex(input.trim())?;
+
+    let old_balance = wallet.balance();
+    wallet.deposit(vec![dbc]);
+    let new_balance = wallet.balance();
+
+    println!("Successfully stored dbc to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
 
     Ok(())
 }
