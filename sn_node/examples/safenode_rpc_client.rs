@@ -6,20 +6,20 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use clap::Parser;
+use eyre::Result;
+use libp2p::{Multiaddr, PeerId};
 use safenode_proto::safe_node_client::SafeNodeClient;
 use safenode_proto::{
     NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RestartRequest, StopRequest,
     UpdateRequest,
 };
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
-use tonic::Request;
-
-use clap::Parser;
-use eyre::Result;
-use libp2p::{Multiaddr, PeerId};
+use sn_node::NodeEvent;
 use std::str::FromStr;
 use std::{net::SocketAddr, time::Duration};
 use tokio_stream::StreamExt;
+use tonic::Request;
 use tracing_core::Level;
 
 // this includes code generated from .proto files
@@ -155,7 +155,14 @@ pub async fn node_events(addr: SocketAddr) -> Result<()> {
     println!("Listening to node events... (press Ctrl+C to exit)");
     let mut stream = response.into_inner();
     while let Some(Ok(e)) = stream.next().await {
-        println!("New event received: {}", e.event);
+        let event = match NodeEvent::from_bytes(&e.event) {
+            Ok(event) => event,
+            Err(_) => {
+                println!("Error while parsing received NodeEvent");
+                continue;
+            }
+        };
+        println!("New event received: {event:?}");
     }
 
     Ok(())
