@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.79.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.78.26...sn_cli-v0.79.0) - 2023-07-06
+
+### Added
+- introduce `--log-format` arguments
+- provide `--log-output-dest` arg for `safe`
+- provide `--log-output-dest` arg for `safenode`
+
+### Other
+- use data-dir rather than root-dir
+- incorporate various feedback items
+
 ## [0.78.26](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.78.25...sn_cli-v0.78.26) - 2023-07-05
 
 ### Other

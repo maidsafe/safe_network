@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.1.5...sn_logging-v0.2.0) - 2023-07-06
+
+### Added
+- introduce `--log-format` arguments
+- provide `--log-output-dest` arg for `safe`
+- provide `--log-output-dest` arg for `safenode`
+
 ## [0.1.5](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.1.4...sn_logging-v0.1.5) - 2023-07-05
 
 ### Added
