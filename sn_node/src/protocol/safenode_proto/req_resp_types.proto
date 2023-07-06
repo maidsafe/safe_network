@@ -27,7 +27,7 @@ message NodeInfoResponse {
 message NodeEventsRequest {}
 
 message NodeEvent {
-  string event = 1;
+  bytes event = 1;
 }
 
 // Stop the safenode app
