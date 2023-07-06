@@ -566,7 +566,7 @@ mod test {
             Err(e) => {
                 assert_eq!(
                     e.to_string(),
-                    "A genesis node cannot be launched for an existing network"
+                    "A new testnet cannot be launched until the data directory is cleared"
                 );
                 Ok(())
             }

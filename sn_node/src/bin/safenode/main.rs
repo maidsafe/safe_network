@@ -19,10 +19,6 @@ use sn_logging::metrics::init_metrics;
 use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
 use sn_node::{Marker, Node, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
-
-use clap::Parser;
-use eyre::{eyre, Error, Result};
-use libp2p::{identity::Keypair, Multiaddr, PeerId};
 use std::{
     env,
     io::Write,
@@ -32,7 +28,7 @@ use std::{
     time::Duration,
 };
 use tokio::{
-    fs::{remove_dir_all, File},
+    fs::File,
     io::AsyncWriteExt,
     runtime::Runtime,
     sync::{broadcast::error::RecvError, mpsc},
@@ -237,9 +233,6 @@ async fn start_node(
     root_dir: PathBuf,
 ) -> Result<()> {
     let started_instant = std::time::Instant::now();
-
-    info!("Starting node ...");
-    debug!("Built with git version: {}", sn_build_info::git_info());
 
     info!("Starting node ...");
     let running_node = Node::run(keypair, node_socket_addr, peers, local, root_dir).await?;
@@ -470,4 +463,39 @@ fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf, Keypa
             Ok((dir, keypair))
         }
     }
+}
+
+/// Starts a new process running the binary with the same args as
+/// the current process
+fn start_new_node_process() {
+    // Retrieve the current executable's path
+    let current_exe = env::current_exe().unwrap();
+
+    // Retrieve the command-line arguments passed to this process
+    let args: Vec<String> = env::args().collect();
+
+    info!("Original args are: {args:?}");
+
+    // Create a new Command instance to run the current executable
+    let mut cmd = Command::new(current_exe);
+
+    // Set the arguments for the new Command
+    cmd.args(&args[1..]); // Exclude the first argument (binary path)
+
+    warn!(
+        "Attempting to start a new process as node process loop has been broken: {:?}",
+        cmd
+    );
+    // Execute the command
+    let _handle = match cmd.spawn() {
+        Ok(status) => status,
+        Err(e) => {
+            // Do not return an error as this isn't a critical failure.
+            // The current node can continue.
+            eprintln!("Failed to execute hard-restart command: {}", e);
+            error!("Failed to execute hard-restart command: {}", e);
+
+            return;
+        }
+    };
 }
