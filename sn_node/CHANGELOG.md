@@ -413,6 +413,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - *(node)* verify incoming `Record::key`
 
+## [0.86.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.85.10...sn_node-v0.86.0) - 2023-07-06
+
+### Added
+- add restart func for node process
+- remove option from `--log-output-dest` arg
+- introduce `--log-format` arguments
+- provide `--log-output-dest` arg for `safenode`
+
+### Fixed
+- use SAFE_PEERS as fall back initial peers for non-local-discovery
+
+### Other
+- tidy remove_file call
+- clear out chunks and registers
+- use data-dir rather than root-dir
+- incorporate various feedback items
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

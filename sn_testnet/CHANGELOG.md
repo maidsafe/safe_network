@@ -494,6 +494,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.1.76](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.1.75...sn_testnet-v0.1.76) - 2023-07-06
+
+### Other
+- update benchmark workflows for new directories
+- update node logging paths
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>
