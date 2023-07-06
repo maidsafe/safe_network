@@ -430,6 +430,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - use data-dir rather than root-dir
 - incorporate various feedback items
 
+## [0.86.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.86.0...sn_node-v0.86.1) - 2023-07-06
+
+### Added
+- client upload chunk using kad::put_record
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
