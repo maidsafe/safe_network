@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.12](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.11...sn_networking-v0.3.12) - 2023-07-06
+
+### Added
+- PutRecord response during client upload
+- client upload chunk using kad::put_record
+
+### Other
+- small tidy up
+
+## [0.3.11](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.10...sn_networking-v0.3.11) - 2023-07-06
+
+### Other
+- updated the following local packages: sn_logging
+
 ## [0.3.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.9...sn_networking-v0.3.10) - 2023-07-05
 
 ### Added

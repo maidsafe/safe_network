@@ -336,6 +336,34 @@ impl SwarmDriver {
             }
             KademliaEvent::OutboundQueryProgressed {
                 id,
+                result: QueryResult::PutRecord(put_record_res),
+                stats,
+                step,
+            } => {
+                trace!("PutRecord task {id:?} returned, {stats:?} - {step:?}",);
+                if let Some(sender) = self.pending_record_put.remove(&id) {
+                    match put_record_res {
+                        Ok(put_record_ok) => {
+                            trace!(
+                                "PutRecord task {id:?} of {:?} completed successfully.",
+                                put_record_ok.key
+                            );
+                            sender
+                                .send(Ok(()))
+                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        }
+                        Err(err) => {
+                            warn!("PutRecord task {id:?} completed with error {:?}.", err);
+                            // TODO: consider sending back the correct error
+                            sender
+                                .send(Err(Error::RecordNotPut))
+                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        }
+                    }
+                }
+            }
+            KademliaEvent::OutboundQueryProgressed {
+                id,
                 result: QueryResult::GetRecord(Ok(GetRecordOk::FoundRecord(peer_record))),
                 stats,
                 step,
@@ -393,21 +421,10 @@ impl SwarmDriver {
                 }
             }
             KademliaEvent::InboundRequest {
-                request: InboundRequest::PutRecord { source, record, .. },
+                request: InboundRequest::PutRecord { .. },
             } => {
-                if record.is_some() {
-                    // Currently we do not perform `kad.put_record()` or use `kad's replication` in our codebase,
-                    // hence we should not receive any inbound PutRecord.
-                    warn!("Kad's PutRecord handling is not implemented yet. {source:?} has triggerd kad.put_record or has enabled kad's replication flow");
-                } else {
-                    // If the Record filtering is not enabled at the kad cfg, a malicious node
-                    // can just call `kad.put_record()` which would store that record at the
-                    // closest nodes without any validations
-                    //
-                    // Enable it to instead get the above `PutRequest` event which is then
-                    // handled separately
-                    warn!("The PutRecord KademliaEvent should include a Record. Enable record filtering via the kad config")
-                }
+                // Ignored to reduce logging. When `Record filtering` is enabled,
+                // the `record` variable will contain the content for further validation before put.
             }
             KademliaEvent::InboundRequest {
                 request:

@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: ["*"]
 
+env:
+  CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  NODE_DATA_PATH: /home/runner/.local/share/safe/node
+  HEAPNODE_DATA_PATH: /home/runner/.local/share/safe/heapnode
 
 jobs:
   memory-check:
@@ -35,8 +39,9 @@ jobs:
           cache-on-failure: true
           sharedKey: ${{github.run_id}}
 
-      - name: install ripgrep ubuntu
-        run: sudo apt-get install ripgrep
+      - name: install ripgrep
+        shell: bash
+        run: sudo apt-get install -y ripgrep
 
       - name: Build sn bins
         run: cargo build --release --bins 
@@ -46,27 +51,27 @@ jobs:
         run: cargo test --release -p sn_node --no-run
         timeout-minutes: 30
 
-      # Start a heaptracked node instance to compare memory usage
-      - name: Start safenode with heaptrack
+      - name: Start a heaptracked node instance to compare memory usage
         run: |
-          mkdir -p ~/.safe/heapnode
-          heaptrack ./target/release/safenode --root-dir ~/.safe/heapnode --log-dir ~/.safe/heapnode --local &
+          mkdir -p $HEAPNODE_DATA_PATH
+          heaptrack ./target/release/safenode \
+            --root-dir $HEAPNODE_DATA_PATH --log-output-dest $HEAPNODE_DATA_PATH --local &
           sleep 10
         env:
           SN_LOG: "all"
 
-      - name: Set contact env var node.
-        shell: bash
-        # get all listen ports of the heap_node, as it is the only one not restarted during the test
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe/heapnode -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+      - name: Set SAFE_PEERS
+        run: |
+          safe_peers=$(rg "listening on \".+\"" $HEAPNODE_DATA_PATH -u | \
+            rg '/ip4.*$' -m1 -o | rg '"' -r '')
+          echo "SAFE_PEERS=$safe_peers" >> $GITHUB_ENV
 
-      - name: Check contact peer
+      - name: Check SAFE_PEERS
         shell: bash
         run: echo "Contact peer is set to $SAFE_PEERS"
 
       - name: Start a local network
-        run: cargo run --release --bin testnet --features verify-nodes -- --interval 2000 --node-path ./target/release/safenode
-        id: section-startup
+        run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -100,21 +105,24 @@ jobs:
         # then check we have an expected level of restarts
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          restart_count=$(rg "Node is wiping data and restarting in" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          restart_count=$(rg "Node is restarting in" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
           echo "Restart $restart_count nodes"
-          detected_dead_peer=$(rg "Detected dead peer" ~/.safe/node/local-test-network -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          detected_dead_peer=$(rg "Detected dead peer" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
           echo "Detected dead peer $detected_dead_peer times"
           if [ $detected_dead_peer -lt $restart_count ]; then
             echo "Detected dead peer times of: $detected_dead_peer is less than the restart count of: $restart_count"
             exit 1
           fi
-          node_count=$(ls ~/.safe/node/local-test-network | wc -l)
-          if [ $restart_count -lt $node_count ]; then
-            echo "Restart count of: $restart_count is less than the node count of: $node_count"
-            exit 1
-          fi
-        if: always()
-
+          node_count=$(ls $NODE_DATA_PATH | wc -l)
+          echo "Node dir count is $node_count"
+        # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
+        # if [ $restart_count -lt $node_count ]; then
+        #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
+        #   exit 1
+        # fi
+          
       - name: Verify data replication using rg
         shell: bash
         timeout-minutes: 1
@@ -124,17 +132,22 @@ jobs:
         # As the heap_node using separate folder for logging, 
         # hence the folder input to rg needs to cover that as well.
         run : |
-          sending_list_count=$(rg "Sending a replication list" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          sending_list_count=$(rg "Sending a replication list" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
           echo "Sent $sending_list_count replication lists"
-          received_list_count=$(rg "Replicate list received from" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          received_list_count=$(rg "Replicate list received from" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
           echo "Received $received_list_count replication lists"
-          fetching_attempt_count=$(rg "Fetching replication" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          fetching_attempt_count=$(rg "Fetching replication" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
           echo "Carried out $fetching_attempt_count fetching attempts"
-          replication_attempt_count=$(rg "Replicating chunk" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          replication_attempt_count=$(rg "Replicating chunk" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
           echo "Sent $replication_attempt_count chunk copies"
-          replication_count=$(rg "Chunk received for replication" ~/.safe -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          replication_count=$(rg "Chunk received for replication" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
           echo "Received $replication_count chunk copies"
-          node_count=$(ls ~/.safe/node/local-test-network | wc -l)
+          node_count=$(ls $NODE_DATA_PATH | wc -l)
           if [ $replication_count -lt $node_count ]; then
             echo "Replication count of: $replication_count is less than the node count of: $node_count"
             exit 1
@@ -144,13 +157,12 @@ jobs:
       - name: Start a client to download files
         run: |
           cargo run --bin safe --release -- files download
-          ls -l ~/.local/share/safe/client/downloaded_files
-          downloaded_files=$(ls ~/.local/share/safe/client/downloaded_files | wc -l)
+          ls -l $CLIENT_DATA_PATH/downloaded_files
+          downloaded_files=$(ls $CLIENT_DATA_PATH/downloaded_files | wc -l)
           if [ $downloaded_files -lt 4 ]; then
             echo "Only downloaded $downloaded_files files, less than the 4 files uploaded"
             exit 1
           fi
-        id: client-file-download
         env:
           RUST_LOG: "safenode,safe=trace"
         timeout-minutes: 10
@@ -161,7 +173,6 @@ jobs:
         continue-on-error: true
         run: pgrep safenode | wc -l
         if: always()
-
 
       - name: Kill all nodes
         shell: bash
@@ -178,27 +189,39 @@ jobs:
       - name: Analyze memory usage
         shell: bash
         run: |
-          HEAPTRACK_FILE=$(ls -t heaptrack.safenode.*.zst | head -1)
-          heaptrack --analyze $HEAPTRACK_FILE > heaptrack.safenode.txt
+          heaptrack_file=$(ls -t heaptrack.safenode.*.zst | head -1)
+          heaptrack --analyze $heaptrack_file > heaptrack.safenode.txt
         if: always()
      
       - name: Check memory usage
         shell: bash
-        env:
-          # The resources file and churning chunk_size we upload may change, and with it mem consumption.
-          # This is set to a value high enough to allow for some variation depending on 
-          # resources and node locatin in the network, but hopefully low enough to catch 
-          # any wild memory issues 
-          # Any changes to this value should be carefully considered and tested!
-          # As the heap_node also acting as a bootstrap access point for churning nodes and client,
-          # The memory usage here will be sinificantly higher here than in the benchmark test,
-          # where the heap_node only act as a normal network member.
-          MEM_LIMIT_MB: "160" # mb
+        # The resources file and churning chunk_size we upload may change, and with it mem consumption.
+        # This is set to a value high enough to allow for some variation depending on 
+        # resources and node locatin in the network, but hopefully low enough to catch 
+        # any wild memory issues 
+        # Any changes to this value should be carefully considered and tested!
+        # As the heap_node also acting as a bootstrap access point for churning nodes and client,
+        # The memory usage here will be sinificantly higher here than in the benchmark test,
+        # where the heap_node only act as a normal network member.
         run: |
-          MEMORY_USAGE=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{print $5}' | rg "M" -r "")
-          echo "Memory usage: $MEMORY_USAGE MB"
-          if (( $(echo "$MEMORY_USAGE > $MEM_LIMIT_MB" | bc -l) )); then
-            echo "Memory usage exceeded threshold: $MEMORY_USAGE MB"
+          mem_limit_mb="160" # mb
+          memory_usage=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{
+            if ($5 ~ /K/) {
+              sub(/K/, "", $5);
+              $5 = $5 / 1024;
+            } else if ($5 ~ /G/) {
+              sub(/G/, "", $5);
+              $5 = $5 * 1024;
+            }
+            else if ($5 ~ /M/) {
+              sub(/M/, "", $5);
+              $5 = $5;
+            }
+            print $5;
+          }')
+          echo "Memory usage: $memory_usage MB"
+          if (( $(echo "$memory_usage > $mem_limit_mb" | bc -l) )); then
+            echo "Memory usage exceeded threshold: $memory_usage MB"
             exit 1
           fi
         if: always()
@@ -207,12 +230,11 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
-          find ~/.safe/heapnode -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
-          find ~/.safe/node/local-test-network -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
-          find /tmp/safe-client -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
+          find $HEAPNODE_DATA_PATH -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
+          find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
+          find $CLIENT_DATA_PATH -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
           find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
         if: failure()
-
 
       - name: Upload Heaptrack
         uses: actions/upload-artifact@main
@@ -229,4 +251,3 @@ jobs:
           path: log_files.tar.gz
         if: failure()
         continue-on-error: true
-

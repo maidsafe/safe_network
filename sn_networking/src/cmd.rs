@@ -9,7 +9,7 @@
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 use crate::{error::Result, multiaddr_pop_p2p, CLOSE_GROUP_SIZE};
 use libp2p::{
-    kad::{kbucket::Distance, store::RecordStore, Record, RecordKey},
+    kad::{kbucket::Distance, store::RecordStore, Quorum, Record, RecordKey},
     swarm::{
         dial_opts::{DialOpts, PeerCondition},
         DialError,
@@ -87,7 +87,12 @@ pub enum SwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<Option<Record>>,
     },
-    /// Put data to the local RecordStore
+    /// Put record to network
+    PutRecord {
+        record: Record,
+        sender: oneshot::Sender<Result<()>>,
+    },
+    /// Put record to the local RecordStore
     PutLocalRecord {
         record: Record,
     },
@@ -188,6 +193,15 @@ impl SwarmDriver {
                     .get(&key)
                     .map(|rec| rec.into_owned());
                 let _ = sender.send(record);
+            }
+            SwarmCmd::PutRecord { record, sender } => {
+                let request_id = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .put_record(record, Quorum::All)?;
+                trace!("Sending record {request_id:?} to network");
+                let _ = self.pending_record_put.insert(request_id, sender);
             }
             SwarmCmd::PutLocalRecord { record } => {
                 self.swarm
