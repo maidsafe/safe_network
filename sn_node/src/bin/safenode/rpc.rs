@@ -106,9 +106,17 @@ impl SafeNode for SafeNodeRpcService {
         let mut events_rx = self.running_node.node_events_channel().subscribe();
         let _handle = tokio::spawn(async move {
             while let Ok(event) = events_rx.recv().await {
-                let event = NodeEvent {
-                    event: format!("Event-{event:?}"),
+                let event_bytes = match event.to_bytes() {
+                    Ok(bytes) => bytes,
+                    Err(err) => {
+                        debug!(
+                            "Error {err:?} while converting NodeEvent to bytes, ignoring the error"
+                        );
+                        continue;
+                    }
                 };
+
+                let event = NodeEvent { event: event_bytes };
 
                 if let Err(err) = client_tx.send(Ok(event)).await {
                     debug!(
