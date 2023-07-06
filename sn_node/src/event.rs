@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::error::{Error, Result};
+use serde::{Deserialize, Serialize};
 use sn_dbc::DbcId;
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
 use tokio::sync::broadcast;
@@ -41,7 +43,7 @@ impl NodeEventsChannel {
 }
 
 /// Type of events broadcasted by the node to the public API.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum NodeEvent {
     /// The node has been connected to the network
     ConnectedToNetwork,
@@ -57,4 +59,16 @@ pub enum NodeEvent {
     ChannelClosed,
     /// AutoNAT discovered we are behind a NAT, thus private.
     BehindNat,
+}
+
+impl NodeEvent {
+    /// Convert NodeEvent to bytes
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        rmp_serde::to_vec(&self).map_err(|_| Error::NodeEventParsingFailed)
+    }
+
+    /// Get NodeEvent from bytes
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        rmp_serde::from_slice(bytes).map_err(|_| Error::NodeEventParsingFailed)
+    }
 }
