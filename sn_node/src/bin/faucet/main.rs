@@ -6,6 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod faucet_server;
+
+use faucet_server::run_faucet_server;
+
 use clap::{Parser, Subcommand};
 use eyre::Result;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet, Client};
@@ -53,26 +57,46 @@ enum SubCmd {
         #[clap(name = "to")]
         to: String,
     },
+    /// Starts an http server that will send tokens to anyone who requests them.
+    /// curl http://localhost:8000/your-hex-encoded-wallet-public-address
+    Server,
 }
 
 async fn faucet_cmds(cmds: SubCmd, client: &Client) -> Result<()> {
     match cmds {
         SubCmd::ClaimGenesis => {
-            let _wallet = load_faucet_wallet(client).await;
+            claim_genesis(client).await;
         }
         SubCmd::Send { amount, to } => {
-            let to = parse_public_address(to)?;
-            use std::str::FromStr;
-            let amount = Token::from_str(&amount)?;
-            if amount.as_nano() == 0 {
-                println!("Invalid format or zero amount passed in. Nothing sent.");
-                return Ok(());
-            }
-
-            let dbc = get_tokens_from_faucet(amount, to, client).await;
-            let dbc_hex = dbc.to_hex()?;
-            println!("{dbc_hex}");
+            send_tokens(client, &amount, &to).await?;
+        }
+        SubCmd::Server => {
+            // shouldn't return except on error
+            run_faucet_server(client).await?;
         }
     }
     Ok(())
+}
+
+async fn claim_genesis(client: &Client) {
+    let _wallet = load_faucet_wallet(client).await;
+}
+
+/// returns the hex-encoded dbc
+async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> {
+    let to = parse_public_address(to)?;
+    use std::str::FromStr;
+    let amount = Token::from_str(amount)?;
+    if amount.as_nano() == 0 {
+        println!("Invalid format or zero amount passed in. Nothing sent.");
+        return Err(eyre::eyre!(
+            "Invalid format or zero amount passed in. Nothing sent."
+        ));
+    }
+
+    let dbc = get_tokens_from_faucet(amount, to, client).await;
+    let dbc_hex = dbc.to_hex()?;
+    println!("{dbc_hex}");
+
+    Ok(dbc_hex)
 }

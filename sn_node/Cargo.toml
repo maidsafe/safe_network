@@ -15,7 +15,7 @@ path = "src/bin/safenode/main.rs"
 
 [[bin]]
 name = "faucet"
-path = "src/bin/faucet.rs"
+path = "src/bin/faucet/main.rs"
 
 [features]
 default=["metrics"]
@@ -68,6 +68,7 @@ walkdir = "2.3.1"
 xor_name = "5.0.0"
 tracing-log = { version = "0.1.3", features = ["env_logger"] }
 strum = { version = "0.25.0", features = ["derive"] }
+tiny_http = "0.11"
 
 [dev-dependencies]
 assert_fs = "1.0.0"
