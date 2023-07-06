@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.12...sn_networking-v0.3.13) - 2023-07-06
+
+### Other
+- add docs to `dialed_peers` for explanation
+
 ## [0.3.12](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.11...sn_networking-v0.3.12) - 2023-07-06
 
 ### Added
