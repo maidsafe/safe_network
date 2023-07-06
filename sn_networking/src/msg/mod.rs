@@ -23,14 +23,14 @@ impl SwarmDriver {
         event: request_response::Event<Request, Response>,
     ) -> Result<(), Error> {
         match event {
-            request_response::Event::Message { message, .. } => match message {
+            request_response::Event::Message { message, peer } => match message {
                 Message::Request {
                     request,
                     channel,
                     request_id,
                     ..
                 } => {
-                    trace!("Received request with id: {request_id:?}, req: {request:?}");
+                    trace!("Received request {request_id:?} from peer {peer:?}, req: {request:?}");
                     self.send_event(NetworkEvent::RequestReceived {
                         req: request,
                         channel: MsgResponder::FromPeer(channel),
@@ -40,7 +40,7 @@ impl SwarmDriver {
                     request_id,
                     response,
                 } => {
-                    trace!("Got response for id: {request_id:?}, res: {response}.");
+                    trace!("Got response {request_id:?} from peer {peer:?}, res: {response}.");
                     if let Some(sender) = self.pending_requests.remove(&request_id) {
                         // The sender will be provided if the caller (Requester) is awaiting for a response
                         // at the call site.
