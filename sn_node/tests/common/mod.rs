@@ -10,8 +10,34 @@ use sn_client::{get_tokens_from_faucet, Client};
 use sn_transfers::wallet::LocalWallet;
 
 use eyre::Result;
+use lazy_static::lazy_static;
 use sn_dbc::Token;
-use std::path::Path;
+use sn_logging::{LogFormat, LogOutputDest};
+use std::{path::Path, sync::Once};
+use tokio::sync::Mutex;
+use tracing_core::Level;
+
+static TEST_INIT_LOGGER: Once = Once::new();
+
+pub fn init_logging() {
+    TEST_INIT_LOGGER.call_once(|| {
+        let logging_targets = vec![
+            ("safenode".to_string(), Level::INFO),
+            ("sn_client".to_string(), Level::TRACE),
+            ("sn_transfers".to_string(), Level::INFO),
+            ("sn_networking".to_string(), Level::INFO),
+            ("sn_node".to_string(), Level::INFO),
+        ];
+        let _log_appender_guard =
+            sn_logging::init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)
+                .expect("Failed to init logging");
+    });
+}
+
+lazy_static! {
+    // mutex to restrict access to faucet wallet from concurrent tests
+    static ref FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::new(());
+}
 
 pub async fn get_client() -> Client {
     let secret_key = bls::SecretKey::random();
@@ -27,13 +53,16 @@ pub async fn get_wallet(root_dir: &Path) -> LocalWallet {
 }
 
 pub async fn get_client_and_wallet(root_dir: &Path, amount: u64) -> Result<(Client, LocalWallet)> {
-    let wallet_balance = Token::from_nano(amount);
+    let _guard = FAUCET_WALLET_MUTEX.lock().await;
 
+    let wallet_balance = Token::from_nano(amount);
     let mut local_wallet = get_wallet(root_dir).await;
     let client = get_client().await;
+
     println!("Getting {wallet_balance} tokens from the faucet...");
     let tokens = get_tokens_from_faucet(wallet_balance, local_wallet.address(), &client).await;
     std::thread::sleep(std::time::Duration::from_secs(5));
+
     println!("Verifying the transfer from faucet...");
     client.verify(&tokens).await?;
     local_wallet.deposit(vec![tokens]);
