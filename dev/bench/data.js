@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688751469137,
+  "lastUpdate": 1688751497333,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3795,6 +3795,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 30.64,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "d7760063050c81e3a7c9650723687285031f5b93",
+          "message": "test: adapting paid chunk upload integration tests to new no-responses type of protocol",
+          "timestamp": "2023-07-07T16:35:43Z",
+          "tree_id": "abcea46ef1eda899e034ff1e1a86adb28c9ed325",
+          "url": "https://github.com/maidsafe/safe_network/commit/d7760063050c81e3a7c9650723687285031f5b93"
+        },
+        "date": 1688751496928,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 35.51,
             "unit": "MB"
           }
         ]
