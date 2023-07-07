@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688718345158,
+  "lastUpdate": 1688718372768,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3591,6 +3591,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 26.65,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "d29cae7683bec39fdef219ffdbfdb083d4d7d2f6",
+          "message": "feat: provide a `--clean` flag\n\nProvides a `--clean` flag to remove all previous node root directories under the data directory,\nwhich is platform specific.",
+          "timestamp": "2023-07-07T07:17:02Z",
+          "tree_id": "34c6270a1ab26d76386bd48ce13539d29f67eed5",
+          "url": "https://github.com/maidsafe/safe_network/commit/d29cae7683bec39fdef219ffdbfdb083d4d7d2f6"
+        },
+        "date": 1688718372357,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "node-memory-usage-through-safe-benchmark",
+            "value": 24.63,
             "unit": "MB"
           }
         ]
