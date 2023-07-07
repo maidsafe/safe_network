@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688735618463,
+  "lastUpdate": 1688735655870,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3727,6 +3727,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 26.28,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "345c03439de1aaa86211233c1363eb9fd648c2fb",
+          "message": "ci: duplicate proto files for sn_testnet\n\nThis is a quick fix to the publishing problem regarding missing proto files, which duplicates the\nfiles.\n\nIt is not completely straight forward to reference the files from another crate due to the way the\nCargo publishing process works.",
+          "timestamp": "2023-07-07T14:47:22+02:00",
+          "tree_id": "c5c7a447b0a58e2d489581db839f9760f6759f33",
+          "url": "https://github.com/maidsafe/safe_network/commit/345c03439de1aaa86211233c1363eb9fd648c2fb"
+        },
+        "date": 1688735654973,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 30.64,
             "unit": "MB"
           }
         ]
