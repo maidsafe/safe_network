@@ -3722,7 +3722,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 487,
             "unit": "MB"
           }
@@ -3756,7 +3756,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 467,
             "unit": "MB"
           }
@@ -3790,7 +3790,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 441,
             "unit": "MB"
           }
@@ -3824,7 +3824,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 493,
             "unit": "MB"
           }
@@ -3858,7 +3858,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 465,
             "unit": "MB"
           }
@@ -3892,7 +3892,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 471,
             "unit": "MB"
           }
@@ -3926,7 +3926,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 469,
             "unit": "MB"
           }
@@ -3960,7 +3960,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 479,
             "unit": "MB"
           }
@@ -3994,7 +3994,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 466,
             "unit": "MB"
           }
@@ -4028,7 +4028,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 576,
             "unit": "MB"
           }
@@ -4062,7 +4062,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 580,
             "unit": "MB"
           }
@@ -4096,7 +4096,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 581,
             "unit": "MB"
           }
@@ -4130,7 +4130,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 537,
             "unit": "MB"
           }
@@ -4164,7 +4164,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 550,
             "unit": "MB"
           }
@@ -4198,7 +4198,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 554,
             "unit": "MB"
           }
@@ -4232,7 +4232,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 569,
             "unit": "MB"
           }
@@ -4266,7 +4266,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 568,
             "unit": "MB"
           }
@@ -4300,7 +4300,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 563,
             "unit": "MB"
           }
@@ -4334,7 +4334,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 514,
             "unit": "MB"
           }
@@ -4368,7 +4368,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 505,
             "unit": "MB"
           }
@@ -4402,7 +4402,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 471,
             "unit": "MB"
           }
@@ -4436,7 +4436,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 438,
             "unit": "MB"
           }
@@ -4470,7 +4470,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 442,
             "unit": "MB"
           }
@@ -4504,7 +4504,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 454,
             "unit": "MB"
           }
@@ -4538,7 +4538,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 482,
             "unit": "MB"
           }
@@ -4572,7 +4572,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 413,
             "unit": "MB"
           }
@@ -4606,7 +4606,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 360,
             "unit": "MB"
           }
@@ -4640,7 +4640,7 @@ window.BENCHMARK_DATA = {
             "unit": "MB"
           },
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 549,
             "unit": "MB"
           }
@@ -4703,7 +4703,7 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 324.1,
             "unit": "MB"
           },
@@ -4737,7 +4737,7 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ upload",
+            "name": "Average memory usage w/ upload",
             "value": 315.68,
             "unit": "MB"
           },
