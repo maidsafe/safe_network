@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688735660493,
+  "lastUpdate": 1688751469137,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -2101,6 +2101,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 8.476656350639411,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "d7760063050c81e3a7c9650723687285031f5b93",
+          "message": "test: adapting paid chunk upload integration tests to new no-responses type of protocol",
+          "timestamp": "2023-07-07T16:35:43Z",
+          "tree_id": "abcea46ef1eda899e034ff1e1a86adb28c9ed325",
+          "url": "https://github.com/maidsafe/safe_network/commit/d7760063050c81e3a7c9650723687285031f5b93"
+        },
+        "date": 1688751468523,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1935044793374843,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.877539819043596,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.219219256399931,
             "unit": "MiB/s"
           }
         ]
