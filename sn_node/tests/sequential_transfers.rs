@@ -8,29 +8,19 @@
 
 mod common;
 
-use common::{get_client_and_wallet, get_wallet};
+use common::{get_client_and_wallet, get_wallet, init_logging};
 
 use sn_client::send;
 
 use sn_dbc::{random_derivation_index, rng, Token};
-use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_transfers::client_transfers::create_transfer;
-use tracing_core::Level;
 
 use assert_fs::TempDir;
 use eyre::Result;
 
 #[tokio::test(flavor = "multi_thread")]
-async fn multiple_sequential_transfers_succeed() -> Result<()> {
-    let logging_targets = vec![
-        ("safenode".to_string(), Level::INFO),
-        ("sn_client".to_string(), Level::TRACE),
-        ("sn_transfers".to_string(), Level::INFO),
-        ("sn_networking".to_string(), Level::INFO),
-        ("sn_node".to_string(), Level::INFO),
-    ];
-    let _log_appender_guard =
-        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
+async fn dbc_transfer_multiple_sequential_succeed() -> Result<()> {
+    init_logging();
 
     let first_wallet_balance = 1_000_000_000;
     let first_wallet_dir = TempDir::new()?;
@@ -66,16 +56,8 @@ async fn multiple_sequential_transfers_succeed() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn double_spend_transfers_fail() -> Result<()> {
-    let logging_targets = vec![
-        ("safenode".to_string(), Level::INFO),
-        ("sn_client".to_string(), Level::TRACE),
-        ("sn_transfers".to_string(), Level::INFO),
-        ("sn_networking".to_string(), Level::INFO),
-        ("sn_node".to_string(), Level::INFO),
-    ];
-    let _log_appender_guard =
-        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
+async fn dbc_transfer_double_spend_fail() -> Result<()> {
+    init_logging();
 
     // create 1 wallet add money from faucet
     let first_wallet_balance = 1_000_000_000;

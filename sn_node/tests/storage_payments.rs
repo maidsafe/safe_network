@@ -8,30 +8,51 @@
 
 mod common;
 
-use common::get_client_and_wallet;
+use common::{get_client_and_wallet, init_logging};
 
-use sn_client::WalletClient;
+use self_encryption::MIN_ENCRYPTABLE_BYTES;
+use sn_client::{Client, Error as ClientError, Files, WalletClient};
 use sn_dbc::{Hash, Token};
-use sn_logging::{init_logging, LogFormat, LogOutputDest};
-use sn_transfers::wallet::Error;
+use sn_protocol::{
+    error::Error as ProtocolError,
+    storage::{Chunk, ChunkAddress},
+};
+use sn_transfers::wallet::Error as WalletError;
 
 use assert_fs::TempDir;
+use bytes::Bytes;
 use eyre::Result;
-use rand::Rng;
-use tracing_core::Level;
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
+use tokio::time::{sleep, Duration};
 use xor_name::XorName;
+
+fn random_content(client: &Client) -> Result<(Files, Bytes, ChunkAddress, Vec<Chunk>)> {
+    let mut rng = rand::thread_rng();
+
+    let random_len = rng.gen_range(MIN_ENCRYPTABLE_BYTES..1024 * MIN_ENCRYPTABLE_BYTES);
+    let random_length_content: Vec<u8> =
+        <Standard as Distribution<u8>>::sample_iter(Standard, &mut rng)
+            .take(random_len)
+            .collect();
+
+    let files_api = Files::new(client.clone());
+    let content_bytes = Bytes::from(random_length_content);
+    let (file_addr, chunks) = files_api.chunk_bytes(content_bytes.clone())?;
+
+    Ok((
+        files_api,
+        content_bytes,
+        ChunkAddress::new(file_addr),
+        chunks,
+    ))
+}
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_succeeds() -> Result<()> {
-    let logging_targets = vec![
-        ("safenode".to_string(), Level::INFO),
-        ("sn_client".to_string(), Level::TRACE),
-        ("sn_transfers".to_string(), Level::INFO),
-        ("sn_networking".to_string(), Level::INFO),
-        ("sn_node".to_string(), Level::INFO),
-    ];
-    let _log_appender_guard =
-        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
+    init_logging();
 
     let paying_wallet_balance = 500_000;
     let paying_wallet_dir = TempDir::new()?;
@@ -56,7 +77,7 @@ async fn storage_payment_succeeds() -> Result<()> {
         .pay_for_storage(random_content_addrs.iter())
         .await?;
 
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    sleep(Duration::from_secs(5)).await;
 
     let cost = proofs.len() as u64; // 1 nano per addr
     let new_balance = Token::from_nano(paying_wallet_balance - cost);
@@ -69,15 +90,7 @@ async fn storage_payment_succeeds() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_fails() -> Result<()> {
-    let logging_targets = vec![
-        ("safenode".to_string(), Level::INFO),
-        ("sn_client".to_string(), Level::TRACE),
-        ("sn_transfers".to_string(), Level::INFO),
-        ("sn_networking".to_string(), Level::INFO),
-        ("sn_node".to_string(), Level::INFO),
-    ];
-    let _log_appender_guard =
-        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
+    init_logging();
 
     let wallet_dir = TempDir::new()?;
     let (client, mut wallet_client) = get_client_and_wallet(wallet_dir.path(), 15_000).await?;
@@ -97,7 +110,149 @@ async fn storage_payment_fails() -> Result<()> {
 
     let failed_send = client.send(transfer).await;
 
-    assert!(matches!(failed_send, Err(Error::CouldNotSendTokens(_))));
+    assert!(matches!(
+        failed_send,
+        Err(WalletError::CouldNotSendTokens(_))
+    ));
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
+    let paying_wallet_balance = 500_000;
+    let paying_wallet_dir = TempDir::new()?;
+
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    let (files_api, content_bytes, content_addr, chunks) = random_content(&client)?;
+
+    println!("Paying for {} random addresses...", chunks.len());
+
+    let proofs = wallet_client
+        .pay_for_storage(chunks.iter().map(|c| c.name()))
+        .await?;
+
+    sleep(Duration::from_secs(5)).await;
+
+    files_api.upload_with_proof(content_bytes, &proofs).await?;
+
+    sleep(Duration::from_secs(5)).await;
+
+    files_api.read_bytes(content_addr).await?;
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn storage_payment_chunk_upload_fails() -> Result<()> {
+    let paying_wallet_balance = 500_000;
+    let paying_wallet_dir = TempDir::new()?;
+
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    let (files_api, content_bytes, _, chunks) = random_content(&client)?;
+
+    println!("Paying for {} random addresses...", chunks.len());
+
+    let proofs = wallet_client
+        .pay_for_storage(chunks.iter().map(|c| c.name()))
+        .await?;
+
+    sleep(Duration::from_secs(5)).await;
+
+    // let's corrupt the proofs, removing spent input ids
+    let invalid_proofs: std::collections::BTreeMap<_, _> = proofs
+        .clone()
+        .into_iter()
+        .map(|(a, mut p)| {
+            p.spent_ids = vec![];
+            (a, p)
+        })
+        .collect();
+
+    assert!(matches!(
+        files_api
+            .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+            .await,
+        Err(ClientError::Protocol(
+            ProtocolError::PaymentProofWithoutInputs(_)
+        ))
+    ));
+
+    // let's corrupt the proofs' audit trail
+    let invalid_proofs: std::collections::BTreeMap<_, _> = proofs
+        .clone()
+        .into_iter()
+        .map(|(a, mut p)| {
+            p.audit_trail = vec![];
+            (a, p)
+        })
+        .collect();
+
+    assert!(matches!(
+        files_api
+            .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+            .await,
+        Err(ClientError::Protocol(
+            ProtocolError::InvalidPaymentProof { .. }
+        ))
+    ));
+
+    // let's corrupt the proofs' audit trail path
+    let invalid_proofs: std::collections::BTreeMap<_, _> = proofs
+        .clone()
+        .into_iter()
+        .map(|(a, mut p)| {
+            p.path = vec![];
+            (a, p)
+        })
+        .collect();
+
+    assert!(matches!(
+        files_api
+            .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+            .await,
+        Err(ClientError::Protocol(
+            ProtocolError::InvalidPaymentProof { .. }
+        ))
+    ));
+
+    // let's make a payment but only for one chunk/address,
+    let (root_hash, _) =
+        sn_transfers::payment_proof::build_payment_proofs(chunks.iter().map(|c| c.name()))?;
+    let transfer = wallet_client
+        .into_wallet()
+        .local_send_storage_payment(Token::from_nano(1), root_hash, None)
+        .await?;
+    client.send(transfer.clone()).await?;
+    let spent_ids: Vec<_> = transfer.tx.inputs.iter().map(|i| i.dbc_id()).collect();
+
+    sleep(Duration::from_secs(5)).await;
+
+    // and let's link it from the payment proof
+    let invalid_proofs: std::collections::BTreeMap<_, _> = proofs
+        .clone()
+        .into_iter()
+        .map(|(a, mut p)| {
+            p.spent_ids = spent_ids.clone();
+            (a, p)
+        })
+        .collect();
+
+    // it should fail to store as the amount paid is not enough
+    assert!(matches!(
+        files_api
+        .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+        .await,
+        Err(ClientError::Protocol(
+            ProtocolError::PaymentProofInsufficientAmount { paid, .. }
+        )) if paid == 1
+    ));
 
     Ok(())
 }
