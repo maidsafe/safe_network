@@ -247,7 +247,7 @@ impl SwarmDriver {
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         let peer_id = PeerId::from(keypair.public());
         info!(
-            "Node (PID: {}) with PeerId: {peer_id}. Is running as local? {local}",
+            "Node (PID: {}) with PeerId: {peer_id}",
             std::process::id()
         );
         info!("PeerId: {peer_id} has replication interval of {replication_interval:?}");

@@ -220,6 +220,7 @@ fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
 
             lines.map_while(|item| item.ok()).for_each(|line| {
                 if let Some(cap) = re.captures_iter(&line).next() {
+                    println!(">>>>>>>>>.. {line:?}");
                     let pid = cap[1].parse().expect("Failed to parse PID from node log");
                     let peer_id =
                         PeerId::from_str(&cap[2]).expect("Failed to parse PeerId from node log");
