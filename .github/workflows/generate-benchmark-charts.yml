@@ -188,7 +188,7 @@ jobs:
           # Write the node memory usage to a file
           echo '[
               {
-                  "name": "node-memory-usage-through-safe-benchmark",
+                  "name": "Peak memory w/ `safe` benchmarks",
                   "value": '$memory_usage',
                   "unit": "MB"
               }
@@ -279,12 +279,12 @@ jobs:
           # Write the client memory usage to a file
           echo '[
               {
-                  "name": "client-peak-memory-usage-during-upload",
+                  "name": "Peak memory usage w/ upload",
                   "value": '$peak_mem_usage',
                   "unit": "MB"
               },
               {
-                  "name": "client-average-memory-usage-during-upload",
+                  "name": "Average memory usage w/ upload",
                   "value": '$average_mem',
                   "unit": "MB"
               }
