@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688674926314,
+  "lastUpdate": 1688718345158,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -1984,6 +1984,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 9.90656689523297,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "d29cae7683bec39fdef219ffdbfdb083d4d7d2f6",
+          "message": "feat: provide a `--clean` flag\n\nProvides a `--clean` flag to remove all previous node root directories under the data directory,\nwhich is platform specific.",
+          "timestamp": "2023-07-07T07:17:02Z",
+          "tree_id": "34c6270a1ab26d76386bd48ce13539d29f67eed5",
+          "url": "https://github.com/maidsafe/safe_network/commit/d29cae7683bec39fdef219ffdbfdb083d4d7d2f6"
+        },
+        "date": 1688718344558,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1829986950566398,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.781628065756104,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.19795698203776,
             "unit": "MiB/s"
           }
         ]
