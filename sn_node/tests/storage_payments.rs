@@ -13,10 +13,8 @@ use common::{get_client_and_wallet, init_logging};
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use sn_client::{Client, Error as ClientError, Files, WalletClient};
 use sn_dbc::{Hash, Token};
-use sn_protocol::{
-    error::Error as ProtocolError,
-    storage::{Chunk, ChunkAddress},
-};
+use sn_networking::Error as NetworkError;
+use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::wallet::Error as WalletError;
 
 use assert_fs::TempDir;
@@ -155,7 +153,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, _, chunks) = random_content(&client)?;
+    let (files_api, content_bytes, content_addr, chunks) = random_content(&client)?;
 
     println!("Paying for {} random addresses...", chunks.len());
 
@@ -175,13 +173,12 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         })
         .collect();
 
+    files_api
+        .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+        .await?;
     assert!(matches!(
-        files_api
-            .upload_with_proof(content_bytes.clone(), &invalid_proofs)
-            .await,
-        Err(ClientError::Protocol(
-            ProtocolError::PaymentProofWithoutInputs(_)
-        ))
+        files_api.read_bytes(content_addr).await,
+        Err(ClientError::Network(NetworkError::RecordNotFound))
     ));
 
     // let's corrupt the proofs' audit trail
@@ -194,13 +191,12 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         })
         .collect();
 
+    files_api
+        .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+        .await?;
     assert!(matches!(
-        files_api
-            .upload_with_proof(content_bytes.clone(), &invalid_proofs)
-            .await,
-        Err(ClientError::Protocol(
-            ProtocolError::InvalidPaymentProof { .. }
-        ))
+        files_api.read_bytes(content_addr).await,
+        Err(ClientError::Network(NetworkError::RecordNotFound))
     ));
 
     // let's corrupt the proofs' audit trail path
@@ -213,13 +209,12 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         })
         .collect();
 
+    files_api
+        .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+        .await?;
     assert!(matches!(
-        files_api
-            .upload_with_proof(content_bytes.clone(), &invalid_proofs)
-            .await,
-        Err(ClientError::Protocol(
-            ProtocolError::InvalidPaymentProof { .. }
-        ))
+        files_api.read_bytes(content_addr).await,
+        Err(ClientError::Network(NetworkError::RecordNotFound))
     ));
 
     // let's make a payment but only for one chunk/address,
@@ -245,13 +240,12 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         .collect();
 
     // it should fail to store as the amount paid is not enough
-    assert!(matches!(
-        files_api
+    files_api
         .upload_with_proof(content_bytes.clone(), &invalid_proofs)
-        .await,
-        Err(ClientError::Protocol(
-            ProtocolError::PaymentProofInsufficientAmount { paid, .. }
-        )) if paid == 1
+        .await?;
+    assert!(matches!(
+        files_api.read_bytes(content_addr).await,
+        Err(ClientError::Network(NetworkError::RecordNotFound))
     ));
 
     Ok(())
