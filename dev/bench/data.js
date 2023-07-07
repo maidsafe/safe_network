@@ -3657,7 +3657,7 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "node-memory-usage-through-safe-benchmark",
+            "name": "Peak memory w/ `safe` benchmarks",
             "value": 24.63,
             "unit": "MB"
           }
@@ -3717,12 +3717,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 925.6,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 487,
             "unit": "MB"
           }
@@ -3751,12 +3751,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 925.87,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 467,
             "unit": "MB"
           }
@@ -3785,12 +3785,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 924.36,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 441,
             "unit": "MB"
           }
@@ -3819,12 +3819,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 914.62,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 493,
             "unit": "MB"
           }
@@ -3853,12 +3853,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 917.94,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 465,
             "unit": "MB"
           }
@@ -3887,12 +3887,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 931.73,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 471,
             "unit": "MB"
           }
@@ -3921,12 +3921,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 933.82,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 469,
             "unit": "MB"
           }
@@ -3955,12 +3955,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 926.24,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 479,
             "unit": "MB"
           }
@@ -3989,12 +3989,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 930.35,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 466,
             "unit": "MB"
           }
@@ -4023,12 +4023,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 927.7,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 576,
             "unit": "MB"
           }
@@ -4057,12 +4057,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 928.85,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 580,
             "unit": "MB"
           }
@@ -4091,12 +4091,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 934.51,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 581,
             "unit": "MB"
           }
@@ -4125,12 +4125,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 924.02,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 537,
             "unit": "MB"
           }
@@ -4159,12 +4159,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 924.85,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 550,
             "unit": "MB"
           }
@@ -4193,12 +4193,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 930.81,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 554,
             "unit": "MB"
           }
@@ -4227,12 +4227,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 928.71,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 569,
             "unit": "MB"
           }
@@ -4261,12 +4261,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 930.48,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 568,
             "unit": "MB"
           }
@@ -4295,12 +4295,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 928.85,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 563,
             "unit": "MB"
           }
@@ -4329,12 +4329,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 924.08,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 514,
             "unit": "MB"
           }
@@ -4363,12 +4363,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 928.43,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 505,
             "unit": "MB"
           }
@@ -4397,12 +4397,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 936.36,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 471,
             "unit": "MB"
           }
@@ -4431,12 +4431,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 918.98,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 438,
             "unit": "MB"
           }
@@ -4465,12 +4465,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 916.65,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 442,
             "unit": "MB"
           }
@@ -4499,12 +4499,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 916.47,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 454,
             "unit": "MB"
           }
@@ -4533,12 +4533,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 926.41,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 482,
             "unit": "MB"
           }
@@ -4567,12 +4567,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 923.8,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 413,
             "unit": "MB"
           }
@@ -4601,12 +4601,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 928.09,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 360,
             "unit": "MB"
           }
@@ -4635,12 +4635,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 969.02,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 549,
             "unit": "MB"
           }
@@ -4669,12 +4669,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "Peak memory usage w/ ~450mb upload",
+            "name": "Peak memory usage w/ upload",
             "value": 345.46,
             "unit": "MB"
           },
           {
-            "name": "Average memory usage w/ ~450mb upload",
+            "name": "Average memory usage w/ upload",
             "value": 198,
             "unit": "MB"
           }
@@ -4703,12 +4703,12 @@ window.BENCHMARK_DATA = {
         "tool": "customSmallerIsBetter",
         "benches": [
           {
-            "name": "client-peak-memory-usage-during-upload",
+            "name": "Peak memory usage w/ upload",
             "value": 324.1,
             "unit": "MB"
           },
           {
-            "name": "client-average-memory-usage-during-upload",
+            "name": "Average memory usage w/ upload",
             "value": 241,
             "unit": "MB"
           }
