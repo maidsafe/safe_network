@@ -181,11 +181,14 @@ impl Node {
                 }
             }
             NetworkEvent::PeerRemoved(peer_id) => {
+                Marker::PeerRemovedFromRoutingTable(peer_id).log();
+
                 if let Err(err) = self.try_trigger_replication(&peer_id, true).await {
                     error!("Error while triggering replication {err:?}");
                 }
             }
             NetworkEvent::LostRecordDetected(peer_ids) => {
+                Marker::LostRecordDetected(&peer_ids).log();
                 for peer_id in peer_ids.iter() {
                     if let Err(err) = self.try_trigger_replication(peer_id, false).await {
                         error!("Error while triggering replication to {peer_id:?} {err:?}");
