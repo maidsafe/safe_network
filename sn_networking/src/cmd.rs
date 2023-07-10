@@ -24,6 +24,7 @@ use std::collections::HashSet;
 use tokio::sync::oneshot;
 
 /// Commands to send to the Swarm
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum SwarmCmd {
     StartListening {

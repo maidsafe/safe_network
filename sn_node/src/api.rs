@@ -12,9 +12,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_networking::{MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{
-        Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, ReplicatedData, Request, Response,
-    },
+    messages::{Cmd, CmdResponse, Query, QueryResponse, ReplicatedData, Request, Response},
     storage::DbcAddress,
     NetworkAddress,
 };
@@ -378,23 +376,6 @@ impl Node {
 
                 // if we do not send a response, we can cause conneciton failures.
                 CmdResponse::Replicate(Ok(()))
-            }
-            Cmd::Register(cmd) => {
-                let result = self.handle_register_cmd(&cmd).await;
-
-                let xorname = cmd.dst();
-                match cmd {
-                    RegisterCmd::Create { .. } => {
-                        self.events_channel
-                            .broadcast(NodeEvent::RegisterCreated(xorname));
-                        CmdResponse::CreateRegister(result)
-                    }
-                    RegisterCmd::Edit(_) => {
-                        self.events_channel
-                            .broadcast(NodeEvent::RegisterEdited(xorname));
-                        CmdResponse::EditRegister(result)
-                    }
-                }
             }
             Cmd::SpendDbc(signed_spend) => {
                 let dbc_id = *signed_spend.dbc_id();

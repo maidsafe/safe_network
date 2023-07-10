@@ -6,7 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::RegisterCmd;
 use crate::{storage::DbcAddress, NetworkAddress};
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
@@ -21,10 +20,6 @@ pub use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend};
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
 pub enum Cmd {
-    /// [`Register`] write operation.
-    ///
-    /// [`Register`]: sn_registers::Register
-    Register(RegisterCmd),
     /// [`SignedSpend`] write operation.
     ///
     /// [`SignedSpend`]: sn_dbc::SignedSpend
@@ -50,7 +45,6 @@ impl Cmd {
     /// Used to send a cmd to the close group of the address.
     pub fn dst(&self) -> NetworkAddress {
         match self {
-            Cmd::Register(cmd) => NetworkAddress::from_register_address(cmd.dst()),
             Cmd::SpendDbc(signed_spend) => {
                 NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
             }
@@ -63,9 +57,6 @@ impl Cmd {
 impl std::fmt::Display for Cmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Cmd::Register(cmd) => {
-                write!(f, "Cmd::Register({:?})", cmd.name()) // more qualification needed
-            }
             Cmd::SpendDbc(signed_spend) => {
                 write!(f, "Cmd::SpendDbc({:?})", signed_spend.dbc_id())
             }
