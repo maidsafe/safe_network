@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use libp2p::PeerId;
+use rand::{seq::SliceRandom, thread_rng};
 use sn_protocol::NetworkAddress;
 use std::{
     collections::{BTreeMap, HashSet},
@@ -14,7 +15,7 @@ use std::{
 };
 
 // Max parallel fetches can be undertaken at the same time.
-const MAX_PARALLEL_FETCH: usize = 4;
+const MAX_PARALLEL_FETCH: usize = 8;
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
@@ -81,7 +82,14 @@ impl ReplicationFetcher {
 
         let len = MAX_PARALLEL_FETCH - self.on_going_fetches;
         let mut all_failed_entries = vec![];
-        for (key, holders) in self.to_be_fetched.iter_mut() {
+
+        debug!("Records awaiting fetch: {:?}", self.to_be_fetched.len());
+        // Randomize the order of keys to fetch
+        let mut rng = thread_rng();
+        let mut data_to_fetch = self.to_be_fetched.iter_mut().collect::<Vec<_>>();
+        data_to_fetch.shuffle(&mut rng); // devskim: ignore DS148264 - this is crypto secure using os rng 
+
+        for (key, holders) in data_to_fetch {
             let mut failed_counter = 0;
             if holders.values().any(|status| {
                 HolderStatus::OnGoing == status.1
