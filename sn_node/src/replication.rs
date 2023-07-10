@@ -6,8 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::error::Result;
 use crate::Node;
+use crate::{error::Result, log_markers::Marker};
 use libp2p::{kad::KBucketKey, PeerId};
 use sn_networking::{sort_peers_by_address, sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{
@@ -160,6 +160,14 @@ impl Node {
             .network
             .add_keys_to_replication_fetcher(peer_id, non_existing_keys)
             .await?;
+
+        Marker::FetchingKeysForReplication {
+            fetching_keys_len: keys_to_fetch.len(),
+            provided_keys_len: keys.len(),
+            peer_id,
+        }
+        .log();
+
         self.fetch_replication_keys_without_wait(keys_to_fetch)
             .await?;
         Ok(())
