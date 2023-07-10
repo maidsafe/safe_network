@@ -320,7 +320,6 @@ impl Node {
 
     async fn handle_query(&self, query: Query) -> Response {
         let resp = match query {
-            Query::Register(reg_query) => self.handle_register_query(&reg_query).await,
             Query::GetChunk(address) => {
                 trace!("Got GetChunk query for {address:?}");
                 let result = self.get_chunk_from_network(address).await;

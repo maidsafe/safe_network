@@ -11,8 +11,6 @@ use crate::{
     NetworkAddress,
 };
 
-use super::RegisterQuery;
-
 use serde::{Deserialize, Serialize};
 
 /// Data queries - retrieving data and inspecting their structure.
@@ -31,10 +29,6 @@ pub enum Query {
     /// [`Chunk`]:  crate::storage::Chunk
     /// [`GetChunk`]: super::QueryResponse::GetChunk
     GetChunk(ChunkAddress),
-    /// [`Register`] read operation.
-    ///
-    /// [`Register`]: sn_registers::Register
-    Register(RegisterQuery),
     /// Retrieve a [`SignedSpend`] at the given address.
     ///
     /// This should eventually lead to a [`GetDbcSpend`] response.
@@ -61,7 +55,6 @@ impl Query {
     pub fn dst(&self) -> NetworkAddress {
         match self {
             Query::GetChunk(address) => NetworkAddress::from_chunk_address(*address),
-            Query::Register(query) => NetworkAddress::from_register_address(query.dst()),
             Query::GetSpend(address) => NetworkAddress::from_dbc_address(*address),
             Query::GetReplicatedData { address, .. } => address.clone(),
         }
@@ -73,9 +66,6 @@ impl std::fmt::Display for Query {
         match self {
             Query::GetChunk(address) => {
                 write!(f, "Query::GetChunk({address:?})")
-            }
-            Query::Register(query) => {
-                write!(f, "Query::Register({:?})", query.dst()) // more qualification needed
             }
             Query::GetSpend(address) => {
                 write!(f, "Query::GetSpend({address:?})")

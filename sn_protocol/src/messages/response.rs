@@ -6,14 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-#[allow(unused_imports)] // needed by rustdocs links
-use super::RegisterQuery;
 use crate::{error::Result, messages::ReplicatedData, storage::Chunk, NetworkAddress};
 use serde::{Deserialize, Serialize};
 use sn_dbc::SignedSpend;
-use std::{collections::BTreeSet, fmt::Debug};
-
-use sn_registers::{Entry, EntryHash, Permissions, Register, User};
+use std::fmt::Debug;
 
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]
@@ -43,19 +39,6 @@ pub enum QueryResponse {
     ///
     /// [`GetReplicatedData`]: crate::messages::Query::GetReplicatedData
     GetReplicatedData(Result<(NetworkAddress, ReplicatedData)>),
-    //
-    // ===== Register Data =====
-    //
-    /// Response to [`RegisterQuery::Get`].
-    GetRegister(Result<Register>),
-    /// Response to [`RegisterQuery::GetEntry`].
-    GetRegisterEntry(Result<Entry>),
-    /// Response to [`RegisterQuery::GetOwner`].
-    GetRegisterOwner(Result<User>),
-    /// Response to [`RegisterQuery::Read`].
-    ReadRegister(Result<BTreeSet<(EntryHash, Entry)>>),
-    /// Response to [`RegisterQuery::GetPermissions`].
-    GetRegisterPermissions(Result<Permissions>),
 }
 
 /// The response to a Cmd, containing the query result.
