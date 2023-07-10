@@ -481,6 +481,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - client query register via get_record
 - client upload Register via put_record
 
+## [0.86.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.86.9...sn_node-v0.86.10) - 2023-07-10
+
+### Added
+- *(node)* remove any data we have from replication queue
+
+### Other
+- *(node)* cleanup unused SwarmCmd for GetAllRecordAddrs
+- add more logging around replication
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

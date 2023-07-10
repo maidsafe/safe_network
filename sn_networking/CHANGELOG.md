@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.15](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.14...sn_networking-v0.3.15) - 2023-07-10
+
+### Added
+- *(node)* remove any data we have from replication queue
+
+### Other
+- *(node)* cleanup unused SwarmCmd for GetAllRecordAddrs
+
 ## [0.3.14](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.13...sn_networking-v0.3.14) - 2023-07-10
 
 ### Added
