@@ -16,7 +16,6 @@ use super::{
 use bls::{PublicKey, SecretKey, Signature};
 use futures::future::select_all;
 use indicatif::ProgressBar;
-use itertools::Itertools;
 use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
     Multiaddr,
@@ -316,17 +315,6 @@ impl Client {
         } else {
             Err(ProtocolError::RecordKindMismatch(RecordKind::Chunk).into())
         }
-    }
-
-    pub(crate) async fn send_to_closest(&self, request: Request) -> Result<Vec<Result<Response>>> {
-        let responses = self
-            .network
-            .client_send_to_closest(&request, true)
-            .await?
-            .into_iter()
-            .map(|res| res.map_err(Error::Network))
-            .collect_vec();
-        Ok(responses)
     }
 
     /// Send a `SpendDbc` request to the closest nodes to the dbc_id
