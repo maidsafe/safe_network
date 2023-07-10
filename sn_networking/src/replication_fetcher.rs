@@ -74,9 +74,9 @@ impl ReplicationFetcher {
 
     // Returns a list of keys to fetch
     fn next_to_fetch(&mut self) -> Vec<(PeerId, NetworkAddress)> {
-        let mut keys_to_fetch = vec![];
+        let mut keys_to_fetch = BTreeMap::default();
         if self.on_going_fetches >= MAX_PARALLEL_FETCH {
-            return keys_to_fetch;
+            return vec![];
         }
 
         let len = MAX_PARALLEL_FETCH - self.on_going_fetches;
@@ -95,7 +95,11 @@ impl ReplicationFetcher {
                         status.0 = Instant::now();
                         status.1 = HolderStatus::OnGoing;
                         self.on_going_fetches += 1;
-                        keys_to_fetch.push((*peer_id, key.clone()));
+                        if keys_to_fetch.contains_key(peer_id) {
+                            // only do one request per peer in the pending list per `next_to_fetch` iteration
+                            continue;
+                        }
+                        keys_to_fetch.insert(*peer_id, key.clone());
                         break;
                     }
                     HolderStatus::OnGoing => {
@@ -127,6 +131,9 @@ impl ReplicationFetcher {
         }
 
         keys_to_fetch
+            .iter()
+            .map(|(peer_id, key)| (*peer_id, key.clone()))
+            .collect()
     }
 
     fn add_holder(&mut self, key: NetworkAddress, peer_id: PeerId) {
