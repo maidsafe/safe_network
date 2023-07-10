@@ -16,7 +16,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            node_data_path: /home/runner/.local/share/safe/node
+          - os: windows-latest
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+          - os: macos-latest
+            node_data_path: /Users/runner/Library/Application Support/safe/node
     steps:
       - uses: actions/checkout@v3
 
@@ -55,7 +61,7 @@ jobs:
       - name: Set contact env var node.
         shell: bash
         # get all nodes listen ports
-        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
+        run: echo "SAFE_PEERS=$(rg "listening on \".+\"" "${{ matrix.node_data_path }}" -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')" >> "$GITHUB_ENV"
 
       - name: Check contact peer
         shell: bash
