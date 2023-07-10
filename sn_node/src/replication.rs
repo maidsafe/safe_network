@@ -155,6 +155,10 @@ impl Node {
             .add_keys_to_replication_fetcher(peer_id, keys)
             .await?;
 
+        if keys_to_fetch.is_empty() {
+            return Ok(());
+        }
+
         Marker::FetchingKeysForReplication {
             fetching_keys_len: keys_to_fetch.len(),
             provided_keys_len,
