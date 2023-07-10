@@ -93,6 +93,7 @@ pub enum MsgResponder {
     FromPeer(PeerResponseChannel<Response>),
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 /// Events forwarded by the underlying Network; to be used by the upper layers
 pub enum NetworkEvent {

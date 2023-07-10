@@ -31,6 +31,7 @@ use sn_dbc::SignedSpend;
 use sn_registers::Register;
 use xor_name::XorName;
 
+#[allow(clippy::large_enum_variant)]
 /// A request to peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Request {

@@ -67,13 +67,6 @@ pub enum CmdResponse {
     /// Response to DbcCmd::Spend.
     Spend(Result<CmdOk>),
     //
-    // ===== Register Data =====
-    //
-    /// Response to RegisterCmd::Create.
-    CreateRegister(Result<()>),
-    /// Response to RegisterCmd::Edit.
-    EditRegister(Result<()>),
-    //
     // ===== Replication =====
     //
     /// Response to replication cmd

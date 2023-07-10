@@ -8,8 +8,10 @@
 
 use crate::{Client, Error, Result};
 
-use sn_protocol::messages::{
-    Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, RegisterQuery, Request, Response,
+use libp2p::kad::{Record, RecordKey};
+use sn_protocol::{
+    messages::{Query, QueryResponse, RegisterCmd, RegisterQuery, Request, Response},
+    storage::{try_serialize_record, RecordKind},
 };
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, User};
 
@@ -145,7 +147,7 @@ impl ClientRegister {
                     name: self.name().to_owned(),
                     tag: self.tag(),
                 };
-                self.publish_register_create(cmd).await?;
+                self.publish_register(cmd).await?;
                 self.register.clone()
             }
         };
@@ -163,10 +165,7 @@ impl ClientRegister {
 
             // TODO: send them all concurrently
             while let Some(cmd) = self.ops.pop_back() {
-                let result = match cmd {
-                    RegisterCmd::Create { .. } => self.publish_register_create(cmd.clone()).await,
-                    RegisterCmd::Edit { .. } => self.publish_register_edit(cmd.clone()).await,
-                };
+                let result = self.publish_register(cmd.clone()).await;
 
                 if let Err(err) = result {
                     warn!("Did not push Register cmd on all nodes in the close group!: {err}");
@@ -231,64 +230,47 @@ impl ClientRegister {
         Ok(reg)
     }
 
-    // Publish a `Register` creation command on the network.
-    async fn publish_register_create(&self, cmd: RegisterCmd) -> Result<()> {
-        debug!("Publishing Register create cmd: {:?}", cmd.dst());
-        let request = Request::Cmd(Cmd::Register(cmd));
-        let responses = self.client.send_to_closest(request).await?;
+    // Publish a `Register` command on the network.
+    async fn publish_register(&self, cmd: RegisterCmd) -> Result<()> {
+        let cmd_dst = cmd.dst();
+        debug!("Querying existing Register for cmd: {cmd_dst:?}");
 
-        let all_ok = responses
-            .iter()
-            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::CreateRegister(Ok(()))))));
-        if all_ok {
-            return Ok(());
-        }
+        let maybe_register = self.client.get_register_from_network(cmd.dst()).await;
 
-        // If not all were Ok, we will return the first error sent to us.
-        for resp in responses.iter().flatten() {
-            if let Response::Cmd(CmdResponse::CreateRegister(result)) = resp {
-                result.clone()?;
-            };
-        }
+        debug!("Publishing Register cmd: {cmd_dst:?}");
 
-        // If there were no success or fail to the expected query,
-        // we check if there were any send errors.
-        for resp in responses {
-            let _ = resp?;
-        }
+        let register = match cmd {
+            RegisterCmd::Create {
+                owner,
+                name,
+                tag,
+                permissions,
+            } => {
+                if maybe_register.is_ok() {
+                    // no op, since already created
+                    return Ok(());
+                }
+                Register::new(owner, name, tag, permissions)
+            }
+            RegisterCmd::Edit(op) => {
+                if let Ok(mut register) = maybe_register {
+                    register.apply_op(op)?;
+                    register
+                } else {
+                    warn!("Cann't fetch register for RegisterEdit cmd {cmd_dst:?}");
+                    return Err(Error::UnexpectedResponses);
+                }
+            }
+        };
 
-        // If there were no register errors, then we had unexpected responses.
-        Err(Error::UnexpectedResponses)
-    }
-
-    // Publish a `Register` edit command in the network.
-    async fn publish_register_edit(&self, cmd: RegisterCmd) -> Result<()> {
-        debug!("Publishing Register edit cmd: {:?}", cmd.dst());
-        let request = Request::Cmd(Cmd::Register(cmd));
-        let responses = self.client.send_to_closest(request).await?;
-
-        let all_ok = responses
-            .iter()
-            .all(|resp| matches!(resp, Ok(Response::Cmd(CmdResponse::EditRegister(Ok(()))))));
-        if all_ok {
-            return Ok(());
-        }
-
-        // If not all were Ok, we will return the first error sent to us.
-        for resp in responses.iter().flatten() {
-            if let Response::Cmd(CmdResponse::EditRegister(result)) = resp {
-                result.clone()?;
-            };
-        }
-
-        // If there were no success or fail to the expected query,
-        // we check if there were any send errors.
-        for resp in responses {
-            let _ = resp?;
-        }
-
-        // If there were no register errors, then we had unexpected responses.
-        Err(Error::UnexpectedResponses)
+        let reg_addr = register.address();
+        let record = Record {
+            key: RecordKey::new(reg_addr.name()),
+            value: try_serialize_record(&register, RecordKind::Register)?,
+            publisher: None,
+            expires: None,
+        };
+        Ok(self.client.network.put_record(record).await?)
     }
 
     // Retrieve a `Register` from the closest peers.

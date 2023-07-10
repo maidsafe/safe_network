@@ -28,10 +28,11 @@ use sn_protocol::{
     messages::{Cmd, CmdResponse, PaymentProof, Query, QueryResponse, Request, Response},
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, ChunkWithPayment,
-        DbcAddress, RecordHeader, RecordKind,
+        DbcAddress, RecordHeader, RecordKind, RegisterAddress,
     },
     NetworkAddress,
 };
+use sn_registers::Register;
 use sn_transfers::client_transfers::SpendRequest;
 use std::num::NonZeroUsize;
 use std::time::Duration;
@@ -245,6 +246,29 @@ impl Client {
     /// Return the public key of the data signing key
     pub fn signer_pk(&self) -> PublicKey {
         self.signer.public_key()
+    }
+
+    /// Get a register from network
+    pub async fn get_register_from_network(&self, address: RegisterAddress) -> Result<Register> {
+        let record = self
+            .network
+            .get_record_from_network(RecordKey::new(address.name()))
+            .await
+            .map_err(|_| ProtocolError::RegisterNotFound(address))?;
+        debug!("Got record from the network, {:?}", record.key);
+        let header = RecordHeader::from_record(&record)
+            .map_err(|_| ProtocolError::RegisterNotFound(address))?;
+
+        if let RecordKind::Register = header.kind {
+            let register = try_deserialize_record::<Register>(&record)
+                .map_err(|_| ProtocolError::RegisterNotFound(address))?;
+            Ok(register)
+        } else {
+            error!("RecordKind mismatch while trying to retrieve a chunk");
+            Err(Error::Protocol(ProtocolError::RecordKindMismatch(
+                RecordKind::Register,
+            )))
+        }
     }
 
     /// Retrieve a Register from the network.
