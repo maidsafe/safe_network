@@ -648,16 +648,6 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::PutLocalRecord { record })
     }
 
-    /// Get the RecordAddress of all the Records stored locally
-    pub async fn get_all_local_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetAllRecordAddress { sender })?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
-    }
-
     /// Returns true if a RecordKey is present locally in the RecordStore
     pub async fn is_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
