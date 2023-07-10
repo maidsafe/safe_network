@@ -424,15 +424,32 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
+      - name: Start a client to create a register
+        run: cargo run --bin safe --release --features local-discovery -- register create baobao
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
       - name: Chunks data integrity during nodes churn (during 10min)
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 
         env:
           # new output folder to avoid linker issues w/ windows
           CARGO_TARGET_DIR: "./churn-target"
-          CHUNKS_ONLY: true
           TEST_DURATION_MINS: 10
           SN_LOG: "all"
         timeout-minutes: 30
+
+      - name: Start a client to get the created register
+        run: cargo run --bin safe --release --features="local-discovery" -- register get baobao
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
+      - name: Start a client to edit the created register
+        run: cargo run --bin safe --release --features="local-discovery" -- register edit baobao wood
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
 
       - name: Verify restart of nodes using rg
         shell: bash

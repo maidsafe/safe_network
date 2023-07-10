@@ -96,6 +96,7 @@ async fn data_availability_during_churn() -> Result<()> {
     let churn_count = Arc::new(RwLock::new(0_usize));
 
     // Allow to disable Registers data creation/checks, storing and querying only Chunks during churn.
+    // Default to be not carry out chunks only during churn.
     let chunks_only = std::env::var("CHUNKS_ONLY").is_ok();
 
     println!(
