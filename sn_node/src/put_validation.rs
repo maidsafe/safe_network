@@ -84,6 +84,7 @@ impl Node {
         &self,
         chunk_with_payment: ChunkWithPayment,
     ) -> Result<CmdOk, ProtocolError> {
+        let chunk_addr = *chunk_with_payment.chunk.address();
         let chunk_name = *chunk_with_payment.chunk.name();
         debug!("validating and storing chunk {chunk_name:?}");
 
@@ -123,6 +124,8 @@ impl Node {
             warn!("Error while locally storing Chunk as a Record{err}");
             ProtocolError::ChunkNotStored(chunk_name)
         })?;
+        self.events_channel
+            .broadcast(crate::NodeEvent::ChunkStored(chunk_addr));
 
         Ok(CmdOk::StoredSuccessfully)
     }
