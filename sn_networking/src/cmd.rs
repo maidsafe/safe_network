@@ -97,10 +97,6 @@ pub enum SwarmCmd {
     PutLocalRecord {
         record: Record,
     },
-    /// Get all the Addresses of all Records stored locally
-    GetAllRecordAddress {
-        sender: oneshot::Sender<HashSet<NetworkAddress>>,
-    },
     /// Get the list of keys that within the provided distance to the target Key
     GetRecordKeysClosestToTarget {
         key: NetworkAddress,
@@ -136,15 +132,6 @@ pub struct SwarmLocalState {
 impl SwarmDriver {
     pub(crate) async fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
-            SwarmCmd::GetAllRecordAddress { sender } => {
-                let addresses = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .record_addresses();
-                let _ = sender.send(addresses);
-            }
             SwarmCmd::GetRecordKeysClosestToTarget {
                 key,
                 distance,
