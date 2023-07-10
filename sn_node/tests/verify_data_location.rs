@@ -11,10 +11,13 @@
 mod safenode_proto {
     tonic::include_proto!("safenode_proto");
 }
-use bytes::Bytes;
+mod common;
+
+use common::node_restart;
 use safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest, NodeInfoRequest};
 
-use eyre::Result;
+use bytes::Bytes;
+use eyre::{eyre, Result};
 use libp2p::{
     kad::{KBucketKey, RecordKey},
     PeerId,
@@ -34,11 +37,16 @@ use std::{
 };
 use tokio::{sync::RwLock, task::JoinHandle};
 use tonic::Request;
-use tracing::{debug, error};
 use tracing_core::Level;
 
-const NODE_COUNT: u32 = 25;
-const CHUNKS_SIZE: usize = 1024 * 1024;
+const NODE_COUNT: u8 = 25;
+const CHUNK_SIZE: usize = 1024;
+const CHUNK_COUNT: usize = 10;
+const VERIFICATION_DELAY: Duration = Duration::from_secs(5);
+
+type NodeIndex = u8;
+
+type StoredChunks = Arc<RwLock<BTreeMap<ChunkAddress, BTreeSet<NodeIndex>>>>;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_data_location() -> Result<()> {
@@ -51,45 +59,85 @@ async fn verify_data_location() -> Result<()> {
     ];
     let _log_appender_guard = init_logging(
         logging_targets,
-        LogOutputDest::Path(tmp_dir.join("safe-client")),
+        LogOutputDest::Path(tmp_dir.to_path_buf()),
         LogFormat::Default,
     )?;
 
     // state
     let stored_chunks = Arc::new(RwLock::new(BTreeMap::new()));
 
-    let all_peers = rpc_to_nodes(stored_chunks.clone()).await?;
-    println!("all peers {all_peers:?}");
+    // spawn node event handler for each node
+    for node_index in 1..NODE_COUNT {
+        handle_node_events(stored_chunks.clone(), node_index).await?;
+    }
+    let mut all_peers = get_all_peer_ids().await?;
 
     // Store chunks
     let client = get_client().await;
     let file_api = Files::new(client);
-    for _ in 0..10 {
-        let chunk_addr = store_chunk(&file_api, stored_chunks.clone()).await?;
-        let key = RecordKey::new(chunk_addr.name());
-
-        let record_key = KBucketKey::from(key.to_vec());
-        let expected_closest_peers: Vec<_> = sort_peers_by_key(
-            all_peers.iter().cloned().collect(),
-            &record_key,
-            CLOSE_GROUP_SIZE,
-        )?;
-
-        tokio::time::sleep(Duration::from_secs(1)).await;
-        let closest = stored_chunks.read().await.get(&chunk_addr).unwrap().clone();
-        println!("expected {expected_closest_peers:?}\ngot{closest:?}");
+    for _ in 0..CHUNK_COUNT {
+        store_chunk(&file_api, stored_chunks.clone()).await?;
     }
 
-    tokio::time::sleep(Duration::from_secs(10)).await;
+    tokio::time::sleep(VERIFICATION_DELAY).await;
+    verify_location(stored_chunks.clone(), &all_peers).await?;
+
+    // churn all nodes and verify the location
+    let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
+    for node_index in 1..NODE_COUNT {
+        addr.set_port(12000 + node_index as u16);
+
+        node_restart(addr).await?;
+        println!("starting node event handler");
+        while (handle_node_events(stored_chunks.clone(), node_index).await).is_err() {
+            println!("Node RPC is not functional yet");
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+
+        println!("Sleeping for {VERIFICATION_DELAY:?} before verifying");
+        tokio::time::sleep(VERIFICATION_DELAY).await;
+
+        let endpoint = format!("https://{addr}");
+        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let response = rpc_client
+            .node_info(Request::new(NodeInfoRequest {}))
+            .await?;
+        let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
+
+        all_peers[node_index as usize - 1] = peer_id;
+        verify_location(stored_chunks.clone(), &all_peers).await?;
+    }
+
     Ok(())
 }
 
-/// Spawn a thread for each running node to handle the `NodeEvent` they emit
-/// returns all the PeerId
-async fn rpc_to_nodes(
-    stored_chunks: Arc<RwLock<BTreeMap<ChunkAddress, BTreeSet<PeerId>>>>,
-) -> Result<BTreeSet<PeerId>> {
-    let mut all_peers = BTreeSet::new();
+// Verfies that the chunk is stored by the actual closest peers to the ChunkAddress
+async fn verify_location(stored_chunks: StoredChunks, all_peers: &[PeerId]) -> Result<()> {
+    for chunk_addr in stored_chunks.read().await.keys() {
+        let key = RecordKey::new(chunk_addr.name());
+
+        let record_key = KBucketKey::from(key.to_vec());
+        let expected_closest_peers =
+            sort_peers_by_key(all_peers.to_vec(), &record_key, CLOSE_GROUP_SIZE)?
+                .into_iter()
+                .collect::<BTreeSet<_>>();
+
+        let mut actual_closest = stored_chunks
+            .read()
+            .await
+            .get(chunk_addr)
+            .unwrap()
+            .clone()
+            .into_iter()
+            .map(|idx| all_peers[idx as usize - 1]);
+        assert!(actual_closest.all(|peer| expected_closest_peers.contains(&peer)));
+    }
+    Ok(())
+}
+
+// Returns all the PeerId for all the locally running nodes
+async fn get_all_peer_ids() -> Result<Vec<PeerId>> {
+    let mut all_peers = Vec::new();
 
     let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
     for node_index in 1..NODE_COUNT {
@@ -102,42 +150,54 @@ async fn rpc_to_nodes(
             .node_info(Request::new(NodeInfoRequest {}))
             .await?;
         let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
-        all_peers.insert(peer_id);
+        all_peers.push(peer_id);
+    }
+    Ok(all_peers)
+}
 
-        // handle NodeEvent
-        let stored_chunks_clone = stored_chunks.clone();
-        let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
+/// Spawn a thread for each running node to handle the `NodeEvent` they emit
+/// Keeps track of all the nodes that are storing a Chunk
+async fn handle_node_events(
+    stored_chunks: Arc<RwLock<BTreeMap<ChunkAddress, BTreeSet<NodeIndex>>>>,
+    node_index: u8,
+) -> Result<()> {
+    let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
+    addr.set_port(12000 + node_index as u16);
+    let endpoint = format!("https://{addr}");
+    let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+
+    let stored_chunks_clone = stored_chunks.clone();
+    let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
+        loop {
             let event_rx = rpc_client
                 .node_events(Request::new(NodeEventsRequest {}))
                 .await?;
-            if let Some(event_bytes) = event_rx.into_inner().message().await? {
-                if let Ok(NodeEvent::ChunkStored(chunk_addr)) =
-                    NodeEvent::from_bytes(&event_bytes.event)
-                {
-                    if let Some(value) = stored_chunks_clone.write().await.get_mut(&chunk_addr) {
-                        value.insert(peer_id);
-                    } else {
-                        error!("{peer_id:?}: stored_chunks_clone does not contain the chunk_addr {chunk_addr:?}");
-                    }
+            let event_bytes =
+                event_rx.into_inner().message().await?.ok_or_else(|| {
+                    eyre!("Error while obtaining node event on node {node_index:?}")
+                })?;
+            let event = NodeEvent::from_bytes(&event_bytes.event)?;
+            println!("Node: {node_index} Got node_event {event:?}");
+            if let NodeEvent::ChunkStored(chunk_addr) = event {
+                if let Some(value) = stored_chunks_clone.write().await.get_mut(&chunk_addr) {
+                    value.insert(node_index);
+                } else {
+                    println!("stored_chunks does not contain the chunk_addr {chunk_addr:?}");
                 }
             }
-            Ok(())
-        });
-    }
+        }
+    });
 
-    Ok(all_peers)
+    Ok(())
 }
 
 // Generate a random Chunk and store it to the Network
 // Returns the ChunkAddress
-async fn store_chunk(
-    file_api: &Files,
-    stored_chunks: Arc<RwLock<BTreeMap<ChunkAddress, BTreeSet<PeerId>>>>,
-) -> Result<ChunkAddress> {
+async fn store_chunk(file_api: &Files, stored_chunks: StoredChunks) -> Result<ChunkAddress> {
     let mut rng = OsRng;
     let random_bytes: Vec<u8> = ::std::iter::repeat(())
         .map(|()| rng.gen::<u8>())
-        .take(CHUNKS_SIZE)
+        .take(CHUNK_SIZE)
         .collect();
     let bytes = Bytes::copy_from_slice(&random_bytes);
 
@@ -146,10 +206,10 @@ async fn store_chunk(
             .calculate_address(bytes.clone())
             .expect("Failed to calculate new Chunk address"),
     );
-    debug!("inserting chunk addr {addr:?} into the map");
+    println!("Storing Chunk with addr {addr:?}");
     match stored_chunks.write().await.entry(addr) {
         Entry::Vacant(entry) => entry.insert(BTreeSet::new()),
-        Entry::Occupied(_) => panic!("chunk should be new"),
+        Entry::Occupied(_) => panic!("Chunk addr {addr:?} has been inserted into the map already"),
     };
 
     file_api

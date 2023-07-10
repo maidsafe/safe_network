@@ -6,16 +6,26 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#![allow(dead_code)]
+
+use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
 use sn_client::{get_tokens_from_faucet, Client};
 use sn_transfers::wallet::LocalWallet;
 
-use eyre::Result;
+use eyre::{eyre, Result};
 use lazy_static::lazy_static;
 use sn_dbc::Token;
 use sn_logging::{LogFormat, LogOutputDest};
-use std::{path::Path, sync::Once};
-use tokio::sync::Mutex;
+use std::{net::SocketAddr, path::Path, sync::Once};
+use tokio::{fs::remove_dir_all, sync::Mutex};
+use tonic::Request;
 use tracing_core::Level;
+
+// this includes code generated from .proto files
+#[allow(unused_qualifications, unreachable_pub, clippy::unwrap_used)]
+mod safenode_proto {
+    tonic::include_proto!("safenode_proto");
+}
 
 static TEST_INIT_LOGGER: Once = Once::new();
 
@@ -70,4 +80,43 @@ pub async fn get_client_and_wallet(root_dir: &Path, amount: u64) -> Result<(Clie
     println!("Tokens deposited to the wallet that'll pay for storage: {wallet_balance}.");
 
     Ok((client, local_wallet))
+}
+
+pub async fn node_restart(addr: SocketAddr) -> Result<()> {
+    let endpoint = format!("https://{addr}");
+    let mut client = SafeNodeClient::connect(endpoint).await?;
+
+    let response = client.node_info(Request::new(NodeInfoRequest {})).await?;
+    let log_dir = Path::new(&response.get_ref().log_dir);
+    let root_dir = log_dir
+        .parent()
+        .ok_or_else(|| eyre!("could not obtain parent from logging directory"))?;
+
+    // remove Chunks records
+    let chunks_records = root_dir.join("record_store");
+    if let Ok(true) = chunks_records.try_exists() {
+        println!("Removing Chunks records from {}", chunks_records.display());
+        remove_dir_all(chunks_records).await?;
+    }
+
+    // remove Registers records
+    let registers_records = root_dir.join("registers");
+    if let Ok(true) = registers_records.try_exists() {
+        println!(
+            "Removing Registers records from {}",
+            registers_records.display()
+        );
+        remove_dir_all(registers_records).await?;
+    }
+
+    let _response = client
+        .restart(Request::new(RestartRequest { delay_millis: 0 }))
+        .await?;
+
+    println!(
+        "Node restart requested to RPC service at {addr}, and removed all its chunks and registers records at {}",
+        log_dir.display()
+    );
+
+    Ok(())
 }
