@@ -87,7 +87,7 @@ impl ReplicationFetcher {
         // Randomize the order of keys to fetch
         let mut rng = thread_rng();
         let mut data_to_fetch = self.to_be_fetched.iter_mut().collect::<Vec<_>>();
-        data_to_fetch.shuffle(&mut rng); // devskim: ignore DS148264 - this is crypto secure using os rng 
+        data_to_fetch.shuffle(&mut rng); // devskim: ignore DS148264 - this is crypto secure using os rng
 
         for (key, holders) in data_to_fetch {
             let mut failed_counter = 0;
