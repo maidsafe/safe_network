@@ -30,6 +30,7 @@ pub enum WalletCmds {
     /// Print the wallet balance.
     Balance,
     /// Deposit DBCs from the received directory to the local wallet.
+    /// Or Read a hex encoded DBC from stdin.
     ///
     /// The default received directory is platform specific:
     ///  - Linux: $HOME/.local/share/safe/wallet/received_dbcs
@@ -39,9 +40,11 @@ pub enum WalletCmds {
     /// If you find the default path unwieldy, you can also set the RECEIVED_DBCS_PATH environment
     /// variable to a path you would prefer to work with.
     #[clap(verbatim_doc_comment)]
-    Deposit,
-    /// Read a DBC from stdin and deposit it to the local wallet.
-    Read,
+    Deposit {
+        /// Read a hex encoded DBC from stdin.
+        #[clap(long, default_value = "false")]
+        stdin: bool,
+    },
     /// Send a DBC.
     Send {
         /// The number of nanos to send.
@@ -65,8 +68,7 @@ pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Pa
     match cmds {
         WalletCmds::Address => address(root_dir).await?,
         WalletCmds::Balance => balance(root_dir).await?,
-        WalletCmds::Deposit => deposit(root_dir).await?,
-        WalletCmds::Read => read(root_dir).await?,
+        WalletCmds::Deposit { stdin } => deposit(root_dir, stdin).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
         WalletCmds::Pay { path } => pay_for_storage(client, root_dir, &path).await.map(|_| ())?,
     }
@@ -87,7 +89,11 @@ async fn balance(root_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-async fn deposit(root_dir: &Path) -> Result<()> {
+async fn deposit(root_dir: &Path, read_from_stdin: bool) -> Result<()> {
+    if read_from_stdin {
+        return read_dbc_from_stdin(root_dir).await;
+    }
+
     let mut wallet = LocalWallet::load_from(root_dir).await?;
 
     let previous_balance = wallet.balance();
@@ -107,7 +113,7 @@ async fn deposit(root_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-async fn read(root_dir: &Path) -> Result<()> {
+async fn read_dbc_from_stdin(root_dir: &Path) -> Result<()> {
     let mut wallet = LocalWallet::load_from(root_dir).await?;
 
     println!("Please paste your DBC below:");
