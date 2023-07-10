@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.41](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.40...sn_client-v0.85.41) - 2023-07-10
+
+### Added
+- client query register via get_record
+- client upload Register via put_record
+
 ## [0.85.40](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.39...sn_client-v0.85.40) - 2023-07-06
 
 ### Other

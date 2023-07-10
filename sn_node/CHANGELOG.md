@@ -475,6 +475,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - use Deposit --stdin instead of Read in cli
 
+## [0.86.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.86.8...sn_node-v0.86.9) - 2023-07-10
+
+### Added
+- client query register via get_record
+- client upload Register via put_record
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
