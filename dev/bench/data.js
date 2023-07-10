@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689005068571,
+  "lastUpdate": 1689008546236,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -2257,6 +2257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 9.915502013429787,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "879cfdd2c12566adb3650f183aeda29793878c13",
+          "message": "chore(node): cleanup unused SwarmCmd for GetAllRecordAddrs",
+          "timestamp": "2023-07-10T14:57:56Z",
+          "tree_id": "d765b61a86e425b6aa7846aa00ebe12164a0ec27",
+          "url": "https://github.com/maidsafe/safe_network/commit/879cfdd2c12566adb3650f183aeda29793878c13"
+        },
+        "date": 1689008544996,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1382495619567918,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.527141216769127,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 9.359085367105314,
             "unit": "MiB/s"
           }
         ]
