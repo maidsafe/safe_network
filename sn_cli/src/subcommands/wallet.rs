@@ -14,12 +14,13 @@ use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
 use std::{
-    collections::BTreeSet,
+    collections::BTreeMap,
     fs,
     io::Read,
     path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
+use xor_name::XorName;
 
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
@@ -70,7 +71,9 @@ pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Pa
         WalletCmds::Balance => balance(root_dir).await?,
         WalletCmds::Deposit { stdin } => deposit(root_dir, stdin).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
-        WalletCmds::Pay { path } => pay_for_storage(client, root_dir, &path).await.map(|_| ())?,
+        WalletCmds::Pay { path } => chunk_and_pay_for_storage(client, root_dir, &path, true)
+            .await
+            .map(|_| ())?,
     }
     Ok(())
 }
@@ -168,48 +171,80 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
     Ok(())
 }
 
-pub(super) async fn pay_for_storage(
+pub(super) async fn chunk_and_pay_for_storage(
     client: &Client,
     root_dir: &Path,
     files_path: &Path,
-) -> Result<PaymentProofsMap> {
+    pay: bool, // TODO: to be removed; temporarily payment is optional
+) -> Result<(
+    BTreeMap<(String, XorName, usize), Vec<(XorName, PathBuf)>>,
+    PaymentProofsMap,
+)> {
     let wallet = LocalWallet::load_from(root_dir).await?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     let file_api: Files = Files::new(client.clone());
 
     // Get the list of Chunks addresses from the files found at 'files_path'
-    let mut chunks_addrs = BTreeSet::new();
-    let mut num_of_files = 0;
+    let chunks_dir = std::env::temp_dir();
+    let mut files_to_pay = BTreeMap::new();
+    let mut num_of_chunks = 0;
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
+            let file_name = if let Some(file_name) = entry.file_name().to_str() {
+                file_name.to_string()
+            } else {
+                println!(
+                    "Skipping file {:?} as it is not valid UTF-8.",
+                    entry.file_name()
+                );
+                continue;
+            };
+
             let file = fs::read(entry.path())?;
             let bytes = Bytes::from(file);
             // we need all chunks addresses not just the data-map addr
-            let (_, chunks) = file_api.chunk_bytes(bytes)?;
-            num_of_files += 1;
-            chunks.iter().for_each(|c| {
-                let _ = chunks_addrs.insert(*c.name());
-            });
+            let (file_addr, chunks) = file_api.chunk_bytes(bytes.clone())?;
+            let mut chunks_paths = vec![];
+            for c in chunks.iter() {
+                num_of_chunks += 1;
+                let xorname = *c.name();
+                // let's store the chunk on temp file for the user
+                // to be able to upload it to the network after making the payment,
+                // without needing to chunk the files again.
+                let path = chunks_dir.join(hex::encode(xorname));
+                fs::write(&path, c.value())?;
+                chunks_paths.push((xorname, path));
+            }
+
+            files_to_pay.insert((file_name, file_addr, bytes.len()), chunks_paths);
         }
     }
 
-    println!(
-        "Making payment for {} Chunks (belonging to {} files)...",
-        chunks_addrs.len(),
-        num_of_files
-    );
-    let proofs = wallet_client.pay_for_storage(chunks_addrs.iter()).await?;
+    // For now, we make the payment for Chunks storage only if requested by the user
+    let proofs = if pay {
+        println!(
+            "Making payment for {num_of_chunks} Chunks (belonging to {} files)...",
+            files_to_pay.len()
+        );
 
-    let wallet = wallet_client.into_wallet();
-    let new_balance = wallet.balance();
+        let proofs = wallet_client
+            .pay_for_storage(files_to_pay.values().flatten().map(|(name, _)| name))
+            .await?;
 
-    if let Err(err) = wallet.store().await {
-        println!("Failed to store wallet: {err:?}");
+        let wallet = wallet_client.into_wallet();
+        let new_balance = wallet.balance();
+
+        if let Err(err) = wallet.store().await {
+            println!("Failed to store wallet: {err:?}");
+        } else {
+            println!("Successfully stored wallet with new balance {new_balance}.");
+        }
+
+        println!("Successfully paid for storage and generated the proofs. They can now be sent to the storage nodes when uploading paid chunks.");
+        proofs
     } else {
-        println!("Successfully stored wallet with new balance {new_balance}.");
-    }
+        PaymentProofsMap::default()
+    };
 
-    println!("Successfully paid for storage and generated the proofs. They can now be sent to the storage nodes when uploading paid chunks.");
-
-    Ok(proofs)
+    Ok((files_to_pay, proofs))
 }
