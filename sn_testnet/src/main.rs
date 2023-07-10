@@ -32,6 +32,8 @@ use sn_testnet::{Testnet, DEFAULT_NODE_LAUNCH_INTERVAL, SAFENODE_BIN_NAME};
 use clap::Parser;
 use color_eyre::{eyre::eyre, Help, Result};
 use std::{
+    fs::remove_dir_all,
+    io::ErrorKind,
     path::PathBuf,
     process::{Command, Stdio},
 };
@@ -116,7 +118,16 @@ async fn main() -> Result<()> {
             .join("safe")
             .join("node");
         println!("Cleaning previous node directories under {node_data_dir:?}");
-        std::fs::remove_dir_all(node_data_dir)?;
+        if let Err(e) = remove_dir_all(node_data_dir) {
+            match e.kind() {
+                ErrorKind::NotFound => {
+                    println!("No previous node directories found under");
+                }
+                _ => {
+                    return Err(e.into());
+                }
+            }
+        }
     }
 
     if args.flame {
