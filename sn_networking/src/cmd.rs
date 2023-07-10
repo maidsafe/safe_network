@@ -159,7 +159,26 @@ impl SwarmDriver {
                 let _ = sender.send(peers);
             }
             SwarmCmd::AddKeysToReplicationFetcher { peer, keys, sender } => {
-                let keys_to_fetch = self.replication_fetcher.add_keys(peer, keys);
+                // check if we have any of the data before adding it.
+                let existing_keys: HashSet<NetworkAddress> = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .record_addresses();
+
+                // remove any keys that we already have from replication fetcher
+                self.replication_fetcher.remove_held_data(&existing_keys);
+
+                let non_existing_keys: Vec<NetworkAddress> = keys
+                    .iter()
+                    .filter(|key| !existing_keys.contains(key))
+                    .cloned()
+                    .collect();
+
+                let keys_to_fetch = self
+                    .replication_fetcher
+                    .add_keys_to_replicate_per_peer(peer, non_existing_keys);
                 let _ = sender.send(keys_to_fetch);
             }
             SwarmCmd::NotifyFetchResult {
