@@ -28,7 +28,7 @@ use tiny_http::{Response, Server};
 /// curl "localhost:8000/`cargo run  --features="local-discovery"  --bin safe --release  wallet address | tail -n 1`" > dbc_hex
 ///
 /// # feed DBC to local wallet
-/// cat dbc_hex | cargo run  --features="local-discovery"  --bin safe --release  wallet read
+/// cat dbc_hex | cargo run  --features="local-discovery"  --bin safe --release  wallet deposit --stdin
 ///
 /// # balance should be updated
 /// ```
