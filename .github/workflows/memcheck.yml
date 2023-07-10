@@ -93,7 +93,6 @@ jobs:
       - name: Chunks data integrity during nodes churn
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 
         env:
-          CHUNKS_ONLY: true
           TEST_DURATION_MINS: 15
           SN_LOG: "all"
         timeout-minutes: 20
