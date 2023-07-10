@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689008576772,
+  "lastUpdate": 1689008580580,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5322,6 +5322,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 231,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "879cfdd2c12566adb3650f183aeda29793878c13",
+          "message": "chore(node): cleanup unused SwarmCmd for GetAllRecordAddrs",
+          "timestamp": "2023-07-10T14:57:56Z",
+          "tree_id": "d765b61a86e425b6aa7846aa00ebe12164a0ec27",
+          "url": "https://github.com/maidsafe/safe_network/commit/879cfdd2c12566adb3650f183aeda29793878c13"
+        },
+        "date": 1689008579773,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 311.5,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 241,
             "unit": "MB"
           }
         ]
