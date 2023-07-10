@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_registers::{EntryHash, Permissions, RegisterAddress, RegisterOp, User};
+use sn_registers::{Permissions, RegisterAddress, RegisterOp, User};
 
 #[allow(unused_imports)] // needed by rustdocs links
 use crate::messages::QueryResponse;
@@ -15,47 +15,6 @@ use sn_registers::Register;
 
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;
-
-/// [`Register`] read operations.
-#[derive(Hash, Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
-pub enum RegisterQuery {
-    /// Retrieve the [`Register`] at the given address.
-    ///
-    /// This should eventually lead to a [`GetRegister`] response.
-    ///
-    /// [`GetRegister`]: QueryResponse::GetRegister
-    Get(RegisterAddress),
-    /// Retrieve the current entries from the [`Register`] at the given address.
-    ///
-    /// Multiple entries occur on concurrent writes. This should eventually lead to a
-    /// [`ReadRegister`] response.
-    ///
-    /// [`ReadRegister`]: QueryResponse::ReadRegister
-    Read(RegisterAddress),
-    /// Get an entry from a [`Register`] on the Network by its hash
-    ///
-    /// This should eventually lead to a [`GetRegisterEntry`] response.
-    ///
-    /// [`GetRegisterEntry`]: QueryResponse::GetRegisterEntry
-    GetEntry {
-        /// Register address.
-        address: RegisterAddress,
-        /// The hash of the entry.
-        hash: EntryHash,
-    },
-    /// Retrieve the permissions of the [`Register`] at the given address.
-    ///
-    /// This should eventually lead to a [`GetRegisterPermissions`] response.
-    ///
-    /// [`GetRegisterPermissions`]: QueryResponse::GetRegisterPermissions
-    GetPermissions(RegisterAddress),
-    /// Retrieve the owner of the [`Register`] at the given address.
-    ///
-    /// This should eventually lead to a [`GetRegisterOwner`] response.
-    ///
-    /// [`GetRegisterOwner`]: QueryResponse::GetRegisterOwner
-    GetOwner(RegisterAddress),
-}
 
 /// A [`Register`] cmd that is stored in a log on Adults.
 #[allow(clippy::large_enum_variant)]
@@ -74,19 +33,6 @@ pub enum RegisterCmd {
     },
     /// Edit the [`Register`].
     Edit(RegisterOp),
-}
-
-impl RegisterQuery {
-    /// Returns the dst address for the query.
-    pub fn dst(&self) -> RegisterAddress {
-        match self {
-            Self::Get(ref address)
-            | Self::Read(ref address)
-            | Self::GetPermissions(ref address)
-            | Self::GetEntry { ref address, .. }
-            | Self::GetOwner(ref address) => *address,
-        }
-    }
 }
 
 impl RegisterCmd {

@@ -10,7 +10,7 @@ use crate::{Client, Error, Result};
 
 use libp2p::kad::{Record, RecordKey};
 use sn_protocol::{
-    messages::{Query, QueryResponse, RegisterCmd, RegisterQuery, Request, Response},
+    messages::RegisterCmd,
     storage::{try_serialize_record, RecordKind},
 };
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, User};
@@ -277,30 +277,6 @@ impl ClientRegister {
     async fn get_register(client: &Client, name: XorName, tag: u64) -> Result<Register> {
         let address = RegisterAddress { name, tag };
         debug!("Retrieving Register from: {address:?}");
-        let request = Request::Query(Query::Register(RegisterQuery::Get(address)));
-        let responses = client.send_to_closest(request).await?;
-
-        // We will return the first register we get.
-        for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetRegister(Ok(register))) = resp {
-                return Ok(register.clone());
-            };
-        }
-
-        // If no register was gotten, we will return the first error sent to us.
-        for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetRegister(result)) = resp {
-                let _ = result.clone()?;
-            };
-        }
-
-        // If there were no success or fail to the expected query,
-        // we check if there were any send errors.
-        for resp in responses {
-            let _ = resp?;
-        }
-
-        // If there was none of the above, then we had unexpected responses.
-        Err(Error::UnexpectedResponses)
+        client.get_register_from_network(address).await
     }
 }

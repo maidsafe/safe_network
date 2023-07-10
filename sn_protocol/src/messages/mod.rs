@@ -17,7 +17,7 @@ pub use self::{
     cmd::{Cmd, Hash, MerkleTreeNodesType, PaymentProof},
     node_id::NodeId,
     query::Query,
-    register::{RegisterCmd, RegisterQuery},
+    register::RegisterCmd,
     response::{CmdOk, CmdResponse, QueryResponse},
 };
 
