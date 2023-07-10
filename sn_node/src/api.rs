@@ -188,10 +188,12 @@ impl Node {
                 }
             }
             NetworkEvent::LostRecordDetected(peer_ids) => {
-                Marker::LostRecordDetected(&peer_ids).log();
-                for peer_id in peer_ids.iter() {
-                    if let Err(err) = self.try_trigger_replication(peer_id, false).await {
-                        error!("Error while triggering replication to {peer_id:?} {err:?}");
+                if !peer_ids.is_empty() {
+                    Marker::LostRecordDetected(&peer_ids).log();
+                    for peer_id in peer_ids.iter() {
+                        if let Err(err) = self.try_trigger_replication(peer_id, false).await {
+                            error!("Error while triggering replication to {peer_id:?} {err:?}");
+                        }
                     }
                 }
             }
