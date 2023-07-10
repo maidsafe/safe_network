@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688989163433,
+  "lastUpdate": 1688989190831,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3863,6 +3863,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 35.51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "4c03afc297c027ee906d00a305cd40580c1ac60b",
+          "message": "fix: update nightly node data dir",
+          "timestamp": "2023-07-10T10:31:05Z",
+          "tree_id": "a51c880f2fe644efc5f59b0b6f0c6999db652300",
+          "url": "https://github.com/maidsafe/safe_network/commit/4c03afc297c027ee906d00a305cd40580c1ac60b"
+        },
+        "date": 1688989190068,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 24.62,
             "unit": "MB"
           }
         ]
