@@ -14,13 +14,33 @@ use clap::{Parser, Subcommand};
 use eyre::Result;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet, Client};
 use sn_dbc::Token;
-use sn_peers_acquisition::PeersArgs;
+use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
 use sn_transfers::wallet::parse_public_address;
-use tracing::info;
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let opt = Opt::parse();
+    let mut opt = Opt::parse();
+    // This is only used for non-local-discocery,
+    // i.e. make SAFE_PEERS always being a fall back option for initial peers.
+    if !cfg!(feature = "local-discovery") {
+        match std::env::var("SAFE_PEERS") {
+            Ok(str) => match parse_peer_addr(&str) {
+                Ok(peer) => {
+                    if !opt
+                        .peers
+                        .peers
+                        .iter()
+                        .any(|existing_peer| *existing_peer == peer)
+                    {
+                        opt.peers.peers.push(peer);
+                    }
+                }
+                Err(err) => error!("Can't parse SAFE_PEERS {str:?} with error {err:?}"),
+            },
+            Err(err) => error!("Can't get env var SAFE_PEERS with error {err:?}"),
+        }
+    }
 
     info!("Instantiating a SAFE Test Faucet...");
 
