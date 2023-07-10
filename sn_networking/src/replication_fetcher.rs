@@ -9,7 +9,7 @@
 use libp2p::PeerId;
 use sn_protocol::NetworkAddress;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     time::{Duration, Instant},
 };
 
@@ -35,9 +35,9 @@ pub(crate) struct ReplicationFetcher {
 }
 
 impl ReplicationFetcher {
-    // Add a list of keys of a holder.
-    // Return with a list of keys to fetch, if presents.
-    pub(crate) fn add_keys(
+    /// Add a list of keys of a holder.
+    /// Return with a list of keys to fetch from holder
+    pub(crate) fn add_keys_to_replicate_per_peer(
         &mut self,
         peer_id: PeerId,
         keys: Vec<NetworkAddress>,
@@ -46,6 +46,10 @@ impl ReplicationFetcher {
             self.add_holder(key, peer_id);
         }
         self.next_to_fetch()
+    }
+    /// Remove keys that we hold already and no longer need to be replicated.
+    pub(crate) fn remove_held_data(&mut self, keys: &HashSet<NetworkAddress>) {
+        self.to_be_fetched.retain(|key, _| !keys.contains(key));
     }
 
     // Notify the fetch result of a key from a holder.

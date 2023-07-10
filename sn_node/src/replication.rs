@@ -14,7 +14,7 @@ use sn_protocol::{
     messages::{Cmd, Query, Request},
     NetworkAddress,
 };
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 
 // To reduce the number of messages exchanged, patch max 500 replication keys into one request.
 const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
@@ -148,22 +148,16 @@ impl Node {
             return Ok(());
         };
         trace!("Convert {holder:?} to {peer_id:?}");
-        let existing_keys: HashSet<NetworkAddress> =
-            self.network.get_all_local_record_addresses().await?;
-        let non_existing_keys: Vec<NetworkAddress> = keys
-            .iter()
-            .filter(|key| !existing_keys.contains(key))
-            .cloned()
-            .collect();
 
+        let provided_keys_len = keys.len();
         let keys_to_fetch = self
             .network
-            .add_keys_to_replication_fetcher(peer_id, non_existing_keys)
+            .add_keys_to_replication_fetcher(peer_id, keys)
             .await?;
 
         Marker::FetchingKeysForReplication {
             fetching_keys_len: keys_to_fetch.len(),
-            provided_keys_len: keys.len(),
+            provided_keys_len,
             peer_id,
         }
         .log();
