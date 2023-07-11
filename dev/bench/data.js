@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689075003505,
+  "lastUpdate": 1689075033300,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4339,6 +4339,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 24.48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "12b2befea7cdf068ee4c7458213dbc622094994f",
+          "message": "fix(CI): OS dependent tar files and env setup in nightly",
+          "timestamp": "2023-07-11T13:07:52+02:00",
+          "tree_id": "77bd126f8c4528a1a164b23bc11e984421ebc78a",
+          "url": "https://github.com/maidsafe/safe_network/commit/12b2befea7cdf068ee4c7458213dbc622094994f"
+        },
+        "date": 1689075032579,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 24.52,
             "unit": "MB"
           }
         ]
