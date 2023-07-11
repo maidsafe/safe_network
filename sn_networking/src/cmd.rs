@@ -73,6 +73,10 @@ pub enum SwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<bool>,
     },
+    /// Get the Addresses of all the Records held locally
+    GetAllLocalRecordAddresses {
+        sender: oneshot::Sender<HashSet<NetworkAddress>>,
+    },
     /// Get Record from the Kad network
     GetNetworkRecord {
         key: RecordKey,
@@ -220,6 +224,15 @@ impl SwarmDriver {
                     .store_mut()
                     .contains(&key);
                 let _ = sender.send(has_key);
+            }
+            SwarmCmd::GetAllLocalRecordAddresses { sender } => {
+                let addresses = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .record_addresses();
+                let _ = sender.send(addresses);
             }
 
             SwarmCmd::StartListening { addr, sender } => {
