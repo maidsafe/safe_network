@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.16](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.15...sn_networking-v0.3.16) - 2023-07-11
+
+### Added
+- *(node)* shuffle data waiting for fetch
+
+### Other
+- *(node)* only log LostRecord when peersfound
+
 ## [0.3.15](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.14...sn_networking-v0.3.15) - 2023-07-10
 
 ### Added
