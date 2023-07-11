@@ -83,7 +83,8 @@ async fn edit_register(name: String, entry: String, client: &Client) -> Result<(
         Err(error) => {
             println!(
                 "Did not retrieve Register '{name}' from all nodes in the close group! {error}"
-            )
+            );
+            return Err(error.into());
         }
     }
 
@@ -107,7 +108,8 @@ async fn get_registers(names: Vec<String>, client: &Client) -> Result<()> {
             Err(error) => {
                 println!(
                     "Did not retrieve Register '{name}' from all nodes in the close group! {error}"
-                )
+                );
+                return Err(error.into());
             }
         }
     }

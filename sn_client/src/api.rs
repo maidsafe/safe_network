@@ -279,7 +279,9 @@ impl Client {
     /// Create a new Register.
     pub async fn create_register(&self, xorname: XorName, tag: u64) -> Result<ClientRegister> {
         info!("Instantiating a new Register replica with name {xorname} and tag {tag}");
-        ClientRegister::create(self.clone(), xorname, tag)
+        let mut client_register = ClientRegister::create(self.clone(), xorname, tag)?;
+        client_register.sync().await?;
+        Ok(client_register)
     }
 
     /// Store `Chunk` as a record.
