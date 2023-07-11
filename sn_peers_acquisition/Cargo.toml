@@ -17,5 +17,5 @@ local-discovery=[]
 [dependencies]
 clap = { version = "4.2.1", features = ["derive", "env"] }
 eyre = "0.6.8"
-libp2p = { version="0.51", features = [] }
+libp2p = { version="0.51", git = "https://github.com/b-zee/rust-libp2p.git", branch = "feat-default-dial-notdialing-0.51.3", features = [] }
 tracing = { version = "~0.1.26" }

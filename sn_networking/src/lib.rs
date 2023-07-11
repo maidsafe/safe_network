@@ -320,10 +320,10 @@ impl SwarmDriver {
         let transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(
-                libp2p::noise::Config::new(&keypair)
+                libp2p::noise::NoiseAuthenticated::xx(&keypair)
                     .expect("Signing libp2p-noise static DH keypair failed."),
             )
-            .multiplex(libp2p::yamux::Config::default())
+            .multiplex(libp2p::yamux::YamuxConfig::default())
             .boxed();
 
         // Disable AutoNAT if we are either running locally or a client.
