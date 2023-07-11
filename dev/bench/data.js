@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689094466105,
+  "lastUpdate": 1689094496998,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4475,6 +4475,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 22.95,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "832f6916cd052c4f1e88a1a7571cc076a60e0e58",
+          "message": "fix: prevent multiple concurrent get_closest calls when joining",
+          "timestamp": "2023-07-11T15:11:53Z",
+          "tree_id": "17fe05497520f32c203867987492fcf81703cc74",
+          "url": "https://github.com/maidsafe/safe_network/commit/832f6916cd052c4f1e88a1a7571cc076a60e0e58"
+        },
+        "date": 1689094496139,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 26.3,
             "unit": "MB"
           }
         ]
