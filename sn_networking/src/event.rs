@@ -411,7 +411,10 @@ impl SwarmDriver {
                 // TODO: send an error response back?
             }
             KademliaEvent::RoutingUpdated {
-                peer, is_new_peer, ..
+                peer,
+                is_new_peer,
+                old_peer,
+                ..
             } => {
                 if is_new_peer {
                     if self.dead_peers.remove(&peer) {
@@ -419,6 +422,12 @@ impl SwarmDriver {
                     }
                     self.log_kbuckets(&peer);
                     self.send_event(NetworkEvent::PeerAdded(peer));
+                }
+
+                if old_peer.is_some() {
+                    info!("Evicted old peer on new peer join: {old_peer:?}");
+                    self.send_event(NetworkEvent::PeerRemoved(peer));
+                    self.log_kbuckets(&peer);
                 }
             }
             KademliaEvent::InboundRequest {
