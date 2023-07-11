@@ -11,8 +11,8 @@ use eyre::Result;
 use libp2p::{Multiaddr, PeerId};
 use safenode_proto::safe_node_client::SafeNodeClient;
 use safenode_proto::{
-    NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RestartRequest, StopRequest,
-    UpdateRequest,
+    NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RecordAddressesRequest, RestartRequest,
+    StopRequest, UpdateRequest,
 };
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_node::NodeEvent;
@@ -66,7 +66,7 @@ enum Cmd {
     /// Update to latest `safenode` released version, and restart it
     #[clap(name = "update")]
     Update {
-        /// Delay in milliseconds before updating and restarting the node
+        /// Delay in milliseconds before updating and restarting the nodeNetworkInfoRequest
         #[clap(default_value = "0")]
         delay_millis: u64,
     },
@@ -163,6 +163,22 @@ pub async fn node_events(addr: SocketAddr) -> Result<()> {
             }
         };
         println!("New event received: {event:?}");
+    }
+
+    Ok(())
+}
+
+pub async fn record_addresses(addr: SocketAddr) -> Result<()> {
+    let endpoint = format!("https://{addr}");
+    let mut client = SafeNodeClient::connect(endpoint).await?;
+    let response = client
+        .record_addresses(Request::new(RecordAddressesRequest {}))
+        .await?;
+
+    println!("Records held by the node:");
+    for bytes in response.get_ref().addresses.iter() {
+        let key = libp2p::kad::RecordKey::from(bytes.clone());
+        println!("Key: {key:?}");
     }
 
     Ok(())
