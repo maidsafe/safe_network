@@ -166,15 +166,6 @@ impl SwarmDriver {
                                 .unique()
                                 .collect();
 
-                            debug!(%peer_id, ?addrs, "identify: adding addresses to routing table");
-                            for multiaddr in addrs.clone() {
-                                let _routing_update = self
-                                    .swarm
-                                    .behaviour_mut()
-                                    .kademlia
-                                    .add_address(&peer_id, multiaddr);
-                            }
-
                             // If the peer supports AutoNAT, add it as server
                             if info
                                 .protocols
@@ -411,7 +402,10 @@ impl SwarmDriver {
                 // TODO: send an error response back?
             }
             KademliaEvent::RoutingUpdated {
-                peer, is_new_peer, ..
+                peer,
+                is_new_peer,
+                old_peer,
+                ..
             } => {
                 if is_new_peer {
                     if self.dead_peers.remove(&peer) {
@@ -419,6 +413,9 @@ impl SwarmDriver {
                     }
                     self.log_kbuckets(&peer);
                     self.send_event(NetworkEvent::PeerAdded(peer));
+                }
+                if let Some(old_peer) = old_peer {
+                    self.send_event(NetworkEvent::PeerRemoved(old_peer));
                 }
             }
             KademliaEvent::InboundRequest {
@@ -438,6 +435,7 @@ impl SwarmDriver {
                     trace!("InboundRequest::GetRecord doesn't have local record, with {num_closer_peers:?} closer_peers");
                 }
             }
+
             other => {
                 trace!("KademliaEvent ignored: {other:?}");
             }
