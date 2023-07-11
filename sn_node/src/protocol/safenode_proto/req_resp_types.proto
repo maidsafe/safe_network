@@ -23,11 +23,26 @@ message NodeInfoResponse {
   uint64 uptime_secs = 5;
 }
 
+// Information about how this node's connections to the network and peers
+message NetworkInfoRequest {}
+
+message NetworkInfoResponse {
+  repeated bytes connected_peers = 1;
+  repeated string listeners = 2;
+}
+
 // Stream of node events
 message NodeEventsRequest {}
 
 message NodeEvent {
   bytes event = 1;
+}
+
+// Addresses of all the Records stored by the node
+message RecordAddressesRequest {}
+
+message RecordAddressesResponse {
+    repeated bytes addresses = 1;
 }
 
 // Stop the safenode app
@@ -51,10 +66,3 @@ message UpdateRequest {
 
 message UpdateResponse {}
 
-// Information about how this node's connections to the network and peers
-message NetworkInfoRequest {}
-
-message NetworkInfoResponse {
-  repeated bytes connected_peers = 1;
-  repeated string listeners = 2;
-}

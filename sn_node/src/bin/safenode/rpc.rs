@@ -25,8 +25,8 @@ use tracing::{debug, info, trace};
 use safenode_proto::safe_node_server::{SafeNode, SafeNodeServer};
 use safenode_proto::{
     NetworkInfoRequest, NetworkInfoResponse, NodeEvent, NodeEventsRequest, NodeInfoRequest,
-    NodeInfoResponse, RestartRequest, RestartResponse, StopRequest, StopResponse, UpdateRequest,
-    UpdateResponse,
+    NodeInfoResponse, RecordAddressesRequest, RecordAddressesResponse, RestartRequest,
+    RestartResponse, StopRequest, StopResponse, UpdateRequest, UpdateResponse,
 };
 
 // this includes code generated from .proto files
@@ -129,6 +129,28 @@ impl SafeNode for SafeNodeRpcService {
         });
 
         Ok(Response::new(ReceiverStream::new(client_rx)))
+    }
+
+    async fn record_addresses(
+        &self,
+        request: Request<RecordAddressesRequest>,
+    ) -> Result<Response<RecordAddressesResponse>, Status> {
+        trace!(
+            "RPC request received at {}: {:?}",
+            self.addr,
+            request.get_ref()
+        );
+
+        let addresses = self
+            .running_node
+            .get_all_record_addresses()
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|addr| addr.as_bytes())
+            .collect();
+
+        Ok(Response::new(RecordAddressesResponse { addresses }))
     }
 
     async fn stop(&self, request: Request<StopRequest>) -> Result<Response<StopResponse>, Status> {
