@@ -100,6 +100,21 @@ impl NetworkAddress {
         }
     }
 
+    // For track and logging purpose, return the convertable `RecordKey`.
+    fn to_record_key(&self) -> Option<RecordKey> {
+        match self {
+            NetworkAddress::RecordKey(bytes) => Some(RecordKey::new(bytes)),
+            NetworkAddress::ChunkAddress(chunk_address) => {
+                Some(RecordKey::new(chunk_address.name()))
+            }
+            NetworkAddress::RegisterAddress(register_address) => {
+                Some(RecordKey::new(register_address.name()))
+            }
+            NetworkAddress::DbcAddress(dbc_address) => Some(RecordKey::new(dbc_address.name())),
+            _ => None,
+        }
+    }
+
     /// Return the `KBucketKey` representation of this `NetworkAddress`.
     ///
     /// The `KBucketKey` is used for calculating proximity/distance to other items (whether nodes or data).
@@ -142,6 +157,11 @@ impl std::fmt::Debug for NetworkAddress {
             ),
             NetworkAddress::RecordKey(_) => "NetworkAddress::RecordKey(".to_string(),
         };
-        write!(f, "{name_str}{:?})", self.as_bytes())
+        write!(
+            f,
+            "{name_str} - {:?} - {:?})",
+            self.to_record_key(),
+            self.as_kbucket_key()
+        )
     }
 }
