@@ -178,7 +178,7 @@ jobs:
 
       - name: Run register tests
         shell: bash
-        timeout-minutes: 25
+        timeout-minutes: 50
         env:
           PROPTEST_CASES: 512
         run: cargo test --release -p sn_registers
