@@ -18,6 +18,7 @@ use itertools::Itertools;
 use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
+    core::ConnectedPoint,
     kad::{GetRecordOk, InboundRequest, Kademlia, KademliaEvent, QueryResult, Record, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
@@ -145,15 +146,18 @@ impl SwarmDriver {
                     libp2p::identify::Event::Received { peer_id, info } => {
                         debug!(%peer_id, ?info, "identify: received info");
 
+                        // Get the peers listen addresses that we dialed already
+                        let mut dialed_listen_addrs = info.listen_addrs.clone();
+                        dialed_listen_addrs.retain(|x| self.dialed_addrs.contains(x));
+
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
-                        if (self.local || self.dialed_peers.contains(&peer_id))
+                        if (self.local || !dialed_listen_addrs.is_empty())
                             && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
                         {
                             let addrs = match self.local {
                                 true => info.listen_addrs,
-                                // If we're not in local mode, only add globally reachable addresses
-                                false => info
-                                    .listen_addrs
+                                // If we're not in local mode, only add globally reachable addresses (that we dialed already)
+                                false => dialed_listen_addrs
                                     .into_iter()
                                     .filter(multiaddr_is_global)
                                     .collect(),
@@ -231,8 +235,8 @@ impl SwarmDriver {
             } => {
                 debug!(%peer_id, num_established, "ConnectionEstablished: {}", endpoint_str(&endpoint));
 
-                if endpoint.is_dialer() {
-                    self.dialed_peers.push(peer_id);
+                if let ConnectedPoint::Dialer { address, .. } = endpoint {
+                    self.dialed_addrs.push(address);
                 }
             }
             SwarmEvent::ConnectionClosed {

@@ -109,8 +109,8 @@ pub struct SwarmDriver {
     pending_record_put: HashMap<QueryId, oneshot::Sender<Result<()>>>,
     replication_fetcher: ReplicationFetcher,
     local: bool,
-    /// A list of the most recent peers we have dialed ourselves.
-    dialed_peers: CircularVec<PeerId>,
+    /// A list of the most recent addresses we have dialed ourselves.
+    dialed_addrs: CircularVec<Multiaddr>,
     dead_peers: BTreeSet<PeerId>,
 }
 
@@ -368,11 +368,11 @@ impl SwarmDriver {
             pending_record_put: Default::default(),
             replication_fetcher: Default::default(),
             local,
-            // We use 63 here, as in practice the capactiy will be rounded to the nearest 2^(n-1).
+            // We use 127 here, as in practice the capactiy will be rounded to the nearest 2^(n-1).
             // Source: https://users.rust-lang.org/t/the-best-ring-buffer-library/58489/8
-            // 63 will mean at least 63 most recent peers we have dialed, which should be allow for enough time for the
+            // 127 will mean at least 127 most recent addresses we have dialed, which should be allow for enough time for the
             // `identify` protocol to kick in and get them in the routing table.
-            dialed_peers: CircularVec::new(63),
+            dialed_addrs: CircularVec::new(127),
             dead_peers: Default::default(),
         };
 
