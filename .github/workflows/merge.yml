@@ -249,7 +249,7 @@ jobs:
         continue-on-error: true
         run: |
           find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure() && matrix.os == 'windows-latest'
+        if: failure() && matrix.os != 'windows-latest'
 
       - name: Tar log files (windows)
         shell: pwsh
@@ -355,7 +355,7 @@ jobs:
         continue-on-error: true
         run: |
           find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure() && matrix.os == 'windows-latest'
+        if: failure() && matrix.os != 'windows-latest'
 
       - name: Tar log files (windows)
         shell: pwsh
@@ -497,7 +497,7 @@ jobs:
         continue-on-error: true
         run: |
           find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure() && matrix.os == 'windows-latest'
+        if: failure() && matrix.os != 'windows-latest'
 
       - name: Tar log files (windows)
         shell: pwsh
