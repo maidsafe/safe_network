@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689067330407,
+  "lastUpdate": 1689067356609,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4203,6 +4203,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 22.14,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "97f2a8fc3cbfa954999fa477313a0d862fd1bc84",
+          "message": "chore(node): only log LostRecord when peersfound",
+          "timestamp": "2023-07-11T08:19:17Z",
+          "tree_id": "a0911d1e5ae0c3a1d49bc152faef80394e4ef271",
+          "url": "https://github.com/maidsafe/safe_network/commit/97f2a8fc3cbfa954999fa477313a0d862fd1bc84"
+        },
+        "date": 1689067356204,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 32.21,
             "unit": "MB"
           }
         ]
