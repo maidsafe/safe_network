@@ -661,6 +661,16 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
+    /// Returns the Addresses of all the locally stored Records
+    pub async fn get_all_local_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetAllLocalRecordAddresses { sender })?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
     // Add a list of keys of a holder to RecordFetcher.  Return with a list of keys to fetch, if present.
     pub async fn add_keys_to_replication_fetcher(
         &self,

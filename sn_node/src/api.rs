@@ -16,7 +16,7 @@ use sn_protocol::{
     storage::DbcAddress,
     NetworkAddress,
 };
-use std::{net::SocketAddr, path::PathBuf, time::Duration};
+use std::{collections::HashSet, net::SocketAddr, path::PathBuf, time::Duration};
 use tokio::task::spawn;
 
 /// Once a node is started and running, the user obtains
@@ -54,6 +54,12 @@ impl RunningNode {
     /// Returns the node events channel where to subscribe to receive `NodeEvent`s
     pub fn node_events_channel(&self) -> &NodeEventsChannel {
         &self.node_events_channel
+    }
+
+    /// Returns the list of all the RecordKeys held by the node
+    pub async fn get_all_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
+        let addresses = self.network.get_all_local_record_addresses().await?;
+        Ok(addresses)
     }
 }
 

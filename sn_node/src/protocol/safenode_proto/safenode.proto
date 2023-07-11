@@ -31,6 +31,9 @@ service SafeNode {
   // Returns a stream of events as triggered by this node
   rpc NodeEvents (NodeEventsRequest) returns (stream NodeEvent);
 
+  // Returns the Addresses of all the Records stored by this node
+  rpc RecordAddresses (RecordAddressesRequest) returns (RecordAddressesResponse);
+
   // Stop the execution of this node
   rpc Stop (StopRequest) returns (StopResponse);
 
