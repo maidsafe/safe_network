@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.79.15](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.14...sn_cli-v0.79.15) - 2023-07-11
+
+### Other
+- update dependencies
+
 ## [0.79.14](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.13...sn_cli-v0.79.14) - 2023-07-11
 
 ### Fixed
