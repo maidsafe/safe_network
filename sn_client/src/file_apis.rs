@@ -18,7 +18,7 @@ use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use tokio::task;
+use tokio::task::{self, JoinHandle};
 use tracing::trace;
 use xor_name::XorName;
 
@@ -132,6 +132,50 @@ impl Files {
         }
     }
 
+    /// Directly writes Chunks to the network in the
+    /// form of immutable self encrypted chunks.
+    #[instrument(skip_all, level = "trace")]
+    pub async fn upload_chunks_in_batches(
+        &self,
+        chunks: impl Iterator<Item = Chunk>,
+        payment_proofs: &PaymentProofsMap,
+        verify: bool,
+    ) -> Result<()> {
+        trace!("Client upload in batches started");
+        let mut tasks = vec![];
+        let mut next_batch_size = 0;
+        for chunk in chunks {
+            next_batch_size += 1;
+            let client = self.client.clone();
+            let chunk_addr = *chunk.address();
+            let payment = payment_proofs.get(chunk_addr.name()).cloned();
+            // TODO: re-enable requirement to always provide payment proof
+            //.ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
+
+            tasks.push(task::spawn(async move {
+                client.store_chunk(chunk, payment).await?;
+                if verify {
+                    let _ = client.get_chunk(chunk_addr).await?;
+                }
+                Ok::<(), super::error::Error>(())
+            }));
+
+            if next_batch_size == CHUNKS_BATCH_MAX_SIZE {
+                let tasks_to_poll = tasks;
+                join_all_tasks(tasks_to_poll).await?;
+                tasks = vec![];
+                next_batch_size = 0;
+            }
+        }
+
+        if next_batch_size > 0 {
+            join_all_tasks(tasks).await?;
+        }
+
+        trace!("Client upload in batches completed");
+        Ok(())
+    }
+
     // --------------------------------------------
     // ---------- Private helpers -----------------
     // --------------------------------------------
@@ -147,7 +191,10 @@ impl Files {
             let file = SmallFile::new(bytes)?;
             self.upload_small(file, payment_proofs, verify).await
         } else {
-            self.upload_large(bytes, payment_proofs, verify).await
+            let (head_address, chunks) = encrypt_large(bytes)?;
+            self.upload_chunks_in_batches(chunks.into_iter(), payment_proofs, verify)
+                .await?;
+            Ok(ChunkAddress::new(head_address))
         }
     }
 
@@ -173,53 +220,6 @@ impl Files {
         }
 
         Ok(address)
-    }
-
-    /// Directly writes a [`LargeFile`] to the network in the
-    /// form of immutable self encrypted chunks, without any batching.
-    #[instrument(skip_all, level = "trace")]
-    async fn upload_large(
-        &self,
-        large: Bytes,
-        payment_proofs: &PaymentProofsMap,
-        verify: bool,
-    ) -> Result<ChunkAddress> {
-        let (head_address, mut all_chunks) = encrypt_large(large)?;
-        trace!("Client upload started");
-        while !all_chunks.is_empty() {
-            let chop_size = std::cmp::min(CHUNKS_BATCH_MAX_SIZE, all_chunks.len());
-            let next_batch: Vec<Chunk> = all_chunks.drain(..chop_size).collect();
-
-            let mut tasks = vec![];
-            for chunk in next_batch {
-                let client = self.client.clone();
-                let chunk_addr = *chunk.address();
-                let payment = payment_proofs.get(chunk_addr.name()).cloned();
-                // TODO: re-enable requirement to always provide payment proof
-                //.ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
-
-                tasks.push(task::spawn(async move {
-                    client.store_chunk(chunk, payment).await?;
-                    if verify {
-                        let _ = client.get_chunk(chunk_addr).await?;
-                    }
-                    Ok::<(), super::error::Error>(())
-                }));
-            }
-
-            let responses = join_all(tasks)
-                .await
-                .into_iter()
-                .flatten() // swallows errors
-                .collect_vec();
-
-            for res in responses {
-                // fail with any issue here
-                res?;
-            }
-        }
-        trace!("Client upload completed");
-        Ok(ChunkAddress::new(head_address))
     }
 
     // Verify a chunk is stored at provided address
@@ -358,4 +358,21 @@ fn package_small(file: SmallFile) -> Result<Chunk> {
         return Err(Error::SmallFilePaddingNeeded(chunk.value().len()))?;
     }
     Ok(chunk)
+}
+
+// Helper to join a provided set of spawned tasks
+async fn join_all_tasks(tasks: Vec<JoinHandle<Result<()>>>) -> Result<()> {
+    let responses = join_all(tasks)
+        .await
+        .into_iter()
+        .flatten() // swallows errors
+        .collect_vec();
+
+    for res in responses {
+        // fail with any issue here
+        if res.as_ref().is_err() {
+            return res;
+        }
+    }
+    Ok(())
 }

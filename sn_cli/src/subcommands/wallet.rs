@@ -71,9 +71,9 @@ pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Pa
         WalletCmds::Balance => balance(root_dir).await?,
         WalletCmds::Deposit { stdin } => deposit(root_dir, stdin).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
-        WalletCmds::Pay { path } => chunk_and_pay_for_storage(client, root_dir, &path, true)
-            .await
-            .map(|_| ())?,
+        WalletCmds::Pay { path } => {
+            chunk_and_pay_for_storage(client, root_dir, &path, true).await?;
+        }
     }
     Ok(())
 }
@@ -171,20 +171,27 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
     Ok(())
 }
 
+pub(super) struct ChunkedFile {
+    pub file_name: String,
+    pub size: usize,
+    pub chunks: Vec<(XorName, PathBuf)>,
+}
+
 pub(super) async fn chunk_and_pay_for_storage(
     client: &Client,
     root_dir: &Path,
     files_path: &Path,
     pay: bool, // TODO: to be removed; temporarily payment is optional
-) -> Result<(
-    BTreeMap<(String, XorName, usize), Vec<(XorName, PathBuf)>>,
-    PaymentProofsMap,
-)> {
+) -> Result<(BTreeMap<XorName, ChunkedFile>, PaymentProofsMap)> {
     let wallet = LocalWallet::load_from(root_dir).await?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     let file_api: Files = Files::new(client.clone());
 
     // Get the list of Chunks addresses from the files found at 'files_path'
+    println!(
+        "Preparing (chunking) files at '{}'...",
+        files_path.display()
+    );
     let chunks_dir = std::env::temp_dir();
     let mut files_to_pay = BTreeMap::new();
     let mut num_of_chunks = 0;
@@ -216,7 +223,14 @@ pub(super) async fn chunk_and_pay_for_storage(
                 chunks_paths.push((xorname, path));
             }
 
-            files_to_pay.insert((file_name, file_addr, bytes.len()), chunks_paths);
+            files_to_pay.insert(
+                file_addr,
+                ChunkedFile {
+                    file_name,
+                    size: bytes.len(),
+                    chunks: chunks_paths,
+                },
+            );
         }
     }
 
@@ -228,7 +242,12 @@ pub(super) async fn chunk_and_pay_for_storage(
         );
 
         let proofs = wallet_client
-            .pay_for_storage(files_to_pay.values().flatten().map(|(name, _)| name))
+            .pay_for_storage(
+                files_to_pay
+                    .values()
+                    .flat_map(|chunked_file| &chunked_file.chunks)
+                    .map(|(name, _)| name),
+            )
             .await?;
 
         let wallet = wallet_client.into_wallet();
