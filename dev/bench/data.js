@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689091907391,
+  "lastUpdate": 1689094466105,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -2491,6 +2491,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 9.773969769252245,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "832f6916cd052c4f1e88a1a7571cc076a60e0e58",
+          "message": "fix: prevent multiple concurrent get_closest calls when joining",
+          "timestamp": "2023-07-11T15:11:53Z",
+          "tree_id": "17fe05497520f32c203867987492fcf81703cc74",
+          "url": "https://github.com/maidsafe/safe_network/commit/832f6916cd052c4f1e88a1a7571cc076a60e0e58"
+        },
+        "date": 1689094464782,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1585905975652813,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.435372747246392,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 9.586666189979208,
             "unit": "MiB/s"
           }
         ]
