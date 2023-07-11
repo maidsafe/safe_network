@@ -147,17 +147,25 @@ impl SwarmDriver {
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if (self.local || self.dialed_peers.contains(&peer_id))
-                            && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
+                        && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
                         {
                             let addrs = match self.local {
                                 true => info.listen_addrs,
                                 // If we're not in local mode, only add globally reachable addresses
                                 false => info
-                                    .listen_addrs
-                                    .into_iter()
-                                    .filter(multiaddr_is_global)
-                                    .collect(),
+                                .listen_addrs
+                                .into_iter()
+                                .filter(multiaddr_is_global)
+                                .collect(),
                             };
+                            info!("Addrs provided: {addrs:?}");
+                            for addr in &addrs {
+                                let mut pp2p = addr.clone();
+                                pp2p.push(Protocol::P2p(peer_id.as_ref().clone()));
+                                info!("ppppp2p: {pp2p:?}");
+                                self.dial(pp2p)?;
+                            }
+
                             // Strip the `/p2p/...` part of the multiaddresses
                             let addrs: Vec<_> = addrs
                                 .into_iter()
@@ -166,11 +174,7 @@ impl SwarmDriver {
                                 .unique()
                                 .collect();
 
-                            info!("Addrs provided: {addrs:?}");
 
-                            for addr in &addrs {
-                                self.dial(addr.clone())?;
-                            }
 
                             // If the peer supports AutoNAT, add it as server
                             if info
