@@ -246,6 +246,13 @@ jobs:
           CARGO_TARGET_DIR: "./transfer-target"
           SN_LOG: "all"
         timeout-minutes: 10
+      
+      - name: Check safenode process count (non win)
+        shell: bash
+        timeout-minutes: 1
+        if: always() && matrix.os != 'windows-latest'
+        continue-on-error: true
+        run: echo "$(pgrep safenode | wc -l) nodes running"
 
       - name: Kill all nodes on Windows
         shell: bash
@@ -263,6 +270,7 @@ jobs:
         continue-on-error: true
         run: |
           pkill safenode
+          sleep 5
           echo "$(pgrep safenode | wc -l) nodes still running"
 
       - name: Tar log files
