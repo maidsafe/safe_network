@@ -166,6 +166,12 @@ impl SwarmDriver {
                                 .unique()
                                 .collect();
 
+                            info!("Addrs provided: {addrs:?}");
+
+                            for addr in &addrs {
+                                self.dial(addr.clone())?;
+                            }
+
                             // If the peer supports AutoNAT, add it as server
                             if info
                                 .protocols
@@ -407,6 +413,7 @@ impl SwarmDriver {
                 old_peer,
                 ..
             } => {
+                info!("RoutingUpdate {:?}" ,peer);
                 if is_new_peer {
                     if self.dead_peers.remove(&peer) {
                         info!("A dead peer {peer:?} joined back with the same ID");
