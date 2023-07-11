@@ -42,7 +42,7 @@ use tracing_core::Level;
 const NODE_COUNT: u8 = 25;
 const CHUNK_SIZE: usize = 1024;
 const CHUNK_COUNT: usize = 10;
-const VERIFICATION_DELAY: Duration = Duration::from_secs(5);
+const VERIFICATION_DELAY: Duration = Duration::from_secs(10);
 
 type NodeIndex = u8;
 
@@ -67,7 +67,7 @@ async fn verify_data_location() -> Result<()> {
     let stored_chunks = Arc::new(RwLock::new(BTreeMap::new()));
 
     // spawn node event handler for each node
-    for node_index in 1..NODE_COUNT {
+    for node_index in 1..NODE_COUNT + 1 {
         handle_node_events(stored_chunks.clone(), node_index).await?;
     }
     let mut all_peers = get_all_peer_ids().await?;
@@ -84,8 +84,19 @@ async fn verify_data_location() -> Result<()> {
 
     // churn all nodes and verify the location
     let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
-    for node_index in 1..NODE_COUNT {
+    for node_index in 1..NODE_COUNT + 1 {
+        // 1 is used as the bootstrap peer
+        if node_index == 1 {
+            continue;
+        }
         addr.set_port(12000 + node_index as u16);
+
+        let endpoint = format!("https://{addr}");
+        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let response = rpc_client
+            .node_info(Request::new(NodeInfoRequest {}))
+            .await?;
+        let peer_id_old = PeerId::from_bytes(&response.get_ref().peer_id)?;
 
         node_restart(addr).await?;
         println!("starting node event handler");
@@ -104,6 +115,9 @@ async fn verify_data_location() -> Result<()> {
             .await?;
         let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
 
+        let old_one = all_peers.get(node_index as usize - 1).unwrap();
+        assert_eq!(*old_one, peer_id_old);
+
         all_peers[node_index as usize - 1] = peer_id;
         verify_location(stored_chunks.clone(), &all_peers).await?;
     }
@@ -113,6 +127,9 @@ async fn verify_data_location() -> Result<()> {
 
 // Verfies that the chunk is stored by the actual closest peers to the ChunkAddress
 async fn verify_location(stored_chunks: StoredChunks, all_peers: &[PeerId]) -> Result<()> {
+    for (idx, peer) in all_peers.iter().enumerate() {
+        println!("{}: {peer:?}", idx + 1);
+    }
     for chunk_addr in stored_chunks.read().await.keys() {
         let key = RecordKey::new(chunk_addr.name());
 
@@ -122,15 +139,19 @@ async fn verify_location(stored_chunks: StoredChunks, all_peers: &[PeerId]) -> R
                 .into_iter()
                 .collect::<BTreeSet<_>>();
 
-        let mut actual_closest = stored_chunks
-            .read()
-            .await
-            .get(chunk_addr)
-            .unwrap()
-            .clone()
-            .into_iter()
-            .map(|idx| all_peers[idx as usize - 1]);
-        assert!(actual_closest.all(|peer| expected_closest_peers.contains(&peer)));
+        let actual_closest_idx = stored_chunks.read().await.get(chunk_addr).unwrap().clone();
+        let actual_closest = actual_closest_idx
+            .iter()
+            .map(|idx| all_peers[*idx as usize - 1])
+            .collect::<BTreeSet<_>>();
+
+        for expected in &expected_closest_peers {
+            if !actual_closest.contains(expected) {
+                return Err(eyre!(
+                    "Chunk {chunk_addr:?} is not stored inside {expected:?}"
+                ));
+            }
+        }
     }
     Ok(())
 }
@@ -140,7 +161,7 @@ async fn get_all_peer_ids() -> Result<Vec<PeerId>> {
     let mut all_peers = Vec::new();
 
     let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
-    for node_index in 1..NODE_COUNT {
+    for node_index in 1..NODE_COUNT + 1 {
         addr.set_port(12000 + node_index as u16);
         let endpoint = format!("https://{addr}");
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
