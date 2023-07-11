@@ -6,13 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::wallet::chunk_and_pay_for_storage;
+use super::wallet::{chunk_and_pay_for_storage, ChunkedFile};
 
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
 use sn_client::{Client, Files, PaymentProofsMap};
-use sn_protocol::storage::ChunkAddress;
+use sn_protocol::storage::{Chunk, ChunkAddress};
 
 use std::{
     fs,
@@ -98,11 +98,26 @@ async fn upload_files(
     }
 
     let mut chunks_to_fetch = Vec::new();
-    for ((src_filename, file_addr, size), chunks_paths) in chunks_to_upload.into_iter() {
-        println!("Storing file {src_filename} of {size} bytes..");
-        upload_chunks(&file_api, chunks_paths, &src_filename, &payment_proofs).await?;
-        chunks_to_fetch.push((file_addr, src_filename.clone()));
-        println!("Successfully stored {src_filename} to {file_addr:64x}",);
+    for (
+        file_addr,
+        ChunkedFile {
+            file_name,
+            size,
+            chunks,
+        },
+    ) in chunks_to_upload.into_iter()
+    {
+        println!(
+            "Storing file '{file_name}' of {size} bytes ({} chunk/s)..",
+            chunks.len()
+        );
+
+        if let Err(error) = upload_chunks(&file_api, &file_name, chunks, &payment_proofs).await {
+            println!("Did not store all chunks of file '{file_name}' to all nodes in the close group: {error}")
+        }
+
+        println!("Successfully stored '{file_name}' to {file_addr:64x}");
+        chunks_to_fetch.push((file_addr, file_name));
     }
 
     let content = bincode::serialize(&chunks_to_fetch)?;
@@ -115,23 +130,31 @@ async fn upload_files(
     Ok(())
 }
 
-/// Upload an individual file to the network.
+/// Upload chunks of an individual file to the network.
 async fn upload_chunks(
     file_api: &Files,
+    file_name: &str,
     chunks_paths: Vec<(XorName, PathBuf)>,
-    src_filename: &str,
     payment_proofs: &PaymentProofsMap,
 ) -> Result<()> {
-    for (_, chunk_path) in chunks_paths {
-        let file = fs::read(chunk_path)?;
-        let bytes = Bytes::from(file);
-        if let Err(error) = file_api.upload_with_proof(bytes, payment_proofs).await {
-            println!(
-                "Did not store chunk of file {src_filename} to all nodes in the close group: {error}"
-            )
-        }
-    }
+    let chunks_reader = chunks_paths
+        .into_iter()
+        .map(|(name, chunk_path)| (name, fs::read(chunk_path)))
+        .filter_map(|x| match x {
+            (name, Ok(file)) => Some(Chunk {
+                address: ChunkAddress::new(name),
+                value: Bytes::from(file),
+            }),
+            (_, Err(err)) => {
+                // FIXME: this error won't be seen/reported, thus assumed all chunks were read and stored.
+                println!("Could not upload generated chunk of file '{file_name}': {err}");
+                None
+            }
+        });
 
+    file_api
+        .upload_chunks_in_batches(chunks_reader, payment_proofs, false)
+        .await?;
     Ok(())
 }
 

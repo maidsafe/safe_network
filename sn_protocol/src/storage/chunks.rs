@@ -17,10 +17,10 @@ use xor_name::XorName;
 pub struct Chunk {
     /// Network address. Omitted when serialising and
     /// calculated from the `value` when deserialising.
-    address: ChunkAddress,
+    pub address: ChunkAddress,
     /// Contained data.
     #[debug(skip)]
-    value: Bytes,
+    pub value: Bytes,
 }
 
 impl Chunk {
