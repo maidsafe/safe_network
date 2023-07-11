@@ -469,18 +469,15 @@ fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf, Keypa
 /// Starts a new process running the binary with the same args as
 /// the current process
 fn start_new_node_process() {
-    // Retrieve the current executable's path
-    let current_exe = env::current_exe().unwrap();
-
     // Retrieve the command-line arguments passed to this process
     let args: Vec<String> = env::args().collect();
 
     info!("Original args are: {args:?}");
 
     // Create a new Command instance to run the current executable
-    let mut cmd = Command::new(current_exe);
+    // First argument contains the current exe
+    let mut cmd = Command::new(&args[0]);
 
-    // Set the arguments for the new Command
     cmd.args(&args[1..]); // Exclude the first argument (binary path)
 
     warn!(
