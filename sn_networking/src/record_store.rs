@@ -197,17 +197,21 @@ impl DiskBackedRecordStore {
 
         let filename = Self::key_to_hex(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
-        match fs::write(file_path, r.value) {
-            Ok(_) => {
-                trace!("Wrote record to disk! filename: {filename}");
-                let _ = self.records.insert(r.key);
-                Ok(())
+        let _ = self.records.insert(r.key);
+
+        // TODO: How could we clean up records if we fail to insert?
+        tokio::spawn(async move {
+            match fs::write(file_path, r.value) {
+                Ok(_) => {
+                    trace!("Wrote record to disk! filename: {filename}");
+                }
+                Err(err) => {
+                    error!("Error writing file. filename: {filename}, error: {err:?}");
+                }
             }
-            Err(err) => {
-                error!("Error writing file. filename: {filename}, error: {err:?}");
-                Ok(())
-            }
-        }
+        });
+
+        Ok(())
     }
 
     fn storage_pruning(&mut self) {
@@ -272,14 +276,17 @@ impl RecordStore for DiskBackedRecordStore {
 
         let filename = Self::key_to_hex(k);
         let file_path = self.config.storage_dir.join(&filename);
-        match fs::remove_file(file_path) {
-            Ok(_) => {
-                trace!("Removed record from disk! filename: {filename}");
+
+        let _handle = tokio::spawn(async move {
+            match fs::remove_file(file_path) {
+                Ok(_) => {
+                    trace!("Removed record from disk! filename: {filename}");
+                }
+                Err(err) => {
+                    error!("Error while removing file. filename: {filename}, error: {err:?}");
+                }
             }
-            Err(err) => {
-                error!("Error while removing file. filename: {filename}, error: {err:?}");
-            }
-        }
+        });
     }
 
     // A backstop replication shall only trigger within pre-defined interval
