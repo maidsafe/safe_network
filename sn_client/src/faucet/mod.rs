@@ -10,10 +10,34 @@ pub async fn get_tokens_from_faucet(amount: Token, to: PublicAddress, client: &C
     send(load_faucet_wallet(client).await, amount, to, client).await
 }
 
+/// Returns a dbc with the requested number of tokens to be transferred from genesis to another wallet.
+/// For use by the network churning test.
+pub async fn get_tokens_from_genesis_to_another_wallet(
+    genesis_wallet: LocalWallet,
+    amount: Token,
+    to: PublicAddress,
+    client: &Client,
+) -> Dbc {
+    send(
+        load_faucet_wallet_from_genesis_wallet(client, genesis_wallet).await,
+        amount,
+        to,
+        client,
+    )
+    .await
+}
+
 /// Use the client to load the faucet wallet from the genesis DBC.
 pub async fn load_faucet_wallet(client: &Client) -> LocalWallet {
     let genesis_wallet = load_genesis_wallet().await;
+    load_faucet_wallet_from_genesis_wallet(client, genesis_wallet).await
+}
 
+/// Use the client to load the faucet wallet from the genesis Wallet.
+pub async fn load_faucet_wallet_from_genesis_wallet(
+    client: &Client,
+    genesis_wallet: LocalWallet,
+) -> LocalWallet {
     println!("Loading faucet...");
     let mut faucet_wallet = create_faucet_wallet().await;
 

@@ -11,6 +11,7 @@ on:
 
 env:
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  CLIENT_LOG_PATH: /tmp/safe-client
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
   HEAPNODE_DATA_PATH: /home/runner/.local/share/safe/heapnode
 
@@ -228,7 +229,7 @@ jobs:
         run: |
           find $HEAPNODE_DATA_PATH -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
           find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
-          find $CLIENT_DATA_PATH -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
+          find $CLIENT_LOG_PATH -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
           find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
         if: failure()
 
