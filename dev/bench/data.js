@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689094500941,
+  "lastUpdate": 1689144931533,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -2530,6 +2530,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 9.586666189979208,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "b3c8fc1c206c85a5571f8c647bcbcf345545bd19",
+          "message": "refactor: client to upload paid chunks in batches",
+          "timestamp": "2023-07-12T05:58:07Z",
+          "tree_id": "8dd07ba3524ee25588e75306ae161c2aa2f8560c",
+          "url": "https://github.com/maidsafe/safe_network/commit/b3c8fc1c206c85a5571f8c647bcbcf345545bd19"
+        },
+        "date": 1689144930892,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1912803478239744,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.738244482471663,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.349445393930955,
             "unit": "MiB/s"
           }
         ]
