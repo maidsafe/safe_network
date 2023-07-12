@@ -18,7 +18,7 @@ use sn_protocol::{
     },
     NetworkAddress,
 };
-use sn_registers::Register;
+use sn_registers::SignedRegister;
 
 impl Node {
     pub(crate) async fn get_chunk_from_network(&self, address: ChunkAddress) -> Result<Chunk> {
@@ -41,10 +41,10 @@ impl Node {
         }
     }
 
-    pub(crate) async fn get_register_from_network(
+    pub(crate) async fn get_signed_register_from_network(
         &self,
         address: RegisterAddress,
-    ) -> Result<Register> {
+    ) -> Result<SignedRegister> {
         let record = self
             .network
             .get_record_from_network(RecordKey::new(address.name()))
@@ -55,7 +55,7 @@ impl Node {
             RecordHeader::from_record(&record).map_err(|_| Error::RegisterNotFound(address))?;
 
         if let RecordKind::Register = header.kind {
-            let register = try_deserialize_record::<Register>(&record)
+            let register = try_deserialize_record::<SignedRegister>(&record)
                 .map_err(|_| Error::RegisterNotFound(address))?;
             Ok(register)
         } else {
@@ -136,7 +136,8 @@ impl Node {
                 Ok(ReplicatedData::DbcSpend(spends))
             }
             RecordKind::Register => {
-                let register = try_deserialize_record::<Register>(&record).map_err(|_| error)?;
+                let register =
+                    try_deserialize_record::<SignedRegister>(&record).map_err(|_| error)?;
                 Ok(ReplicatedData::Register(register))
             }
         }

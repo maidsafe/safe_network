@@ -20,7 +20,7 @@ use sn_protocol::{
         RecordKind,
     },
 };
-use sn_registers::Register;
+use sn_registers::SignedRegister;
 use sn_transfers::payment_proof::validate_payment_proof;
 use std::collections::HashSet;
 use xor_name::XorName;
@@ -65,10 +65,10 @@ impl Node {
                 self.validate_and_store_spends(signed_spends).await
             }
             RecordKind::Register => {
-                let register = try_deserialize_record::<Register>(&record)?;
+                let register = try_deserialize_record::<SignedRegister>(&record)?;
 
                 // check if the deserialized value's RegisterAddress matches the record's key
-                if record.key != RecordKey::new(&register.name()) {
+                if record.key != RecordKey::new(&register.address().name()) {
                     warn!(
                         "Record's key does not match with the value's RegisterAddress, ignoring PUT."
                     );
@@ -130,7 +130,7 @@ impl Node {
     /// Validate and store a `Register` to the RecordStore
     pub(crate) async fn validate_and_store_register(
         &self,
-        register: Register,
+        register: SignedRegister,
     ) -> Result<CmdOk, ProtocolError> {
         let reg_addr = register.address();
         debug!("Validating and storing register {reg_addr:?}");
@@ -337,9 +337,9 @@ impl Node {
 
     async fn register_validation(
         &self,
-        register: &Register,
+        register: &SignedRegister,
         present_locally: bool,
-    ) -> Result<Option<Register>, ProtocolError> {
+    ) -> Result<Option<SignedRegister>, ProtocolError> {
         // check if register is valid
         let reg_addr = register.address();
         if let Err(e) = register.verify() {
@@ -370,11 +370,11 @@ impl Node {
                 return Err(ProtocolError::RegisterNotStored(*reg_addr.name()));
             }
         };
-        let local_register: Register = try_deserialize_record(&record)?;
+        let local_register: SignedRegister = try_deserialize_record(&record)?;
 
         // merge the two registers
         let mut merged_register = local_register.clone();
-        merged_register.merge(register.to_owned());
+        merged_register.verified_merge(register.to_owned())?;
         if merged_register == local_register {
             debug!("Register with addr {reg_addr:?} is the same as the local version");
             Ok(None)

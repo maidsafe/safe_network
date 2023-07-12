@@ -329,6 +329,11 @@ impl Node {
 
     async fn handle_query(&self, query: Query) -> Response {
         let resp = match query {
+            Query::GetRegister(address) => {
+                trace!("Got GetRegister query for {address:?}");
+                let result = self.get_signed_register_from_network(address).await;
+                QueryResponse::GetRegister(result)
+            }
             Query::GetChunk(address) => {
                 trace!("Got GetChunk query for {address:?}");
                 let result = self.get_chunk_from_network(address).await;

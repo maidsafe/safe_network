@@ -31,7 +31,7 @@ use sn_protocol::{
     },
     NetworkAddress,
 };
-use sn_registers::Register;
+use sn_registers::SignedRegister;
 use sn_transfers::client_transfers::SpendRequest;
 use std::num::NonZeroUsize;
 use std::time::Duration;
@@ -236,7 +236,7 @@ impl Client {
     }
 
     /// Sign the given data
-    pub fn sign(&self, data: &[u8]) -> Signature {
+    pub fn sign<T: AsRef<[u8]>>(&self, data: T) -> Signature {
         self.signer.sign(data)
     }
 
@@ -246,7 +246,10 @@ impl Client {
     }
 
     /// Get a register from network
-    pub async fn get_register_from_network(&self, address: RegisterAddress) -> Result<Register> {
+    pub async fn get_signed_register_from_network(
+        &self,
+        address: RegisterAddress,
+    ) -> Result<SignedRegister> {
         let record = self
             .network
             .get_record_from_network(RecordKey::new(address.name()))
@@ -257,11 +260,11 @@ impl Client {
             .map_err(|_| ProtocolError::RegisterNotFound(address))?;
 
         if let RecordKind::Register = header.kind {
-            let register = try_deserialize_record::<Register>(&record)
+            let register = try_deserialize_record::<SignedRegister>(&record)
                 .map_err(|_| ProtocolError::RegisterNotFound(address))?;
             Ok(register)
         } else {
-            error!("RecordKind mismatch while trying to retrieve a chunk");
+            error!("RecordKind mismatch while trying to retrieve a signed register");
             Err(Error::Protocol(ProtocolError::RecordKindMismatch(
                 RecordKind::Register,
             )))
@@ -274,12 +277,10 @@ impl Client {
         ClientRegister::retrieve(self.clone(), xorname, tag).await
     }
 
-    /// Create a new Register.
+    /// Create a new Register on the Network.
     pub async fn create_register(&self, xorname: XorName, tag: u64) -> Result<ClientRegister> {
         info!("Instantiating a new Register replica with name {xorname} and tag {tag}");
-        let mut client_register = ClientRegister::create(self.clone(), xorname, tag)?;
-        client_register.sync().await?;
-        Ok(client_register)
+        ClientRegister::create_online(self.clone(), xorname, tag).await
     }
 
     /// Store `Chunk` as a record.

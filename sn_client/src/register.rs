@@ -8,12 +8,16 @@
 
 use crate::{Client, Error, Result};
 
+use bls::PublicKey;
 use libp2p::kad::{Record, RecordKey};
 use sn_protocol::{
+    error::Error as ProtocolError,
     messages::RegisterCmd,
     storage::{try_serialize_record, RecordKind},
 };
-use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, User};
+use sn_registers::{
+    Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister, User,
+};
 
 use std::collections::{BTreeSet, LinkedList};
 use xor_name::XorName;
@@ -28,14 +32,21 @@ pub struct ClientRegister {
 }
 
 impl ClientRegister {
-    /// Create a new Register.
+    /// Create a new Register Locally.
     pub fn create(client: Client, name: XorName, tag: u64) -> Result<Self> {
         Self::new(client, name, tag)
     }
 
+    /// Create a new Register and send it to the Network.
+    pub async fn create_online(client: Client, name: XorName, tag: u64) -> Result<Self> {
+        let mut reg = Self::new(client, name, tag)?;
+        reg.sync().await?;
+        Ok(reg)
+    }
+
     /// Retrieve a Register from the network to work on it offline.
     pub(super) async fn retrieve(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        let register = Self::get_register(&client, name, tag).await?;
+        let register = Self::get_register_from_network(&client, name, tag).await?;
 
         Ok(Self {
             client,
@@ -45,7 +56,7 @@ impl ClientRegister {
     }
 
     /// Return the Owner of the Register.
-    pub fn owner(&self) -> User {
+    pub fn owner(&self) -> PublicKey {
         self.register.owner()
     }
 
@@ -118,7 +129,9 @@ impl ClientRegister {
         self.register
             .check_user_permissions(User::Key(public_key))?;
 
-        let (_hash, op) = self.register.write(entry.into(), children)?;
+        let (_hash, mut op) = self.register.write(entry.into(), children)?;
+        let signature = self.client.sign(op.bytes_for_signing()?);
+        op.add_signature(public_key, signature)?;
         let cmd = RegisterCmd::Edit(op);
 
         self.ops.push_front(cmd);
@@ -131,26 +144,24 @@ impl ClientRegister {
     /// Sync this Register with the replicas on the network.
     pub async fn sync(&mut self) -> Result<()> {
         debug!("Syncing Register at {}, {}!", self.name(), self.tag());
-        let remote_replica = match Self::get_register(&self.client, *self.name(), self.tag()).await
-        {
-            Ok(r) => r,
-            Err(err) => {
-                debug!("Failed to fetch register: {err:?}");
-                debug!(
-                    "Creating Register as it doesn't exist at {}, {}!",
-                    self.name(),
-                    self.tag()
-                );
-                let cmd = RegisterCmd::Create {
-                    owner: self.owner(),
-                    permissions: self.permissions().clone(),
-                    name: self.name().to_owned(),
-                    tag: self.tag(),
-                };
-                self.publish_register(cmd).await?;
-                self.register.clone()
-            }
-        };
+        let remote_replica =
+            match Self::get_register_from_network(&self.client, *self.name(), self.tag()).await {
+                Ok(r) => r,
+                Err(err) => {
+                    debug!("Failed to fetch register: {err:?}");
+                    debug!(
+                        "Creating Register as it doesn't exist at {}, {}!",
+                        self.name(),
+                        self.tag()
+                    );
+                    let cmd = RegisterCmd::Create {
+                        register: self.register.clone(),
+                        signature: self.client.sign(self.register.bytes()?),
+                    };
+                    self.publish_register(cmd).await?;
+                    self.register.clone()
+                }
+            };
         self.register.merge(remote_replica);
         self.push().await
     }
@@ -217,10 +228,11 @@ impl ClientRegister {
     // Create a new `ClientRegister` instance with the given name and tag.
     fn new(client: Client, name: XorName, tag: u64) -> Result<Self> {
         let public_key = client.signer_pk();
-        let owner = User::Key(public_key);
-        let perms = Permissions::new_anyone_can_write();
+        // NB TODO permissions should be configurable
+        // using owner only for now, as it is the most restrictive
+        let perms = Permissions::new_owner_only();
 
-        let register = Register::new(owner, name, tag, perms);
+        let register = Register::new(public_key, name, tag, perms);
         let reg = Self {
             client,
             register,
@@ -234,32 +246,29 @@ impl ClientRegister {
     async fn publish_register(&self, cmd: RegisterCmd) -> Result<()> {
         let cmd_dst = cmd.dst();
         debug!("Querying existing Register for cmd: {cmd_dst:?}");
-
-        let maybe_register = self.client.get_register_from_network(cmd.dst()).await;
+        let network_reg = self
+            .client
+            .get_signed_register_from_network(cmd.dst())
+            .await;
 
         debug!("Publishing Register cmd: {cmd_dst:?}");
-
         let register = match cmd {
             RegisterCmd::Create {
-                owner,
-                name,
-                tag,
-                permissions,
+                register,
+                signature,
             } => {
-                if maybe_register.is_ok() {
-                    // no op, since already created
-                    return Ok(());
+                if let Ok(existing_reg) = network_reg {
+                    if existing_reg.owner() != register.owner() {
+                        return Err(ProtocolError::RegisterAlreadyClaimed(existing_reg.owner()))?;
+                    }
+                    return Ok(()); // no op, since already created
                 }
-                Register::new(owner, name, tag, permissions)
+                SignedRegister::new(register, signature)
             }
             RegisterCmd::Edit(op) => {
-                if let Ok(mut register) = maybe_register {
-                    register.apply_op(op)?;
-                    register
-                } else {
-                    warn!("Cann't fetch register for RegisterEdit cmd {cmd_dst:?}");
-                    return Err(Error::UnexpectedResponses);
-                }
+                let mut reg = network_reg?;
+                reg.add_op(op)?;
+                reg
             }
         };
 
@@ -273,10 +282,16 @@ impl ClientRegister {
         Ok(self.client.network.put_record(record).await?)
     }
 
-    // Retrieve a `Register` from the closest peers.
-    async fn get_register(client: &Client, name: XorName, tag: u64) -> Result<Register> {
+    // Retrieve a `Register` from the Network.
+    async fn get_register_from_network(
+        client: &Client,
+        name: XorName,
+        tag: u64,
+    ) -> Result<Register> {
         let address = RegisterAddress { name, tag };
         debug!("Retrieving Register from: {address:?}");
-        client.get_register_from_network(address).await
+        let reg = client.get_signed_register_from_network(address).await?;
+        reg.verify_with_address(address)?;
+        Ok(reg.register()?)
     }
 }

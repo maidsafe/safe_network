@@ -6,12 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_registers::{Permissions, RegisterAddress, RegisterOp, User};
-
-#[allow(unused_imports)] // needed by rustdocs links
-use crate::messages::QueryResponse;
-#[allow(unused_imports)] // needed by rustdocs links
-use sn_registers::Register;
+use sn_registers::{Register, RegisterAddress, RegisterOp};
 
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;
@@ -22,14 +17,10 @@ use xor_name::XorName;
 pub enum RegisterCmd {
     /// Create a new [`Register`] on the network.
     Create {
-        /// The owner of the register
-        owner: User,
-        /// The name of the register
-        name: XorName,
-        /// The tag on the register
-        tag: u64,
-        /// The permissions of the register
-        permissions: Permissions,
+        /// The base register (contains, owner, name, tag, permissions, and register initial state)
+        register: Register,
+        /// The signature of the owner on that register.
+        signature: bls::Signature,
     },
     /// Edit the [`Register`].
     Edit(RegisterOp),
@@ -45,10 +36,7 @@ impl RegisterCmd {
     /// Returns the dst address of the register.
     pub fn dst(&self) -> RegisterAddress {
         match self {
-            Self::Create { name, tag, .. } => RegisterAddress {
-                name: *name,
-                tag: *tag,
-            },
+            Self::Create { register, .. } => *register.address(),
             Self::Edit(op) => op.address(),
         }
     }
