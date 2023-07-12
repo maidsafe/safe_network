@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689144957696,
+  "lastUpdate": 1689144960494,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6036,6 +6036,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 265,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "b3c8fc1c206c85a5571f8c647bcbcf345545bd19",
+          "message": "refactor: client to upload paid chunks in batches",
+          "timestamp": "2023-07-12T05:58:07Z",
+          "tree_id": "8dd07ba3524ee25588e75306ae161c2aa2f8560c",
+          "url": "https://github.com/maidsafe/safe_network/commit/b3c8fc1c206c85a5571f8c647bcbcf345545bd19"
+        },
+        "date": 1689144960044,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 232.86,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 161,
             "unit": "MB"
           }
         ]
