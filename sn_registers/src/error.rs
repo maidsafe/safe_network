@@ -44,12 +44,26 @@ pub enum Error {
     /// Serialisation Failed
     #[error("Serialisation failed")]
     SerialisationFailed,
+    /// SignedRegister Merge only works when both registers have the same base register (owner/permissions/etc)
+    #[error("SignedRegister Merge failed because base Register was different")]
+    DifferentBaseRegister,
     /// Invalid Signature found in register op
     #[error("Invalid signature")]
     InvalidSignature,
     /// Missing Signature when expecting one in register op
     #[error("Missing signature")]
     MissingSignature,
+    /// Signer is not the owner of the Register when attempting to sign a Register
+    #[error("Invalid SecretKey provided, signer is not the owner of the Register")]
+    InvalidSecretKey,
+    /// The register obtained was not the one requested
+    #[error(
+        "Got Register with an invalid register address, requested: {requested:?}, got: {got:?}"
+    )]
+    InvalidRegisterAddress {
+        requested: RegisterAddress,
+        got: RegisterAddress,
+    },
 }
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;

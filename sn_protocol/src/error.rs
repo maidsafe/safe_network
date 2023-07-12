@@ -37,6 +37,8 @@ pub enum Error {
     InvalidRegister(RegisterAddress),
     #[error("Register is Invalid: {0}")]
     RegisterError(#[from] sn_registers::Error),
+    #[error("The Register was already created by another owner: {0:?}")]
+    RegisterAlreadyClaimed(bls::PublicKey),
 
     /// The amount paid by payment proof is not the required for the received content
     #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]

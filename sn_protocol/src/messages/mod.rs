@@ -28,7 +28,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use sn_dbc::SignedSpend;
-use sn_registers::Register;
+use sn_registers::SignedRegister;
 use xor_name::XorName;
 
 #[allow(clippy::large_enum_variant)]
@@ -56,8 +56,8 @@ pub enum ReplicatedData {
     Chunk(ChunkWithPayment),
     /// A set of SignedSpends
     DbcSpend(Vec<SignedSpend>),
-    /// An entire register
-    Register(Register),
+    /// A signed register
+    Register(SignedRegister),
 }
 
 impl Request {

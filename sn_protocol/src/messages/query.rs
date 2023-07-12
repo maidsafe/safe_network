@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    storage::{ChunkAddress, DbcAddress},
+    storage::{ChunkAddress, DbcAddress, RegisterAddress},
     NetworkAddress,
 };
 
@@ -29,6 +29,13 @@ pub enum Query {
     /// [`Chunk`]:  crate::storage::Chunk
     /// [`GetChunk`]: super::QueryResponse::GetChunk
     GetChunk(ChunkAddress),
+    /// Retrieve a [`Register`] at the given address.
+    ///
+    /// This should eventually lead to a [`GetRegister`] response.
+    ///
+    /// [`Register`]: sn_registers::Register
+    /// [`GetRegister`]: super::QueryResponse::GetRegister
+    GetRegister(RegisterAddress),
     /// Retrieve a [`SignedSpend`] at the given address.
     ///
     /// This should eventually lead to a [`GetDbcSpend`] response.
@@ -55,6 +62,7 @@ impl Query {
     pub fn dst(&self) -> NetworkAddress {
         match self {
             Query::GetChunk(address) => NetworkAddress::from_chunk_address(*address),
+            Query::GetRegister(address) => NetworkAddress::from_register_address(*address),
             Query::GetSpend(address) => NetworkAddress::from_dbc_address(*address),
             Query::GetReplicatedData { address, .. } => address.clone(),
         }
@@ -66,6 +74,9 @@ impl std::fmt::Display for Query {
         match self {
             Query::GetChunk(address) => {
                 write!(f, "Query::GetChunk({address:?})")
+            }
+            Query::GetRegister(address) => {
+                write!(f, "Query::GetRegister({address:?})")
             }
             Query::GetSpend(address) => {
                 write!(f, "Query::GetSpend({address:?})")
