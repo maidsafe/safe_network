@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_transfers"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.10.7"
+version = "0.10.8"
 
 [dependencies]
 async-trait = "0.1"
@@ -22,7 +22,7 @@ merkletree = "~0.23.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_dbc = { version = "19.1.1", features = ["serdes"] }
-sn_protocol = { path = "../sn_protocol", version = "0.2.4" }
+sn_protocol = { path = "../sn_protocol", version = "0.2.5" }
 tokio = { version = "1.17.0", features = ["fs", "macros", "rt"] }
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"

@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.79.16](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.15...sn_cli-v0.79.16) - 2023-07-12
+
+### Other
+- client to upload paid chunks in batches
+- chunk files only once when making payment for their storage
+
 ## [0.79.15](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.14...sn_cli-v0.79.15) - 2023-07-11
 
 ### Other

@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "sn_protocol"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.2.4"
+version = "0.2.5"
 
 [dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
