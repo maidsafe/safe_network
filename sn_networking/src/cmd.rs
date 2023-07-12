@@ -35,11 +35,6 @@ pub enum SwarmCmd {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
     },
-    AddToRoutingTable {
-        peer_id: PeerId,
-        peer_addr: Multiaddr,
-        sender: oneshot::Sender<Result<()>>,
-    },
     // Get closest peers from the network
     GetClosestPeers {
         key: NetworkAddress,
@@ -232,19 +227,6 @@ impl SwarmDriver {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(e.into())),
                 };
-            }
-            SwarmCmd::AddToRoutingTable {
-                peer_id,
-                peer_addr,
-                sender,
-            } => {
-                // TODO: This returns RoutingUpdate, but it doesn't implement `Debug`, so it's a hassle to return.
-                let _ = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .add_address(&peer_id, peer_addr);
-                let _ = sender.send(Ok(()));
             }
             SwarmCmd::Dial { addr, sender } => {
                 let _ = match self.dial(addr) {
