@@ -31,6 +31,7 @@ impl Node {
         churned_peer: &PeerId,
         is_dead_peer: bool,
     ) -> Result<()> {
+        Marker::ReplicationTriggered((churned_peer, is_dead_peer)).log();
         let our_address = NetworkAddress::from_peer(self.network.peer_id);
         let churned_peer_address = NetworkAddress::from_peer(*churned_peer);
 
