@@ -11,13 +11,15 @@ use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartR
 use bytes::Bytes;
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Error, Files};
+use sn_client::{get_tokens_from_genesis_to_another_wallet, Client, Error, Files};
+use sn_dbc::{Dbc, MainKey, Token};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{
-    storage::{ChunkAddress, RegisterAddress},
+    storage::{ChunkAddress, DbcAddress, RegisterAddress},
     NetworkAddress,
 };
+use sn_transfers::dbc_genesis::{create_genesis_wallet, load_genesis_wallet};
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
@@ -44,6 +46,7 @@ const EXTRA_CHURN_COUNT: u32 = 5;
 const CHURN_CYCLES: u32 = 1;
 const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 5;
 const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 5;
+const DBC_CREATION_RATIO_TO_CHURN: u32 = 5;
 
 const CHUNKS_SIZE: usize = 1024 * 1024;
 
@@ -55,6 +58,7 @@ const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 const TEST_DURATION: Duration = Duration::from_secs(60 * 60); // 1hr
 
 type ContentList = Arc<RwLock<VecDeque<NetworkAddress>>>;
+type DbcMap = Arc<RwLock<BTreeMap<DbcAddress, Dbc>>>;
 
 struct ContentError {
     net_addr: NetworkAddress,
@@ -124,6 +128,9 @@ async fn data_availability_during_churn() -> Result<()> {
     // Shared bucket where we keep track of content created/stored on the network
     let content = ContentList::default();
 
+    // Shared bucket where we keep track of DBCs created/stored on the network
+    let dbcs = DbcMap::default();
+
     // Upload some chunks before carry out any churning.
 
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
@@ -143,9 +150,11 @@ async fn data_availability_during_churn() -> Result<()> {
     // Shared bucket where we keep track of the content we failed to fetch for 'MAX_NUM_OF_QUERY_ATTEMPTS' times.
     let failures = ContentErredList::default();
 
-    // Spawn a task to create Registers at random locations, at a higher frequency than the churning events
+    // Spawn a task to create Registers and DBCs at random locations,
+    // at a higher frequency than the churning events
     if !chunks_only {
         create_registers_task(client.clone(), content.clone(), churn_period);
+        create_dbc_task(client.clone(), content.clone(), dbcs.clone(), churn_period);
     }
 
     // Spawn a task to randomly query/fetch the content we create/store
@@ -153,6 +162,7 @@ async fn data_availability_during_churn() -> Result<()> {
         client.clone(),
         content.clone(),
         content_erred.clone(),
+        dbcs.clone(),
         churn_period,
     );
 
@@ -162,6 +172,7 @@ async fn data_availability_during_churn() -> Result<()> {
         client.clone(),
         content_erred.clone(),
         failures.clone(),
+        dbcs.clone(),
         churn_period,
     );
 
@@ -203,7 +214,7 @@ async fn data_availability_during_churn() -> Result<()> {
     let content = content.read().await;
     let uploaded_content_count = content.len();
     for net_addr in content.iter() {
-        let result = final_retry_query_content(&client, net_addr, churn_period).await;
+        let result = final_retry_query_content(&client, net_addr, dbcs.clone(), churn_period).await;
         assert!(
             result.is_ok(),
             "Failed to query content at {net_addr:?} with error {result:?}"
@@ -223,6 +234,36 @@ async fn data_availability_during_churn() -> Result<()> {
 
     println!("Test passed after running for {:?}.", start_time.elapsed());
     Ok(())
+}
+
+// Spawns a task which periodically creates DBCs at random locations.
+fn create_dbc_task(client: Client, content: ContentList, dbcs: DbcMap, churn_period: Duration) {
+    let _handle = tokio::spawn(async move {
+        // Creating a genesis wallet first
+        let _genesis_wallet = create_genesis_wallet().await;
+
+        // Create Dbc at a higher frequency than the churning events
+        let delay = churn_period / DBC_CREATION_RATIO_TO_CHURN;
+
+        loop {
+            sleep(delay).await;
+
+            let genesis_wallet = load_genesis_wallet().await;
+            let key = MainKey::random();
+            let dbc = get_tokens_from_genesis_to_another_wallet(
+                genesis_wallet,
+                Token::from_nano(100),
+                key.public_address(),
+                &client,
+            )
+            .await;
+            let dbc_addr = DbcAddress::from_dbc_id(&dbc.id());
+            let net_addr = NetworkAddress::DbcAddress(dbc_addr);
+            println!("Created DBC at {net_addr:?} after {delay:?}");
+            content.write().await.push_back(net_addr);
+            let _ = dbcs.write().await.insert(dbc_addr, dbc);
+        }
+    });
 }
 
 // Spawns a task which periodically creates Registers at random locations.
@@ -293,6 +334,7 @@ fn query_content_task(
     client: Client,
     content: ContentList,
     content_erred: ContentErredList,
+    dbcs: DbcMap,
     churn_period: Duration,
 ) {
     let _handle = tokio::spawn(async move {
@@ -311,7 +353,7 @@ fn query_content_task(
             trace!("Querying content (bucket index: {index}) at {net_addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match query_content(&client, &net_addr).await {
+            match query_content(&client, &net_addr, dbcs.clone()).await {
                 Ok(_) => {
                     let _ = content_erred.write().await.remove(&net_addr);
                 }
@@ -381,6 +423,7 @@ fn retry_query_content_task(
     client: Client,
     content_erred: ContentErredList,
     failures: ContentErredList,
+    dbcs: DbcMap,
     churn_period: Duration,
 ) {
     let _handle = tokio::spawn(async move {
@@ -395,7 +438,7 @@ fn retry_query_content_task(
                 let attempts = content_error.attempts + 1;
 
                 println!("Querying erred content at {net_addr:?}, attempt: #{attempts} ...");
-                if let Err(last_err) = query_content(&client, &net_addr).await {
+                if let Err(last_err) = query_content(&client, &net_addr, dbcs.clone()).await {
                     println!("Erred content is still not retrievable at {net_addr:?} after {attempts} attempts: {last_err:?}");
                     // We only keep it to retry 'MAX_NUM_OF_QUERY_ATTEMPTS' times,
                     // otherwise report it effectivelly as failure.
@@ -416,12 +459,13 @@ fn retry_query_content_task(
 async fn final_retry_query_content(
     client: &Client,
     net_addr: &NetworkAddress,
+    dbcs: DbcMap,
     churn_period: Duration,
 ) -> Result<()> {
     let mut attempts = 1;
     loop {
         println!("Querying content at {net_addr:?}, attempt: #{attempts} ...");
-        if let Err(last_err) = query_content(client, net_addr).await {
+        if let Err(last_err) = query_content(client, net_addr, dbcs.clone()).await {
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
                 bail!("Final check: Content is still not retrievable at {net_addr:?} after {attempts} attempts: {last_err:?}");
             } else {
@@ -476,8 +520,26 @@ async fn node_restart(addr: SocketAddr) -> Result<()> {
     Ok(())
 }
 
-async fn query_content(client: &Client, net_addr: &NetworkAddress) -> Result<(), Error> {
+async fn query_content(
+    client: &Client,
+    net_addr: &NetworkAddress,
+    dbcs: DbcMap,
+) -> Result<(), Error> {
     match net_addr {
+        NetworkAddress::DbcAddress(addr) => {
+            if let Some(dbc) = dbcs.read().await.get(addr) {
+                match client.verify(dbc).await {
+                    Ok(_) => Ok(()),
+                    Err(err) => Err(Error::CouldNotVerifyTransfer(format!(
+                        "Verification of dbc {addr:?} failed with error: {err:?}"
+                    ))),
+                }
+            } else {
+                Err(Error::CouldNotVerifyTransfer(format!(
+                    "Do not have the DBC: {addr:?}"
+                )))
+            }
+        }
         NetworkAddress::RegisterAddress(addr) => {
             let _ = client.get_register(*addr.name(), addr.tag()).await?;
             Ok(())
