@@ -88,7 +88,7 @@ pub async fn load_genesis_wallet() -> LocalWallet {
     genesis_wallet
 }
 
-async fn create_genesis_wallet() -> LocalWallet {
+pub async fn create_genesis_wallet() -> LocalWallet {
     let root_dir = get_genesis_dir().await;
     let wallet_dir = root_dir.join("wallet");
     tokio::fs::create_dir_all(&wallet_dir)
