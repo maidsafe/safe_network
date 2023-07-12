@@ -6,62 +6,37 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_protocol::error::Result;
-use sn_protocol::messages::{QueryResponse, RegisterCmd, RegisterQuery};
-use sn_registers::Register;
+use sn_protocol::error::{Error, Result};
+use sn_protocol::messages::RegisterCmd;
+use sn_registers::SignedRegister;
 
 use crate::Node;
 
 impl Node {
-    /// Handle a RegisterQuery
-    pub async fn handle_register_query(&self, query: &RegisterQuery) -> QueryResponse {
-        let register = match self.get_register_from_network(query.dst()).await {
-            Ok(reg) => reg,
-            Err(e) => return QueryResponse::GetRegister(Err(e)),
-        };
-
-        match query {
-            RegisterQuery::Get(_) => QueryResponse::GetRegister(Ok(register)),
-            RegisterQuery::GetEntry { address: _, hash } => {
-                let entry = register.get_cloned(*hash).map_err(|e| e.into());
-                QueryResponse::GetRegisterEntry(entry)
-            }
-            RegisterQuery::GetOwner(_) => {
-                let owner = register.owner();
-                QueryResponse::GetRegisterOwner(Ok(owner))
-            }
-            RegisterQuery::Read(_) => {
-                let entries = register.read();
-                QueryResponse::ReadRegister(Ok(entries))
-            }
-            RegisterQuery::GetPermissions(_) => {
-                let perm = register.permissions().clone();
-                QueryResponse::GetRegisterPermissions(Ok(perm))
-            }
-        }
-    }
-
     /// Handle a RegisterCmd
     pub async fn handle_register_cmd(&self, cmd: &RegisterCmd) -> Result<()> {
         match cmd {
             RegisterCmd::Create {
-                owner,
-                name,
-                tag,
-                permissions,
+                register,
+                signature,
             } => {
-                let maybe_register = self.get_register_from_network(cmd.dst()).await;
-                if maybe_register.is_ok() {
-                    // no op, since already created
-                    return Ok(());
+                // check if register already exists
+                let network_reg = self.get_register_from_network(cmd.dst()).await;
+                if let Ok(existing_reg) = network_reg {
+                    if existing_reg.owner() != register.owner() {
+                        return Err(Error::RegisterAlreadyClaimed(existing_reg.owner()));
+                    }
+                    return Ok(()); // no op, since already created
                 }
-                let register = Register::new(*owner, *name, *tag, permissions.clone());
+
+                // create and store new register
+                let register = SignedRegister::new(register.clone(), signature.clone());
                 let _ok = self.validate_and_store_register(register).await?;
                 Ok(())
             }
             RegisterCmd::Edit(op) => {
                 let mut register = self.get_register_from_network(cmd.dst()).await?;
-                register.apply_op(op.clone())?;
+                register.add_op(op.clone())?;
                 let _ok = self.validate_and_store_register(register).await?;
                 Ok(())
             }

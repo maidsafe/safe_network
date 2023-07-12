@@ -17,7 +17,7 @@ pub use self::{
     cmd::{Cmd, Hash, MerkleTreeNodesType, PaymentProof},
     node_id::NodeId,
     query::Query,
-    register::{RegisterCmd, RegisterQuery},
+    register::RegisterCmd,
     response::{CmdOk, CmdResponse, QueryResponse},
 };
 
@@ -28,7 +28,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use sn_dbc::SignedSpend;
-use sn_registers::Register;
+use sn_registers::SignedRegister;
 use xor_name::XorName;
 
 /// A request to peers in the network
@@ -55,8 +55,8 @@ pub enum ReplicatedData {
     Chunk(ChunkWithPayment),
     /// A set of SignedSpends
     DbcSpend(Vec<SignedSpend>),
-    /// An entire register
-    Register(Register),
+    /// A signed register
+    Register(SignedRegister),
 }
 
 impl Request {

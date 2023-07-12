@@ -7,11 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    storage::{ChunkAddress, DbcAddress},
+    storage::{ChunkAddress, DbcAddress, RegisterAddress},
     NetworkAddress,
 };
-
-use super::RegisterQuery;
 
 use serde::{Deserialize, Serialize};
 
@@ -31,10 +29,13 @@ pub enum Query {
     /// [`Chunk`]:  crate::storage::Chunk
     /// [`GetChunk`]: super::QueryResponse::GetChunk
     GetChunk(ChunkAddress),
-    /// [`Register`] read operation.
+    /// Retrieve a [`Register`] at the given address.
+    ///
+    /// This should eventually lead to a [`GetRegister`] response.
     ///
     /// [`Register`]: sn_registers::Register
-    Register(RegisterQuery),
+    /// [`GetRegister`]: super::QueryResponse::GetRegister
+    GetRegister(RegisterAddress),
     /// Retrieve a [`SignedSpend`] at the given address.
     ///
     /// This should eventually lead to a [`GetDbcSpend`] response.
@@ -61,7 +62,7 @@ impl Query {
     pub fn dst(&self) -> NetworkAddress {
         match self {
             Query::GetChunk(address) => NetworkAddress::from_chunk_address(*address),
-            Query::Register(query) => NetworkAddress::from_register_address(query.dst()),
+            Query::GetRegister(address) => NetworkAddress::from_register_address(*address),
             Query::GetSpend(address) => NetworkAddress::from_dbc_address(*address),
             Query::GetReplicatedData { address, .. } => address.clone(),
         }
@@ -74,8 +75,8 @@ impl std::fmt::Display for Query {
             Query::GetChunk(address) => {
                 write!(f, "Query::GetChunk({address:?})")
             }
-            Query::Register(query) => {
-                write!(f, "Query::Register({:?})", query.dst()) // more qualification needed
+            Query::GetRegister(address) => {
+                write!(f, "Query::GetRegister({address:?})")
             }
             Query::GetSpend(address) => {
                 write!(f, "Query::GetSpend({address:?})")

@@ -238,7 +238,7 @@ impl Client {
     }
 
     /// Sign the given data
-    pub fn sign(&self, data: &[u8]) -> Signature {
+    pub fn sign<T: AsRef<[u8]>>(&self, data: T) -> Signature {
         self.signer.sign(data)
     }
 
@@ -253,10 +253,10 @@ impl Client {
         ClientRegister::retrieve(self.clone(), xorname, tag).await
     }
 
-    /// Create a new Register.
+    /// Create a new Register on the Network.
     pub async fn create_register(&self, xorname: XorName, tag: u64) -> Result<ClientRegister> {
         info!("Instantiating a new Register replica with name {xorname} and tag {tag}");
-        ClientRegister::create(self.clone(), xorname, tag)
+        ClientRegister::create_online(self.clone(), xorname, tag).await
     }
 
     /// Store `Chunk` as a record.

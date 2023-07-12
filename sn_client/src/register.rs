@@ -8,10 +8,13 @@
 
 use crate::{Client, Error, Result};
 
+use bls::PublicKey;
 use sn_protocol::messages::{
-    Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, RegisterQuery, Request, Response,
+    Cmd, CmdResponse, Query, QueryResponse, RegisterCmd, Request, Response,
 };
-use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, User};
+use sn_registers::{
+    Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister, User,
+};
 
 use std::collections::{BTreeSet, LinkedList};
 use xor_name::XorName;
@@ -26,14 +29,21 @@ pub struct ClientRegister {
 }
 
 impl ClientRegister {
-    /// Create a new Register.
+    /// Create a new Register Locally.
     pub fn create(client: Client, name: XorName, tag: u64) -> Result<Self> {
         Self::new(client, name, tag)
     }
 
+    /// Create a new Register and send it to the Network.
+    pub async fn create_online(client: Client, name: XorName, tag: u64) -> Result<Self> {
+        let mut reg = Self::new(client, name, tag)?;
+        reg.sync().await?;
+        Ok(reg)
+    }
+
     /// Retrieve a Register from the network to work on it offline.
     pub(super) async fn retrieve(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        let register = Self::get_register(&client, name, tag).await?;
+        let register = Self::get_register_from_peers(&client, name, tag).await?;
 
         Ok(Self {
             client,
@@ -43,7 +53,7 @@ impl ClientRegister {
     }
 
     /// Return the Owner of the Register.
-    pub fn owner(&self) -> User {
+    pub fn owner(&self) -> PublicKey {
         self.register.owner()
     }
 
@@ -116,7 +126,9 @@ impl ClientRegister {
         self.register
             .check_user_permissions(User::Key(public_key))?;
 
-        let (_hash, op) = self.register.write(entry.into(), children)?;
+        let (_hash, mut op) = self.register.write(entry.into(), children)?;
+        let signature = self.client.sign(op.bytes_for_signing()?);
+        op.add_signature(public_key, signature)?;
         let cmd = RegisterCmd::Edit(op);
 
         self.ops.push_front(cmd);
@@ -129,26 +141,24 @@ impl ClientRegister {
     /// Sync this Register with the replicas on the network.
     pub async fn sync(&mut self) -> Result<()> {
         debug!("Syncing Register at {}, {}!", self.name(), self.tag());
-        let remote_replica = match Self::get_register(&self.client, *self.name(), self.tag()).await
-        {
-            Ok(r) => r,
-            Err(err) => {
-                debug!("Failed to fetch register: {err:?}");
-                debug!(
-                    "Creating Register as it doesn't exist at {}, {}!",
-                    self.name(),
-                    self.tag()
-                );
-                let cmd = RegisterCmd::Create {
-                    owner: self.owner(),
-                    permissions: self.permissions().clone(),
-                    name: self.name().to_owned(),
-                    tag: self.tag(),
-                };
-                self.publish_register_create(cmd).await?;
-                self.register.clone()
-            }
-        };
+        let remote_replica =
+            match Self::get_register_from_peers(&self.client, *self.name(), self.tag()).await {
+                Ok(r) => r,
+                Err(err) => {
+                    debug!("Failed to fetch register: {err:?}");
+                    debug!(
+                        "Creating Register as it doesn't exist at {}, {}!",
+                        self.name(),
+                        self.tag()
+                    );
+                    let cmd = RegisterCmd::Create {
+                        register: self.register.clone(),
+                        signature: self.client.sign(self.register.bytes()?),
+                    };
+                    self.publish_register_create(cmd).await?;
+                    self.register.clone()
+                }
+            };
         self.register.merge(remote_replica);
         self.push().await
     }
@@ -218,10 +228,11 @@ impl ClientRegister {
     // Create a new `ClientRegister` instance with the given name and tag.
     fn new(client: Client, name: XorName, tag: u64) -> Result<Self> {
         let public_key = client.signer_pk();
-        let owner = User::Key(public_key);
-        let perms = Permissions::new_anyone_can_write();
+        // NB TODO permissions should be configurable
+        // using owner only for now, as it is the most restrictive
+        let perms = Permissions::new_owner_only();
 
-        let register = Register::new(owner, name, tag, perms);
+        let register = Register::new(public_key, name, tag, perms);
         let reg = Self {
             client,
             register,
@@ -292,17 +303,58 @@ impl ClientRegister {
     }
 
     // Retrieve a `Register` from the closest peers.
-    async fn get_register(client: &Client, name: XorName, tag: u64) -> Result<Register> {
+    async fn get_register_from_peers(client: &Client, name: XorName, tag: u64) -> Result<Register> {
         let address = RegisterAddress { name, tag };
         debug!("Retrieving Register from: {address:?}");
-        let request = Request::Query(Query::Register(RegisterQuery::Get(address)));
+        let request = Request::Query(Query::GetRegister(address));
         let responses = client.send_to_closest(request).await?;
 
-        // We will return the first register we get.
-        for resp in responses.iter().flatten() {
-            if let Response::Query(QueryResponse::GetRegister(Ok(register))) = resp {
-                return Ok(register.clone());
-            };
+        // collect non-failed responses and filter out invalid responses
+        let regs = responses
+            .iter()
+            .flatten()
+            .filter_map(|res| {
+                if let Response::Query(QueryResponse::GetRegister(Ok(register))) = res {
+                    Some(register.clone())
+                } else {
+                    debug!("Got failed response while retrieving Register at {address:?}: {res:?}");
+                    None
+                }
+            })
+            .filter(|reg| {
+                if reg.address() != &address {
+                    debug!(
+                        "Ignoring Register at {address:?} with invalid address",
+                        address = reg.address()
+                    );
+                    return false;
+                }
+                match reg.verify() {
+                    Ok(_) => true,
+                    Err(err) => {
+                        debug!("Ignoring invalid Register at {address:?}: {err:?}");
+                        false
+                    }
+                }
+            })
+            .collect::<Vec<SignedRegister>>();
+
+        debug!(
+            "Got {}/{} valid Register responses for Register at {address:?}",
+            regs.len(),
+            responses.len()
+        );
+
+        // merge all valid Registers into a single Register and return it
+        if let [reg, ..] = regs.as_slice() {
+            let mut merged = reg.clone();
+            for r in regs.iter().skip(1) {
+                // merge fails and returns an error if any of the Registers is from a different owner
+                // here we could ignore bad registers and log them?
+                // success could depend on the amount of valid responses we get?
+                merged.merge(r.clone())?;
+            }
+            return Ok(merged.register()?);
         }
 
         // If no register was gotten, we will return the first error sent to us.
