@@ -38,6 +38,9 @@ pub enum Marker<'a> {
     /// Lost Record Detected
     LostRecordDetected(&'a Vec<PeerId>),
 
+    /// Replication trigger was fired
+    ReplicationTriggered((&'a PeerId, bool)),
+
     /// Keys of Records we are fetching to replicate locally
     FetchingKeysForReplication {
         /// fetching_keys_len: number of keys we are fetching

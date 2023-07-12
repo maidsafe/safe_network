@@ -220,6 +220,7 @@ fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
 
             lines.map_while(|item| item.ok()).for_each(|line| {
                 if let Some(cap) = re.captures_iter(&line).next() {
+                    println!(">>>>>>>>>.. {line:?}");
                     let pid = cap[1].parse().expect("Failed to parse PID from node log");
                     let peer_id =
                         PeerId::from_str(&cap[2]).expect("Failed to parse PeerId from node log");
@@ -283,7 +284,6 @@ async fn send_rpc_queries_to_node(addr: SocketAddr) -> Result<(NodeInfo, BTreeSe
     let request = Request::new(NetworkInfoRequest {});
     let response = client.network_info(request).await?;
     let net_info = response.get_ref();
-    let multihash = peer_id.as_ref();
     let listeners = net_info
         .listeners
         .iter()
@@ -291,7 +291,7 @@ async fn send_rpc_queries_to_node(addr: SocketAddr) -> Result<(NodeInfo, BTreeSe
             // let's add the peer id to the addr since that's how it's logged
             let mut multiaddr = Multiaddr::from_str(multiaddr)
                 .expect("Failed to deserialise Multiaddr from RPC response");
-            multiaddr.push(Protocol::P2p(*multihash));
+            multiaddr.push(Protocol::P2p(peer_id));
             multiaddr
         })
         .collect::<Vec<_>>();

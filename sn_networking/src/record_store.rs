@@ -9,9 +9,9 @@ use crate::event::NetworkEvent;
 use libp2p::{
     identity::PeerId,
     kad::{
-        kbucket::{Distance, Key as KBucketKey},
         record::{Key, ProviderRecord, Record},
         store::{Error, RecordStore, Result},
+        KBucketDistance as Distance, KBucketKey,
     },
 };
 use rand::Rng;
@@ -336,7 +336,7 @@ impl<'a> Iterator for RecordsIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use libp2p::{core::multihash::Multihash, kad::kbucket::Key as KBucketKey};
+    use libp2p::{core::multihash::Multihash, kad::KBucketKey};
     use quickcheck::*;
     use tokio::runtime::Runtime;
 
@@ -374,7 +374,7 @@ mod tests {
         fn arbitrary(g: &mut Gen) -> ArbitraryKey {
             let hash: [u8; 32] = core::array::from_fn(|_| u8::arbitrary(g));
             ArbitraryKey(Key::from(
-                Multihash::wrap(MULITHASH_CODE, &hash).expect("Failed to gen MultiHash"),
+                Multihash::<64>::wrap(MULITHASH_CODE, &hash).expect("Failed to gen MultiHash"),
             ))
         }
     }
