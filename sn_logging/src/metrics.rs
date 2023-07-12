@@ -28,24 +28,22 @@ struct Metrics {
     system_memory_used_mb: f32,
     // Percentage of RAM used
     system_memory_usage_percent: f32,
-    // Network metrics is None if the default network interface cannot be found
-    network: Option<NetworkMetrics>,
+    // System wide Network Metrics
+    network: NetworkMetrics,
     // Process metrics is None if the Pid for the process is invalid
     process: Option<ProcessMetrics>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Default)]
 #[allow(dead_code)]
 struct NetworkMetrics {
-    // The default network interface
-    interface_name: String,
-    // Bytes received during UPDATE_INTERVAL
+    // Bytes received during UPDATE_INTERVAL through all the network interfaces
     bytes_received: u64,
-    // Bytes transmitted during UPDATE_INTERVAL
+    // Bytes transmitted during UPDATE_INTERVAL through all the network interfaces
     bytes_transmitted: u64,
-    // The total MBytes received through the interface
+    // The total MBytes received through all the network interfaces
     total_mb_received: f32,
-    // The total MBytes transmitted through the interface
+    // The total MBytes transmitted through all the network interfaces
     total_mb_transmitted: f32,
 }
 
@@ -71,7 +69,6 @@ struct ProcessMetrics {
 pub async fn init_metrics(pid: u32) {
     let mut sys = System::new_all();
     let pid = Pid::from_u32(pid);
-    let default_interface = default_net::get_default_interface();
 
     loop {
         refresh_metrics(&mut sys, pid);
@@ -94,29 +91,13 @@ pub async fn init_metrics(pid: u32) {
                 None
             }
         };
-
-        let network = if let Ok(default_interface) = &default_interface {
-            if let Some((interface_name, network_stat)) = sys
-                .networks()
-                .into_iter()
-                .find(|&(interface, _)| interface == &default_interface.name)
-            {
-                let network = NetworkMetrics {
-                    interface_name: interface_name.clone(),
-                    bytes_received: network_stat.received(),
-                    bytes_transmitted: network_stat.transmitted(),
-                    total_mb_received: network_stat.total_received() as f32 / TO_MB,
-                    total_mb_transmitted: network_stat.total_transmitted() as f32 / TO_MB,
-                };
-                Some(network)
-            } else {
-                // Could not get stats for the default interface
-                None
-            }
-        } else {
-            // Could not obtain the default network interface");
-            None
-        };
+        let mut network = NetworkMetrics::default();
+        for (_interface, stat) in sys.networks() {
+            network.bytes_received += stat.received();
+            network.bytes_transmitted += stat.transmitted();
+            network.total_mb_received += stat.total_received() as f32 / TO_MB;
+            network.total_mb_transmitted += stat.total_transmitted() as f32 / TO_MB;
+        }
 
         let cpu_stat = sys.global_cpu_info();
         let metrics = Metrics {
