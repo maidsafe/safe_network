@@ -34,12 +34,40 @@ pub struct ClientRegister {
 impl ClientRegister {
     /// Create a new Register Locally.
     pub fn create(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        Self::new(client, name, tag)
+        let public_key = client.signer_pk();
+        // NB TODO permissions should be configurable
+        // using owner only for now, as it is the most restrictive
+        let perms = Permissions::new_owner_only();
+
+        let register = Register::new(public_key, name, tag, perms);
+        let reg = Self {
+            client,
+            register,
+            ops: LinkedList::new(),
+        };
+
+        Ok(reg)
+    }
+
+    /// Create a new public Register (Anybody can write to it) and send it so the Network.
+    pub async fn create_public_online(client: Client, name: XorName, tag: u64) -> Result<Self> {
+        let public_key = client.signer_pk();
+        let perms = Permissions::new_anyone_can_write();
+
+        let register = Register::new(public_key, name, tag, perms);
+        let mut reg = Self {
+            client,
+            register,
+            ops: LinkedList::new(),
+        };
+        reg.sync().await?;
+
+        Ok(reg)
     }
 
     /// Create a new Register and send it to the Network.
     pub async fn create_online(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        let mut reg = Self::new(client, name, tag)?;
+        let mut reg = Self::create(client, name, tag)?;
         reg.sync().await?;
         Ok(reg)
     }
@@ -224,23 +252,6 @@ impl ClientRegister {
     }
 
     // ********* Private helpers  *********
-
-    // Create a new `ClientRegister` instance with the given name and tag.
-    fn new(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        let public_key = client.signer_pk();
-        // NB TODO permissions should be configurable
-        // using owner only for now, as it is the most restrictive
-        let perms = Permissions::new_owner_only();
-
-        let register = Register::new(public_key, name, tag, perms);
-        let reg = Self {
-            client,
-            register,
-            ops: LinkedList::new(),
-        };
-
-        Ok(reg)
-    }
 
     // Publish a `Register` command on the network.
     async fn publish_register(&self, cmd: RegisterCmd) -> Result<()> {
