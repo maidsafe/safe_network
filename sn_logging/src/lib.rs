@@ -81,7 +81,7 @@ where
         // Write level and target
         let level = *event.metadata().level();
         let module = event.metadata().module_path().unwrap_or("<unknown module>");
-        let time = SystemTime::default();
+        let time = SystemTime;
 
         write!(writer, "[")?;
         time.format_time(&mut writer)?;
@@ -116,7 +116,7 @@ impl TracingLayers {
                 tracing_fmt::layer()
                     .with_ansi(false)
                     .with_target(false)
-                    .event_format(LogFormatter::default())
+                    .event_format(LogFormatter)
                     .boxed()
             }
             LogOutputDest::Path(ref path) => {
@@ -140,7 +140,7 @@ impl TracingLayers {
                     LogFormat::Default => tracing_fmt::layer()
                         .with_ansi(false)
                         .with_writer(file_rotation)
-                        .event_format(LogFormatter::default())
+                        .event_format(LogFormatter)
                         .boxed(),
                 }
             }
@@ -251,7 +251,7 @@ pub fn init_test_logger() {
             //.pretty()
             .with_ansi(false)
             .with_target(false)
-            .event_format(LogFormatter::default())
+            .event_format(LogFormatter)
             .try_init()
             .unwrap_or_else(|_| println!("Error initializing logger"));
     });
