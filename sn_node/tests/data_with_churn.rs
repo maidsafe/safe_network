@@ -6,15 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
+mod common;
+use common::{get_client, node_restart};
 
 use bytes::Bytes;
-use eyre::{bail, eyre, Result};
+use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{get_tokens_from_genesis_to_another_wallet, Client, Error, Files};
 use sn_dbc::{Dbc, MainKey, Token};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
-use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{
     storage::{ChunkAddress, DbcAddress, RegisterAddress},
     NetworkAddress,
@@ -24,21 +24,13 @@ use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::Path,
     sync::Arc,
     time::{Duration, Instant},
 };
-use tokio::{fs::remove_dir_all, sync::RwLock, time::sleep};
-use tonic::Request;
+use tokio::{sync::RwLock, time::sleep};
 use tracing::trace;
 use tracing_core::Level;
 use xor_name::XorName;
-
-// this includes code generated from .proto files
-#[allow(unused_qualifications, unreachable_pub, clippy::unwrap_used)]
-mod safenode_proto {
-    tonic::include_proto!("safenode_proto");
-}
 
 const NODE_COUNT: u32 = 25;
 
@@ -481,45 +473,6 @@ async fn final_retry_query_content(
     }
 }
 
-async fn node_restart(addr: SocketAddr) -> Result<()> {
-    let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-
-    let response = client.node_info(Request::new(NodeInfoRequest {})).await?;
-    let log_dir = Path::new(&response.get_ref().log_dir);
-    let root_dir = log_dir
-        .parent()
-        .ok_or_else(|| eyre!("could not obtain parent from logging directory"))?;
-
-    // remove Chunks records
-    let chunks_records = root_dir.join("record_store");
-    if let Ok(true) = chunks_records.try_exists() {
-        println!("Removing Chunks records from {}", chunks_records.display());
-        remove_dir_all(chunks_records).await?;
-    }
-
-    // remove Registers records
-    let registers_records = root_dir.join("registers");
-    if let Ok(true) = registers_records.try_exists() {
-        println!(
-            "Removing Registers records from {}",
-            registers_records.display()
-        );
-        remove_dir_all(registers_records).await?;
-    }
-
-    let _response = client
-        .restart(Request::new(RestartRequest { delay_millis: 0 }))
-        .await?;
-
-    println!(
-        "Node restart requested to RPC service at {addr}, and removed all its chunks and registers records at {}",
-        log_dir.display()
-    );
-
-    Ok(())
-}
-
 async fn query_content(
     client: &Client,
     net_addr: &NetworkAddress,
@@ -551,24 +504,4 @@ async fn query_content(
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet
     }
-}
-
-async fn get_client() -> Client {
-    let secret_key = bls::SecretKey::random();
-
-    let bootstrap_peers = if !cfg!(feature = "local-discovery") {
-        match std::env::var("SAFE_PEERS") {
-            Ok(str) => match parse_peer_addr(&str) {
-                Ok(peer) => Some(vec![peer]),
-                Err(err) => panic!("Can't parse SAFE_PEERS {str:?} with error {err:?}"),
-            },
-            Err(err) => panic!("Can't get env var SAFE_PEERS with error {err:?}"),
-        }
-    } else {
-        None
-    };
-    println!("Client bootstrap with peer {bootstrap_peers:?}");
-    Client::new(secret_key, bootstrap_peers, None)
-        .await
-        .expect("Client shall be successfully created.")
 }
