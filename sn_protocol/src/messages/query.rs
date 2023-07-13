@@ -6,10 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    storage::{ChunkAddress, DbcAddress},
-    NetworkAddress,
-};
+use crate::{storage::ChunkAddress, NetworkAddress};
 
 use serde::{Deserialize, Serialize};
 
@@ -29,13 +26,6 @@ pub enum Query {
     /// [`Chunk`]:  crate::storage::Chunk
     /// [`GetChunk`]: super::QueryResponse::GetChunk
     GetChunk(ChunkAddress),
-    /// Retrieve a [`SignedSpend`] at the given address.
-    ///
-    /// This should eventually lead to a [`GetDbcSpend`] response.
-    ///
-    /// [`SignedSpend`]: sn_dbc::SignedSpend
-    /// [`GetDbcSpend`]: super::QueryResponse::GetDbcSpend
-    GetSpend(DbcAddress),
     /// Retrieve a [`ReplicatedData`] at the given address.
     ///
     /// This should eventually lead to a [`GetReplicatedData`] response.
@@ -55,7 +45,6 @@ impl Query {
     pub fn dst(&self) -> NetworkAddress {
         match self {
             Query::GetChunk(address) => NetworkAddress::from_chunk_address(*address),
-            Query::GetSpend(address) => NetworkAddress::from_dbc_address(*address),
             Query::GetReplicatedData { address, .. } => address.clone(),
         }
     }
@@ -66,9 +55,6 @@ impl std::fmt::Display for Query {
         match self {
             Query::GetChunk(address) => {
                 write!(f, "Query::GetChunk({address:?})")
-            }
-            Query::GetSpend(address) => {
-                write!(f, "Query::GetSpend({address:?})")
             }
             Query::GetReplicatedData { requester, address } => {
                 write!(

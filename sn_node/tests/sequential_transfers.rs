@@ -93,11 +93,12 @@ async fn dbc_transfer_double_spend_fail() -> Result<()> {
     let transfer_to_3 = create_transfer(same_dbcs, vec![to3_unique_key], to1, reason_hash).unwrap();
 
     // send both transfers to the network
+    // upload won't error out, only error out during verification.
     println!("Sending both transfers to the network...");
     let res = client.send(transfer_to_2.clone()).await;
     assert!(res.is_ok());
     let res = client.send(transfer_to_3.clone()).await;
-    assert!(res.is_err());
+    assert!(res.is_ok());
 
     // check the DBCs, it should fail
     std::thread::sleep(std::time::Duration::from_secs(5));

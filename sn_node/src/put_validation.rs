@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    spends::{aggregate_spends, check_parent_spends, get_aggregated_spends_from_peers},
+    spends::{aggregate_spends, check_parent_spends},
     Node,
 };
 use libp2p::kad::{Record, RecordKey};
@@ -21,8 +21,11 @@ use sn_protocol::{
     },
 };
 use sn_registers::SignedRegister;
-use sn_transfers::payment_proof::validate_payment_proof;
-use std::collections::HashSet;
+use sn_transfers::{
+    dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC},
+    payment_proof::validate_payment_proof,
+};
+use std::collections::{BTreeSet, HashSet};
 use xor_name::XorName;
 
 // The max length of `Vec<SignedSpend>` that is permitted
@@ -280,46 +283,14 @@ impl Node {
             let mut payment_tx = None;
             for dbc_id in spent_ids.iter() {
                 let addr = DbcAddress::from_dbc_id(dbc_id);
-                match get_aggregated_spends_from_peers(&self.network, *dbc_id).await {
-                    Ok(mut signed_spends) => match signed_spends.len() {
-                        0 => {
-                            error!("Could not get spends from the network");
-                            return Err(ProtocolError::SpendNotFound(addr));
-                        }
-                        1 => {
-                            if let Some(signed_spend) = signed_spends.pop() {
-                                let spent_tx = signed_spend.spent_tx();
-                                match payment_tx {
-                                    Some(tx) if spent_tx != tx => {
-                                        return Err(ProtocolError::PaymentProofTxMismatch(
-                                            addr_name,
-                                        ));
-                                    }
-                                    Some(_) => {}
-                                    None => payment_tx = Some(spent_tx),
-                                }
-                            } else {
-                                return Err(ProtocolError::SpendNotFound(addr));
-                            }
-                        }
-                        _ => {
-                            warn!(
-                                "Got a double spend for during chunk payment validation {dbc_id:?}",
-                            );
-                            let mut proof = signed_spends.iter();
-                            if let (Some(spend_one), Some(spend_two)) = (proof.next(), proof.next())
-                            {
-                                return Err(ProtocolError::DoubleSpendAttempt(
-                                    Box::new(spend_one.to_owned()),
-                                    Box::new(spend_two.to_owned()),
-                                ))?;
-                            }
-                        }
-                    },
-                    Err(err) => {
-                        error!("Error getting payment's input DBC {dbc_id:?} from network: {err}");
-                        return Err(ProtocolError::SpendNotFound(addr));
+                let signed_spend = self.get_spend_from_network(addr).await?;
+                let spent_tx = signed_spend.spent_tx();
+                match payment_tx {
+                    Some(tx) if spent_tx != tx => {
+                        return Err(ProtocolError::PaymentProofTxMismatch(addr_name));
                     }
+                    Some(_) => {}
+                    None => payment_tx = Some(spent_tx),
                 }
             }
 
@@ -462,8 +433,8 @@ impl Node {
         // if so aggregate the spends and return just 2 spends.
         let signed_spends = match signed_spends.len() {
             0 => {
-                let err = ProtocolError::SpendNotStored("No valid Spend found".to_string());
-                debug!("No valid spends found while validating Spend PUT {err}");
+                let err = ProtocolError::SpendNotStored("No valid Spend found locally".to_string());
+                debug!("No valid spends found locally while validating Spend PUT {err}");
 
                 return Err(err);
             }
@@ -491,14 +462,35 @@ impl Node {
                 // If this is a storage payment, then verify FeeOutput's id is the expected.
                 verify_fee_output_id(&signed_spend.spent_tx())?;
 
+                // Get parents
+                let mut parent_spends = BTreeSet::new();
+                if is_genesis_parent_tx(&signed_spend.spend.dbc_creation_tx)
+                    && signed_spend.dbc_id() == &GENESIS_DBC.id
+                {
+                    trace!("GENESIS_DBC {dbc_addr:?} doesn't have a parent");
+                } else {
+                    for parent_input in &signed_spend.spend.dbc_creation_tx.inputs {
+                        let _ = parent_spends.insert(
+                            self.get_spend_from_network(DbcAddress::from_dbc_id(
+                                &parent_input.dbc_id(),
+                            ))
+                            .await?,
+                        );
+                    }
+                }
+
                 // Check parents
-                if let Err(e) = check_parent_spends(&self.network, &signed_spend).await {
+                if let Err(e) = check_parent_spends(&parent_spends, &signed_spend) {
                     return Err(ProtocolError::InvalidSpendParents(format!("{e:?}")));
                 }
 
                 // check the network if any spend has happened for the same dbc_id
                 // Does not return an error, instead the Vec<SignedSpend> is returned.
-                let mut spends = get_aggregated_spends_from_peers(&self.network, dbc_id).await?;
+                let mut spends = if let Ok(spend) = self.get_spend_from_network(dbc_addr).await {
+                    vec![spend]
+                } else {
+                    vec![]
+                };
                 // aggregate the spends from the network with our own
                 spends.push(signed_spend);
                 aggregate_spends(spends, dbc_id)

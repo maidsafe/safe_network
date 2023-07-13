@@ -6,30 +6,26 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::collections::BTreeMap;
-
 use super::{
     error::{Error, Result},
     Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, ClientRegister,
 };
 
 use bls::{PublicKey, SecretKey, Signature};
-use futures::future::select_all;
 use indicatif::ProgressBar;
 use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
     Multiaddr,
 };
 use sn_dbc::{DbcId, SignedSpend};
-use sn_networking::{close_group_majority, multiaddr_is_global, NetworkEvent, SwarmDriver};
+use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{Cmd, CmdResponse, PaymentProof, Query, QueryResponse, Request, Response},
+    messages::PaymentProof,
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, ChunkWithPayment,
         DbcAddress, RecordHeader, RecordKind, RegisterAddress,
     },
-    NetworkAddress,
 };
 use sn_registers::SignedRegister;
 use sn_transfers::client_transfers::SpendRequest;
@@ -318,158 +314,88 @@ impl Client {
         }
     }
 
-    /// Send a `SpendDbc` request to the closest nodes to the dbc_id
-    /// Makes sure at least majority of them successfully stored it
+    /// Send a `SpendDbc` request to the network
     pub(crate) async fn network_store_spend(&self, spend: SpendRequest) -> Result<()> {
         let dbc_id = *spend.signed_spend.dbc_id();
-        let network_address = NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(&dbc_id));
+        let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
-        trace!("Getting the closest peers to the dbc_id {dbc_id:?} / {network_address:?}.");
-        let closest_peers = self
-            .network
-            .client_get_closest_peers(&network_address)
-            .await?;
+        trace!("Sending spend {dbc_id:?} to the network via put_record, with addr of {dbc_addr:?}");
 
-        let cmd = Cmd::SpendDbc(spend.signed_spend);
-
-        trace!(
-            "Sending {:?} to the closest peers to store spend for {dbc_id:?}.",
-            cmd
-        );
-
-        let mut list_of_futures = vec![];
-        for peer in closest_peers {
-            let request = Request::Cmd(cmd.clone());
-            let future = Box::pin(self.network.send_request(request, peer));
-            list_of_futures.push(future);
-        }
-
-        let mut ok_responses = 0;
-
-        while !list_of_futures.is_empty() {
-            match select_all(list_of_futures).await {
-                (Ok(Response::Cmd(CmdResponse::Spend(Ok(spend_ok)))), _, remaining_futures) => {
-                    trace!(
-                        "Spend Ok {spend_ok:?} response got while requesting to spend {dbc_id:?}"
-                    );
-                    ok_responses += 1;
-
-                    // Return once we got required number of expected responses.
-                    if ok_responses >= close_group_majority() {
-                        return Ok(());
-                    }
-
-                    list_of_futures = remaining_futures;
-                }
-                (Ok(other), _, remaining_futures) => {
-                    trace!("Unexpected response got while requesting to spend {dbc_id:?}: {other}");
-                    list_of_futures = remaining_futures;
-                }
-                (Err(err), _, remaining_futures) => {
-                    trace!("Network error while requesting to spend {dbc_id:?}: {err:?}.");
-                    list_of_futures = remaining_futures;
-                }
-            }
-        }
-
-        let err = Err(Error::CouldNotVerifyTransfer(format!(
-            "Not enough close group nodes accepted the spend for {dbc_id:?}. Got {}, required: {}.",
-            ok_responses,
-            close_group_majority()
-        )));
-
-        warn!("Failed to store spend on the network: {:?}", err);
-        err
+        let record = Record {
+            key: RecordKey::new(dbc_addr.name()),
+            value: try_serialize_record(&[spend.signed_spend], RecordKind::DbcSpend)?,
+            publisher: None,
+            expires: None,
+        };
+        Ok(self.network.put_record(record).await?)
     }
 
-    pub(crate) async fn expect_closest_majority_same(&self, dbc_id: &DbcId) -> Result<SignedSpend> {
+    /// Get a dbc spend from network
+    pub async fn get_spend_from_network(&self, dbc_id: &DbcId) -> Result<SignedSpend> {
         let address = DbcAddress::from_dbc_id(dbc_id);
-        let network_address = NetworkAddress::from_dbc_address(address);
-        trace!("Getting the closest peers to {dbc_id:?} / {network_address:?}.");
-        let closest_peers = self
+
+        let record = self
             .network
-            .client_get_closest_peers(&network_address)
-            .await?;
+            .get_record_from_network(RecordKey::new(address.name()))
+            .await
+            .map_err(|err| {
+                Error::CouldNotVerifyTransfer(format!(
+                    "Cann't find record for the dbc_id {dbc_id:?} with error {err:?}"
+                ))
+            })?;
+        debug!("Got record from the network, {:?}", record.key);
 
-        let query = Query::GetSpend(address);
-        trace!("Sending {:?} to the closest peers.", query);
+        let header = RecordHeader::from_record(&record).map_err(|err| {
+            Error::CouldNotVerifyTransfer(format!(
+                "Cann't parse RecordHeader for the dbc_id {dbc_id:?} with error {err:?}"
+            ))
+        })?;
 
-        let mut list_of_futures = vec![];
-        for peer in closest_peers {
-            let request = Request::Query(query.clone());
-            let future = Box::pin(self.network.send_request(request, peer));
-            list_of_futures.push(future);
-        }
-
-        let mut ok_responses = vec![];
-
-        while !list_of_futures.is_empty() {
-            match select_all(list_of_futures).await {
-                (
-                    Ok(Response::Query(QueryResponse::GetDbcSpend(Ok(signed_spend)))),
-                    _,
-                    remaining_futures,
-                ) => {
+        if let RecordKind::DbcSpend = header.kind {
+            match try_deserialize_record::<Vec<SignedSpend>>(&record)
+                .map_err(|err| {
+                    Error::CouldNotVerifyTransfer(format!(
+                        "Cann't deserialize record for the dbc_id {dbc_id:?} with error {err:?}"
+                    ))
+                })?
+                .as_slice()
+            {
+                [one, two, ..] => {
+                    error!("Found double spend for {address:?}");
+                    Err(Error::CouldNotVerifyTransfer(format!(
+                "Found double spend for the dbc_id {dbc_id:?}: spend_one {one:?} and spend_two {two:?}"
+            )))
+                }
+                [signed_spend] => {
+                    trace!("Spend get for address: {address:?} successful");
                     if dbc_id == signed_spend.dbc_id() {
                         match signed_spend.verify(signed_spend.spent_tx_hash()) {
                             Ok(_) => {
-                                trace!("Verified signed spend got from network while getting Spend for {dbc_id:?}");
-                                ok_responses.push(signed_spend);
+                                trace!("Verified signed spend got from networkfor {dbc_id:?}");
+                                Ok(signed_spend.clone())
                             }
                             Err(err) => {
-                                warn!("Invalid signed spend got from network while getting Spend for {dbc_id:?}: {err:?}.");
+                                warn!("Invalid signed spend got from network for {dbc_id:?}: {err:?}.");
+                                Err(Error::CouldNotVerifyTransfer(format!(
+                                "Spend failed verifiation for the dbc_id {dbc_id:?} with error {err:?}")))
                             }
                         }
+                    } else {
+                        warn!("Signed spend ({:?}) got from network mismatched the expected one {dbc_id:?}.", signed_spend.dbc_id());
+                        Err(Error::CouldNotVerifyTransfer(format!(
+                                "Signed spend ({:?}) got from network mismatched the expected one {dbc_id:?}.", signed_spend.dbc_id())))
                     }
-
-                    // Return once we got required number of expected responses.
-                    if ok_responses.len() >= close_group_majority() {
-                        use itertools::*;
-                        let resp_count_by_spend: BTreeMap<SignedSpend, usize> = ok_responses
-                            .clone()
-                            .into_iter()
-                            .map(|x| (x, 1))
-                            .into_group_map()
-                            .into_iter()
-                            .map(|(spend, vec_of_ones)| (spend, vec_of_ones.len()))
-                            .collect();
-
-                        if resp_count_by_spend.len() > 1 {
-                            return Err(Error::CouldNotVerifyTransfer(format!(
-                                "Double spend detected while getting Spend for {dbc_id:?}: {:?}",
-                                resp_count_by_spend.keys()
-                            )));
-                        }
-
-                        let majority_agreement = resp_count_by_spend
-                            .into_iter()
-                            .max_by_key(|(_, count)| *count)
-                            .map(|(k, _)| k);
-
-                        if let Some(agreed_spend) = majority_agreement {
-                            // Majority of nodes in the close group returned the same spend of the requested id.
-                            // We return the spend, so that it can be compared to the spends we have in the DBC.
-                            return Ok(agreed_spend);
-                        }
-                    }
-
-                    list_of_futures = remaining_futures;
                 }
-                (Ok(other), _, remaining_futures) => {
-                    trace!("Unexpected response while getting Spend for {dbc_id:?}: {other}.");
-                    list_of_futures = remaining_futures;
-                }
-                (Err(err), _, remaining_futures) => {
-                    trace!("Network error getting Spend for {dbc_id:?}: {err:?}.");
-                    list_of_futures = remaining_futures;
+                _ => {
+                    trace!("Found no spend for {address:?}");
+                    Err(Error::CouldNotVerifyTransfer(format!(
+                        "Fetched record shows no spend for dbc {dbc_id:?}."
+                    )))
                 }
             }
+        } else {
+            error!("RecordKind mismatch while trying to retrieve a dbc spend");
+            Err(ProtocolError::RecordKindMismatch(RecordKind::DbcSpend).into())
         }
-
-        Err(Error::CouldNotVerifyTransfer(format!(
-            "Not enough close group nodes returned the requested spend. Got {}, required: {}.",
-            ok_responses.len(),
-            close_group_majority()
-        )))
     }
 }

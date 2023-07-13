@@ -224,7 +224,9 @@ impl Node {
                 let key = record.key.clone();
                 match self.validate_and_store_record(record).await {
                     Ok(cmdok) => trace!("UnverifiedRecord {key:?} stored with {cmdok:?}."),
-                    Err(err) => trace!("UnverifiedRecord {key:?} stored with error {err:?}."),
+                    Err(err) => {
+                        trace!("UnverifiedRecord {key:?} failed to be stored with error {err:?}.")
+                    }
                 }
             }
         }
@@ -332,11 +334,6 @@ impl Node {
                 let result = self.get_chunk_from_network(address).await;
                 QueryResponse::GetChunk(result)
             }
-            Query::GetSpend(address) => {
-                trace!("Got GetSpend query for {address:?}");
-                let result = self.get_spend_from_network(address).await;
-                QueryResponse::GetDbcSpend(result)
-            }
             Query::GetReplicatedData {
                 requester: _,
                 address,
@@ -382,22 +379,6 @@ impl Node {
 
                 // if we do not send a response, we can cause conneciton failures.
                 CmdResponse::Replicate(Ok(()))
-            }
-            Cmd::SpendDbc(signed_spend) => {
-                let dbc_id = *signed_spend.dbc_id();
-                let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
-                match self.validate_and_store_spends(vec![signed_spend]).await {
-                    Ok(cmd_ok) => {
-                        debug!("Broadcasting valid spend: {dbc_id:?} at: {dbc_addr:?}");
-                        self.events_channel
-                            .broadcast(NodeEvent::SpendStored(dbc_id));
-                        CmdResponse::Spend(Ok(cmd_ok))
-                    }
-                    Err(err) => {
-                        error!("Failed to StoreSpend: {err:?}");
-                        CmdResponse::Spend(Err(err))
-                    }
-                }
             }
         };
 
