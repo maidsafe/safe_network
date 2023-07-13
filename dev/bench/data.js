@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689279775376,
+  "lastUpdate": 1689279778191,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6240,6 +6240,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 148,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "78124d38bdc3b7c5a8b9d706cec53ff99f01f5f3",
+          "message": "chore(clippy): fix clippy warnings",
+          "timestamp": "2023-07-13T18:55:47Z",
+          "tree_id": "9d340387a71dd57af2c0229eee1a1c3ce4da8779",
+          "url": "https://github.com/maidsafe/safe_network/commit/78124d38bdc3b7c5a8b9d706cec53ff99f01f5f3"
+        },
+        "date": 1689279777749,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 228.42,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 222,
             "unit": "MB"
           }
         ]
