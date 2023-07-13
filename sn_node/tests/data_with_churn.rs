@@ -8,13 +8,10 @@
 
 mod common;
 
-use common::{get_client_and_wallet, get_funded_wallet, get_wallet};
-
-use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
-
 use assert_fs::TempDir;
 use bytes::Bytes;
-use eyre::{bail, eyre, Result};
+use common::{get_client_and_wallet, get_funded_wallet, get_wallet, node_restart};
+use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files, WalletClient};
 use sn_dbc::{Dbc, MainKey, Token};
@@ -24,26 +21,17 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_transfers::wallet::LocalWallet;
-
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::Path,
     sync::Arc,
     time::{Duration, Instant},
 };
-use tokio::{fs::remove_dir_all, sync::RwLock, time::sleep};
-use tonic::Request;
+use tokio::{sync::RwLock, time::sleep};
 use tracing::trace;
 use tracing_core::Level;
 use xor_name::XorName;
-
-// this includes code generated from .proto files
-#[allow(unused_qualifications, unreachable_pub, clippy::unwrap_used)]
-mod safenode_proto {
-    tonic::include_proto!("safenode_proto");
-}
 
 const NODE_COUNT: u32 = 25;
 
@@ -537,45 +525,6 @@ async fn final_retry_query_content(
             return Ok(());
         }
     }
-}
-
-async fn node_restart(addr: SocketAddr) -> Result<()> {
-    let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-
-    let response = client.node_info(Request::new(NodeInfoRequest {})).await?;
-    let log_dir = Path::new(&response.get_ref().log_dir);
-    let root_dir = log_dir
-        .parent()
-        .ok_or_else(|| eyre!("could not obtain parent from logging directory"))?;
-
-    // remove Chunks records
-    let chunks_records = root_dir.join("record_store");
-    if let Ok(true) = chunks_records.try_exists() {
-        println!("Removing Chunks records from {}", chunks_records.display());
-        remove_dir_all(chunks_records).await?;
-    }
-
-    // remove Registers records
-    let registers_records = root_dir.join("registers");
-    if let Ok(true) = registers_records.try_exists() {
-        println!(
-            "Removing Registers records from {}",
-            registers_records.display()
-        );
-        remove_dir_all(registers_records).await?;
-    }
-
-    let _response = client
-        .restart(Request::new(RestartRequest { delay_millis: 0 }))
-        .await?;
-
-    println!(
-        "Node restart requested to RPC service at {addr}, and removed all its chunks and registers records at {}",
-        log_dir.display()
-    );
-
-    Ok(())
 }
 
 async fn query_content(
