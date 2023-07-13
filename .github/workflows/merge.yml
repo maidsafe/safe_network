@@ -369,7 +369,7 @@ jobs:
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: safe_test_logs_e2e_${{matrix.os}}
+          name: safe_test_logs_spend_${{matrix.os}}
           path: log_files.tar.gz
         continue-on-error: true
         if: failure()
@@ -528,7 +528,149 @@ jobs:
       - name: Upload Node Logs
         uses: actions/upload-artifact@main
         with:
-          name: safe_test_logs_e2e_${{matrix.os}}
+          name: safe_test_logs_churn_${{matrix.os}}
+          path: log_files.tar.gz
+        continue-on-error: true
+        if: failure()
+
+  data_location_test:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Verify data location
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            node_data_path: /home/runner/.local/share/safe/node
+          - os: windows-latest
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+          - os: macos-latest
+            node_data_path: /Users/runner/Library/Application Support/safe/node
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: install ripgrep
+        run: sudo apt-get -y install ripgrep
+        if: matrix.os == 'ubuntu-latest'
+        
+      - name: install ripgrep mac
+        run: brew install ripgrep
+        if: matrix.os == 'macos-latest'
+
+      - name: install ripgrep windows
+        run: choco install ripgrep
+        if: matrix.os == 'windows-latest'
+
+      - name: Build sn bins
+        run: cargo build --release --bins --features local-discovery
+        timeout-minutes: 30
+
+      - name: Build data location test
+        run: cargo test --release -p sn_node --features="local-discovery" --no-run
+        timeout-minutes: 30
+        # new output folder to avoid linker issues w/ windows
+        env:
+          CARGO_TARGET_DIR: "./data-location-target"
+
+      - name: Start a local network
+        run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      - name: Verify the location of the data on the network (4 * 5 mins)
+        run: cargo test --release -p sn_node --features="local-discovery" --test verify_data_location -- --nocapture 
+        env:
+          # new output folder to avoid linker issues w/ windows
+          CARGO_TARGET_DIR: "./data-location-target"
+          CHURN_COUNT: 4
+          SN_LOG: "all"
+        timeout-minutes: 30
+
+      - name: Verify restart of nodes using rg
+        shell: bash
+        timeout-minutes: 1
+        # get the counts, then the specific line, and then the digit count only
+        # then check we have an expected level of restarts
+        # TODO: make this use an env var, or relate to testnet size
+        run : |
+          restart_count=$(rg "Node is restarting in" "${{ matrix.node_data_path }}" -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
+          echo "Restart $restart_count nodes"
+          detected_dead_peer=$(rg "Detected dead peer" "${{ matrix.node_data_path }}" -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
+          echo "Detected dead peer $detected_dead_peer times"
+          if [ $detected_dead_peer -lt $restart_count ]; then
+            echo "Detected dead peer times of: $detected_dead_peer is less than the restart count of: $restart_count"
+            exit 1
+          fi
+          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
+          echo "Node dir count is $node_count"
+         
+        # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
+        # if [ $restart_count -lt $node_count ]; then
+        #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
+        #   exit 1
+        # fi
+
+      - name: Verify data replication using rg
+        shell: bash
+        timeout-minutes: 1
+        # get the counts, then the specific line, and then the digit count only
+        # then check we have an expected level of replication
+        # TODO: make this use an env var, or relate to testnet size
+        run : |
+          replication_count=$(rg "Chunk received for replication" "${{ matrix.node_data_path }}" -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
+          echo "Replicated $replication_count copies"
+          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
+          if [ $replication_count -lt $node_count ]; then
+            echo "Replication count of: $replication_count is less than the node count of: $node_count"
+            exit 1
+          fi
+
+      - name: Kill all nodes (unix)
+        shell: bash
+        timeout-minutes: 1
+        continue-on-error: true
+        run: |
+          pkill safenode
+          echo "$(pgrep safenode | wc -l) nodes still running"
+        if: failure() && matrix.os != 'windows-latest'
+
+      - name: Kill all nodes (windows)
+        shell: pwsh
+        timeout-minutes: 1
+        continue-on-error: true
+        run: Get-Process safenode | Stop-Process -Force
+        if: failure() && matrix.os == 'windows-latest'
+
+      - name: Tar log files (unix)
+        shell: bash
+        continue-on-error: true
+        run: |
+          find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
+        if: failure() && matrix.os != 'windows-latest'
+
+      - name: Tar log files (windows)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File | `
+            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
+        if: failure() && matrix.os == 'windows-latest'
+
+      - name: Upload Node Logs
+        uses: actions/upload-artifact@main
+        with:
+          name: safe_test_logs_data_location_${{matrix.os}}
           path: log_files.tar.gz
         continue-on-error: true
         if: failure()
