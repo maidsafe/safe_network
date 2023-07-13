@@ -8,7 +8,7 @@
 
 use clap::Subcommand;
 use color_eyre::Result;
-use sn_client::{Client, Error as ClientError};
+use sn_client::{Client, ClientRegister, Error as ClientError};
 use xor_name::XorName;
 
 #[derive(Subcommand, Debug)]
@@ -48,7 +48,8 @@ async fn create_register(name: String, client: &Client) -> Result<()> {
     let xorname = XorName::from_content(name.as_bytes());
     println!("Creating Register with '{name}' at xorname: {xorname:x} and tag {tag}");
 
-    let _register = client.create_register(xorname, tag).await?;
+    // clients currently only support public registers as we create a new key at each run
+    let _register = ClientRegister::create_public_online(client.clone(), xorname, tag).await?;
     println!("Successfully created register '{name}' at {xorname:?}, {tag}!");
     Ok(())
 }
