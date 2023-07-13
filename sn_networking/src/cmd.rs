@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
-use crate::{error::Result, multiaddr_pop_p2p, CLOSE_GROUP_SIZE};
+use crate::{error::Result, multiaddr_pop_p2p};
 use libp2p::{
     kad::{kbucket::Distance, store::RecordStore, Quorum, Record, RecordKey},
     swarm::{
@@ -22,6 +22,8 @@ use sn_protocol::{
 };
 use std::collections::HashSet;
 use tokio::sync::oneshot;
+
+use custom_debug::Debug;
 
 /// Commands to send to the Swarm
 #[allow(clippy::large_enum_variant)]
@@ -45,11 +47,6 @@ pub enum SwarmCmd {
         key: NetworkAddress,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
-    // Get closest peers from the local RoutingTable
-    GetClosestLocalPeers {
-        key: NetworkAddress,
-        sender: oneshot::Sender<Vec<PeerId>>,
-    },
     // Returns all the peers from all the k-buckets from the local Routing Table.
     // This includes our PeerId as well.
     GetAllLocalPeers {
@@ -57,6 +54,7 @@ pub enum SwarmCmd {
     },
     // Send Request to the PeerId.
     SendRequest {
+        #[debug(skip)]
         req: Request,
         peer: PeerId,
 
@@ -69,32 +67,38 @@ pub enum SwarmCmd {
         sender: Option<oneshot::Sender<Result<Response>>>,
     },
     SendResponse {
+        #[debug(skip)]
         resp: Response,
         channel: MsgResponder,
     },
     GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
     /// Check if the local RecordStore contains the provided key
     RecordStoreHasKey {
+        #[debug(skip)]
         key: RecordKey,
         sender: oneshot::Sender<bool>,
     },
     /// Get Record from the Kad network
     GetNetworkRecord {
+        #[debug(skip)]
         key: RecordKey,
         sender: oneshot::Sender<Result<Record>>,
     },
     /// Get data from the local RecordStore
     GetLocalRecord {
+        #[debug(skip)]
         key: RecordKey,
         sender: oneshot::Sender<Option<Record>>,
     },
     /// Put record to network
     PutRecord {
+        #[debug(skip)]
         record: Record,
         sender: oneshot::Sender<Result<()>>,
     },
     /// Put record to the local RecordStore
     PutLocalRecord {
+        #[debug(skip)]
         record: Record,
     },
     /// Get the list of keys that within the provided distance to the target Key
@@ -105,7 +109,9 @@ pub enum SwarmCmd {
     },
     AddKeysToReplicationFetcher {
         peer: PeerId,
+        #[debug(skip)]
         keys: Vec<NetworkAddress>,
+        #[debug(skip)]
         sender: oneshot::Sender<Vec<(PeerId, NetworkAddress)>>,
     },
     NotifyFetchResult {
@@ -130,8 +136,12 @@ pub struct SwarmLocalState {
 }
 
 impl SwarmDriver {
-    pub(crate) async fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
+    /// Handle a command sent to the SwarmDriver
+    pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
+            SwarmCmd::GetAllLocalPeers { sender } => {
+                let _ = sender.send(self.all_local_peers());
+            }
             SwarmCmd::GetRecordKeysClosestToTarget {
                 key,
                 distance,
@@ -144,6 +154,25 @@ impl SwarmDriver {
                     .store_mut()
                     .get_record_keys_closest_to_target(key.as_kbucket_key(), distance);
                 let _ = sender.send(peers);
+            }
+            SwarmCmd::GetLocalRecord { key, sender } => {
+                let record = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .get(&key)
+                    .map(|rec| rec.into_owned());
+                let _ = sender.send(record);
+            }
+            SwarmCmd::RecordStoreHasKey { key, sender } => {
+                let has_key = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .contains(&key);
+                let _ = sender.send(has_key);
             }
             SwarmCmd::AddKeysToReplicationFetcher { peer, keys, sender } => {
                 // check if we have any of the data before adding it.
@@ -191,16 +220,6 @@ impl SwarmDriver {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
                 let _ = self.pending_query.insert(query_id, sender);
             }
-            SwarmCmd::GetLocalRecord { key, sender } => {
-                let record = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .get(&key)
-                    .map(|rec| rec.into_owned());
-                let _ = sender.send(record);
-            }
             SwarmCmd::PutRecord { record, sender } => {
                 let request_id = self
                     .swarm
@@ -216,15 +235,6 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .put_verified(record)?;
-            }
-            SwarmCmd::RecordStoreHasKey { key, sender } => {
-                let has_key = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .contains(&key);
-                let _ = sender.send(has_key);
             }
 
             SwarmCmd::StartListening { addr, sender } => {
@@ -262,32 +272,7 @@ impl SwarmDriver {
                     .pending_get_closest_peers
                     .insert(query_id, (sender, Default::default()));
             }
-            SwarmCmd::GetClosestLocalPeers { key, sender } => {
-                let key = key.as_kbucket_key();
-                // calls `kbuckets.closest_keys(key)` internally, which orders the peers by
-                // increasing distance
-                // Note it will return all peers, heance a chop down is required.
-                let closest_peers = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .get_closest_local_peers(&key)
-                    .map(|peer| peer.into_preimage())
-                    .take(CLOSE_GROUP_SIZE)
-                    .collect();
 
-                let _ = sender.send(closest_peers);
-            }
-            SwarmCmd::GetAllLocalPeers { sender } => {
-                let mut all_peers: Vec<PeerId> = vec![];
-                for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
-                    for entry in kbucket.iter() {
-                        all_peers.push(entry.node.key.clone().into_preimage());
-                    }
-                }
-                all_peers.push(self.self_peer_id);
-                let _ = sender.send(all_peers);
-            }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 // If `self` is the recipient, forward the request directly to our upper layer to
                 // be handled.
@@ -346,6 +331,23 @@ impl SwarmDriver {
             }
         }
         Ok(())
+    }
+
+    /// Update local peers stored on the SwarmDriver
+    /// Also logs the k-buckets information
+    ///
+    /// This should prevent having to dive into the swarm driver to get the local peers
+    pub(crate) fn update_local_peers(&mut self, changed_peer_id: PeerId) {
+        let mut all_peers: Vec<PeerId> = vec![];
+        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+            for entry in kbucket.iter() {
+                all_peers.push(entry.node.key.clone().into_preimage());
+            }
+        }
+        all_peers.push(self.self_peer_id);
+
+        self.all_local_peers = all_peers;
+        self.log_kbuckets(changed_peer_id);
     }
 
     /// Dials the given multiaddress. If address contains a peer ID, simultaneous

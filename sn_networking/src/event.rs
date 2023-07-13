@@ -129,8 +129,6 @@ impl SwarmDriver {
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
     ) -> Result<()> {
-        let span = info_span!("Handling a swarm event");
-        let _ = span.enter();
         match event {
             SwarmEvent::Behaviour(NodeEvent::MsgReceived(event)) => {
                 if let Err(e) = self.handle_msg(event).await {
@@ -203,7 +201,6 @@ impl SwarmDriver {
                         for (peer_id, addr) in list {
                             // The multiaddr does not contain the peer ID, so add it.
                             let addr = addr.with(Protocol::P2p(peer_id.into()));
-
                             info!(%addr, "mDNS node discovered and dialing");
 
                             if let Err(err) = self.dial(addr.clone()) {
@@ -219,7 +216,9 @@ impl SwarmDriver {
             SwarmEvent::NewListenAddr { address, .. } => {
                 let local_peer_id = *self.swarm.local_peer_id();
                 let address = address.with(Protocol::P2p(local_peer_id.into()));
+
                 self.send_event(NetworkEvent::NewListenAddr(address.clone()));
+
                 info!("Local node is listening on {address:?}");
             }
             SwarmEvent::IncomingConnection { .. } => {}
@@ -267,16 +266,16 @@ impl SwarmDriver {
                             self.send_event(NetworkEvent::PeerRemoved(peer_id));
                         }
                         let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
-                        self.log_kbuckets(&peer_id);
                     }
+
+                    self.update_local_peers(peer_id);
                 }
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
             SwarmEvent::Dialing(peer_id) => trace!("Dialing {peer_id}"),
-
             SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
-                autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
-                autonat::Event::OutboundProbe(e) => trace!("AutoNAT outbound probe: {e:?}"),
+                autonat::Event::InboundProbe(e) => debug!("AutoNAT inbound probe: {e:?}"),
+                autonat::Event::OutboundProbe(e) => debug!("AutoNAT outbound probe: {e:?}"),
                 autonat::Event::StatusChanged { old, new } => {
                     info!("AutoNAT status changed: {old:?} -> {new:?}");
                     self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
@@ -420,15 +419,17 @@ impl SwarmDriver {
                     if self.dead_peers.remove(&peer) {
                         info!("A dead peer {peer:?} joined back with the same ID");
                     }
-                    self.log_kbuckets(&peer);
                     self.send_event(NetworkEvent::PeerAdded(peer));
+                    let connected_peers = self.swarm.connected_peers().collect_vec().len();
+                    info!("Connected peers: {connected_peers}");
                 }
 
                 if old_peer.is_some() {
                     info!("Evicted old peer on new peer join: {old_peer:?}");
                     self.send_event(NetworkEvent::PeerRemoved(peer));
-                    self.log_kbuckets(&peer);
                 }
+
+                self.update_local_peers(peer);
             }
             KademliaEvent::InboundRequest {
                 request: InboundRequest::PutRecord { .. },
@@ -455,10 +456,13 @@ impl SwarmDriver {
         Ok(())
     }
 
-    fn log_kbuckets(&mut self, peer: &PeerId) {
+    pub(crate) fn log_kbuckets(&mut self, changed_peer: PeerId) {
         let distance = NetworkAddress::from_peer(self.self_peer_id)
-            .distance(&NetworkAddress::from_peer(*peer));
-        info!("Peer {peer:?} has a {:?} distance to us", distance.ilog2());
+            .distance(&NetworkAddress::from_peer(changed_peer));
+        info!(
+            "Peer {changed_peer:?} has a {:?} distance to us",
+            distance.ilog2()
+        );
         let mut kbucket_table_stats = vec![];
         let mut index = 0;
         let mut total_peers = 0;
