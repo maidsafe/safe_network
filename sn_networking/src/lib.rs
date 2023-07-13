@@ -61,6 +61,7 @@ use std::{
     num::NonZeroUsize,
     path::PathBuf,
     time::Duration,
+    vec,
 };
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
@@ -112,6 +113,7 @@ pub struct SwarmDriver {
     /// A list of the most recent peers we have dialed ourselves.
     dialed_peers: CircularVec<PeerId>,
     dead_peers: BTreeSet<PeerId>,
+    all_local_peers: Vec<PeerId>,
 }
 
 impl SwarmDriver {
@@ -374,6 +376,7 @@ impl SwarmDriver {
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             dead_peers: Default::default(),
+            all_local_peers: vec![peer_id],
         };
 
         Ok((
@@ -385,6 +388,11 @@ impl SwarmDriver {
             network_event_receiver,
             swarm_driver,
         ))
+    }
+
+    /// Return all local peers in the routing table
+    pub fn all_local_peers(&self) -> Vec<PeerId> {
+        self.all_local_peers.clone()
     }
 
     /// Asynchronously drives the swarm event loop, handling events from both
@@ -404,7 +412,7 @@ impl SwarmDriver {
                 },
                 some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
-                        if let Err(err) = self.handle_cmd(cmd).await {
+                        if let Err(err) = self.handle_cmd(cmd) {
                             warn!("Error while handling cmd: {err}");
                         }
                     },
@@ -495,21 +503,6 @@ impl Network {
     /// Includes our node's `PeerId` while calculating the closest peers.
     pub async fn node_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
         self.get_closest_peers(key, false).await
-    }
-
-    /// Returns the closest peers to the given `NetworkAddress` that is fetched from the local
-    /// Routing Table. It is ordered by increasing distance of the peers
-    /// Note self peer_id is not included in the result.
-    pub async fn get_closest_local_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetClosestLocalPeers {
-            key: key.clone(),
-            sender,
-        })?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
     /// Returns all the PeerId from all the KBuckets from our local Routing Table
