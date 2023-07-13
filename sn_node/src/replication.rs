@@ -30,11 +30,11 @@ impl Node {
         &mut self,
         churned_peer: &PeerId,
         is_dead_peer: bool,
+        all_peers: Vec<PeerId>
     ) -> Result<()> {
         let our_address = NetworkAddress::from_peer(self.network.peer_id);
         let churned_peer_address = NetworkAddress::from_peer(*churned_peer);
 
-        let all_peers = self.network.get_all_local_peers().await?;
         if all_peers.len() < 2 * CLOSE_GROUP_SIZE {
             return Ok(());
         }

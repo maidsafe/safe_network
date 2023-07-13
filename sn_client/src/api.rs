@@ -195,7 +195,7 @@ impl Client {
             NetworkEvent::NewListenAddr(_) => {}
             // We are not doing AutoNAT and don't care about our status.
             NetworkEvent::NatStatusChanged(_) => {}
-            NetworkEvent::PeerAdded(peer_id) => {
+            NetworkEvent::PeerAdded((peer_id, _all_peers)) => {
                 debug!("PeerAdded: {peer_id}");
                 // In case client running in non-local-discovery mode,
                 // it may take some time to fill up the RT.

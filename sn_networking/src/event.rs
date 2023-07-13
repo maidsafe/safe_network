@@ -110,9 +110,11 @@ pub enum NetworkEvent {
         res: Response,
     },
     /// Peer has been added to the Routing Table
-    PeerAdded(PeerId),
+    /// All Routing Table PeerIds are provided as well
+    PeerAdded((PeerId, Vec<PeerId>)),
     // Peer has been removed from the Routing Table
-    PeerRemoved(PeerId),
+    /// All Routing Table PeerIds are provided as well
+    PeerRemoved((PeerId, Vec<PeerId>)),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
     /// AutoNAT status changed
@@ -263,12 +265,12 @@ impl SwarmDriver {
                         info!("Detected dead peer {peer_id:?}");
                         if !self.dead_peers.contains(&peer_id) {
                             let _ = self.dead_peers.insert(peer_id);
-                            self.send_event(NetworkEvent::PeerRemoved(peer_id));
+                            let all_peers = self.get_and_log_peers_from_buckets(peer_id);
+                            self.send_event(NetworkEvent::PeerRemoved((peer_id, all_peers)));
                         }
                         let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
                     }
-
-                    self.update_local_peers(peer_id);
+                    
                 }
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
@@ -379,19 +381,21 @@ impl SwarmDriver {
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
             }
-            KademliaEvent::OutboundQueryProgressed {
-                result:
-                    QueryResult::GetRecord(Ok(GetRecordOk::FinishedWithNoAdditionalRecord {
-                        cache_candidates,
-                    })),
-                ..
-            } => {
-                // The candidates are nodes supposed to hold a copy however failed to do so.
-                // In that case, we can try to trigger a replication to it.
-                let peer_ids: Vec<PeerId> = cache_candidates.values().copied().collect();
-                trace!("Candidates {peer_ids:?} failed to respond a record query request.");
-                self.send_event(NetworkEvent::LostRecordDetected(peer_ids));
-            }
+            // KademliaEvent::OutboundQueryProgressed {
+            //     result:
+            //         QueryResult::GetRecord(Ok(GetRecordOk::FinishedWithNoAdditionalRecord {
+            //             cache_candidates,
+            //         })),
+            //     ..
+            // } => {
+            //     // The candidates are nodes supposed to hold a copy however failed to do so.
+            //     // In that case, we can try to trigger a replication to it.
+            //     let peer_ids: Vec<PeerId> = cache_candidates.values().copied().collect();
+            //     trace!("Candidates {peer_ids:?} failed to respond a record query request.");
+
+            //     let all_peers = self.get_and_log_peers_from_buckets(changed_peer_id)
+            //     self.send_event(NetworkEvent::LostRecordDetected(peer_ids));
+            // }
             KademliaEvent::OutboundQueryProgressed {
                 id,
                 result: QueryResult::GetRecord(Err(err)),
@@ -419,17 +423,18 @@ impl SwarmDriver {
                     if self.dead_peers.remove(&peer) {
                         info!("A dead peer {peer:?} joined back with the same ID");
                     }
-                    self.send_event(NetworkEvent::PeerAdded(peer));
+                    let all_peers = self.get_and_log_peers_from_buckets(peer);
+                    self.send_event(NetworkEvent::PeerAdded((peer, all_peers)));
                     let connected_peers = self.swarm.connected_peers().collect_vec().len();
                     info!("Connected peers: {connected_peers}");
                 }
 
                 if old_peer.is_some() {
+                    let all_peers = self.get_and_log_peers_from_buckets(peer);
                     info!("Evicted old peer on new peer join: {old_peer:?}");
-                    self.send_event(NetworkEvent::PeerRemoved(peer));
+                    self.send_event(NetworkEvent::PeerRemoved((peer, all_peers)));
                 }
 
-                self.update_local_peers(peer);
             }
             KademliaEvent::InboundRequest {
                 request: InboundRequest::PutRecord { .. },

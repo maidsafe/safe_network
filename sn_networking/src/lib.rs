@@ -384,6 +384,7 @@ impl SwarmDriver {
                 swarm_cmd_sender,
                 peer_id,
                 root_dir_path,
+                all_routing_table_peers: vec![peer_id],
             },
             network_event_receiver,
             swarm_driver,
@@ -464,6 +465,8 @@ pub struct Network {
     pub swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
     pub peer_id: PeerId,
     pub root_dir_path: PathBuf,
+    pub all_routing_table_peers: Vec<PeerId>,
+
 }
 
 impl Network {
@@ -483,6 +486,12 @@ impl Network {
             sender,
         })?;
         receiver.await?
+    }
+    /// Update the cache of the routing table 
+    /// This helps avoid calling into the swarm
+    pub async fn update_routing_table_peers(&mut self, all_peers: Vec<PeerId>) {
+      
+      self.all_routing_table_peers = all_peers;
     }
 
     /// Dial the given peer at the given address.

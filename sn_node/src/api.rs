@@ -166,8 +166,10 @@ impl Node {
                     error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
                 }
             }
-            NetworkEvent::PeerAdded(peer_id) => {
+            NetworkEvent::PeerAdded((peer_id, all_peers)) => {
                 Marker::PeerAddedToRoutingTable(peer_id).log();
+
+                // self.network.update_routing_table_peers(all_peers).await;
                 // perform a get_closest query to self on node join. This should help populate the node's RT
                 // since this only runs once, we don't need to make it run in a background task
                 debug!(
@@ -190,26 +192,27 @@ impl Node {
 
                     self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
                 }
-                if let Err(err) = self.try_trigger_replication(&peer_id, false).await {
+                if let Err(err) = self.try_trigger_replication(&peer_id, false, all_peers).await {
                     error!("Error while triggering replication {err:?}");
                 }
             }
-            NetworkEvent::PeerRemoved(peer_id) => {
+            NetworkEvent::PeerRemoved((peer_id, all_peers)) => {
                 Marker::PeerRemovedFromRoutingTable(peer_id).log();
+                // self.network.update_routing_table_peers(all_peers).await;
 
-                if let Err(err) = self.try_trigger_replication(&peer_id, true).await {
+                if let Err(err) = self.try_trigger_replication(&peer_id, true, all_peers).await {
                     error!("Error while triggering replication {err:?}");
                 }
             }
             NetworkEvent::LostRecordDetected(peer_ids) => {
-                if !peer_ids.is_empty() {
-                    Marker::LostRecordDetected(&peer_ids).log();
-                    for peer_id in peer_ids.iter() {
-                        if let Err(err) = self.try_trigger_replication(peer_id, false).await {
-                            error!("Error while triggering replication to {peer_id:?} {err:?}");
-                        }
-                    }
-                }
+                // if !peer_ids.is_empty() {
+                //     Marker::LostRecordDetected(&peer_ids).log();
+                //     for peer_id in peer_ids.iter() {
+                //         if let Err(err) = self.try_trigger_replication(peer_id, false).await {
+                //             error!("Error while triggering replication to {peer_id:?} {err:?}");
+                //         }
+                //     }
+                // }
             }
             NetworkEvent::NewListenAddr(_) => {
                 if !cfg!(feature = "local-discovery") {
@@ -385,14 +388,14 @@ impl Node {
                 CmdResponse::Replicate(Ok(()))
             }
             Cmd::RequestReplication(sender) => {
-                debug!("RequestReplication received from {sender:?}");
-                if let Some(peer_id) = sender.as_peer_id() {
-                    let _ = self.try_trigger_replication(&peer_id, false).await;
-                } else {
-                    warn!("Failed to parse peer_id for RequestReplication from {sender:?}");
-                };
+                // debug!("RequestReplication received from {sender:?}");
+                // if let Some(peer_id) = sender.as_peer_id() {
+                //     let _ = self.try_trigger_replication(&peer_id, false).await;
+                // } else {
+                //     warn!("Failed to parse peer_id for RequestReplication from {sender:?}");
+                // };
 
-                // if we do not send a response, we can cause conneciton failures.
+                // // if we do not send a response, we can cause conneciton failures.
                 CmdResponse::Replicate(Ok(()))
             }
             Cmd::SpendDbc(signed_spend) => {
