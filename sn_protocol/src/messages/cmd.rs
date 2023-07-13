@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{storage::DbcAddress, NetworkAddress};
+use crate::NetworkAddress;
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
-pub use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend};
+pub use sn_dbc::{DbcId, Hash};
 
 /// Data and Dbc cmds - recording spends or creating, updating, and removing data.
 ///
@@ -20,11 +20,6 @@ pub use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend};
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
 pub enum Cmd {
-    /// [`SignedSpend`] write operation.
-    ///
-    /// [`SignedSpend`]: sn_dbc::SignedSpend
-    /// The spend to be recorded
-    SpendDbc(SignedSpend),
     /// Write operation to notify peer fetch a list of [`NetworkAddress`] from the holder.
     ///
     /// [`NetworkAddress`]: crate::NetworkAddress
@@ -45,9 +40,6 @@ impl Cmd {
     /// Used to send a cmd to the close group of the address.
     pub fn dst(&self) -> NetworkAddress {
         match self {
-            Cmd::SpendDbc(signed_spend) => {
-                NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(signed_spend.dbc_id()))
-            }
             Cmd::Replicate { holder, .. } => holder.clone(),
             Cmd::RequestReplication(sender) => sender.clone(),
         }
@@ -57,9 +49,6 @@ impl Cmd {
 impl std::fmt::Display for Cmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Cmd::SpendDbc(signed_spend) => {
-                write!(f, "Cmd::SpendDbc({:?})", signed_spend.dbc_id())
-            }
             Cmd::Replicate { holder, keys } => {
                 write!(
                     f,

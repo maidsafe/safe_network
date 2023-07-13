@@ -15,7 +15,6 @@ use sn_client::{Client, Error as ClientError, Files, WalletClient};
 use sn_dbc::{Hash, Token};
 use sn_networking::Error as NetworkError;
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::wallet::Error as WalletError;
 
 use assert_fs::TempDir;
 use bytes::Bytes;
@@ -98,18 +97,22 @@ async fn storage_payment_fails() -> Result<()> {
     let mut transfer = wallet_client
         .local_send_storage_payment(storage_cost, Hash::default(), None)
         .await?;
+    assert!(transfer.created_dbcs.is_empty());
 
     // let's corrupt the generated spend in any way
     let mut invalid_signed_spend = transfer.all_spend_requests[0].signed_spend.clone();
     invalid_signed_spend.spend.spent_tx.fee.token = Token::from_nano(random_num_of_addrs + 1);
     transfer.all_spend_requests[0].signed_spend = invalid_signed_spend;
 
-    let failed_send = client.send(transfer).await;
+    // Sending will always return with OK, only verification will error out.
+    let res = client.send(transfer.clone()).await;
+    assert!(res.is_ok());
 
-    assert!(matches!(
-        failed_send,
-        Err(WalletError::CouldNotSendTokens(_))
-    ));
+    std::thread::sleep(std::time::Duration::from_secs(5));
+
+    let should_err = client.verify(&transfer.change_dbc.unwrap()).await;
+    println!("Verified with fail: {should_err:?}");
+    assert!(should_err.is_err());
 
     Ok(())
 }
