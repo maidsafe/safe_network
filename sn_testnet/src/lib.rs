@@ -31,7 +31,12 @@ pub const SAFENODE_BIN_NAME: &str = "safenode.exe";
 /// launching processes.
 #[cfg_attr(test, automock)]
 pub trait NodeLauncher {
-    fn launch(&self, node_bin_path: &Path, args: Vec<String>) -> Result<()>;
+    fn launch(
+        &self,
+        node_bin_path: &Path,
+        args: Vec<String>,
+        running_dir: PathBuf,
+    ) -> Result<()>;
 }
 
 /// This trait exists for unit testing.
@@ -48,10 +53,17 @@ pub trait RpcClient {
 #[derive(Default)]
 pub struct SafeNodeLauncher {}
 impl NodeLauncher for SafeNodeLauncher {
-    fn launch(&self, node_bin_path: &Path, args: Vec<String>) -> Result<()> {
+    fn launch(
+        &self,
+        node_bin_path: &Path,
+        args: Vec<String>,
+        running_path: PathBuf,
+    ) -> Result<()> {
+        std::fs::create_dir_all(&running_path)?;
         debug!("Running {:#?} with args: {:#?}", node_bin_path, args);
         Command::new(node_bin_path)
             .args(args)
+            .current_dir(running_path)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()?;
@@ -227,7 +239,8 @@ impl Testnet {
         }
 
         let rpc_address = "127.0.0.1:12001".parse()?;
-        let mut launch_args =
+
+        let (mut launch_args, run_dir) =
             self.get_launch_args("safenode-1".to_string(), Some(rpc_address), node_args)?;
 
         let genesis_port: u16 = 11101;
@@ -235,10 +248,10 @@ impl Testnet {
         launch_args.push(genesis_port.to_string());
 
         let launch_bin = self.get_launch_bin();
-        self.launcher.launch(&launch_bin, launch_args)?;
+        self.launcher.launch(&launch_bin, launch_args, run_dir)?;
         info!(
             "Delaying for {} seconds before launching other nodes",
-            self.node_launch_interval / 1000
+            self.node_launch_interval
         );
         std::thread::sleep(std::time::Duration::from_millis(self.node_launch_interval));
 
@@ -269,13 +282,14 @@ impl Testnet {
         for i in start..=end {
             info!("Launching node {i} of {end}...");
             let rpc_address = format!("127.0.0.1:{}", 12000 + i).parse()?;
-            let launch_args = self.get_launch_args(
+            let (launch_args, run_dir) = self.get_launch_args(
                 format!("safenode-{i}"),
                 Some(rpc_address),
                 node_args.clone(),
             )?;
             let launch_bin = self.get_launch_bin();
-            self.launcher.launch(&launch_bin, launch_args)?;
+
+            self.launcher.launch(&launch_bin, launch_args, run_dir)?;
 
             if i < end {
                 info!(
@@ -294,18 +308,23 @@ impl Testnet {
         node_name: String,
         rpc_address: Option<SocketAddr>,
         node_args: Vec<String>,
-    ) -> Result<Vec<String>> {
+    ) -> Result<(Vec<String>, PathBuf)> {
         let mut launch_args = Vec::new();
+        let mut run_dir = self.nodes_dir_path.join(format!("{node_name}"));
         if self.flamegraph_mode {
+            let path = std::env::current_dir()?;
+            run_dir = path.join(format!("flames/{node_name}"));
+            let the_flame_output_file = run_dir.join(format!("flame.svg"));
+            
+            let flame_dir_string = the_flame_output_file
+                .to_str()
+                .ok_or_else(|| eyre!("Unable to obtain path"))?
+                .to_string();
+
+            println!("Flame chart sould be: {flame_dir_string:?} ");
             launch_args.push("flamegraph".to_string());
             launch_args.push("--output".to_string());
-            launch_args.push(
-                self.nodes_dir_path
-                    .join(format!("{node_name}-flame.svg"))
-                    .to_str()
-                    .ok_or_else(|| eyre!("Unable to obtain path"))?
-                    .to_string(),
-            );
+            launch_args.push(flame_dir_string);
             launch_args.push("--root".to_string());
             launch_args.push("--bin".to_string());
             launch_args.push("safenode".to_string());
@@ -320,7 +339,8 @@ impl Testnet {
         }
         launch_args.extend(node_args);
 
-        Ok(launch_args)
+        std::fs::create_dir_all(&run_dir)?;
+        Ok((launch_args, run_dir))
     }
 
     fn get_launch_bin(&self) -> PathBuf {
