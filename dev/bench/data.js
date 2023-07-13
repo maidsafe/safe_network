@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689144960494,
+  "lastUpdate": 1689238206407,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -2569,6 +2569,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 10.349445393930955,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fdb169980390a1b34dc12d24412d63810338a02e",
+          "message": "chore(metrics): remove network stats\n- Currently the `NetworkMetrics` provides interface/system wide stats\n  and thus can dirtied easily. A process level mechanism has to be\n  implemented to have valid usable network stat.",
+          "timestamp": "2023-07-13T07:42:24Z",
+          "tree_id": "1f1110648a0658b2ff04f7675653a2692b235bb7",
+          "url": "https://github.com/maidsafe/safe_network/commit/fdb169980390a1b34dc12d24412d63810338a02e"
+        },
+        "date": 1689238205678,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1772489760618743,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.639354855821466,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.31965672746308,
             "unit": "MiB/s"
           }
         ]
