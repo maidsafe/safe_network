@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689238206407,
+  "lastUpdate": 1689238233949,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4611,6 +4611,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 27.8,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fdb169980390a1b34dc12d24412d63810338a02e",
+          "message": "chore(metrics): remove network stats\n- Currently the `NetworkMetrics` provides interface/system wide stats\n  and thus can dirtied easily. A process level mechanism has to be\n  implemented to have valid usable network stat.",
+          "timestamp": "2023-07-13T07:42:24Z",
+          "tree_id": "1f1110648a0658b2ff04f7675653a2692b235bb7",
+          "url": "https://github.com/maidsafe/safe_network/commit/fdb169980390a1b34dc12d24412d63810338a02e"
+        },
+        "date": 1689238233587,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 23.84,
             "unit": "MB"
           }
         ]
