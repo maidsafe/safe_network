@@ -12,7 +12,7 @@ use faucet_server::run_faucet_server;
 
 use clap::{Parser, Subcommand};
 use eyre::Result;
-use sn_client::{get_tokens_from_faucet, load_faucet_wallet, Client};
+use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
 use sn_dbc::Token;
 use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
 use sn_transfers::wallet::parse_public_address;
@@ -99,7 +99,7 @@ async fn faucet_cmds(cmds: SubCmd, client: &Client) -> Result<()> {
 }
 
 async fn claim_genesis(client: &Client) {
-    let _wallet = load_faucet_wallet(client).await;
+    let _wallet = load_faucet_wallet_from_genesis_wallet(client).await;
 }
 
 /// returns the hex-encoded dbc

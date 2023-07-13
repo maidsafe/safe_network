@@ -184,7 +184,7 @@ impl Client {
         // transfer is considered valid in the network.
         let mut tasks = Vec::new();
         for spend in &dbc.signed_spends {
-            tasks.push(self.expect_closest_majority_same(spend.dbc_id()));
+            tasks.push(self.get_spend_from_network(spend.dbc_id()));
         }
 
         let mut received_spends = std::collections::BTreeSet::new();

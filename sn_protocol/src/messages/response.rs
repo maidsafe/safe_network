@@ -8,23 +8,12 @@
 
 use crate::{error::Result, messages::ReplicatedData, storage::Chunk, NetworkAddress};
 use serde::{Deserialize, Serialize};
-use sn_dbc::SignedSpend;
 use std::fmt::Debug;
 
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 pub enum QueryResponse {
-    /// If the queried node has validated a corresponding spend
-    /// request, it will return the SignedSpend.
-    /// It is up to the Client to get this SignedSpend from enough
-    /// nodes as to consider it a valid spend. The specific rules
-    /// on how many nodes are enough, are found here: (TODO).
-    ///
-    /// Response to [`GetDbcSpend`]
-    ///
-    /// [`GetDbcSpend`]: crate::messages::Query::GetSpend
-    GetDbcSpend(Result<SignedSpend>),
     //
     // ===== Chunk =====
     //
@@ -45,11 +34,6 @@ pub enum QueryResponse {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CmdResponse {
     //
-    // ===== Dbc Spends =====
-    //
-    /// Response to DbcCmd::Spend.
-    Spend(Result<CmdOk>),
-    //
     // ===== Replication =====
     //
     /// Response to replication cmd
@@ -61,15 +45,4 @@ pub enum CmdResponse {
 pub enum CmdOk {
     StoredSuccessfully,
     DataAlreadyPresent,
-}
-
-impl std::fmt::Display for QueryResponse {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            QueryResponse::GetDbcSpend(Ok(signed_spend)) => {
-                write!(f, "GetDbcSpend(Ok({:?}))", signed_spend.dbc_id())
-            }
-            _ => write!(f, "{:?}", self),
-        }
-    }
 }
