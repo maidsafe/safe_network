@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689238236585,
+  "lastUpdate": 1689279739247,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -2608,6 +2608,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 10.31965672746308,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "78124d38bdc3b7c5a8b9d706cec53ff99f01f5f3",
+          "message": "chore(clippy): fix clippy warnings",
+          "timestamp": "2023-07-13T18:55:47Z",
+          "tree_id": "9d340387a71dd57af2c0229eee1a1c3ce4da8779",
+          "url": "https://github.com/maidsafe/safe_network/commit/78124d38bdc3b7c5a8b9d706cec53ff99f01f5f3"
+        },
+        "date": 1689279738605,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.119130268862963,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.07763345470276,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 8.110588867987218,
             "unit": "MiB/s"
           }
         ]
