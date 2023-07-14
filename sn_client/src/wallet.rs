@@ -13,15 +13,12 @@ use sn_protocol::messages::PaymentProof;
 use sn_transfers::{
     client_transfers::TransferOutputs,
     payment_proof::build_payment_proofs,
-    wallet::{Error, LocalWallet, Result},
+    wallet::{Error, LocalWallet, PaymentProofsMap, Result},
 };
 
 use futures::future::join_all;
-use std::{collections::BTreeMap, iter::Iterator};
+use std::iter::Iterator;
 use xor_name::XorName;
-
-/// Map from content address name to its corresponding PaymentProof.
-pub type PaymentProofsMap = BTreeMap<XorName, PaymentProof>;
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
@@ -76,14 +73,35 @@ impl WalletClient {
         &mut self,
         content_addrs: impl Iterator<Item = &XorName>,
     ) -> Result<PaymentProofsMap> {
+        // Let's filter the content addresses we hold payment proofs for, i.e. avoid
+        // paying for those chunks we've already paid for with this wallet.
+        let mut proofs = PaymentProofsMap::default();
+        let addrs_to_pay: Vec<&XorName> = content_addrs
+            .filter(|name| {
+                if let Some(proof) = self.wallet.get_payment_proof(name) {
+                    proofs.insert(**name, proof.clone());
+                    false
+                } else {
+                    true
+                }
+            })
+            .collect();
+
+        // If no addresses need to be paid for, we don't have to go further
+        if addrs_to_pay.is_empty() {
+            trace!("We already hold payment proofs for all the Chunks");
+            return Ok(proofs);
+        }
+
         // Let's build the payment proofs for list of content addresses
-        let (root_hash, audit_trail_info) = build_payment_proofs(content_addrs)?;
+        let (root_hash, audit_trail_info) = build_payment_proofs(addrs_to_pay.into_iter())?;
 
         // TODO: request an invoice to network which provides the amount to pay.
         // For now, we just pay 1 nano per Chunk.
         let num_of_addrs = audit_trail_info.len() as u64;
         // We need to just "burn" the amount that corresponds for storage payment.
         let storage_cost = Token::from_nano(num_of_addrs);
+        trace!("Making payment for {num_of_addrs} addreses");
 
         let transfer = self
             .wallet
@@ -100,7 +118,7 @@ impl WalletClient {
 
         let spent_ids: Vec<_> = transfer.tx.inputs.iter().map(|i| i.dbc_id()).collect();
 
-        let payment_proofs = audit_trail_info
+        let new_payment_proofs: PaymentProofsMap = audit_trail_info
             .into_iter()
             .map(|(addr, (audit_trail, path))| {
                 (
@@ -114,7 +132,13 @@ impl WalletClient {
             })
             .collect();
 
-        Ok(payment_proofs)
+        // cache the new set of payment proofs
+        self.wallet.add_payment_proofs(new_payment_proofs.clone());
+
+        // return the set of payment proofs, including new ones, and the ones we had in cache
+        proofs.extend(new_payment_proofs);
+
+        Ok(proofs)
     }
 
     /// Resend failed txs

@@ -6,13 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_client::{Client, Files, PaymentProofsMap, WalletClient};
+use sn_client::{Client, Files, WalletClient};
 use sn_dbc::Token;
-use sn_transfers::wallet::{parse_public_address, LocalWallet};
+use sn_transfers::wallet::{parse_public_address, LocalWallet, PaymentProofsMap};
 
 use bytes::Bytes;
 use clap::Parser;
-use color_eyre::Result;
+use color_eyre::{eyre::bail, Result};
 use std::{
     collections::BTreeMap,
     fs,
@@ -193,8 +193,8 @@ pub(super) async fn chunk_and_pay_for_storage(
         files_path.display()
     );
     let chunks_dir = std::env::temp_dir();
-    let mut files_to_pay = BTreeMap::new();
     let mut num_of_chunks = 0;
+    let mut chunked_files = BTreeMap::new();
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
             let file_name = if let Some(file_name) = entry.file_name().to_str() {
@@ -223,7 +223,7 @@ pub(super) async fn chunk_and_pay_for_storage(
                 chunks_paths.push((xorname, path));
             }
 
-            files_to_pay.insert(
+            chunked_files.insert(
                 file_addr,
                 ChunkedFile {
                     file_name,
@@ -234,36 +234,40 @@ pub(super) async fn chunk_and_pay_for_storage(
         }
     }
 
+    if chunked_files.is_empty() {
+        bail!("The provided path does not contain any file. Please check your path!\nExiting...");
+    }
+
     // For now, we make the payment for Chunks storage only if requested by the user
-    let proofs = if pay {
-        println!(
-            "Making payment for {num_of_chunks} Chunks (belonging to {} files)...",
-            files_to_pay.len()
-        );
+    if !pay {
+        return Ok((chunked_files, PaymentProofsMap::default()));
+    }
 
-        let proofs = wallet_client
-            .pay_for_storage(
-                files_to_pay
-                    .values()
-                    .flat_map(|chunked_file| &chunked_file.chunks)
-                    .map(|(name, _)| name),
-            )
-            .await?;
+    println!(
+        "Making payment for {num_of_chunks} Chunks that belong to {} file/s.",
+        chunked_files.len()
+    );
 
-        let wallet = wallet_client.into_wallet();
-        let new_balance = wallet.balance();
+    let proofs = wallet_client
+        .pay_for_storage(
+            chunked_files
+                .values()
+                .flat_map(|chunked_file| &chunked_file.chunks)
+                .map(|(name, _)| name),
+        )
+        .await?;
+    println!("Successfully made payment for {} Chunks.", proofs.len(),);
 
-        if let Err(err) = wallet.store().await {
-            println!("Failed to store wallet: {err:?}");
-        } else {
-            println!("Successfully stored wallet with new balance {new_balance}.");
-        }
-
-        println!("Successfully paid for storage and generated the proofs. They can now be sent to the storage nodes when uploading paid chunks.");
-        proofs
+    let wallet = wallet_client.into_wallet();
+    if let Err(err) = wallet.store().await {
+        println!("Failed to store wallet: {err:?}");
     } else {
-        PaymentProofsMap::default()
-    };
+        println!(
+            "Successfully stored wallet with cached payment proofs, and new balance {}.",
+            wallet.balance()
+        );
+    }
 
-    Ok((files_to_pay, proofs))
+    println!("Successfully paid for storage and generated the proofs. They can now be sent to the storage nodes when uploading paid chunks.");
+    Ok((chunked_files, proofs))
 }
