@@ -11,8 +11,9 @@ use super::wallet::{chunk_and_pay_for_storage, ChunkedFile};
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
-use sn_client::{Client, Files, PaymentProofsMap};
+use sn_client::{Client, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_transfers::wallet::PaymentProofsMap;
 
 use std::{
     fs,
@@ -89,13 +90,6 @@ async fn upload_files(
 
     let (chunks_to_upload, payment_proofs) =
         chunk_and_pay_for_storage(&client, root_dir, &files_path, pay).await?;
-
-    if chunks_to_upload.is_empty() {
-        println!(
-            "The provided path does not contain any file. Please check your path!\nExiting..."
-        );
-        return Ok(());
-    }
 
     let mut chunks_to_fetch = Vec::new();
     for (
