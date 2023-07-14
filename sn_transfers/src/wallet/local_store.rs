@@ -11,15 +11,17 @@ use super::{
     wallet_file::{
         create_received_dbcs_dir, get_wallet, load_received_dbcs, store_created_dbcs, store_wallet,
     },
-    KeyLessWallet, Result,
+    KeyLessWallet, PaymentProofsMap, Result,
 };
 use crate::client_transfers::{create_storage_payment_transfer, create_transfer, TransferOutputs};
 use sn_dbc::{random_derivation_index, Dbc, DerivedKey, Hash, MainKey, PublicAddress, Token};
+use sn_protocol::messages::PaymentProof;
 
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
+use xor_name::XorName;
 
 const WALLET_DIR_NAME: &str = "wallet";
 
@@ -96,6 +98,17 @@ impl LocalWallet {
             }
         }
         available_dbcs
+    }
+
+    /// Add given storage payment proofs to the wallet's cache,
+    /// so they can be used when uploading the paid content.
+    pub fn add_payment_proofs(&mut self, proofs: PaymentProofsMap) {
+        self.wallet.paymet_proofs.extend(proofs);
+    }
+
+    /// Return the payment proof for the given content address name if cached.
+    pub fn get_payment_proof(&self, name: &XorName) -> Option<&PaymentProof> {
+        self.wallet.paymet_proofs.get(name)
     }
 
     pub async fn local_send(
@@ -198,6 +211,7 @@ impl KeyLessWallet {
             spent_dbcs: BTreeMap::new(),
             available_dbcs: BTreeMap::new(),
             dbcs_created_for_others: vec![],
+            paymet_proofs: PaymentProofsMap::default(),
         }
     }
 
