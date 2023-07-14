@@ -14,6 +14,7 @@ mod rpc;
 use clap::Parser;
 use eyre::{eyre, Error, Result};
 use libp2p::{identity::Keypair, Multiaddr, PeerId};
+use rand::seq::SliceRandom;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
@@ -22,7 +23,7 @@ use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
 use std::{
     env,
     io::Write,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
+    net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener},
     path::{Path, PathBuf},
     process::Command,
     time::Duration,
@@ -142,7 +143,14 @@ enum NodeCtrl {
 fn main() -> Result<()> {
     let mut opt = Opt::parse();
 
-    let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
+    let port = if opt.port == 0 {
+        get_unused_port()?
+    } else {
+        opt.port
+    };
+    println!("Node will use port {port}");
+
+    let node_socket_addr = SocketAddr::new(opt.ip, port);
     let (root_dir, keypair) = get_root_dir_and_keypair(opt.root_dir)?;
 
     let (log_output_dest, _log_appender_guard) = init_logging(
@@ -220,6 +228,28 @@ fn main() -> Result<()> {
     // Command was successful, so we shut down the process
     println!("A new node process has been started successfully.");
     Ok(())
+}
+
+fn get_unused_port() -> Result<u16> {
+    let mut rng = rand::thread_rng();
+    let mut ports: Vec<u16> = (1024..65535).collect();
+    ports.shuffle(&mut rng);
+
+    ports
+        .into_iter()
+        .find_map(|port| {
+            match TcpListener::bind(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port)) {
+                Ok(_) => Some(Ok(port)),
+                Err(e) => {
+                    if e.kind() == std::io::ErrorKind::AddrInUse {
+                        None
+                    } else {
+                        Some(Err(eyre!(e)))
+                    }
+                }
+            }
+        })
+        .ok_or_else(|| eyre!("Could not find unused port to assign"))?
 }
 
 /// Start a node with the given configuration.
