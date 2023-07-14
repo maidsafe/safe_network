@@ -62,8 +62,6 @@ async fn storage_payment_succeeds() -> Result<()> {
     // generate a random number (between 50 and 100) of random addresses
     let mut rng = rand::thread_rng();
     let random_content_addrs = (0..rng.gen_range(50..100))
-        .collect::<Vec<_>>()
-        .iter()
         .map(|_| XorName::random(&mut rng))
         .collect::<Vec<_>>();
     println!(
@@ -112,6 +110,62 @@ async fn storage_payment_fails() -> Result<()> {
         failed_send,
         Err(WalletError::CouldNotSendTokens(_))
     ));
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
+    let wallet_original_balance = 100_000;
+    let paying_wallet_dir = TempDir::new()?;
+
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    // generate a random number (between 50 and 100) of random addresses
+    let mut rng = rand::thread_rng();
+    let random_content_addrs = (0..rng.gen_range(50..100))
+        .map(|_| XorName::random(&mut rng))
+        .collect::<Vec<_>>();
+
+    // let's first pay only for a subset of the addresses
+    let subset_len = random_content_addrs.len() / 3;
+    println!("Paying for {subset_len} random addresses...",);
+    let proofs = wallet_client
+        .pay_for_storage(random_content_addrs.iter().take(subset_len))
+        .await?;
+    assert_eq!(proofs.len(), subset_len);
+
+    // check we've paid only for the subset of addresses, 1 nano per addr
+    let new_balance = Token::from_nano(wallet_original_balance - subset_len as u64);
+    println!("Verifying new balance on paying wallet is {new_balance} ...");
+    let paying_wallet = wallet_client.into_wallet();
+    assert_eq!(paying_wallet.balance(), new_balance);
+
+    // let's verify payment proofs for the subset have been cached in the wallet
+    assert!(random_content_addrs
+        .iter()
+        .take(subset_len)
+        .all(|name| paying_wallet.get_payment_proof(name) == proofs.get(name)));
+
+    // now let's request to pay for all addresses, even that we've already paid for a subset of them
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+    let proofs = wallet_client
+        .pay_for_storage(random_content_addrs.iter())
+        .await?;
+    assert_eq!(proofs.len(), random_content_addrs.len());
+
+    // check we've paid only for addresses we haven't previously paid for, 1 nano per addr
+    let new_balance = Token::from_nano(wallet_original_balance - random_content_addrs.len() as u64);
+    println!("Verifying new balance on paying wallet is {new_balance} ...");
+    let paying_wallet = wallet_client.into_wallet();
+    assert_eq!(paying_wallet.balance(), new_balance);
+
+    // let's verify payment proofs now for all addresses have been cached in the wallet
+    assert!(random_content_addrs
+        .iter()
+        .all(|name| paying_wallet.get_payment_proof(name) == proofs.get(name)));
 
     Ok(())
 }
