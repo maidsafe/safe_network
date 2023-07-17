@@ -857,11 +857,12 @@ pub fn multiaddr_is_global(multiaddr: &Multiaddr) -> bool {
 
 /// Pop off the `/p2p/<peer_id>`. This mutates the `Multiaddr` and returns the `PeerId` if it exists.
 pub(crate) fn multiaddr_pop_p2p(multiaddr: &mut Multiaddr) -> Option<PeerId> {
-    // Mutate the `Multiaddr` to remove the `/p2p/<peer_id>`.
-    let protocol = multiaddr.pop();
-    match protocol {
-        Some(Protocol::P2p(peer_id)) => Some(peer_id),
-        _ => None,
+    if let Some(Protocol::P2p(peer_id)) = multiaddr.iter().last() {
+        // Only actually strip the last protocol if it's indeed the peer ID.
+        let _ = multiaddr.pop();
+        Some(peer_id)
+    } else {
+        None
     }
 }
 
