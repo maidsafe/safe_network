@@ -183,6 +183,7 @@ pub(super) async fn chunk_and_pay_for_storage(
     files_path: &Path,
     pay: bool, // TODO: to be removed; temporarily payment is optional
 ) -> Result<(BTreeMap<XorName, ChunkedFile>, PaymentProofsMap)> {
+    tokio::fs::create_dir_all(&root_dir).await?;
     let wallet = LocalWallet::load_from(root_dir).await?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     let file_api: Files = Files::new(client.clone());
