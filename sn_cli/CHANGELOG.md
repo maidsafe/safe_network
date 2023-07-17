@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.79.22](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.21...sn_cli-v0.79.22) - 2023-07-17
+
+### Fixed
+- *(cli)* add more context when failing to decode a wallet
+
 ## [0.79.21](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.20...sn_cli-v0.79.21) - 2023-07-17
 
 ### Other
