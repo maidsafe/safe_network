@@ -256,7 +256,7 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: |
-          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File | `
+          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File |
             ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
         if: failure() && matrix.os == 'windows-latest'
 
@@ -362,7 +362,7 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: |
-          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File | `
+          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File |
             ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
         if: failure() && matrix.os == 'windows-latest'
 
@@ -521,7 +521,7 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: |
-          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File | `
+          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File |
             ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
         if: failure() && matrix.os == 'windows-latest'
 
