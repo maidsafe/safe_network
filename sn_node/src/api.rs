@@ -201,16 +201,6 @@ impl Node {
                     error!("Error while triggering replication {err:?}");
                 }
             }
-            NetworkEvent::LostRecordDetected(peer_ids) => {
-                if !peer_ids.is_empty() {
-                    Marker::LostRecordDetected(&peer_ids).log();
-                    for peer_id in peer_ids.iter() {
-                        if let Err(err) = self.try_trigger_replication(peer_id, false).await {
-                            error!("Error while triggering replication to {peer_id:?} {err:?}");
-                        }
-                    }
-                }
-            }
             NetworkEvent::NewListenAddr(_) => {
                 if !cfg!(feature = "local-discovery") {
                     let network = self.network.clone();

@@ -116,8 +116,6 @@ pub enum NetworkEvent {
     NewListenAddr(Multiaddr),
     /// AutoNAT status changed
     NatStatusChanged(NatStatus),
-    /// Report peers that lost a record
-    LostRecordDetected(Vec<PeerId>),
     /// Report unverified record
     UnverifiedRecord(Record),
 }
@@ -396,19 +394,6 @@ impl SwarmDriver {
                         .send(Ok(peer_record.record))
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
-            }
-            KademliaEvent::OutboundQueryProgressed {
-                result:
-                    QueryResult::GetRecord(Ok(GetRecordOk::FinishedWithNoAdditionalRecord {
-                        cache_candidates,
-                    })),
-                ..
-            } => {
-                // The candidates are nodes supposed to hold a copy however failed to do so.
-                // In that case, we can try to trigger a replication to it.
-                let peer_ids: Vec<PeerId> = cache_candidates.values().copied().collect();
-                trace!("Candidates {peer_ids:?} failed to respond a record query request.");
-                self.send_event(NetworkEvent::LostRecordDetected(peer_ids));
             }
             KademliaEvent::OutboundQueryProgressed {
                 id,
