@@ -166,8 +166,8 @@ impl Node {
                     error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
                 }
             }
-            NetworkEvent::PeerAdded((peer_id, all_peers)) => {
-                Marker::PeerAddedToRoutingTable(peer_id).log();
+            NetworkEvent::PeerAdded((new_peer_id, all_peers)) => {
+                Marker::PeerAddedToRoutingTable(new_peer_id).log();
 
                 // self.network.update_routing_table_peers(all_peers).await;
                 // perform a get_closest query to self on node join. This should help populate the node's RT
@@ -193,21 +193,18 @@ impl Node {
                     self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
                 }
 
-                let our_peer_id = self.network.peer_id;
-
                 if let Err(err) = self
-                    .try_trigger_replication(&our_peer_id, &peer_id, false, all_peers)
+                    .update_distance_and_trigger_any_replication(all_peers, new_peer_id)
                     .await
                 {
                     error!("Error while triggering replication {err:?}");
                 }
             }
-            NetworkEvent::PeerRemoved((peer_id, all_peers)) => {
-                Marker::PeerRemovedFromRoutingTable(peer_id).log();
-                // self.network.update_routing_table_peers(all_peers).await;
-                let our_peer_id = self.network.peer_id;
+            NetworkEvent::PeerRemoved((churned_id, all_peers)) => {
+                Marker::PeerRemovedFromRoutingTable(churned_id).log();
+
                 if let Err(err) = self
-                    .try_trigger_replication(&our_peer_id, &peer_id, true, all_peers)
+                    .update_distance_and_trigger_any_replication(all_peers, churned_id)
                     .await
                 {
                     error!("Error while triggering replication {err:?}");

@@ -8,7 +8,7 @@
 
 use crate::Node;
 use crate::{error::Result, log_markers::Marker};
-use libp2p::{kad::KBucketKey, PeerId};
+use libp2p::{kad::kbucket::Distance, kad::KBucketKey, PeerId};
 use sn_networking::{sort_peers_by_address, sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, Request},
@@ -25,17 +25,16 @@ const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
 const REPLICATION_RANGE: usize = 8;
 
 impl Node {
-    /// Replication is triggered when the newly added peer or the dead peer was among our closest.
-    pub(crate) async fn try_trigger_replication(
+    pub(crate) async fn update_distance_and_trigger_any_replication(
         &mut self,
-        our_peer_id: &PeerId,
-        churned_peer: &PeerId,
-        is_dead_peer: bool,
         all_peers: Vec<PeerId>,
+        churned_peer: PeerId,
     ) -> Result<()> {
-        let our_address = NetworkAddress::from_peer(*our_peer_id);
-        let churned_peer_address = NetworkAddress::from_peer(*churned_peer);
+        let our_peer_id = self.network.peer_id;
+        let our_address = NetworkAddress::from_peer(our_peer_id);
+        let churned_peer_address = NetworkAddress::from_peer(churned_peer);
 
+        // Start updating our distance calcs and trigger any needed replication
         if all_peers.len() < 2 * CLOSE_GROUP_SIZE {
             return Ok(());
         }
@@ -51,26 +50,61 @@ impl Node {
             return Ok(());
         };
 
-        let distance_bar = match sorted_peers.get(CLOSE_GROUP_SIZE) {
-            Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
-            None => {
-                debug!("could not obtain distance_bar as sorted_peers.len() <= CLOSE_GROUP_SIZE ");
-                return Ok(());
-            }
-        };
-
+        let range_were_responsible_for =
+            Self::get_data_responsibility_range(&our_address, &sorted_peers)?;
         // Do nothing if self is not among the closest range.
-        if our_address.distance(&churned_peer_address) > distance_bar {
+        if our_address.distance(&churned_peer_address) > range_were_responsible_for {
             return Ok(());
         }
 
-        // Setup the record storage distance range.
-        self.network.set_record_distance_range(distance_bar)?;
+        // Update the distance range we are responsible for.
+        // this is pushed off thread for SwarmCmd to not block
+        self.network
+            .set_record_distance_range(range_were_responsible_for)?;
+
+        self.try_trigger_replication_for_sorted_peers(
+            &our_peer_id,
+            &churned_peer,
+            false,
+            sorted_peers,
+            range_were_responsible_for,
+        )
+        .await
+    }
+
+    /// Get the range of address space that we are responsible for
+    /// given a set of sorted peers
+    pub(crate) fn get_data_responsibility_range(
+        our_address: &NetworkAddress,
+        sorted_peers: &[PeerId],
+    ) -> Result<Distance> {
+        let distance_bar = match sorted_peers.get(CLOSE_GROUP_SIZE) {
+            Some(peer) => NetworkAddress::from_peer(*peer).distance(our_address),
+            None => {
+                debug!("could not obtain distance_bar as sorted_peers.len() <= CLOSE_GROUP_SIZE ");
+                return Ok(Distance::default());
+            }
+        };
+
+        Ok(distance_bar)
+    }
+
+    /// Replication is triggered for a given peer and range
+    pub(crate) async fn try_trigger_replication_for_sorted_peers(
+        &mut self,
+        our_peer_id: &PeerId,
+        churned_peer: &PeerId,
+        is_dead_peer: bool,
+        sorted_peers: Vec<PeerId>,
+        data_responsibility_range: Distance,
+    ) -> Result<()> {
+        let our_address = NetworkAddress::from_peer(*our_peer_id);
+        let churned_peer_address = NetworkAddress::from_peer(*churned_peer);
 
         // The fetched entries are records that supposed to be held by the churned_peer.
         let entries_to_be_replicated = self
             .network
-            .get_record_keys_closest_to_target(&churned_peer_address, distance_bar)
+            .get_record_keys_closest_to_target(&churned_peer_address, data_responsibility_range)
             .await?;
 
         let mut replications: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
