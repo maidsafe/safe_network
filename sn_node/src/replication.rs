@@ -27,7 +27,7 @@ const REPLICATION_RANGE: usize = 8;
 
 impl Node {
     pub(crate) async fn update_distance_and_trigger_any_replication(
-        &mut self,
+        &self,
         all_peers: Vec<PeerId>,
         churned_peer: PeerId,
     ) -> Result<()> {
@@ -92,7 +92,7 @@ impl Node {
 
     /// Replication is triggered for a given peer and range
     pub(crate) async fn try_trigger_replication_for_sorted_peers(
-        &mut self,
+        &self,
         our_peer_id: &PeerId,
         churned_peer: &PeerId,
         is_dead_peer: bool,
