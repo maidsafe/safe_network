@@ -466,7 +466,6 @@ pub struct Network {
     pub peer_id: PeerId,
     pub root_dir_path: PathBuf,
     pub all_routing_table_peers: Vec<PeerId>,
-
 }
 
 impl Network {
@@ -487,11 +486,10 @@ impl Network {
         })?;
         receiver.await?
     }
-    /// Update the cache of the routing table 
+    /// Update the cache of the routing table
     /// This helps avoid calling into the swarm
     pub async fn update_routing_table_peers(&mut self, all_peers: Vec<PeerId>) {
-      
-      self.all_routing_table_peers = all_peers;
+        self.all_routing_table_peers = all_peers;
     }
 
     /// Dial the given peer at the given address.
@@ -553,7 +551,7 @@ impl Network {
         );
         let closest_peers = self.node_get_closest_peers(&request.dst()).await?;
         for peer in closest_peers {
-            self.send_req_ignore_reply(request.clone(), peer).await?;
+            self.send_req_ignore_reply(request.clone(), peer)?;
         }
         Ok(())
     }
@@ -564,7 +562,7 @@ impl Network {
         // Using `client_get_closest_peers` to filter self out.
         let closest_peers = self.client_get_closest_peers(&request.dst()).await?;
         for peer in closest_peers {
-            self.send_req_ignore_reply(request.clone(), peer).await?;
+            self.send_req_ignore_reply(request.clone(), peer)?;
         }
         Ok(())
     }
@@ -641,7 +639,7 @@ impl Network {
 
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
-    pub async fn put_local_record(&self, record: Record) -> Result<()> {
+    pub fn put_local_record(&self, record: Record) -> Result<()> {
         debug!(
             "Writing Record locally, for {:?} - length {:?}",
             record.key,
@@ -699,7 +697,7 @@ impl Network {
 
     /// Set the acceptable range of record entry. A record is removed from the storage if the
     /// distance between the record and the node is greater than the provided `distance`.
-    pub async fn set_record_distance_range(&self, distance: Distance) -> Result<()> {
+    pub fn set_record_distance_range(&self, distance: Distance) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SetRecordDistanceRange { distance })
     }
 
@@ -719,7 +717,7 @@ impl Network {
 
     /// Send `Request` to the the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
-    pub async fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
+    pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let swarm_cmd = SwarmCmd::SendRequest {
             req,
             peer,
@@ -729,7 +727,7 @@ impl Network {
     }
 
     /// Send a `Response` through the channel opened by the requester.
-    pub async fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
+    pub fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
     }
 

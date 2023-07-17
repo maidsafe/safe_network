@@ -192,19 +192,28 @@ impl Node {
 
                     self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
                 }
-                if let Err(err) = self.try_trigger_replication(&peer_id, false, all_peers).await {
+
+                let our_peer_id = self.network.peer_id;
+
+                if let Err(err) = self
+                    .try_trigger_replication(&our_peer_id, &peer_id, false, all_peers)
+                    .await
+                {
                     error!("Error while triggering replication {err:?}");
                 }
             }
             NetworkEvent::PeerRemoved((peer_id, all_peers)) => {
                 Marker::PeerRemovedFromRoutingTable(peer_id).log();
                 // self.network.update_routing_table_peers(all_peers).await;
-
-                if let Err(err) = self.try_trigger_replication(&peer_id, true, all_peers).await {
+                let our_peer_id = self.network.peer_id;
+                if let Err(err) = self
+                    .try_trigger_replication(&our_peer_id, &peer_id, true, all_peers)
+                    .await
+                {
                     error!("Error while triggering replication {err:?}");
                 }
             }
-            NetworkEvent::LostRecordDetected(peer_ids) => {
+            NetworkEvent::LostRecordDetected(_peer_ids) => {
                 // if !peer_ids.is_empty() {
                 //     Marker::LostRecordDetected(&peer_ids).log();
                 //     for peer_id in peer_ids.iter() {
@@ -296,8 +305,7 @@ impl Node {
                         .network
                         .notify_fetch_result(peer_id, address, true)
                         .await?;
-                    self.fetch_replication_keys_without_wait(keys_to_fetch)
-                        .await?;
+                    self.fetch_replication_keys_without_wait(keys_to_fetch)?;
                 } else {
                     warn!("Cannot parse PeerId from {holder:?}");
                 }
@@ -311,8 +319,7 @@ impl Node {
                         .network
                         .notify_fetch_result(peer_id, address, false)
                         .await?;
-                    self.fetch_replication_keys_without_wait(keys_to_fetch)
-                        .await?;
+                    self.fetch_replication_keys_without_wait(keys_to_fetch)?;
                 } else {
                     warn!("Cannot parse PeerId from {holder:?}");
                 }
@@ -337,7 +344,7 @@ impl Node {
             Request::Cmd(cmd) => self.handle_node_cmd(cmd).await,
             Request::Query(query) => self.handle_query(query).await,
         };
-        self.send_response(response, response_channel).await;
+        self.send_response(response, response_channel);
     }
 
     async fn handle_query(&self, query: Query) -> Response {
@@ -387,7 +394,7 @@ impl Node {
                 // if we do not send a response, we can cause connection failures.
                 CmdResponse::Replicate(Ok(()))
             }
-            Cmd::RequestReplication(sender) => {
+            Cmd::RequestReplication(_sender) => {
                 // debug!("RequestReplication received from {sender:?}");
                 // if let Some(peer_id) = sender.as_peer_id() {
                 //     let _ = self.try_trigger_replication(&peer_id, false).await;
@@ -421,8 +428,8 @@ impl Node {
         Response::Cmd(resp)
     }
 
-    async fn send_response(&self, resp: Response, response_channel: MsgResponder) {
-        if let Err(err) = self.network.send_response(resp, response_channel).await {
+    fn send_response(&self, resp: Response, response_channel: MsgResponder) {
+        if let Err(err) = self.network.send_response(resp, response_channel) {
             warn!("Error while sending response: {err:?}");
         }
     }

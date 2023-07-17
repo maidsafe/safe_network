@@ -28,11 +28,12 @@ impl Node {
     /// Replication is triggered when the newly added peer or the dead peer was among our closest.
     pub(crate) async fn try_trigger_replication(
         &mut self,
+        our_peer_id: &PeerId,
         churned_peer: &PeerId,
         is_dead_peer: bool,
-        all_peers: Vec<PeerId>
+        all_peers: Vec<PeerId>,
     ) -> Result<()> {
-        let our_address = NetworkAddress::from_peer(self.network.peer_id);
+        let our_address = NetworkAddress::from_peer(*our_peer_id);
         let churned_peer_address = NetworkAddress::from_peer(*churned_peer);
 
         if all_peers.len() < 2 * CLOSE_GROUP_SIZE {
@@ -64,7 +65,7 @@ impl Node {
         }
 
         // Setup the record storage distance range.
-        self.network.set_record_distance_range(distance_bar).await?;
+        self.network.set_record_distance_range(distance_bar)?;
 
         // The fetched entries are records that supposed to be held by the churned_peer.
         let entries_to_be_replicated = self
@@ -114,7 +115,7 @@ impl Node {
         }
 
         // Avoid replicate to self or to a dead peer
-        let _ = replications.remove(&self.network.peer_id);
+        let _ = replications.remove(our_peer_id);
         if is_dead_peer {
             let _ = replications.remove(churned_peer);
         }
@@ -124,11 +125,9 @@ impl Node {
             while remaining_keys.len() > MAX_REPLICATION_KEYS_PER_REQUEST {
                 let (left, right) = remaining_keys.split_at(MAX_REPLICATION_KEYS_PER_REQUEST);
                 remaining_keys = right;
-                self.send_replicate_cmd_without_wait(&our_address, &peer_id, left.to_vec())
-                    .await?;
+                self.send_replicate_cmd_without_wait(&our_address, &peer_id, left.to_vec())?;
             }
-            self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())
-                .await?;
+            self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())?;
         }
         Ok(())
     }
@@ -166,15 +165,14 @@ impl Node {
         }
         .log();
 
-        self.fetch_replication_keys_without_wait(keys_to_fetch)
-            .await?;
+        self.fetch_replication_keys_without_wait(keys_to_fetch)?;
         Ok(())
     }
 
     /// Utility to send `Query::GetReplicatedData` without awaiting for the `Response` at the call
     /// site
-    pub(crate) async fn fetch_replication_keys_without_wait(
-        &mut self,
+    pub(crate) fn fetch_replication_keys_without_wait(
+        &self,
         keys_to_fetch: Vec<(PeerId, NetworkAddress)>,
     ) -> Result<()> {
         for (peer, key) in keys_to_fetch {
@@ -183,13 +181,13 @@ impl Node {
                 requester: NetworkAddress::from_peer(self.network.peer_id),
                 address: key,
             });
-            self.network.send_req_ignore_reply(request, peer).await?
+            self.network.send_req_ignore_reply(request, peer)?
         }
         Ok(())
     }
 
     // Utility to send `Cmd::Replicate` without awaiting for the `Response` at the call site.
-    async fn send_replicate_cmd_without_wait(
+    fn send_replicate_cmd_without_wait(
         &mut self,
         our_address: &NetworkAddress,
         peer_id: &PeerId,
@@ -200,9 +198,7 @@ impl Node {
             holder: our_address.clone(),
             keys,
         });
-        self.network
-            .send_req_ignore_reply(request, *peer_id)
-            .await?;
+        self.network.send_req_ignore_reply(request, *peer_id)?;
         trace!("Sending a replication list with {len:?} keys to {peer_id:?}");
         Ok(())
     }

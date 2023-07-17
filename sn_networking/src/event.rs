@@ -270,7 +270,6 @@ impl SwarmDriver {
                         }
                         let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
                     }
-                    
                 }
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
@@ -434,7 +433,6 @@ impl SwarmDriver {
                     info!("Evicted old peer on new peer join: {old_peer:?}");
                     self.send_event(NetworkEvent::PeerRemoved((peer, all_peers)));
                 }
-
             }
             KademliaEvent::InboundRequest {
                 request: InboundRequest::PutRecord { .. },

@@ -337,7 +337,10 @@ impl SwarmDriver {
     /// Also logs the k-buckets information
     ///
     /// This should prevent having to dive into the swarm driver to get the local peers
-    pub(crate) fn get_and_log_peers_from_buckets(&mut self, changed_peer_id: PeerId) -> Vec<PeerId> {
+    pub(crate) fn get_and_log_peers_from_buckets(
+        &mut self,
+        changed_peer_id: PeerId,
+    ) -> Vec<PeerId> {
         let mut all_peers: Vec<PeerId> = vec![];
         for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
             for entry in kbucket.iter() {
