@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689596395843,
+  "lastUpdate": 1689604820283,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -2725,6 +2725,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 9.871508326447712,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "f174112c7e5091b513e887c247179f80c6699f3a",
+          "message": "fix(sn_networking): revert multiaddr pop fn\n\nThe function should only actually mutate/pop the multiaddr if it's in\nfact containing the /p2p/ protocol. Else it returns `None` and leaves\nthe address in its original state.",
+          "timestamp": "2023-07-17T13:25:59Z",
+          "tree_id": "7be1a171ea10e5b3985e3f437d770650a5df5f63",
+          "url": "https://github.com/maidsafe/safe_network/commit/f174112c7e5091b513e887c247179f80c6699f3a"
+        },
+        "date": 1689604819176,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1823373753634372,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.824815518532045,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 9.74226480911677,
             "unit": "MiB/s"
           }
         ]
