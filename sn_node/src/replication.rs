@@ -7,7 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::Node;
-use crate::{error::Result, log_markers::Marker};
+use crate::{
+    error::{Error, Result},
+    log_markers::Marker,
+};
 use libp2p::{kad::kbucket::Distance, kad::KBucketKey, PeerId};
 use sn_networking::{sort_peers_by_address, sort_peers_by_key, SwarmCmd, CLOSE_GROUP_SIZE};
 use sn_protocol::{
@@ -64,8 +67,8 @@ impl Node {
             .set_record_distance_range(range_were_responsible_for)?;
 
         self.try_trigger_replication_for_sorted_peers(
-            &our_peer_id,
-            &churned_peer,
+            our_peer_id,
+            churned_peer,
             false,
             sorted_peers,
             range_were_responsible_for,
@@ -93,88 +96,101 @@ impl Node {
     /// Replication is triggered for a given peer and range
     pub(crate) async fn try_trigger_replication_for_sorted_peers(
         &self,
-        our_peer_id: &PeerId,
-        churned_peer: &PeerId,
+        our_peer_id: PeerId,
+        churned_peer: PeerId,
         is_dead_peer: bool,
         sorted_peers: Vec<PeerId>,
         data_responsibility_range: Distance,
     ) -> Result<()> {
-        let our_address = NetworkAddress::from_peer(*our_peer_id);
-        let churned_peer_address = NetworkAddress::from_peer(*churned_peer);
+        let our_address = NetworkAddress::from_peer(our_peer_id);
+        let churned_peer_address = NetworkAddress::from_peer(churned_peer);
 
         let swarm_cmd_sender = self.network.get_swarm_cmd_sender();
         // The fetched entries are records that supposed to be held by the churned_peer.
-        let entries_to_be_replicated = self
-            .network
-            .get_record_keys_closest_to_target(&churned_peer_address, data_responsibility_range)
-            .await?;
+        let entries_to_be_replicated_recv =
+            self.network.get_record_keys_closest_to_target_receiver(
+                churned_peer_address,
+                data_responsibility_range,
+            )?;
 
-        let mut replications: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
-        for key in entries_to_be_replicated.iter() {
-            let record_key = KBucketKey::from(key.to_vec());
-            let closest_peers: Vec<_> = if let Ok(sorted_peers) =
-                sort_peers_by_key(sorted_peers.clone(), &record_key, CLOSE_GROUP_SIZE + 1)
-            {
-                sorted_peers
-            } else {
-                continue;
-            };
-
-            // Only carry out replication when self within REPLICATION_RANGE
-            let replicate_range = match closest_peers.get(REPLICATION_RANGE) {
-                Some(peer) => NetworkAddress::from_peer(*peer),
-                None => {
-                    debug!("could not obtain replicate_range as closest_peers.len() <= REPLICATION_RANGE");
-                    continue;
+        // push any record waits and other tasks off thread for SwarmCmd to not block
+        let _handle = tokio::spawn(async move {
+            let entries_to_be_replicated = match entries_to_be_replicated_recv.await {
+                Ok(entries) => entries,
+                Err(err) => {
+                    error!("could not obtain entries_to_be_replicated as {:?}", err);
+                    return Ok(());
                 }
             };
+            let mut replications: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
+            for key in entries_to_be_replicated.iter() {
+                let record_key = KBucketKey::from(key.to_vec());
+                let closest_peers: Vec<_> = if let Ok(sorted_peers) =
+                    sort_peers_by_key(sorted_peers.clone(), &record_key, CLOSE_GROUP_SIZE + 1)
+                {
+                    sorted_peers
+                } else {
+                    continue;
+                };
 
-            if our_address.as_kbucket_key().distance(&record_key)
-                >= replicate_range.as_kbucket_key().distance(&record_key)
-            {
-                continue;
+                // Only carry out replication when self within REPLICATION_RANGE
+                let replicate_range = match closest_peers.get(REPLICATION_RANGE) {
+                    Some(peer) => NetworkAddress::from_peer(*peer),
+                    None => {
+                        debug!("could not obtain replicate_range as closest_peers.len() <= REPLICATION_RANGE");
+                        continue;
+                    }
+                };
+
+                if our_address.as_kbucket_key().distance(&record_key)
+                    >= replicate_range.as_kbucket_key().distance(&record_key)
+                {
+                    continue;
+                }
+
+                let dsts = if is_dead_peer {
+                    // To ensure more copies to be retained across the network,
+                    // make all closest_peers as target in case of peer drop out.
+                    // This can be reduced depends on the performance.
+                    closest_peers
+                } else {
+                    vec![churned_peer]
+                };
+
+                for peer in dsts {
+                    let keys_to_replicate = replications.entry(peer).or_insert(Default::default());
+                    keys_to_replicate.push(NetworkAddress::from_record_key(key.clone()));
+                }
             }
 
-            let dsts = if is_dead_peer {
-                // To ensure more copies to be retained across the network,
-                // make all closest_peers as target in case of peer drop out.
-                // This can be reduced depends on the performance.
-                closest_peers
-            } else {
-                vec![*churned_peer]
-            };
-
-            for peer in dsts {
-                let keys_to_replicate = replications.entry(peer).or_insert(Default::default());
-                keys_to_replicate.push(NetworkAddress::from_record_key(key.clone()));
+            // Avoid replicate to self or to a dead peer
+            let _ = replications.remove(&our_peer_id);
+            if is_dead_peer {
+                let _ = replications.remove(&churned_peer);
             }
-        }
 
-        // Avoid replicate to self or to a dead peer
-        let _ = replications.remove(our_peer_id);
-        if is_dead_peer {
-            let _ = replications.remove(churned_peer);
-        }
-
-        for (peer_id, keys) in replications {
-            let (_left, mut remaining_keys) = keys.split_at(0);
-            while remaining_keys.len() > MAX_REPLICATION_KEYS_PER_REQUEST {
-                let (left, right) = remaining_keys.split_at(MAX_REPLICATION_KEYS_PER_REQUEST);
-                remaining_keys = right;
+            for (peer_id, keys) in replications {
+                let (_left, mut remaining_keys) = keys.split_at(0);
+                while remaining_keys.len() > MAX_REPLICATION_KEYS_PER_REQUEST {
+                    let (left, right) = remaining_keys.split_at(MAX_REPLICATION_KEYS_PER_REQUEST);
+                    remaining_keys = right;
+                    Self::send_replicate_cmd_without_wait(
+                        swarm_cmd_sender.clone(),
+                        &our_address,
+                        peer_id,
+                        left.to_vec(),
+                    )?;
+                }
                 Self::send_replicate_cmd_without_wait(
                     swarm_cmd_sender.clone(),
                     &our_address,
                     peer_id,
-                    left.to_vec(),
+                    remaining_keys.to_vec(),
                 )?;
             }
-            Self::send_replicate_cmd_without_wait(
-                swarm_cmd_sender.clone(),
-                &our_address,
-                peer_id,
-                remaining_keys.to_vec(),
-            )?;
-        }
+            Ok::<(), Error>(())
+        });
+
         Ok(())
     }
 

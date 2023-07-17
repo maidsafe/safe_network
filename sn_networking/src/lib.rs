@@ -583,11 +583,11 @@ impl Network {
     }
 
     /// Returns the list of keys that are within the provided distance to the target
-    pub async fn get_record_keys_closest_to_target(
+    pub fn get_record_keys_closest_to_target_receiver(
         &self,
-        target: &NetworkAddress,
+        target: NetworkAddress,
         distance: Distance,
-    ) -> Result<Vec<RecordKey>> {
+    ) -> Result<oneshot::Receiver<Vec<RecordKey>>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd_non_blocking(SwarmCmd::GetRecordKeysClosestToTarget {
             key: target.clone(),
@@ -595,9 +595,7 @@ impl Network {
             sender,
         })?;
 
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+        Ok(receiver)
     }
 
     /// Get the Record from the network
