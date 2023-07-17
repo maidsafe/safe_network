@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.20](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.19...sn_networking-v0.3.20) - 2023-07-17
+
+### Added
+- *(networking)* drop network events if channel is full
+- *(networking)* upgrade to libp2p 0.52.0
+
+### Other
+- *(networking)* log all connected peer count
+
 ## [0.3.19](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.18...sn_networking-v0.3.19) - 2023-07-12
 
 ### Other
