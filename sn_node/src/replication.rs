@@ -9,12 +9,13 @@
 use crate::Node;
 use crate::{error::Result, log_markers::Marker};
 use libp2p::{kad::kbucket::Distance, kad::KBucketKey, PeerId};
-use sn_networking::{sort_peers_by_address, sort_peers_by_key, CLOSE_GROUP_SIZE};
+use sn_networking::{sort_peers_by_address, sort_peers_by_key, SwarmCmd, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, Request},
     NetworkAddress,
 };
 use std::collections::BTreeMap;
+use tokio::sync::mpsc::Sender;
 
 // To reduce the number of messages exchanged, patch max 500 replication keys into one request.
 const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
@@ -101,6 +102,7 @@ impl Node {
         let our_address = NetworkAddress::from_peer(*our_peer_id);
         let churned_peer_address = NetworkAddress::from_peer(*churned_peer);
 
+        let swarm_cmd_sender = self.network.get_swarm_cmd_sender();
         // The fetched entries are records that supposed to be held by the churned_peer.
         let entries_to_be_replicated = self
             .network
@@ -159,9 +161,19 @@ impl Node {
             while remaining_keys.len() > MAX_REPLICATION_KEYS_PER_REQUEST {
                 let (left, right) = remaining_keys.split_at(MAX_REPLICATION_KEYS_PER_REQUEST);
                 remaining_keys = right;
-                self.send_replicate_cmd_without_wait(&our_address, &peer_id, left.to_vec())?;
+                Self::send_replicate_cmd_without_wait(
+                    swarm_cmd_sender.clone(),
+                    &our_address,
+                    peer_id,
+                    left.to_vec(),
+                )?;
             }
-            self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())?;
+            Self::send_replicate_cmd_without_wait(
+                swarm_cmd_sender.clone(),
+                &our_address,
+                peer_id,
+                remaining_keys.to_vec(),
+            )?;
         }
         Ok(())
     }
@@ -222,18 +234,46 @@ impl Node {
 
     // Utility to send `Cmd::Replicate` without awaiting for the `Response` at the call site.
     fn send_replicate_cmd_without_wait(
-        &mut self,
+        swarm_cmd_sender: Sender<SwarmCmd>,
         our_address: &NetworkAddress,
-        peer_id: &PeerId,
+        peer: PeerId,
         keys: Vec<NetworkAddress>,
     ) -> Result<()> {
         let len = keys.len();
-        let request = Request::Cmd(Cmd::Replicate {
+        let req = Request::Cmd(Cmd::Replicate {
             holder: our_address.clone(),
             keys,
         });
-        self.network.send_req_ignore_reply(request, *peer_id)?;
-        trace!("Sending a replication list with {len:?} keys to {peer_id:?}");
+
+        let swarm_cmd = SwarmCmd::SendRequest {
+            req,
+            peer,
+            sender: None,
+        };
+
+        trace!("Sending a replication list with {len:?} keys to {peer:?}");
+        Self::send_swarm_cmd_using_sender(swarm_cmd_sender, swarm_cmd)?;
+        Ok(())
+    }
+
+    /// Given a sender, will push the cmd off thread
+    fn send_swarm_cmd_using_sender(sender: Sender<SwarmCmd>, cmd: SwarmCmd) -> Result<()> {
+        let capacity = sender.capacity();
+
+        if capacity == 0 {
+            error!("SwarmCmd channel is full. Dropping SwarmCmd: {:?}", cmd);
+
+            // Lets error out just now.
+            // return Err(Error::NoSwarmCmdChannelCapacity);
+        }
+
+        // Spawn a task to send the SwarmCmd and keep this fn sync
+        let _handle = tokio::spawn(async move {
+            if let Err(error) = sender.send(cmd).await {
+                error!("Failed to send SwarmCmd: {}", error);
+            }
+        });
+
         Ok(())
     }
 }
