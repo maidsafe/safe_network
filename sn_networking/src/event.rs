@@ -439,7 +439,7 @@ impl SwarmDriver {
                     }
                     self.log_kbuckets(&peer);
                     self.send_event(NetworkEvent::PeerAdded(peer));
-                    let connected_peers = self.swarm.connected_peers().collect_vec().len();
+                    let connected_peers = self.swarm.connected_peers().count();
 
                     info!("Connected peers: {connected_peers}");
                 }
