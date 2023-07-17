@@ -12,7 +12,7 @@ use sn_transfers::wallet::{parse_public_address, LocalWallet, PaymentProofsMap};
 
 use bytes::Bytes;
 use clap::Parser;
-use color_eyre::{eyre::bail, Result};
+use color_eyre::{eyre::bail, eyre::WrapErr, Result, Section};
 use std::{
     collections::BTreeMap,
     fs,
@@ -183,7 +183,12 @@ pub(super) async fn chunk_and_pay_for_storage(
     files_path: &Path,
     pay: bool, // TODO: to be removed; temporarily payment is optional
 ) -> Result<(BTreeMap<XorName, ChunkedFile>, PaymentProofsMap)> {
-    let wallet = LocalWallet::load_from(root_dir).await?;
+    let wallet = LocalWallet::load_from(root_dir)
+        .await
+        .wrap_err("Unable to read wallet file in {path:?}")
+        .suggestion(
+            "If you have an old wallet file, it may no longer be compatible. Try removing it",
+        )?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     let file_api: Files = Files::new(client.clone());
 
