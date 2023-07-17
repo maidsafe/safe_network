@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.9](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.8...sn_transfers-v0.10.9) - 2023-07-17
+
+### Added
+- *(client)* keep storage payment proofs in local wallet
+
 ## [0.10.8](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.7...sn_transfers-v0.10.8) - 2023-07-12
 
 ### Other

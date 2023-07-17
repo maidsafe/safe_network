@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.79.19](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.18...sn_cli-v0.79.19) - 2023-07-17
+
+### Added
+- *(client)* keep storage payment proofs in local wallet
+
 ## [0.79.18](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.17...sn_cli-v0.79.18) - 2023-07-13
 
 ### Other
