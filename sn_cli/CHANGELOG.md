@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.79.20](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.19...sn_cli-v0.79.20) - 2023-07-17
+
+### Added
+- *(networking)* upgrade to libp2p 0.52.0
+
 ## [0.79.19](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.18...sn_cli-v0.79.19) - 2023-07-17
 
 ### Added
