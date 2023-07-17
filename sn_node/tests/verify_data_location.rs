@@ -170,6 +170,7 @@ async fn verify_location(
     record_holders: &mut HashMap<RecordKey, HashSet<NodeIndex>>,
     all_peers: &[PeerId],
 ) -> Result<()> {
+    let mut failed = HashMap::new();
     for (key, actual_closest_idx) in record_holders.iter() {
         println!("Verifying {key:?}");
         let record_key = KBucketKey::from(key.to_vec());
@@ -183,16 +184,35 @@ async fn verify_location(
             .map(|idx| all_peers[*idx as usize - 1])
             .collect::<BTreeSet<_>>();
 
-        for expected in &expected_closest_peers {
-            if !actual_closest.contains(expected) {
-                println!("Verification failed");
-                for (idx, peer) in all_peers.iter().enumerate() {
-                    println!("{idx} : {peer:?}")
-                }
-                println!("Record Holders:\n {record_holders:?}");
-                return Err(eyre!("Record {key:?} is not stored inside {expected:?}"));
-            }
+        let mut failed_peers = Vec::new();
+        expected_closest_peers
+            .iter()
+            .filter(|expected| !actual_closest.contains(expected))
+            .for_each(|expected| failed_peers.push(*expected));
+
+        if !failed_peers.is_empty() {
+            failed.insert(key.clone(), failed_peers);
         }
+    }
+
+    if !failed.is_empty() {
+        println!("Verification failed");
+
+        failed.iter().for_each(|(key, failed_peers)| {
+            failed_peers
+                .iter()
+                .for_each(|peer| println!("Record {key:?} is not stored inside {peer:?}"));
+        });
+        println!("State of each node:");
+        record_holders.iter().for_each(|(key, node_index)| {
+            println!("Record {key:?} is currently held by node indexes {node_index:?}");
+        });
+        println!("Node index map:");
+        all_peers
+            .iter()
+            .enumerate()
+            .for_each(|(idx, peer)| println!("{} : {peer:?}", idx + 1));
+        return Err(eyre!("Verification failed for: {failed:?}"));
     }
     println!("All the Records have been verified!");
     Ok(())
