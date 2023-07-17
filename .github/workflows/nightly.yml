@@ -133,7 +133,7 @@ jobs:
         continue-on-error: true
         run: |
           Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File |
-            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
+            Compress-Archive -DestinationPath log_files.tar.gz
         if: failure() && matrix.os == 'windows-latest'
 
       - name: Upload Node Logs
@@ -299,7 +299,7 @@ jobs:
         continue-on-error: true
         run: |
           Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File |
-            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
+            Compress-Archive log_files.tar.gz
         if: failure() && matrix.os == 'windows-latest'
 
       - name: Upload Node Logs
@@ -461,7 +461,7 @@ jobs:
         continue-on-error: true
         run: |
           Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File |
-            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
+            Compress-Archive log_files.tar.gz
         if: failure() && matrix.os == 'windows-latest'
 
       - name: Upload Node Logs

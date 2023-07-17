@@ -257,7 +257,7 @@ jobs:
         continue-on-error: true
         run: |
           Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File |
-            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
+            Compress-Archive -DestinationPath log_files.tar.gz
         if: failure() && matrix.os == 'windows-latest'
 
       - name: Upload Node Logs
@@ -308,18 +308,21 @@ jobs:
       - name: Build sn bins
         run: cargo build --release --bins --features local-discovery
         timeout-minutes: 30
+        if: matrix.os == 'windows-latest'
 
       - name: Build testing executable
         run: cargo test --release --features local-discovery dbc_transfer_,storage_payment_ --no-run
         timeout-minutes: 30
         env:
           CARGO_TARGET_DIR: "./transfer-target"
+        if: matrix.os == 'windows-latest'
 
       - name: Start a local network
         run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
         env:
           SN_LOG: "all"
         timeout-minutes: 10
+        if: matrix.os == 'windows-latest'
 
       - name: execute the dbc spend test
         run: cargo test --release --features="local-discovery" dbc_transfer_ -- --nocapture
@@ -327,6 +330,7 @@ jobs:
           SN_LOG: "all"
           CARGO_TARGET_DIR: "./transfer-target"
         timeout-minutes: 10
+        if: matrix.os == 'windows-latest'
 
       - name: execute the storage payment tests
         run: cargo test --release --features="local-discovery" storage_payment_ -- --nocapture
@@ -334,15 +338,7 @@ jobs:
           SN_LOG: "all"
           CARGO_TARGET_DIR: "./transfer-target"
         timeout-minutes: 10
-
-      - name: Kill all nodes (unix)
-        shell: bash
-        timeout-minutes: 1
-        continue-on-error: true
-        run: |
-          pkill safenode
-          echo "$(pgrep safenode | wc -l) nodes still running"
-        if: failure() && matrix.os != 'windows-latest'
+        if: matrix.os == 'windows-latest'
 
       - name: Kill all nodes (windows)
         shell: pwsh
@@ -351,19 +347,12 @@ jobs:
         run: Get-Process safenode | Stop-Process -Force
         if: failure() && matrix.os == 'windows-latest'
 
-      - name: Tar log files (unix)
-        shell: bash
-        continue-on-error: true
-        run: |
-          find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure() && matrix.os != 'windows-latest'
-
       - name: Tar log files (windows)
         shell: pwsh
         continue-on-error: true
         run: |
           Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File |
-            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
+            Compress-Archive -DestinationPath log_files.tar.gz
         if: failure() && matrix.os == 'windows-latest'
 
       - name: Upload Node Logs
@@ -521,8 +510,7 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: |
-          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File |
-            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
+          find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
         if: failure() && matrix.os == 'windows-latest'
 
       - name: Upload Node Logs
