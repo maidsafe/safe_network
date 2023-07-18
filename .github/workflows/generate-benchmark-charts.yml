@@ -53,15 +53,19 @@ jobs:
         shell: bash
         run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
      
-      - name: Build sn bins
-        run: cargo build --release --bins --features local-discovery
+      - name: Build node and client
+        run: |
+          cargo build --release --features local-discovery --bin safenode
+          cargo build --release --features local-discovery --bin safe
         timeout-minutes: 30
 
       - name: Start a local network
-        run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          platform: ${{ matrix.os }}
 
       - name: Start a heaptracked node instance to compare memory usage
         run: |
