@@ -14,7 +14,7 @@ use tracing::{trace, warn};
 
 impl SwarmDriver {
     /// Forwards `Request` to the upper layers using `Sender<NetworkEvent>`. Sends `Response` to the peers
-    pub async fn handle_msg(
+    pub fn handle_msg(
         &mut self,
         event: request_response::Event<Request, Response>,
     ) -> Result<(), Error> {

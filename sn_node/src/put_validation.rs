@@ -119,7 +119,7 @@ impl Node {
 
         // finally store the Record directly into the local storage
         debug!("Storing chunk {chunk_name:?} as Record locally");
-        self.network.put_local_record(record).await.map_err(|err| {
+        self.network.put_local_record(record).map_err(|err| {
             warn!("Error while locally storing Chunk as a Record{err}");
             ProtocolError::ChunkNotStored(chunk_name)
         })?;
@@ -162,7 +162,7 @@ impl Node {
             expires: None,
         };
         debug!("Storing register {reg_addr:?} as Record locally");
-        self.network.put_local_record(record).await.map_err(|err| {
+        self.network.put_local_record(record).map_err(|err| {
             warn!("Error while locally storing register as a Record {err}");
             ProtocolError::RegisterNotStored(*reg_addr.name())
         })?;
@@ -239,7 +239,7 @@ impl Node {
             publisher: None,
             expires: None,
         };
-        self.network.put_local_record(record).await.map_err(|_| {
+        self.network.put_local_record(record).map_err(|_| {
             let err = ProtocolError::SpendNotStored(format!("Cannot PUT Spend with {dbc_addr:?}"));
             error!("Cannot put spend {err:?}");
             err
