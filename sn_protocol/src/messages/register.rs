@@ -11,18 +11,18 @@ use sn_registers::{Register, RegisterAddress, RegisterOp};
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;
 
-/// A [`Register`] cmd that is stored in a log on Adults.
+/// A register cmd that is sent over to the Network
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
 pub enum RegisterCmd {
-    /// Create a new [`Register`] on the network.
+    /// Create a new register on the network.
     Create {
         /// The base register (contains, owner, name, tag, permissions, and register initial state)
         register: Register,
         /// The signature of the owner on that register.
         signature: bls::Signature,
     },
-    /// Edit the [`Register`].
+    /// Edit the register
     Edit(RegisterOp),
 }
 
