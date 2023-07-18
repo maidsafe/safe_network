@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.23](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.22...sn_networking-v0.3.23) - 2023-07-18
+
+### Added
+- *(networking)* remove LostRecordEvent
+
 ## [0.3.22](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.21...sn_networking-v0.3.22) - 2023-07-18
 
 ### Other

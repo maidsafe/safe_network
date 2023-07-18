@@ -553,6 +553,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.86.23](https://github.com/maidsafe/safe_network/compare/sn_node-v0.86.22...sn_node-v0.86.23) - 2023-07-18
+
+### Added
+- safer registers requiring signatures
+- *(networking)* remove LostRecordEvent
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
