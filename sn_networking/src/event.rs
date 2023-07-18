@@ -124,7 +124,7 @@ pub enum NetworkEvent {
 
 impl SwarmDriver {
     // Handle `SwarmEvents`
-    pub(super) async fn handle_swarm_events<EventError: std::error::Error>(
+    pub(super) fn handle_swarm_events<EventError: std::error::Error>(
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
     ) -> Result<()> {
@@ -132,12 +132,12 @@ impl SwarmDriver {
         let _ = span.enter();
         match event {
             SwarmEvent::Behaviour(NodeEvent::MsgReceived(event)) => {
-                if let Err(e) = self.handle_msg(event).await {
+                if let Err(e) = self.handle_msg(event) {
                     warn!("MsgReceivedError: {e:?}");
                 }
             }
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
-                self.handle_kad_event(kad_event).await?;
+                self.handle_kad_event(kad_event)?;
             }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 match *iden {
@@ -318,7 +318,7 @@ impl SwarmDriver {
         Ok(())
     }
 
-    async fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
+    fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
         match kad_event {
             ref event @ KademliaEvent::OutboundQueryProgressed {
                 id,

@@ -293,8 +293,7 @@ impl Node {
                         .network
                         .notify_fetch_result(peer_id, address, true)
                         .await?;
-                    self.fetch_replication_keys_without_wait(keys_to_fetch)
-                        .await?;
+                    self.fetch_replication_keys_without_wait(keys_to_fetch)?;
                 } else {
                     warn!("Cannot parse PeerId from {holder:?}");
                 }
@@ -308,8 +307,7 @@ impl Node {
                         .network
                         .notify_fetch_result(peer_id, address, false)
                         .await?;
-                    self.fetch_replication_keys_without_wait(keys_to_fetch)
-                        .await?;
+                    self.fetch_replication_keys_without_wait(keys_to_fetch)?;
                 } else {
                     warn!("Cannot parse PeerId from {holder:?}");
                 }
@@ -334,7 +332,7 @@ impl Node {
             Request::Cmd(cmd) => self.handle_node_cmd(cmd).await,
             Request::Query(query) => self.handle_query(query).await,
         };
-        self.send_response(response, response_channel).await;
+        self.send_response(response, response_channel);
     }
 
     async fn handle_query(&self, query: Query) -> Response {
@@ -418,8 +416,8 @@ impl Node {
         Response::Cmd(resp)
     }
 
-    async fn send_response(&self, resp: Response, response_channel: MsgResponder) {
-        if let Err(err) = self.network.send_response(resp, response_channel).await {
+    fn send_response(&self, resp: Response, response_channel: MsgResponder) {
+        if let Err(err) = self.network.send_response(resp, response_channel) {
             warn!("Error while sending response: {err:?}");
         }
     }
