@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use sn_client::{get_tokens_from_faucet, Client};
+use sn_peers_acquisition::parse_peer_addr;
 use sn_transfers::wallet::LocalWallet;
 
 use eyre::Result;
@@ -19,6 +20,7 @@ use tracing_core::Level;
 
 static TEST_INIT_LOGGER: Once = Once::new();
 
+#[allow(dead_code)]
 pub fn init_logging() {
     TEST_INIT_LOGGER.call_once(|| {
         let logging_targets = vec![
@@ -41,7 +43,20 @@ lazy_static! {
 
 pub async fn get_client() -> Client {
     let secret_key = bls::SecretKey::random();
-    Client::new(secret_key, None, None)
+
+    let bootstrap_peers = if !cfg!(feature = "local-discovery") {
+        match std::env::var("SAFE_PEERS") {
+            Ok(str) => match parse_peer_addr(&str) {
+                Ok(peer) => Some(vec![peer]),
+                Err(err) => panic!("Can't parse SAFE_PEERS {str:?} with error {err:?}"),
+            },
+            Err(err) => panic!("Can't get env var SAFE_PEERS with error {err:?}"),
+        }
+    } else {
+        None
+    };
+    println!("Client bootstrap with peer {bootstrap_peers:?}");
+    Client::new(secret_key, bootstrap_peers, None)
         .await
         .expect("Client shall be successfully created.")
 }
