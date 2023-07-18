@@ -38,7 +38,6 @@ use crate::common::get_client_and_wallet;
 
 const NODE_COUNT: u8 = 25;
 const CHUNK_SIZE: usize = 1024;
-const CHUNK_COUNT: usize = 10;
 
 const PAYING_WALLET_INITIAL_BALANCE: u64 = 1_000_000;
 // The delay between each chunk PUT.
@@ -55,6 +54,10 @@ const VERIFICATION_DELAY: Duration = Duration::from_secs(300);
 // wait for VERIFICATION_DELAY time before verifying the data location.
 // It can be overridden by setting the 'CHURN_COUNT' env var.
 const CHURN_COUNT: u8 = 4;
+
+/// Default number of chunks that should be PUT to the netowrk.
+// It can be overridden by setting the 'CHUNK_COUNT' env var.
+const CHUNK_COUNT: usize = 5;
 
 type NodeIndex = u8;
 
@@ -78,7 +81,15 @@ async fn verify_data_location() -> Result<()> {
     } else {
         CHURN_COUNT
     };
-    println!("Performing data location verification with a churn count of {churn_count}. It will take approx {:?}", VERIFICATION_DELAY*churn_count as u32);
+    let chunk_count = if let Ok(str) = std::env::var("CHUNK_COUNT") {
+        str.parse::<usize>()?
+    } else {
+        CHUNK_COUNT
+    };
+    println!(
+        "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}\nIt will take approx {:?}",
+        VERIFICATION_DELAY*churn_count as u32
+    );
 
     // set of all the node indexes that stores a record key
     let mut record_holders = HashMap::new();
@@ -90,7 +101,7 @@ async fn verify_data_location() -> Result<()> {
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE).await?;
 
-    store_chunk(client, paying_wallet, &mut record_holders).await?;
+    store_chunk(client, paying_wallet, &mut record_holders, chunk_count).await?;
 
     // Verify data location initially
     get_record_holder_list(&mut record_holders).await?;
@@ -244,14 +255,15 @@ async fn store_chunk(
     client: Client,
     paying_wallet: LocalWallet,
     record_holders: &mut HashMap<RecordKey, HashSet<NodeIndex>>,
+    chunk_count: usize,
 ) -> Result<()> {
     let mut rng = OsRng;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
     let file_api = Files::new(client);
 
-    let mut uploaded_chunks = 0;
+    let mut uploaded_chunks_count = 0;
     loop {
-        if uploaded_chunks >= CHUNK_COUNT {
+        if uploaded_chunks_count >= chunk_count {
             break;
         }
 
@@ -288,7 +300,7 @@ async fn store_chunk(
         let key = RecordKey::new(addr.name());
         match file_api.upload_with_proof(bytes, &proofs, true).await {
             Ok(_) => {
-                uploaded_chunks += 1;
+                uploaded_chunks_count += 1;
                 match record_holders.entry(key.clone()) {
                     Entry::Vacant(entry) => entry.insert(HashSet::new()),
                     Entry::Occupied(_) => {
