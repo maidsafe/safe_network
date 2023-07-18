@@ -29,11 +29,11 @@ pub enum Query {
     /// [`Chunk`]:  crate::storage::Chunk
     /// [`GetChunk`]: super::QueryResponse::GetChunk
     GetChunk(ChunkAddress),
-    /// Retrieve a [`Register`] at the given address.
+    /// Retrieve a [`SignedRegister`] at the given address.
     ///
     /// This should eventually lead to a [`GetRegister`] response.
     ///
-    /// [`Register`]: sn_registers::Register
+    /// [`SignedRegister`]: sn_registers::SignedRegister
     /// [`GetRegister`]: super::QueryResponse::GetRegister
     GetRegister(RegisterAddress),
     /// Retrieve a [`SignedSpend`] at the given address.

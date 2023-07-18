@@ -163,8 +163,7 @@ impl Register {
 
     /// Sign a Register into a SignedRegister
     pub fn into_signed(self, secret_key: &SecretKey) -> Result<SignedRegister> {
-        let bytes = self.bytes()?;
-        let signature = secret_key.sign(bytes);
+        let signature = self.sign(secret_key)?;
         Ok(SignedRegister::new(self, signature))
     }
 
