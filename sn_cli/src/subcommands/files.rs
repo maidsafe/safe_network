@@ -28,9 +28,6 @@ pub enum FilesCmds {
         /// The location of the files to upload.
         #[clap(name = "path", value_name = "DIRECTORY")]
         path: PathBuf,
-        /// Whether to make the payment and generate proofs for the files to upload.
-        #[clap(long)]
-        pay: bool,
     },
     Download {
         /// Name of the file to download.
@@ -44,7 +41,7 @@ pub enum FilesCmds {
 
 pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path) -> Result<()> {
     match cmds {
-        FilesCmds::Upload { path, pay } => upload_files(path, client, root_dir, pay).await?,
+        FilesCmds::Upload { path } => upload_files(path, client, root_dir).await?,
         FilesCmds::Download {
             file_name,
             file_addr,
@@ -77,19 +74,14 @@ pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path)
 }
 
 /// Givena directory, upload all files contained
-async fn upload_files(
-    files_path: PathBuf,
-    client: Client,
-    root_dir: &Path,
-    pay: bool,
-) -> Result<()> {
+async fn upload_files(files_path: PathBuf, client: Client, root_dir: &Path) -> Result<()> {
     let file_api: Files = Files::new(client.clone());
 
     // The input files_path has to be a dir
     let file_names_path = root_dir.join("uploaded_files");
 
     let (chunks_to_upload, payment_proofs) =
-        chunk_and_pay_for_storage(&client, root_dir, &files_path, pay).await?;
+        chunk_and_pay_for_storage(&client, root_dir, &files_path).await?;
 
     let mut chunks_to_fetch = Vec::new();
     for (

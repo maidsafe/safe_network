@@ -72,7 +72,7 @@ pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Pa
         WalletCmds::Deposit { stdin } => deposit(root_dir, stdin).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
         WalletCmds::Pay { path } => {
-            chunk_and_pay_for_storage(client, root_dir, &path, true).await?;
+            chunk_and_pay_for_storage(client, root_dir, &path).await?;
         }
     }
     Ok(())
@@ -181,7 +181,6 @@ pub(super) async fn chunk_and_pay_for_storage(
     client: &Client,
     root_dir: &Path,
     files_path: &Path,
-    pay: bool, // TODO: to be removed; temporarily payment is optional
 ) -> Result<(BTreeMap<XorName, ChunkedFile>, PaymentProofsMap)> {
     let wallet = LocalWallet::load_from(root_dir)
         .await
@@ -241,11 +240,6 @@ pub(super) async fn chunk_and_pay_for_storage(
 
     if chunked_files.is_empty() {
         bail!("The provided path does not contain any file. Please check your path!\nExiting...");
-    }
-
-    // For now, we make the payment for Chunks storage only if requested by the user
-    if !pay {
-        return Ok((chunked_files, PaymentProofsMap::default()));
     }
 
     println!(

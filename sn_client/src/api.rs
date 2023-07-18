@@ -280,11 +280,7 @@ impl Client {
     }
 
     /// Store `Chunk` as a record.
-    pub(super) async fn store_chunk(
-        &self,
-        chunk: Chunk,
-        payment: Option<PaymentProof>,
-    ) -> Result<()> {
+    pub(super) async fn store_chunk(&self, chunk: Chunk, payment: PaymentProof) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let chunk_with_payment = ChunkWithPayment { chunk, payment };
         let record = Record {
