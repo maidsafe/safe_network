@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689675086066,
+  "lastUpdate": 1689679221287,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -2920,6 +2920,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 10.118737840174525,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "e9563817660304eaa3fe5b5d5f3913a8c70125ef",
+          "message": "ci: ensure we use rust-cache v2 everywhere",
+          "timestamp": "2023-07-18T09:22:39Z",
+          "tree_id": "8996958b3a7759a84a6efcb0d98832a350e7b01f",
+          "url": "https://github.com/maidsafe/safe_network/commit/e9563817660304eaa3fe5b5d5f3913a8c70125ef"
+        },
+        "date": 1689679220554,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.152248752773261,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.554791401717534,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 9.33249224347893,
             "unit": "MiB/s"
           }
         ]
