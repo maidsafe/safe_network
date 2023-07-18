@@ -76,5 +76,5 @@ impl<'de> Deserialize<'de> for Chunk {
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ChunkWithPayment {
     pub chunk: Chunk,
-    pub payment: Option<PaymentProof>,
+    pub payment: PaymentProof,
 }

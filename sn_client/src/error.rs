@@ -9,7 +9,10 @@
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 use super::ClientEvent;
+
+use sn_protocol::storage::ChunkAddress;
 use sn_registers::{Entry, EntryHash};
+
 use std::collections::BTreeSet;
 use thiserror::Error;
 
@@ -50,4 +53,7 @@ pub enum Error {
         Entries hashes of branches are: {0:?}"
     )]
     ContentBranchDetected(BTreeSet<(EntryHash, Entry)>),
+
+    #[error("Missing a payment proof for address {0:?}")]
+    MissingPaymentProof(ChunkAddress),
 }
