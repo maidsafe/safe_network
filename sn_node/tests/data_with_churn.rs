@@ -6,20 +6,27 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod common;
+
+use common::get_client_and_wallet;
+
 use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
 
+use assert_fs::TempDir;
 use bytes::Bytes;
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
+use sn_client::WalletClient;
 use sn_client::{get_tokens_from_genesis_to_another_wallet, Client, Error, Files};
 use sn_dbc::{Dbc, MainKey, Token};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
-use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{
     storage::{ChunkAddress, DbcAddress, RegisterAddress},
     NetworkAddress,
 };
 use sn_transfers::dbc_genesis::{create_genesis_wallet, load_genesis_wallet};
+use sn_transfers::wallet::LocalWallet;
+
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
@@ -56,6 +63,8 @@ const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 // Default total amount of time we run the checks for before reporting the outcome.
 // It can be overriden by setting the 'TEST_DURATION_MINS' env var.
 const TEST_DURATION: Duration = Duration::from_secs(60 * 60); // 1hr
+
+const PAYING_WALLET_INITIAL_BALANCE: u64 = 1_000_000;
 
 type ContentList = Arc<RwLock<VecDeque<NetworkAddress>>>;
 type DbcMap = Arc<RwLock<BTreeMap<DbcAddress, Dbc>>>;
@@ -121,8 +130,11 @@ async fn data_availability_during_churn() -> Result<()> {
         LogFormat::Default,
     )?;
 
-    println!("Creating a client...");
-    let client = get_client().await;
+    println!("Creating a client and paying wallet...");
+    let paying_wallet_dir = TempDir::new()?;
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE).await?;
+
     println!("Client created with signing key: {:?}", client.signer_pk());
 
     // Shared bucket where we keep track of content created/stored on the network
@@ -134,7 +146,7 @@ async fn data_availability_during_churn() -> Result<()> {
     // Upload some chunks before carry out any churning.
 
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
-    store_chunks_task(client.clone(), content.clone(), churn_period);
+    store_chunks_task(client.clone(), paying_wallet, content.clone(), churn_period);
 
     // Wait one churn period _before_ we start churning, to get some data PUT on the network
     sleep(churn_period).await;
@@ -292,10 +304,17 @@ fn create_registers_task(client: Client, content: ContentList, churn_period: Dur
 }
 
 // Spawns a task which periodically stores Chunks at random locations.
-fn store_chunks_task(client: Client, content: ContentList, churn_period: Duration) {
+fn store_chunks_task(
+    client: Client,
+    paying_wallet: LocalWallet,
+    content: ContentList,
+    churn_period: Duration,
+) {
     let _handle = tokio::spawn(async move {
         // Store Chunks at a higher frequency than the churning events
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
+
+        let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
         let file_api = Files::new(client);
         let mut rng = OsRng;
@@ -306,22 +325,32 @@ fn store_chunks_task(client: Client, content: ContentList, churn_period: Duratio
                 .collect();
             let bytes = Bytes::copy_from_slice(&random_bytes);
 
-            let addr = ChunkAddress::new(
-                file_api
-                    .calculate_address(bytes.clone())
-                    .expect("Failed to calculate new Chunk address"),
+            let (addr, chunks) = file_api
+                .chunk_bytes(bytes.clone())
+                .expect("Failed to chunk bytes");
+
+            println!(
+                "Paying storage for ({}) new Chunk/s of file ({} bytes) at: {addr:?} ...",
+                chunks.len(),
+                bytes.len()
             );
-            println!("Storing Chunk at {addr:?} in {delay:?}");
+            let proofs = wallet_client
+                .pay_for_storage(chunks.iter().map(|c| c.name()))
+                .await
+                .expect("Failed to pay for storage for new Chunk address");
+
+            println!(
+                "Storing ({}) Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
+                chunks.len(),
+                bytes.len()
+            );
             sleep(delay).await;
 
-            match file_api
-                .upload_with_proof(bytes, &BTreeMap::default())
-                .await
-            {
+            match file_api.upload_with_proof(bytes, &proofs).await {
                 Ok(_) => content
                     .write()
                     .await
-                    .push_back(NetworkAddress::ChunkAddress(addr)),
+                    .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(addr))),
                 Err(err) => println!("Discarding new Chunk ({addr:?}) due to error: {err:?}"),
             }
         }
@@ -551,24 +580,4 @@ async fn query_content(
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet
     }
-}
-
-async fn get_client() -> Client {
-    let secret_key = bls::SecretKey::random();
-
-    let bootstrap_peers = if !cfg!(feature = "local-discovery") {
-        match std::env::var("SAFE_PEERS") {
-            Ok(str) => match parse_peer_addr(&str) {
-                Ok(peer) => Some(vec![peer]),
-                Err(err) => panic!("Can't parse SAFE_PEERS {str:?} with error {err:?}"),
-            },
-            Err(err) => panic!("Can't get env var SAFE_PEERS with error {err:?}"),
-        }
-    } else {
-        None
-    };
-    println!("Client bootstrap with peer {bootstrap_peers:?}");
-    Client::new(secret_key, bootstrap_peers, None)
-        .await
-        .expect("Client shall be successfully created.")
 }
