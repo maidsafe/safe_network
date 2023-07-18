@@ -36,7 +36,6 @@ use tracing_core::Level;
 
 const NODE_COUNT: u8 = 25;
 const CHUNK_SIZE: usize = 1024;
-const CHUNK_COUNT: usize = 10;
 
 // VERIFICATION_DELAY is set based on the dead peer detection interval
 // Once a node has been restarted, it takes VERIFICATION_DELAY time
@@ -49,6 +48,10 @@ const VERIFICATION_DELAY: Duration = Duration::from_secs(300);
 // wait for VERIFICATION_DELAY time before verifying the data location.
 // It can be overridden by setting the 'CHURN_COUNT' env var.
 const CHURN_COUNT: u8 = 4;
+
+/// Default number of chunks that should be PUT to the netowrk.
+// It can be overridden by setting the 'CHUNK_COUNT' env var.
+const CHUNK_COUNT: usize = 5;
 
 type NodeIndex = u8;
 
@@ -72,7 +75,15 @@ async fn verify_data_location() -> Result<()> {
     } else {
         CHURN_COUNT
     };
-    println!("Performing data location verification with a churn count of {churn_count}. It will take approx {:?}", VERIFICATION_DELAY*churn_count as u32);
+    let chunk_count = if let Ok(str) = std::env::var("CHUNK_COUNT") {
+        str.parse::<usize>()?
+    } else {
+        CHUNK_COUNT
+    };
+    println!(
+        "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}\nIt will take approx {:?}",
+        VERIFICATION_DELAY*churn_count as u32
+    );
 
     // set of all the node indexes that stores a record key
     let mut record_holders = HashMap::new();
@@ -81,7 +92,7 @@ async fn verify_data_location() -> Result<()> {
     // Store chunks
     let client = get_client().await;
     let file_api = Files::new(client);
-    for _ in 0..CHUNK_COUNT {
+    for _ in 0..chunk_count {
         store_chunk(&file_api, &mut record_holders).await?;
     }
     // allow time for the PUTs to be stored
