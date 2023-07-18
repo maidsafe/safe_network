@@ -3695,6 +3695,7 @@ dependencies = [
  "rand 0.8.5",
  "rmp-serde",
  "serde",
+ "sn_logging",
  "sn_protocol",
  "thiserror",
  "tokio",

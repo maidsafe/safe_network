@@ -17,15 +17,18 @@ mod msg;
 mod record_store;
 mod replication_fetcher;
 
+#[cfg(feature = "test-utils")]
+pub use self::cmd::SwarmCmd;
 pub use self::{
     cmd::SwarmLocalState,
     error::Error,
     event::{MsgResponder, NetworkEvent},
 };
 
+#[cfg(not(feature = "test-utils"))]
+use self::cmd::SwarmCmd;
 use self::{
     circular_vec::CircularVec,
-    cmd::SwarmCmd,
     error::Result,
     event::NodeBehaviour,
     record_store::{

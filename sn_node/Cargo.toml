@@ -72,6 +72,8 @@ tiny_http = "0.11"
 
 [dev-dependencies]
 assert_fs = "1.0.0"
+sn_networking = { path = "../sn_networking", version = "0.3.10", features=["test-utils"] }
+sn_logging = { path = "../sn_logging", features = ["test-utils"], version = "0.2.2" }
 proptest = { version = "1.0.0" }
 
 [build-dependencies]

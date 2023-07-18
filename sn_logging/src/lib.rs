@@ -245,12 +245,14 @@ pub fn init_logging(
 static TEST_INIT_LOGGER: std::sync::Once = std::sync::Once::new();
 #[cfg(feature = "test-utils")]
 pub fn init_test_logger() {
+    use tracing_subscriber::EnvFilter;
+
     TEST_INIT_LOGGER.call_once(|| {
         tracing_subscriber::fmt::fmt()
             // NOTE: uncomment this line for pretty printed log output.
             //.pretty()
             .with_ansi(false)
-            .with_target(false)
+            .with_env_filter(EnvFilter::from_default_env())
             .event_format(LogFormatter)
             .try_init()
             .unwrap_or_else(|_| println!("Error initializing logger"));

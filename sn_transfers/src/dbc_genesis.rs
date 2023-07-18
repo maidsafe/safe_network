@@ -24,7 +24,7 @@ use thiserror::Error;
 /// At the inception of the Network 30 % of total supply - i.e. 1,288,490,189 - whole tokens will be created.
 /// Each whole token can be subdivided 10^9 times,
 /// thus creating a total of 1,288,490,189,000,000,000 available units.
-pub(super) const GENESIS_DBC_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
+pub const GENESIS_DBC_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
 
 /// A specialised `Result` type for dbc_genesis crate.
 pub(super) type GenesisResult<T> = Result<T, Error>;
@@ -36,7 +36,7 @@ const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
 ///
 /// This key is public for auditing purposes. Hard coding its value means all nodes will be able to
 /// validate it.
-const GENESIS_DBC_SK: &str = "5f15ae2ea589007e1474e049bbc32904d583265f12ce1f8153f955076a9af49b";
+pub const GENESIS_DBC_SK: &str = "5f15ae2ea589007e1474e049bbc32904d583265f12ce1f8153f955076a9af49b";
 
 /// Main error type for the crate.
 #[derive(Error, Debug, Clone)]
