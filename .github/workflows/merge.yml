@@ -81,7 +81,6 @@ jobs:
       - name: Check the whole workspace can build
         run: cargo build --all-targets --all-features
 
-
   unit:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
     name: Unit Tests
@@ -135,13 +134,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-            node_data_path: /home/runner/.local/share/safe/node
-          - os: windows-latest
-            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-          - os: macos-latest
-            node_data_path: /Users/runner/Library/Application Support/safe/node
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust
@@ -151,47 +144,23 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v2
 
-      - name: install ripgrep
-        run: sudo apt-get -y install ripgrep
-        if: matrix.os == 'ubuntu-latest'
-
-      - name: install ripgrep mac
-        run: brew install ripgrep
-        if: matrix.os == 'macos-latest'
-
-      - name: install ripgrep windows
-        run: choco install ripgrep
-        if: matrix.os == 'windows-latest'
-
-      - name: Build sn bins
-        run: cargo build --release --bins
+      - name: Build node and client
+        run: |
+          cargo build --release --bin safenode
+          cargo build --release --bin safe
         timeout-minutes: 30
 
       - name: Start a local network
-        run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          platform: ${{ matrix.os }}
 
-      - name: Set SAFE_PEERS (unix)
-        run: |
-          safe_peers=$(rg "listening on \".+\"" "${{ matrix.node_data_path }}" -u | \
-            rg '/ip4.*$' -m1 -o | rg '"' -r '')
-          echo "SAFE_PEERS=$safe_peers" >> $GITHUB_ENV
-        if: matrix.os != 'windows-latest'
-
-      - name: Set SAFE_PEERS (windows)
-        shell: pwsh
-        run: |
-          $safe_peers = rg 'listening on ".+"' "${{ matrix.node_data_path }}" -u | `
-              rg '/ip4.*$' -m1 -o
-          $env:SAFE_PEERS = $safe_peers.Trim('"')
-          Add-Content -Path $env:GITHUB_ENV -Value "SAFE_PEERS=$env:SAFE_PEERS"
-        if: matrix.os == 'windows-latest'
-
-      - name: Check SAFE_PEERS
+      - name: Check SAFE_PEERS was set
         shell: bash
-        run: echo "Peer is $SAFE_PEERS"
+        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
 
       - name: Start a client to upload files
         run: cargo run --bin safe --release -- files upload -- "./resources"
@@ -229,44 +198,13 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 2
 
-      - name: Kill all nodes (unix)
-        shell: bash
-        timeout-minutes: 1
-        continue-on-error: true
-        run: |
-          pkill safenode
-          echo "$(pgrep safenode | wc -l) nodes still running"
-        if: failure() && matrix.os != 'windows-latest'
-
-      - name: Kill all nodes (windows)
-        shell: pwsh
-        timeout-minutes: 1
-        continue-on-error: true
-        run: Get-Process safenode | Stop-Process -Force
-        if: failure() && matrix.os == 'windows-latest'
-
-      - name: Tar log files (unix)
-        shell: bash
-        continue-on-error: true
-        run: |
-          find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure() && matrix.os != 'windows-latest'
-
-      - name: Tar log files (windows)
-        shell: pwsh
-        continue-on-error: true
-        run: |
-          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File | `
-            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
-        if: failure() && matrix.os == 'windows-latest'
-
-      - name: Upload Node Logs
-        uses: actions/upload-artifact@main
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
         with:
-          name: safe_test_logs_e2e_${{matrix.os}}
-          path: log_files.tar.gz
-        continue-on-error: true
-        if: failure()
+          action: stop
+          log_file_prefix: safe_test_logs_e2e
+          platform: ${{ matrix.os }}
 
   spend_test:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
@@ -274,14 +212,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-            node_data_path: /home/runner/.local/share/safe/node
-          - os: windows-latest
-            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-          - os: macos-latest
-            node_data_path: /Users/runner/Library/Application Support/safe/node
-
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v3
 
@@ -293,20 +224,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: install ripgrep
-        run: sudo apt-get -y install ripgrep
-        if: matrix.os == 'ubuntu-latest'
-
-      - name: install ripgrep mac
-        run: brew install ripgrep
-        if: matrix.os == 'macos-latest'
-
-      - name: install ripgrep windows
-        run: choco install ripgrep
-        if: matrix.os == 'windows-latest'
-
-      - name: Build sn bins
-        run: cargo build --release --bins --features local-discovery
+      - name: Build node and client
+        run: |
+          cargo build --release --bin safenode
+          cargo build --release --bin safe
         timeout-minutes: 30
 
       - name: Build testing executable
@@ -316,10 +237,16 @@ jobs:
           CARGO_TARGET_DIR: "./transfer-target"
 
       - name: Start a local network
-        run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          platform: ${{ matrix.os }}
+
+      - name: Check SAFE_PEERS was set
+        shell: bash
+        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
 
       - name: execute the dbc spend test
         run: cargo test --release --features="local-discovery" dbc_transfer_ -- --nocapture
@@ -335,44 +262,13 @@ jobs:
           CARGO_TARGET_DIR: "./transfer-target"
         timeout-minutes: 10
 
-      - name: Kill all nodes (unix)
-        shell: bash
-        timeout-minutes: 1
-        continue-on-error: true
-        run: |
-          pkill safenode
-          echo "$(pgrep safenode | wc -l) nodes still running"
-        if: failure() && matrix.os != 'windows-latest'
-
-      - name: Kill all nodes (windows)
-        shell: pwsh
-        timeout-minutes: 1
-        continue-on-error: true
-        run: Get-Process safenode | Stop-Process -Force
-        if: failure() && matrix.os == 'windows-latest'
-
-      - name: Tar log files (unix)
-        shell: bash
-        continue-on-error: true
-        run: |
-          find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure() && matrix.os != 'windows-latest'
-
-      - name: Tar log files (windows)
-        shell: pwsh
-        continue-on-error: true
-        run: |
-          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File | `
-            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
-        if: failure() && matrix.os == 'windows-latest'
-
-      - name: Upload Node Logs
-        uses: actions/upload-artifact@main
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
         with:
-          name: safe_test_logs_e2e_${{matrix.os}}
-          path: log_files.tar.gz
-        continue-on-error: true
-        if: failure()
+          action: stop
+          log_file_prefix: safe_test_logs_spend
+          platform: ${{ matrix.os }}
 
   churn:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
@@ -396,18 +292,6 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: install ripgrep
-        run: sudo apt-get -y install ripgrep
-        if: matrix.os == 'ubuntu-latest'
-
-      - name: install ripgrep mac
-        run: brew install ripgrep
-        if: matrix.os == 'macos-latest'
-
-      - name: install ripgrep windows
-        run: choco install ripgrep
-        if: matrix.os == 'windows-latest'
-
       - name: Build sn bins
         run: cargo build --release --bins --features local-discovery
         timeout-minutes: 30
@@ -420,10 +304,16 @@ jobs:
           CARGO_TARGET_DIR: "./churn-target"
 
       - name: Start a local network
-        run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          platform: ${{ matrix.os }}
+
+      - name: Check SAFE_PEERS was set
+        shell: bash
+        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
 
       - name: Start a client to create a register
         run: cargo run --bin safe --release --features local-discovery -- register create baobao
@@ -494,41 +384,10 @@ jobs:
             exit 1
           fi
 
-      - name: Kill all nodes (unix)
-        shell: bash
-        timeout-minutes: 1
-        continue-on-error: true
-        run: |
-          pkill safenode
-          echo "$(pgrep safenode | wc -l) nodes still running"
-        if: failure() && matrix.os != 'windows-latest'
-
-      - name: Kill all nodes (windows)
-        shell: pwsh
-        timeout-minutes: 1
-        continue-on-error: true
-        run: Get-Process safenode | Stop-Process -Force
-        if: failure() && matrix.os == 'windows-latest'
-
-      - name: Tar log files (unix)
-        shell: bash
-        continue-on-error: true
-        run: |
-          find "${{ matrix.node_data_path }}" -iname '*.log*' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure() && matrix.os != 'windows-latest'
-
-      - name: Tar log files (windows)
-        shell: pwsh
-        continue-on-error: true
-        run: |
-          Get-ChildItem -Path "${{ matrix.node_data_path }}" -Filter "*.log*" -Recurse -File | `
-            ForEach-Object {& 'tar' -czvf 'log_files.tar.gz' $_.FullName}
-        if: failure() && matrix.os == 'windows-latest'
-
-      - name: Upload Node Logs
-        uses: actions/upload-artifact@main
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
         with:
-          name: safe_test_logs_e2e_${{matrix.os}}
-          path: log_files.tar.gz
-        continue-on-error: true
-        if: failure()
+          action: stop
+          log_file_prefix: safe_test_logs_churn
+          platform: ${{ matrix.os }}
