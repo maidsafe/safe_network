@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689679221287,
+  "lastUpdate": 1689679252111,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5223,6 +5223,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 23.42,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "e9563817660304eaa3fe5b5d5f3913a8c70125ef",
+          "message": "ci: ensure we use rust-cache v2 everywhere",
+          "timestamp": "2023-07-18T09:22:39Z",
+          "tree_id": "8996958b3a7759a84a6efcb0d98832a350e7b01f",
+          "url": "https://github.com/maidsafe/safe_network/commit/e9563817660304eaa3fe5b5d5f3913a8c70125ef"
+        },
+        "date": 1689679251764,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 24.89,
             "unit": "MB"
           }
         ]
