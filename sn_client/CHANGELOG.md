@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.51](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.50...sn_client-v0.85.51) - 2023-07-18
+
+### Added
+- safer registers requiring signatures
+- *(networking)* remove LostRecordEvent
+
+### Fixed
+- address PR comments
+- client
+
 ## [0.85.50](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.49...sn_client-v0.85.50) - 2023-07-18
 
 ### Other
