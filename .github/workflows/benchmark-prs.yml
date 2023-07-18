@@ -30,7 +30,7 @@ jobs:
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
-          continue-on-error: true
+        continue-on-error: true
 
       ########################
       ### Setup            ###
@@ -54,10 +54,12 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          platform: ubuntu-latest
 
       - name: Start a heaptracked node instance to compare memory usage
         run: |
