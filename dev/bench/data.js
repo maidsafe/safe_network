@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689773185007,
+  "lastUpdate": 1689773215502,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5427,6 +5427,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 24.34,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "08fc3aecac15c0dbeea74199f8e47b955aa9e1bc",
+          "message": "feat: using kad::record for dbc spend ops",
+          "timestamp": "2023-07-19T12:18:26Z",
+          "tree_id": "0157417ad05d1207717187869790cbd536717784",
+          "url": "https://github.com/maidsafe/safe_network/commit/08fc3aecac15c0dbeea74199f8e47b955aa9e1bc"
+        },
+        "date": 1689773214882,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 23.88,
             "unit": "MB"
           }
         ]
