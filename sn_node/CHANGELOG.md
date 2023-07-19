@@ -569,6 +569,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.86.26](https://github.com/maidsafe/safe_network/compare/sn_node-v0.86.25...sn_node-v0.86.26) - 2023-07-19
+
+### Other
+- remove un-used Query::GetRegister
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.2.7...sn_protocol-v0.2.8) - 2023-07-19
+
+### Other
+- remove un-used Query::GetRegister
+
 ## [0.2.7](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.2.6...sn_protocol-v0.2.7) - 2023-07-18
 
 ### Added
