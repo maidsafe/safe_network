@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689768911516,
+  "lastUpdate": 1689768941911,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5359,6 +5359,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 29.99,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "ed199e40331eabd1fcea2f4ac24e0d90e19fcf13",
+          "message": "feat: faucet integration in testnet bin",
+          "timestamp": "2023-07-19T10:43:23Z",
+          "tree_id": "4bf6f7666c177c41198f9f39b86d7fbfc3be33b1",
+          "url": "https://github.com/maidsafe/safe_network/commit/ed199e40331eabd1fcea2f4ac24e0d90e19fcf13"
+        },
+        "date": 1689768941544,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 24.34,
             "unit": "MB"
           }
         ]
