@@ -11,8 +11,6 @@ use serde::{Deserialize, Serialize};
 use sn_dbc::SignedSpend;
 use std::fmt::Debug;
 
-use sn_registers::SignedRegister;
-
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
@@ -41,13 +39,6 @@ pub enum QueryResponse {
     ///
     /// [`GetReplicatedData`]: crate::messages::Query::GetReplicatedData
     GetReplicatedData(Result<(NetworkAddress, ReplicatedData)>),
-    //
-    // ===== Register =====
-    //
-    /// Response to [`GetRegister`]
-    ///
-    /// [`GetRegister`]: crate::messages::Query::GetRegister
-    GetRegister(Result<SignedRegister>),
 }
 
 /// The response to a Cmd, containing the query result.
