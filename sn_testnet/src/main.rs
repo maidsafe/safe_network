@@ -27,7 +27,7 @@
     unused_results
 )]
 
-use sn_testnet::{Testnet, DEFAULT_NODE_LAUNCH_INTERVAL, SAFENODE_BIN_NAME};
+use sn_testnet::{Testnet, DEFAULT_NODE_LAUNCH_INTERVAL, FAUCET_BIN_NAME, SAFENODE_BIN_NAME};
 
 use clap::Parser;
 use color_eyre::{eyre::eyre, Help, Result};
@@ -61,6 +61,12 @@ struct Cmd {
     /// Windows is not supported.
     #[clap(long, short = 'f')]
     flame: bool,
+
+    /// Launch the DBC faucet server
+    ///
+    /// The server will be listening on port 8000
+    #[clap(long, short = 'd')]
+    dbc_faucet: bool,
 
     /// Build the node from source.
     ///
@@ -175,6 +181,20 @@ async fn main() -> Result<()> {
     )
     .await?;
 
+    if args.dbc_faucet {
+        let mut faucet_bin_path = PathBuf::new();
+        if args.build_node {
+            build_node().await?;
+            faucet_bin_path.push("target");
+            faucet_bin_path.push("release");
+            faucet_bin_path.push(FAUCET_BIN_NAME);
+        } else {
+            faucet_bin_path.push(FAUCET_BIN_NAME);
+        }
+        info!("Launching DBC faucet server");
+        run_faucet(faucet_bin_path).await?;
+    }
+
     Ok(())
 }
 
@@ -240,6 +260,14 @@ async fn build_node() -> Result<()> {
     }
 
     info!("safenode built successfully");
+    Ok(())
+}
+
+async fn run_faucet(bin_path: PathBuf) -> Result<()> {
+    let testnet = Testnet::configure().node_bin_path(bin_path).build()?;
+    let launch_bin = testnet.node_bin_path;
+    let args = vec!["server".to_string()];
+    testnet.launcher.launch(&launch_bin, args)?;
     Ok(())
 }
 

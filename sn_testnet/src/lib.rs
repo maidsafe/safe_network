@@ -25,6 +25,11 @@ pub const SAFENODE_BIN_NAME: &str = "safenode";
 #[cfg(target_os = "windows")]
 pub const SAFENODE_BIN_NAME: &str = "safenode.exe";
 
+#[cfg(not(target_os = "windows"))]
+pub const FAUCET_BIN_NAME: &str = "faucet";
+#[cfg(target_os = "windows")]
+pub const FAUCET_BIN_NAME: &str = "faucet.exe";
+
 /// This trait exists for unit testing.
 ///
 /// It enables us to test that nodes are launched with the correct arguments without actually
