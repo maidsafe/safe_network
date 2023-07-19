@@ -14,7 +14,7 @@ use sn_protocol::{
     messages::ReplicatedData,
     storage::{
         try_deserialize_record, Chunk, ChunkAddress, ChunkWithPayment, DbcAddress, RecordHeader,
-        RecordKind, RegisterAddress,
+        RecordKind,
     },
     NetworkAddress,
 };
@@ -38,29 +38,6 @@ impl Node {
         } else {
             error!("RecordKind mismatch while trying to retrieve a chunk");
             Err(Error::RecordKindMismatch(RecordKind::Chunk))
-        }
-    }
-
-    pub(crate) async fn get_signed_register_from_network(
-        &self,
-        address: RegisterAddress,
-    ) -> Result<SignedRegister> {
-        let record = self
-            .network
-            .get_record_from_network(RecordKey::new(address.name()))
-            .await
-            .map_err(|_| Error::RegisterNotFound(address))?;
-        debug!("Got record from the network, {:?}", record.key);
-        let header =
-            RecordHeader::from_record(&record).map_err(|_| Error::RegisterNotFound(address))?;
-
-        if let RecordKind::Register = header.kind {
-            let register = try_deserialize_record::<SignedRegister>(&record)
-                .map_err(|_| Error::RegisterNotFound(address))?;
-            Ok(register)
-        } else {
-            error!("RecordKind mismatch while trying to retrieve a chunk");
-            Err(Error::RecordKindMismatch(RecordKind::Register))
         }
     }
 
