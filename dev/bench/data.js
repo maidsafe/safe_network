@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689876446591,
+  "lastUpdate": 1689876483086,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5631,6 +5631,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 28.6,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "e3bd53790e20ba312f00458cd3a3cbeb8f7bf724",
+          "message": "ci: fix issues in dbc spend test and memcheck workflow\n\nThe `local-discovery` feature was unintentionally removed from the client and node binaries for the\nDBC spend tests.\n\nFor the memcheck workflow, we had to prevent `SAFE_PEERS` from being reset in the new custom action\nbecause the node that's runner with heaptrack is the only one that stays consistent through the\ntest.",
+          "timestamp": "2023-07-20T18:43:41+01:00",
+          "tree_id": "3bc2fb528f299ed24ac575ee9431cdb51f75abb8",
+          "url": "https://github.com/maidsafe/safe_network/commit/e3bd53790e20ba312f00458cd3a3cbeb8f7bf724"
+        },
+        "date": 1689876482263,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 23.15,
             "unit": "MB"
           }
         ]
