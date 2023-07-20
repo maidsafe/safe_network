@@ -29,17 +29,6 @@ pub enum Error {
     EmptyFileProvided,
 
     #[error(
-        "Not enough bytes ({size}) for self-encryption, at least {minimum} bytes needed. \
-        Try storing it as a SmallFile."
-    )]
-    TooSmallForSelfEncryption {
-        /// Number of bytes
-        size: usize,
-        /// Minimum number of bytes for self-encryption
-        minimum: usize,
-    },
-
-    #[error(
         "You might need to pad the `SmallFile` contents and then store it as a `LargeFile`, \
         as the encryption has made it slightly too big ({0} bytes)"
     )]

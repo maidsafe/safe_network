@@ -69,7 +69,7 @@ pub(crate) fn check_parent_spends(
         .iter()
         .any(|o| o.dbc_id() == signed_spend.dbc_id())
     {
-        return Err(Error::InvalidParentTx(format!(
+        return Err(Error::SpendParentTxInvalid(format!(
             "The DBC we're trying to spend: {:?} is not an output of the parent tx: {:?}",
             signed_spend, signed_spend.spend.dbc_creation_tx
         )));
@@ -94,7 +94,7 @@ fn validate_parent_spends(
         let tx_our_dbc_was_created_in = signed_spend.dbc_creation_tx_hash();
         let tx_its_parents_where_spent_in = parent_spend.spent_tx_hash();
         if tx_our_dbc_was_created_in != tx_its_parents_where_spent_in {
-            return Err(Error::BadParentSpendHash(format!(
+            return Err(Error::SpendParentTxInvalid(format!(
                 "One of the parents was spent in another transaction. Expected: {tx_our_dbc_was_created_in:?} Got: {tx_its_parents_where_spent_in:?}"
             )));
         }
@@ -106,7 +106,7 @@ fn validate_parent_spends(
         .dbc_creation_tx
         .verify_against_inputs_spent(parent_spends)
     {
-        return Err(Error::InvalidParentTx(format!(
+        return Err(Error::SpendParentTxInvalid(format!(
             "verification failed for parent tx for {:?}: {e:?}",
             signed_spend.dbc_id()
         )));

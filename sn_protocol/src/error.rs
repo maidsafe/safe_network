@@ -22,24 +22,39 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Error, Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 #[non_exhaustive]
 pub enum Error {
+    // ---------- chunk errors
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
     #[error("Chunk was not stored, xorname: {0:?}")]
     ChunkNotStored(XorName),
 
+    // ---------- register errors
     #[error("Register was not stored, xorname: {0:?}")]
     RegisterNotStored(XorName),
     #[error("Register not found: {0:?}")]
     RegisterNotFound(RegisterAddress),
-    #[error("Register operation was not stored: {0:?}")]
-    RegisterCmdNotStored(RegisterAddress),
     #[error("Register is Invalid: {0:?}")]
-    InvalidRegister(RegisterAddress),
+    RegisterInvalid(RegisterAddress),
     #[error("Register is Invalid: {0}")]
     RegisterError(#[from] sn_registers::Error),
     #[error("The Register was already created by another owner: {0:?}")]
     RegisterAlreadyClaimed(bls::PublicKey),
 
+    // ---------- spend errors
+    #[error("Spend not found: {0:?}")]
+    SpendNotFound(DbcAddress),
+    #[error("Failed to store spend: {0:?}")]
+    SpendNotStored(String),
+    #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
+    DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
+    #[error("Spend signature is invalid: {0}")]
+    SpendSignatureInvalid(String),
+    #[error("Invalid Parent Tx: {0}")]
+    SpendParentTxInvalid(String),
+    #[error("Dbc Spend is empty")]
+    SpendIsEmpty,
+
+    // ---------- payment errors
     /// The amount paid by payment proof is not the required for the received content
     #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
     PaymentProofInsufficientAmount { paid: usize, expected: usize },
@@ -52,48 +67,6 @@ pub enum Error {
     /// The id of the fee output found in a storage payment proof is invalid
     #[error("The id of the fee output found in a storage payment proof is invalid: {}", .0.to_hex())]
     PaymentProofInvalidFeeOutput(Hash),
-
-    /// Cannot add another entry since the register entry cap has been reached.
-    #[error("Cannot add another entry since the register entry cap has been reached: {0}")]
-    TooManyEntries(usize),
-    /// Data authority provided is invalid.
-    #[error("Provided PublicKey could not validate signature: {0:?}")]
-    InvalidSignature(bls::PublicKey),
-
-    /// Received a empty `Vec<SignedSpend>`
-    #[error("Operation received no SignedSpends")]
-    MinNumberOfSpendsNotMet,
-    /// Received a `Vec<SignedSpend>` with more than two spends
-    #[error("Incoming SpendDbc PUT with incorrect number of SignedSpend")]
-    MaxNumberOfSpendsExceeded,
-    #[error("Spend not found: {0:?}")]
-    SpendNotFound(DbcAddress),
-    #[error("Failed to store spend: {0:?}")]
-    SpendNotStored(String),
-    #[error("Insufficient valid spends found: {0:?}")]
-    InsufficientValidSpendsFound(DbcAddress),
-    #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
-    DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
-    /// Cannot verify a Spend signature.
-    #[error("Spend signature is invalid: {0}")]
-    InvalidSpendSignature(String),
-    #[error("Spend parents are invalid: {0}")]
-    InvalidSpendParents(String),
-    #[error("Invalid Parent Tx: {0}")]
-    InvalidParentTx(String),
-    /// One or more parent spends of a requested spend has an invalid hash
-    #[error("Invalid parent spend hash: {0}")]
-    BadParentSpendHash(String),
-
-    /// Replication not found.
-    #[error("Peer {holder:?} cannot find ReplicatedData {address:?}")]
-    ReplicatedDataNotFound {
-        /// Holder that being contacted
-        holder: NetworkAddress,
-        /// Address of the missing data
-        address: NetworkAddress,
-    },
-
     /// Payment proof provided deemed invalid
     #[error("Payment proof provided deemed invalid for item's name {addr_name:?}: {reason}")]
     InvalidPaymentProof {
@@ -103,6 +76,17 @@ pub enum Error {
         reason: String,
     },
 
+    // ---------- replication errors
+    /// Replication not found.
+    #[error("Peer {holder:?} cannot find ReplicatedData {address:?}")]
+    ReplicatedDataNotFound {
+        /// Holder that being contacted
+        holder: NetworkAddress,
+        /// Address of the missing data
+        address: NetworkAddress,
+    },
+
+    // ---------- record errors
     // Could not Serialize/Deserialize RecordHeader from Record
     #[error("Could not Serialize/Deserialize RecordHeader to/from Record")]
     RecordHeaderParsingFailed,
