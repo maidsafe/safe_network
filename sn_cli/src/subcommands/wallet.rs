@@ -45,6 +45,9 @@ pub enum WalletCmds {
         /// Read a hex encoded DBC from stdin.
         #[clap(long, default_value = "false")]
         stdin: bool,
+        /// The hex encoded DBC.
+        #[clap(long)]
+        dbc: Option<String>,
     },
     /// Send a DBC.
     Send {
@@ -69,7 +72,7 @@ pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Pa
     match cmds {
         WalletCmds::Address => address(root_dir).await?,
         WalletCmds::Balance => balance(root_dir).await?,
-        WalletCmds::Deposit { stdin } => deposit(root_dir, stdin).await?,
+        WalletCmds::Deposit { stdin, dbc } => deposit(root_dir, stdin, dbc).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
         WalletCmds::Pay { path } => {
             chunk_and_pay_for_storage(client, root_dir, &path).await?;
@@ -92,9 +95,13 @@ async fn balance(root_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-async fn deposit(root_dir: &Path, read_from_stdin: bool) -> Result<()> {
+async fn deposit(root_dir: &Path, read_from_stdin: bool, dbc: Option<String>) -> Result<()> {
     if read_from_stdin {
         return read_dbc_from_stdin(root_dir).await;
+    }
+
+    if let Some(dbc_hex) = dbc {
+        return deposit_from_dbc_hex(root_dir, dbc_hex).await;
     }
 
     let mut wallet = LocalWallet::load_from(root_dir).await?;
@@ -117,12 +124,14 @@ async fn deposit(root_dir: &Path, read_from_stdin: bool) -> Result<()> {
 }
 
 async fn read_dbc_from_stdin(root_dir: &Path) -> Result<()> {
-    let mut wallet = LocalWallet::load_from(root_dir).await?;
-
     println!("Please paste your DBC below:");
     let mut input = String::new();
     std::io::stdin().read_to_string(&mut input)?;
+    deposit_from_dbc_hex(root_dir, input).await
+}
 
+async fn deposit_from_dbc_hex(root_dir: &Path, input: String) -> Result<()> {
+    let mut wallet = LocalWallet::load_from(root_dir).await?;
     let dbc = sn_dbc::Dbc::from_hex(input.trim())?;
 
     let old_balance = wallet.balance();
