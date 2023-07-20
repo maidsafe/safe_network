@@ -34,7 +34,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y heaptrack
       - uses: actions-rs/toolchain@v1
-        id: toolchain
         with:
           profile: minimal
           toolchain: stable

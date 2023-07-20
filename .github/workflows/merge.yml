@@ -22,7 +22,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
         with:
           #Needs nightly to distinguish between deps of different versions
           toolchain: nightly
@@ -56,7 +55,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
         with:
           toolchain: stable
           components: rustfmt, clippy
@@ -93,7 +91,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -139,7 +136,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@v2
@@ -218,7 +214,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -286,7 +281,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
         with:
           toolchain: stable
 
