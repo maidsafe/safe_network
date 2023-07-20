@@ -20,6 +20,4 @@ pub enum Error {
     OpenTelemetryTracing(#[from] opentelemetry::trace::TraceError),
     #[error("Could not configure logging: {0}")]
     LoggingConfigurationError(String),
-    #[error("Could not configure OTLP logging: {0}")]
-    OtlpLoggingConfigurationError(String),
 }

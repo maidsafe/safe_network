@@ -169,9 +169,9 @@ fn main() -> Result<()> {
                         opt.peers.peers.push(peer);
                     }
                 }
-                Err(err) => error!("Cann't parse SAFE_PEERS {str:?} with error {err:?}"),
+                Err(err) => error!("Can't parse SAFE_PEERS {str:?} with error {err:?}"),
             },
-            Err(err) => error!("Cann't get env var SAFE_PEERS with error {err:?}"),
+            Err(err) => error!("Can't get env var SAFE_PEERS with error {err:?}"),
         }
     }
 

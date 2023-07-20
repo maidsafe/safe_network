@@ -144,7 +144,7 @@ impl Node {
         let peer_id = if let Some(peer_id) = holder.as_peer_id() {
             peer_id
         } else {
-            warn!("Cann't parse PeerId from NetworkAddress {holder:?}");
+            warn!("Can't parse PeerId from NetworkAddress {holder:?}");
             return Ok(());
         };
         trace!("Convert {holder:?} to {peer_id:?}");

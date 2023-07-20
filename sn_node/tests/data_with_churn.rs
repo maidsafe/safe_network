@@ -560,9 +560,9 @@ async fn get_client() -> Client {
         match std::env::var("SAFE_PEERS") {
             Ok(str) => match parse_peer_addr(&str) {
                 Ok(peer) => Some(vec![peer]),
-                Err(err) => panic!("Cann't parse SAFE_PEERS {str:?} with error {err:?}"),
+                Err(err) => panic!("Can't parse SAFE_PEERS {str:?} with error {err:?}"),
             },
-            Err(err) => panic!("Cann't get env var SAFE_PEERS with error {err:?}"),
+            Err(err) => panic!("Can't get env var SAFE_PEERS with error {err:?}"),
         }
     } else {
         None

@@ -370,9 +370,8 @@ impl SwarmDriver {
                         }
                         Err(err) => {
                             warn!("PutRecord task {id:?} completed with error {:?}.", err);
-                            // TODO: consider sending back the correct error
                             sender
-                                .send(Err(Error::RecordNotPut))
+                                .send(Err(err.into()))
                                 .map_err(|_| Error::InternalMsgChannelDropped)?;
                         }
                     }

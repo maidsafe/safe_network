@@ -79,7 +79,7 @@ impl ReplicatedData {
                 if let Some(spend) = spends.first() {
                     *DbcAddress::from_dbc_id(spend.dbc_id()).name()
                 } else {
-                    return Err(Error::MinNumberOfSpendsNotMet);
+                    return Err(Error::SpendIsEmpty);
                 }
             }
             Self::Register(register) => *register.address().name(),
@@ -95,7 +95,7 @@ impl ReplicatedData {
                 if let Some(spend) = spends.first() {
                     NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(spend.dbc_id()))
                 } else {
-                    return Err(Error::MinNumberOfSpendsNotMet);
+                    return Err(Error::SpendIsEmpty);
                 }
             }
             Self::Register(register) => NetworkAddress::from_register_address(*register.address()),
