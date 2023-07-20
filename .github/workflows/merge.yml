@@ -164,6 +164,26 @@ jobs:
             echo "SAFE_PEERS has been set to $SAFE_PEERS"
           fi
 
+      - name: Start a faucet client to claim genesis
+        run: cargo run --bin faucet --release -- claim-genesis
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
+      - name: Create and fund a wallet to pay for files storage
+        run: |
+          cargo run --bin faucet --release -- send 1000 $(cargo run --bin safe --release -- wallet address | tail -n 1) | tail -n 1 > dbc_hex
+          cat dbc_hex | cargo run --bin safe --release -- wallet deposit --stdin
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
+      - name: Start a client to pay for files storage
+        run: cargo run --bin safe --release -- wallet pay "./resources"
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
       - name: Start a client to upload files
         run: cargo run --bin safe --release -- files upload -- "./resources"
         env:
@@ -190,12 +210,6 @@ jobs:
 
       - name: Start a client to edit a register
         run: cargo run --bin safe --release -- register edit baobao wood
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
-
-      - name: Start a faucet client to claim genesis
-        run: cargo run --bin faucet --release -- claim-genesis
         env:
           SN_LOG: "all"
         timeout-minutes: 2
@@ -327,12 +341,6 @@ jobs:
             echo "SAFE_PEERS has been set to $SAFE_PEERS"
           fi
 
-      - name: Start a client to create a register
-        run: cargo run --bin safe --release --features local-discovery -- register create baobao
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
-
       - name: Chunks data integrity during nodes churn (during 10min)
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 
         env:
@@ -341,18 +349,6 @@ jobs:
           TEST_DURATION_MINS: 10
           SN_LOG: "all"
         timeout-minutes: 30
-
-      - name: Start a client to get the created register
-        run: cargo run --bin safe --release --features="local-discovery" -- register get baobao
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
-
-      - name: Start a client to edit the created register
-        run: cargo run --bin safe --release --features="local-discovery" -- register edit baobao wood
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
 
       - name: Verify restart of nodes using rg
         shell: bash

@@ -83,6 +83,20 @@ jobs:
         shell: bash
         run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
 
+      - name: Start a faucet client to claim genesis
+        run: cargo run --bin faucet --release -- claim-genesis
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
+      - name: Create and fund a wallet to pay for files storage
+        run: |
+          cargo run --bin faucet --release -- send 500 $(cargo run --bin safe --release -- wallet address | tail -n 1) | tail -n 1 > dbc_hex
+          cat dbc_hex | cargo run --bin safe --release -- wallet deposit --stdin
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
       - name: Start a client to upload files
