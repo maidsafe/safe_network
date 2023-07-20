@@ -49,6 +49,40 @@ fn create_file(size_mb: u64) -> tempfile::TempDir {
     dir
 }
 
+fn fund_cli_wallet() {
+    let output = Command::new("./target/release/safe")
+        .arg("wallet")
+        .arg("address")
+        .output()
+        .expect("Failed to execute 'safe wallet address' command");
+
+    let str = String::from_utf8(output.stdout).unwrap();
+    let addr = str.lines().last().unwrap();
+
+    let _ = Command::new("./target/release/faucet")
+        .arg("claim-genesis")
+        .output()
+        .expect("Failed to execute 'faucet claim-genesis");
+
+    let output = Command::new("./target/release/faucet")
+        .arg("send")
+        .arg("10000")
+        .arg(addr)
+        .output()
+        .expect("Failed to execute 'faucet send 10000' command");
+
+    let str = String::from_utf8(output.stdout).unwrap();
+    let dbc_hex = str.lines().last().unwrap();
+
+    let _ = Command::new("./target/release/safe")
+        .arg("wallet")
+        .arg("deposit")
+        .arg("--dbc")
+        .arg(dbc_hex)
+        .output()
+        .expect("Failed to execute 'safe wallet deposit' command");
+}
+
 fn criterion_benchmark(c: &mut Criterion) {
     // Check if the binary exists
     if !Path::new("./target/release/safe").exists() {
@@ -61,6 +95,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     for size in sizes.iter() {
         let dir = create_file(*size);
         let dir_path = dir.path().to_str().unwrap();
+        fund_cli_wallet();
 
         let mut group = c.benchmark_group(format!("Upload Benchmark {}MB", size));
         group.sampling_mode(criterion::SamplingMode::Flat);
