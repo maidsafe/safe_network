@@ -23,10 +23,7 @@ pub(crate) use error::Result;
 pub use self::{
     error::Error,
     event::{ClientEvent, ClientEventsReceiver},
-    faucet::{
-        get_tokens_from_faucet, get_tokens_from_genesis_to_another_wallet,
-        load_faucet_wallet_from_genesis_wallet,
-    },
+    faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
     file_apis::Files,
     register::ClientRegister,
     wallet::{send, WalletClient},
