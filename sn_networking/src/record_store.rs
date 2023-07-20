@@ -244,8 +244,10 @@ impl RecordStore for DiskBackedRecordStore {
     fn put(&mut self, record: Record) -> Result<()> {
         if self.records.contains(&record.key) {
             trace!("Unverified Record {:?} already exists.", record.key);
-            // Blindly sent to validation to allow double spend can be detected.
-            // TODO: consider avoid throw duplicated chunk to validation.
+            // To avoid sending duplicated data for validation,
+            // do nothing for already existing entry.
+            // The double spend case shall be handled separately.
+            return Ok(());
         }
         trace!(
             "Unverified Record {:?} try to validate and store",

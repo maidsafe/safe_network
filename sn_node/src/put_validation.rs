@@ -473,16 +473,14 @@ impl Node {
                 // Check parents
                 check_parent_spends(&parent_spends, &signed_spend)?;
 
+                // The record_store won't store duplicated record.
+                // To avoid `get_record` targeting a non-existing record,
+                // which result in it only complete after a fixed timeout (currently 10s),
+                // no explicit check of existence to be carried out here.
+                // A double spend complain shall be addressed via separate approach.
                 // check the network if any spend has happened for the same dbc_id
                 // Does not return an error, instead the Vec<SignedSpend> is returned.
-                let mut spends = if let Ok(spend) = self.get_spend_from_network(dbc_addr).await {
-                    vec![spend]
-                } else {
-                    vec![]
-                };
-                // aggregate the spends from the network with our own
-                spends.push(signed_spend);
-                aggregate_spends(spends, dbc_id)
+                vec![signed_spend]
             }
             _ => {
                 debug!("Received >1 spends with parent. Aggregating the spends to check for double spend. Not performing parent check or querying the network for double spend");
