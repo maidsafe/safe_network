@@ -58,8 +58,7 @@ impl ClientRegister {
 
     /// Create a new public Register (Anybody can write to it) and send it so the Network.
     pub async fn create_public_online(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        let mut reg =
-            Self::create_register(client, name, tag, Permissions::new_anyone_can_write())?;
+        let mut reg = Self::create_register(client, name, tag, Permissions::new_owner_only())?;
         reg.sync().await?;
         Ok(reg)
     }

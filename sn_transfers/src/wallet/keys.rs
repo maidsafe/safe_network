@@ -53,7 +53,7 @@ pub(super) async fn get_main_key(wallet_dir: &Path) -> Result<Option<MainKey>> {
 }
 
 /// Construct a BLS secret key from a hex-encoded string.
-fn bls_secret_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::SecretKey> {
+pub fn bls_secret_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::SecretKey> {
     let bytes = decode(hex).map_err(|_| Error::FailedToDecodeHexToKey)?;
     let bytes_fixed_len: [u8; bls::SK_SIZE] = bytes
         .as_slice()

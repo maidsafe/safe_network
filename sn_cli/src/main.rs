@@ -14,6 +14,7 @@ mod subcommands;
 
 use crate::cli::Opt;
 use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wallet_cmds, SubCmd};
+use bls::SecretKey;
 use sn_client::Client;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
@@ -21,8 +22,11 @@ use sn_logging::{init_logging, LogFormat};
 
 use clap::Parser;
 use color_eyre::Result;
+use sn_transfers::wallet::bls_secret_from_hex;
 use std::path::PathBuf;
 use tracing::Level;
+
+const CLIENT_KEY: &str = "clientkey";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -48,8 +52,8 @@ async fn main() -> Result<()> {
     println!("Built with git version: {}", sn_build_info::git_info());
     println!("Instantiating a SAFE client...");
 
-    let secret_key = bls::SecretKey::random();
     let client_data_dir_path = get_client_data_dir_path().await?;
+    let secret_key = get_client_secret_key(&client_data_dir_path).await?;
 
     if opt.peers.peers.is_empty() {
         if !cfg!(feature = "local-discovery") {
@@ -70,6 +74,23 @@ async fn main() -> Result<()> {
     };
 
     Ok(())
+}
+
+async fn get_client_secret_key(root_dir: &PathBuf) -> Result<SecretKey> {
+    // create the root directory if it doesn't exist
+    tokio::fs::create_dir_all(&root_dir).await?;
+    let key_path = root_dir.join(CLIENT_KEY);
+    let secret_key = if key_path.is_file() {
+        info!("Client key found. Loading from file...");
+        let secret_hex_bytes = tokio::fs::read(key_path).await?;
+        bls_secret_from_hex(secret_hex_bytes)?
+    } else {
+        info!("No key found. Generating a new client key...");
+        let secret_key = SecretKey::random();
+        tokio::fs::write(key_path, hex::encode(secret_key.to_bytes())).await?;
+        secret_key
+    };
+    Ok(secret_key)
 }
 
 async fn get_client_data_dir_path() -> Result<PathBuf> {
