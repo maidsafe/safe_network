@@ -101,11 +101,22 @@ async fn get_registers(names: Vec<String>, client: &Client) -> Result<()> {
         println!("Trying to retrieve Register from {xorname:?}, {tag}");
 
         match client.get_register(xorname, tag).await {
-            Ok(register) => println!(
-                "Successfully retrieved Register '{name}' from {}, {}!",
-                register.name(),
-                register.tag()
-            ),
+            Ok(register) => {
+                println!(
+                    "Successfully retrieved Register '{name}' from {}, {}!",
+                    register.name(),
+                    register.tag()
+                );
+                let entries = register.read();
+                println!("Register entries:");
+                for (hash, bytes) in entries {
+                    let data_str = match String::from_utf8(bytes.clone()) {
+                        Ok(data_str) => data_str,
+                        Err(_) => format!("{bytes:?}"),
+                    };
+                    println!("{hash:?}: {data_str}");
+                }
+            }
             Err(error) => {
                 println!(
                     "Did not retrieve Register '{name}' from all nodes in the close group! {error}"
