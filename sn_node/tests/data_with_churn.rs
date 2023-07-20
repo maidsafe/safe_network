@@ -50,7 +50,7 @@ const NODE_COUNT: u32 = 25;
 const EXTRA_CHURN_COUNT: u32 = 5;
 const CHURN_CYCLES: u32 = 1;
 const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 2;
-const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 2;
+const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 5;
 const DBC_CREATION_RATIO_TO_CHURN: u32 = 2;
 
 const CHUNKS_SIZE: usize = 1024 * 1024;
@@ -94,9 +94,10 @@ async fn data_availability_during_churn() -> Result<()> {
         TEST_DURATION
     };
 
-    let churn_period = if let Ok(str) = std::env::var("TEST_CHURN_CYCLES") {
+    let churn_period = if let Ok(str) = std::env::var("TEST_TOTAL_CHURN_CYCLES") {
+        println!("Using value set in 'TEST_TOTAL_CHURN_CYCLES' env var: {str}");
         let cycles = str.parse::<u32>()?;
-        test_duration / (cycles * NODE_COUNT)
+        test_duration / cycles
     } else {
         // Ensure at least some nodes got churned twice.
         test_duration / std::cmp::max(CHURN_CYCLES * NODE_COUNT, NODE_COUNT + EXTRA_CHURN_COUNT)
@@ -146,9 +147,6 @@ async fn data_availability_during_churn() -> Result<()> {
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
     store_chunks_task(client.clone(), paying_wallet, content.clone(), churn_period);
 
-    // Wait one churn period _before_ we start churning, to get some data PUT on the network
-    sleep(churn_period).await;
-
     // Spawn a task to churn nodes
     churn_nodes_task(churn_count.clone(), test_duration, churn_period);
 
@@ -164,7 +162,6 @@ async fn data_availability_during_churn() -> Result<()> {
     // at a higher frequency than the churning events
     if !chunks_only {
         create_registers_task(client.clone(), content.clone(), churn_period);
-
         let transfers_wallet_dir = TempDir::new()?;
         let transfers_wallet = get_funded_wallet(
             &client,
@@ -214,7 +211,7 @@ async fn data_availability_during_churn() -> Result<()> {
 
     println!();
     println!(
-        "Test stopping after running for {:?}.",
+        ">>>>>> Test stopping after running for {:?}. <<<<<<",
         start_time.elapsed()
     );
     println!("{:?} churn events happened.", *churn_count.read().await);
@@ -354,7 +351,7 @@ fn store_chunks_task(
             let proofs = wallet_client
                 .pay_for_storage(chunks.iter().map(|c| c.name()))
                 .await
-                .expect("Failed to pay for storage for new Chunk address");
+                .expect("Failed to pay for storage for new file at {addr:?}");
 
             println!(
                 "Storing ({}) Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
@@ -405,7 +402,7 @@ fn query_content_task(
                 }
                 Err(last_err) => {
                     println!(
-                        "Failed to query content (index: {index}) at {net_addr:?}: {last_err:?}"
+                        "Failed to query content (index: {index}) at {net_addr}: {last_err:?}"
                     );
                     // mark it to try 'MAX_NUM_OF_QUERY_ATTEMPTS' times.
                     let _ = content_erred
@@ -434,8 +431,9 @@ fn churn_nodes_task(
     let _handle = tokio::spawn(async move {
         let mut node_index = 1;
         let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
-        let delay = churn_period;
         loop {
+            sleep(churn_period).await;
+
             // break out if we've run the duration of churn
             if start.elapsed() > test_duration {
                 println!("Test duration reached, stopping churn nodes task");
@@ -457,8 +455,6 @@ fn churn_nodes_task(
             if node_index > NODE_COUNT as u16 {
                 node_index = 1;
             }
-
-            sleep(delay).await;
         }
     });
 }
@@ -483,9 +479,9 @@ fn retry_query_content_task(
             if let Some((net_addr, mut content_error)) = erred {
                 let attempts = content_error.attempts + 1;
 
-                println!("Querying erred content at {net_addr:?}, attempt: #{attempts} ...");
+                println!("Querying erred content at {net_addr}, attempt: #{attempts} ...");
                 if let Err(last_err) = query_content(&client, &net_addr, dbcs.clone()).await {
-                    println!("Erred content is still not retrievable at {net_addr:?} after {attempts} attempts: {last_err:?}");
+                    println!("Erred content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                     // We only keep it to retry 'MAX_NUM_OF_QUERY_ATTEMPTS' times,
                     // otherwise report it effectivelly as failure.
                     content_error.attempts = attempts;
@@ -510,10 +506,10 @@ async fn final_retry_query_content(
 ) -> Result<()> {
     let mut attempts = 1;
     loop {
-        println!("Querying content at {net_addr:?}, attempt: #{attempts} ...");
+        println!("Querying content at {net_addr}, attempt: #{attempts} ...");
         if let Err(last_err) = query_content(client, net_addr, dbcs.clone()).await {
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
-                bail!("Final check: Content is still not retrievable at {net_addr:?} after {attempts} attempts: {last_err:?}");
+                bail!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
             } else {
                 attempts += 1;
                 let delay = 2 * churn_period;
