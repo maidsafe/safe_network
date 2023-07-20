@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.27](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.26...sn_networking-v0.3.27) - 2023-07-20
+
+### Other
+- cleanup error types
+
 ## [0.3.26](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.25...sn_networking-v0.3.26) - 2023-07-19
 
 ### Other
