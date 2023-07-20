@@ -450,7 +450,7 @@ impl Node {
                 }
 
                 // If this is a storage payment, then verify FeeOutput's id is the expected.
-                verify_fee_output_id(&signed_spend.spent_tx())?;
+                verify_fee_output_id(&signed_spend.spent_tx(), false)?;
 
                 // Get parents
                 let mut parent_spends = BTreeSet::new();
@@ -502,10 +502,15 @@ impl Node {
 // This requirement makes it possible for this output to be used as an input in a network
 // rewards/farming reclaiming TX, by making its spend location deterministic, analogous to
 // how an output DBC Id works for regular outputs.
-fn verify_fee_output_id(spent_tx: &DbcTransaction) -> Result<(), ProtocolError> {
+// If 'required' was set to 'true' then the fee output must be non-zero and valid.
+fn verify_fee_output_id(spent_tx: &DbcTransaction, required: bool) -> Result<(), ProtocolError> {
     let fee = &spent_tx.fee;
     info!(">>>> FEE: {fee:?}");
-    if !fee.is_free() {
+    if fee.is_free() {
+        if required {
+            return Err(ProtocolError::PaymentProofInvalidFeeOutput(fee.id));
+        }
+    } else {
         let mut fee_id_bytes = fee.root_hash.slice().to_vec();
         spent_tx
             .inputs
@@ -530,7 +535,7 @@ fn verify_fee_output_and_proof(
     path: &[usize],
 ) -> Result<(), ProtocolError> {
     // Check if the fee output id is correct
-    verify_fee_output_id(tx)?;
+    verify_fee_output_id(tx, true)?;
 
     // Check the root hash verifies the merkle-tree audit trail and path against the content address name
     let leaf_index = validate_payment_proof(addr_name, &tx.fee.root_hash, audit_trail, path)

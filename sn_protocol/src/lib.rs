@@ -19,6 +19,7 @@ use libp2p::{
     PeerId,
 };
 use serde::{Deserialize, Serialize};
+use std::fmt::{self, Debug, Display, Formatter};
 
 /// This is the address in the network by which proximity/distance
 /// to other items (whether nodes or data chunks) are calculated.
@@ -141,8 +142,8 @@ impl NetworkAddress {
     // }
 }
 
-impl std::fmt::Debug for NetworkAddress {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Debug for NetworkAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let name_str = match self {
             NetworkAddress::PeerId(_) => "NetworkAddress::PeerId(".to_string(),
             NetworkAddress::ChunkAddress(chunk_address) => {
@@ -163,5 +164,27 @@ impl std::fmt::Debug for NetworkAddress {
             self.to_record_key(),
             self.as_kbucket_key()
         )
+    }
+}
+
+impl Display for NetworkAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            NetworkAddress::PeerId(id) => {
+                write!(f, "NetworkAddress::PeerId({})", hex::encode(id))
+            }
+            NetworkAddress::ChunkAddress(addr) => {
+                write!(f, "NetworkAddress::ChunkAddress({addr:?})")
+            }
+            NetworkAddress::DbcAddress(addr) => {
+                write!(f, "NetworkAddress::DbcAddress({addr:?})")
+            }
+            NetworkAddress::RegisterAddress(addr) => {
+                write!(f, "NetworkAddress::RegisterAddress({addr:?})")
+            }
+            NetworkAddress::RecordKey(key) => {
+                write!(f, "NetworkAddress::RecordKey({})", hex::encode(key))
+            }
+        }
     }
 }
