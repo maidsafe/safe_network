@@ -21,13 +21,14 @@ use libp2p::{
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
     swarm::{behaviour::toggle::Toggle, DialError, NetworkBehaviour, SwarmEvent},
-    Multiaddr, PeerId,
+    Multiaddr, PeerId, TransportError,
 };
 use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress,
 };
 use std::collections::HashSet;
+use std::io::ErrorKind;
 use tokio::sync::oneshot;
 use tracing::{info, warn};
 
@@ -254,34 +255,30 @@ impl SwarmDriver {
             } => {
                 debug!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
             }
-            SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
-                error!("OutgoingConnectionError to {peer_id:?} - {error:?}");
-                if let Some(peer_id) = peer_id {
-                    // Related errors are: WrongPeerId, ConnectionRefused(TCP), HandshakeTimedOut(QUIC)
-                    let err_string = format!("{error:?}");
-                    let is_wrong_id = err_string.contains("WrongPeerId");
-                    let is_all_connection_failed = if let DialError::Transport(ref errors) = error {
-                        errors.iter().all(|(_, error)| {
-                            let err_string = format!("{error:?}");
-                            err_string.contains("ConnectionRefused")
-                        }) || errors.iter().all(|(_, error)| {
-                            let err_string = format!("{error:?}");
-                            err_string.contains("HandshakeTimedOut")
-                        })
-                    } else {
-                        false
-                    };
-                    if is_wrong_id || is_all_connection_failed {
-                        info!("Detected dead peer {peer_id:?}");
-                        if let Some(dead_peer) =
-                            self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id)
-                        {
-                            self.send_event(NetworkEvent::PeerRemoved(
-                                *dead_peer.node.key.preimage(),
-                            ));
-                        }
-                        self.log_kbuckets(&peer_id);
+            SwarmEvent::OutgoingConnectionError {
+                peer_id: Some(failed_peer_id),
+                error,
+                connection_id,
+            } => {
+                error!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
+
+                let peer_died = match error {
+                    DialError::WrongPeerId { .. } => true,
+                    DialError::Transport(errors) => errors.iter().any(|(_, error)| matches!(error, TransportError::Other(err) if err.kind() == ErrorKind::ConnectionRefused) ),
+                    _ => false,
+                };
+
+                if peer_died {
+                    info!("Detected dead peer {failed_peer_id:?}");
+                    if let Some(dead_peer) = self
+                        .swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .remove_peer(&failed_peer_id)
+                    {
+                        self.send_event(NetworkEvent::PeerRemoved(*dead_peer.node.key.preimage()));
                     }
+                    self.log_kbuckets(&failed_peer_id);
                 }
             }
             SwarmEvent::IncomingConnectionError { .. } => {}
