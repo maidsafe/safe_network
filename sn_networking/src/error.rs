@@ -79,12 +79,9 @@ pub enum Error {
     #[error("Record was not found locally")]
     RecordNotFound,
 
-    #[error("Record not put to network properly")]
-    RecordNotPut,
+    #[error("Error putting record")]
+    PutRecordError(#[from] kad::PutRecordError),
 
     #[error("No SwarmCmd channel capacity")]
     NoSwarmCmdChannelCapacity,
-
-    #[error("No NetworkEvent channel capacity")]
-    NoNetworkEventChannelCapacity,
 }

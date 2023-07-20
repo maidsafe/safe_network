@@ -28,9 +28,6 @@ use sn_transfers::{
 use std::collections::{BTreeSet, HashSet};
 use xor_name::XorName;
 
-// The max length of `Vec<SignedSpend>` that is permitted
-const MAX_SIGNED_SPENDS_LENGTH: usize = 2;
-
 impl Node {
     /// Validate and store a record to the RecordStore
     pub(crate) async fn validate_and_store_record(
@@ -178,12 +175,6 @@ impl Node {
         &mut self,
         signed_spends: Vec<SignedSpend>,
     ) -> Result<CmdOk, ProtocolError> {
-        // Prevents someone from crafting large Vec and slowing down nodes.
-        if signed_spends.len() > MAX_SIGNED_SPENDS_LENGTH {
-            warn!("Discarding incoming DbcSpend PUT as it contains more than {MAX_SIGNED_SPENDS_LENGTH} SignedSpends");
-            return Err(ProtocolError::MaxNumberOfSpendsExceeded);
-        }
-
         // make sure that the dbc_ids match
         let dbc_id = if let Some((first, elements)) = signed_spends.split_first() {
             let common_dbc_id = *first.dbc_id();
@@ -194,7 +185,7 @@ impl Node {
                 common_dbc_id
             } else {
                 let err = Err(ProtocolError::SpendNotStored(
-                    "The dbc_id of the provided Vec<SignedSpend> does not match".to_string(),
+                    "found SignedSpends with differing dbc_ids".to_string(),
                 ));
                 error!("{err:?}");
                 return err;
@@ -315,7 +306,7 @@ impl Node {
         let reg_addr = register.address();
         if let Err(e) = register.verify() {
             error!("Register with addr {reg_addr:?} is invalid: {e:?}");
-            return Err(ProtocolError::InvalidRegister(*reg_addr));
+            return Err(ProtocolError::RegisterInvalid(*reg_addr));
         }
 
         // if we don't have it locally return it
@@ -453,7 +444,7 @@ impl Node {
 
                 // check the spend
                 if let Err(e) = signed_spend.verify(signed_spend.spent_tx_hash()) {
-                    return Err(ProtocolError::InvalidSpendSignature(format!(
+                    return Err(ProtocolError::SpendSignatureInvalid(format!(
                         "while verifying spend for {:?}: {e:?}",
                         signed_spend.dbc_id()
                     )));
@@ -480,9 +471,7 @@ impl Node {
                 }
 
                 // Check parents
-                if let Err(e) = check_parent_spends(&parent_spends, &signed_spend) {
-                    return Err(ProtocolError::InvalidSpendParents(format!("{e:?}")));
-                }
+                check_parent_spends(&parent_spends, &signed_spend)?;
 
                 // check the network if any spend has happened for the same dbc_id
                 // Does not return an error, instead the Vec<SignedSpend> is returned.
