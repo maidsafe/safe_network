@@ -75,7 +75,7 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
-          platform: "ubunt-latest"
+          platform: "ubuntu-latest"
 
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
