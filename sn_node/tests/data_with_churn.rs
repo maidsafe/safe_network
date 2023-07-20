@@ -342,7 +342,7 @@ fn query_content_task(
         loop {
             let len = content.read().await.len();
             if len == 0 {
-                println!("No content created/stored just yet, let's try in {delay:?} ...");
+                println!("No contentsss created/stored just yet, let's try in {delay:?} ...");
                 sleep(delay).await;
                 continue;
             }
