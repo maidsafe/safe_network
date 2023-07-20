@@ -207,7 +207,10 @@ impl SwarmDriver {
                     .kademlia
                     .put_record(record, Quorum::All)?;
                 trace!("Sending record {request_id:?} to network");
-                let _ = self.pending_record_put.insert(request_id, sender);
+
+                if let Err(err) = sender.send(Ok(())) {
+                    error!("Could not send response to PutRecord cmd: {:?}", err);
+                }
             }
             SwarmCmd::PutLocalRecord { record } => {
                 self.swarm

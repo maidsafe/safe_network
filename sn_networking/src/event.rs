@@ -340,33 +340,6 @@ impl SwarmDriver {
             }
             KademliaEvent::OutboundQueryProgressed {
                 id,
-                result: QueryResult::PutRecord(put_record_res),
-                stats,
-                step,
-            } => {
-                trace!("PutRecord task {id:?} returned, {stats:?} - {step:?}",);
-                if let Some(sender) = self.pending_record_put.remove(&id) {
-                    match put_record_res {
-                        Ok(put_record_ok) => {
-                            trace!(
-                                "PutRecord task {id:?} of {:?} completed successfully.",
-                                put_record_ok.key
-                            );
-                            sender
-                                .send(Ok(()))
-                                .map_err(|_| Error::InternalMsgChannelDropped)?;
-                        }
-                        Err(err) => {
-                            warn!("PutRecord task {id:?} completed with error {:?}.", err);
-                            sender
-                                .send(Err(err.into()))
-                                .map_err(|_| Error::InternalMsgChannelDropped)?;
-                        }
-                    }
-                }
-            }
-            KademliaEvent::OutboundQueryProgressed {
-                id,
                 result: QueryResult::GetRecord(Ok(GetRecordOk::FoundRecord(peer_record))),
                 stats,
                 step,
