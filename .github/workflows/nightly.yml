@@ -35,7 +35,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -78,7 +78,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_e2e
@@ -167,7 +167,7 @@ jobs:
           CARGO_TARGET_DIR: "./transfer-target"
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -183,7 +183,7 @@ jobs:
       
       - name: Stop the local network and upload logs
         if: always()
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_spend
@@ -225,7 +225,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -293,7 +293,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_churn

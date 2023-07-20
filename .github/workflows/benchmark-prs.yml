@@ -54,12 +54,16 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
           platform: ubuntu-latest
+
+      - name: Check SAFE_PEERS was set
+        shell: bash
+        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
 
       - name: Start a heaptracked node instance to compare memory usage
         run: |

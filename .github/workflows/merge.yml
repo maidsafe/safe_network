@@ -147,7 +147,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -156,7 +156,13 @@ jobs:
 
       - name: Check SAFE_PEERS was set
         shell: bash
-        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+          fi
 
       - name: Start a client to upload files
         run: cargo run --bin safe --release -- files upload -- "./resources"
@@ -196,7 +202,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_e2e
@@ -221,8 +227,8 @@ jobs:
 
       - name: Build node and client
         run: |
-          cargo build --release --bin safenode
-          cargo build --release --bin safe
+          cargo build --release --features local-discovery --bin safenode
+          cargo build --release --features local-discovery --bin safe
         timeout-minutes: 30
 
       - name: Build testing executable
@@ -232,7 +238,7 @@ jobs:
           CARGO_TARGET_DIR: "./transfer-target"
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -241,7 +247,13 @@ jobs:
 
       - name: Check SAFE_PEERS was set
         shell: bash
-        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+          fi
 
       - name: execute the dbc spend test
         run: cargo test --release --features="local-discovery" dbc_transfer_ -- --nocapture
@@ -259,7 +271,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_spend
@@ -298,7 +310,7 @@ jobs:
           CARGO_TARGET_DIR: "./churn-target"
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -307,7 +319,13 @@ jobs:
 
       - name: Check SAFE_PEERS was set
         shell: bash
-        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+          fi
 
       - name: Start a client to create a register
         run: cargo run --bin safe --release --features local-discovery -- register create baobao
@@ -380,7 +398,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_churn

@@ -63,19 +63,25 @@ jobs:
             rg '/ip4.*$' -m1 -o | rg '"' -r '')
           echo "SAFE_PEERS=$safe_peers" >> $GITHUB_ENV
 
-      - name: Check SAFE_PEERS
+      - name: Check SAFE_PEERS was set
         shell: bash
-        run: echo "Contact peer is set to $SAFE_PEERS"
+        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
 
       - name: Start a local network
         env:
           SN_LOG: all
-        uses: jacderida/sn-local-testnet-action@initial-testnet-admin
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
           platform: "ubuntu-latest"
+          set-safe-peers: false
+
+      # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
+      - name: Check SAFE_PEERS was not changed
+        shell: bash
+        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
 
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
