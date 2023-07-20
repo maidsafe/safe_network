@@ -36,7 +36,6 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
       - uses: actions-rs/toolchain@v1
-        id: toolchain
         with:
           profile: minimal
           toolchain: stable
