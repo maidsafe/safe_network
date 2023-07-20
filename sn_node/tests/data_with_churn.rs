@@ -8,7 +8,7 @@
 
 mod common;
 
-use common::get_client_and_wallet;
+use common::{get_client_and_wallet, get_funded_wallet};
 
 use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
 
@@ -16,16 +16,14 @@ use assert_fs::TempDir;
 use bytes::Bytes;
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
-use sn_client::WalletClient;
-use sn_client::{get_tokens_from_genesis_to_another_wallet, Client, Error, Files};
+use sn_client::{Client, Error, Files, WalletClient};
 use sn_dbc::{Dbc, MainKey, Token};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_protocol::{
     storage::{ChunkAddress, DbcAddress, RegisterAddress},
     NetworkAddress,
 };
-use sn_transfers::dbc_genesis::{create_genesis_wallet, load_genesis_wallet};
-use sn_transfers::wallet::LocalWallet;
+use sn_transfers::{dbc_genesis::create_genesis_wallet, wallet::LocalWallet};
 
 use std::{
     collections::{BTreeMap, VecDeque},
@@ -51,8 +49,8 @@ const NODE_COUNT: u32 = 25;
 
 const EXTRA_CHURN_COUNT: u32 = 5;
 const CHURN_CYCLES: u32 = 1;
-const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 5;
-const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 5;
+const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 2;
+const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 2;
 const DBC_CREATION_RATIO_TO_CHURN: u32 = 2;
 
 const CHUNKS_SIZE: usize = 1024 * 1024;
@@ -65,6 +63,7 @@ const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 const TEST_DURATION: Duration = Duration::from_secs(60 * 60); // 1hr
 
 const PAYING_WALLET_INITIAL_BALANCE: u64 = 1_000_000;
+const TRANSFERS_WALLET_INITIAL_BALANCE: u64 = 2_000_000;
 
 type ContentList = Arc<RwLock<VecDeque<NetworkAddress>>>;
 type DbcMap = Arc<RwLock<BTreeMap<DbcAddress, Dbc>>>;
@@ -102,8 +101,7 @@ async fn data_availability_during_churn() -> Result<()> {
         // Ensure at least some nodes got churned twice.
         test_duration / std::cmp::max(CHURN_CYCLES * NODE_COUNT, NODE_COUNT + EXTRA_CHURN_COUNT)
     };
-
-    println!("Nodes will churn every {:?}", churn_period);
+    println!("Nodes will churn every {churn_period:?}");
 
     // Create a cross thread usize for tracking churned nodes
     let churn_count = Arc::new(RwLock::new(0_usize));
@@ -166,7 +164,21 @@ async fn data_availability_during_churn() -> Result<()> {
     // at a higher frequency than the churning events
     if !chunks_only {
         create_registers_task(client.clone(), content.clone(), churn_period);
-        create_dbc_task(client.clone(), content.clone(), dbcs.clone(), churn_period);
+
+        let transfers_wallet_dir = TempDir::new()?;
+        let transfers_wallet = get_funded_wallet(
+            &client,
+            transfers_wallet_dir.path(),
+            TRANSFERS_WALLET_INITIAL_BALANCE,
+        )
+        .await?;
+        create_dbc_task(
+            client.clone(),
+            transfers_wallet,
+            content.clone(),
+            dbcs.clone(),
+            churn_period,
+        );
     }
 
     // Spawn a task to randomly query/fetch the content we create/store
@@ -249,7 +261,13 @@ async fn data_availability_during_churn() -> Result<()> {
 }
 
 // Spawns a task which periodically creates DBCs at random locations.
-fn create_dbc_task(client: Client, content: ContentList, dbcs: DbcMap, churn_period: Duration) {
+fn create_dbc_task(
+    client: Client,
+    transfers_wallet: LocalWallet,
+    content: ContentList,
+    dbcs: DbcMap,
+    churn_period: Duration,
+) {
     let _handle = tokio::spawn(async move {
         // Creating a genesis wallet first
         let _genesis_wallet = create_genesis_wallet().await;
@@ -257,21 +275,20 @@ fn create_dbc_task(client: Client, content: ContentList, dbcs: DbcMap, churn_per
         // Create Dbc at a higher frequency than the churning events
         let delay = churn_period / DBC_CREATION_RATIO_TO_CHURN;
 
+        let mut wallet_client = WalletClient::new(client.clone(), transfers_wallet);
+
         loop {
             sleep(delay).await;
 
-            let genesis_wallet = load_genesis_wallet().await;
-            let key = MainKey::random();
-            let dbc = get_tokens_from_genesis_to_another_wallet(
-                genesis_wallet,
-                Token::from_nano(100),
-                key.public_address(),
-                &client,
-            )
-            .await;
+            let dest_pk = MainKey::random().public_address();
+            let dbc = wallet_client
+                .send(Token::from_nano(10), dest_pk)
+                .await
+                .expect("Failed to send DBC to {dest_pk}");
+
             let dbc_addr = DbcAddress::from_dbc_id(&dbc.id());
             let net_addr = NetworkAddress::DbcAddress(dbc_addr);
-            println!("Created DBC at {net_addr:?} after {delay:?}");
+            println!("Created DBC at {dbc_addr:?} after {delay:?}");
             content.write().await.push_back(net_addr);
             let _ = dbcs.write().await.insert(dbc_addr, dbc);
         }
@@ -313,7 +330,6 @@ fn store_chunks_task(
     let _handle = tokio::spawn(async move {
         // Store Chunks at a higher frequency than the churning events
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
-
         let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
         let file_api = Files::new(client);
@@ -330,10 +346,11 @@ fn store_chunks_task(
                 .expect("Failed to chunk bytes");
 
             println!(
-                "Paying storage for ({}) new Chunk/s of file ({} bytes) at: {addr:?} ...",
+                "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
                 chunks.len(),
                 bytes.len()
             );
+            sleep(delay).await;
             let proofs = wallet_client
                 .pay_for_storage(chunks.iter().map(|c| c.name()))
                 .await
