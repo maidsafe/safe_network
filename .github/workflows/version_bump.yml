@@ -25,7 +25,6 @@ jobs:
           fetch-depth: "0"
           token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
       - uses: actions-rs/toolchain@v1
-        id: toolchain
         with:
           profile: minimal
           toolchain: stable

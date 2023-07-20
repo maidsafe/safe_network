@@ -27,7 +27,6 @@ jobs:
           sudo apt-get install -y heaptrack
   
       - name: Install Rust
-        id: toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -87,7 +86,6 @@ jobs:
           cargo run --bin safe --release -- files upload -- "./target/release/safe"
           cargo run --bin safe --release -- files upload -- "./target/release/safenode"
           cargo run --bin safe --release -- files upload -- "./target/release/testnet"
-        id: client-file-upload
         env:
           SN_LOG: "all"
         timeout-minutes: 10

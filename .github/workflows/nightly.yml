@@ -1,4 +1,4 @@
-name: Nightly. Full Network Tests
+name: Nightly -- Full Network Tests
 
 on:
   schedule:
@@ -28,7 +28,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -53,7 +52,6 @@ jobs:
 
       - name: Start a local network
         run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
-        id: section-startup
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -70,35 +68,30 @@ jobs:
       
       - name: Start a client to carry out chunk actions
         run: cargo run --bin safe --release -- files upload -- "./resources"
-        id: client-chunk-actions
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to create a register
         run: cargo run --bin safe --release -- register create baobao
-        id: client-register-create
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to get a register
         run: cargo run --bin safe --release -- register get baobao
-        id: client-register-get
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to edit a register
         run: cargo run --bin safe --release -- register edit baobao wood
-        id: client-register-edit
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a faucet client to claim genesis
         run: cargo run --bin faucet --release -- claim-genesis
-        id: faucet-claim-genesis
         env:
           SN_LOG: "all"
         timeout-minutes: 2
@@ -164,7 +157,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -217,7 +209,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -248,14 +239,12 @@ jobs:
 
       - name: Start a local network
         run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
-        id: section-startup
         env:
           SN_LOG: "all"
         timeout-minutes: 10
 
       - name: execute the dbc spend test
         run: cargo test --release --features="local-discovery" multiple_sequential_transfers_succeed  -- --nocapture
-        id: client-spend-dbc
         env:
           CARGO_TARGET_DIR: "./transfer-target"
           SN_LOG: "all"
@@ -336,7 +325,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
         with:
           toolchain: stable
 
@@ -365,7 +353,6 @@ jobs:
 
       - name: Start a local network
         run: cargo run --release --bin testnet -- --interval 2000 --node-path ./target/release/safenode
-        id: section-startup
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -380,7 +367,6 @@ jobs:
 
       - name: Chunks data integrity during nodes churn (during 10min) (in theory)
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture
-        id: data_availability_during_churn
         env:
           # new output folder to avoid linker issues w/ windows
           CARGO_TARGET_DIR: "./churn-target"
