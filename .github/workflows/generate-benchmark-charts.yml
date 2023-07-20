@@ -64,7 +64,7 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
-          platform: ${{ matrix.os }}
+          platform: ubuntu-latest
 
       - name: Start a heaptracked node instance to compare memory usage
         run: |
