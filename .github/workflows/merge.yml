@@ -341,12 +341,24 @@ jobs:
             echo "SAFE_PEERS has been set to $SAFE_PEERS"
           fi
 
-      - name: Chunks data integrity during nodes churn (during 10min)
+      - name: Chunks data integrity during nodes churn (during 10min) - Linux/MacOS
+        if: matrix.os != 'windows-latest'
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 
         env:
           # new output folder to avoid linker issues w/ windows
           CARGO_TARGET_DIR: "./churn-target"
           TEST_DURATION_MINS: 10
+          SN_LOG: "all"
+        timeout-minutes: 30
+
+      - name: Chunks data integrity during nodes churn (during 10min) - Windows
+        if: matrix.os == 'windows-latest'
+        run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 
+        env:
+          # new output folder to avoid linker issues w/ windows
+          CARGO_TARGET_DIR: "./churn-target"
+          TEST_DURATION_MINS: 10
+          TEST_TOTAL_CHURN_CYCLES: 15
           SN_LOG: "all"
         timeout-minutes: 30
 
