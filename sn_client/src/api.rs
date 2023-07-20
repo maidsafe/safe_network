@@ -183,14 +183,6 @@ impl Client {
 
     fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
         match event {
-            // Clients do not handle requests.
-            NetworkEvent::RequestReceived { .. } => {}
-            // Clients do not handle responses
-            NetworkEvent::ResponseReceived { .. } => {}
-            // We do not listen on sockets.
-            NetworkEvent::NewListenAddr(_) => {}
-            // We are not doing AutoNAT and don't care about our status.
-            NetworkEvent::NatStatusChanged(_) => {}
             NetworkEvent::PeerAdded(peer_id) => {
                 debug!("PeerAdded: {peer_id}");
                 // In case client running in non-local-discovery mode,
@@ -220,7 +212,14 @@ impl Client {
                 }
                 self.peers_added += 1;
             }
-            NetworkEvent::PeerRemoved(_) | NetworkEvent::UnverifiedRecord(_) => {}
+            NetworkEvent::PeerRemoved(_)
+            | NetworkEvent::UnverifiedRecord(_)
+            | NetworkEvent::RequestReceived { .. }
+            | NetworkEvent::ResponseReceived { .. }
+            | NetworkEvent::NewListenAddr(_)
+            | NetworkEvent::NatStatusChanged(_)
+            | NetworkEvent::CloseGroupUpdated(_)
+            | NetworkEvent::KeysForReplication(_) => {}
         }
 
         Ok(())

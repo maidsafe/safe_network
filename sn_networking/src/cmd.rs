@@ -55,6 +55,9 @@ pub enum SwarmCmd {
     GetAllLocalPeers {
         sender: oneshot::Sender<Vec<PeerId>>,
     },
+    GetOurCloseGroup {
+        sender: oneshot::Sender<Vec<PeerId>>,
+    },
     // Send Request to the PeerId.
     SendRequest {
         req: Request,
@@ -110,13 +113,6 @@ pub enum SwarmCmd {
     AddKeysToReplicationFetcher {
         peer: PeerId,
         keys: Vec<NetworkAddress>,
-        sender: oneshot::Sender<Vec<(PeerId, NetworkAddress)>>,
-    },
-    NotifyFetchResult {
-        peer: PeerId,
-        key: NetworkAddress,
-        result: bool,
-        sender: oneshot::Sender<Vec<(PeerId, NetworkAddress)>>,
     },
     // Set the acceptable range of `Record` entry
     SetRecordDistanceRange {
@@ -149,41 +145,17 @@ impl SwarmDriver {
                     .get_record_keys_closest_to_target(key.as_kbucket_key(), distance);
                 let _ = sender.send(peers);
             }
-            SwarmCmd::AddKeysToReplicationFetcher { peer, keys, sender } => {
-                // check if we have any of the data before adding it.
-                let existing_keys: HashSet<NetworkAddress> = self
+            SwarmCmd::AddKeysToReplicationFetcher { peer, keys } => {
+                #[allow(clippy::mutable_key_type)]
+                let all_keys = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .record_addresses();
-
-                // remove any keys that we already have from replication fetcher
-                self.replication_fetcher.remove_held_data(&existing_keys);
-
-                let non_existing_keys: Vec<NetworkAddress> = keys
-                    .iter()
-                    .filter(|key| !existing_keys.contains(key))
-                    .cloned()
-                    .collect();
-
-                let keys_to_fetch = self
-                    .replication_fetcher
-                    .add_keys_to_replicate_per_peer(peer, non_existing_keys);
-                let _ = sender.send(keys_to_fetch);
+                    .record_addresses_ref();
+                let keys_to_fetch = self.replication_fetcher.add_keys(peer, keys, all_keys);
+                self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
             }
-            SwarmCmd::NotifyFetchResult {
-                peer,
-                key,
-                result,
-                sender,
-            } => {
-                let keys_to_fetch = self
-                    .replication_fetcher
-                    .notify_fetch_result(peer, key, result);
-                let _ = sender.send(keys_to_fetch);
-            }
-
             SwarmCmd::SetRecordDistanceRange { distance } => {
                 self.swarm
                     .behaviour_mut()
@@ -215,11 +187,20 @@ impl SwarmDriver {
                 let _ = self.pending_record_put.insert(request_id, sender);
             }
             SwarmCmd::PutLocalRecord { record } => {
-                self.swarm
+                let key = record.key.clone();
+                match self
+                    .swarm
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .put_verified(record)?;
+                    .put_verified(record)
+                {
+                    Ok(_) => {
+                        let new_keys_to_fetch = self.replication_fetcher.notify_about_new_put(key);
+                        self.send_event(NetworkEvent::KeysForReplication(new_keys_to_fetch));
+                    }
+                    Err(err) => return Err(err.into()),
+                };
             }
             SwarmCmd::RecordStoreHasKey { key, sender } => {
                 let has_key = self
@@ -292,14 +273,10 @@ impl SwarmDriver {
                 let _ = sender.send(closest_peers);
             }
             SwarmCmd::GetAllLocalPeers { sender } => {
-                let mut all_peers: Vec<PeerId> = vec![];
-                for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
-                    for entry in kbucket.iter() {
-                        all_peers.push(entry.node.key.clone().into_preimage());
-                    }
-                }
-                all_peers.push(self.self_peer_id);
-                let _ = sender.send(all_peers);
+                let _ = sender.send(self.get_all_local_peers());
+            }
+            SwarmCmd::GetOurCloseGroup { sender } => {
+                let _ = sender.send(self.closest_peers.clone());
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 // If `self` is the recipient, forward the request directly to our upper layer to

@@ -590,7 +590,8 @@ jobs:
         env:
           # new output folder to avoid linker issues w/ windows
           CARGO_TARGET_DIR: "./data-location-target"
-          CHURN_COUNT: 4
+          CHURN_COUNT: 12
+          CHUNK_COUNT: 50
           SN_LOG: "all"
         timeout-minutes: 30
 

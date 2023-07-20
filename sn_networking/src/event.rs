@@ -11,13 +11,19 @@ use super::{
     record_store::DiskBackedRecordStore,
     SwarmDriver,
 };
-use crate::{multiaddr_is_global, multiaddr_strip_p2p, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR};
+use crate::{
+    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
+    IDENTIFY_AGENT_STR,
+};
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
-    kad::{GetRecordOk, InboundRequest, Kademlia, KademliaEvent, QueryResult, Record, K_VALUE},
+    kad::{
+        GetRecordOk, InboundRequest, Kademlia, KademliaEvent, QueryResult, Record, RecordKey,
+        K_VALUE,
+    },
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
     swarm::{behaviour::toggle::Toggle, DialError, NetworkBehaviour, SwarmEvent},
@@ -112,6 +118,10 @@ pub enum NetworkEvent {
     PeerAdded(PeerId),
     // Peer has been removed from the Routing Table
     PeerRemoved(PeerId),
+    ///
+    CloseGroupUpdated(Vec<PeerId>),
+    ///
+    KeysForReplication(Vec<(RecordKey, Option<PeerId>)>),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
     /// AutoNAT status changed
@@ -280,6 +290,9 @@ impl SwarmDriver {
                         }
                         let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
                         self.log_kbuckets(&peer_id);
+                        if let Some(new_members) = self.check_for_change_in_closest_peers() {
+                            self.send_event(NetworkEvent::CloseGroupUpdated(new_members));
+                        }
                     }
                 }
             }
@@ -433,6 +446,9 @@ impl SwarmDriver {
                     self.send_event(NetworkEvent::PeerRemoved(peer));
                     self.log_kbuckets(&peer);
                 }
+                if let Some(new_members) = self.check_for_change_in_closest_peers() {
+                    self.send_event(NetworkEvent::CloseGroupUpdated(new_members));
+                }
             }
             KademliaEvent::InboundRequest {
                 request: InboundRequest::PutRecord { .. },
@@ -457,6 +473,42 @@ impl SwarmDriver {
         }
 
         Ok(())
+    }
+
+    pub(super) fn get_all_local_peers(&mut self) -> Vec<PeerId> {
+        let mut all_peers: Vec<PeerId> = vec![];
+        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+            for entry in kbucket.iter() {
+                all_peers.push(entry.node.key.clone().into_preimage());
+            }
+        }
+        all_peers.push(self.self_peer_id);
+        all_peers
+    }
+
+    fn check_for_change_in_closest_peers(&mut self) -> Option<Vec<PeerId>> {
+        let new_closest_peers = {
+            let all_peers = self.get_all_local_peers();
+            sort_peers_by_address(
+                all_peers,
+                &NetworkAddress::from_peer(self.self_peer_id),
+                CLOSE_GROUP_SIZE + 1,
+            )
+            .ok()?
+        };
+
+        let old = self.closest_peers.iter().cloned().collect::<HashSet<_>>();
+        let new_members = new_closest_peers
+            .iter()
+            .filter(|p| !old.contains(p))
+            .cloned()
+            .collect::<Vec<_>>();
+        if !new_members.is_empty() {
+            self.closest_peers = new_closest_peers;
+            Some(new_members)
+        } else {
+            None
+        }
     }
 
     fn log_kbuckets(&mut self, peer: &PeerId) {

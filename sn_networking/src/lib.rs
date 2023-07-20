@@ -113,6 +113,7 @@ pub struct SwarmDriver {
     /// A list of the most recent peers we have dialed ourselves.
     dialed_peers: CircularVec<PeerId>,
     dead_peers: BTreeSet<PeerId>,
+    closest_peers: Vec<PeerId>,
     is_client: bool,
 }
 
@@ -394,6 +395,7 @@ impl SwarmDriver {
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             dead_peers: Default::default(),
+            closest_peers: Default::default(),
             is_client,
         };
 
@@ -538,6 +540,15 @@ impl Network {
     pub async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetAllLocalPeers { sender })?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
+    pub async fn get_our_close_group(&self) -> Result<Vec<PeerId>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetOurCloseGroup { sender })?;
 
         receiver
             .await
@@ -693,37 +704,12 @@ impl Network {
     }
 
     // Add a list of keys of a holder to RecordFetcher.  Return with a list of keys to fetch, if present.
-    pub async fn add_keys_to_replication_fetcher(
+    pub fn add_keys_to_replication_fetcher(
         &self,
         peer: PeerId,
         keys: Vec<NetworkAddress>,
-    ) -> Result<Vec<(PeerId, NetworkAddress)>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { peer, keys, sender })?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
-    }
-
-    // Notify the fetch result of a key from a holder. Return with a list of keys to fetch, if present.
-    pub async fn notify_fetch_result(
-        &self,
-        peer: PeerId,
-        key: NetworkAddress,
-        result: bool,
-    ) -> Result<Vec<(PeerId, NetworkAddress)>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::NotifyFetchResult {
-            peer,
-            key,
-            result,
-            sender,
-        })?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+    ) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { peer, keys })
     }
 
     /// Set the acceptable range of record entry. A record is removed from the storage if the

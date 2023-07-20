@@ -132,6 +132,7 @@ impl DiskBackedRecordStore {
 
     /// Setup the distance range.
     pub fn set_distance_range(&mut self, distance_bar: Distance) {
+        trace!("record_store, setting distance range");
         self.distance_range = Some(distance_bar);
     }
 
@@ -150,6 +151,11 @@ impl DiskBackedRecordStore {
             .iter()
             .map(|record_key| NetworkAddress::from_record_key(record_key.clone()))
             .collect()
+    }
+
+    #[allow(clippy::mutable_key_type)]
+    pub fn record_addresses_ref(&self) -> &HashSet<Key> {
+        &self.records
     }
 
     pub fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {

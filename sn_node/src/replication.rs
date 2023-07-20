@@ -8,8 +8,9 @@
 
 use crate::Node;
 use crate::{error::Result, log_markers::Marker};
-use libp2p::{kad::KBucketKey, PeerId};
-use sn_networking::{sort_peers_by_address, sort_peers_by_key, CLOSE_GROUP_SIZE};
+use libp2p::kad::RecordKey;
+use libp2p::PeerId;
+use sn_networking::{sort_peers_by_address, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, Request},
     NetworkAddress,
@@ -22,103 +23,36 @@ const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
 // Defines how close that a node will trigger replication.
 // That is, the node has to be among the REPLICATION_RANGE closest to data,
 // to carry out the replication.
-const REPLICATION_RANGE: usize = 8;
+// const REPLICATION_RANGE: usize = 8;
 
 impl Node {
     /// Replication is triggered when the newly added peer or the dead peer was among our closest.
-    pub(crate) async fn try_trigger_replication(
-        &mut self,
-        churned_peer: &PeerId,
-        is_dead_peer: bool,
-    ) -> Result<()> {
-        Marker::ReplicationTriggered((churned_peer, is_dead_peer)).log();
+    pub(crate) async fn try_trigger_replication(&mut self, new_members: Vec<PeerId>) -> Result<()> {
+        Marker::ReplicationTriggered.log();
+        debug!("our close group has changed, the new members are {new_members:?}");
+        let our_close_group = self.network.get_our_close_group().await?;
         let our_peer_id = self.network.peer_id;
         let our_address = NetworkAddress::from_peer(our_peer_id);
-        let churned_peer_address = NetworkAddress::from_peer(*churned_peer);
 
         let all_peers = self.network.get_all_local_peers().await?;
-        if all_peers.len() < 2 * CLOSE_GROUP_SIZE {
-            return Ok(());
-        }
 
-        // Only nearby peers (two times of the CLOSE_GROUP_SIZE) may affect the later on
-        // calculation of `closest peers to each entry`.
-        // Hence to reduce the computation work, no need to take all peers.
-        let sorted_peers: Vec<PeerId> = if let Ok(sorted_peers) =
-            sort_peers_by_address(all_peers, &churned_peer_address, 2 * CLOSE_GROUP_SIZE)
-        {
-            sorted_peers
-        } else {
-            return Ok(());
-        };
-
-        let distance_bar = match sorted_peers.get(CLOSE_GROUP_SIZE) {
-            Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
-            None => {
-                debug!("could not obtain distance_bar as sorted_peers.len() <= CLOSE_GROUP_SIZE ");
-                return Ok(());
-            }
-        };
-
-        // Do nothing if self is not among the closest range.
-        if our_address.distance(&churned_peer_address) > distance_bar {
-            return Ok(());
-        }
-
-        // Setup the record storage distance range.
-        self.network.set_record_distance_range(distance_bar)?;
-
-        // The fetched entries are records that supposed to be held by the churned_peer.
-        let entries_to_be_replicated = self
-            .network
-            .get_record_keys_closest_to_target(&churned_peer_address, distance_bar)
-            .await?;
+        let entries_to_be_replicated = self.network.get_all_local_record_addresses().await?;
+        trace!("entries_to_be_replicated {entries_to_be_replicated:?}");
 
         let mut replications: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
-        for key in entries_to_be_replicated.iter() {
-            let record_key = KBucketKey::from(key.to_vec());
-            let closest_peers: Vec<_> = if let Ok(sorted_peers) =
-                sort_peers_by_key(sorted_peers.clone(), &record_key, CLOSE_GROUP_SIZE + 1)
-            {
-                sorted_peers
-            } else {
-                continue;
-            };
+        for key in entries_to_be_replicated {
+            let mut sending_to_n_peers = 0;
+            let sorted_based_on_key =
+                sort_peers_by_address(all_peers.clone(), &key, CLOSE_GROUP_SIZE + 1)?;
 
-            // Only carry out replication when self within REPLICATION_RANGE
-            let replicate_range = match closest_peers.get(REPLICATION_RANGE) {
-                Some(peer) => NetworkAddress::from_peer(*peer),
-                None => {
-                    debug!("could not obtain replicate_range as closest_peers.len() <= REPLICATION_RANGE");
-                    continue;
+            for peer in our_close_group.iter().filter(|&p| p != &our_peer_id) {
+                if sorted_based_on_key.contains(peer) {
+                    sending_to_n_peers += 1;
+                    let keys_to_replicate = replications.entry(*peer).or_insert(Default::default());
+                    keys_to_replicate.push(key.clone());
                 }
-            };
-
-            if our_address.as_kbucket_key().distance(&record_key)
-                >= replicate_range.as_kbucket_key().distance(&record_key)
-            {
-                continue;
             }
-
-            let dsts = if is_dead_peer {
-                // To ensure more copies to be retained across the network,
-                // make all closest_peers as target in case of peer drop out.
-                // This can be reduced depends on the performance.
-                closest_peers
-            } else {
-                vec![*churned_peer]
-            };
-
-            for peer in dsts {
-                let keys_to_replicate = replications.entry(peer).or_insert(Default::default());
-                keys_to_replicate.push(NetworkAddress::from_record_key(key.clone()));
-            }
-        }
-
-        // Avoid replicate to self or to a dead peer
-        let _ = replications.remove(&our_peer_id);
-        if is_dead_peer {
-            let _ = replications.remove(churned_peer);
+            trace!("The key is being sent to n_peers {sending_to_n_peers:?} for key {key:?}");
         }
 
         for (peer_id, keys) in replications {
@@ -136,7 +70,7 @@ impl Node {
     /// Notify a list of keys within a holder to be replicated to self.
     /// The `chunk_storage` is currently held by `swarm_driver` within `network` instance.
     /// Hence has to carry out this notification.
-    pub(crate) async fn replication_keys_to_fetch(
+    pub(crate) fn replication_keys_to_fetch(
         &mut self,
         holder: NetworkAddress,
         keys: Vec<NetworkAddress>,
@@ -149,24 +83,8 @@ impl Node {
         };
         trace!("Convert {holder:?} to {peer_id:?}");
 
-        let provided_keys_len = keys.len();
-        let keys_to_fetch = self
-            .network
-            .add_keys_to_replication_fetcher(peer_id, keys)
-            .await?;
-
-        if keys_to_fetch.is_empty() {
-            return Ok(());
-        }
-
-        Marker::FetchingKeysForReplication {
-            fetching_keys_len: keys_to_fetch.len(),
-            provided_keys_len,
-            peer_id,
-        }
-        .log();
-
-        self.fetch_replication_keys_without_wait(keys_to_fetch)?;
+        self.network
+            .add_keys_to_replication_fetcher(peer_id, keys)?;
         Ok(())
     }
 
@@ -174,15 +92,22 @@ impl Node {
     /// site
     pub(crate) fn fetch_replication_keys_without_wait(
         &self,
-        keys_to_fetch: Vec<(PeerId, NetworkAddress)>,
+        keys_to_fetch: Vec<(RecordKey, Option<PeerId>)>,
     ) -> Result<()> {
-        for (peer, key) in keys_to_fetch {
-            trace!("Fetching replication {key:?} from {peer:?}");
-            let request = Request::Query(Query::GetReplicatedData {
-                requester: NetworkAddress::from_peer(self.network.peer_id),
-                address: key,
-            });
-            self.network.send_req_ignore_reply(request, peer)?
+        for (key, maybe_peer) in keys_to_fetch {
+            match maybe_peer {
+                Some(peer) => {
+                    trace!("Fetching replication {key:?} from {peer:?}");
+                    let request = Request::Query(Query::GetReplicatedData {
+                        requester: NetworkAddress::from_peer(self.network.peer_id),
+                        address: NetworkAddress::from_record_key(key),
+                    });
+                    self.network.send_req_ignore_reply(request, peer)?
+                }
+                None => {
+                    trace!("Fetching {key:?} from the network, to be implemented");
+                }
+            }
         }
         Ok(())
     }
