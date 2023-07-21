@@ -271,13 +271,13 @@ impl SwarmDriver {
 
                 if peer_died {
                     info!("Detected dead peer {failed_peer_id:?}");
-                    if self.dead_peers.insert(failed_peer_id) {
-                        self.send_event(NetworkEvent::PeerRemoved(failed_peer_id));
-                        let _ = self
-                            .swarm
-                            .behaviour_mut()
-                            .kademlia
-                            .remove_peer(&failed_peer_id);
+                    if let Some(dead_peer) = self
+                        .swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .remove_peer(&failed_peer_id)
+                    {
+                        self.send_event(NetworkEvent::PeerRemoved(*dead_peer.node.key.preimage()));
                     }
                     self.log_kbuckets(&failed_peer_id);
                 }
@@ -417,9 +417,6 @@ impl SwarmDriver {
                 ..
             } => {
                 if is_new_peer {
-                    if self.dead_peers.remove(&peer) {
-                        info!("A dead peer {peer:?} joined back with the same ID");
-                    }
                     self.log_kbuckets(&peer);
                     self.send_event(NetworkEvent::PeerAdded(peer));
                     let connected_peers = self.swarm.connected_peers().count();
