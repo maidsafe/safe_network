@@ -55,14 +55,18 @@ async fn create_register(name: String, client: &Client) -> Result<()> {
     println!("Creating Register with '{name}' at xorname: {xorname:x} and tag {tag}");
 
     // clients currently only support public registers as we create a new key at each run
-    let _register = ClientRegister::create_public_online(client.clone(), xorname, tag).await?;
+    let our_register = ClientRegister::create_public_online(client.clone(), xorname, tag).await?;
 
     let mut verification_attempts = 0;
 
     while verification_attempts < VERIFICATION_ATTEMPTS {
         match client.get_register(xorname, tag).await {
-            Ok(_) => {
-                println!("Successfully created register '{name}' at {xorname:?}, {tag}!");
+            Ok(returned_register) => {
+                // if the returned register is not _the same_ lets inform the user
+                if our_register.register() != returned_register.register() {
+                    return Err(eyre!("Returned register '{name}' is not the same as the one we created. (It may have new entries or branches)"));
+                }
+
                 return Ok(());
             }
             Err(error) => {

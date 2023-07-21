@@ -51,6 +51,11 @@ impl ClientRegister {
         Ok(reg)
     }
 
+    /// Get the underlying register
+    pub fn register(&self) -> &Register {
+        &self.register
+    }
+
     /// Create a new Register Locally.
     pub fn create(client: Client, name: XorName, tag: u64) -> Result<Self> {
         Self::create_register(client, name, tag, Permissions::new_owner_only())
