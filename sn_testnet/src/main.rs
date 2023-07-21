@@ -119,15 +119,15 @@ async fn main() -> Result<()> {
     let args = Cmd::from_args();
 
     if args.clean {
-        let node_data_dir = dirs_next::data_dir()
+        let safe_data_dir = dirs_next::data_dir()
             .ok_or_else(|| eyre!("could not obtain root directory path".to_string()))?
-            .join("safe")
-            .join("node");
-        println!("Cleaning previous node directories under {node_data_dir:?}");
-        if let Err(e) = remove_dir_all(node_data_dir) {
+            .join("safe");
+
+        println!("Cleaning previous safe directories under {safe_data_dir:?}");
+        if let Err(e) = remove_dir_all(safe_data_dir) {
             match e.kind() {
                 ErrorKind::NotFound => {
-                    println!("No previous node directories found under");
+                    println!("No previous safe directories found.");
                 }
                 _ => {
                     return Err(e.into());
