@@ -431,6 +431,8 @@ mod tests {
             Default::default(),
             Some(network_event_sender),
         );
+
+        // An initial unverified put should not write to disk
         assert!(store.put(r.clone()).is_ok());
         assert!(store.get(&r.key).is_none());
 
@@ -443,8 +445,22 @@ mod tests {
         } else {
             panic!("Failed recevied the record for further verification");
         };
+
         assert!(store.put_verified(returned_record).is_ok());
-        assert_eq!(Some(Cow::Borrowed(&r)), store.get(&r.key));
+
+        // loop over store.get 10 times to make sure async disk write has had time to complete
+        for _ in 0..10 {
+            if store.get(&r.key).is_some() {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+
+        assert_eq!(
+            Some(Cow::Borrowed(&r)),
+            store.get(&r.key),
+            "record can be retrieved after put"
+        );
         store.remove(&r.key);
         assert!(store.get(&r.key).is_none());
     }
