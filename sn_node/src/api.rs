@@ -138,12 +138,6 @@ impl Node {
                         if let Ok(closest) = network_clone.node_get_closest_peers(&random_target).await {
                             debug!("Network inactivity: get_closest returned {closest:?}");
                         }
-
-                        // Currently trigger the replication query once inactivity detected.
-                        // Could reduce the frequence further say `after X times of inactivity`.
-                        debug!("No network activity in the past {inactivity_timeout:?}, performing a replication query");
-                        let request = Request::Cmd(Cmd::RequestReplication(NetworkAddress::from_peer(network_clone.peer_id)));
-                        let _ = network_clone.send_req_no_reply_to_self_closest(&request).await;
                     }
                 }
             }
@@ -197,15 +191,18 @@ impl Node {
 
                     self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
                 }
-                if let Err(err) = self.try_trigger_replication(&peer_id, false).await {
-                    error!("Error while triggering replication {err:?}");
-                }
             }
             NetworkEvent::PeerRemoved(peer_id) => {
                 Marker::PeerRemovedFromRoutingTable(peer_id).log();
-
-                if let Err(err) = self.try_trigger_replication(&peer_id, true).await {
+            }
+            NetworkEvent::CloseGroupUpdated(new_members) => {
+                if let Err(err) = self.try_trigger_replication(new_members).await {
                     error!("Error while triggering replication {err:?}");
+                }
+            }
+            NetworkEvent::KeysForReplication(keys) => {
+                if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
+                    error!("Error while trying to fetch replicated data {err:?}");
                 }
             }
             NetworkEvent::NewListenAddr(_) => {
@@ -242,8 +239,8 @@ impl Node {
     // Handle the response that was not awaited at the call site
     async fn handle_response(&mut self, response: Response) -> Result<()> {
         match response {
-            Response::Query(QueryResponse::GetReplicatedData(Ok((holder, replicated_data)))) => {
-                let address = match replicated_data {
+            Response::Query(QueryResponse::GetReplicatedData(Ok((_holder, replicated_data)))) => {
+                let _address = match replicated_data {
                     ReplicatedData::Chunk(chunk_with_payment) => {
                         let chunk_addr = *chunk_with_payment.chunk.address();
                         debug!("Chunk received for replication: {:?}", chunk_addr.name());
@@ -285,31 +282,11 @@ impl Node {
                         addr
                     }
                 };
-
-                // notify the fetch result
-                if let Some(peer_id) = holder.as_peer_id() {
-                    let keys_to_fetch = self
-                        .network
-                        .notify_fetch_result(peer_id, address, true)
-                        .await?;
-                    self.fetch_replication_keys_without_wait(keys_to_fetch)?;
-                } else {
-                    warn!("Cannot parse PeerId from {holder:?}");
-                }
             }
             Response::Query(QueryResponse::GetReplicatedData(Err(
                 ProtocolError::ReplicatedDataNotFound { holder, address },
             ))) => {
-                // notify the fetch result
-                if let Some(peer_id) = holder.as_peer_id() {
-                    let keys_to_fetch = self
-                        .network
-                        .notify_fetch_result(peer_id, address, false)
-                        .await?;
-                    self.fetch_replication_keys_without_wait(keys_to_fetch)?;
-                } else {
-                    warn!("Cannot parse PeerId from {holder:?}");
-                }
+                warn!("Replicated data {address:?} could not be retrieved from peer: {holder:?}");
             }
             Response::Cmd(CmdResponse::Replicate(Ok(()))) => {
                 // Nothing to do, response was fine
@@ -328,7 +305,7 @@ impl Node {
     async fn handle_request(&mut self, request: Request, response_channel: MsgResponder) {
         trace!("Handling request: {request:?}");
         let response = match request {
-            Request::Cmd(cmd) => self.handle_node_cmd(cmd).await,
+            Request::Cmd(cmd) => self.handle_node_cmd(cmd),
             Request::Query(query) => self.handle_query(query).await,
         };
         self.send_response(response, response_channel);
@@ -361,7 +338,7 @@ impl Node {
         Response::Query(resp)
     }
 
-    async fn handle_node_cmd(&mut self, cmd: Cmd) -> Response {
+    fn handle_node_cmd(&mut self, cmd: Cmd) -> Response {
         Marker::NodeCmdReceived(&cmd).log();
         let resp = match cmd {
             Cmd::Replicate { holder, keys } => {
@@ -372,19 +349,8 @@ impl Node {
                 );
 
                 // todo: error is not propagated to the caller here
-                let _ = self.replication_keys_to_fetch(holder, keys).await;
+                let _ = self.add_keys_to_replication_fetcher(holder, keys);
                 // if we do not send a response, we can cause connection failures.
-                CmdResponse::Replicate(Ok(()))
-            }
-            Cmd::RequestReplication(sender) => {
-                debug!("RequestReplication received from {sender:?}");
-                if let Some(peer_id) = sender.as_peer_id() {
-                    let _ = self.try_trigger_replication(&peer_id, false).await;
-                } else {
-                    warn!("Failed to parse peer_id for RequestReplication from {sender:?}");
-                };
-
-                // if we do not send a response, we can cause conneciton failures.
                 CmdResponse::Replicate(Ok(()))
             }
         };
