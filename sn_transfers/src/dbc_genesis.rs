@@ -105,7 +105,7 @@ pub async fn create_genesis_wallet() -> LocalWallet {
 
     LocalWallet::load_from(&root_dir)
         .await
-        .expect("Faucet wallet shall be created successfully.")
+        .expect("Faucet wallet (after genesis) shall be created successfully.")
 }
 
 /// Create a first DBC given any key (i.e. not specifically the hard coded genesis key).
@@ -210,6 +210,8 @@ pub(super) fn split(
 
 pub async fn create_faucet_wallet() -> LocalWallet {
     let root_dir = get_faucet_dir().await;
+
+    println!("Creating faucet wallet... {:#?}", root_dir);
     LocalWallet::load_from(&root_dir)
         .await
         .expect("Faucet wallet shall be created successfully.")
@@ -218,23 +220,23 @@ pub async fn create_faucet_wallet() -> LocalWallet {
 // We need deterministic and fix path for the genesis wallet.
 // Otherwise the test instances will not be able to find the same genesis instance.
 async fn get_genesis_dir() -> PathBuf {
-    let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
-    home_dirs.push(".safe");
-    home_dirs.push("test_genesis");
-    tokio::fs::create_dir_all(home_dirs.as_path())
+    let mut data_dirs = dirs_next::data_dir().expect("A homedir to exist.");
+    data_dirs.push("safe");
+    data_dirs.push("test_genesis");
+    tokio::fs::create_dir_all(data_dirs.as_path())
         .await
         .expect("Genesis test path to be successfully created.");
-    home_dirs
+    data_dirs
 }
 
 // We need deterministic and fix path for the faucet wallet.
 // Otherwise the test instances will not be able to find the same faucet instance.
 async fn get_faucet_dir() -> PathBuf {
-    let mut home_dirs = dirs_next::home_dir().expect("A homedir to exist.");
-    home_dirs.push(".safe");
-    home_dirs.push("test_faucet");
-    tokio::fs::create_dir_all(home_dirs.as_path())
+    let mut data_dirs = dirs_next::data_dir().expect("A homedir to exist.");
+    data_dirs.push("safe");
+    data_dirs.push("test_faucet");
+    tokio::fs::create_dir_all(data_dirs.as_path())
         .await
         .expect("Faucet test path to be successfully created.");
-    home_dirs
+    data_dirs
 }
