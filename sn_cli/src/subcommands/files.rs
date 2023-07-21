@@ -139,7 +139,7 @@ async fn upload_chunks(
         });
 
     file_api
-        .upload_chunks_in_batches(chunks_reader, payment_proofs, false)
+        .upload_chunks_in_batches(chunks_reader, payment_proofs, true)
         .await?;
     Ok(())
 }
