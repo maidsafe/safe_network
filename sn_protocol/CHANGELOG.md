@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.2.10...sn_protocol-v0.3.0) - 2023-07-21
+
+### Added
+- *(node)* fee output of payment proof to be required before storing chunks
+- *(protocol)* [**breaking**] make Chunks storage payment required
+
 ## [0.2.10](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.2.9...sn_protocol-v0.2.10) - 2023-07-20
 
 ### Other
