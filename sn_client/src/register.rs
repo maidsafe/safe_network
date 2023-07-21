@@ -81,6 +81,10 @@ impl ClientRegister {
         })
     }
 
+    pub fn address(&self) -> &RegisterAddress {
+        self.register.address()
+    }
+
     /// Return the Owner of the Register.
     pub fn owner(&self) -> PublicKey {
         self.register.owner()
