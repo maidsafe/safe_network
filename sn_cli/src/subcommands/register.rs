@@ -7,10 +7,14 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use clap::Subcommand;
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, ClientRegister, Error as ClientError};
 use xor_name::XorName;
 
+/// Duration to wait for verification
+const VERIFICATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+/// Number of attempts to verify the register
+const VERIFICATION_ATTEMPTS: usize = 3;
 #[derive(Subcommand, Debug)]
 pub enum RegisterCmds {
     /// Create a new register with the given pet name.
@@ -43,6 +47,8 @@ pub(crate) async fn register_cmds(cmds: RegisterCmds, client: &Client) -> Result
     Ok(())
 }
 
+/// Crates a new register with the given pet name.
+/// Verifies it exists on the network before returning
 async fn create_register(name: String, client: &Client) -> Result<()> {
     let tag = 3006;
     let xorname = XorName::from_content(name.as_bytes());
@@ -50,8 +56,31 @@ async fn create_register(name: String, client: &Client) -> Result<()> {
 
     // clients currently only support public registers as we create a new key at each run
     let _register = ClientRegister::create_public_online(client.clone(), xorname, tag).await?;
-    println!("Successfully created register '{name}' at {xorname:?}, {tag}!");
-    Ok(())
+
+    let mut verification_attempts = 0;
+
+    while verification_attempts < VERIFICATION_ATTEMPTS {
+        match client.get_register(xorname, tag).await {
+            Ok(_) => {
+                println!("Successfully created register '{name}' at {xorname:?}, {tag}!");
+                return Ok(());
+            }
+            Err(error) => {
+                verification_attempts += 1;
+                warn!(
+                    "Did not retrieve Register '{name}' from all nodes in the close group! {error}. Retrying..."
+                );
+                error!("{error:?}");
+            }
+        }
+
+        // wait for a bit before trying again
+        tokio::time::sleep(VERIFICATION_TIMEOUT).await;
+    }
+
+    Err(eyre!(
+        "Failed to create register '{name}' at {xorname:?}, {tag}."
+    ))
 }
 
 async fn edit_register(name: String, entry: String, client: &Client) -> Result<()> {
