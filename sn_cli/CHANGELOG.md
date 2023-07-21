@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.80.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.32...sn_cli-v0.80.0) - 2023-07-21
+
+### Added
+- *(cli)* allow to pass the hex-encoded DBC as arg
+- *(protocol)* [**breaking**] make Chunks storage payment required
+
 ## [0.79.32](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.79.31...sn_cli-v0.79.32) - 2023-07-20
 
 ### Other

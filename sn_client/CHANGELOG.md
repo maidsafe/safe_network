@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.55...sn_client-v0.86.0) - 2023-07-21
+
+### Added
+- *(protocol)* [**breaking**] make Chunks storage payment required
+
+### Other
+- tokens transfers task in data_with_churn tests to use client apis instead of faucet helpers
+
 ## [0.85.55](https://github.com/maidsafe/safe_network/compare/sn_client-v0.85.54...sn_client-v0.85.55) - 2023-07-20
 
 ### Other
