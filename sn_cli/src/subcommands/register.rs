@@ -62,9 +62,8 @@ async fn edit_register(name: String, entry: String, client: &Client) -> Result<(
     match client.get_register(xorname, tag).await {
         Ok(mut register) => {
             println!(
-                "Successfully retrieved Register '{name}' from {}, {}!",
-                register.name(),
-                register.tag()
+                "Successfully retrieved Register '{name}' from {:?}!",
+                register.address(),
             );
             println!("Editing Register '{name}' with: {entry}");
             match register.write_online(entry.as_bytes()).await {
@@ -103,9 +102,8 @@ async fn get_registers(names: Vec<String>, client: &Client) -> Result<()> {
         match client.get_register(xorname, tag).await {
             Ok(register) => {
                 println!(
-                    "Successfully retrieved Register '{name}' from {}, {}!",
-                    register.name(),
-                    register.tag()
+                    "Successfully retrieved Register '{name}' from {:?}!",
+                    register.address(),
                 );
                 let entries = register.read();
                 println!("Register entries:");
