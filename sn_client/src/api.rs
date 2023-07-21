@@ -182,45 +182,34 @@ impl Client {
     }
 
     fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
-        match event {
-            // Clients do not handle requests.
-            NetworkEvent::RequestReceived { .. } => {}
-            // Clients do not handle responses
-            NetworkEvent::ResponseReceived { .. } => {}
-            // We do not listen on sockets.
-            NetworkEvent::NewListenAddr(_) => {}
-            // We are not doing AutoNAT and don't care about our status.
-            NetworkEvent::NatStatusChanged(_) => {}
-            NetworkEvent::PeerAdded(peer_id) => {
-                debug!("PeerAdded: {peer_id}");
-                // In case client running in non-local-discovery mode,
-                // it may take some time to fill up the RT.
-                // To avoid such delay may fail the query with RecordNotFound,
-                // wait till certain amount of peers populated into RT
-                if let Some(peers_added) = NonZeroUsize::new(self.peers_added) {
-                    if peers_added >= K_VALUE {
-                        if let Some(progress) = &self.progress {
-                            progress.finish_with_message("Connected to the Network");
-                            // Remove the progress bar
-                            self.progress = None;
-                        }
+        if let NetworkEvent::PeerAdded(peer_id) = event {
+            debug!("PeerAdded: {peer_id}");
+            // In case client running in non-local-discovery mode,
+            // it may take some time to fill up the RT.
+            // To avoid such delay may fail the query with RecordNotFound,
+            // wait till certain amount of peers populated into RT
+            if let Some(peers_added) = NonZeroUsize::new(self.peers_added) {
+                if peers_added >= K_VALUE {
+                    if let Some(progress) = &self.progress {
+                        progress.finish_with_message("Connected to the Network");
+                        // Remove the progress bar
+                        self.progress = None;
+                    }
 
-                        self.events_channel
-                            .broadcast(ClientEvent::ConnectedToNetwork)?;
-                    } else {
-                        debug!("{}/{} initial peers found.", self.peers_added, K_VALUE);
+                    self.events_channel
+                        .broadcast(ClientEvent::ConnectedToNetwork)?;
+                } else {
+                    debug!("{}/{} initial peers found.", self.peers_added, K_VALUE);
 
-                        if let Some(progress) = &self.progress {
-                            progress.set_message(format!(
-                                "{}/{} initial peers found.",
-                                self.peers_added, K_VALUE
-                            ));
-                        }
+                    if let Some(progress) = &self.progress {
+                        progress.set_message(format!(
+                            "{}/{} initial peers found.",
+                            self.peers_added, K_VALUE
+                        ));
                     }
                 }
-                self.peers_added += 1;
             }
-            NetworkEvent::PeerRemoved(_) | NetworkEvent::UnverifiedRecord(_) => {}
+            self.peers_added += 1;
         }
 
         Ok(())

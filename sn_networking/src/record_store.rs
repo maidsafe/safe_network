@@ -114,27 +114,6 @@ impl DiskBackedRecordStore {
         to_be_removed.iter().for_each(|key| self.remove(key));
     }
 
-    /// Returns the list of keys that are within the provided distance to the target
-    pub fn get_record_keys_closest_to_target(
-        &mut self,
-        target: KBucketKey<Vec<u8>>,
-        distance_bar: Distance,
-    ) -> Vec<Key> {
-        self.records
-            .iter()
-            .filter(|key| {
-                let record_key = KBucketKey::from(key.to_vec());
-                target.distance(&record_key) < distance_bar
-            })
-            .cloned()
-            .collect()
-    }
-
-    /// Setup the distance range.
-    pub fn set_distance_range(&mut self, distance_bar: Distance) {
-        self.distance_range = Some(distance_bar);
-    }
-
     // Converts a Key into a Hex string.
     fn key_to_hex(key: &Key) -> String {
         let key_bytes = key.as_ref();
@@ -150,6 +129,11 @@ impl DiskBackedRecordStore {
             .iter()
             .map(|record_key| NetworkAddress::from_record_key(record_key.clone()))
             .collect()
+    }
+
+    #[allow(clippy::mutable_key_type)]
+    pub fn record_addresses_ref(&self) -> &HashSet<Key> {
+        &self.records
     }
 
     pub fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {

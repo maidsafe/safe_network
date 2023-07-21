@@ -39,10 +39,7 @@ use futures::{future::select_all, StreamExt};
 use libp2p::mdns;
 use libp2p::{
     identity::Keypair,
-    kad::{
-        KBucketDistance as Distance, KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
-        RecordKey,
-    },
+    kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
@@ -116,6 +113,8 @@ pub struct SwarmDriver {
     local: bool,
     /// A list of the most recent peers we have dialed ourselves.
     dialed_peers: CircularVec<PeerId>,
+    /// The peers that are closer to our PeerId
+    close_group: Vec<PeerId>,
     is_client: bool,
 }
 
@@ -390,11 +389,12 @@ impl SwarmDriver {
             pending_query: Default::default(),
             replication_fetcher: Default::default(),
             local,
-            // We use 63 here, as in practice the capactiy will be rounded to the nearest 2^(n-1).
+            // We use 63 here, as in practice the capacity will be rounded to the nearest 2^(n-1).
             // Source: https://users.rust-lang.org/t/the-best-ring-buffer-library/58489/8
             // 63 will mean at least 63 most recent peers we have dialed, which should be allow for enough time for the
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
+            close_group: Default::default(),
             is_client,
         };
 
@@ -534,6 +534,17 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
+    /// Returns the current set of members in our close group. This list is sorted in ascending order based on the
+    ///  distance to self. The first element is self.
+    pub async fn get_our_close_group(&self) -> Result<Vec<PeerId>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetOurCloseGroup { sender })?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
     /// Send `Request` to the closest peers. If `self` is among the closest_peers, the `Request` is
     /// forwarded to itself and handled. Then a corresponding `Response` is created and is
     /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
@@ -592,24 +603,6 @@ impl Network {
         Ok(self
             .send_and_get_responses(closest_peers, request, expect_all_responses)
             .await)
-    }
-
-    /// Returns the list of keys that are within the provided distance to the target
-    pub async fn get_record_keys_closest_to_target(
-        &self,
-        target: &NetworkAddress,
-        distance: Distance,
-    ) -> Result<Vec<RecordKey>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetRecordKeysClosestToTarget {
-            key: target.clone(),
-            distance,
-            sender,
-        })?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
     /// Get the Record from the network
@@ -722,44 +715,13 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
-    // Add a list of keys of a holder to RecordFetcher.  Return with a list of keys to fetch, if present.
-    pub async fn add_keys_to_replication_fetcher(
+    // Add a list of keys of a holder to Replication Fetcher.
+    pub fn add_keys_to_replication_fetcher(
         &self,
         peer: PeerId,
         keys: Vec<NetworkAddress>,
-    ) -> Result<Vec<(PeerId, NetworkAddress)>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { peer, keys, sender })?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
-    }
-
-    // Notify the fetch result of a key from a holder. Return with a list of keys to fetch, if present.
-    pub async fn notify_fetch_result(
-        &self,
-        peer: PeerId,
-        key: NetworkAddress,
-        result: bool,
-    ) -> Result<Vec<(PeerId, NetworkAddress)>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::NotifyFetchResult {
-            peer,
-            key,
-            result,
-            sender,
-        })?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
-    }
-
-    /// Set the acceptable range of record entry. A record is removed from the storage if the
-    /// distance between the record and the node is greater than the provided `distance`.
-    pub fn set_record_distance_range(&self, distance: Distance) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::SetRecordDistanceRange { distance })
+    ) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { peer, keys })
     }
 
     /// Send `Request` to the the given `PeerId` and await for the response. If `self` is the recipient,
