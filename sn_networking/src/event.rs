@@ -20,15 +20,15 @@ use libp2p::{
     kad::{GetRecordOk, InboundRequest, Kademlia, KademliaEvent, QueryResult, Record, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
-    swarm::{behaviour::toggle::Toggle, DialError, NetworkBehaviour, SwarmEvent},
-    Multiaddr, PeerId, TransportError,
+    swarm::{behaviour::toggle::Toggle, NetworkBehaviour, SwarmEvent},
+    Multiaddr, PeerId,
 };
 use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress,
 };
 use std::collections::HashSet;
-use std::io::ErrorKind;
+
 use tokio::sync::oneshot;
 use tracing::{info, warn};
 
@@ -261,23 +261,13 @@ impl SwarmDriver {
                 connection_id,
             } => {
                 error!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
-
-                let peer_died = match error {
-                    DialError::WrongPeerId { .. } => true,
-                    DialError::Transport(errors) => errors.iter().any(|(_, error)| matches!(error, TransportError::Other(err) if err.kind() == ErrorKind::ConnectionRefused) ),
-                    _ => false,
-                };
-
-                if peer_died {
-                    info!("Detected dead peer {failed_peer_id:?}");
-                    if let Some(dead_peer) = self
-                        .swarm
-                        .behaviour_mut()
-                        .kademlia
-                        .remove_peer(&failed_peer_id)
-                    {
-                        self.send_event(NetworkEvent::PeerRemoved(*dead_peer.node.key.preimage()));
-                    }
+                if let Some(dead_peer) = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .remove_peer(&failed_peer_id)
+                {
+                    self.send_event(NetworkEvent::PeerRemoved(*dead_peer.node.key.preimage()));
                     self.log_kbuckets(&failed_peer_id);
                 }
             }
