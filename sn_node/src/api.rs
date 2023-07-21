@@ -196,11 +196,14 @@ impl Node {
                 Marker::PeerRemovedFromRoutingTable(peer_id).log();
             }
             NetworkEvent::CloseGroupUpdated(new_members) => {
-                if let Err(err) = self.try_trigger_replication(new_members).await {
+                Marker::CloseGroupUpdated(&new_members).log();
+                if let Err(err) = self.try_trigger_replication().await {
                     error!("Error while triggering replication {err:?}");
                 }
             }
             NetworkEvent::KeysForReplication(keys) => {
+                Marker::fetching_keys_for_replication(&keys).log();
+
                 if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
                     error!("Error while trying to fetch replicated data {err:?}");
                 }
