@@ -23,9 +23,6 @@ pub enum Error {
     #[error("Protocol error {0}")]
     Protocol(#[from] ProtocolError),
 
-    #[error("Node wallet load issue: {0}.")]
-    CouldNotLoadWallet(String),
-
     #[error("Genesis error {0}")]
     Genesis(#[from] GenesisError),
 
