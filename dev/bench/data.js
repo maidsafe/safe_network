@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689937061478,
+  "lastUpdate": 1689937104841,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5699,6 +5699,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 23.15,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "21afa206e44718d1f77e0daf6d314a5b9ae724ba",
+          "message": "ci: update benchmark generation for faucet startup",
+          "timestamp": "2023-07-21T12:32:17+02:00",
+          "tree_id": "c37a28239fc7ac68251419aa65d731fe688d0182",
+          "url": "https://github.com/maidsafe/safe_network/commit/21afa206e44718d1f77e0daf6d314a5b9ae724ba"
+        },
+        "date": 1689937104471,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 35.94,
             "unit": "MB"
           }
         ]
