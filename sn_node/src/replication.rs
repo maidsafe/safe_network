@@ -22,8 +22,8 @@ const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
 
 impl Node {
     /// Replication is triggered when is there is a change in our close group
-    pub(crate) async fn try_trigger_replication(&mut self, new_members: Vec<PeerId>) -> Result<()> {
-        Marker::ReplicationTriggered(&new_members).log();
+    pub(crate) async fn try_trigger_replication(&mut self) -> Result<()> {
+        Marker::ReplicationTriggered.log();
         let our_close_group = self.network.get_our_close_group().await?;
         let our_peer_id = self.network.peer_id;
         let our_address = NetworkAddress::from_peer(our_peer_id);
