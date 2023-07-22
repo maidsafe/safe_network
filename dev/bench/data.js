@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690008756424,
+  "lastUpdate": 1690008759037,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -7872,6 +7872,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 235,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "beb15f9ba34f85e93d97815a52d9be110bf43113",
+          "message": "fix(testnet): clean the whole safe dir\n\nAlso more test wallet creation in to that same safedir",
+          "timestamp": "2023-07-22T05:53:06Z",
+          "tree_id": "5feac39ecfce972533099201d761b380e7bf44c6",
+          "url": "https://github.com/maidsafe/safe_network/commit/beb15f9ba34f85e93d97815a52d9be110bf43113"
+        },
+        "date": 1690008758640,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 225.55,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 224,
             "unit": "MB"
           }
         ]
