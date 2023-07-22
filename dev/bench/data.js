@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689937107387,
+  "lastUpdate": 1690008718530,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3232,6 +3232,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 9.215862561105045,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "beb15f9ba34f85e93d97815a52d9be110bf43113",
+          "message": "fix(testnet): clean the whole safe dir\n\nAlso more test wallet creation in to that same safedir",
+          "timestamp": "2023-07-22T05:53:06Z",
+          "tree_id": "5feac39ecfce972533099201d761b380e7bf44c6",
+          "url": "https://github.com/maidsafe/safe_network/commit/beb15f9ba34f85e93d97815a52d9be110bf43113"
+        },
+        "date": 1690008717912,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1559763197481483,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 7.215967147307332,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 11.2931534894421,
             "unit": "MiB/s"
           }
         ]
