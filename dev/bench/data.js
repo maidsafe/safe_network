@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690197971437,
+  "lastUpdate": 1690197974507,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8076,6 +8076,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 228,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "3fb62504886c8fd6282bc07b31f41ae3007cf405",
+          "message": "chore: improve logging, add address method to ClientRegister",
+          "timestamp": "2023-07-24T10:09:30Z",
+          "tree_id": "fb69ab11b51286767db39cdddd13d8bbf1407971",
+          "url": "https://github.com/maidsafe/safe_network/commit/3fb62504886c8fd6282bc07b31f41ae3007cf405"
+        },
+        "date": 1690197974147,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 231.96,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 234,
             "unit": "MB"
           }
         ]
