@@ -71,7 +71,7 @@ impl Client {
         };
 
         // subscribe to our events channel first, so we don't have intermittent
-        // errors if it does not exist and we cannot send to it
+        // errors if it does not exist and we cannot send to it.
         // (eg, if PeerAdded happens faster than our events channel is created)
         let mut client_events_rx = client.events_channel();
 
@@ -130,8 +130,8 @@ impl Client {
             }
         });
 
+        // loop to connect to the network
         let mut is_connected = false;
-
         loop {
             let mut rng = rand::thread_rng();
             // Carry out 5 rounds of random get to fill up the RT at the beginning.
@@ -163,6 +163,14 @@ impl Client {
                 }
             }
         }
+        // The above loop breaks if `ConnectedToNetwork` is received, but we might need the
+        // receiver to still be active for us to not get any error if any other event is sent
+        let mut client_events_rx = client.events_channel();
+        spawn(async move {
+            loop {
+                let _ = client_events_rx.recv().await;
+            }
+        });
 
         Ok(client)
     }
