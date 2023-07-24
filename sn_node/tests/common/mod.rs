@@ -82,6 +82,21 @@ pub async fn get_funded_wallet(
     std::thread::sleep(std::time::Duration::from_secs(5));
 
     println!("Verifying the transfer from faucet...");
+
+    // loop over verification for 10s in case the write has not gone through instantaneously
+    let mut verified = false;
+    for _ in 0..10 {
+        if client.verify(&tokens).await.is_ok() {
+            verified = true;
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
+
+    if !verified {
+        panic!("Failed to verify the transfer from faucet");
+    }
+
     client.verify(&tokens).await?;
     local_wallet.deposit(vec![tokens]);
     assert_eq!(local_wallet.balance(), wallet_balance);
