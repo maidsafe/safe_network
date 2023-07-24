@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690196327142,
+  "lastUpdate": 1690197909723,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3310,6 +3310,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 12.023473361005403,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "3fb62504886c8fd6282bc07b31f41ae3007cf405",
+          "message": "chore: improve logging, add address method to ClientRegister",
+          "timestamp": "2023-07-24T10:09:30Z",
+          "tree_id": "fb69ab11b51286767db39cdddd13d8bbf1407971",
+          "url": "https://github.com/maidsafe/safe_network/commit/3fb62504886c8fd6282bc07b31f41ae3007cf405"
+        },
+        "date": 1690197909037,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1158842865195338,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 6.823264105515796,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.325309706843138,
             "unit": "MiB/s"
           }
         ]
