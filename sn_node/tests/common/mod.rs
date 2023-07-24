@@ -15,7 +15,10 @@ use lazy_static::lazy_static;
 use sn_dbc::Token;
 use sn_logging::{LogFormat, LogOutputDest};
 use std::{path::Path, sync::Once};
-use tokio::sync::Mutex;
+use tokio::{
+    sync::Mutex,
+    time::{sleep, Instant},
+};
 use tracing_core::Level;
 
 static TEST_INIT_LOGGER: Once = Once::new();
@@ -82,7 +85,26 @@ pub async fn get_funded_wallet(
     std::thread::sleep(std::time::Duration::from_secs(5));
 
     println!("Verifying the transfer from faucet...");
-    client.verify(&tokens).await?;
+    let verification_start = Instant::now();
+    // loop over verification for 10s in case the write has not gone through instantaneously
+    let mut verified = false;
+    for _ in 0..100 {
+        if client.verify(&tokens).await.is_ok() {
+            verified = true;
+
+            println!(
+                "Verified after {} seconds.",
+                verification_start.elapsed().as_secs()
+            );
+            break;
+        }
+        sleep(std::time::Duration::from_secs(10)).await;
+    }
+
+    if !verified {
+        panic!("Failed to verify the transfer from faucet");
+    }
+
     local_wallet.deposit(vec![tokens]);
     assert_eq!(local_wallet.balance(), wallet_balance);
     println!("Tokens deposited to the wallet that'll pay for storage: {wallet_balance}.");
