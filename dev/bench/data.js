@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690210835557,
+  "lastUpdate": 1690210839965,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8280,6 +8280,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 233,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "d02e1cc975f68caadce385bf66b87515564f7a68",
+          "message": "test: prevent from self-encrypting same file twice in churn tests\n\nCo-authored-by: RolandSherwin <RolandSherwin@protonmail.com>",
+          "timestamp": "2023-07-24T13:41:38Z",
+          "tree_id": "f70e486d36b1269e86c2518df6e0cb433fb8faf6",
+          "url": "https://github.com/maidsafe/safe_network/commit/d02e1cc975f68caadce385bf66b87515564f7a68"
+        },
+        "date": 1690210839167,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 231.24,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 240,
             "unit": "MB"
           }
         ]
