@@ -44,6 +44,7 @@ sn_protocol = { path = "../sn_protocol", version = "0.3.0" }
 tokio = { version = "1.17.0", features = ["fs", "io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
 tracing-core = "0.1.30"
+url = "2.4.0"
 walkdir = "2.3.1"
 xor_name = "5.0.0"
 
