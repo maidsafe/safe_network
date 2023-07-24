@@ -63,6 +63,7 @@ use std::{
 };
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
+use xor_name::XorName;
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
 /// This is the group size used in safe network protocol to be responsible for
@@ -103,6 +104,14 @@ pub const fn close_group_majority() -> usize {
 }
 
 type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
+// Usig XorName to differentiate different record content under the same key.
+type PendingGetRecord = HashMap<
+    QueryId,
+    (
+        oneshot::Sender<Result<Record>>,
+        HashMap<XorName, (Record, HashSet<PeerId>)>,
+    ),
+>;
 
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
@@ -116,7 +125,7 @@ pub struct SwarmDriver {
     event_sender: mpsc::Sender<NetworkEvent>,
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
-    pending_query: HashMap<QueryId, oneshot::Sender<Result<Record>>>,
+    pending_get_record: PendingGetRecord,
     replication_fetcher: ReplicationFetcher,
     local: bool,
     /// A list of the most recent peers we have dialed ourselves.
@@ -394,7 +403,7 @@ impl SwarmDriver {
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
-            pending_query: Default::default(),
+            pending_get_record: Default::default(),
             replication_fetcher: Default::default(),
             local,
             // We use 63 here, as in practice the capacity will be rounded to the nearest 2^n-1.
