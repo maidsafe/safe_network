@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690204580210,
+  "lastUpdate": 1690210791417,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3388,6 +3388,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 9.064891312021832,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "d02e1cc975f68caadce385bf66b87515564f7a68",
+          "message": "test: prevent from self-encrypting same file twice in churn tests\n\nCo-authored-by: RolandSherwin <RolandSherwin@protonmail.com>",
+          "timestamp": "2023-07-24T13:41:38Z",
+          "tree_id": "f70e486d36b1269e86c2518df6e0cb433fb8faf6",
+          "url": "https://github.com/maidsafe/safe_network/commit/d02e1cc975f68caadce385bf66b87515564f7a68"
+        },
+        "date": 1690210790096,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.13613061038947,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 7.446190477050504,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 12.054469785470417,
             "unit": "MiB/s"
           }
         ]
