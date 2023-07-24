@@ -33,11 +33,17 @@ use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress,
 };
-use std::{collections::HashSet, num::NonZeroUsize};
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    num::NonZeroUsize,
+};
 
 use tokio::sync::oneshot;
 use tracing::{info, warn};
 use xor_name::XorName;
+
+// Usig XorName to differentiate different record content under the same key.
+pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
 
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
@@ -508,13 +514,6 @@ impl SwarmDriver {
     // 1, Return whenever reached majority of CLOSE_GROUP_SIZE
     // 2, In case of split, return with NotFound,
     //    whenever `ProgressStep::count` hits CLOSE_GROUP_SIZE
-    //
-    // Split resolvement policy:
-    // 1, Always choose the copy having the highest votes
-    // 2, If multiple having same votes, chose the lowest XorName one
-    //
-    // Only update self when is among the `non-majority list`.
-    // Trying to update other peers is un-necessary and may introduce extra holes.
     fn accumulate_get_record_ok(
         &mut self,
         query_id: QueryId,
@@ -539,21 +538,62 @@ impl SwarmDriver {
                     peer_list
                 };
 
-            if peer_list.len() >= close_group_majority() {
-                let _ = sender.send(Ok(peer_record.record));
-                return;
-            }
+            let result = if peer_list.len() >= close_group_majority() {
+                Some(Ok(peer_record.record.clone()))
+            } else if usize::from(count) >= CLOSE_GROUP_SIZE {
+                Some(Err(Error::RecordNotFound))
+            } else {
+                None
+            };
 
             let _ = result_map.insert(record_content_hash, (peer_record.record, peer_list));
 
-            if usize::from(count) >= CLOSE_GROUP_SIZE {
-                let _ = sender.send(Err(Error::RecordNotFound));
-                return;
+            if let Some(result) = result {
+                let _ = sender.send(result);
+                self.try_update_self_for_split_record(result_map);
+            } else {
+                let _ = self
+                    .pending_get_record
+                    .insert(query_id, (sender, result_map));
             }
+        }
+    }
 
-            let _ = self
-                .pending_get_record
-                .insert(query_id, (sender, result_map));
+    // Split resolvement policy:
+    // 1, Always choose the copy having the highest votes
+    // 2, If multiple having same votes, chose the lowest XorName one
+    //
+    // Only update self when is among the `non-majority list`.
+    // Trying to update other peers is un-necessary and may introduce extra holes.
+    fn try_update_self_for_split_record(&mut self, result_map: GetRecordResultMap) {
+        if result_map.len() == 1 {
+            // Do nothing as there is no split votes
+            return;
+        }
+
+        let mut highest_count = 0;
+        let mut highest_records = BTreeMap::new();
+        for (xor_name, (record, peer_list)) in &result_map {
+            if peer_list.len() > highest_count {
+                // Cleanup whenever there is a record got more votes
+                highest_records = BTreeMap::new();
+            }
+            if peer_list.len() >= highest_count {
+                highest_count = peer_list.len();
+                let _ = highest_records.insert(xor_name, (record, peer_list));
+            }
+        }
+
+        if let Some((_, (record, peer_list))) = highest_records.pop_first() {
+            if !peer_list.contains(&self.self_peer_id) {
+                warn!("Update self regarding a split record {:?}", record.key);
+                let _ = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .put_verified(record.clone());
+            }
         }
     }
 }
