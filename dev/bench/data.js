@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690196279162,
+  "lastUpdate": 1690196323739,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5835,6 +5835,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 28.11,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4adf3051bc350fd93f00849fa59c0a1748ee358f",
+          "message": "feat(rpc): get addresses of the locally stored Records",
+          "timestamp": "2023-07-24T09:40:30Z",
+          "tree_id": "58d94fb1147f3620a5855b7fff02e4406caee6fd",
+          "url": "https://github.com/maidsafe/safe_network/commit/4adf3051bc350fd93f00849fa59c0a1748ee358f"
+        },
+        "date": 1690196322950,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 24.75,
             "unit": "MB"
           }
         ]
