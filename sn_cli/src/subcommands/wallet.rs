@@ -19,6 +19,7 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
 };
+use url::Url;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -105,10 +106,15 @@ async fn balance(root_dir: &Path) -> Result<()> {
 async fn get_faucet(root_dir: &Path, url: String) -> Result<()> {
     let wallet = LocalWallet::load_from(root_dir).await?;
     let address_hex = hex::encode(wallet.address().to_bytes());
-    let req_url = format!("{}/{}", url, address_hex);
+    let url = if !url.contains("://") {
+        format!("{}://{}", "http", url)
+    } else {
+        url
+    };
+    let req_url = Url::parse(&format!("{}/{}", url, address_hex))?;
     println!("Requesting token for wallet address: {address_hex}...");
 
-    let response = reqwest::get(&req_url).await?;
+    let response = reqwest::get(req_url).await?;
     let is_ok = response.status().is_success();
     let body = response.text().await?;
     if is_ok {
