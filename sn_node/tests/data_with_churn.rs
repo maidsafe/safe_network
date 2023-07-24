@@ -360,8 +360,11 @@ fn store_chunks_task(
             );
             sleep(delay).await;
 
-            match file_api.upload_with_proof(bytes, &proofs).await {
-                Ok(_) => content
+            match file_api
+                .upload_chunks_in_batches(chunks.into_iter(), &proofs, false)
+                .await
+            {
+                Ok(()) => content
                     .write()
                     .await
                     .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(addr))),
