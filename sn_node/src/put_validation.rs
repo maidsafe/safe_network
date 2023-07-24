@@ -26,6 +26,7 @@ use sn_transfers::{
     payment_proof::validate_payment_proof,
 };
 use std::collections::{BTreeSet, HashSet};
+use tokio::task::JoinSet;
 use xor_name::XorName;
 
 impl Node {
@@ -269,13 +270,20 @@ impl Node {
 
         // We need to fetch the inputs of the DBC tx in order to obtain the root-hash and
         // other info for verifications of valid payment.
-        // TODO: perform verifications in multiple concurrent tasks
-        let mut payment_tx = None;
-        for dbc_id in spent_ids.iter() {
-            let addr = DbcAddress::from_dbc_id(dbc_id);
+        let mut tasks = JoinSet::new();
+        spent_ids.iter().cloned().for_each(|dbc_id| {
+            let self_clone = self.clone();
+            let _ = tasks.spawn(async move {
+                let addr = DbcAddress::from_dbc_id(&dbc_id);
+                let signed_spend = self_clone.get_spend_from_network(addr).await?;
+                Ok::<DbcTransaction, ProtocolError>(signed_spend.spent_tx())
+            });
+        });
 
-            let signed_spend = self.get_spend_from_network(addr).await?;
-            let spent_tx = signed_spend.spent_tx();
+        let mut payment_tx = None;
+        while let Some(result) = tasks.join_next().await {
+            // TODO: since we are not sending these errors as a response, return sn_node::Error instead.
+            let spent_tx = result.map_err(|_| ProtocolError::ChunkNotStored(addr_name))??;
             match payment_tx {
                 Some(tx) if spent_tx != tx => {
                     return Err(ProtocolError::PaymentProofTxMismatch(addr_name));
