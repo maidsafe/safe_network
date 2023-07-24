@@ -52,13 +52,19 @@ Thereafter we can ask the faucet to send tokens to any address we specify.
 To get the address of your wallet, just call the address cmd. It will create the wallet if it doesn't exist.
 
 - Claim genesis
-`cargo run --bin faucet --release -- claim-genesis`
+`cargo run --release --bin faucet -- claim-genesis`
 
 - Get your wallet address
-`cargo run --bin safe --release -- wallet address`
+`cargo run --release --bin safe -- wallet address`
 
 - Send tokens from the faucet to your wallet
-`cargo run --bin faucet --release -- send [amount] [address]`
+`cargo run --release --bin faucet -- send [amount] [address]`
+
+- Start a local faucet server
+`cargo run --release --bin faucet -- server`
+
+- Request tokens from the local faucet server (requires a running faucet server)
+`cargo run --release --bin safe wallet get-faucet http://localhost:8000`
 
 Please note that this feature is still unstable and most likely won't work yet.
 
