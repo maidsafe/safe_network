@@ -150,7 +150,13 @@ impl SwarmDriver {
             }
             SwarmCmd::GetNetworkRecord { key, sender } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
-                let _ = self.pending_query.insert(query_id, sender);
+                if self
+                    .pending_get_record
+                    .insert(query_id, (sender, Default::default()))
+                    .is_some()
+                {
+                    warn!("An existing get_record task {query_id:?} got replaced");
+                }
             }
             SwarmCmd::GetLocalStoreCost { sender } => {
                 let cost = self.swarm.behaviour_mut().kademlia.store_mut().store_cost();

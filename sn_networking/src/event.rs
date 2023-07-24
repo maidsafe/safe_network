@@ -12,8 +12,8 @@ use super::{
     SwarmDriver,
 };
 use crate::{
-    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, PrettyPrintRecordKey,
-    CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
+    close_group_majority, multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address,
+    PrettyPrintRecordKey, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
 };
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
@@ -21,8 +21,8 @@ use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{
-        GetRecordOk, InboundRequest, Kademlia, KademliaEvent, QueryResult, Record, RecordKey,
-        K_VALUE,
+        GetRecordOk, InboundRequest, Kademlia, KademliaEvent, PeerRecord, QueryId, QueryResult,
+        Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
@@ -33,10 +33,11 @@ use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress,
 };
-use std::collections::HashSet;
+use std::{collections::HashSet, num::NonZeroUsize};
 
 use tokio::sync::oneshot;
 use tracing::{info, warn};
+use xor_name::XorName;
 
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
@@ -349,22 +350,34 @@ impl SwarmDriver {
                         .insert(id, (sender, current_closest));
                 }
             }
+            // For `get_record` returning behaviour:
+            //   1, targeting a non-existing entry
+            //     there will only be one event of `KademliaEvent::OutboundQueryProgressed`
+            //     with `ProgressStep::last` to be `true`
+            //          `QueryStats::requests` to be 20 (K-Value)
+            //          `QueryStats::success` to be over majority of the requests
+            //          `err::NotFound::closest_peers` contains a list of CLOSE_GROUP_SIZE peers
+            //   2, targeting an existing entry
+            //     there will a sequence of (at least CLOSE_GROUP_SIZE) events of
+            //     `KademliaEvent::OutboundQueryProgressed` to be received
+            //     with `QueryStats::end` always being `None`
+            //          `ProgressStep::last` all to be `false`
+            //          `ProgressStep::count` to be increased with step of 1
+            //             capped and stopped at CLOSE_GROUP_SIZE, may have duplicated counts
+            //          `PeerRecord::peer` could be None to indicate from self
+            //             in which case it always use a duplicated `PregressStep::count`
             KademliaEvent::OutboundQueryProgressed {
                 id,
                 result: QueryResult::GetRecord(Ok(GetRecordOk::FoundRecord(peer_record))),
                 stats,
                 step,
             } => {
-                if let Some(sender) = self.pending_query.remove(&id) {
-                    trace!(
-                        "Query task {id:?} returned with record {:?} from peer {:?}, {stats:?} - {step:?}",
-                        PrettyPrintRecordKey::from(peer_record.record.key.clone()),
-                        peer_record.peer
-                    );
-                    sender
-                        .send(Ok(peer_record.record))
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
-                }
+                trace!(
+                    "Query task {id:?} returned with record {:?} from peer {:?}, {stats:?} - {step:?}",
+                    PrettyPrintRecordKey::from(peer_record.record.key.clone()),
+                    peer_record.peer
+                );
+                self.accumulate_get_record_ok(id, peer_record, step.count);
             }
             KademliaEvent::OutboundQueryProgressed {
                 id,
@@ -375,7 +388,7 @@ impl SwarmDriver {
                 warn!("Query task {id:?} failed to get record with error: {err:?}, {stats:?} - {step:?}");
                 if step.last {
                     // To avoid the caller wait forever on a non-existing entry
-                    if let Some(sender) = self.pending_query.remove(&id) {
+                    if let Some((sender, _)) = self.pending_get_record.remove(&id) {
                         sender
                             .send(Err(Error::RecordNotFound))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
@@ -489,6 +502,59 @@ impl SwarmDriver {
             index += 1;
         }
         info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}");
+    }
+
+    // Completes when any of the following condition reaches first:
+    // 1, Return whenever reached majority of CLOSE_GROUP_SIZE
+    // 2, In case of split, return with NotFound,
+    //    whenever `ProgressStep::count` hits CLOSE_GROUP_SIZE
+    //
+    // Split resolvement policy:
+    // 1, Always choose the copy having the highest votes
+    // 2, If multiple having same votes, chose the lowest XorName one
+    //
+    // Only update self when is among the `non-majority list`.
+    // Trying to update other peers is un-necessary and may introduce extra holes.
+    fn accumulate_get_record_ok(
+        &mut self,
+        query_id: QueryId,
+        peer_record: PeerRecord,
+        count: NonZeroUsize,
+    ) {
+        let peer_id = if let Some(peer_id) = peer_record.peer {
+            peer_id
+        } else {
+            self.self_peer_id
+        };
+        let record_content_hash = XorName::from_content(&peer_record.record.value);
+
+        if let Some((sender, mut result_map)) = self.pending_get_record.remove(&query_id) {
+            let peer_list =
+                if let Some((_, mut peer_list)) = result_map.remove(&record_content_hash) {
+                    let _ = peer_list.insert(peer_id);
+                    peer_list
+                } else {
+                    let mut peer_list = HashSet::new();
+                    let _ = peer_list.insert(peer_id);
+                    peer_list
+                };
+
+            if peer_list.len() >= close_group_majority() {
+                let _ = sender.send(Ok(peer_record.record));
+                return;
+            }
+
+            let _ = result_map.insert(record_content_hash, (peer_record.record, peer_list));
+
+            if usize::from(count) >= CLOSE_GROUP_SIZE {
+                let _ = sender.send(Err(Error::RecordNotFound));
+                return;
+            }
+
+            let _ = self
+                .pending_get_record
+                .insert(query_id, (sender, result_map));
+        }
     }
 }
 
