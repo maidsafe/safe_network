@@ -49,6 +49,12 @@ pub enum WalletCmds {
         #[clap(long)]
         dbc: Option<String>,
     },
+    /// Get tokens from a faucet.
+    GetFaucet {
+        /// The http url of the faucet to get tokens from.
+        #[clap(name = "url")]
+        url: String,
+    },
     /// Send a DBC.
     Send {
         /// The number of nanos to send.
@@ -73,6 +79,7 @@ pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Pa
         WalletCmds::Address => address(root_dir).await?,
         WalletCmds::Balance => balance(root_dir).await?,
         WalletCmds::Deposit { stdin, dbc } => deposit(root_dir, stdin, dbc).await?,
+        WalletCmds::GetFaucet { url } => get_faucet(root_dir, url).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
         WalletCmds::Pay { path } => {
             chunk_and_pay_for_storage(client, root_dir, &path).await?;
@@ -92,6 +99,27 @@ async fn balance(root_dir: &Path) -> Result<()> {
     let wallet = LocalWallet::load_from(root_dir).await?;
     let balance = wallet.balance();
     println!("{balance}");
+    Ok(())
+}
+
+async fn get_faucet(root_dir: &Path, url: String) -> Result<()> {
+    let wallet = LocalWallet::load_from(root_dir).await?;
+    let address_hex = hex::encode(wallet.address().to_bytes());
+    let req_url = format!("{}/{}", url, address_hex);
+    println!("Requesting token for wallet address: {address_hex}...");
+
+    let response = reqwest::get(&req_url).await?;
+    let is_ok = response.status().is_success();
+    let body = response.text().await?;
+    if is_ok {
+        deposit_from_dbc_hex(root_dir, body).await?;
+        println!("Successfully got tokens from faucet.");
+    } else {
+        println!(
+            "Failed to get tokens from faucet, server responded with: {}",
+            body
+        );
+    }
     Ok(())
 }
 
