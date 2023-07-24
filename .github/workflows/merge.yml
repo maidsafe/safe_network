@@ -348,6 +348,7 @@ jobs:
           # new output folder to avoid linker issues w/ windows
           CARGO_TARGET_DIR: "./churn-target"
           TEST_DURATION_MINS: 10
+          TEST_TOTAL_CHURN_CYCLES: 15
           SN_LOG: "all"
         timeout-minutes: 30
 
