@@ -27,7 +27,7 @@ use self::{
     circular_vec::CircularVec,
     cmd::SwarmCmd,
     error::Result,
-    event::NodeBehaviour,
+    event::{GetRecordResultMap, NodeBehaviour},
     record_store::{
         DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
         REPLICATION_INTERVAL_UPPER_BOUND,
@@ -63,7 +63,6 @@ use std::{
 };
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
-use xor_name::XorName;
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
 /// This is the group size used in safe network protocol to be responsible for
@@ -104,14 +103,7 @@ pub const fn close_group_majority() -> usize {
 }
 
 type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
-// Usig XorName to differentiate different record content under the same key.
-type PendingGetRecord = HashMap<
-    QueryId,
-    (
-        oneshot::Sender<Result<Record>>,
-        HashMap<XorName, (Record, HashSet<PeerId>)>,
-    ),
->;
+type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRecordResultMap)>;
 
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
