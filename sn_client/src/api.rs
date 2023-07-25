@@ -29,7 +29,6 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::client_transfers::SpendRequest;
-use std::num::NonZeroUsize;
 use std::time::Duration;
 use tokio::task::spawn;
 use tracing::trace;
@@ -40,6 +39,11 @@ const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs
 
 /// The initial rounds of `get_random` allowing client to fill up the RT.
 const INITIAL_GET_RANDOM_ROUNDS: usize = 5;
+
+// returns the primitive K_VALUE
+const fn k_value() -> usize {
+    K_VALUE.get()
+}
 
 impl Client {
     /// Instantiate a new client.
@@ -196,25 +200,23 @@ impl Client {
             // it may take some time to fill up the RT.
             // To avoid such delay may fail the query with RecordNotFound,
             // wait till certain amount of peers populated into RT
-            if let Some(peers_added) = NonZeroUsize::new(self.peers_added) {
-                if peers_added >= K_VALUE {
-                    if let Some(progress) = &self.progress {
-                        progress.finish_with_message("Connected to the Network");
-                        // Remove the progress bar
-                        self.progress = None;
-                    }
+            if self.peers_added >= k_value() {
+                if let Some(progress) = &self.progress {
+                    progress.finish_with_message("Connected to the Network");
+                    // Remove the progress bar
+                    self.progress = None;
+                }
 
-                    self.events_channel
-                        .broadcast(ClientEvent::ConnectedToNetwork)?;
-                } else {
-                    debug!("{}/{} initial peers found.", self.peers_added, K_VALUE);
+                self.events_channel
+                    .broadcast(ClientEvent::ConnectedToNetwork)?;
+            } else {
+                debug!("{}/{} initial peers found.", self.peers_added, K_VALUE);
 
-                    if let Some(progress) = &self.progress {
-                        progress.set_message(format!(
-                            "{}/{} initial peers found.",
-                            self.peers_added, K_VALUE
-                        ));
-                    }
+                if let Some(progress) = &self.progress {
+                    progress.set_message(format!(
+                        "{}/{} initial peers found.",
+                        self.peers_added, K_VALUE
+                    ));
                 }
             }
             self.peers_added += 1;
