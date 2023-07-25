@@ -104,13 +104,9 @@ async fn storage_payment_fails() -> Result<()> {
     invalid_signed_spend.spend.spent_tx.fee.token = Token::from_nano(random_num_of_addrs + 1);
     transfer.all_spend_requests[0].signed_spend = invalid_signed_spend;
 
-    // Sending will always return with OK, only verification will error out.
-    let res = client.send(transfer.clone()).await;
-    assert!(res.is_ok());
+    // Sending now verifies
+    let should_err = client.send(transfer.clone()).await;
 
-    std::thread::sleep(std::time::Duration::from_secs(5));
-
-    let should_err = client.verify(&transfer.change_dbc.unwrap()).await;
     println!("Verified with fail: {should_err:?}");
     assert!(should_err.is_err());
 
