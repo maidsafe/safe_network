@@ -85,6 +85,11 @@ const REQ_RESPONSE_VERSION_STR: &str = concat!("/safe/node/", env!("CARGO_PKG_VE
 const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PKG_VERSION"));
 const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
+/// Duration to wait for verification
+const VERIFICATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+/// Number of attempts to verify the register
+const VERIFICATION_ATTEMPTS: usize = 3;
+
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -631,16 +636,55 @@ impl Network {
     }
 
     /// Put `Record` to network
-    pub async fn put_record(&self, record: Record) -> Result<()> {
+    /// optionally verify the record is stored after putting it to network
+    pub async fn put_record(&self, record: Record, verify_store: bool) -> Result<()> {
+        let the_record = record.clone();
         debug!(
             "Putting record of {:?} - length {:?} to network",
-            record.key,
+            the_record.key,
             record.value.len()
         );
         // Waiting for a response to avoid flushing to network too quick that causing choke
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::PutRecord { record, sender })?;
-        receiver.await?
+        let response = receiver.await?;
+
+        if !verify_store {
+            return response;
+        }
+
+        // Verify the record is stored
+        let mut verification_attempts = 0;
+        let mut something_was_found = false;
+        while verification_attempts < VERIFICATION_ATTEMPTS {
+            match self.get_record_from_network(the_record.key.clone()).await {
+                Ok(returned_record) => {
+                    // if the returned register is not _the same_ lets inform the user
+                    if the_record != returned_record {
+                        something_was_found = true;
+                        continue;
+                    }
+
+                    return Ok(());
+                }
+                Err(error) => {
+                    verification_attempts += 1;
+                    warn!(
+                        "Did not retrieve Record '{:?}' from all nodes in the close group!. Retrying...", the_record.key
+                    );
+                    error!("{error:?}");
+                }
+            }
+
+            // wait for a bit before trying againq
+            tokio::time::sleep(VERIFICATION_TIMEOUT).await;
+        }
+
+        if something_was_found {
+            return Err(Error::ReturnedRecordDoesNotMatch(the_record.key));
+        }
+
+        Err(Error::FailedToVerifyRecordWasStored(the_record.key))
     }
 
     /// Put `Record` to the local RecordStore

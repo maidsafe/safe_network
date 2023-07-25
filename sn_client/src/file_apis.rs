@@ -141,7 +141,7 @@ impl Files {
         &self,
         chunks: impl Iterator<Item = Chunk>,
         payment_proofs: &PaymentProofsMap,
-        verify: bool,
+        verify_store: bool,
     ) -> Result<()> {
         trace!("Client upload in batches started");
         let mut tasks = vec![];
@@ -156,10 +156,8 @@ impl Files {
                 .ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
 
             tasks.push(task::spawn(async move {
-                client.store_chunk(chunk, payment).await?;
-                if verify {
-                    let _ = client.get_chunk(chunk_addr).await?;
-                }
+                client.store_chunk(chunk, payment, verify_store).await?;
+
                 Ok::<(), super::error::Error>(())
             }));
 
@@ -208,7 +206,7 @@ impl Files {
         &self,
         small: SmallFile,
         payment_proofs: &PaymentProofsMap,
-        verify: bool,
+        verify_store: bool,
     ) -> Result<ChunkAddress> {
         let chunk = package_small(small)?;
         let address = *chunk.address();
@@ -217,19 +215,11 @@ impl Files {
             .cloned()
             .ok_or(super::Error::MissingPaymentProof(address))?;
 
-        self.client.store_chunk(chunk, payment).await?;
-
-        if verify {
-            self.verify_chunk_is_stored(address).await?;
-        }
+        self.client
+            .store_chunk(chunk, payment, verify_store)
+            .await?;
 
         Ok(address)
-    }
-
-    // Verify a chunk is stored at provided address
-    async fn verify_chunk_is_stored(&self, address: ChunkAddress) -> Result<()> {
-        let _ = self.client.get_chunk(address).await?;
-        Ok(())
     }
 
     // Gets and decrypts chunks from the network using nothing else but the data map,
