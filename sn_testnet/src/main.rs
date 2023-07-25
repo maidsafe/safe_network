@@ -62,12 +62,6 @@ struct Cmd {
     #[clap(long, short = 'f')]
     flame: bool,
 
-    /// Launch the DBC faucet server
-    ///
-    /// The server will be listening on port 8000
-    #[clap(long, short = 'd')]
-    dbc_faucet: bool,
-
     /// Build the node from source.
     ///
     /// This assumes the process is running from the `safe_network` repository.
@@ -191,20 +185,19 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    if args.dbc_faucet {
-        let mut faucet_bin_path = cargo_target_dir.clone();
-        if args.build_node {
-            build_node().await?;
-            faucet_bin_path.push("target");
-            faucet_bin_path.push("release");
-            faucet_bin_path.push(FAUCET_BIN_NAME);
-        } else {
-            faucet_bin_path.push(FAUCET_BIN_NAME);
-        }
-        info!("Launching DBC faucet server");
-        run_faucet(faucet_bin_path).await?;
+    let mut faucet_bin_path = cargo_target_dir.clone();
+    if args.build_node {
+        build_node().await?;
+        faucet_bin_path.push("target");
+        faucet_bin_path.push("release");
+        faucet_bin_path.push(FAUCET_BIN_NAME);
+    } else {
+        faucet_bin_path.push(FAUCET_BIN_NAME);
     }
+    info!("Launching DBC faucet server");
+    run_faucet(faucet_bin_path).await?;
 
+    println!("Testnet and faucet launched successfully");
     Ok(())
 }
 
