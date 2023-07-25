@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use super::wallet::send;
 use crate::Client;
 
@@ -53,7 +55,14 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWal
 
     println!("Verifying the transfer from genesis...");
     if let Err(error) = client.verify(&tokens).await {
-        println!("Could not verify the transfer from genesis: {error:?}");
+        println!("Could not verify the transfer from genesis, retrying after 10 secs...");
+        println!("The error was: {error:?}");
+        tokio::time::sleep(Duration::from_secs(10)).await;
+        if let Err(error) = client.verify(&tokens).await {
+            println!("Could not verify the transfer from genesis: {error:?}");
+        } else {
+            println!("Successfully verified the transfer from genesis on the second try.");
+        }
     }
 
     faucet_wallet
