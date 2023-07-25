@@ -372,6 +372,10 @@ impl SwarmDriver {
             //             capped and stopped at CLOSE_GROUP_SIZE, may have duplicated counts
             //          `PeerRecord::peer` could be None to indicate from self
             //             in which case it always use a duplicated `PregressStep::count`
+            //     the sequence will be completed with `FinishedWithNoAdditionalRecord`
+            //     where: `cache_candidates`: being the peers supposed to hold the record but not
+            //            `ProgressStep::count`: to be `number of received copies plus one`
+            //            `ProgressStep::last` to be `true`
             KademliaEvent::OutboundQueryProgressed {
                 id,
                 result: QueryResult::GetRecord(Ok(GetRecordOk::FoundRecord(peer_record))),
@@ -387,20 +391,38 @@ impl SwarmDriver {
             }
             KademliaEvent::OutboundQueryProgressed {
                 id,
+                result:
+                    QueryResult::GetRecord(Ok(GetRecordOk::FinishedWithNoAdditionalRecord { .. })),
+                stats,
+                step,
+            } => {
+                trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?}");
+                if let Some((sender, result_map)) = self.pending_get_record.remove(&id) {
+                    if let Some((record, _)) = result_map.values().next() {
+                        info!(
+                            "Getting record {:?} early completed with {:?} copies received",
+                            record.key,
+                            usize::from(step.count) - 1
+                        );
+                    }
+                    // Consider any early completion as RecordNotFound, and not to update self
+                    sender
+                        .send(Err(Error::RecordNotFound))
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                }
+            }
+            KademliaEvent::OutboundQueryProgressed {
+                id,
                 result: QueryResult::GetRecord(Err(err)),
                 stats,
                 step,
             } => {
-                warn!("Query task {id:?} failed to get record with error: {err:?}, {stats:?} - {step:?}");
-                if step.last {
-                    // To avoid the caller wait forever on a non-existing entry
-                    if let Some((sender, _)) = self.pending_get_record.remove(&id) {
-                        sender
-                            .send(Err(Error::RecordNotFound))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
-                    }
+                info!("Query task {id:?} failed to get record with error: {err:?}, {stats:?} - {step:?}");
+                if let Some((sender, _)) = self.pending_get_record.remove(&id) {
+                    sender
+                        .send(Err(Error::RecordNotFound))
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
-                // TODO: send an error response back?
             }
             KademliaEvent::RoutingUpdated {
                 peer,
