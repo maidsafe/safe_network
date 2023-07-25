@@ -180,6 +180,22 @@ impl Client {
         Ok(())
     }
 
+    /// Send a spend request to the network.
+    /// This does _not_ verify the spend has been put to the network correctly
+    pub async fn send_without_verify(&self, transfer: TransferOutputs) -> Result<()> {
+        let mut tasks = Vec::new();
+        for spend_request in &transfer.all_spend_requests {
+            trace!("sending spend request to the network: {spend_request:#?}");
+            tasks.push(self.network_store_spend(spend_request.clone(), false));
+        }
+
+        for spend_attempt_result in join_all(tasks).await {
+            spend_attempt_result.map_err(|err| Error::CouldNotSendTokens(err.to_string()))?;
+        }
+
+        Ok(())
+    }
+
     pub async fn verify(&self, dbc: &Dbc) -> Result<()> {
         // We need to get all the spends in the dbc from the network,
         // and compare them to the spends in the dbc, to know if the
