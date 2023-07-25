@@ -45,7 +45,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build churn tests 
-        run: cargo test --release -p sn_node --no-run
+        run: cargo test --release -p sn_node --test data_with_churn --no-run
         timeout-minutes: 30
 
       - name: Start a heaptracked node instance to compare memory usage
