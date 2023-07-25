@@ -169,10 +169,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
 
-      - name: Build node and client
-        run: |
-          cargo build --release --features local-discovery --bin safenode
-          cargo build --release --features local-discovery --bin safe
+      - name: Build safenode
+        run: cargo build --release --features local-discovery --bin safenode
         timeout-minutes: 30
 
       - name: Build testing executable
@@ -236,10 +234,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
 
-      - name: Build node and client
-        run: |
-          cargo build --release --features local-discovery --bin safenode
-          cargo build --release --features local-discovery --bin safe
+      - name: Build safenode
+        run: cargo build --release --features local-discovery --bin safenode
         timeout-minutes: 30
 
       - name: Start a local network
