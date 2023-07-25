@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690297435519,
+  "lastUpdate": 1690297441520,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8688,6 +8688,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 207,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "82e490552ab569e33d93f7f3354bd1065ef1c7fa",
+          "message": "test(networking): add read loop to await async disk write\n\nverified puts write to disk in async manner now, returning immediately.\nSo a  straight afterwards is not guaranteed to succeed. Thus we\nadd a small but finate get loop before we assert",
+          "timestamp": "2023-07-25T13:39:11Z",
+          "tree_id": "4c611a7c66e1a7ce7ae06b501bc7cfd53988f3de",
+          "url": "https://github.com/maidsafe/safe_network/commit/82e490552ab569e33d93f7f3354bd1065ef1c7fa"
+        },
+        "date": 1690297440638,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 251.42,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 226,
             "unit": "MB"
           }
         ]
