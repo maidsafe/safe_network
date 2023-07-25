@@ -164,11 +164,13 @@ impl WalletClient {
 }
 
 impl Client {
+    /// Send a spend request to the network.
+    /// This will verify the spend has been correctly stored before returning
     pub async fn send(&self, transfer: TransferOutputs) -> Result<()> {
         let mut tasks = Vec::new();
         for spend_request in &transfer.all_spend_requests {
             trace!("sending spend request to the network: {spend_request:#?}");
-            tasks.push(self.network_store_spend(spend_request.clone()));
+            tasks.push(self.network_store_spend(spend_request.clone(), true));
         }
 
         for spend_attempt_result in join_all(tasks).await {

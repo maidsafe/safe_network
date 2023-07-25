@@ -280,7 +280,12 @@ impl Client {
     }
 
     /// Store `Chunk` as a record.
-    pub(super) async fn store_chunk(&self, chunk: Chunk, payment: PaymentProof) -> Result<()> {
+    pub(super) async fn store_chunk(
+        &self,
+        chunk: Chunk,
+        payment: PaymentProof,
+        verify_store: bool,
+    ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let chunk_with_payment = ChunkWithPayment { chunk, payment };
         let record = Record {
@@ -290,7 +295,7 @@ impl Client {
             expires: None,
         };
 
-        Ok(self.network.put_record(record).await?)
+        Ok(self.network.put_record(record, verify_store).await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.
@@ -311,7 +316,11 @@ impl Client {
     }
 
     /// Send a `SpendDbc` request to the network
-    pub(crate) async fn network_store_spend(&self, spend: SpendRequest) -> Result<()> {
+    pub(crate) async fn network_store_spend(
+        &self,
+        spend: SpendRequest,
+        verify_store: bool,
+    ) -> Result<()> {
         let dbc_id = *spend.signed_spend.dbc_id();
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
@@ -323,7 +332,7 @@ impl Client {
             publisher: None,
             expires: None,
         };
-        Ok(self.network.put_record(record).await?)
+        Ok(self.network.put_record(record, verify_store).await?)
     }
 
     /// Get a dbc spend from network

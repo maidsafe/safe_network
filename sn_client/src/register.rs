@@ -172,6 +172,7 @@ impl ClientRegister {
     // ********* Online methods  *********
 
     /// Sync this Register with the replicas on the network.
+    /// This will verify the stored Register on the network is the same as the local one.
     pub async fn sync(&mut self) -> Result<()> {
         debug!("Syncing Register at {}, {}!", self.name(), self.tag());
         let remote_replica =
@@ -188,7 +189,7 @@ impl ClientRegister {
                         register: self.register.clone(),
                         signature: self.client.sign(self.register.bytes()?),
                     };
-                    self.publish_register(cmd).await?;
+                    self.publish_register(cmd, true).await?;
                     self.register.clone()
                 }
             };
@@ -197,6 +198,7 @@ impl ClientRegister {
     }
 
     /// Push all operations made locally to the replicas of this Register on the network.
+    /// This verifies that the stored Register is the same as our local register
     pub async fn push(&mut self) -> Result<()> {
         let ops_len = self.ops.len();
         if ops_len > 0 {
@@ -206,7 +208,7 @@ impl ClientRegister {
 
             // TODO: send them all concurrently
             while let Some(cmd) = self.ops.pop_back() {
-                let result = self.publish_register(cmd.clone()).await;
+                let result = self.publish_register(cmd.clone(), true).await;
 
                 if let Err(err) = result {
                     warn!("Did not push Register cmd on all nodes in the close group!: {err}");
@@ -255,8 +257,9 @@ impl ClientRegister {
 
     // ********* Private helpers  *********
 
-    // Publish a `Register` command on the network.
-    async fn publish_register(&self, cmd: RegisterCmd) -> Result<()> {
+    /// Publish a `Register` command on the network.
+    /// If `verify_store` is true, it will verify the Register was stored on the network.
+    async fn publish_register(&self, cmd: RegisterCmd, verify_store: bool) -> Result<()> {
         let cmd_dst = cmd.dst();
         debug!("Querying existing Register for cmd: {cmd_dst:?}");
         let network_reg = self
@@ -292,7 +295,7 @@ impl ClientRegister {
             publisher: None,
             expires: None,
         };
-        Ok(self.client.network.put_record(record).await?)
+        Ok(self.client.network.put_record(record, verify_store).await?)
     }
 
     // Retrieve a `Register` from the Network.
