@@ -87,7 +87,7 @@ const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
 /// Duration to wait for verification
 const VERIFICATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
-/// Number of attempts to verify the register
+/// Number of attempts to verify a record
 const VERIFICATION_ATTEMPTS: usize = 3;
 
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
@@ -655,13 +655,14 @@ impl Network {
 
         // Verify the record is stored
         let mut verification_attempts = 0;
-        let mut something_was_found = false;
+        let mut something_different_was_found = false;
         while verification_attempts < VERIFICATION_ATTEMPTS {
+            something_different_was_found = false;
             match self.get_record_from_network(the_record.key.clone()).await {
                 Ok(returned_record) => {
-                    // if the returned register is not _the same_ lets inform the user
+                    // if the returned record is not _the same_ lets inform the user
                     if the_record != returned_record {
-                        something_was_found = true;
+                        something_different_was_found = true;
                         continue;
                     }
 
@@ -680,11 +681,11 @@ impl Network {
             tokio::time::sleep(VERIFICATION_TIMEOUT).await;
         }
 
-        if something_was_found {
-            return Err(Error::ReturnedRecordDoesNotMatch(the_record.key));
+        if something_different_was_found {
+            Err(Error::ReturnedRecordDoesNotMatch(the_record.key))
+        } else {
+            Err(Error::FailedToVerifyRecordWasStored(the_record.key))
         }
-
-        Err(Error::FailedToVerifyRecordWasStored(the_record.key))
     }
 
     /// Put `Record` to the local RecordStore
