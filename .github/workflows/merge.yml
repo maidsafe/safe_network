@@ -96,8 +96,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build tests before running
-        run: cargo test --no-run --release
+      - name: Build unit tests before running
+        run: cargo test --release --lib --bins --no-run 
         timeout-minutes: 30
 
       - name: Run testnet tests
@@ -240,7 +240,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release --features local-discovery dbc_transfer_,storage_payment_ --no-run
+        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --no-run
         timeout-minutes: 30
         env:
           CARGO_TARGET_DIR: "./transfer-target"
@@ -264,14 +264,14 @@ jobs:
           fi
 
       - name: execute the dbc spend test
-        run: cargo test --release --features="local-discovery" dbc_transfer_ -- --nocapture
+        run: cargo test --release --features="local-discovery" --test sequential_transfers -- --nocapture
         env:
           SN_LOG: "all"
           CARGO_TARGET_DIR: "./transfer-target"
         timeout-minutes: 25
 
       - name: execute the storage payment tests
-        run: cargo test --release --features="local-discovery" storage_payment_ -- --nocapture
+        run: cargo test --release --features="local-discovery" --test storage_payments -- --nocapture
         env:
           SN_LOG: "all"
           CARGO_TARGET_DIR: "./transfer-target"
@@ -311,7 +311,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build churn tests
-        run: cargo test --release -p sn_node --features="local-discovery" --no-run
+        run: cargo test --release -p sn_node --features=local-discovery --test data_with_churn --no-run
         timeout-minutes: 30
         # new output folder to avoid linker issues w/ windows
         env:

@@ -117,18 +117,25 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
 
-      - name: Build tests before running
-        run: cargo test --no-run --release
+      - name: Build unit tests before running
+        run: cargo test --release --lib --bins --no-run 
         timeout-minutes: 30
 
+      - name: Run testnet tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_testnet
+
       - name: Run network tests
-        # Only run on PRs w/ ubuntu
         timeout-minutes: 25
         run: cargo test --release -p sn_networking
 
       - name: Run protocol tests
         timeout-minutes: 25
         run: cargo test --release -p sn_protocol
+
+      - name: Run transfers tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_transfers
 
       - name: Run register tests
         shell: bash
@@ -169,7 +176,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release multiple_sequential_transfers_succeed --no-run
+        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --no-run
         timeout-minutes: 30
         env:
           CARGO_TARGET_DIR: "./transfer-target"
@@ -183,7 +190,14 @@ jobs:
           platform: ${{ matrix.os }}
 
       - name: execute the dbc spend test
-        run: cargo test --release --features="local-discovery" multiple_sequential_transfers_succeed  -- --nocapture
+        run: cargo test --release --features="local-discovery" --test sequential_transfers -- --nocapture
+        env:
+          CARGO_TARGET_DIR: "./transfer-target"
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      - name: execute the storage payment tests
+        run: cargo test --release --features="local-discovery" --test storage_payments -- --nocapture
         env:
           CARGO_TARGET_DIR: "./transfer-target"
           SN_LOG: "all"
@@ -228,10 +242,6 @@ jobs:
           cargo build --release --features local-discovery --bin safe
         timeout-minutes: 30
 
-      - name: Build churn tests 
-        run: cargo test --release -p sn_node --features="local-discovery" --no-run
-        timeout-minutes: 30
-
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
         with:
@@ -241,7 +251,7 @@ jobs:
           platform: ${{ matrix.os }}
 
       - name: Build churn tests 
-        run: cargo test --release -p sn_node --features="local-discovery" --no-run
+        run: cargo test --release -p sn_node --features=local-discovery --test data_with_churn --no-run
         timeout-minutes: 30
         # new output folder to avoid linker issues w/ windows
         env:
