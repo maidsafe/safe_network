@@ -613,6 +613,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - tokens transfers task in data_with_churn tests to use client apis instead of faucet helpers
 - adapt churn tests to make chunks storage payment
 
+## [0.87.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.87.0...sn_node-v0.87.1) - 2023-07-25
+
+### Added
+- *(log)* add new log markers
+- *(replication)* replicate when our close group changes
+
+### Fixed
+- *(node)* handling events should wait before connected to the network
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
