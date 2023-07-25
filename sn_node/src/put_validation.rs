@@ -278,6 +278,11 @@ impl Node {
         // other info for verifications of valid payment.
         let mut tasks = JoinSet::new();
         spent_ids.iter().cloned().for_each(|dbc_id| {
+            trace!(
+                "Getting spend {:?} for chunk {:?} to prove payment",
+                dbc_id,
+                addr_name
+            );
             let self_clone = self.clone();
             let _ = tasks.spawn(async move {
                 let addr = DbcAddress::from_dbc_id(&dbc_id);
