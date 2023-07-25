@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, NodeEvent};
-use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr, PeerId};
+use libp2p::{autonat::NatStatus, identity::Keypair, kad::K_VALUE, Multiaddr, PeerId};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_networking::{MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState};
 use sn_protocol::{
@@ -16,8 +16,22 @@ use sn_protocol::{
     storage::DbcAddress,
     NetworkAddress, PrettyPrintRecordKey,
 };
-use std::{collections::HashSet, net::SocketAddr, path::PathBuf, time::Duration};
+use std::{
+    collections::HashSet,
+    net::SocketAddr,
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
 use tokio::task::spawn;
+
+// returns the primitive K_VALUE
+const fn k_value() -> usize {
+    K_VALUE.get()
+}
 
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
@@ -97,6 +111,8 @@ impl Node {
         let node_event_sender = node_events_channel.clone();
         let mut rng = StdRng::from_entropy();
 
+        let peers_connected = Arc::new(AtomicUsize::new(0));
+
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
             // use a random inactivity timeout to ensure that the nodes do not sync when messages
@@ -106,6 +122,8 @@ impl Node {
 
             loop {
                 trace!("NetworkEvent loop started");
+                let peers_connected = peers_connected.clone();
+
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
                         trace!("Handling NetworkEvent: {net_event:?}");
@@ -113,7 +131,7 @@ impl Node {
                             Some(event) => {
                                 let stateless_node_copy = node.clone();
                                 let _handle =
-                                    spawn(async move { stateless_node_copy.handle_network_event(event).await });
+                                    spawn(async move { stateless_node_copy.handle_network_event(event, peers_connected).await });
                             }
                             None => {
                                 error!("The `NetworkEvent` channel is closed");
@@ -152,7 +170,36 @@ impl Node {
 
     // **** Private helpers *****
 
-    async fn handle_network_event(&self, event: NetworkEvent) {
+    async fn handle_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
+        // when the node has not been connected to enough peers, it should not perform activities
+        // that might require peers in the RT to succeed.
+        loop {
+            if peers_connected.load(Ordering::Relaxed) >= k_value() {
+                debug!("Enough peers connected to the network, breaking out of the wait_before_process loop");
+                break;
+            }
+            match &event {
+                // these activities requires the node to be connected to some peer to be able to carry
+                // out get kad.get_record etc. This happens during replication/PUT. So we should wait
+                // until we have enough nodes, else these might fail.
+                NetworkEvent::RequestReceived { .. }
+                | NetworkEvent::UnverifiedRecord(_)
+                | NetworkEvent::ResponseReceived { .. }
+                | NetworkEvent::KeysForReplication(_) => {
+                    trace!(
+                        "Waiting before processing certain NetworkEvent before reaching {} peers",
+                        k_value()
+                    );
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
+                // These events do not need to wait until there are enough peers
+                NetworkEvent::PeerAdded(_)
+                | NetworkEvent::PeerRemoved(_)
+                | NetworkEvent::NewListenAddr(_)
+                | NetworkEvent::NatStatusChanged(_) => break,
+            }
+        }
+
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
                 trace!("RequestReceived: {req:?}");
@@ -165,6 +212,11 @@ impl Node {
                 }
             }
             NetworkEvent::PeerAdded(peer_id) => {
+                // increment peers_connected and send ConnectedToNetwork event if have connected to K_VALUE peers
+                let _ = peers_connected.fetch_add(1, Ordering::SeqCst);
+                if peers_connected.load(Ordering::SeqCst) == k_value() {
+                    self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
+                }
                 Marker::PeerAddedToRoutingTable(peer_id).log();
 
                 if let Err(err) = self.try_trigger_replication(peer_id, false).await {
