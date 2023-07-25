@@ -389,7 +389,7 @@ impl SwarmDriver {
             pending_query: Default::default(),
             replication_fetcher: Default::default(),
             local,
-            // We use 63 here, as in practice the capacity will be rounded to the nearest 2^(n-1).
+            // We use 63 here, as in practice the capacity will be rounded to the nearest 2^n-1.
             // Source: https://users.rust-lang.org/t/the-best-ring-buffer-library/58489/8
             // 63 will mean at least 63 most recent peers we have dialed, which should be allow for enough time for the
             // `identify` protocol to kick in and get them in the routing table.

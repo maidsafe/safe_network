@@ -128,7 +128,9 @@ impl SwarmDriver {
                     .store_mut()
                     .record_addresses_ref();
                 let keys_to_fetch = self.replication_fetcher.add_keys(peer, keys, all_keys);
-                self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
+                if !keys_to_fetch.is_empty() {
+                    self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
+                }
             }
             SwarmCmd::GetNetworkRecord { key, sender } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
@@ -167,7 +169,9 @@ impl SwarmDriver {
                 {
                     Ok(_) => {
                         let new_keys_to_fetch = self.replication_fetcher.notify_about_new_put(key);
-                        self.send_event(NetworkEvent::KeysForReplication(new_keys_to_fetch));
+                        if !new_keys_to_fetch.is_empty() {
+                            self.send_event(NetworkEvent::KeysForReplication(new_keys_to_fetch));
+                        }
                     }
                     Err(err) => return Err(err.into()),
                 };
