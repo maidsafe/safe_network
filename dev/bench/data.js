@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690294661572,
+  "lastUpdate": 1690294722257,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6243,6 +6243,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 31.02,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "b88b11edb5849eb289409b5292832dc8904f23eb",
+          "message": "feat(node): make the faucet and client use rustls as opposed to openssl\n\nno extra deps to add there",
+          "timestamp": "2023-07-25T12:58:53Z",
+          "tree_id": "6e87402c73ac2660b3eeed933030cf6020206732",
+          "url": "https://github.com/maidsafe/safe_network/commit/b88b11edb5849eb289409b5292832dc8904f23eb"
+        },
+        "date": 1690294721448,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 34.29,
             "unit": "MB"
           }
         ]
