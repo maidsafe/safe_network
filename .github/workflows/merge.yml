@@ -141,9 +141,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build node and client
-        run: |
-          cargo build --release --bin safenode
-          cargo build --release --bin safe
+        run: cargo build --release --bin safenode --bin safe --bin faucet
         timeout-minutes: 30
 
       - name: Start a local network
