@@ -15,6 +15,7 @@ use libp2p::{
     },
 };
 use rand::Rng;
+use sn_dbc::Token;
 use sn_protocol::NetworkAddress;
 use std::{
     borrow::Cow,
@@ -235,6 +236,33 @@ impl DiskBackedRecordStore {
             warn!("Record storage didn't have the distance_range setup yet.");
         }
     }
+
+    #[allow(dead_code)]
+    /// Calculate the cost to store data for our current store state
+    pub fn store_cost(&self) -> Token {
+        let records_len = self.records().count();
+
+        let mut cost = Token::from_nano(1);
+        const NANOS_PER_SNT: u64 = 1_000_000_000;
+
+        // if we imagine that at FULL capacity we want _all the money_ (ie, we never want to reach full capacity)
+        // So we get the total amount of nanos in the network,
+        // we divide that number by our MAX_RECORD_COUNT to know
+        // what to charge for each additional record
+        let step_per_record = ((2 ^ 32) * NANOS_PER_SNT) / MAX_RECORDS_COUNT as u64;
+        let step_amount = Token::from_nano(step_per_record);
+
+        // we want to spread the cost of storing data across the MAX_CAPACITY
+        // doubling the cost for each record store
+        for _ in 0..records_len {
+            if let Some(new_cost) = cost.checked_add(step_amount) {
+                cost = new_cost;
+            }
+        }
+
+        trace!("Cost is now {cost:?}");
+        cost
+    }
 }
 
 impl RecordStore for DiskBackedRecordStore {
@@ -441,9 +469,12 @@ mod tests {
             Some(network_event_sender),
         );
 
+        let store_cost_before = store.store_cost();
         // An initial unverified put should not write to disk
         assert!(store.put(r.clone()).is_ok());
         assert!(store.get(&r.key).is_none());
+        // Store cost should not change if no PUT has been added
+        assert!(store.store_cost() == store_cost_before);
 
         let returned_record = if let Some(event) = network_event_receiver.recv().await {
             if let NetworkEvent::UnverifiedRecord(record) = event {
@@ -455,6 +486,8 @@ mod tests {
             panic!("Failed recevied the record for further verification");
         };
 
+        let store_cost_before = store.store_cost();
+
         assert!(store.put_verified(returned_record).is_ok());
 
         // loop over store.get 10 times to make sure async disk write has had time to complete
@@ -465,12 +498,19 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
 
+        let cost_after_put = store.store_cost();
+        // store cost should have increased
+        assert!(cost_after_put > store_cost_before);
+
         assert_eq!(
             Some(Cow::Borrowed(&r)),
             store.get(&r.key),
             "record can be retrieved after put"
         );
         store.remove(&r.key);
+
+        // now we've removed a record, the cost should decrease
+        assert!(cost_after_put > store.store_cost());
         assert!(store.get(&r.key).is_none());
     }
 }
