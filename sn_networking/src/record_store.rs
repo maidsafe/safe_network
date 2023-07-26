@@ -34,6 +34,12 @@ pub const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(180);
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
 
+/// How frequenly we prune the records in the store
+/// eg, if 100 here, every 100 valid PUTs we'll prune the store
+/// This should give us some margin about storing data for nodes that are no longer our responsibility
+/// And may eventually feed into price discovery / storage costs and give us a buffer there too
+const PRUNE_ONCE_EVERY_PUTS: usize = 100;
+
 /// A `RecordStore` that stores records on disk.
 pub struct DiskBackedRecordStore {
     /// The identity of the peer owning the store.
@@ -168,16 +174,7 @@ impl DiskBackedRecordStore {
             return Err(Error::ValueTooLarge);
         }
 
-        let num_records = self.records.len();
-        if num_records >= self.config.max_records {
-            self.storage_pruning();
-            let new_num_records = self.records.len();
-            trace!("A pruning reduced number of record in hold from {num_records} to {new_num_records}");
-            if new_num_records >= self.config.max_records {
-                warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
-                return Err(Error::MaxRecords);
-            }
-        }
+        self.prune_storage_if_needed()?;
 
         let filename = Self::key_to_hex(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
@@ -198,7 +195,35 @@ impl DiskBackedRecordStore {
         Ok(())
     }
 
-    fn storage_pruning(&mut self) {
+    /// Prune the records in the store to ensure that we free up space
+    /// for new records.
+    ///
+    /// This can happen if we're full, or once in every X PUTs
+    ///
+    /// An error is returned if we prune and we're _still_ at max_record count
+    fn prune_storage_if_needed(&mut self) -> Result<()> {
+        let num_records = self.records.len();
+        let mut should_prune = num_records >= self.config.max_records;
+        if !should_prune {
+            // check the modulo of record count over 10, if 0 we should prune
+            should_prune = num_records % PRUNE_ONCE_EVERY_PUTS == 0;
+        }
+
+        if should_prune {
+            self.prune_storage();
+            let new_num_records: usize = self.records.len();
+            trace!("A pruning reduced number of record in hold from {num_records} to {new_num_records}");
+            if new_num_records >= self.config.max_records {
+                warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
+                return Err(Error::MaxRecords);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Remove records that are no longer our responsibility
+    fn prune_storage(&mut self) {
         if let Some(distance_bar) = self.distance_range {
             let our_kbucket_key = self.local_key.clone();
             let predicate = |key: &Key| {
