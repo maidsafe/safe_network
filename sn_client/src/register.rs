@@ -16,6 +16,7 @@ use sn_protocol::{
     storage::{try_serialize_record, RecordKind},
     NetworkAddress,
 };
+pub use sn_registers::Metadata;
 use sn_registers::{
     Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister, User,
 };
@@ -36,13 +37,13 @@ impl ClientRegister {
     /// Central helper func to create a client register
     fn create_register(
         client: Client,
-        name: XorName,
+        metadata: Metadata,
         tag: u64,
         perms: Permissions,
     ) -> Result<Self> {
         let public_key = client.signer_pk();
 
-        let register = Register::new(public_key, name, tag, perms);
+        let register = Register::new(public_key, metadata, tag, perms);
         let reg = Self {
             client,
             register,
@@ -53,20 +54,24 @@ impl ClientRegister {
     }
 
     /// Create a new Register Locally.
-    pub fn create(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        Self::create_register(client, name, tag, Permissions::new_owner_only())
+    pub fn create(client: Client, metadata: Metadata, tag: u64) -> Result<Self> {
+        Self::create_register(client, metadata, tag, Permissions::new_owner_only())
     }
 
     /// Create a new public Register (Anybody can write to it) and send it so the Network.
-    pub async fn create_public_online(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        let mut reg = Self::create_register(client, name, tag, Permissions::new_owner_only())?;
+    pub async fn create_public_online(
+        client: Client,
+        metadata: Metadata,
+        tag: u64,
+    ) -> Result<Self> {
+        let mut reg = Self::create_register(client, metadata, tag, Permissions::new_owner_only())?;
         reg.sync().await?;
         Ok(reg)
     }
 
     /// Create a new Register and send it to the Network.
-    pub async fn create_online(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        let mut reg = Self::create_register(client, name, tag, Permissions::new_owner_only())?;
+    pub async fn create_online(client: Client, metadata: Metadata, tag: u64) -> Result<Self> {
+        let mut reg = Self::create_register(client, metadata, tag, Permissions::new_owner_only())?;
         reg.sync().await?;
         Ok(reg)
     }

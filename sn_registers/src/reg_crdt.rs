@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{error::Result, Entry, EntryHash, Error, RegisterAddress, RegisterOp, User};
+use crate::{error::Result, Entry, EntryHash, Error, Metadata, RegisterAddress, RegisterOp, User};
 
 use crdts::{merkle_reg::MerkleReg, CmRDT, CvRDT};
 use serde::{Deserialize, Serialize};
@@ -20,7 +20,13 @@ use std::{
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd)]
 pub(crate) struct RegisterCrdt {
     /// Address on the network of this piece of data
+    /// Network address. Omitted when serialising and
+    /// calculated from the `metadata` when deserialising.
     address: RegisterAddress,
+    /// Metadata provided by the creator of this Register, which becomes immutable,
+    /// and it defines this Register's address on the network, i.e. this Register is
+    /// stored by the network at: XorName(hash(medatada)).
+    metadata: Metadata,
     /// CRDT to store the actual data, i.e. the items of the Register.
     data: MerkleReg<Entry>,
 }
@@ -40,9 +46,10 @@ impl Display for RegisterCrdt {
 
 impl RegisterCrdt {
     /// Constructs a new '`RegisterCrdtImpl`'.
-    pub(crate) fn new(address: RegisterAddress) -> Self {
+    pub(crate) fn new(metadata: Metadata, tag: u64) -> Self {
         Self {
-            address,
+            address: RegisterAddress::new(metadata.xorname(), tag),
+            metadata,
             data: MerkleReg::new(),
         }
     }
@@ -54,6 +61,15 @@ impl RegisterCrdt {
 
     /// Merge another register into this one.
     pub(crate) fn merge(&mut self, other: Self) {
+        /* FIXME: check if addresses match first
+        // Check the targetting address is correct
+        if self.address != other.address {
+            return Err(Error::RegisterAddrMismatch {
+                dst_addr: self.address,
+                reg_addr: other.address,
+            });
+        }
+        */
         self.data.merge(other.data);
     }
 
@@ -115,28 +131,28 @@ impl RegisterCrdt {
             .map(|(hash, node)| (EntryHash(hash), node.value.clone()))
             .collect()
     }
+
+    /// Return this Register's metadata
+    pub(crate) fn metadata(&self) -> &Metadata {
+        &self.metadata
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use xor_name::XorName;
+    use rand::Rng;
 
     #[test]
     fn creating_entry_hash() -> Result<()> {
         let mut rng = rand::thread_rng();
-        let address_1 = RegisterAddress {
-            name: XorName::random(&mut rng),
-            tag: 0,
-        };
-        let address_2 = RegisterAddress {
-            name: XorName::random(&mut rng),
-            tag: 0,
-        };
+        let metadata_1 = Metadata::new(&rng.gen::<[u8; 32]>())?;
+        let metadata_2 = Metadata::new(&rng.gen::<[u8; 32]>())?;
+        let tag = 0;
 
-        let mut crdt_1 = RegisterCrdt::new(address_1);
-        let mut crdt_2 = RegisterCrdt::new(address_2);
+        let mut crdt_1 = RegisterCrdt::new(metadata_1, tag);
+        let mut crdt_2 = RegisterCrdt::new(metadata_2, tag);
         let mut parents = BTreeSet::new();
 
         let entry_1 = vec![0x1, 0x1];

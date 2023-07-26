@@ -24,6 +24,14 @@ pub enum Error {
         /// Targeted Register's address
         reg_addr: RegisterAddress,
     },
+    /// Metadata is too big to create a register
+    #[error("Metadata is too big to create a register: {size}, max: {max}")]
+    MetadataTooBig {
+        /// Size of the metadata
+        size: usize,
+        /// Maximum metadata size allowed
+        max: usize,
+    },
     /// Entry is too big to fit inside a register
     #[error("Entry is too big to fit inside a register: {size}, max: {max}")]
     EntryTooBig {

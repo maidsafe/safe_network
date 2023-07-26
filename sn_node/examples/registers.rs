@@ -6,14 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_client::{Client, Error};
+use sn_client::{Client, Error, Metadata};
 
 use bls::SecretKey;
 use clap::Parser;
 use eyre::Result;
 use std::{io, time::Duration};
 use tokio::time::sleep;
-use xor_name::XorName;
 
 #[derive(Parser, Debug)]
 #[clap(name = "registers cli")]
@@ -45,7 +44,8 @@ async fn main() -> Result<()> {
     // we'll retrieve (or create if not found) a Register, and write on it
     // in offline mode, syncing with the network periodically.
     let tag = 5000;
-    let xorname = XorName::from_content(reg_nickname.as_bytes());
+    let metadata = Metadata::new(reg_nickname.as_bytes())?;
+    let xorname = metadata.xorname();
     println!("Retrieving Register '{reg_nickname}' from SAFE, as user '{user}'");
     let mut reg_replica = match client.get_register(xorname, tag).await {
         Ok(register) => {
@@ -57,8 +57,8 @@ async fn main() -> Result<()> {
             register
         }
         Err(_) => {
-            println!("Register '{reg_nickname}' not found, creating it at {xorname}, {tag}",);
-            client.create_register(xorname, tag).await?
+            println!("Register '{reg_nickname}' not found, creating it with tag {tag}",);
+            client.create_register(metadata, tag).await?
         }
     };
     println!("Register owned by: {:?}", reg_replica.owner());

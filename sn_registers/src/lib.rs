@@ -17,7 +17,7 @@ mod register_op;
 pub use self::{
     address::RegisterAddress,
     error::Error,
-    metadata::{Entry, EntryHash},
+    metadata::{Entry, EntryHash, Metadata},
     permissions::{Permissions, User},
     register::{Register, SignedRegister},
     register_op::RegisterOp,

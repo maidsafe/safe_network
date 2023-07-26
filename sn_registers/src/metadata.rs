@@ -6,8 +6,38 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::{register::MAX_REG_ENTRY_SIZE, Error};
+
 use serde::{Deserialize, Serialize};
-use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
+use std::{
+    fmt::{Debug, Display, Formatter, Result as FmtResult},
+    result::Result,
+};
+use xor_name::XorName;
+
+/// Metadata of a Register, provided by the creator (end user) upon creation, which becomes immutable,
+/// and it defines this Register's address on the network, i.e. this Register is stored by the network
+/// at: XorName(hash(medatada)) (note that the size is limited: `MAX_REG_ENTRY_SIZE`).
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd)]
+pub struct Metadata(Vec<u8>);
+
+impl Metadata {
+    pub fn new(metadata: &[u8]) -> Result<Self, Error> {
+        let data = metadata.to_vec();
+        if data.len() > MAX_REG_ENTRY_SIZE {
+            return Err(Error::MetadataTooBig {
+                size: data.len(),
+                max: MAX_REG_ENTRY_SIZE,
+            });
+        }
+
+        Ok(Self(data))
+    }
+
+    pub fn xorname(&self) -> XorName {
+        XorName::from_content(&self.0)
+    }
+}
 
 /// An entry in a Register (note that the `vec<u8>` is size limited: `MAX_REG_ENTRY_SIZE`)
 pub type Entry = Vec<u8>;

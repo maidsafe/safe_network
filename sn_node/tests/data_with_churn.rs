@@ -16,7 +16,7 @@ use assert_fs::TempDir;
 use bytes::Bytes;
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Error, Files, WalletClient};
+use sn_client::{Client, Error, Files, Metadata, WalletClient};
 use sn_dbc::{Dbc, MainKey, Token};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_protocol::{
@@ -37,7 +37,6 @@ use tokio::{fs::remove_dir_all, sync::RwLock, time::sleep};
 use tonic::Request;
 use tracing::trace;
 use tracing_core::Level;
-use xor_name::XorName;
 
 // this includes code generated from .proto files
 #[allow(unused_qualifications, unreachable_pub, clippy::unwrap_used)]
@@ -312,14 +311,18 @@ fn create_registers_task(client: Client, content: ContentList, churn_period: Dur
         let delay = churn_period / REGISTER_CREATION_RATIO_TO_CHURN;
 
         loop {
-            let xorname = XorName(rand::random());
+            let metadata = Metadata::new(&rand::thread_rng().gen::<[u8; 32]>())
+                .expect("Failed to generate random metadata for new Register");
             let tag = rand::random();
 
-            let addr = RegisterAddress { name: xorname, tag };
+            let addr = RegisterAddress {
+                name: metadata.xorname(),
+                tag,
+            };
             println!("Creating Register at {addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match client.create_register(xorname, tag).await {
+            match client.create_register(metadata, tag).await {
                 Ok(_) => content
                     .write()
                     .await

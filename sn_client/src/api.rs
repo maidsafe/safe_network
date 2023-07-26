@@ -28,7 +28,7 @@ use sn_protocol::{
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_registers::SignedRegister;
+use sn_registers::{Metadata, SignedRegister};
 use sn_transfers::client_transfers::SpendRequest;
 use std::time::Duration;
 use tokio::task::spawn;
@@ -279,9 +279,9 @@ impl Client {
     }
 
     /// Create a new Register on the Network.
-    pub async fn create_register(&self, xorname: XorName, tag: u64) -> Result<ClientRegister> {
-        info!("Instantiating a new Register replica with name {xorname} and tag {tag}");
-        ClientRegister::create_online(self.clone(), xorname, tag).await
+    pub async fn create_register(&self, metadata: Metadata, tag: u64) -> Result<ClientRegister> {
+        info!("Instantiating a new Register replica with tag {tag}, and metadata: {metadata:?}");
+        ClientRegister::create_online(self.clone(), metadata, tag).await
     }
 
     /// Store `Chunk` as a record.

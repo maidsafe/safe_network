@@ -25,7 +25,7 @@ pub use self::{
     event::{ClientEvent, ClientEventsReceiver},
     faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
     file_apis::Files,
-    register::ClientRegister,
+    register::{ClientRegister, Metadata},
     wallet::{send, WalletClient},
 };
 
