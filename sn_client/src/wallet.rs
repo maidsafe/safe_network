@@ -109,9 +109,9 @@ impl WalletClient {
             .await?;
 
         // send to network
-        trace!("Sending transfer to the network: {transfer:#?}");
+        trace!("Sending storage payment transfer to the network: {transfer:#?}");
         if let Err(error) = self.client.send(transfer.clone()).await {
-            warn!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
+            warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
             self.unconfirmed_txs.push(transfer);
             return Err(error);
         }
