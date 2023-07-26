@@ -346,7 +346,12 @@ impl Node {
     }
 
     async fn handle_query(&self, query: Query) -> Response {
-        let resp = match query {
+        let resp: QueryResponse = match query {
+            Query::GetStoreCost(_address) => {
+                trace!("Got GetStoreCost");
+                let result = self.current_storecost().await;
+                QueryResponse::GetStoreCost(result)
+            }
             Query::GetChunk(address) => {
                 trace!("Got GetChunk query for {address:?}");
                 let result = self.get_chunk_from_network(address).await;

@@ -91,6 +91,9 @@ pub enum Error {
 
     #[error("No SwarmCmd channel capacity")]
     NoSwarmCmdChannelCapacity,
+
+    #[error("Failed to sign the message with the PeerId keypair")]
+    SigningFailed(#[from] libp2p::identity::SigningError),
 }
 
 /// Pretty print a `kad::RecordKey` as a hex string.

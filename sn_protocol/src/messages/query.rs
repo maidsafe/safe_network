@@ -19,6 +19,8 @@ use serde::{Deserialize, Serialize};
 #[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
 pub enum Query {
+    /// Retrieve the cost of storing a record at the given address.
+    GetStoreCost(NetworkAddress),
     /// Retrieve a [`Chunk`] at the given address.
     ///
     /// This should eventually lead to a [`GetChunk`] response.
@@ -44,6 +46,7 @@ impl Query {
     /// Used to send a query to the close group of the address.
     pub fn dst(&self) -> NetworkAddress {
         match self {
+            Query::GetStoreCost(address) => address.clone(),
             Query::GetChunk(address) => NetworkAddress::from_chunk_address(*address),
             Query::GetReplicatedData { address, .. } => address.clone(),
         }
@@ -53,6 +56,9 @@ impl Query {
 impl std::fmt::Display for Query {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Query::GetStoreCost(address) => {
+                write!(f, "Query::GetStoreCost({address:?})")
+            }
             Query::GetChunk(address) => {
                 write!(f, "Query::GetChunk({address:?})")
             }

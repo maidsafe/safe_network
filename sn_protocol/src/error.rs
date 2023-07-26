@@ -55,6 +55,11 @@ pub enum Error {
     SpendIsEmpty,
 
     // ---------- payment errors
+    /// Failed to get the storecost from kademlia stoe
+    #[error("There was an error getting the storecost from kademlia store")]
+    GetStoreCostFailed,
+    #[error("There was an error signing the storecost from kademlia store")]
+    SignStoreCostFailed,
     /// The amount paid by payment proof is not the required for the received content
     #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
     PaymentProofInsufficientAmount { paid: usize, expected: usize },
