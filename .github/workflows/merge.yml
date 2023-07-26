@@ -150,6 +150,7 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
+          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
 
       - name: Check SAFE_PEERS was set
@@ -231,8 +232,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build safenode
-        run: cargo build --release --features local-discovery --bin safenode
+      - name: Build safe bins
+        run: cargo build --release --features local-discovery --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Build testing executable
@@ -247,6 +248,7 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
+          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
 
       - name: Check SAFE_PEERS was set
@@ -302,8 +304,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build safenode
-        run: cargo build --release --features local-discovery --bin safenode
+      - name: Build safe bins
+        run: cargo build --release --features local-discovery --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Build churn tests
@@ -319,6 +321,7 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
+          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
 
       - name: Check SAFE_PEERS was set
