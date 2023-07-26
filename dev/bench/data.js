@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690394225838,
+  "lastUpdate": 1690394304526,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6583,6 +6583,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 31.53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "ed104f5590f87424b7c036e40a9f0ebe81ec7719",
+          "message": "refactor: centralising RecordKey creation logic to make sure we always use the same for all content type",
+          "timestamp": "2023-07-26T15:28:40Z",
+          "tree_id": "25b8208809b2a4eb75cf44c2c9633dd4a3c0a7aa",
+          "url": "https://github.com/maidsafe/safe_network/commit/ed104f5590f87424b7c036e40a9f0ebe81ec7719"
+        },
+        "date": 1690394303822,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 28.61,
             "unit": "MB"
           }
         ]
