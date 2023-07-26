@@ -26,6 +26,7 @@ use sn_protocol::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, ChunkWithPayment,
         DbcAddress, RecordHeader, RecordKind, RegisterAddress,
     },
+    NetworkAddress,
 };
 use sn_registers::SignedRegister;
 use sn_transfers::client_transfers::SpendRequest;
@@ -245,9 +246,11 @@ impl Client {
         &self,
         address: RegisterAddress,
     ) -> Result<SignedRegister> {
+        let key = NetworkAddress::from_register_address(address).to_record_key();
+
         let record = self
             .network
-            .get_record_from_network(RecordKey::new(address.name()))
+            .get_record_from_network(key)
             .await
             .map_err(|_| ProtocolError::RegisterNotFound(address))?;
         debug!("Got record from the network, {:?}", record.key);

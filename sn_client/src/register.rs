@@ -9,11 +9,12 @@
 use crate::{Client, Error, Result};
 
 use bls::PublicKey;
-use libp2p::kad::{Record, RecordKey};
+use libp2p::kad::Record;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::RegisterCmd,
     storage::{try_serialize_record, RecordKind},
+    NetworkAddress,
 };
 use sn_registers::{
     Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister, User,
@@ -288,9 +289,10 @@ impl ClientRegister {
             }
         };
 
-        let reg_addr = register.address();
+        let key = NetworkAddress::from_register_address(*register.address()).to_record_key();
+
         let record = Record {
-            key: RecordKey::new(reg_addr.name()),
+            key,
             value: try_serialize_record(&register, RecordKind::Register)?,
             publisher: None,
             expires: None,

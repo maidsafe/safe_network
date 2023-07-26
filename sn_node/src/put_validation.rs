@@ -19,6 +19,7 @@ use sn_protocol::{
         try_deserialize_record, try_serialize_record, ChunkWithPayment, DbcAddress, RecordHeader,
         RecordKind,
     },
+    NetworkAddress,
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{
@@ -69,7 +70,9 @@ impl Node {
                 let register = try_deserialize_record::<SignedRegister>(&record)?;
 
                 // check if the deserialized value's RegisterAddress matches the record's key
-                if record.key != RecordKey::new(&register.address().name()) {
+                let key =
+                    NetworkAddress::from_register_address(*register.address()).to_record_key();
+                if record.key != key {
                     warn!(
                         "Record's key does not match with the value's RegisterAddress, ignoring PUT."
                     );
@@ -137,7 +140,7 @@ impl Node {
         debug!("Validating and storing register {reg_addr:?}");
 
         // check if the Register is present locally
-        let key = RecordKey::new(reg_addr.name());
+        let key = NetworkAddress::from_register_address(*reg_addr).to_record_key();
         let present_locally = self
             .network
             .is_key_present_locally(&key)
@@ -157,7 +160,7 @@ impl Node {
 
         // store in kad
         let record = Record {
-            key: RecordKey::new(reg_addr.name()),
+            key,
             value: try_serialize_record(&updated_register, RecordKind::Register)?,
             publisher: None,
             expires: None,
@@ -323,15 +326,13 @@ impl Node {
         }
         debug!("Register with addr {reg_addr:?} exists locally, comparing with local version");
 
+        let key = NetworkAddress::from_register_address(*reg_addr).to_record_key();
+
         // get local register
-        let maybe_record = self
-            .network
-            .get_local_record(&RecordKey::new(reg_addr.name()))
-            .await
-            .map_err(|err| {
-                warn!("Error while fetching local record {err}");
-                ProtocolError::RegisterNotStored(*reg_addr.name())
-            })?;
+        let maybe_record = self.network.get_local_record(&key).await.map_err(|err| {
+            warn!("Error while fetching local record {err}");
+            ProtocolError::RegisterNotStored(*reg_addr.name())
+        })?;
         let record = match maybe_record {
             Some(r) => r,
             None => {
