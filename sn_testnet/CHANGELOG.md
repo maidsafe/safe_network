@@ -671,6 +671,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.2.31](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.30...sn_testnet-v0.2.31) - 2023-07-26
+
+### Added
+- *(testnet)* provide args to build/run faucet
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>
