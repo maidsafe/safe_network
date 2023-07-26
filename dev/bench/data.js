@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690394304526,
+  "lastUpdate": 1690394308635,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9096,6 +9096,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 223,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "ed104f5590f87424b7c036e40a9f0ebe81ec7719",
+          "message": "refactor: centralising RecordKey creation logic to make sure we always use the same for all content type",
+          "timestamp": "2023-07-26T15:28:40Z",
+          "tree_id": "25b8208809b2a4eb75cf44c2c9633dd4a3c0a7aa",
+          "url": "https://github.com/maidsafe/safe_network/commit/ed104f5590f87424b7c036e40a9f0ebe81ec7719"
+        },
+        "date": 1690394307905,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 231.68,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 218,
             "unit": "MB"
           }
         ]
