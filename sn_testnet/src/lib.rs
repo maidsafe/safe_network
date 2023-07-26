@@ -17,7 +17,7 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::process::{Command, Stdio};
-use tracing::{debug, info};
+use tracing::info;
 
 pub const DEFAULT_NODE_LAUNCH_INTERVAL: u64 = 1000;
 #[cfg(not(target_os = "windows"))]
@@ -54,7 +54,7 @@ pub trait RpcClient {
 pub struct SafeNodeLauncher {}
 impl NodeLauncher for SafeNodeLauncher {
     fn launch(&self, node_bin_path: &Path, args: Vec<String>) -> Result<()> {
-        debug!("Running {:#?} with args: {:#?}", node_bin_path, args);
+        println!("Running {:#?} with args: {:#?}", node_bin_path, args);
         Command::new(node_bin_path)
             .args(args)
             .stdout(Stdio::inherit())
