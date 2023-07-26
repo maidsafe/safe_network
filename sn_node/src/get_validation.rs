@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::Node;
-use libp2p::kad::RecordKey;
 use sn_dbc::SignedSpend;
 use sn_protocol::{
     error::{Error, Result},
@@ -22,9 +21,10 @@ use sn_registers::SignedRegister;
 
 impl Node {
     pub(crate) async fn get_chunk_from_network(&self, address: ChunkAddress) -> Result<Chunk> {
+        let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(RecordKey::new(address.name()))
+            .get_record_from_network(key)
             .await
             .map_err(|_| Error::ChunkNotFound(address))?;
         debug!("Got record from the network, {:?}", record.key);
@@ -42,9 +42,10 @@ impl Node {
     }
 
     pub(crate) async fn get_spend_from_network(&self, address: DbcAddress) -> Result<SignedSpend> {
+        let key = NetworkAddress::from_dbc_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(RecordKey::new(address.name()))
+            .get_record_from_network(key)
             .await
             .map_err(|_| Error::SpendNotFound(address))?;
         debug!("Got record from the network, {:?}", record.key);

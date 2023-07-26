@@ -82,16 +82,13 @@ impl NetworkAddress {
 
     /// Try to return the represented `PeerId`.
     pub fn as_peer_id(&self) -> Option<PeerId> {
-        match self {
-            NetworkAddress::PeerId(bytes) => {
-                if let Ok(peer_id) = PeerId::from_bytes(bytes) {
-                    Some(peer_id)
-                } else {
-                    None
-                }
+        if let NetworkAddress::PeerId(bytes) = self {
+            if let Ok(peer_id) = PeerId::from_bytes(bytes) {
+                return Some(peer_id);
             }
-            _ => None,
         }
+
+        None
     }
 
     /// Try to return the represented `RecordKey`.

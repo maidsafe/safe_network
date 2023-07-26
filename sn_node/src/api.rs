@@ -7,12 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, NodeEvent};
-use libp2p::{
-    autonat::NatStatus,
-    identity::Keypair,
-    kad::{RecordKey, K_VALUE},
-    Multiaddr, PeerId,
-};
+use libp2p::{autonat::NatStatus, identity::Keypair, kad::K_VALUE, Multiaddr, PeerId};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_networking::{MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState};
 use sn_protocol::{
@@ -297,8 +292,7 @@ impl Node {
                         if let Some(spend) = signed_spend.first() {
                             let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
                             debug!("DbcSpend received for replication: {:?}", dbc_addr.name());
-                            let addr =
-                                NetworkAddress::from_record_key(RecordKey::new(dbc_addr.name()));
+                            let addr = NetworkAddress::from_dbc_address(dbc_addr);
 
                             let success = self.validate_and_store_spends(signed_spend).await?;
                             trace!("ReplicatedData::Dbc with {addr:?} has been validated and stored. {success:?}");
