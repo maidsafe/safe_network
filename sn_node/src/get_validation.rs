@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::Node;
-use sn_dbc::SignedSpend;
+use sn_dbc::{SignedSpend, Token};
 use sn_networking::PrettyPrintRecordKey;
 use sn_protocol::{
     error::{Error, Result},
@@ -21,6 +21,22 @@ use sn_protocol::{
 use sn_registers::SignedRegister;
 
 impl Node {
+    /// Get the current storecost in nanos from our local kademlia store
+    /// Returns cost and our node's signature over that cost
+    pub(crate) async fn current_storecost(&self) -> Result<(Token, Vec<u8>)> {
+        let cost = self
+            .network
+            .get_local_storecost()
+            .await
+            .map_err(|_| Error::GetStoreCostFailed)?;
+
+        let signed_cost = match self.network.sign(&cost.to_bytes()) {
+            Ok(signed_cost) => signed_cost,
+            Err(_) => return Err(Error::SignStoreCostFailed),
+        };
+
+        Ok((cost, signed_cost))
+    }
     pub(crate) async fn get_chunk_from_network(&self, address: ChunkAddress) -> Result<Chunk> {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self

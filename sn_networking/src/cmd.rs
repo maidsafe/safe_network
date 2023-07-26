@@ -16,6 +16,7 @@ use libp2p::{
     },
     Multiaddr, PeerId,
 };
+use sn_dbc::Token;
 use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress,
@@ -86,6 +87,10 @@ pub enum SwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<Result<Record>>,
     },
+    /// GetLocalStoreCost from the Kad network
+    GetLocalStoreCost {
+        sender: oneshot::Sender<Token>,
+    },
     /// Get data from the local RecordStore
     GetLocalRecord {
         key: RecordKey,
@@ -146,6 +151,11 @@ impl SwarmDriver {
             SwarmCmd::GetNetworkRecord { key, sender } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
                 let _ = self.pending_query.insert(query_id, sender);
+            }
+            SwarmCmd::GetLocalStoreCost { sender } => {
+                let cost = self.swarm.behaviour_mut().kademlia.store_mut().store_cost();
+
+                let _res = sender.send(cost);
             }
             SwarmCmd::GetLocalRecord { key, sender } => {
                 let record = self

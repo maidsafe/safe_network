@@ -8,12 +8,15 @@
 
 use crate::{error::Result, messages::ReplicatedData, storage::Chunk, NetworkAddress};
 use serde::{Deserialize, Serialize};
+use sn_dbc::Token;
 use std::fmt::Debug;
 
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 pub enum QueryResponse {
+    /// The store cost in nanos for storing the next record, and the node's singature over that cost.
+    GetStoreCost(Result<(Token, Vec<u8>)>),
     //
     // ===== Chunk =====
     //

@@ -49,6 +49,7 @@ use libp2p::{
     Multiaddr, PeerId, Transport,
 };
 use rand::Rng;
+use sn_dbc::Token;
 use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress,
@@ -410,6 +411,7 @@ impl SwarmDriver {
                 swarm_cmd_sender,
                 peer_id,
                 root_dir_path,
+                keypair,
             },
             network_event_receiver,
             swarm_driver,
@@ -485,9 +487,15 @@ pub struct Network {
     pub swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
     pub peer_id: PeerId,
     pub root_dir_path: PathBuf,
+    keypair: Keypair,
 }
 
 impl Network {
+    /// Signs the given data with the node's keypair.
+    pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
+        self.keypair.sign(msg).map_err(Error::from)
+    }
+
     ///  Listen for incoming connections on the given address.
     pub async fn start_listening(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
@@ -620,6 +628,16 @@ impl Network {
         receiver
             .await
             .map_err(|_e| Error::InternalMsgChannelDropped)?
+    }
+
+    /// Get the the cost of storing the next record from the network
+    pub async fn get_local_storecost(&self) -> Result<Token> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetLocalStoreCost { sender })?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
     /// Get `Record` from the local RecordStore
