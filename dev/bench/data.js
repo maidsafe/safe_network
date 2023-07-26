@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690313960823,
+  "lastUpdate": 1690379021107,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3622,6 +3622,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 25.5743061030106,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "bce4d5516656a15aa4403f90cf5d32e93e5fa180",
+          "message": "feat(networking): record store prunes more frequently.\n\nWe now prune every 1/100 PUTs to keep space available\nmore clear, and remove unneeded data faster\n\nfixes #566",
+          "timestamp": "2023-07-26T12:32:14Z",
+          "tree_id": "eda9b1322a5262501d269d516a6fcece7679c601",
+          "url": "https://github.com/maidsafe/safe_network/commit/bce4d5516656a15aa4403f90cf5d32e93e5fa180"
+        },
+        "date": 1690379020329,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.8941520000889684,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.9480198867425574,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 25.9081593232524,
             "unit": "MiB/s"
           }
         ]
