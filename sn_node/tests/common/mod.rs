@@ -79,7 +79,7 @@ pub async fn get_funded_wallet(
 
     println!("Getting {wallet_balance} tokens from the faucet...");
     let tokens = get_tokens_from_faucet(wallet_balance, local_wallet.address(), client).await;
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(20));
 
     println!("Verifying the transfer from faucet...");
     client.verify(&tokens).await?;

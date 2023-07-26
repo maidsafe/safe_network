@@ -193,7 +193,7 @@ jobs:
         run: cargo run --bin safe --release -- register create baobao
         env:
           SN_LOG: "all"
-        timeout-minutes: 2
+        timeout-minutes: 5
 
       - name: Start a client to get a register
         run: cargo run --bin safe --release -- register get baobao
@@ -205,7 +205,7 @@ jobs:
         run: cargo run --bin safe --release -- register edit baobao wood
         env:
           SN_LOG: "all"
-        timeout-minutes: 2
+        timeout-minutes: 5
 
       - name: Stop the local network and upload logs
         if: always()

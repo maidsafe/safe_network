@@ -250,7 +250,7 @@ impl Client {
 
         let record = self
             .network
-            .get_record_from_network(key)
+            .get_record_from_network(key, None, true)
             .await
             .map_err(|_| ProtocolError::RegisterNotFound(address))?;
         debug!(
@@ -308,7 +308,10 @@ impl Client {
     pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
-        let record = self.network.get_record_from_network(key).await?;
+        let record = self
+            .network
+            .get_record_from_network(key, None, false)
+            .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
             let chunk_with_payment: ChunkWithPayment = try_deserialize_record(&record)?;
@@ -347,7 +350,7 @@ impl Client {
         trace!("Getting spend {dbc_id:?} with record_key {key:?}");
         let record = self
             .network
-            .get_record_from_network(key)
+            .get_record_from_network(key, None, true)
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!(

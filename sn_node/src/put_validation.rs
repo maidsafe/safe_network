@@ -206,8 +206,11 @@ impl Node {
         };
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
-        debug!("validating and storing spends {:?}", dbc_addr.name());
         let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
+        debug!(
+            "validating and storing spends {:?} - {key:?}",
+            dbc_addr.name()
+        );
 
         let present_locally = self
             .network
@@ -286,7 +289,7 @@ impl Node {
             let self_clone = self.clone();
             let _ = tasks.spawn(async move {
                 let addr = DbcAddress::from_dbc_id(&dbc_id);
-                let signed_spend = self_clone.get_spend_from_network(addr).await?;
+                let signed_spend = self_clone.get_spend_from_network(addr, true).await?;
                 Ok::<DbcTransaction, ProtocolError>(signed_spend.spent_tx())
             });
         });
@@ -478,9 +481,10 @@ impl Node {
                 } else {
                     for parent_input in &signed_spend.spend.dbc_creation_tx.inputs {
                         let _ = parent_spends.insert(
-                            self.get_spend_from_network(DbcAddress::from_dbc_id(
-                                &parent_input.dbc_id(),
-                            ))
+                            self.get_spend_from_network(
+                                DbcAddress::from_dbc_id(&parent_input.dbc_id()),
+                                true,
+                            )
                             .await?,
                         );
                     }
@@ -491,11 +495,12 @@ impl Node {
 
                 // check the network if any spend has happened for the same dbc_id
                 // Does not return an error, instead the Vec<SignedSpend> is returned.
-                let mut spends = if let Ok(spend) = self.get_spend_from_network(dbc_addr).await {
-                    vec![spend]
-                } else {
-                    vec![]
-                };
+                let mut spends =
+                    if let Ok(spend) = self.get_spend_from_network(dbc_addr, false).await {
+                        vec![spend]
+                    } else {
+                        vec![]
+                    };
                 // aggregate the spends from the network with our own
                 spends.push(signed_spend);
                 aggregate_spends(spends, dbc_id)
