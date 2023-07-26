@@ -76,6 +76,20 @@ struct Cmd {
     #[clap(short = 'p', long, value_name = "FILE_PATH")]
     node_path: Option<PathBuf>,
 
+    /// Build the faucet from source.
+    ///
+    /// This assumes the process is running from the `safe_network` repository.
+    #[clap(long)]
+    build_faucet: bool,
+
+    /// Optional path to the faucet binary.
+    ///
+    /// This will take precedence over the --build_faucet flag and effectively ignore it.
+    ///
+    /// If not supplied we will assume that faucet is on PATH.
+    #[clap(long, value_name = "FILE_PATH")]
+    faucet_path: Option<PathBuf>,
+
     /// The number of nodes for the testnet. Defaults to 30.
     ///
     /// If you use the 'join' command, you must supply this value.
@@ -147,6 +161,7 @@ async fn main() -> Result<()> {
         Err(_) => PathBuf::new(),
     };
 
+    // build/run node
     let mut node_bin_path = cargo_target_dir.clone();
     if let Some(node_path) = args.node_path {
         node_bin_path.push(node_path);
@@ -185,8 +200,11 @@ async fn main() -> Result<()> {
     )
     .await?;
 
+    // build/run faucet
     let mut faucet_bin_path = cargo_target_dir.clone();
-    if args.build_node {
+    if let Some(faucet_path) = args.faucet_path {
+        faucet_bin_path.push(faucet_path);
+    } else if args.build_faucet {
         build_node().await?;
         faucet_bin_path.push("target");
         faucet_bin_path.push("release");
@@ -194,6 +212,7 @@ async fn main() -> Result<()> {
     } else {
         faucet_bin_path.push(FAUCET_BIN_NAME);
     }
+
     info!("Launching DBC faucet server");
     run_faucet(faucet_bin_path).await?;
 
