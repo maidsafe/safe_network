@@ -51,7 +51,7 @@ fn random_content(client: &Client) -> Result<(Files, Bytes, ChunkAddress, Vec<Ch
 async fn storage_payment_succeeds() -> Result<()> {
     init_logging();
 
-    let paying_wallet_balance = 500_000;
+    let paying_wallet_balance = 500_001;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
@@ -171,7 +171,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
-    let paying_wallet_balance = 500_000;
+    let paying_wallet_balance = 500_002;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
@@ -199,7 +199,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_chunk_upload_fails() -> Result<()> {
-    let paying_wallet_balance = 500_000;
+    let paying_wallet_balance = 500_003;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =

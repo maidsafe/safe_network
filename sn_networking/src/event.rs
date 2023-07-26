@@ -404,11 +404,17 @@ impl SwarmDriver {
                             record.key,
                             usize::from(step.count) - 1
                         );
+                        // Consider any early completion as Putting in progress or split.
+                        // Just send back the first record (for put verification only),
+                        // and not to update self
+                        sender
+                            .send(Err(Error::RecordNotEnoughCopies(record.clone())))
+                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    } else {
+                        sender
+                            .send(Err(Error::RecordNotFound))
+                            .map_err(|_| Error::InternalMsgChannelDropped)?;
                     }
-                    // Consider any early completion as RecordNotFound, and not to update self
-                    sender
-                        .send(Err(Error::RecordNotFound))
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
             }
             KademliaEvent::OutboundQueryProgressed {
