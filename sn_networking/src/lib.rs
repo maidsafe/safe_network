@@ -113,6 +113,7 @@ pub struct SwarmDriver {
     local: bool,
     /// A list of the most recent peers we have dialed ourselves.
     dialed_peers: CircularVec<PeerId>,
+    num_dials: usize,
     /// The peers that are closer to our PeerId
     close_group: Vec<PeerId>,
     is_client: bool,
@@ -394,6 +395,7 @@ impl SwarmDriver {
             // 63 will mean at least 63 most recent peers we have dialed, which should be allow for enough time for the
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
+            num_dials: 0,
             close_group: Default::default(),
             is_client,
         };

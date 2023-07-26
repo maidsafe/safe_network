@@ -296,7 +296,33 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
     let _handle = tokio::spawn(async move {
         loop {
             match node_events_rx.recv().await {
-                Ok(NodeEvent::ConnectedToNetwork) => Marker::NodeConnectedToNetwork.log(),
+                Ok(NodeEvent::AttemptingNetworkConnection) => {
+                    Marker::AttemptingNetworkConnection.log();
+                    let inactivity_timeout = Duration::from_secs(60);
+                    let mut node_event = node_events_rx.resubscribe();
+
+                    let _event_handler: tokio::task::JoinHandle<()> = tokio::spawn(async move {                   
+                        loop {
+                            match tokio::time::timeout(inactivity_timeout, node_event.recv()).await {
+                               Ok(event) => {
+                                    match event {
+                                        Ok(NodeEvent::ConnectedToNetwork) => {
+                                            break;
+                                        },
+                                        _ => {}
+                                    };
+                                }
+                                Err(_elapsed_err) => {
+                                    Marker::NetworkConnectionTimingOut.log();
+                                }
+                                
+                            }   
+                        }
+                    });
+                }
+                Ok(NodeEvent::ConnectedToNetwork) => {
+                    Marker::NodeConnectedToNetwork.log();
+                }
                 Ok(NodeEvent::ChannelClosed) | Err(RecvError::Closed) => {
                     if let Err(err) = ctrl_tx
                         .send(NodeCtrl::Stop {

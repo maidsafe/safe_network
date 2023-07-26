@@ -17,6 +17,12 @@ use strum::Display;
 /// Changing these log markers is a breaking change.
 #[derive(Debug, Clone, Display)]
 pub enum Marker<'a> {
+    /// Dialing an initial peer and attempting to connect to the network
+    AttemptingNetworkConnection,
+
+    /// Attempt to dial initial peers and connect to the network is timing out after a period of time
+    NetworkConnectionTimingOut,
+    
     /// The node has started
     NodeConnectedToNetwork,
 

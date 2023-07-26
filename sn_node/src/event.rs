@@ -45,6 +45,8 @@ impl NodeEventsChannel {
 /// Type of events broadcasted by the node to the public API.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum NodeEvent {
+    /// Dialing an initial peer and attempting to connect to the network
+    AttemptingNetworkConnection,
     /// The node has been connected to the network
     ConnectedToNetwork,
     /// A Chunk has been stored in local storage

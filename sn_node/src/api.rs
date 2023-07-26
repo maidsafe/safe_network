@@ -190,11 +190,15 @@ impl Node {
             },
             // These events do not need to wait until there are enough peers
             NetworkEvent::PeerAdded(_)
+            | NetworkEvent::AttemptingNetworkConnection
             | NetworkEvent::PeerRemoved(_)
             | NetworkEvent::NewListenAddr(_)
             | NetworkEvent::NatStatusChanged(_) => {}
         }
         match event {
+            NetworkEvent::AttemptingNetworkConnection => {
+                self.events_channel.broadcast(NodeEvent::AttemptingNetworkConnection);
+            }
             NetworkEvent::RequestReceived { req, channel } => {
                 trace!("RequestReceived: {req:?}");
                 self.handle_request(req, channel).await;
