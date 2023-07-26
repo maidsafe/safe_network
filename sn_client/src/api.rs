@@ -14,7 +14,7 @@ use super::{
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
 use libp2p::{
-    kad::{Record, RecordKey, K_VALUE},
+    kad::{Record, K_VALUE},
     Multiaddr,
 };
 use sn_dbc::{DbcId, SignedSpend};
@@ -289,9 +289,10 @@ impl Client {
         verify_store: bool,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
+        let key = NetworkAddress::from_chunk_address(*chunk.address()).to_record_key();
         let chunk_with_payment = ChunkWithPayment { chunk, payment };
         let record = Record {
-            key: RecordKey::new(chunk_with_payment.chunk.name()),
+            key,
             value: try_serialize_record(&chunk_with_payment, RecordKind::Chunk)?,
             publisher: None,
             expires: None,
@@ -303,11 +304,8 @@ impl Client {
     /// Retrieve a `Chunk` from the kad network.
     pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
-        let xorname = address.name();
-        let record = self
-            .network
-            .get_record_from_network(RecordKey::new(xorname))
-            .await?;
+        let key = NetworkAddress::from_chunk_address(address).to_record_key();
+        let record = self.network.get_record_from_network(key).await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
             let chunk_with_payment: ChunkWithPayment = try_deserialize_record(&record)?;
@@ -328,8 +326,9 @@ impl Client {
 
         trace!("Sending spend {dbc_id:?} to the network via put_record, with addr of {dbc_addr:?}");
 
+        let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
         let record = Record {
-            key: RecordKey::new(dbc_addr.name()),
+            key,
             value: try_serialize_record(&[spend.signed_spend], RecordKind::DbcSpend)?,
             publisher: None,
             expires: None,
@@ -340,10 +339,11 @@ impl Client {
     /// Get a dbc spend from network
     pub async fn get_spend_from_network(&self, dbc_id: &DbcId) -> Result<SignedSpend> {
         let address = DbcAddress::from_dbc_id(dbc_id);
+        let key = NetworkAddress::from_dbc_address(address).to_record_key();
 
         let record = self
             .network
-            .get_record_from_network(RecordKey::new(address.name()))
+            .get_record_from_network(key)
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!(
