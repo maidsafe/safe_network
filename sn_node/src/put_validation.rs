@@ -10,7 +10,7 @@ use crate::{
     spends::{aggregate_spends, check_parent_spends},
     Node,
 };
-use libp2p::kad::{Record, RecordKey};
+use libp2p::kad::Record;
 use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -43,7 +43,9 @@ impl Node {
                 let chunk_with_payment = try_deserialize_record::<ChunkWithPayment>(&record)?;
 
                 // check if the deserialized value's ChunkAddress matches the record's key
-                if record.key != RecordKey::new(&chunk_with_payment.chunk.name()) {
+                let key = NetworkAddress::from_chunk_address(*chunk_with_payment.chunk.address())
+                    .to_record_key();
+                if record.key != key {
                     warn!(
                         "Record's key does not match with the value's ChunkAddress, ignoring PUT."
                     );
@@ -58,7 +60,7 @@ impl Node {
                 // check if all the DbcAddresses matches with Record::key
                 if !signed_spends.iter().all(|spend| {
                     let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-                    record.key == RecordKey::new(dbc_addr.name())
+                    record.key == NetworkAddress::from_dbc_address(dbc_addr).to_record_key()
                 }) {
                     warn!("Record's key does not match with the value's DbcAddress, ignoring PUT.");
                     return Err(ProtocolError::RecordKeyMismatch);
@@ -91,7 +93,8 @@ impl Node {
         let chunk_name = *chunk_with_payment.chunk.name();
         debug!("validating and storing chunk {chunk_name:?}");
 
-        let key = RecordKey::new(&chunk_name);
+        let key =
+            NetworkAddress::from_chunk_address(*chunk_with_payment.chunk.address()).to_record_key();
         let present_locally = self
             .network
             .is_key_present_locally(&key)
@@ -115,7 +118,7 @@ impl Node {
         self.chunk_payment_validation(&chunk_with_payment).await?;
 
         let record = Record {
-            key: RecordKey::new(chunk_with_payment.chunk.name()),
+            key,
             value: try_serialize_record(&chunk_with_payment, RecordKind::Chunk)?,
             publisher: None,
             expires: None,
@@ -204,7 +207,7 @@ impl Node {
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
         debug!("validating and storing spends {:?}", dbc_addr.name());
-        let key = RecordKey::new(dbc_addr.name());
+        let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
 
         let present_locally = self
             .network
@@ -373,7 +376,7 @@ impl Node {
     ) -> Result<Option<Vec<SignedSpend>>, ProtocolError> {
         // get the DbcId; used for validation
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
-        let record_key = RecordKey::new(dbc_addr.name());
+        let record_key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
 
         if present_locally {
             debug!("DbcSpend with DbcId {dbc_id:?} already exists, checking if it's the same spend/double spend",);
