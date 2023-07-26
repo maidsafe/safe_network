@@ -83,9 +83,9 @@ const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PK
 const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
 /// Duration to wait for verification
-const VERIFICATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
 /// Number of attempts to verify a record
-const VERIFICATION_ATTEMPTS: usize = 3;
+const VERIFICATION_ATTEMPTS: usize = 30;
 
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 /// Majority of a given group (i.e. > 1/2).
@@ -671,7 +671,7 @@ impl Network {
             }
 
             // wait for a bit before trying againq
-            tokio::time::sleep(VERIFICATION_TIMEOUT).await;
+            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
         }
 
         if something_different_was_found {
