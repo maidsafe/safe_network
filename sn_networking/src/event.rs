@@ -288,7 +288,6 @@ impl SwarmDriver {
                 peer_id,
                 connection_id,
             } => trace!("Dialing {peer_id:?} on {connection_id:?}"),
-
             SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
                 autonat::Event::InboundProbe(e) => debug!("AutoNAT inbound probe: {e:?}"),
                 autonat::Event::OutboundProbe(e) => debug!("AutoNAT outbound probe: {e:?}"),

@@ -143,12 +143,15 @@ impl Node {
                         }
                     }
                     _ = tokio::time::sleep(inactivity_timeout) => {
-                        let random_target = NetworkAddress::from_peer(PeerId::random());
-
                         Marker::NoNetworkActivity( inactivity_timeout ).log();
+                        let random_target = NetworkAddress::from_peer(PeerId::random());
                         debug!("No network activity in the past {inactivity_timeout:?}, performing a random get_closest query to target: {random_target:?}");
-                        if let Ok(closest) = network_clone.node_get_closest_peers(&random_target).await {
-                            debug!("Network inactivity: get_closest returned {closest:?}");
+                        match network_clone.node_get_closest_peers(&random_target).await {
+                            Ok(closest) => debug!("Network inactivity: get_closest returned {closest:?}"),
+                            Err(e) => {
+                                warn!("get_closest query failed after network inactivity timeout - check your connection: {}", e);
+                                Marker::OperationFailedAfterNetworkInactivityTimeout.log();
+                            }
                         }
                     }
                 }
