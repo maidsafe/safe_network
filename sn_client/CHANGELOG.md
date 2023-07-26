@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.3...sn_client-v0.86.4) - 2023-07-26
+
+### Fixed
+- *(register)* Registers with same name but different tags were not being stored by the network
+
+### Other
+- centralising RecordKey creation logic to make sure we always use the same for all content type
+
 ## [0.86.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.2...sn_client-v0.86.3) - 2023-07-26
 
 ### Other
