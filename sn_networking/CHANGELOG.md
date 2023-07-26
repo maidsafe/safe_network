@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.31](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.30...sn_networking-v0.3.31) - 2023-07-26
+
+### Added
+- *(networking)* add in a basic store cost calculation based on record_store capacity
+
+### Other
+- *(networking)* increase verification attempts for PUT records
+
 ## [0.3.30](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.29...sn_networking-v0.3.30) - 2023-07-26
 
 ### Added
