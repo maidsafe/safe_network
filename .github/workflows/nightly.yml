@@ -45,12 +45,6 @@ jobs:
       - name: Check contact peer
         shell: bash
         run: echo "Peer is $SAFE_PEERS"
-    
-      - name: Start a faucet client to claim genesis
-        run: cargo run --bin faucet --release -- claim-genesis
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
 
       - name: Create and fund a wallet to pay for files storage
         run: |
