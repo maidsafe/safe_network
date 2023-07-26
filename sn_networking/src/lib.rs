@@ -622,13 +622,78 @@ impl Network {
     }
 
     /// Get the Record from the network
-    pub async fn get_record_from_network(&self, key: RecordKey) -> Result<Record> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetNetworkRecord { key, sender })?;
+    /// Carry out re-attempts if required
+    /// In case a target_record is provided, only return when fetched target.
+    /// Otherwise count it as a failure when all attempts completed.
+    pub async fn get_record_from_network(
+        &self,
+        key: RecordKey,
+        target_record: Option<Record>,
+        re_attampt: bool,
+    ) -> Result<Record> {
+        let total_attempts = if re_attampt { VERIFICATION_ATTEMPTS } else { 1 };
 
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)?
+        let mut verification_attempts = 0;
+
+        while verification_attempts < total_attempts {
+            verification_attempts += 1;
+            debug!(
+                "Verification putting record of {key:?} attempts {verification_attempts:?}/{total_attempts:?}"
+            );
+
+            let (sender, receiver) = oneshot::channel();
+            self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
+                key: key.clone(),
+                sender,
+            })?;
+
+            match receiver
+                .await
+                .map_err(|_e| Error::InternalMsgChannelDropped)?
+            {
+                Ok(returned_record) => {
+                    // Returning OK whenever fulfill one of the followings:
+                    // 1, No targeting record
+                    // 2, Fetched record matches the targeting record
+                    //
+                    // Returning mismatched error when: completed all attempts
+                    if target_record.is_none()
+                        || (target_record.is_some()
+                            && target_record == Some(returned_record.clone()))
+                    {
+                        return Ok(returned_record);
+                    } else if verification_attempts >= total_attempts {
+                        return Err(Error::ReturnedRecordDoesNotMatch(
+                            returned_record.key.into(),
+                        ));
+                    }
+                }
+                Err(Error::RecordNotEnoughCopies(returned_record)) => {
+                    // Only return when completed all attempts
+                    if verification_attempts >= total_attempts {
+                        if target_record.is_none()
+                            || (target_record.is_some()
+                                && target_record == Some(returned_record.clone()))
+                        {
+                            return Ok(returned_record);
+                        } else {
+                            return Err(Error::ReturnedRecordDoesNotMatch(
+                                returned_record.key.into(),
+                            ));
+                        }
+                    }
+                }
+                Err(error) => {
+                    warn!("Did not retrieve Record '{key:?}' from network!. Retrying...",);
+                    error!("{error:?}");
+                }
+            }
+
+            // wait for a bit before re-trying
+            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+        }
+
+        Err(Error::RecordNotFound)
     }
 
     /// Get the cost of storing the next record from the network
@@ -688,60 +753,27 @@ impl Network {
         let the_record = record.clone();
         // Waiting for a response to avoid flushing to network too quick that causing choke
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::PutRecord { record, sender })?;
+        self.send_swarm_cmd(SwarmCmd::PutRecord {
+            record: record.clone(),
+            sender,
+        })?;
         let response = receiver.await?;
 
-        if !verify_store {
-            return response;
-        }
-
-        // Verify the record is stored
-        let mut verification_attempts = 0;
-        let mut something_different_was_found = false;
-        while verification_attempts <= VERIFICATION_ATTEMPTS {
-            verification_attempts += 1;
-            debug!(
-                "Verification putting record of {:?} attempts {verification_attempts:?}/{VERIFICATION_ATTEMPTS:?}",
-                PrettyPrintRecordKey::from(the_record.key.clone()),
-            );
-
-            // wait for a bit before trying
-            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
-
-            something_different_was_found = false;
-            match self.get_record_from_network(the_record.key.clone()).await {
-                // For put verification, a `NotEnoughCopy` is acceptable as long as it's the same.
-                Ok(returned_record) => {
-                    // if the returned record is not _the same_ lets inform the user
-                    if the_record == returned_record {
-                        return Ok(());
-                    } else {
-                        something_different_was_found = true;
-                    }
-                }
-                Err(Error::RecordNotEnoughCopies(returned_record)) => {
-                    // Only return when completed all attempts AND record is same to uploaded
-                    if the_record != returned_record {
-                        something_different_was_found = true;
-                    } else if verification_attempts > VERIFICATION_ATTEMPTS {
-                        return Ok(());
-                    }
-                }
-                Err(error) => {
-                    warn!(
-                        "Did not retrieve Record '{:?}' from network!. Retrying...",
-                        PrettyPrintRecordKey::from(the_record.key.clone())
+        if verify_store {
+            // Verify the record is stored, requiring re-attempts
+            let _ = self
+                .get_record_from_network(record.key.clone(), Some(record), true)
+                .await
+                .map_err(|e| {
+                    trace!(
+                        "Failing to verify the put record {:?} with error {e:?}",
+                        the_record.key
                     );
-                    error!("{error:?}");
-                }
-            }
+                    Error::FailedToVerifyRecordWasStored(the_record.key.into())
+                })?;
         }
 
-        if something_different_was_found {
-            Err(Error::ReturnedRecordDoesNotMatch(the_record.key.into()))
-        } else {
-            Err(Error::FailedToVerifyRecordWasStored(the_record.key.into()))
-        }
+        response
     }
 
     /// Put `Record` to the local RecordStore
