@@ -680,12 +680,12 @@ impl Network {
     }
 
     async fn put_record_once(&self, record: Record, verify_store: bool) -> Result<()> {
-        let the_record = record.clone();
         debug!(
             "Putting record of {} - length {:?} to network",
             PrettyPrintRecordKey::from(record.key.clone()),
             record.value.len()
         );
+        let the_record = record.clone();
         // Waiting for a response to avoid flushing to network too quick that causing choke
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::PutRecord { record, sender })?;
@@ -698,29 +698,43 @@ impl Network {
         // Verify the record is stored
         let mut verification_attempts = 0;
         let mut something_different_was_found = false;
-        while verification_attempts < VERIFICATION_ATTEMPTS {
+        while verification_attempts <= VERIFICATION_ATTEMPTS {
+            verification_attempts += 1;
+            debug!(
+                "Verification putting record of {:?} attempts {verification_attempts:?}/{VERIFICATION_ATTEMPTS:?}",
+                PrettyPrintRecordKey::from(the_record.key.clone()),
+            );
+
+            // wait for a bit before trying
+            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+
             something_different_was_found = false;
             match self.get_record_from_network(the_record.key.clone()).await {
+                // For put verification, a `NotEnoughCopy` is acceptable as long as it's the same.
                 Ok(returned_record) => {
                     // if the returned record is not _the same_ lets inform the user
+                    if the_record == returned_record {
+                        return Ok(());
+                    } else {
+                        something_different_was_found = true;
+                    }
+                }
+                Err(Error::RecordNotEnoughCopies(returned_record)) => {
+                    // Only return when completed all attempts AND record is same to uploaded
                     if the_record != returned_record {
                         something_different_was_found = true;
-                        continue;
+                    } else if verification_attempts > VERIFICATION_ATTEMPTS {
+                        return Ok(());
                     }
-
-                    return Ok(());
                 }
                 Err(error) => {
-                    verification_attempts += 1;
                     warn!(
-                        "Did not retrieve Record '{:?}' from all nodes in the close group!. Retrying...", PrettyPrintRecordKey::from(the_record.key.clone()),
+                        "Did not retrieve Record '{:?}' from network!. Retrying...",
+                        PrettyPrintRecordKey::from(the_record.key.clone())
                     );
                     error!("{error:?}");
                 }
             }
-
-            // wait for a bit before trying againq
-            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
         }
 
         if something_different_was_found {

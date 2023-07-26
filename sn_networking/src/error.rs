@@ -10,7 +10,7 @@ use super::{cmd::SwarmCmd, NetworkEvent};
 
 use bytes::Bytes;
 use libp2p::{
-    kad,
+    kad::{self, Record},
     request_response::{OutboundFailure, RequestId},
     swarm::DialError,
     TransportError,
@@ -85,6 +85,9 @@ pub enum Error {
 
     #[error("Record was not found locally")]
     RecordNotFound,
+
+    #[error("Get Record completed with non enough copies")]
+    RecordNotEnoughCopies(Record),
 
     #[error("Error putting record")]
     PutRecordError(#[from] kad::PutRecordError),
