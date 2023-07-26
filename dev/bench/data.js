@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690388990627,
+  "lastUpdate": 1690389081973,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6515,6 +6515,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 25.08,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "cc78d9c4505050078b301b9a72fc1358fa849e9b",
+          "message": "chore(networking): increase verification attempts for PUT records",
+          "timestamp": "2023-07-26T14:02:54Z",
+          "tree_id": "9551fb7257df30f8e329d5996adaba9949ebc04e",
+          "url": "https://github.com/maidsafe/safe_network/commit/cc78d9c4505050078b301b9a72fc1358fa849e9b"
+        },
+        "date": 1690389081482,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 31.53,
             "unit": "MB"
           }
         ]
