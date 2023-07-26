@@ -38,6 +38,7 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
+          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
 
       - name: Check contact peer
@@ -167,8 +168,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
 
-      - name: Build safenode
-        run: cargo build --release --features local-discovery --bin safenode
+      - name: Build safe bins
+        run: cargo build --release --features local-discovery --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Build testing executable
@@ -183,6 +184,7 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
+          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
 
       - name: execute the dbc spend test
@@ -232,8 +234,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
 
-      - name: Build safenode
-        run: cargo build --release --features local-discovery --bin safenode
+      - name: Build safe bins
+        run: cargo build --release --features local-discovery --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Start a local network
@@ -242,6 +244,7 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
+          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
 
       - name: Build churn tests 

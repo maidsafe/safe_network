@@ -59,6 +59,7 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
+          faucet-path: target/release/faucet
           platform: ubuntu-latest
 
       - name: Check SAFE_PEERS was set
