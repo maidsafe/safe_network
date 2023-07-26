@@ -93,6 +93,11 @@ impl Node {
         let chunk_name = *chunk_with_payment.chunk.name();
         debug!("validating and storing chunk {chunk_name:?}");
 
+        if !chunk_with_payment.chunk.verify_address() {
+            warn!("Chunk's address is incorrect as per its own data: {chunk_name}");
+            return Err(ProtocolError::ChunkNotStored(chunk_name));
+        }
+
         let key =
             NetworkAddress::from_chunk_address(*chunk_with_payment.chunk.address()).to_record_key();
         let present_locally = self
@@ -141,6 +146,11 @@ impl Node {
     ) -> Result<CmdOk, ProtocolError> {
         let reg_addr = register.address();
         debug!("Validating and storing register {reg_addr:?}");
+
+        if !register.verify_address() {
+            warn!("Register's address is incorrect as per its own metadata: {reg_addr:?}");
+            return Err(ProtocolError::RegisterNotStored(*reg_addr.name()));
+        }
 
         // check if the Register is present locally
         let key = NetworkAddress::from_register_address(*reg_addr).to_record_key();

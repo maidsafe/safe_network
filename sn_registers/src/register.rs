@@ -76,6 +76,15 @@ impl SignedRegister {
         Ok(())
     }
 
+    /// Verifies the address is correct for this Register's metadata
+    pub fn verify_address(&self) -> bool {
+        self.address()
+            == &RegisterAddress::new(
+                self.base_register.metadata().xorname(),
+                self.base_register.tag(),
+            )
+    }
+
     pub fn verify_with_address(&self, address: RegisterAddress) -> Result<()> {
         if self.base_register.address() != &address {
             return Err(Error::InvalidRegisterAddress {

@@ -47,6 +47,11 @@ impl Chunk {
         self.address.name()
     }
 
+    /// Verifies the address is correct for this chunk's data
+    pub fn verify_address(&self) -> bool {
+        self.address() == &ChunkAddress::new(XorName::from_content(self.value()))
+    }
+
     /// Returns size of contained value.
     pub fn payload_size(&self) -> usize {
         self.value.len()
