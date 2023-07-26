@@ -93,7 +93,7 @@ jobs:
           cat dbc_hex | cargo run --bin safe --release -- wallet deposit --stdin
         env:
           SN_LOG: "all"
-        timeout-minutes: 2
+        timeout-minutes: 10
 
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!

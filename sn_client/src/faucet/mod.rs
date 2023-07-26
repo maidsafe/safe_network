@@ -55,9 +55,9 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWal
 
     println!("Verifying the transfer from genesis...");
     if let Err(error) = client.verify(&tokens).await {
-        println!("Could not verify the transfer from genesis, retrying after 10 secs...");
+        println!("Could not verify the transfer from genesis, retrying after 20 secs...");
         println!("The error was: {error:?}");
-        tokio::time::sleep(Duration::from_secs(10)).await;
+        tokio::time::sleep(Duration::from_secs(20)).await;
         if let Err(error) = client.verify(&tokens).await {
             println!("Could not verify the transfer from genesis: {error:?}");
         } else {
