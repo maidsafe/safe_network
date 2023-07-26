@@ -20,6 +20,7 @@ use libp2p::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display, Formatter};
+use xor_name::XorName;
 
 /// This is the address in the network by which proximity/distance
 /// to other items (whether nodes or data chunks) are calculated.
@@ -101,18 +102,18 @@ impl NetworkAddress {
         }
     }
 
-    // For track and logging purpose, return the convertable `RecordKey`.
-    fn to_record_key(&self) -> Option<RecordKey> {
+    /// Return the convertable `RecordKey`.
+    pub fn to_record_key(&self) -> RecordKey {
         match self {
-            NetworkAddress::RecordKey(bytes) => Some(RecordKey::new(bytes)),
-            NetworkAddress::ChunkAddress(chunk_address) => {
-                Some(RecordKey::new(chunk_address.name()))
-            }
+            NetworkAddress::RecordKey(bytes) => RecordKey::new(bytes),
+            NetworkAddress::ChunkAddress(chunk_address) => RecordKey::new(chunk_address.name()),
             NetworkAddress::RegisterAddress(register_address) => {
-                Some(RecordKey::new(register_address.name()))
+                let mut reg_name: Vec<u8> = register_address.name().to_vec();
+                reg_name.extend(register_address.tag.to_be_bytes());
+                RecordKey::new(&XorName::from_content(&reg_name))
             }
-            NetworkAddress::DbcAddress(dbc_address) => Some(RecordKey::new(dbc_address.name())),
-            _ => None,
+            NetworkAddress::DbcAddress(dbc_address) => RecordKey::new(dbc_address.name()),
+            NetworkAddress::PeerId(bytes) => RecordKey::new(bytes),
         }
     }
 

@@ -285,16 +285,13 @@ impl Node {
     async fn handle_response(&mut self, response: Response) -> Result<()> {
         match response {
             Response::Query(QueryResponse::GetReplicatedData(Ok((_holder, replicated_data)))) => {
-                let _address = match replicated_data {
+                match replicated_data {
                     ReplicatedData::Chunk(chunk_with_payment) => {
                         let chunk_addr = *chunk_with_payment.chunk.address();
                         debug!("Chunk received for replication: {:?}", chunk_addr.name());
-                        let addr =
-                            NetworkAddress::from_record_key(RecordKey::new(chunk_addr.name()));
 
                         let success = self.validate_and_store_chunk(chunk_with_payment).await?;
                         trace!("ReplicatedData::Chunk with {chunk_addr:?} has been validated and stored. {success:?}");
-                        addr
                     }
                     ReplicatedData::DbcSpend(signed_spend) => {
                         if let Some(spend) = signed_spend.first() {
@@ -305,7 +302,6 @@ impl Node {
 
                             let success = self.validate_and_store_spends(signed_spend).await?;
                             trace!("ReplicatedData::Dbc with {addr:?} has been validated and stored. {success:?}");
-                            addr
                         } else {
                             // Put validations make sure that we have >= 1 spends and with the same
                             // dbc_id
@@ -319,14 +315,11 @@ impl Node {
                             "Register received for replication: {:?}",
                             register_addr.name()
                         );
-                        let addr =
-                            NetworkAddress::from_record_key(RecordKey::new(register_addr.name()));
 
                         let success = self.validate_and_store_register(register).await?;
                         trace!("ReplicatedData::Register with {register_addr:?} has been validated and stored. {success:?}");
-                        addr
                     }
-                };
+                }
             }
             Response::Query(QueryResponse::GetReplicatedData(Err(
                 ProtocolError::ReplicatedDataNotFound { holder, address },
