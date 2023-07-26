@@ -137,17 +137,7 @@ async fn main() -> Result<()> {
         return Err(eyre!("Flamegraph cannot be used on Windows"));
     }
 
-    let cargo_target_dir = match std::env::var("CARGO_TARGET_DIR") {
-        Ok(dir) => {
-            let mut dir = PathBuf::from(dir);
-            let _ = dir.pop();
-            debug!("CARGO_TARGET_DIR is enabled, the path is {dir:?}");
-            dir
-        }
-        Err(_) => PathBuf::new(),
-    };
-
-    let mut node_bin_path = cargo_target_dir.clone();
+    let mut node_bin_path = PathBuf::new();
     if let Some(node_path) = args.node_path {
         node_bin_path.push(node_path);
     } else if args.build_node {
@@ -185,7 +175,7 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    let mut faucet_bin_path = cargo_target_dir.clone();
+    let mut faucet_bin_path = PathBuf::new();
     if args.build_node {
         build_node().await?;
         faucet_bin_path.push("target");
@@ -254,10 +244,6 @@ async fn build_node() -> Result<()> {
 
     let mut build_result = Command::new("cargo");
     let _ = build_result.args(args.clone());
-
-    if let Ok(val) = std::env::var("CARGO_TARGET_DIR") {
-        let _ = build_result.env("CARGO_TARGET_DIR", val);
-    }
 
     let build_result = build_result
         .current_dir("sn_node")
