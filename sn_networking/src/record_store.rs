@@ -211,10 +211,6 @@ impl DiskBackedRecordStore {
     fn prune_storage_if_needed(&mut self) -> Result<()> {
         let num_records = self.records.len();
         let mut should_prune = num_records >= self.config.max_records;
-        if !should_prune {
-            // check the modulo of record count over 10, if 0 we should prune
-            should_prune = num_records % PRUNE_ONCE_EVERY_PUTS == 0;
-        }
 
         if should_prune {
             self.prune_storage();
