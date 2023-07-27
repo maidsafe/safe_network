@@ -382,8 +382,9 @@ impl SwarmDriver {
                 stats,
                 step,
             } => {
+                let content_hash = XorName::from_content(&peer_record.record.value);
                 trace!(
-                    "Query task {id:?} returned with record {:?} from peer {:?}, {stats:?} - {step:?}",
+                    "Query task {id:?} returned with record {:?}(content {content_hash:?}) from peer {:?}, {stats:?} - {step:?}",
                     PrettyPrintRecordKey::from(peer_record.record.key.clone()),
                     peer_record.peer
                 );

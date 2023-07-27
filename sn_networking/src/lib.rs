@@ -638,7 +638,7 @@ impl Network {
         while verification_attempts < total_attempts {
             verification_attempts += 1;
             debug!(
-                "Verification putting record of {key:?} attempts {verification_attempts:?}/{total_attempts:?}"
+                "Getting record of {key:?} attempts {verification_attempts:?}/{total_attempts:?}"
             );
 
             let (sender, receiver) = oneshot::channel();
