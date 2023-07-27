@@ -7,13 +7,13 @@ This is the Safe Network as it was supposed to be, on a kademlia network, enable
 You'll need to set the `SAFE_PEERS` env variable to the multiaddress of a node when you set up a testnet.
 You can do this automatically at network startup using the following command (if you have ripgrep installed)
 ```bash
-killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- -b --interval 100  && export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')
+killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- --build-node --build-faucet --interval 100  && export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')
 ```
 
 This will set the env var for you and so you can run the client without needing to manually pass in `--peer` args.
 
 Or alternatively run with local discovery enabled (mDNS)
-`killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet --features local-discovery -- -b --interval 100`
+`killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet --features local-discovery -- --build-node --build-faucet --interval 100`
 
 ## Actions undertaken by a client accessing the network
 
