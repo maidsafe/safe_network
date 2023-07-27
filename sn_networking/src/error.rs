@@ -8,6 +8,7 @@
 
 use super::{cmd::SwarmCmd, NetworkEvent};
 
+use bytes::Bytes;
 use libp2p::{
     kad,
     request_response::{OutboundFailure, RequestId},
@@ -37,13 +38,11 @@ pub enum Error {
     #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0}")]
     OutgoingResponseDropped(Response),
 
-    #[error("Could not retrieve the record after storing it: {0:?}")]
-    FailedToVerifyRecordWasStored(kad::RecordKey),
+    #[error("Could not retrieve the record after storing it: {0:}")]
+    FailedToVerifyRecordWasStored(PrettyPrintRecordKey),
 
-    #[error(
-        "Record retrieved from the network does not match the one we attempted to store {0:?}"
-    )]
-    ReturnedRecordDoesNotMatch(kad::RecordKey),
+    #[error("Record retrieved from the network does not match the one we attempted to store {0:}")]
+    ReturnedRecordDoesNotMatch(PrettyPrintRecordKey),
 
     #[error("Could not create storage dir: {path:?}, error: {source}")]
     FailedToCreateRecordStoreDir {
@@ -92,4 +91,54 @@ pub enum Error {
 
     #[error("No SwarmCmd channel capacity")]
     NoSwarmCmdChannelCapacity,
+}
+
+/// Pretty print a `kad::RecordKey` as a hex string.
+/// So clients can use the hex string for xorname and record keys interchangeably.
+/// This makes errors actionable for clients.
+/// The only cost is converting ked::RecordKey into it before sending it in errors: `record_key.into()`
+#[derive(Clone)]
+pub struct PrettyPrintRecordKey(kad::RecordKey);
+
+// seamless conversion from `kad::RecordKey` to `PrettyPrintRecordKey`
+impl From<kad::RecordKey> for PrettyPrintRecordKey {
+    fn from(key: kad::RecordKey) -> Self {
+        PrettyPrintRecordKey(key)
+    }
+}
+
+impl std::fmt::Display for PrettyPrintRecordKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let b: Vec<u8> = self.0.as_ref().to_vec();
+        let record_key_b = Bytes::from(b);
+        write!(f, "{:64x}", record_key_b)
+    }
+}
+
+impl std::fmt::Debug for PrettyPrintRecordKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use sn_protocol::{storage::ChunkAddress, NetworkAddress};
+    use xor_name::XorName;
+
+    use super::*;
+
+    #[test]
+    fn test_client_sees_same_hex_in_errors_for_xorname_and_record_keys() {
+        let mut rng = rand::thread_rng();
+        let xor_name = XorName::random(&mut rng);
+        let address = ChunkAddress::new(xor_name);
+        let record_key = NetworkAddress::from_chunk_address(address).to_record_key();
+        let pretty_record: PrettyPrintRecordKey = record_key.into();
+        let record_str = format!("{}", pretty_record);
+        let xor_name_str = format!("{:64x}", xor_name);
+        println!("record_str: {}", record_str);
+        println!("xor_name_str: {}", xor_name_str);
+        assert_eq!(record_str, xor_name_str);
+    }
 }
