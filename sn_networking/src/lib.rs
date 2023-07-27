@@ -17,11 +17,9 @@ mod msg;
 mod record_store;
 mod replication_fetcher;
 
-use crate::error::PrettyPrintRecordKey;
-
 pub use self::{
     cmd::SwarmLocalState,
-    error::Error,
+    error::{Error, PrettyPrintRecordKey},
     event::{MsgResponder, NetworkEvent},
 };
 
@@ -664,10 +662,9 @@ impl Network {
 
     async fn put_record_once(&self, record: Record, verify_store: bool) -> Result<()> {
         let the_record = record.clone();
-        let pretty = PrettyPrintRecordKey::from(record.key.clone());
         debug!(
-            "Putting record of {:?}({pretty}) - length {:?} to network",
-            the_record.key,
+            "Putting record of {} - length {:?} to network",
+            PrettyPrintRecordKey::from(record.key.clone()),
             record.value.len()
         );
         // Waiting for a response to avoid flushing to network too quick that causing choke
@@ -697,7 +694,7 @@ impl Network {
                 Err(error) => {
                     verification_attempts += 1;
                     warn!(
-                        "Did not retrieve Record '{:?}' from all nodes in the close group!. Retrying...", the_record.key
+                        "Did not retrieve Record '{:?}' from all nodes in the close group!. Retrying...", PrettyPrintRecordKey::from(the_record.key.clone()),
                     );
                     error!("{error:?}");
                 }
@@ -719,7 +716,7 @@ impl Network {
     pub fn put_local_record(&self, record: Record) -> Result<()> {
         debug!(
             "Writing Record locally, for {:?} - length {:?}",
-            record.key,
+            PrettyPrintRecordKey::from(record.key.clone()),
             record.value.len()
         );
         self.send_swarm_cmd(SwarmCmd::PutLocalRecord { record })

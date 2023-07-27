@@ -12,8 +12,8 @@ use super::{
     SwarmDriver,
 };
 use crate::{
-    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
-    IDENTIFY_AGENT_STR,
+    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, PrettyPrintRecordKey,
+    CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
 };
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
@@ -359,7 +359,7 @@ impl SwarmDriver {
                 if let Some(sender) = self.pending_query.remove(&id) {
                     trace!(
                         "Query task {id:?} returned with record {:?} from peer {:?}, {stats:?} - {step:?}",
-                        peer_record.record.key,
+                        PrettyPrintRecordKey::from(peer_record.record.key.clone()),
                         peer_record.peer
                     );
                     sender

@@ -5,7 +5,7 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-use crate::event::NetworkEvent;
+use crate::{event::NetworkEvent, PrettyPrintRecordKey};
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -289,13 +289,16 @@ impl RecordStore for DiskBackedRecordStore {
 
     fn put(&mut self, record: Record) -> Result<()> {
         if self.records.contains(&record.key) {
-            trace!("Unverified Record {:?} already exists.", record.key);
+            trace!(
+                "Unverified Record {:?} already exists.",
+                PrettyPrintRecordKey::from(record.key.clone())
+            );
             // Blindly sent to validation to allow double spend can be detected.
             // TODO: consider avoid throw duplicated chunk to validation.
         }
         trace!(
             "Unverified Record {:?} try to validate and store",
-            record.key
+            PrettyPrintRecordKey::from(record.key.clone())
         );
         if let Some(event_sender) = self.event_sender.clone() {
             // push the event off thread so as to be non-blocking

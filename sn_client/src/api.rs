@@ -18,7 +18,7 @@ use libp2p::{
     Multiaddr,
 };
 use sn_dbc::{DbcId, SignedSpend};
-use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver};
+use sn_networking::{multiaddr_is_global, NetworkEvent, PrettyPrintRecordKey, SwarmDriver};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::PaymentProof,
@@ -253,7 +253,10 @@ impl Client {
             .get_record_from_network(key)
             .await
             .map_err(|_| ProtocolError::RegisterNotFound(address))?;
-        debug!("Got record from the network, {:?}", record.key);
+        debug!(
+            "Got record from the network, {:?}",
+            PrettyPrintRecordKey::from(record.key.clone())
+        );
         let header = RecordHeader::from_record(&record)
             .map_err(|_| ProtocolError::RegisterNotFound(address))?;
 
@@ -350,7 +353,10 @@ impl Client {
                     "Can't find record for the dbc_id {dbc_id:?} with error {err:?}"
                 ))
             })?;
-        debug!("Got record from the network, {:?}", record.key);
+        debug!(
+            "Got record from the network, {:?}",
+            PrettyPrintRecordKey::from(record.key.clone())
+        );
 
         let header = RecordHeader::from_record(&record).map_err(|err| {
             Error::CouldNotVerifyTransfer(format!(
