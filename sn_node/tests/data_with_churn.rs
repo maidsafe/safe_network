@@ -313,16 +313,12 @@ fn create_registers_task(client: Client, content: ContentList, churn_period: Dur
         loop {
             let metadata = Metadata::new(&rand::thread_rng().gen::<[u8; 32]>())
                 .expect("Failed to generate random metadata for new Register");
-            let tag = rand::random();
 
-            let addr = RegisterAddress {
-                name: metadata.xorname(),
-                tag,
-            };
+            let addr = RegisterAddress::new(metadata.xorname());
             println!("Creating Register at {addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match client.create_register(metadata, tag).await {
+            match client.create_register(metadata).await {
                 Ok(_) => content
                     .write()
                     .await
@@ -602,7 +598,7 @@ async fn query_content(
             }
         }
         NetworkAddress::RegisterAddress(addr) => {
-            let _ = client.get_register(*addr.name(), addr.tag()).await?;
+            let _ = client.get_register(*addr.name()).await?;
             Ok(())
         }
         NetworkAddress::ChunkAddress(addr) => {

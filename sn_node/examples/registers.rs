@@ -43,22 +43,17 @@ async fn main() -> Result<()> {
 
     // we'll retrieve (or create if not found) a Register, and write on it
     // in offline mode, syncing with the network periodically.
-    let tag = 5000;
     let metadata = Metadata::new(reg_nickname.as_bytes())?;
     let xorname = metadata.xorname();
     println!("Retrieving Register '{reg_nickname}' from SAFE, as user '{user}'");
-    let mut reg_replica = match client.get_register(xorname, tag).await {
+    let mut reg_replica = match client.get_register(xorname).await {
         Ok(register) => {
-            println!(
-                "Register '{reg_nickname}' found at {}, {}!",
-                register.name(),
-                register.tag(),
-            );
+            println!("Register '{reg_nickname}' found at {}!", register.name(),);
             register
         }
         Err(_) => {
-            println!("Register '{reg_nickname}' not found, creating it with tag {tag}",);
-            client.create_register(metadata, tag).await?
+            println!("Register '{reg_nickname}' not found, creating it...",);
+            client.create_register(metadata).await?
         }
     };
     println!("Register owned by: {:?}", reg_replica.owner());

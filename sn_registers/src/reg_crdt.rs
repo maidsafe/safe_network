@@ -45,10 +45,10 @@ impl Display for RegisterCrdt {
 }
 
 impl RegisterCrdt {
-    /// Constructs a new '`RegisterCrdtImpl`'.
-    pub(crate) fn new(metadata: Metadata, tag: u64) -> Self {
+    /// Constructs a new '`RegisterCrdt`' with address derived from the given metadata.
+    pub(crate) fn new(metadata: Metadata) -> Self {
         Self {
-            address: RegisterAddress::new(metadata.xorname(), tag),
+            address: RegisterAddress::new(metadata.xorname()),
             metadata,
             data: MerkleReg::new(),
         }
@@ -99,7 +99,7 @@ impl RegisterCrdt {
         Ok((EntryHash(hash), op))
     }
 
-    /// Apply a remote data CRDT operation to this replica of the `RegisterCrdtImpl`.
+    /// Apply a remote data CRDT operation to this replica of the `RegisterCrdt`.
     pub(crate) fn apply_op(&mut self, op: RegisterOp) -> Result<()> {
         // Let's first check the op is validly signed.
         // Note: Perms and valid sig for the op are checked at the upper Register layer.
@@ -149,25 +149,24 @@ mod tests {
         let mut rng = rand::thread_rng();
         let metadata_1 = Metadata::new(&rng.gen::<[u8; 32]>())?;
         let metadata_2 = Metadata::new(&rng.gen::<[u8; 32]>())?;
-        let tag = 0;
 
-        let mut crdt_1 = RegisterCrdt::new(metadata_1, tag);
-        let mut crdt_2 = RegisterCrdt::new(metadata_2, tag);
+        let mut crdt_1 = RegisterCrdt::new(metadata_1);
+        let mut crdt_2 = RegisterCrdt::new(metadata_2);
         let mut parents = BTreeSet::new();
 
         let entry_1 = vec![0x1, 0x1];
-        // Different RegisterCrdtImpl shall create same hashes for the same entry from root
+        // Different RegisterCrdt shall create same hashes for the same entry from root
         let (entry_hash_1, _) = crdt_1.write(entry_1.clone(), parents.clone(), User::Anyone)?;
         let (entry_hash_2, _) = crdt_2.write(entry_1, parents.clone(), User::Anyone)?;
         assert!(entry_hash_1 == entry_hash_2);
 
         let entry_2 = vec![0x2, 0x2];
-        // RegisterCrdtImpl shall create differnt hashes for different entries from root
+        // RegisterCrdt shall create differnt hashes for different entries from root
         let (entry_hash_1_2, _) = crdt_1.write(entry_2, parents.clone(), User::Anyone)?;
         assert!(entry_hash_1 != entry_hash_1_2);
 
         let entry_3 = vec![0x3, 0x3];
-        // Different RegisterCrdtImpl shall create same hashes for the same entry from same parents
+        // Different RegisterCrdt shall create same hashes for the same entry from same parents
         let _ = parents.insert(entry_hash_1);
         let (entry_hash_1_3, _) = crdt_1.write(entry_3.clone(), parents.clone(), User::Anyone)?;
         let (entry_hash_2_3, _) = crdt_1.write(entry_3, parents, User::Anyone)?;

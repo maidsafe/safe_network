@@ -22,6 +22,7 @@ use xor_name::XorName;
 pub struct Metadata(Vec<u8>);
 
 impl Metadata {
+    /// Creates a new Metadata checking the data length is not larger than the allowed max size.
     pub fn new(metadata: &[u8]) -> Result<Self, Error> {
         let data = metadata.to_vec();
         if data.len() > MAX_REG_ENTRY_SIZE {
@@ -34,6 +35,7 @@ impl Metadata {
         Ok(Self(data))
     }
 
+    /// Returns the xorname this metadata would be mapped to.
     pub fn xorname(&self) -> XorName {
         XorName::from_content(&self.0)
     }

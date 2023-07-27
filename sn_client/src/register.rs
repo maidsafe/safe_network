@@ -35,15 +35,10 @@ pub struct ClientRegister {
 
 impl ClientRegister {
     /// Central helper func to create a client register
-    fn create_register(
-        client: Client,
-        metadata: Metadata,
-        tag: u64,
-        perms: Permissions,
-    ) -> Result<Self> {
+    fn create_register(client: Client, metadata: Metadata, perms: Permissions) -> Result<Self> {
         let public_key = client.signer_pk();
 
-        let register = Register::new(public_key, metadata, tag, perms);
+        let register = Register::new(public_key, metadata, perms);
         let reg = Self {
             client,
             register,
@@ -54,31 +49,27 @@ impl ClientRegister {
     }
 
     /// Create a new Register Locally.
-    pub fn create(client: Client, metadata: Metadata, tag: u64) -> Result<Self> {
-        Self::create_register(client, metadata, tag, Permissions::new_owner_only())
+    pub fn create(client: Client, metadata: Metadata) -> Result<Self> {
+        Self::create_register(client, metadata, Permissions::new_owner_only())
     }
 
     /// Create a new public Register (Anybody can write to it) and send it so the Network.
-    pub async fn create_public_online(
-        client: Client,
-        metadata: Metadata,
-        tag: u64,
-    ) -> Result<Self> {
-        let mut reg = Self::create_register(client, metadata, tag, Permissions::new_owner_only())?;
+    pub async fn create_public_online(client: Client, metadata: Metadata) -> Result<Self> {
+        let mut reg = Self::create_register(client, metadata, Permissions::new_owner_only())?;
         reg.sync().await?;
         Ok(reg)
     }
 
     /// Create a new Register and send it to the Network.
-    pub async fn create_online(client: Client, metadata: Metadata, tag: u64) -> Result<Self> {
-        let mut reg = Self::create_register(client, metadata, tag, Permissions::new_owner_only())?;
+    pub async fn create_online(client: Client, metadata: Metadata) -> Result<Self> {
+        let mut reg = Self::create_register(client, metadata, Permissions::new_owner_only())?;
         reg.sync().await?;
         Ok(reg)
     }
 
     /// Retrieve a Register from the network to work on it offline.
-    pub(super) async fn retrieve(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        let register = Self::get_register_from_network(&client, name, tag).await?;
+    pub(super) async fn retrieve(client: Client, name: XorName) -> Result<Self> {
+        let register = Self::get_register_from_network(&client, name).await?;
 
         Ok(Self {
             client,
@@ -104,11 +95,6 @@ impl ClientRegister {
     /// Return the XorName of the Register.
     pub fn name(&self) -> &XorName {
         self.register.name()
-    }
-
-    /// Return the tag value of the Register.
-    pub fn tag(&self) -> u64 {
-        self.register.tag()
     }
 
     /// Return the number of items held in the register
@@ -180,25 +166,21 @@ impl ClientRegister {
     /// Sync this Register with the replicas on the network.
     /// This will verify the stored Register on the network is the same as the local one.
     pub async fn sync(&mut self) -> Result<()> {
-        debug!("Syncing Register at {}, {}!", self.name(), self.tag());
-        let remote_replica =
-            match Self::get_register_from_network(&self.client, *self.name(), self.tag()).await {
-                Ok(r) => r,
-                Err(err) => {
-                    debug!("Failed to fetch register: {err:?}");
-                    debug!(
-                        "Creating Register as it doesn't exist at {}, {}!",
-                        self.name(),
-                        self.tag()
-                    );
-                    let cmd = RegisterCmd::Create {
-                        register: self.register.clone(),
-                        signature: self.client.sign(self.register.bytes()?),
-                    };
-                    self.publish_register(cmd, true).await?;
-                    self.register.clone()
-                }
-            };
+        debug!("Syncing Register at {}!", self.name());
+        let remote_replica = match Self::get_register_from_network(&self.client, *self.name()).await
+        {
+            Ok(r) => r,
+            Err(err) => {
+                debug!("Failed to fetch register: {err:?}");
+                debug!("Creating Register as it doesn't exist at {}!", self.name());
+                let cmd = RegisterCmd::Create {
+                    register: self.register.clone(),
+                    signature: self.client.sign(self.register.bytes()?),
+                };
+                self.publish_register(cmd, true).await?;
+                self.register.clone()
+            }
+        };
         self.register.merge(remote_replica);
         self.push().await
     }
@@ -209,8 +191,7 @@ impl ClientRegister {
         let ops_len = self.ops.len();
         if ops_len > 0 {
             let name = *self.name();
-            let tag = self.tag();
-            debug!("Pushing {ops_len} cached Register cmds at {name}, {tag}!",);
+            debug!("Pushing {ops_len} cached Register cmds at {name}!",);
 
             // TODO: send them all concurrently
             while let Some(cmd) = self.ops.pop_back() {
@@ -224,7 +205,7 @@ impl ClientRegister {
                 }
             }
 
-            debug!("Successfully pushed {ops_len} Register cmds at {name}, {tag}!",);
+            debug!("Successfully pushed {ops_len} Register cmds at {name}!",);
         }
 
         Ok(())
@@ -306,12 +287,8 @@ impl ClientRegister {
     }
 
     // Retrieve a `Register` from the Network.
-    async fn get_register_from_network(
-        client: &Client,
-        name: XorName,
-        tag: u64,
-    ) -> Result<Register> {
-        let address = RegisterAddress { name, tag };
+    async fn get_register_from_network(client: &Client, name: XorName) -> Result<Register> {
+        let address = RegisterAddress::new(name);
         debug!("Retrieving Register from: {address:?}");
         let reg = client.get_signed_register_from_network(address).await?;
         reg.verify_with_address(address)?;

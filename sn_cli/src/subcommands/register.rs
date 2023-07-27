@@ -44,25 +44,23 @@ pub(crate) async fn register_cmds(cmds: RegisterCmds, client: &Client) -> Result
 }
 
 async fn create_register(name: String, client: &Client) -> Result<()> {
-    let tag = 3006;
     let metadata = Metadata::new(name.as_bytes())?;
-    println!("Creating Register with '{name}' and tag {tag}");
+    println!("Creating Register with '{name}'");
 
     // clients currently only support public registers as we create a new key at each run
-    let register = ClientRegister::create_public_online(client.clone(), metadata, tag).await?;
+    let register = ClientRegister::create_public_online(client.clone(), metadata).await?;
     println!(
-        "Successfully created register '{name}' at {:?}, {tag}!",
+        "Successfully created register '{name}' at {:?}!",
         register.name()
     );
     Ok(())
 }
 
 async fn edit_register(name: String, entry: String, client: &Client) -> Result<()> {
-    let tag = 3006;
     let xorname = Metadata::new(name.as_bytes())?.xorname();
-    println!("Trying to retrieve Register ('{name}') from {xorname:?}, {tag}");
+    println!("Trying to retrieve Register ('{name}') from {xorname:?}");
 
-    match client.get_register(xorname, tag).await {
+    match client.get_register(xorname).await {
         Ok(mut register) => {
             println!(
                 "Successfully retrieved Register '{name}' from {:?}!",
@@ -95,14 +93,13 @@ async fn edit_register(name: String, entry: String, client: &Client) -> Result<(
 }
 
 async fn get_registers(names: Vec<String>, client: &Client) -> Result<()> {
-    let tag = 3006;
     for name in names {
         println!("Register name passed in via `register get` is '{name}'...");
         let xorname = XorName::from_content(name.as_bytes());
 
-        println!("Trying to retrieve Register from {xorname:?}, {tag}");
+        println!("Trying to retrieve Register from {xorname:?}");
 
-        match client.get_register(xorname, tag).await {
+        match client.get_register(xorname).await {
             Ok(register) => {
                 println!(
                     "Successfully retrieved Register '{name}' from {:?}!",

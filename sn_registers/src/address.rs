@@ -12,36 +12,16 @@ use xor_name::XorName;
 
 /// Address of a Register on the SAFE Network
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
-pub struct RegisterAddress {
-    /// Name.
-    pub name: XorName,
-    /// Tag.
-    pub tag: u64,
-}
+pub struct RegisterAddress(XorName);
 
 impl RegisterAddress {
-    /// Construct a new `RegisterAddress` given `name` and `tag`.
-    pub fn new(name: XorName, tag: u64) -> Self {
-        Self { name, tag }
-    }
-
-    /// Return the identifier of the register.
-    /// This is used to locate the register on the network.
-    pub fn id(&self) -> XorName {
-        let mut bytes = vec![];
-        bytes.extend_from_slice(&self.name.0);
-        bytes.extend_from_slice(&self.tag.to_be_bytes());
-        XorName::from_content(&bytes)
+    /// Construct a new `RegisterAddress`.
+    pub fn new(xor_name: XorName) -> Self {
+        Self(xor_name)
     }
 
     /// Return the name.
-    /// This is not a unique identifier.
     pub fn name(&self) -> &XorName {
-        &self.name
-    }
-
-    /// Return the tag.
-    pub fn tag(&self) -> u64 {
-        self.tag
+        &self.0
     }
 }

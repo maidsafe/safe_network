@@ -273,15 +273,15 @@ impl Client {
     }
 
     /// Retrieve a Register from the network.
-    pub async fn get_register(&self, xorname: XorName, tag: u64) -> Result<ClientRegister> {
-        info!("Retrieving a Register replica with name {xorname} and tag {tag}");
-        ClientRegister::retrieve(self.clone(), xorname, tag).await
+    pub async fn get_register(&self, xorname: XorName) -> Result<ClientRegister> {
+        info!("Retrieving a Register replica with name {xorname}");
+        ClientRegister::retrieve(self.clone(), xorname).await
     }
 
     /// Create a new Register on the Network.
-    pub async fn create_register(&self, metadata: Metadata, tag: u64) -> Result<ClientRegister> {
-        info!("Instantiating a new Register replica with tag {tag}, and metadata: {metadata:?}");
-        ClientRegister::create_online(self.clone(), metadata, tag).await
+    pub async fn create_register(&self, metadata: Metadata) -> Result<ClientRegister> {
+        info!("Instantiating a new Register replica with metadata: {metadata:?}");
+        ClientRegister::create_online(self.clone(), metadata).await
     }
 
     /// Store `Chunk` as a record.
