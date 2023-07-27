@@ -30,7 +30,7 @@ pub(super) const GENESIS_DBC_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
 pub(super) type GenesisResult<T> = Result<T, Error>;
 
 /// Total supply of tokens that will eventually exist in the network: 4,294,967,295 * 10^9 = 4,294,967,295,000,000,000.
-const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
+pub const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
 
 /// The secret key for the genesis DBC.
 ///
