@@ -166,7 +166,7 @@ async fn main() -> Result<()> {
     if let Some(node_path) = args.node_path {
         node_bin_path.push(node_path);
     } else if args.build_node {
-        build_node().await?;
+        build_binaries(vec![SAFENODE_BIN_NAME.to_owned()]).await?;
         node_bin_path.push("target");
         node_bin_path.push("release");
         node_bin_path.push(SAFENODE_BIN_NAME);
@@ -205,7 +205,7 @@ async fn main() -> Result<()> {
     if let Some(faucet_path) = args.faucet_path {
         faucet_bin_path.push(faucet_path);
     } else if args.build_faucet {
-        build_node().await?;
+        build_binaries(vec![FAUCET_BIN_NAME.to_owned()]).await?;
         faucet_bin_path.push("target");
         faucet_bin_path.push("release");
         faucet_bin_path.push(FAUCET_BIN_NAME);
@@ -249,8 +249,13 @@ async fn check_flamegraph_prerequisites() -> Result<()> {
     Ok(())
 }
 
-async fn build_node() -> Result<()> {
+// Calls cargo build on the given binaries.
+async fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
     let mut args = vec!["build", "--release"];
+    for bin in &binaries_to_build {
+        args.push("--bin");
+        args.push(bin);
+    }
 
     // Keep features consistent to avoid recompiling.
     if cfg!(feature = "chaos") {
@@ -268,8 +273,8 @@ async fn build_node() -> Result<()> {
         args.extend(["--features", "local-discovery"]);
     }
 
-    info!("Building safenode");
-    debug!("Building safenode with args: {:?}", args);
+    let bins_string = binaries_to_build.join(", ");
+    info!("Building the following binaries: {bins_string}");
 
     let mut build_result = Command::new("cargo");
     let _ = build_result.args(args.clone());
@@ -285,10 +290,10 @@ async fn build_node() -> Result<()> {
         .output()?;
 
     if !build_result.status.success() {
-        return Err(eyre!("Failed to build safenode"));
+        return Err(eyre!("Failed to build binaries"));
     }
 
-    info!("safenode built successfully");
+    info!("Binaries built successfully");
     Ok(())
 }
 
