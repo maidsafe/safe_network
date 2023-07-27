@@ -8,6 +8,7 @@
 
 use crate::Node;
 use sn_dbc::SignedSpend;
+use sn_networking::PrettyPrintRecordKey;
 use sn_protocol::{
     error::{Error, Result},
     messages::ReplicatedData,
@@ -27,7 +28,10 @@ impl Node {
             .get_record_from_network(key)
             .await
             .map_err(|_| Error::ChunkNotFound(address))?;
-        debug!("Got record from the network, {:?}", record.key);
+        debug!(
+            "Got record from the network, {:?}",
+            PrettyPrintRecordKey::from(record.key.clone())
+        );
         let header =
             RecordHeader::from_record(&record).map_err(|_| Error::ChunkNotFound(address))?;
 
@@ -48,7 +52,10 @@ impl Node {
             .get_record_from_network(key)
             .await
             .map_err(|_| Error::SpendNotFound(address))?;
-        debug!("Got record from the network, {:?}", record.key);
+        debug!(
+            "Got record from the network, {:?}",
+            PrettyPrintRecordKey::from(record.key.clone())
+        );
         let header =
             RecordHeader::from_record(&record).map_err(|_| Error::SpendNotFound(address))?;
 
