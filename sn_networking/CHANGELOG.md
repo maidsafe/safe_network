@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.33](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.32...sn_networking-v0.3.33) - 2023-07-27
+
+### Fixed
+- *(network)* close group should only contain CLOSE_GROUP_SIZE elements
+- *(node)* set distance range to prune records
+
 ## [0.3.32](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.31...sn_networking-v0.3.32) - 2023-07-26
 
 ### Other
