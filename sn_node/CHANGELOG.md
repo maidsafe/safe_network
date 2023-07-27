@@ -655,6 +655,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - centralising RecordKey creation logic to make sure we always use the same for all content type
 
+## [0.87.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.87.7...sn_node-v0.87.8) - 2023-07-27
+
+### Fixed
+- *(node)* set distance range to prune records
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
