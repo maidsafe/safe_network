@@ -66,6 +66,7 @@ use tracing::warn;
 /// The maximum number of peers to return in a `GetClosestPeers` response.
 /// This is the group size used in safe network protocol to be responsible for
 /// an item in the network.
+/// The peer should be present among the CLOSE_GROUP_SIZE if we're fetching the close_group(peer)
 pub const CLOSE_GROUP_SIZE: usize = 8;
 
 // Timeout for requests sent/received through the request_response behaviour.
@@ -116,7 +117,7 @@ pub struct SwarmDriver {
     local: bool,
     /// A list of the most recent peers we have dialed ourselves.
     dialed_peers: CircularVec<PeerId>,
-    /// The peers that are closer to our PeerId
+    /// The peers that are closer to our PeerId. Includes self.
     close_group: Vec<PeerId>,
     is_client: bool,
 }
