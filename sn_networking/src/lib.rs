@@ -91,6 +91,9 @@ const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::fro
 /// Number of attempts to verify a record
 const VERIFICATION_ATTEMPTS: usize = 30;
 
+/// Number of attempts to re-put a record
+const PUT_RECORD_RETRIES: usize = 3;
+
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -635,6 +638,29 @@ impl Network {
     /// Put `Record` to network
     /// optionally verify the record is stored after putting it to network
     pub async fn put_record(&self, record: Record, verify_store: bool) -> Result<()> {
+        if verify_store {
+            self.put_record_with_retries(record).await
+        } else {
+            self.put_record_once(record, false).await
+        }
+    }
+
+    /// Put `Record` to network
+    /// Verify the record is stored after putting it to network
+    /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
+    async fn put_record_with_retries(&self, record: Record) -> Result<()> {
+        let mut retries = 0;
+        while retries < PUT_RECORD_RETRIES {
+            let res = self.put_record_once(record.clone(), true).await;
+            if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
+                return res;
+            }
+            retries += 1;
+        }
+        Err(Error::FailedToVerifyRecordWasStored(record.key.into()))
+    }
+
+    async fn put_record_once(&self, record: Record, verify_store: bool) -> Result<()> {
         let the_record = record.clone();
         debug!(
             "Putting record of {:?} - length {:?} to network",
