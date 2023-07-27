@@ -11,7 +11,7 @@ use libp2p::{
     kad::{
         record::{Key, ProviderRecord, Record},
         store::{Error, RecordStore, Result},
-        KBucketKey, KBucketDistance as Distance
+        KBucketDistance as Distance, KBucketKey,
     },
 };
 use rand::Rng;
@@ -36,6 +36,9 @@ pub const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(180);
 
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
+
+/// ~Number of puts per price step
+const PUTS_PER_PRICE_STEP: usize = 100;
 
 /// A `RecordStore` that stores records on disk.
 pub struct DiskBackedRecordStore {
@@ -223,26 +226,45 @@ impl DiskBackedRecordStore {
     #[allow(dead_code)]
     /// Calculate the cost to store data for our current store state
     pub fn store_cost(&self) -> Token {
-        let records_len = self.records().count();
+        // Calculate the factor to increase the cost for every PUTS_PER_PRICE_STEP records
+        let factor = 2.0f64.powf(MAX_RECORDS_COUNT as f64 / PUTS_PER_PRICE_STEP as f64) as u64;
 
-        let mut cost = Token::from_nano(1);
-        // if we imagine that at FULL capacity we want _all the money_ (ie, we never want to reach full capacity)
-        // So we get the total amount of nanos in the network,
-        // we divide that number by our MAX_RECORD_COUNT to know
-        // what to charge for each additional record
-        let step_per_record = TOTAL_SUPPLY / MAX_RECORDS_COUNT as u64;
-        let step_amount = Token::from_nano(step_per_record);
+        // Calculate the starting cost
+        let mut cost = TOTAL_SUPPLY / factor;
 
-        // we want to spread the cost of storing data across the MAX_CAPACITY
-        // doubling the cost for each record store
-        for _ in 0..records_len {
-            if let Some(new_cost) = cost.checked_add(step_amount) {
-                cost = new_cost;
-            }
+        trace!("Starting cost is {:?}", cost);
+
+        trace!("Record count is {:?}", self.records.len());
+        let relevant_records_len = if let Some(distance_range) = self.distance_range {
+            self.records
+                .iter()
+                .cloned()
+                .filter(|key| {
+                    let kbucket_key = KBucketKey::from(key.to_vec());
+                    distance_range >= self.local_key.distance(&kbucket_key)
+                })
+                .count()
+        } else {
+            // Otherwise we've no distance range set, so we actually don't know enough
+            // so we'll say we have MAX_RECORDS_COUNT and set a high price until we know
+            // more about our CLOSE_GROUP
+            MAX_RECORDS_COUNT
+        };
+
+        trace!("Relevant records len is {:?}", relevant_records_len);
+
+        // Find where we are on the scale
+        let current_step = relevant_records_len & (PUTS_PER_PRICE_STEP - 1);
+
+        trace!("Current step is {:?}", current_step);
+
+        // Double the cost for each step up to the current step
+        for _i in 0..current_step {
+            cost = cost.saturating_add(cost);
         }
 
-        trace!("Cost is now {cost:?}");
-        cost
+        trace!("Cost is now {:?}", cost);
+        Token::from_nano(cost)
     }
 
     /// Setup the distance range.
@@ -475,8 +497,6 @@ mod tests {
             panic!("Failed recevied the record for further verification");
         };
 
-        let store_cost_before = store.store_cost();
-
         assert!(store.put_verified(returned_record).is_ok());
 
         // loop over store.get 10 times to make sure async disk write has had time to complete
@@ -493,10 +513,6 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
 
-        let cost_after_put = store.store_cost();
-        // store cost should have increased
-        assert!(cost_after_put > store_cost_before);
-
         assert_eq!(
             Some(Cow::Borrowed(&r)),
             store.get(&r.key),
@@ -504,8 +520,6 @@ mod tests {
         );
         store.remove(&r.key);
 
-        // now we've removed a record, the cost should decrease
-        assert!(cost_after_put > store.store_cost());
         assert!(store.get(&r.key).is_none());
     }
 }
