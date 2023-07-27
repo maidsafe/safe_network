@@ -432,7 +432,7 @@ impl SwarmDriver {
         Ok(())
     }
 
-    // get all the peers from our local RoutingTable
+    // get all the peers from our local RoutingTable. Contains self
     pub(super) fn get_all_local_peers(&mut self) -> Vec<PeerId> {
         let mut all_peers: Vec<PeerId> = vec![];
         for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
@@ -451,7 +451,7 @@ impl SwarmDriver {
             sort_peers_by_address(
                 all_peers,
                 &NetworkAddress::from_peer(self.self_peer_id),
-                CLOSE_GROUP_SIZE + 1,
+                CLOSE_GROUP_SIZE,
             )
             .ok()?
         };
