@@ -11,7 +11,7 @@ use libp2p::{
     kad::{
         record::{Key, ProviderRecord, Record},
         store::{Error, RecordStore, Result},
-        KBucketDistance as Distance, KBucketKey,
+        KBucketKey, KBucketDistance as Distance
     },
 };
 use rand::Rng;
@@ -37,12 +37,6 @@ pub const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(180);
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
 
-/// How frequenly we prune the records in the store
-/// eg, if 100 here, every 100 valid PUTs we'll prune the store
-/// This should give us some margin about storing data for nodes that are no longer our responsibility
-/// And may eventually feed into price discovery / storage costs and give us a buffer there too
-const PRUNE_ONCE_EVERY_PUTS: usize = 100;
-
 /// A `RecordStore` that stores records on disk.
 pub struct DiskBackedRecordStore {
     /// The identity of the peer owning the store.
@@ -51,11 +45,11 @@ pub struct DiskBackedRecordStore {
     config: DiskBackedRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
     records: HashSet<Key>,
-    /// Distance range specify the acceptable range of record entry.
-    /// `None` means accept all.
-    distance_range: Option<Distance>,
     /// Currently only used to notify the record received via network put to be validated.
     event_sender: Option<mpsc::Sender<NetworkEvent>>,
+    /// Distance range specify the acceptable range of record entry.
+    /// None means accept all records.
+    distance_range: Option<Distance>,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -98,29 +92,14 @@ impl DiskBackedRecordStore {
             local_key: KBucketKey::from(local_id),
             config,
             records: Default::default(),
-            distance_range: None,
             event_sender,
+            distance_range: None,
         }
     }
 
     /// Returns `true` if the `Key` is present locally
     pub fn contains(&self, key: &Key) -> bool {
         self.records.contains(key)
-    }
-
-    /// Retains the records satisfying a predicate.
-    pub fn retain<F>(&mut self, predicate: F)
-    where
-        F: Fn(&Key) -> bool,
-    {
-        let to_be_removed = self
-            .records
-            .iter()
-            .filter(|k| !predicate(k))
-            .cloned()
-            .collect::<Vec<_>>();
-
-        to_be_removed.iter().for_each(|key| self.remove(key));
     }
 
     // Converts a Key into a Hex string.
@@ -181,7 +160,7 @@ impl DiskBackedRecordStore {
             return Err(Error::ValueTooLarge);
         }
 
-        self.prune_storage_if_needed()?;
+        self.prune_storage_if_needed_for_record(&r.key)?;
 
         let filename = Self::key_to_hex(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
@@ -203,40 +182,42 @@ impl DiskBackedRecordStore {
     }
 
     /// Prune the records in the store to ensure that we free up space
-    /// for new records.
-    ///
-    /// This can happen if we're full, or once in every X PUTs
+    /// for the incoming record.
     ///
     /// An error is returned if we prune and we're _still_ at max_record count
-    fn prune_storage_if_needed(&mut self) -> Result<()> {
+    fn prune_storage_if_needed_for_record(&mut self, r: &Key) -> Result<()> {
         let num_records = self.records.len();
-        let mut should_prune = num_records >= self.config.max_records;
 
-        if should_prune {
-            self.prune_storage();
-            let new_num_records: usize = self.records.len();
-            trace!("A pruning reduced number of record in hold from {num_records} to {new_num_records}");
-            if new_num_records >= self.config.max_records {
-                warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
-                return Err(Error::MaxRecords);
+        // sort records by distance to our local key
+        let mut records = self.records.iter().cloned().collect::<Vec<_>>();
+        records.sort_by_key(|k| {
+            let kbucket_key = KBucketKey::from(k.to_vec());
+            self.local_key.distance(&kbucket_key)
+        });
+
+        // now check if the incoming record is closer than our furthest
+        // if it is, we can prune
+        let furthest_record = records.last();
+        if let Some(furthest_record) = furthest_record {
+            let furthest_record_key = KBucketKey::from(furthest_record.to_vec());
+            let incoming_record_key = KBucketKey::from(r.to_vec());
+            if incoming_record_key.distance(&self.local_key)
+                < furthest_record_key.distance(&self.local_key)
+            {
+                // we should prune and make space
+                self.remove(furthest_record);
+
+                trace!("Data was pruned to make space for new record");
+            } else {
+                // we should not prune, but we should check if we're at max capacity
+                if num_records >= self.config.max_records {
+                    warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
+                    return Err(Error::MaxRecords);
+                }
             }
         }
 
         Ok(())
-    }
-
-    /// Remove records that are no longer our responsibility
-    fn prune_storage(&mut self) {
-        if let Some(distance_bar) = self.distance_range {
-            let our_kbucket_key = self.local_key.clone();
-            let predicate = |key: &Key| {
-                let kbucket_key = KBucketKey::from(key.to_vec());
-                our_kbucket_key.distance(&kbucket_key) < distance_bar
-            };
-            self.retain(predicate);
-        } else {
-            warn!("Record storage didn't have the distance_range setup yet.");
-        }
     }
 
     #[allow(dead_code)]
@@ -245,8 +226,6 @@ impl DiskBackedRecordStore {
         let records_len = self.records().count();
 
         let mut cost = Token::from_nano(1);
-        const NANOS_PER_SNT: u64 = 1_000_000_000;
-
         // if we imagine that at FULL capacity we want _all the money_ (ie, we never want to reach full capacity)
         // So we get the total amount of nanos in the network,
         // we divide that number by our MAX_RECORD_COUNT to know
