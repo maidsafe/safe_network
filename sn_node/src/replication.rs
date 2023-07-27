@@ -54,6 +54,16 @@ impl Node {
             }
             self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())?;
         }
+
+        // set the distance range used for pruning
+        let distance_range = match our_close_group.get(CLOSE_GROUP_SIZE) {
+            Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
+            None => {
+                debug!("Could not obtain distance_range");
+                return Ok(());
+            }
+        };
+        self.network.set_record_distance_range(distance_range)?;
         Ok(())
     }
 
