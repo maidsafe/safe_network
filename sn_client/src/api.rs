@@ -350,7 +350,7 @@ impl Client {
         trace!("Getting spend {dbc_id:?} with record_key {key:?}");
         let record = self
             .network
-            .get_record_from_network(key, None, true)
+            .get_record_from_network(key.clone(), None, true)
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!(
@@ -380,7 +380,7 @@ impl Client {
                 [one, two, ..] => {
                     error!("Found double spend for {address:?}");
                     Err(Error::CouldNotVerifyTransfer(format!(
-                "Found double spend for the dbc_id {dbc_id:?}: spend_one {one:?} and spend_two {two:?}"
+                "Found double spend for the dbc_id {dbc_id:?} - {key:?}: spend_one {:?} and spend_two {:?}", one.derived_key_sig, two.derived_key_sig
             )))
                 }
                 [signed_spend] => {
