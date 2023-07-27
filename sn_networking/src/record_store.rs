@@ -263,6 +263,11 @@ impl DiskBackedRecordStore {
         trace!("Cost is now {cost:?}");
         cost
     }
+
+    /// Setup the distance range.
+    pub fn set_distance_range(&mut self, distance_range: Distance) {
+        self.distance_range = Some(distance_range);
+    }
 }
 
 impl RecordStore for DiskBackedRecordStore {

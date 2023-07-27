@@ -39,7 +39,10 @@ use futures::{future::select_all, StreamExt};
 use libp2p::mdns;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
+    kad::{
+        KBucketDistance as Distance, KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
+        RecordKey,
+    },
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
@@ -722,6 +725,12 @@ impl Network {
         keys: Vec<NetworkAddress>,
     ) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { peer, keys })
+    }
+
+    /// Set the acceptable range of record entry. A record is removed from the storage if the
+    /// distance between the record and the node is greater than the provided `distance`.
+    pub fn set_record_distance_range(&self, distance: Distance) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::SetRecordDistanceRange { distance })
     }
 
     /// Send `Request` to the the given `PeerId` and await for the response. If `self` is the recipient,
