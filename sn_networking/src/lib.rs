@@ -679,9 +679,9 @@ impl Network {
         }
 
         if something_different_was_found {
-            Err(Error::ReturnedRecordDoesNotMatch(the_record.key))
+            Err(Error::ReturnedRecordDoesNotMatch(the_record.key.into()))
         } else {
-            Err(Error::FailedToVerifyRecordWasStored(the_record.key))
+            Err(Error::FailedToVerifyRecordWasStored(the_record.key.into()))
         }
     }
 
