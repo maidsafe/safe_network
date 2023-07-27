@@ -12,10 +12,10 @@ mod common;
 use assert_fs::TempDir;
 use bytes::Bytes;
 use common::{
-    node_restart,
+    get_client_and_wallet, node_restart,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
 };
-use eyre::{bail, eyre, Result};
+use eyre::{eyre, Result};
 use libp2p::{
     kad::{KBucketKey, RecordKey},
     PeerId,
@@ -27,14 +27,12 @@ use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::storage::ChunkAddress;
 use sn_transfers::wallet::LocalWallet;
 use std::{
-    collections::{hash_map::Entry, BTreeSet, HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     net::{IpAddr, Ipv4Addr, SocketAddr},
     time::Duration,
 };
 use tonic::Request;
 use tracing_core::Level;
-
-use crate::common::get_client_and_wallet;
 
 const NODE_COUNT: u8 = 25;
 const CHUNK_SIZE: usize = 1024;
@@ -60,6 +58,7 @@ const CHURN_COUNT: u8 = 4;
 const CHUNK_COUNT: usize = 5;
 
 type NodeIndex = u8;
+type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_data_location() -> Result<()> {
@@ -92,20 +91,22 @@ async fn verify_data_location() -> Result<()> {
     );
 
     // set of all the node indexes that stores a record key
-    let mut record_holders = HashMap::new();
+    let mut record_holders = RecordHolders::default();
     let mut all_peers = get_all_peer_ids().await?;
 
     // Store chunks
     println!("Creating a client and paying wallet...");
     let paying_wallet_dir = TempDir::new()?;
+
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE).await?;
 
-    store_chunk(client, paying_wallet, &mut record_holders, chunk_count).await?;
+    store_chunk(client, paying_wallet, chunk_count).await?;
+    get_initial_record_keys(&mut record_holders).await?;
 
     // Verify data location initially
     get_record_holder_list(&mut record_holders).await?;
-    verify_location(&mut record_holders, &all_peers).await?;
+    verify_location(&record_holders, &all_peers).await?;
 
     // Churn nodes and verify the location of the data after VERIFICATION_DELAY
     let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
@@ -123,7 +124,7 @@ async fn verify_data_location() -> Result<()> {
         node_restart(addr).await?;
 
         // wait for the dead peer to be removed from the RT and the replication flow to finish
-        println!("Node {node_index} has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
+        println!("\nNode {node_index} has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
         tokio::time::sleep(VERIFICATION_DELAY).await;
 
         // get the new PeerId for the current NodeIndex
@@ -138,7 +139,7 @@ async fn verify_data_location() -> Result<()> {
         // get the new set of holders
         get_record_holder_list(&mut record_holders).await?;
 
-        verify_location(&mut record_holders, &all_peers).await?;
+        verify_location(&record_holders, &all_peers).await?;
 
         node_index += 1;
         if node_index > NODE_COUNT as u16 {
@@ -147,9 +148,27 @@ async fn verify_data_location() -> Result<()> {
     }
 }
 
-async fn get_record_holder_list(
-    record_holders: &mut HashMap<RecordKey, HashSet<NodeIndex>>,
-) -> Result<()> {
+// Get initial set of records keys after put
+async fn get_initial_record_keys(record_holders: &mut RecordHolders) -> Result<()> {
+    for node_index in 1..NODE_COUNT + 1 {
+        let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
+        addr.set_port(12000 + node_index as u16);
+        let endpoint = format!("https://{addr}");
+        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+
+        let response = rpc_client
+            .record_addresses(Request::new(RecordAddressesRequest {}))
+            .await?;
+
+        for bytes in response.get_ref().addresses.iter() {
+            let key = RecordKey::from(bytes.clone());
+            record_holders.insert(key, Default::default());
+        }
+    }
+    Ok(())
+}
+
+async fn get_record_holder_list(record_holders: &mut RecordHolders) -> Result<()> {
     // Clear the set of NodeIndex before updating with the new set
     for (_, v) in record_holders.iter_mut() {
         *v = HashSet::new();
@@ -177,10 +196,7 @@ async fn get_record_holder_list(
 }
 
 // Verifies that the chunk is stored by the actual closest peers to the RecordKey
-async fn verify_location(
-    record_holders: &mut HashMap<RecordKey, HashSet<NodeIndex>>,
-    all_peers: &[PeerId],
-) -> Result<()> {
+async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -> Result<()> {
     let mut failed = HashMap::new();
     for (key, actual_closest_idx) in record_holders.iter() {
         println!("Verifying {key:?}");
@@ -251,12 +267,7 @@ async fn get_all_peer_ids() -> Result<Vec<PeerId>> {
 }
 
 // Generate a random Chunk and store it to the Network
-async fn store_chunk(
-    client: Client,
-    paying_wallet: LocalWallet,
-    record_holders: &mut HashMap<RecordKey, HashSet<NodeIndex>>,
-    chunk_count: usize,
-) -> Result<()> {
+async fn store_chunk(client: Client, paying_wallet: LocalWallet, chunk_count: usize) -> Result<()> {
     let mut rng = OsRng;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
     let file_api = Files::new(client);
@@ -278,11 +289,10 @@ async fn store_chunk(
             .expect("Failed to chunk bytes");
 
         println!(
-            "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?} in {PUT_DELAY:?}",
+            "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?}",
             chunks.len(),
             bytes.len()
         );
-        tokio::time::sleep(PUT_DELAY).await;
 
         let proofs = wallet_client
             .pay_for_storage(chunks.iter().map(|c| c.name()), true)
@@ -298,21 +308,14 @@ async fn store_chunk(
 
         let addr = ChunkAddress::new(file_api.calculate_address(bytes.clone())?);
         let key = RecordKey::new(addr.name());
-        match file_api.upload_with_proof(bytes, &proofs, true).await {
-            Ok(_) => {
-                uploaded_chunks_count += 1;
-                match record_holders.entry(key.clone()) {
-                    Entry::Vacant(entry) => entry.insert(HashSet::new()),
-                    Entry::Occupied(_) => {
-                        bail!("Chunk addr {addr:?} has been inserted into the map already")
-                    }
-                };
-            }
-            Err(err) => println!("Discarding new Chunk ({addr:?}) due to error: {err:?}"),
-        }
+        file_api.upload_with_proof(bytes, &proofs, true).await?;
+        uploaded_chunks_count += 1;
 
         println!("Stored Chunk with {addr:?} / {key:?}");
     }
+
+    // to make sure the last chunk was stored
+    tokio::time::sleep(Duration::from_secs(20)).await;
 
     Ok(())
 }
