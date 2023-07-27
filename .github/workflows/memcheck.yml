@@ -244,13 +244,25 @@ jobs:
           fi
         if: always()
 
-      - name: Tar log files
+      - name: Tar node log files
         shell: bash
         continue-on-error: true
         run: |
           find $HEAPNODE_DATA_PATH -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
           find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
+        if: failure()
+
+      - name: Tar client log files
+        shell: bash
+        continue-on-error: true
+        run: |
           find $CLIENT_LOG_PATH -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
+        if: failure()
+
+      - name: Tar log files for upload
+        shell: bash
+        continue-on-error: true
+        run: |
           find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
         if: failure()
 

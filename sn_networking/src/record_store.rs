@@ -26,6 +26,7 @@ use std::{
     vec,
 };
 use tokio::sync::mpsc;
+use xor_name::XorName;
 
 // Each node will have a replication interval between these bounds
 // This should serve to stagger the intense replication activity across the network
@@ -166,7 +167,11 @@ impl DiskBackedRecordStore {
     }
 
     pub fn put_verified(&mut self, r: Record) -> Result<()> {
-        trace!("PUT a verified Record: {:?}", r.key);
+        let content_hash = XorName::from_content(&r.value);
+        trace!(
+            "PUT a verified Record: {:?} (content_hash {content_hash:?})",
+            r.key
+        );
         if r.value.len() >= self.config.max_value_bytes {
             warn!(
                 "Record not stored. Value too large: {} bytes",
