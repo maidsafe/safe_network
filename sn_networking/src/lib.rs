@@ -17,6 +17,8 @@ mod msg;
 mod record_store;
 mod replication_fetcher;
 
+use crate::error::PrettyPrintRecordKey;
+
 pub use self::{
     cmd::SwarmLocalState,
     error::Error,
@@ -662,8 +664,9 @@ impl Network {
 
     async fn put_record_once(&self, record: Record, verify_store: bool) -> Result<()> {
         let the_record = record.clone();
+        let pretty = PrettyPrintRecordKey::from(record.key.clone());
         debug!(
-            "Putting record of {:?} - length {:?} to network",
+            "Putting record of {:?}({pretty}) - length {:?} to network",
             the_record.key,
             record.value.len()
         );
