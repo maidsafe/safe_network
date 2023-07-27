@@ -33,7 +33,7 @@ use xor_name::XorName;
 impl Node {
     /// Validate and store a record to the RecordStore
     pub(crate) async fn validate_and_store_record(
-        &mut self,
+        &self,
         record: Record,
     ) -> Result<CmdOk, ProtocolError> {
         let record_header = RecordHeader::from_record(&record)?;
@@ -179,7 +179,7 @@ impl Node {
 
     /// Validate and store `Vec<SignedSpend>` to the RecordStore
     pub(crate) async fn validate_and_store_spends(
-        &mut self,
+        &self,
         signed_spends: Vec<SignedSpend>,
     ) -> Result<CmdOk, ProtocolError> {
         // make sure that the dbc_ids match
