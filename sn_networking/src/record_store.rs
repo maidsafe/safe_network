@@ -17,6 +17,7 @@ use libp2p::{
 use rand::Rng;
 use sn_dbc::Token;
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
+use sn_transfers::dbc_genesis::TOTAL_SUPPLY;
 use std::{
     borrow::Cow,
     collections::{hash_set, HashSet},
@@ -254,7 +255,7 @@ impl DiskBackedRecordStore {
         // So we get the total amount of nanos in the network,
         // we divide that number by our MAX_RECORD_COUNT to know
         // what to charge for each additional record
-        let step_per_record = ((2 ^ 32) * NANOS_PER_SNT) / MAX_RECORDS_COUNT as u64;
+        let step_per_record = TOTAL_SUPPLY / MAX_RECORDS_COUNT as u64;
         let step_amount = Token::from_nano(step_per_record);
 
         // we want to spread the cost of storing data across the MAX_CAPACITY
