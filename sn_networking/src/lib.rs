@@ -630,7 +630,7 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)?
     }
 
-    /// Get the the cost of storing the next record from the network
+    /// Get the cost of storing the next record from the network
     pub async fn get_local_storecost(&self) -> Result<Token> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetLocalStoreCost { sender })?;
@@ -778,7 +778,7 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::SetRecordDistanceRange { distance })
     }
 
-    /// Send `Request` to the the given `PeerId` and await for the response. If `self` is the recipient,
+    /// Send `Request` to the given `PeerId` and await for the response. If `self` is the recipient,
     /// then the `Request` is forwarded to itself and handled, and a corresponding `Response` is created
     /// and returned to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
@@ -792,7 +792,7 @@ impl Network {
         receiver.await?
     }
 
-    /// Send `Request` to the the given `PeerId` and do _not_ await a response here.
+    /// Send `Request` to the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
     pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let swarm_cmd = SwarmCmd::SendRequest {
