@@ -42,7 +42,7 @@ pub(crate) enum HolderStatus {
     OnGoing,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub(crate) struct ReplicationFetcher {
     to_be_fetched: HashMap<
         RecordKey,
@@ -200,5 +200,147 @@ impl ReplicationFetcher {
         let _ = holders
             .entry(peer_id)
             .or_insert((Instant::now(), HolderStatus::Pending, 0));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ReplicationFetcher, FETCH_TIMEOUT, MAX_PARALLEL_FETCH};
+    use eyre::Result;
+    use libp2p::{kad::RecordKey, PeerId};
+    use sn_protocol::NetworkAddress;
+    use std::{collections::HashSet, time::Duration};
+
+    #[tokio::test]
+    async fn fetch_from_the_network_if_we_cannot_fetch_from_peer() -> Result<()> {
+        let mut replication_fetcher = ReplicationFetcher::default();
+        let locally_stored_keys = HashSet::new();
+
+        let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
+        let key = NetworkAddress::from_record_key(RecordKey::from(random_data));
+        let peer = PeerId::random();
+
+        // key should be fetched from peer
+        let mut keys_to_fetch =
+            replication_fetcher.add_keys(peer, vec![key.clone()], &locally_stored_keys);
+        assert_eq!(keys_to_fetch.len(), 1);
+        let (fetch_key, fetch_peer) = keys_to_fetch.remove(0);
+        assert!(key.as_record_key().is_some_and(|k| k == fetch_key));
+        assert!(fetch_peer.is_some_and(|p| p == peer));
+
+        // should not return key as it is being fetched
+        let keys_to_fetch = replication_fetcher.next_keys_to_fetch();
+        assert_eq!(keys_to_fetch.len(), 0);
+
+        tokio::time::sleep(FETCH_TIMEOUT).await;
+
+        // key should now be fetched from network
+        let mut keys_to_fetch =
+            replication_fetcher.add_keys(peer, vec![key.clone()], &locally_stored_keys);
+        assert_eq!(keys_to_fetch.len(), 1);
+        let (fetch_key, fetch_peer) = keys_to_fetch.remove(0);
+        assert!(key.as_record_key().is_some_and(|k| k == fetch_key));
+        assert!(fetch_peer.is_none());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn try_with_multiple_peers_before_fetching_from_network() -> Result<()> {
+        let mut replication_fetcher = ReplicationFetcher::default();
+        let locally_stored_keys = HashSet::new();
+        let mut already_fetched_from = HashSet::new();
+
+        let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
+        let key = NetworkAddress::from_record_key(RecordKey::from(random_data));
+        let peer_1 = PeerId::random();
+        let peer_2 = PeerId::random();
+        let peer_3 = PeerId::random();
+        let peer_4 = PeerId::random();
+
+        // key should be fetched from peer_1
+        let mut keys_to_fetch =
+            replication_fetcher.add_keys(peer_1, vec![key.clone()], &locally_stored_keys);
+        assert_eq!(keys_to_fetch.len(), 1);
+        let (fetch_key, fetch_peer) = keys_to_fetch.remove(0);
+        assert!(key.as_record_key().is_some_and(|k| k == fetch_key));
+        assert!(fetch_peer.is_some_and(|p| p == peer_1));
+        already_fetched_from.insert(peer_1);
+
+        // Add peer 2 to 4
+        // should not return key as it is being fetched
+        let keys_to_fetch =
+            replication_fetcher.add_keys(peer_2, vec![key.clone()], &locally_stored_keys);
+        assert_eq!(keys_to_fetch.len(), 0);
+        let keys_to_fetch =
+            replication_fetcher.add_keys(peer_3, vec![key.clone()], &locally_stored_keys);
+        assert_eq!(keys_to_fetch.len(), 0);
+        let keys_to_fetch =
+            replication_fetcher.add_keys(peer_4, vec![key.clone()], &locally_stored_keys);
+        assert_eq!(keys_to_fetch.len(), 0);
+
+        tokio::time::sleep(FETCH_TIMEOUT).await;
+        // key should be fetched from a random peer that was not already fetched
+        let mut keys_to_fetch = replication_fetcher.next_keys_to_fetch();
+        let (fetch_key, fetch_peer) = keys_to_fetch.remove(0);
+        assert!(key.as_record_key().is_some_and(|k| k == fetch_key));
+        assert!(fetch_peer.is_some_and(|p| {
+            let res = !already_fetched_from.contains(&p);
+            already_fetched_from.insert(p);
+            res
+        }));
+
+        tokio::time::sleep(FETCH_TIMEOUT).await;
+        // key should be fetched from a random peer that was not already fetched
+        let mut keys_to_fetch = replication_fetcher.next_keys_to_fetch();
+        let (fetch_key, fetch_peer) = keys_to_fetch.remove(0);
+        assert!(key.as_record_key().is_some_and(|k| k == fetch_key));
+        assert!(fetch_peer.is_some_and(|p| {
+            let res = !already_fetched_from.contains(&p);
+            already_fetched_from.insert(p);
+            res
+        }));
+
+        tokio::time::sleep(FETCH_TIMEOUT).await;
+        // after PEERS_TRIED_BEFORE_NETWORK_FETCH, we should fetch from network
+        let mut keys_to_fetch = replication_fetcher.next_keys_to_fetch();
+        let (fetch_key, fetch_peer) = keys_to_fetch.remove(0);
+        assert!(key.as_record_key().is_some_and(|k| k == fetch_key));
+        assert!(fetch_peer.is_none());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn verify_max_parallel_fetches() -> Result<()> {
+        let mut replication_fetcher = ReplicationFetcher::default();
+        let locally_stored_keys = HashSet::new();
+
+        let peer = PeerId::random();
+        let mut incoming_keys = Vec::new();
+        (0..MAX_PARALLEL_FETCH).for_each(|_| {
+            let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
+            let key = NetworkAddress::from_record_key(RecordKey::from(random_data));
+            incoming_keys.push(key);
+        });
+
+        let keys_to_fetch = replication_fetcher.add_keys(peer, incoming_keys, &locally_stored_keys);
+        assert_eq!(keys_to_fetch.len(), MAX_PARALLEL_FETCH);
+
+        // we should not fetch anymore keys
+        let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
+        let key = NetworkAddress::from_record_key(RecordKey::from(random_data));
+        let keys_to_fetch = replication_fetcher.add_keys(peer, vec![key], &locally_stored_keys);
+        assert!(keys_to_fetch.is_empty());
+
+        tokio::time::sleep(FETCH_TIMEOUT + Duration::from_secs(1)).await;
+
+        // all the previous fetches should have failed and should now be fetched from the network
+        let keys_to_fetch = replication_fetcher.next_keys_to_fetch();
+        assert_eq!(keys_to_fetch.len(), MAX_PARALLEL_FETCH);
+        let keys_to_fetch = replication_fetcher.next_keys_to_fetch();
+        assert_eq!(keys_to_fetch.len(), 1);
+
+        Ok(())
     }
 }
