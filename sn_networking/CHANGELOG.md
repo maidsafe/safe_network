@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.34](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.33...sn_networking-v0.3.34) - 2023-07-28
+
+### Added
+- retries in put records
+- actionable record key errors
+
+### Fixed
+- prettier logs
+
+### Other
+- adapt all logging to use pretty record key
+
 ## [0.3.33](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.32...sn_networking-v0.3.33) - 2023-07-27
 
 ### Fixed

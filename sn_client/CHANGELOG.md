@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.5...sn_client-v0.86.6) - 2023-07-28
+
+### Other
+- adapt all logging to use pretty record key
+
 ## [0.86.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.4...sn_client-v0.86.5) - 2023-07-27
 
 ### Other
