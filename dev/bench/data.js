@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690577298033,
+  "lastUpdate": 1690577302129,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9606,6 +9606,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 231,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "df08c28a107feef1a997a8bb3bb60d78bdc3d486",
+          "message": "fix(replication): fix incorrect fetch timeout condition",
+          "timestamp": "2023-07-28T15:35:01Z",
+          "tree_id": "7c1703cae230c447716271c2b353a4ee68d9e5bb",
+          "url": "https://github.com/maidsafe/safe_network/commit/df08c28a107feef1a997a8bb3bb60d78bdc3d486"
+        },
+        "date": 1690577301461,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 253.35,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 224,
             "unit": "MB"
           }
         ]
