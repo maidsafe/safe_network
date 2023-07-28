@@ -90,6 +90,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: rui314/setup-mold@v1
+
       - uses: actions/checkout@v3
 
       - name: Install Rust
@@ -147,6 +148,14 @@ jobs:
       - name: Build node and client
         run: cargo build --release --bin safenode --bin safe --bin faucet
         timeout-minutes: 30
+
+      - name: install readelf
+        if : matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y binutils          
+        
+      - name: check mold is used in compilation
+        if : matrix.os == 'ubuntu-latest'
+        run : readelf -p .comment ./target/release/safenode
 
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
