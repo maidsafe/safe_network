@@ -660,6 +660,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - *(node)* set distance range to prune records
 
+## [0.87.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.87.8...sn_node-v0.87.9) - 2023-07-28
+
+### Other
+- adapt all logging to use pretty record key
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
