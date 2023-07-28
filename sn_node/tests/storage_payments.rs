@@ -69,7 +69,7 @@ async fn storage_payment_succeeds() -> Result<()> {
     );
 
     let proofs = wallet_client
-        .pay_for_storage(random_content_addrs.iter())
+        .pay_for_storage(random_content_addrs.iter(), false)
         .await?;
 
     sleep(Duration::from_secs(5)).await;
@@ -105,7 +105,7 @@ async fn storage_payment_fails() -> Result<()> {
     transfer.all_spend_requests[0].signed_spend = invalid_signed_spend;
 
     // Sending now verifies
-    let should_err = client.send(transfer.clone()).await;
+    let should_err = client.send(transfer.clone(), true).await;
 
     println!("Verified with fail: {should_err:?}");
     assert!(should_err.is_err());
@@ -132,7 +132,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     let subset_len = random_content_addrs.len() / 3;
     println!("Paying for {subset_len} random addresses...",);
     let proofs = wallet_client
-        .pay_for_storage(random_content_addrs.iter().take(subset_len))
+        .pay_for_storage(random_content_addrs.iter().take(subset_len), false)
         .await?;
     assert_eq!(proofs.len(), subset_len);
 
@@ -151,7 +151,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     // now let's request to pay for all addresses, even that we've already paid for a subset of them
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
     let proofs = wallet_client
-        .pay_for_storage(random_content_addrs.iter())
+        .pay_for_storage(random_content_addrs.iter(), false)
         .await?;
     assert_eq!(proofs.len(), random_content_addrs.len());
 
@@ -183,14 +183,14 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
     println!("Paying for {} random addresses...", chunks.len());
 
     let proofs = wallet_client
-        .pay_for_storage(chunks.iter().map(|c| c.name()))
+        .pay_for_storage(chunks.iter().map(|c| c.name()), false)
         .await?;
 
     sleep(Duration::from_secs(5)).await;
 
-    files_api.upload_with_proof(content_bytes, &proofs).await?;
-
-    sleep(Duration::from_secs(5)).await;
+    files_api
+        .upload_with_proof(content_bytes, &proofs, true)
+        .await?;
 
     files_api.read_bytes(content_addr).await?;
 
@@ -211,7 +211,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
     println!("Paying for {} random addresses...", chunks.len());
 
     let proofs = wallet_client
-        .pay_for_storage(chunks.iter().map(|c| c.name()))
+        .pay_for_storage(chunks.iter().map(|c| c.name()), false)
         .await?;
 
     sleep(Duration::from_secs(5)).await;
@@ -227,7 +227,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         .collect();
 
     files_api
-        .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+        .upload_with_proof(content_bytes.clone(), &invalid_proofs, false)
         .await?;
     assert!(matches!(
         files_api.read_bytes(content_addr).await,
@@ -245,7 +245,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         .collect();
 
     files_api
-        .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+        .upload_with_proof(content_bytes.clone(), &invalid_proofs, false)
         .await?;
     assert!(matches!(
         files_api.read_bytes(content_addr).await,
@@ -263,7 +263,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         .collect();
 
     files_api
-        .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+        .upload_with_proof(content_bytes.clone(), &invalid_proofs, false)
         .await?;
     assert!(matches!(
         files_api.read_bytes(content_addr).await,
@@ -277,7 +277,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         .into_wallet()
         .local_send_storage_payment(Token::from_nano(1), root_hash, None)
         .await?;
-    client.send(transfer.clone()).await?;
+    client.send(transfer.clone(), false).await?;
     let spent_ids: Vec<_> = transfer.tx.inputs.iter().map(|i| i.dbc_id()).collect();
 
     sleep(Duration::from_secs(5)).await;
@@ -294,7 +294,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
 
     // it should fail to store as the amount paid is not enough
     files_api
-        .upload_with_proof(content_bytes.clone(), &invalid_proofs)
+        .upload_with_proof(content_bytes.clone(), &invalid_proofs, false)
         .await?;
     assert!(matches!(
         files_api.read_bytes(content_addr).await,

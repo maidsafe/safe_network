@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
         }
         Err(_) => {
             println!("Register '{reg_nickname}' not found, creating it at {xorname}, {tag}",);
-            client.create_register(xorname, tag).await?
+            client.create_register(xorname, tag, true).await?
         }
     };
     println!("Register owned by: {:?}", reg_replica.owner());
@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
         // Sync with network after a delay
         println!("Syncing with SAFE in {delay:?}...");
         sleep(delay).await;
-        reg_replica.sync().await?;
+        reg_replica.sync(true).await?;
         println!("synced!");
     }
 }
