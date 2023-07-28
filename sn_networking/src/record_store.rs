@@ -485,7 +485,11 @@ mod tests {
         assert!(store.put(r.clone()).is_ok());
         assert!(store.get(&r.key).is_none());
         // Store cost should not change if no PUT has been added
-        assert!(store.store_cost() == store_cost_before);
+        assert_eq!(
+            store.store_cost(),
+            store_cost_before,
+            "store cost should not change over unverified put"
+        );
 
         let returned_record = if let Some(event) = network_event_receiver.recv().await {
             if let NetworkEvent::UnverifiedRecord(record) = event {
