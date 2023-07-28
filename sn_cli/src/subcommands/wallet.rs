@@ -75,15 +75,20 @@ pub enum WalletCmds {
     },
 }
 
-pub(crate) async fn wallet_cmds(cmds: WalletCmds, client: &Client, root_dir: &Path) -> Result<()> {
+pub(crate) async fn wallet_cmds(
+    cmds: WalletCmds,
+    client: &Client,
+    root_dir: &Path,
+    verify_store: bool,
+) -> Result<()> {
     match cmds {
         WalletCmds::Address => address(root_dir).await?,
         WalletCmds::Balance => balance(root_dir).await?,
         WalletCmds::Deposit { stdin, dbc } => deposit(root_dir, stdin, dbc).await?,
         WalletCmds::GetFaucet { url } => get_faucet(root_dir, url).await?,
-        WalletCmds::Send { amount, to } => send(amount, to, client, root_dir).await?,
+        WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
         WalletCmds::Pay { path } => {
-            chunk_and_pay_for_storage(client, root_dir, &path).await?;
+            chunk_and_pay_for_storage(client, root_dir, &path, verify_store).await?;
         }
     }
     Ok(())
@@ -178,7 +183,13 @@ async fn deposit_from_dbc_hex(root_dir: &Path, input: String) -> Result<()> {
     Ok(())
 }
 
-async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> Result<()> {
+async fn send(
+    amount: String,
+    to: String,
+    client: &Client,
+    root_dir: &Path,
+    verify_store: bool,
+) -> Result<()> {
     let address = parse_public_address(to)?;
 
     use std::str::FromStr;
@@ -191,7 +202,7 @@ async fn send(amount: String, to: String, client: &Client, root_dir: &Path) -> R
     let wallet = LocalWallet::load_from(root_dir).await?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
 
-    match wallet_client.send(amount, address).await {
+    match wallet_client.send(amount, address, verify_store).await {
         Ok(new_dbc) => {
             println!("Sent {amount:?} to {address:?}");
             let mut wallet = wallet_client.into_wallet();
@@ -224,6 +235,7 @@ pub(super) async fn chunk_and_pay_for_storage(
     client: &Client,
     root_dir: &Path,
     files_path: &Path,
+    verify_store: bool,
 ) -> Result<(BTreeMap<XorName, ChunkedFile>, PaymentProofsMap)> {
     let wallet = LocalWallet::load_from(root_dir)
         .await
@@ -296,6 +308,7 @@ pub(super) async fn chunk_and_pay_for_storage(
                 .values()
                 .flat_map(|chunked_file| &chunked_file.chunks)
                 .map(|(name, _)| name),
+            verify_store,
         )
         .await?;
     println!("Successfully made payment for {} Chunks.", proofs.len(),);

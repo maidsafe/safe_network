@@ -39,9 +39,14 @@ pub enum FilesCmds {
     },
 }
 
-pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path) -> Result<()> {
+pub(crate) async fn files_cmds(
+    cmds: FilesCmds,
+    client: Client,
+    root_dir: &Path,
+    verify_store: bool,
+) -> Result<()> {
     match cmds {
-        FilesCmds::Upload { path } => upload_files(path, client, root_dir).await?,
+        FilesCmds::Upload { path } => upload_files(path, client, root_dir, verify_store).await?,
         FilesCmds::Download {
             file_name,
             file_addr,
@@ -74,14 +79,20 @@ pub(crate) async fn files_cmds(cmds: FilesCmds, client: Client, root_dir: &Path)
 }
 
 /// Givena directory, upload all files contained
-async fn upload_files(files_path: PathBuf, client: Client, root_dir: &Path) -> Result<()> {
+/// Optionally verifies data was stored successfully
+async fn upload_files(
+    files_path: PathBuf,
+    client: Client,
+    root_dir: &Path,
+    verify_store: bool,
+) -> Result<()> {
     let file_api: Files = Files::new(client.clone());
 
     // The input files_path has to be a dir
     let file_names_path = root_dir.join("uploaded_files");
 
     let (chunks_to_upload, payment_proofs) =
-        chunk_and_pay_for_storage(&client, root_dir, &files_path).await?;
+        chunk_and_pay_for_storage(&client, root_dir, &files_path, verify_store).await?;
 
     let mut chunks_to_fetch = Vec::new();
     for (
@@ -98,7 +109,9 @@ async fn upload_files(files_path: PathBuf, client: Client, root_dir: &Path) -> R
             chunks.len()
         );
 
-        if let Err(error) = upload_chunks(&file_api, &file_name, chunks, &payment_proofs).await {
+        if let Err(error) =
+            upload_chunks(&file_api, &file_name, chunks, &payment_proofs, verify_store).await
+        {
             println!("Did not store all chunks of file '{file_name}' to all nodes in the close group: {error}")
         }
 
@@ -122,6 +135,7 @@ async fn upload_chunks(
     file_name: &str,
     chunks_paths: Vec<(XorName, PathBuf)>,
     payment_proofs: &PaymentProofsMap,
+    verify_store: bool,
 ) -> Result<()> {
     let chunks_reader = chunks_paths
         .into_iter()
@@ -139,7 +153,7 @@ async fn upload_chunks(
         });
 
     file_api
-        .upload_chunks_in_batches(chunks_reader, payment_proofs, true)
+        .upload_chunks_in_batches(chunks_reader, payment_proofs, verify_store)
         .await?;
     Ok(())
 }

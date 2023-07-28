@@ -58,16 +58,27 @@ impl ClientRegister {
     }
 
     /// Create a new public Register (Anybody can write to it) and send it so the Network.
-    pub async fn create_public_online(client: Client, name: XorName, tag: u64) -> Result<Self> {
+    /// This will optionally verify the Register was stored on the network.
+    pub async fn create_public_online(
+        client: Client,
+        name: XorName,
+        tag: u64,
+        verify_store: bool,
+    ) -> Result<Self> {
         let mut reg = Self::create_register(client, name, tag, Permissions::new_owner_only())?;
-        reg.sync().await?;
+        reg.sync(verify_store).await?;
         Ok(reg)
     }
 
     /// Create a new Register and send it to the Network.
-    pub async fn create_online(client: Client, name: XorName, tag: u64) -> Result<Self> {
+    pub async fn create_online(
+        client: Client,
+        name: XorName,
+        tag: u64,
+        verify_store: bool,
+    ) -> Result<Self> {
         let mut reg = Self::create_register(client, name, tag, Permissions::new_owner_only())?;
-        reg.sync().await?;
+        reg.sync(verify_store).await?;
         Ok(reg)
     }
 
@@ -173,8 +184,8 @@ impl ClientRegister {
     // ********* Online methods  *********
 
     /// Sync this Register with the replicas on the network.
-    /// This will verify the stored Register on the network is the same as the local one.
-    pub async fn sync(&mut self) -> Result<()> {
+    /// This will optionally verify the stored Register on the network is the same as the local one.
+    pub async fn sync(&mut self, verify_store: bool) -> Result<()> {
         debug!("Syncing Register at {}, {}!", self.name(), self.tag());
         let remote_replica =
             match Self::get_register_from_network(&self.client, *self.name(), self.tag()).await {
@@ -190,17 +201,17 @@ impl ClientRegister {
                         register: self.register.clone(),
                         signature: self.client.sign(self.register.bytes()?),
                     };
-                    self.publish_register(cmd, true).await?;
+                    self.publish_register(cmd, verify_store).await?;
                     self.register.clone()
                 }
             };
         self.register.merge(remote_replica);
-        self.push().await
+        self.push(verify_store).await
     }
 
     /// Push all operations made locally to the replicas of this Register on the network.
-    /// This verifies that the stored Register is the same as our local register
-    pub async fn push(&mut self) -> Result<()> {
+    /// This optionally verifies that the stored Register is the same as our local register
+    pub async fn push(&mut self, verify_store: bool) -> Result<()> {
         let ops_len = self.ops.len();
         if ops_len > 0 {
             let name = *self.name();
@@ -209,7 +220,7 @@ impl ClientRegister {
 
             // TODO: send them all concurrently
             while let Some(cmd) = self.ops.pop_back() {
-                let result = self.publish_register(cmd.clone(), true).await;
+                let result = self.publish_register(cmd.clone(), verify_store).await;
 
                 if let Err(err) = result {
                     warn!("Did not push Register cmd on all nodes in the close group!: {err}");
@@ -228,9 +239,9 @@ impl ClientRegister {
     /// Write a new value onto the Register atop latest value.
     /// It returns an error if it finds branches in the content/entries; if it is
     /// required to merge/resolve the branches, invoke the `write_merging_branches` API.
-    pub async fn write_online(&mut self, entry: &[u8]) -> Result<()> {
+    pub async fn write_online(&mut self, entry: &[u8], verify_store: bool) -> Result<()> {
         self.write(entry)?;
-        self.push().await
+        self.push(verify_store).await
     }
 
     /// Write a new value onto the Register atop latest value.
@@ -238,9 +249,13 @@ impl ClientRegister {
     /// all leaving the new value as a single latest value of the Register.
     /// Note you can use `write` API instead if you need to handle
     /// content/entries branches in a diffeerent way.
-    pub async fn write_merging_branches_online(&mut self, entry: &[u8]) -> Result<()> {
+    pub async fn write_merging_branches_online(
+        &mut self,
+        entry: &[u8],
+        verify_store: bool,
+    ) -> Result<()> {
         self.write_merging_branches(entry)?;
-        self.push().await
+        self.push(verify_store).await
     }
 
     /// Write a new value onto the Register atop the set of braches/entries
@@ -251,9 +266,10 @@ impl ClientRegister {
         &mut self,
         entry: &[u8],
         children: BTreeSet<EntryHash>,
+        verify_store: bool,
     ) -> Result<()> {
         self.write_atop(entry, children)?;
-        self.push().await
+        self.push(verify_store).await
     }
 
     // ********* Private helpers  *********

@@ -40,6 +40,7 @@ async fn dbc_transfer_multiple_sequential_succeed() -> Result<()> {
         second_wallet_balance,
         second_wallet.address(),
         &client,
+        true,
     )
     .await;
     std::thread::sleep(std::time::Duration::from_secs(5));

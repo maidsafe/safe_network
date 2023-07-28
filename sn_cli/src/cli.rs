@@ -67,4 +67,9 @@ pub(crate) struct Opt {
     /// Timeout in seconds for the CLI to wait for a data response from the network.
     #[clap(long = "timeout", global = true, value_parser = |t: &str| -> Result<Duration> { Ok(t.parse().map(Duration::from_secs)?) })]
     pub timeout: Option<Duration>,
+
+    /// Prevent verification of data storage on the network
+    /// This may increase operation speed, but offers no guarantees that operations were successful.
+    #[clap(global = true, short = 'n')]
+    pub no_verify: bool,
 }

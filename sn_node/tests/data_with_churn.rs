@@ -292,7 +292,7 @@ fn create_dbc_task(
 
             let dest_pk = MainKey::random().public_address();
             let dbc = wallet_client
-                .send(Token::from_nano(10), dest_pk)
+                .send(Token::from_nano(10), dest_pk, false)
                 .await
                 .expect("Failed to send DBC to {dest_pk}");
 
@@ -319,7 +319,7 @@ fn create_registers_task(client: Client, content: ContentList, churn_period: Dur
             println!("Creating Register at {addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match client.create_register(xorname, tag).await {
+            match client.create_register(xorname, tag, false).await {
                 Ok(_) => content
                     .write()
                     .await
@@ -362,7 +362,7 @@ fn store_chunks_task(
             );
             sleep(delay).await;
             let proofs = wallet_client
-                .pay_for_storage(chunks.iter().map(|c| c.name()))
+                .pay_for_storage(chunks.iter().map(|c| c.name()), false)
                 .await
                 .expect("Failed to pay for storage for new file at {addr:?}");
 
