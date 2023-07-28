@@ -541,6 +541,7 @@ impl SwarmDriver {
             .collect::<Vec<_>>();
         if !new_members.is_empty() {
             debug!("The close group has been updated. The new members are {new_members:?}");
+            debug!("New close group: {new_closest_peers:?}");
             self.close_group = new_closest_peers;
             Some(new_members)
         } else {

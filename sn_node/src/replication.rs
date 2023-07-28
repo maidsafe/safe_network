@@ -31,12 +31,14 @@ impl Node {
 
         let all_peers = self.network.get_all_local_peers().await?;
         let all_records = self.network.get_all_local_record_addresses().await?;
+        trace!("Replication triggred, all records: {all_records:?}");
 
         // a key is sent to a peer if the peer is considered to be close to that key
         let mut replicate_to: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
         for key in all_records {
             let sorted_based_on_key =
                 sort_peers_by_address(all_peers.clone(), &key, CLOSE_GROUP_SIZE)?;
+            trace!("replication: close for {key:?} are: {sorted_based_on_key:?}");
 
             for peer in our_close_group.iter().filter(|&p| p != &our_peer_id) {
                 if sorted_based_on_key.contains(peer) {
@@ -45,6 +47,7 @@ impl Node {
                 }
             }
         }
+        trace!("replication list {replicate_to:?}");
 
         for (peer_id, keys) in replicate_to {
             let (_left, mut remaining_keys) = keys.split_at(0);
@@ -65,6 +68,7 @@ impl Node {
             }
         };
         self.network.set_record_distance_range(distance_range)?;
+        debug!("Set record distance range");
         Ok(())
     }
 
@@ -128,12 +132,13 @@ impl Node {
         keys: Vec<NetworkAddress>,
     ) -> Result<()> {
         let len = keys.len();
+        trace!("Sending a replication list to {peer_id:?} keys: {keys:?}");
         let request = Request::Cmd(Cmd::Replicate {
             holder: our_address.clone(),
             keys,
         });
         self.network.send_req_ignore_reply(request, *peer_id)?;
-        trace!("Sending a replication list with {len:?} keys to {peer_id:?}");
+        debug!("Sending a replication list with {len:?} keys to {peer_id:?}");
         Ok(())
     }
 }
