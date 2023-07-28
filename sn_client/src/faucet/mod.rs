@@ -8,6 +8,7 @@ use sn_transfers::dbc_genesis::{create_faucet_wallet, load_genesis_wallet};
 use sn_transfers::wallet::LocalWallet;
 
 /// Returns a dbc with the requested number of tokens, for use by E2E test instances.
+/// Note this will create a faucet having a Genesis balance
 pub async fn get_tokens_from_faucet(amount: Token, to: PublicAddress, client: &Client) -> Dbc {
     send(
         load_faucet_wallet_from_genesis_wallet(client).await,
@@ -59,7 +60,7 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWal
         println!("The error was: {error:?}");
         tokio::time::sleep(Duration::from_secs(20)).await;
         if let Err(error) = client.verify(&dbc).await {
-            println!("Could not verify the transfer from genesis: {error:?}");
+            panic!("Could not verify the transfer from genesis: {error:?}");
         } else {
             println!("Successfully verified the transfer from genesis on the second try.");
         }

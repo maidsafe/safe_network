@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_client::{get_tokens_from_faucet, Client};
+use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_transfers::wallet::LocalWallet;
 
@@ -69,17 +69,16 @@ pub async fn get_wallet(root_dir: &Path) -> LocalWallet {
 
 pub async fn get_funded_wallet(
     client: &Client,
+    from: LocalWallet,
     root_dir: &Path,
     amount: u64,
 ) -> Result<LocalWallet> {
-    let _guard = FAUCET_WALLET_MUTEX.lock().await;
-
     let wallet_balance = Token::from_nano(amount);
     let mut local_wallet = get_wallet(root_dir).await;
 
     println!("Getting {wallet_balance} tokens from the faucet...");
-    let tokens = get_tokens_from_faucet(wallet_balance, local_wallet.address(), client).await;
-    std::thread::sleep(std::time::Duration::from_secs(20));
+    let tokens = send(from, wallet_balance, local_wallet.address(), client).await;
+    std::thread::sleep(std::time::Duration::from_secs(10));
 
     println!("Verifying the transfer from faucet...");
     client.verify(&tokens).await?;
@@ -91,8 +90,13 @@ pub async fn get_funded_wallet(
 }
 
 pub async fn get_client_and_wallet(root_dir: &Path, amount: u64) -> Result<(Client, LocalWallet)> {
+    let _guard = FAUCET_WALLET_MUTEX.lock().await;
+
     let client = get_client().await;
-    let local_wallet = get_funded_wallet(&client, root_dir, amount).await?;
+    let faucet = load_faucet_wallet_from_genesis_wallet(&client).await;
+    std::thread::sleep(std::time::Duration::from_secs(10));
+    let local_wallet = get_funded_wallet(&client, faucet, root_dir, amount).await?;
+    std::thread::sleep(std::time::Duration::from_secs(10));
 
     Ok((client, local_wallet))
 }

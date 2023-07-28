@@ -8,7 +8,7 @@
 
 mod common;
 
-use common::{get_client_and_wallet, get_funded_wallet};
+use common::{get_client_and_wallet, get_funded_wallet, get_wallet};
 
 use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
 
@@ -23,7 +23,7 @@ use sn_protocol::{
     storage::{ChunkAddress, DbcAddress, RegisterAddress},
     NetworkAddress,
 };
-use sn_transfers::{dbc_genesis::create_genesis_wallet, wallet::LocalWallet};
+use sn_transfers::wallet::LocalWallet;
 
 use std::{
     collections::{BTreeMap, VecDeque},
@@ -62,7 +62,7 @@ const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 // It can be overriden by setting the 'TEST_DURATION_MINS' env var.
 const TEST_DURATION: Duration = Duration::from_secs(60 * 60); // 1hr
 
-const PAYING_WALLET_INITIAL_BALANCE: u64 = 1_000_000;
+const PAYING_WALLET_INITIAL_BALANCE: u64 = 10_000_000;
 const TRANSFERS_WALLET_INITIAL_BALANCE: u64 = 2_000_000;
 
 type ContentList = Arc<RwLock<VecDeque<NetworkAddress>>>;
@@ -129,12 +129,19 @@ async fn data_availability_during_churn() -> Result<()> {
         LogFormat::Default,
     )?;
 
+    // The testnet will create a `faucet` at last. To avoid mess up with that,
+    // wait for a while to ensure the spends of that got settled.
+    sleep(std::time::Duration::from_secs(10)).await;
+
     println!("Creating a client and paying wallet...");
     let paying_wallet_dir = TempDir::new()?;
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE).await?;
 
-    println!("Client created with signing key: {:?}", client.signer_pk());
+    println!(
+        "Client and paying_wallet created with signing key: {:?}",
+        client.signer_pk()
+    );
 
     // Shared bucket where we keep track of content created/stored on the network
     let content = ContentList::default();
@@ -142,7 +149,36 @@ async fn data_availability_during_churn() -> Result<()> {
     // Shared bucket where we keep track of DBCs created/stored on the network
     let dbcs = DbcMap::default();
 
-    // Upload some chunks before carry out any churning.
+    // Spawn a task to create Registers and DBCs at random locations,
+    // at a higher frequency than the churning events
+    if !chunks_only {
+        println!("Creating transfer wallet taking balance from the payment wallet");
+        let transfers_wallet_dir = TempDir::new()?;
+        let transfers_wallet = get_funded_wallet(
+            &client,
+            paying_wallet,
+            transfers_wallet_dir.path(),
+            TRANSFERS_WALLET_INITIAL_BALANCE,
+        )
+        .await?;
+        println!("Transfer wallet created");
+
+        create_registers_task(client.clone(), content.clone(), churn_period);
+
+        create_dbc_task(
+            client.clone(),
+            transfers_wallet,
+            content.clone(),
+            dbcs.clone(),
+            churn_period,
+        );
+    }
+
+    // The paying wallet could be updated to pay for the transfer_wallet.
+    // Hence reload it here to avoid double spend, AND the clippy complains.
+    let paying_wallet = get_wallet(paying_wallet_dir.path()).await;
+
+    println!("Uploading some chunks before carry out node churning");
 
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
     store_chunks_task(client.clone(), paying_wallet, content.clone(), churn_period);
@@ -157,26 +193,6 @@ async fn data_availability_during_churn() -> Result<()> {
 
     // Shared bucket where we keep track of the content we failed to fetch for 'MAX_NUM_OF_QUERY_ATTEMPTS' times.
     let failures = ContentErredList::default();
-
-    // Spawn a task to create Registers and DBCs at random locations,
-    // at a higher frequency than the churning events
-    if !chunks_only {
-        create_registers_task(client.clone(), content.clone(), churn_period);
-        let transfers_wallet_dir = TempDir::new()?;
-        let transfers_wallet = get_funded_wallet(
-            &client,
-            transfers_wallet_dir.path(),
-            TRANSFERS_WALLET_INITIAL_BALANCE,
-        )
-        .await?;
-        create_dbc_task(
-            client.clone(),
-            transfers_wallet,
-            content.clone(),
-            dbcs.clone(),
-            churn_period,
-        );
-    }
 
     // Spawn a task to randomly query/fetch the content we create/store
     query_content_task(
@@ -266,9 +282,6 @@ fn create_dbc_task(
     churn_period: Duration,
 ) {
     let _handle = tokio::spawn(async move {
-        // Creating a genesis wallet first
-        let _genesis_wallet = create_genesis_wallet().await;
-
         // Create Dbc at a higher frequency than the churning events
         let delay = churn_period / DBC_CREATION_RATIO_TO_CHURN;
 
