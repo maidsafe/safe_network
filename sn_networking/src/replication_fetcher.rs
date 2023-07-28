@@ -145,7 +145,7 @@ impl ReplicationFetcher {
                         key_added_to_list = true;
                     }
                     HolderStatus::OnGoing => {
-                        if *replication_req_time + FETCH_TIMEOUT > Instant::now() {
+                        if Instant::now() > *replication_req_time + FETCH_TIMEOUT {
                             *failed_attempts += 1;
                             // allows it to be re-queued
                             *holder_status = HolderStatus::Pending;
