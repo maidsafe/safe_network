@@ -55,7 +55,7 @@ pub enum Error {
     SpendIsEmpty,
 
     // ---------- payment errors
-    /// Failed to get the storecost from kademlia stoe
+    /// Failed to get the storecost from kademlia store
     #[error("There was an error getting the storecost from kademlia store")]
     GetStoreCostFailed,
     #[error("There was an error signing the storecost from kademlia store")]
