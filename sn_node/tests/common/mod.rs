@@ -77,8 +77,7 @@ pub async fn get_funded_wallet(
     let mut local_wallet = get_wallet(root_dir).await;
 
     println!("Getting {wallet_balance} tokens from the faucet...");
-    let tokens = send(from, wallet_balance, local_wallet.address(), client).await;
-    std::thread::sleep(std::time::Duration::from_secs(10));
+    let tokens = send(from, wallet_balance, local_wallet.address(), client, true).await;
 
     println!("Verifying the transfer from faucet...");
     client.verify(&tokens).await?;

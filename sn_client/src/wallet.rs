@@ -44,9 +44,15 @@ impl WalletClient {
     }
 
     /// Send tokens to another wallet.
-    pub async fn send(&mut self, amount: Token, to: PublicAddress) -> Result<Dbc> {
+    /// Can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
+    pub async fn send(
+        &mut self,
+        amount: Token,
+        to: PublicAddress,
+        verify_store: bool,
+    ) -> Result<Dbc> {
         // retry previous failures
-        self.resend_pending_txs().await;
+        self.resend_pending_txs(verify_store).await;
 
         // offline transfer
         let transfer = self.wallet.local_send(vec![(amount, to)], None).await?;
@@ -54,7 +60,7 @@ impl WalletClient {
 
         // send to network
         trace!("Sending transfer to the network: {transfer:#?}");
-        if let Err(error) = self.client.send(transfer.clone()).await {
+        if let Err(error) = self.client.send(transfer.clone(), verify_store).await {
             warn!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
             self.unconfirmed_txs.push(transfer);
         }
@@ -69,9 +75,11 @@ impl WalletClient {
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
+    /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = &XorName>,
+        verify_store: bool,
     ) -> Result<PaymentProofsMap> {
         // Let's filter the content addresses we hold payment proofs for, i.e. avoid
         // paying for those chunks we've already paid for with this wallet.
@@ -110,7 +118,7 @@ impl WalletClient {
 
         // send to network
         trace!("Sending storage payment transfer to the network: {transfer:#?}");
-        if let Err(error) = self.client.send(transfer.clone()).await {
+        if let Err(error) = self.client.send(transfer.clone(), verify_store).await {
             warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
             self.unconfirmed_txs.push(transfer);
             return Err(error);
@@ -142,11 +150,17 @@ impl WalletClient {
     }
 
     /// Resend failed txs
-    async fn resend_pending_txs(&mut self) {
+    /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
+    async fn resend_pending_txs(&mut self, verify_store: bool) {
         for (index, transfer) in self.unconfirmed_txs.clone().into_iter().enumerate() {
             let tx_hash = transfer.tx.hash();
             println!("Trying to republish pending tx: {tx_hash:?}..");
-            if self.client.send(transfer.clone()).await.is_ok() {
+            if self
+                .client
+                .send(transfer.clone(), verify_store)
+                .await
+                .is_ok()
+            {
                 println!("Tx {tx_hash:?} was successfully republished!");
                 let _ = self.unconfirmed_txs.remove(index);
                 // We might want to be _really_ sure and do the below
@@ -165,12 +179,12 @@ impl WalletClient {
 
 impl Client {
     /// Send a spend request to the network.
-    /// This will verify the spend has been correctly stored before returning
-    pub async fn send(&self, transfer: TransferOutputs) -> Result<()> {
+    /// This can optionally verify the spend has been correctly stored before returning
+    pub async fn send(&self, transfer: TransferOutputs, verify_store: bool) -> Result<()> {
         let mut tasks = Vec::new();
         for spend_request in &transfer.all_spend_requests {
             trace!("sending spend request to the network: {spend_request:#?}");
-            tasks.push(self.network_store_spend(spend_request.clone(), true));
+            tasks.push(self.network_store_spend(spend_request.clone(), verify_store));
         }
 
         for spend_attempt_result in join_all(tasks).await {
@@ -225,14 +239,20 @@ impl Client {
 
 /// Use the client to send a DBC from a local wallet to an address.
 /// This marks the spent DBC as spent in the Network
-pub async fn send(from: LocalWallet, amount: Token, to: PublicAddress, client: &Client) -> Dbc {
+pub async fn send(
+    from: LocalWallet,
+    amount: Token,
+    to: PublicAddress,
+    client: &Client,
+    verify_store: bool,
+) -> Dbc {
     if amount.as_nano() == 0 {
         panic!("Amount must be more than zero.");
     }
 
     let mut wallet_client = WalletClient::new(client.clone(), from);
     let new_dbc = wallet_client
-        .send(amount, to)
+        .send(amount, to, verify_store)
         .await
         .expect("Tokens shall be successfully sent.");
 

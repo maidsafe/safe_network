@@ -34,27 +34,39 @@ pub enum RegisterCmds {
     },
 }
 
-pub(crate) async fn register_cmds(cmds: RegisterCmds, client: &Client) -> Result<()> {
+pub(crate) async fn register_cmds(
+    cmds: RegisterCmds,
+    client: &Client,
+    verify_store: bool,
+) -> Result<()> {
     match cmds {
-        RegisterCmds::Create { name } => create_register(name, client).await?,
-        RegisterCmds::Edit { name, entry } => edit_register(name, entry, client).await?,
+        RegisterCmds::Create { name } => create_register(name, client, verify_store).await?,
+        RegisterCmds::Edit { name, entry } => {
+            edit_register(name, entry, client, verify_store).await?
+        }
         RegisterCmds::Get { names } => get_registers(names, client).await?,
     }
     Ok(())
 }
 
-async fn create_register(name: String, client: &Client) -> Result<()> {
+async fn create_register(name: String, client: &Client, verify_store: bool) -> Result<()> {
     let tag = 3006;
     let xorname = XorName::from_content(name.as_bytes());
     println!("Creating Register with '{name}' at xorname: {xorname:x} and tag {tag}");
 
     // clients currently only support public registers as we create a new key at each run
-    let _register = ClientRegister::create_public_online(client.clone(), xorname, tag).await?;
+    let _register =
+        ClientRegister::create_public_online(client.clone(), xorname, tag, verify_store).await?;
     println!("Successfully created register '{name}' at {xorname:?}, {tag}!");
     Ok(())
 }
 
-async fn edit_register(name: String, entry: String, client: &Client) -> Result<()> {
+async fn edit_register(
+    name: String,
+    entry: String,
+    client: &Client,
+    verify_store: bool,
+) -> Result<()> {
     let tag = 3006;
     let xorname = XorName::from_content(name.as_bytes());
     println!("Trying to retrieve Register from {xorname:?}, {tag}");
@@ -66,7 +78,7 @@ async fn edit_register(name: String, entry: String, client: &Client) -> Result<(
                 register.address(),
             );
             println!("Editing Register '{name}' with: {entry}");
-            match register.write_online(entry.as_bytes()).await {
+            match register.write_online(entry.as_bytes(), verify_store).await {
                 Ok(()) => {}
                 Err(ref err @ ClientError::ContentBranchDetected(ref branches)) => {
                     println!(
@@ -74,7 +86,7 @@ async fn edit_register(name: String, entry: String, client: &Client) -> Result<(
                         branches.len()
                     );
                     register
-                        .write_merging_branches_online(entry.as_bytes())
+                        .write_merging_branches_online(entry.as_bytes(), verify_store)
                         .await?;
                 }
                 Err(err) => return Err(err.into()),
