@@ -677,6 +677,10 @@ impl Network {
         }
 
         // Verify the record is stored
+        debug!(
+            "Verifying the stored record, {}",
+            PrettyPrintRecordKey::from(the_record.key.clone()),
+        );
         let mut verification_attempts = 0;
         let mut something_different_was_found = false;
         while verification_attempts < VERIFICATION_ATTEMPTS {
@@ -685,7 +689,12 @@ impl Network {
                 Ok(returned_record) => {
                     // if the returned record is not _the same_ lets inform the user
                     if the_record != returned_record {
+                        warn!(
+                            "While verifying record {:?}, the returned record is not the same as the PUT record",
+                            PrettyPrintRecordKey::from(the_record.key.clone())
+                        );
                         something_different_was_found = true;
+                        verification_attempts += 1;
                         continue;
                     }
 
@@ -694,13 +703,14 @@ impl Network {
                 Err(error) => {
                     verification_attempts += 1;
                     warn!(
-                        "Did not retrieve Record '{:?}' from all nodes in the close group!. Retrying...", PrettyPrintRecordKey::from(the_record.key.clone()),
+                        "Did not retrieve Record '{:?}' from all nodes in the close group!. Retrying...",
+                        PrettyPrintRecordKey::from(the_record.key.clone()),
                     );
                     error!("{error:?}");
                 }
             }
 
-            // wait for a bit before trying againq
+            // wait for a bit before trying again
             tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
         }
 
