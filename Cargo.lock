@@ -3817,6 +3817,7 @@ dependencies = [
  "async-trait",
  "blsttc",
  "bytes",
+ "eyre",
  "futures",
  "itertools",
  "libp2p",
