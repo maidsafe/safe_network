@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.34...sn_networking-v0.4.0) - 2023-07-28
+
+### Added
+- *(protocol)* Add GetStoreCost Query and QueryResponse
+
+### Other
+- remove duplicate the thes
+
 ## [0.3.34](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.33...sn_networking-v0.3.34) - 2023-07-28
 
 ### Added
