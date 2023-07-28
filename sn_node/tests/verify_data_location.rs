@@ -38,8 +38,6 @@ const NODE_COUNT: u8 = 25;
 const CHUNK_SIZE: usize = 1024;
 
 const PAYING_WALLET_INITIAL_BALANCE: u64 = 1_000_000;
-// The delay between each chunk PUT.
-const PUT_DELAY: Duration = Duration::from_secs(5);
 
 // VERIFICATION_DELAY is set based on the dead peer detection interval
 // Once a node has been restarted, it takes VERIFICATION_DELAY time
@@ -47,6 +45,9 @@ const PUT_DELAY: Duration = Duration::from_secs(5);
 // Replication is then kicked off to distribute the data to the new closest
 // nodes, hence verification has to be performed after this.
 const VERIFICATION_DELAY: Duration = Duration::from_secs(300);
+
+// Number of times to retry verification if it fails
+const VERIFICATION_ATTEMPTS: usize = 3;
 
 // Default number of churns that should be performed. After each churn, we
 // wait for VERIFICATION_DELAY time before verifying the data location.
@@ -198,51 +199,66 @@ async fn get_record_holder_list(record_holders: &mut RecordHolders) -> Result<()
 // Verifies that the chunk is stored by the actual closest peers to the RecordKey
 async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -> Result<()> {
     let mut failed = HashMap::new();
-    for (key, actual_closest_idx) in record_holders.iter() {
-        println!("Verifying {key:?}");
-        let record_key = KBucketKey::from(key.to_vec());
-        let expected_closest_peers =
-            sort_peers_by_key(all_peers.to_vec(), &record_key, CLOSE_GROUP_SIZE)?
-                .into_iter()
+    let mut verification_attempts = 0;
+    while verification_attempts < VERIFICATION_ATTEMPTS {
+        failed.clear();
+        for (key, actual_closest_idx) in record_holders.iter() {
+            println!("Verifying {key:?}");
+            let record_key = KBucketKey::from(key.to_vec());
+            let expected_closest_peers =
+                sort_peers_by_key(all_peers.to_vec(), &record_key, CLOSE_GROUP_SIZE)?
+                    .into_iter()
+                    .collect::<BTreeSet<_>>();
+
+            let actual_closest = actual_closest_idx
+                .iter()
+                .map(|idx| all_peers[*idx as usize - 1])
                 .collect::<BTreeSet<_>>();
 
-        let actual_closest = actual_closest_idx
-            .iter()
-            .map(|idx| all_peers[*idx as usize - 1])
-            .collect::<BTreeSet<_>>();
+            let mut failed_peers = Vec::new();
+            expected_closest_peers
+                .iter()
+                .filter(|expected| !actual_closest.contains(expected))
+                .for_each(|expected| failed_peers.push(*expected));
 
-        let mut failed_peers = Vec::new();
-        expected_closest_peers
-            .iter()
-            .filter(|expected| !actual_closest.contains(expected))
-            .for_each(|expected| failed_peers.push(*expected));
+            if !failed_peers.is_empty() {
+                failed.insert(key.clone(), failed_peers);
+            }
+        }
 
-        if !failed_peers.is_empty() {
-            failed.insert(key.clone(), failed_peers);
+        if !failed.is_empty() {
+            println!("Verification failed");
+
+            failed.iter().for_each(|(key, failed_peers)| {
+                failed_peers
+                    .iter()
+                    .for_each(|peer| println!("Record {key:?} is not stored inside {peer:?}"));
+            });
+            println!("State of each node:");
+            record_holders.iter().for_each(|(key, node_index)| {
+                println!("Record {key:?} is currently held by node indexes {node_index:?}");
+            });
+            println!("Node index map:");
+            all_peers
+                .iter()
+                .enumerate()
+                .for_each(|(idx, peer)| println!("{} : {peer:?}", idx + 1));
+            verification_attempts += 1;
+            println!("Sleeping before retrying verification");
+            tokio::time::sleep(Duration::from_secs(20)).await;
+        } else {
+            // if successful, break out of the loop
+            break;
         }
     }
 
     if !failed.is_empty() {
-        println!("Verification failed");
-
-        failed.iter().for_each(|(key, failed_peers)| {
-            failed_peers
-                .iter()
-                .for_each(|peer| println!("Record {key:?} is not stored inside {peer:?}"));
-        });
-        println!("State of each node:");
-        record_holders.iter().for_each(|(key, node_index)| {
-            println!("Record {key:?} is currently held by node indexes {node_index:?}");
-        });
-        println!("Node index map:");
-        all_peers
-            .iter()
-            .enumerate()
-            .for_each(|(idx, peer)| println!("{} : {peer:?}", idx + 1));
-        return Err(eyre!("Verification failed for: {failed:?}"));
+        println!("Verification failed after {VERIFICATION_ATTEMPTS} times");
+        Err(eyre!("Verification failed for: {failed:?}"))
+    } else {
+        println!("All the Records have been verified!");
+        Ok(())
     }
-    println!("All the Records have been verified!");
-    Ok(())
 }
 
 // Returns all the PeerId for all the locally running nodes
@@ -294,20 +310,19 @@ async fn store_chunk(client: Client, paying_wallet: LocalWallet, chunk_count: us
             bytes.len()
         );
 
-        let proofs = wallet_client
+        let (proofs, _) = wallet_client
             .pay_for_storage(chunks.iter().map(|c| c.name()), true)
             .await
             .expect("Failed to pay for storage for new file at {addr:?}");
 
         println!(
-            "Storing ({}) Chunk/s of file ({} bytes) at {addr:?} in {PUT_DELAY:?}",
+            "Storing ({}) Chunk/s of file ({} bytes) at {addr:?}",
             chunks.len(),
             bytes.len()
         );
-        tokio::time::sleep(PUT_DELAY).await;
 
         let addr = ChunkAddress::new(file_api.calculate_address(bytes.clone())?);
-        let key = RecordKey::new(addr.name());
+        let key = RecordKey::new(addr.xorname());
         file_api.upload_with_proof(bytes, &proofs, true).await?;
         uploaded_chunks_count += 1;
 
@@ -315,7 +330,7 @@ async fn store_chunk(client: Client, paying_wallet: LocalWallet, chunk_count: us
     }
 
     // to make sure the last chunk was stored
-    tokio::time::sleep(Duration::from_secs(20)).await;
+    tokio::time::sleep(Duration::from_secs(10)).await;
 
     Ok(())
 }
