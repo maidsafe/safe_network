@@ -665,6 +665,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - adapt all logging to use pretty record key
 
+## [0.87.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.87.9...sn_node-v0.87.10) - 2023-07-28
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
