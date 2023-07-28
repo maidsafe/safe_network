@@ -359,6 +359,7 @@ impl Node {
                     holder.as_peer_id(),
                     keys.len()
                 );
+                trace!("received replication keys {keys:?}");
 
                 // todo: error is not propagated to the caller here
                 let _ = self.add_keys_to_replication_fetcher(holder, keys);
