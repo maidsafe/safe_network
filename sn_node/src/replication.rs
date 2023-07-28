@@ -106,7 +106,10 @@ impl Node {
                     let node = self.clone();
                     let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
                         trace!("Fetching replication {key:?} from the network");
-                        let record = node.network.get_record_from_network(key.clone()).await?;
+                        let record = node
+                            .network
+                            .get_record_from_network(key.clone(), None, false)
+                            .await?;
                         trace!("Got Replication Record {key:?} from network, validating and storing it");
                         let _ = node.validate_and_store_record(record).await?;
                         Ok(())

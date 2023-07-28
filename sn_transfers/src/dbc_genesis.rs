@@ -211,7 +211,7 @@ pub(super) fn split(
 pub async fn create_faucet_wallet() -> LocalWallet {
     let root_dir = get_faucet_dir().await;
 
-    println!("Creating faucet wallet... {:#?}", root_dir);
+    println!("Loading faucet wallet... {:#?}", root_dir);
     LocalWallet::load_from(&root_dir)
         .await
         .expect("Faucet wallet shall be created successfully.")
