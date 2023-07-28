@@ -675,6 +675,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(protocol)* Add GetStoreCost Query and QueryResponse
 
+## [0.88.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.0...sn_node-v0.88.1) - 2023-07-28
+
+### Added
+- *(replication)* fetch Record from network if could not get from peer
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
