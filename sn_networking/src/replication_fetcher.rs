@@ -100,11 +100,8 @@ impl ReplicationFetcher {
     // `PEERS_TRIED_BEFORE_NETWORK_FETCH` number of holders, then we queue the key to be fetched from the Network.
     // If the key is returned None as the peer, then it has to be fetched from the network.
     fn next_keys_to_fetch(&mut self) -> Vec<(RecordKey, Option<PeerId>)> {
-        // do not fetch any if max parallel fetches
-        if self.on_going_fetches >= MAX_PARALLEL_FETCH {
-            return vec![];
-        }
-        let len = MAX_PARALLEL_FETCH - self.on_going_fetches;
+        let no_more_fetches_left = self.on_going_fetches >= MAX_PARALLEL_FETCH;
+        let fetches_left = MAX_PARALLEL_FETCH - self.on_going_fetches;
 
         debug!(
             "Number of records awaiting fetch: {:?}",
@@ -119,19 +116,27 @@ impl ReplicationFetcher {
         let mut to_be_removed = vec![];
         for (key, holders) in data_to_fetch {
             let mut key_added_to_list = false;
+            let fetch_for_key_is_ongoing = holders
+                .values()
+                .find(|(_, holder_status, _)| *holder_status == HolderStatus::OnGoing)
+                .map(|(replication_req_time, _, _)| {
+                    Instant::now() > *replication_req_time + FETCH_TIMEOUT
+                });
 
-            //todo: shuffle holder so that we don't re attempt the same peer continuously until MAX_FAILED_ATTEMPTS_PER_PEER
             for (peer_id, (replication_req_time, holder_status, failed_attempts)) in
                 holders.iter_mut()
             {
                 match holder_status {
                     HolderStatus::Pending => {
-                        // if we have added this key/if we have all max keys that we can
-                        // replicate, continue to the next holder;
-                        // todo: or if max failed attempts
-                        if key_added_to_list
-                            || keys_to_fetch.len() >= len
+                        if no_more_fetches_left
+                            || key_added_to_list
+                            || keys_to_fetch.len() >= fetches_left
                             || *failed_attempts >= MAX_RETRIES_PER_PEER
+                            // if fetch is ongoing, but still the FETCH_TIMEOUT is not hit, then
+                            // continue. This is to make sure that we queue up that key as soon as
+                            // the FETCH_TIMEOUT is hit, else we might have to wait till the next
+                            // call to `next_keys_to_fetch` 
+                            || fetch_for_key_is_ongoing.is_some_and(|fetch_will_end_now| !fetch_will_end_now)
                         {
                             continue;
                         }
