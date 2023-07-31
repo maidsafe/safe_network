@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690836565176,
+  "lastUpdate": 1690836568458,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9810,6 +9810,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 218,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "d3ba059d8abee2613ab914165da60998aa61db02",
+          "message": "chore: move PrettyPrintRecordKey to sn_protocol",
+          "timestamp": "2023-07-31T14:21:45Z",
+          "tree_id": "92a00f911ee0be375f47d385cc8a6fc396c05495",
+          "url": "https://github.com/maidsafe/safe_network/commit/d3ba059d8abee2613ab914165da60998aa61db02"
+        },
+        "date": 1690836568125,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 259.06,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 205,
             "unit": "MB"
           }
         ]
