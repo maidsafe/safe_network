@@ -3928,6 +3928,7 @@ dependencies = [
  "rand 0.8.5",
  "self_encryption",
  "serde",
+ "serde_json",
  "thiserror",
  "tiny-keccak",
  "xor_name",

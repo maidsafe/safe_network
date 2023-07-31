@@ -13,7 +13,7 @@ use crate::{
 
 use bls::{PublicKey, SecretKey, Signature};
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::BTreeSet;
 use xor_name::XorName;
 
@@ -29,11 +29,22 @@ pub struct Register {
     /// Owner of the Register
     owner: PublicKey,
     /// CRDT data of the Register
+    #[serde(deserialize_with = "my_der")]
     crdt: RegisterCrdt,
     /// Permissions of the Register
     /// Depending on the permissions, the owner can allow other users to write to the register
     /// Everyone can always read the Register because all data is public
     permissions: Permissions,
+}
+
+fn my_der<'de, D>(deserializer: D) -> std::result::Result<RegisterCrdt, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let mut register_crdt: RegisterCrdt = Deserialize::deserialize(deserializer)?;
+    register_crdt.address = RegisterAddress::new(register_crdt.metadata().xorname());
+
+    Ok(register_crdt)
 }
 
 /// A Signed Register on the SAFE Network
@@ -304,6 +315,26 @@ mod tests {
     use proptest::prelude::*;
     use rand::{rngs::OsRng, seq::SliceRandom, thread_rng, Rng};
     use std::{collections::BTreeSet, sync::Arc};
+
+    #[test]
+    fn pepe() -> Result<()> {
+        let metadata = Metadata::new(&rand::thread_rng().gen::<[u8; 32]>())?;
+        let (_, register) = &gen_reg_replicas(None, metadata.clone(), None, 1)[0];
+
+        println!("REG >>> {:?}", register);
+
+        use serde_json;
+        let serialised = serde_json::to_string(&register).unwrap();
+        println!("SER >>> {}", serialised);
+
+        let deserialised: Register = serde_json::from_str(&serialised).unwrap();
+        println!("DER >>> {:?}", deserialised);
+
+        assert_eq!(register.name(), deserialised.name());
+        assert_eq!(register.metadata(), deserialised.metadata());
+
+        Ok(())
+    }
 
     #[test]
     fn register_create() -> Result<()> {

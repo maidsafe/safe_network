@@ -20,9 +20,10 @@ use std::{
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd)]
 pub(crate) struct RegisterCrdt {
     /// Address on the network of this piece of data
-    /// Network address. Omitted when serialising and
+    /// Omitted when serialising and
     /// calculated from the `metadata` when deserialising.
-    address: RegisterAddress,
+    #[serde(skip)]
+    pub(super) address: RegisterAddress,
     /// Metadata provided by the creator of this Register, which becomes immutable,
     /// and it defines this Register's address on the network, i.e. this Register is
     /// stored by the network at: XorName(hash(medatada)).

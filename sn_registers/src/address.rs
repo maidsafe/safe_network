@@ -11,7 +11,9 @@ use std::hash::Hash;
 use xor_name::XorName;
 
 /// Address of a Register on the SAFE Network
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
+#[derive(
+    Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug,
+)]
 pub struct RegisterAddress(XorName);
 
 impl RegisterAddress {
