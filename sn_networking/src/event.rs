@@ -13,7 +13,7 @@ use super::{
 };
 use crate::{
     close_group_majority, multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address,
-    PrettyPrintRecordKey, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
+    CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
 };
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
@@ -31,7 +31,7 @@ use libp2p::{
 };
 use sn_protocol::{
     messages::{Request, Response},
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
     collections::{BTreeMap, HashMap, HashSet},

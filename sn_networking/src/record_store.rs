@@ -5,7 +5,7 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-use crate::{event::NetworkEvent, PrettyPrintRecordKey};
+use crate::event::NetworkEvent;
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -16,7 +16,7 @@ use libp2p::{
 };
 use rand::Rng;
 use sn_dbc::Token;
-use sn_protocol::NetworkAddress;
+use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{
     borrow::Cow,
     collections::{hash_set, HashSet},

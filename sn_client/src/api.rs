@@ -18,7 +18,7 @@ use libp2p::{
     Multiaddr,
 };
 use sn_dbc::{DbcId, SignedSpend};
-use sn_networking::{multiaddr_is_global, NetworkEvent, PrettyPrintRecordKey, SwarmDriver};
+use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::PaymentProof,
@@ -26,7 +26,7 @@ use sn_protocol::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, ChunkWithPayment,
         DbcAddress, RecordHeader, RecordKind, RegisterAddress,
     },
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
 use sn_transfers::client_transfers::SpendRequest;
@@ -380,7 +380,8 @@ impl Client {
                 [one, two, ..] => {
                     error!("Found double spend for {address:?}");
                     Err(Error::CouldNotVerifyTransfer(format!(
-                "Found double spend for the dbc_id {dbc_id:?} - {key:?}: spend_one {:?} and spend_two {:?}", one.derived_key_sig, two.derived_key_sig
+                "Found double spend for the dbc_id {dbc_id:?} - {:?}: spend_one {:?} and spend_two {:?}",
+                PrettyPrintRecordKey::from(key), one.derived_key_sig, two.derived_key_sig
             )))
                 }
                 [signed_spend] => {
