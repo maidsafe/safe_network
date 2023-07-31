@@ -374,7 +374,7 @@ mod tests {
         let item1 = random_register_entry();
         let (_, op1) = replica1.write(item1, BTreeSet::new())?;
         let mut signed_write_op1 = op1;
-        signed_write_op1.sign_with(&authority_sk1)?;
+        signed_write_op1.sign_with(&authority_sk1);
 
         // Let's assert current state on both replicas
         assert_eq!(replica1.size(), 1);
@@ -384,7 +384,7 @@ mod tests {
         let item2 = random_register_entry();
         let (_, op2) = replica2.write(item2, BTreeSet::new())?;
         let mut signed_write_op2 = op2;
-        signed_write_op2.sign_with(&authority_sk2)?;
+        signed_write_op2.sign_with(&authority_sk2);
 
         // Item should be writeed on replica2
         assert_eq!(replica2.size(), 1);
@@ -633,7 +633,7 @@ mod tests {
             // Write an item on replicas
             let (_, op) = replica1.write(random_register_entry(), BTreeSet::new())?;
             let mut write_op = op;
-            write_op.sign_with(&owner_sk)?;
+            write_op.sign_with(&owner_sk);
             replica2.apply_op(write_op)?;
 
             verify_data_convergence(vec![replica1, replica2], 1)?;
@@ -667,7 +667,7 @@ mod tests {
                 // Write an item on replica1
                 let (hash, op) = replica1.write(random_register_entry(), children.clone())?;
                 let mut write_op = op;
-                write_op.sign_with(&owner_sk)?;
+                write_op.sign_with(&owner_sk);
                 // now apply that op to replica 2
                 replica2.apply_op(write_op)?;
                 children = vec![hash].into_iter().collect();
@@ -709,7 +709,7 @@ mod tests {
                 // Write an item on replica1 using the randomly generated set of children
                 let (hash, op) = replica1.write(random_register_entry(), children)?;
                 let mut write_op = op;
-                write_op.sign_with(&owner_sk)?;
+                write_op.sign_with(&owner_sk);
 
                 // now apply that op to replica 2
                 replica2.apply_op(write_op)?;
@@ -733,7 +733,7 @@ mod tests {
                 // first generate an op from one replica...
                 let (hash, op)= replicas[0].write(random_register_entry(), children)?;
                 let mut signed_op = op;
-                signed_op.sign_with(&owner_sk)?;
+                signed_op.sign_with(&owner_sk);
 
                 // then apply this to all replicas
                 for replica in &mut replicas {
@@ -761,7 +761,7 @@ mod tests {
             for _data in dataset {
                 let (hash, op) = replicas[0].write(random_register_entry(), children)?;
                 let mut signed_op = op;
-                signed_op.sign_with(&owner_sk)?;
+                signed_op.sign_with(&owner_sk);
                 ops.push(signed_op);
                 children = vec![hash].into_iter().collect();
             }
@@ -795,7 +795,7 @@ mod tests {
                 {
                     let (hash, op) = replica.write(random_register_entry(), children)?;
                     let mut signed_op = op;
-                    signed_op.sign_with(&owner_sk)?;
+                    signed_op.sign_with(&owner_sk);
                     ops.push(signed_op);
                     children = vec![hash].into_iter().collect();
                 }
@@ -844,7 +844,7 @@ mod tests {
             for (_data, delivery_chance) in dataset {
                 let (hash, op)= replica1.write(random_register_entry(), children)?;
                 let mut signed_op = op;
-                signed_op.sign_with(&owner_sk)?;
+                signed_op.sign_with(&owner_sk);
 
                 ops.push((signed_op, delivery_chance));
                 children = vec![hash].into_iter().collect();
@@ -888,7 +888,7 @@ mod tests {
 
                 let (hash, op)=replica.write(random_register_entry(), children)?;
                 let mut signed_op = op;
-                signed_op.sign_with(&owner_sk)?;
+                signed_op.sign_with(&owner_sk);
                 ops.push((signed_op, delivery_chance));
                 children = vec![hash].into_iter().collect();
             }
@@ -936,7 +936,7 @@ mod tests {
                 {
                     let (hash, op)=replica.write(random_register_entry(), children)?;
                     let mut signed_op = op;
-                    signed_op.sign_with(&owner_sk)?;
+                    signed_op.sign_with(&owner_sk);
                     ops.push(signed_op);
                     children = vec![hash].into_iter().collect();
                 }
@@ -953,7 +953,7 @@ mod tests {
             for _data in bogus_dataset {
                 let (hash, op)=bogus_replica.write(random_register_entry(), children)?;
                 let mut bogus_op = op;
-                bogus_op.sign_with(&random_owner_sk)?;
+                bogus_op.sign_with(&random_owner_sk);
                 bogus_replica.apply_op(bogus_op.clone())?;
                 ops.push(bogus_op);
                 children = vec![hash].into_iter().collect();

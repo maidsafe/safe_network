@@ -161,7 +161,7 @@ impl ClientRegister {
             .check_user_permissions(User::Key(public_key))?;
 
         let (_hash, mut op) = self.register.write(entry.into(), children)?;
-        let signature = self.client.sign(op.bytes_for_signing()?);
+        let signature = self.client.sign(op.bytes_for_signing());
         op.add_signature(public_key, signature)?;
         let cmd = RegisterCmd::Edit(op);
 
