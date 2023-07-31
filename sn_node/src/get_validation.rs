@@ -8,7 +8,6 @@
 
 use crate::Node;
 use sn_dbc::{SignedSpend, Token};
-use sn_networking::PrettyPrintRecordKey;
 use sn_protocol::{
     error::{Error, Result},
     messages::ReplicatedData,
@@ -16,7 +15,7 @@ use sn_protocol::{
         try_deserialize_record, Chunk, ChunkAddress, ChunkWithPayment, DbcAddress, RecordHeader,
         RecordKind,
     },
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
 

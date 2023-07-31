@@ -19,7 +19,7 @@ mod replication_fetcher;
 
 pub use self::{
     cmd::SwarmLocalState,
-    error::{Error, PrettyPrintRecordKey},
+    error::Error,
     event::{MsgResponder, NetworkEvent},
 };
 
@@ -52,7 +52,7 @@ use rand::Rng;
 use sn_dbc::Token;
 use sn_protocol::{
     messages::{Request, Response},
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
     collections::{HashMap, HashSet},

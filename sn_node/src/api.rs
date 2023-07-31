@@ -9,14 +9,12 @@
 use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, NodeEvent};
 use libp2p::{autonat::NatStatus, identity::Keypair, kad::K_VALUE, Multiaddr, PeerId};
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sn_networking::{
-    MsgResponder, NetworkEvent, PrettyPrintRecordKey, SwarmDriver, SwarmLocalState,
-};
+use sn_networking::{MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{Cmd, CmdResponse, Query, QueryResponse, ReplicatedData, Request, Response},
     storage::DbcAddress,
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
     collections::HashSet,
