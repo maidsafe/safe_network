@@ -88,6 +88,10 @@ async fn upload_files(
 ) -> Result<()> {
     let file_api: Files = Files::new(client.clone());
 
+    debug!(
+        "Uploading files from {:?}, will verify?: {verify_store}",
+        files_path
+    );
     // The input files_path has to be a dir
     let file_names_path = root_dir.join("uploaded_files");
 
@@ -112,10 +116,11 @@ async fn upload_files(
         if let Err(error) =
             upload_chunks(&file_api, &file_name, chunks, &payment_proofs, verify_store).await
         {
-            println!("Did not store all chunks of file '{file_name}' to all nodes in the close group: {error}")
+            println!("Failed to store all chunks of file '{file_name}' to all nodes in the close group: {error}")
+        } else {
+            println!("Successfully stored '{file_name}' to {file_addr:64x}");
         }
 
-        println!("Successfully stored '{file_name}' to {file_addr:64x}");
         chunks_to_fetch.push((file_addr, file_name));
     }
 
