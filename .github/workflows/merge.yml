@@ -172,10 +172,10 @@ jobs:
         timeout-minutes: 5
 
       - name: Start a client to pay for files storage
-        run: cargo run --bin safe --release -- wallet pay "./resources" -n # -n = dont verify
+        run: cargo run --bin safe --release -- wallet pay "./resources" 
         env:
           SN_LOG: "all"
-        timeout-minutes: 2
+        timeout-minutes: 10
 
       - name: Start a client to upload files
         run: cargo run --bin safe --release -- files upload -- "./resources" 
