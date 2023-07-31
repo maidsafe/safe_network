@@ -16,7 +16,7 @@ pub async fn get_tokens_from_faucet(amount: Token, to: PublicAddress, client: &C
         to,
         client,
         // we should not need to wait for this
-        false,
+        true,
     )
     .await
 }
@@ -47,7 +47,7 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWal
         faucet_wallet.address(),
         client,
         // we should not need to wait for this
-        false,
+        true,
     )
     .await;
 
