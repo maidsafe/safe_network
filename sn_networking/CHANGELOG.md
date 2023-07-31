@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.2...sn_networking-v0.4.3) - 2023-07-31
+
+### Added
+- carry out get_record re-attempts for critical record
+- for put_record verification, NotEnoughCopies is acceptable
+- cover the Kademlia completion of get_record
+- resolve get_record split results
+- accumulate get_record_ok to return with majority
+
+### Other
+- move PrettyPrintRecordKey to sn_protocol
+- fix typo
+- small refactors for failing CI
+
 ## [0.4.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.1...sn_networking-v0.4.2) - 2023-07-31
 
 ### Added
