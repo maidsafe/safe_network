@@ -11,7 +11,6 @@ on:
 
 env:
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
-  CLIENT_LOG_PATH: /tmp/safe-client
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
   HEAPNODE_DATA_PATH: /home/runner/.local/share/safe/heapnode
 
@@ -192,14 +191,13 @@ jobs:
         run: pgrep safenode | wc -l
         if: always()
 
-      - name: Kill all nodes
-        shell: bash
-        timeout-minutes: 1
-        continue-on-error: true
-        run: |
-          killall safenode
-          echo "$(pgrep safenode | wc -l) nodes still running"
+      - name: Stop the local network and upload logs
         if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_memcheck
+          platform: ${{ matrix.os }}
 
       - name: Check for heaptrack file
         run: ls -la
@@ -244,28 +242,6 @@ jobs:
           fi
         if: always()
 
-      - name: Tar node log files
-        shell: bash
-        continue-on-error: true
-        run: |
-          find $HEAPNODE_DATA_PATH -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
-          find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
-        if: failure()
-
-      - name: Tar client log files
-        shell: bash
-        continue-on-error: true
-        run: |
-          find $CLIENT_LOG_PATH -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
-        if: failure()
-
-      - name: Tar log files for upload
-        shell: bash
-        continue-on-error: true
-        run: |
-          find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
-        if: failure()
-
       - name: Upload Heaptrack
         uses: actions/upload-artifact@main
         with:
@@ -273,11 +249,3 @@ jobs:
           path: heaptrack.safenode.*
         continue-on-error: true
         if: always()
-
-      - name: Upload Node Logs
-        uses: actions/upload-artifact@main
-        with:
-          name: sn_node_logs_memcheck
-          path: log_files.tar.gz
-        if: failure()
-        continue-on-error: true
