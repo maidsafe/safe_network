@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.3...sn_networking-v0.4.4) - 2023-07-31
+
+### Fixed
+- *(test)* fix failing unit test
+- *(replication)* state should progress even if MAX_PARALLEL_FETCHES is reached
+
+### Other
+- *(replication)* add unit tests
+
 ## [0.4.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.2...sn_networking-v0.4.3) - 2023-07-31
 
 ### Added
