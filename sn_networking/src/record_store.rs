@@ -505,7 +505,13 @@ mod tests {
 
         // loop over store.get 10 times to make sure async disk write has had time to complete
         for _ in 0..10 {
-            if store.get(&r.key).is_some() {
+            // try to check if it is equal to the actual record. This is needed because, the file
+            // might not be fully written to the fs and would cause intermittent failures.
+            // If there is actually a problem with the PUT, the assert statement below would catch it.
+            if store
+                .get(&r.key)
+                .is_some_and(|record| Cow::Borrowed(&r) == record)
+            {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(100)).await;
