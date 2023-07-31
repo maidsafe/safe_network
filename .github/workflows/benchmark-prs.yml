@@ -152,13 +152,33 @@ jobs:
           fi
         if: always()
 
+      ########################
+      ### Clean            ###
+      ########################
+
       - name: Stop the local network and upload logs
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
-          log_file_prefix: safe_test_logs_benchmark
+          log_file_prefix: safe_test_logs_benchmark_prs
           platform: ${{ matrix.os }}
+
+      - name: Tar heapnode files
+        shell: bash
+        continue-on-error: true
+        run: |
+          find $HEAPNODE_DATA_PATH -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
+          find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
+        if: always()
+
+      - name: Upload heapnode logs
+        uses: actions/upload-artifact@main
+        with:
+          name: heapnode_benchmark_prs
+          path: log_files.tar.gz
+        if: always()
+        continue-on-error: true
       
       #########################
       ### Node Mem Analysis ###
