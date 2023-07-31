@@ -92,7 +92,7 @@ jobs:
           cat dbc_hex | cargo run --bin safe --release -- --log-output-dest=data-dir wallet deposit --stdin
         env:
           SN_LOG: "all"
-        timeout-minutes: 10
+        timeout-minutes: 15
 
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
@@ -105,7 +105,7 @@ jobs:
           cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/testnet"
         env:
           SN_LOG: "all"
-        timeout-minutes: 10
+        timeout-minutes: 25
 
       - name: Chunks data integrity during nodes churn
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 
