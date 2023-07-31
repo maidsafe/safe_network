@@ -250,7 +250,7 @@ impl Client {
 
         let record = self
             .network
-            .get_record_from_network(key, None, true)
+            .get_record_from_network(key, None, false)
             .await
             .map_err(|_| ProtocolError::RegisterNotFound(address))?;
         debug!(
@@ -355,7 +355,7 @@ impl Client {
         trace!("Getting spend {dbc_id:?} with record_key {key:?}");
         let record = self
             .network
-            .get_record_from_network(key.clone(), None, true)
+            .get_record_from_network(key.clone(), None, false)
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!(
