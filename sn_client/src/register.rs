@@ -181,7 +181,7 @@ impl ClientRegister {
                 self.register.clone()
             }
         };
-        self.register.merge(remote_replica);
+        self.register.merge(remote_replica)?;
         self.push().await
     }
 

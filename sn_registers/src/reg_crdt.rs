@@ -33,12 +33,9 @@ pub(crate) struct RegisterCrdt {
 
 impl Display for RegisterCrdt {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "(")?;
-        for (i, entry) in self.data.read().values().enumerate() {
-            if i > 0 {
-                write!(f, ", ")?;
-            }
-            write!(f, "<{entry:?}>")?;
+        write!(f, "(<<{:?}>>", self.metadata)?;
+        for entry in self.data.read().values() {
+            write!(f, ", <{entry:?}>")?;
         }
         write!(f, ")")
     }
@@ -60,8 +57,7 @@ impl RegisterCrdt {
     }
 
     /// Merge another register into this one.
-    pub(crate) fn merge(&mut self, other: Self) {
-        /* FIXME: check if addresses match first
+    pub(crate) fn merge(&mut self, other: Self) -> Result<()> {
         // Check the targetting address is correct
         if self.address != other.address {
             return Err(Error::RegisterAddrMismatch {
@@ -69,8 +65,10 @@ impl RegisterCrdt {
                 reg_addr: other.address,
             });
         }
-        */
+
         self.data.merge(other.data);
+
+        Ok(())
     }
 
     /// Returns total number of items in the register.

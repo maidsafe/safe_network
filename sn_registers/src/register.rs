@@ -242,8 +242,8 @@ impl Register {
     }
 
     /// Merge another Register into this one.
-    pub fn merge(&mut self, other: Self) {
-        self.crdt.merge(other.crdt);
+    pub fn merge(&mut self, other: Self) -> Result<()> {
+        self.crdt.merge(other.crdt)
     }
 
     /// Check if a register op is valid for our current register
