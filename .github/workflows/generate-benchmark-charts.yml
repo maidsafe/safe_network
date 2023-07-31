@@ -118,7 +118,7 @@ jobs:
 
       - name: Start a heaptracked client instance to compare memory usage
         shell: bash
-        run: heaptrack ./target/release/safe --log-output-dest data-dir files upload the-test-data.zip
+        run: heaptrack ./target/release/safe --log-output-dest=data-dir files upload the-test-data.zip
         env:
           SN_LOG: "all"
 

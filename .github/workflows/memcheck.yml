@@ -85,11 +85,11 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- send 500 $(cargo run --bin safe --release -- wallet address | tail -n 1) > initial_balance_from_faucet
+          cargo run --bin faucet --release -- send 500 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet
           cat initial_balance_from_faucet
           cat initial_balance_from_faucet | tail -n 1 > dbc_hex
           cat dbc_hex
-          cat dbc_hex | cargo run --bin safe --release -- wallet deposit --stdin
+          cat dbc_hex | cargo run --bin safe --release -- --log-output-dest=data-dir wallet deposit --stdin
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -99,10 +99,10 @@ jobs:
       - name: Start a client to upload files
         run: |
           ls -l ./target/release
-          cargo run --bin safe --release -- files upload -- "./target/release/faucet"
-          cargo run --bin safe --release -- files upload -- "./target/release/safe"
-          cargo run --bin safe --release -- files upload -- "./target/release/safenode"
-          cargo run --bin safe --release -- files upload -- "./target/release/testnet"
+          cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/faucet"
+          cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/safe"
+          cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/safenode"
+          cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/testnet"
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -173,7 +173,7 @@ jobs:
 
       - name: Start a client to download files
         run: |
-          cargo run --bin safe --release -- files download
+          cargo run --bin safe --release -- --log-output-dest=data-dir files download
           ls -l $CLIENT_DATA_PATH/downloaded_files
           downloaded_files=$(ls $CLIENT_DATA_PATH/downloaded_files | wc -l)
           if [ $downloaded_files -lt 4 ]; then
