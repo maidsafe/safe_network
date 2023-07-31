@@ -638,7 +638,8 @@ impl Network {
         while verification_attempts < total_attempts {
             verification_attempts += 1;
             debug!(
-                "Getting record of {key:?} attempts {verification_attempts:?}/{total_attempts:?}"
+                "Getting record of {:?} attempts {verification_attempts:?}/{total_attempts:?}",
+                PrettyPrintRecordKey::from(key.clone()),
             );
 
             let (sender, receiver) = oneshot::channel();
@@ -684,7 +685,10 @@ impl Network {
                     }
                 }
                 Err(error) => {
-                    warn!("Did not retrieve Record '{key:?}' from network!. Retrying...",);
+                    warn!(
+                        "Did not retrieve Record '{:?}' from network!. Retrying...",
+                        PrettyPrintRecordKey::from(key.clone()),
+                    );
                     error!("{error:?}");
                 }
             }

@@ -123,7 +123,7 @@ impl Client {
                         }
                     }
                     Err(_elapse_err) => {
-                        info!("Client experienced inactivity when waiting for a network event");
+                        debug!("Client inactivity... waiting for a network event");
                         if let Err(error) = client_clone
                             .events_channel
                             .broadcast(ClientEvent::InactiveClient(INACTIVITY_TIMEOUT))
