@@ -47,38 +47,38 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- send 1000 $(cargo run --bin safe --release -- wallet address | tail -n 1) | tail -n 1 > dbc_hex
-          cat dbc_hex | cargo run --bin safe --release -- wallet deposit --stdin
+          cargo run --bin faucet --release -- send 1000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > dbc_hex
+          cat dbc_hex | cargo run --bin safe --release -- --log-output-dest=data-dir wallet deposit --stdin
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to pay for files storage
-        run: cargo run --bin safe --release -- wallet pay "./resources"
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir wallet pay "./resources"
         env:
           SN_LOG: "all"
         timeout-minutes: 2
     
       - name: Start a client to carry out chunk actions
-        run: cargo run --bin safe --release -- files upload "./resources"
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources"
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to create a register
-        run: cargo run --bin safe --release -- register create baobao
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register create baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to get a register
-        run: cargo run --bin safe --release -- register get baobao
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to edit a register
-        run: cargo run --bin safe --release -- register edit baobao wood
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit baobao wood
         env:
           SN_LOG: "all"
         timeout-minutes: 2
