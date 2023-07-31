@@ -82,7 +82,7 @@ impl SignedRegister {
     }
 
     pub fn verify_with_address(&self, address: RegisterAddress) -> Result<()> {
-        if self.base_register.address() != &address {
+        if self.base_register.address() != &address || !self.verify_address() {
             return Err(Error::InvalidRegisterAddress {
                 requested: address,
                 got: *self.address(),
