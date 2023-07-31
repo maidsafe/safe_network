@@ -19,7 +19,7 @@ use sn_protocol::{
         try_deserialize_record, try_serialize_record, ChunkWithPayment, DbcAddress, RecordHeader,
         RecordKind,
     },
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{
@@ -208,8 +208,9 @@ impl Node {
 
         let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
         debug!(
-            "validating and storing spends {:?} - {key:?}",
-            dbc_addr.name()
+            "validating and storing spends {:?} - {:?}",
+            dbc_addr.name(),
+            PrettyPrintRecordKey::from(key.clone())
         );
 
         let present_locally = self
@@ -236,18 +237,6 @@ impl Node {
             }
         };
 
-        // Notify the sender of any double spend
-        if validated_spends.len() > 1 {
-            warn!("Got a double spend for the SpendDbc PUT with dbc_id {dbc_id:?}",);
-            let mut proof = validated_spends.iter();
-            if let (Some(spend_one), Some(spend_two)) = (proof.next(), proof.next()) {
-                return Err(ProtocolError::DoubleSpendAttempt(
-                    Box::new(spend_one.to_owned()),
-                    Box::new(spend_two.to_owned()),
-                ))?;
-            }
-        }
-
         // store the record into the local storage
         let record = Record {
             key,
@@ -260,6 +249,18 @@ impl Node {
             error!("Cannot put spend {err:?}");
             err
         })?;
+
+        // Notify the sender of any double spend
+        if validated_spends.len() > 1 {
+            warn!("Got a double spend for the SpendDbc PUT with dbc_id {dbc_id:?}",);
+            let mut proof = validated_spends.iter();
+            if let (Some(spend_one), Some(spend_two)) = (proof.next(), proof.next()) {
+                return Err(ProtocolError::DoubleSpendAttempt(
+                    Box::new(spend_one.to_owned()),
+                    Box::new(spend_two.to_owned()),
+                ))?;
+            }
+        }
 
         Ok(CmdOk::StoredSuccessfully)
     }

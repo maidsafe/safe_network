@@ -14,8 +14,9 @@ pub mod messages;
 pub mod storage;
 
 use self::storage::{ChunkAddress, DbcAddress, RegisterAddress};
+use bytes::Bytes;
 use libp2p::{
-    kad::{record::Key as RecordKey, KBucketDistance as Distance, KBucketKey as Key},
+    kad::{KBucketDistance as Distance, KBucketKey as Key, RecordKey},
     PeerId,
 };
 use serde::{Deserialize, Serialize};
@@ -159,7 +160,7 @@ impl Debug for NetworkAddress {
         write!(
             f,
             "{name_str} - {:?} - {:?})",
-            self.to_record_key(),
+            PrettyPrintRecordKey::from(self.to_record_key()),
             self.as_kbucket_key()
         )
     }
@@ -184,5 +185,33 @@ impl Display for NetworkAddress {
                 write!(f, "NetworkAddress::RecordKey({})", hex::encode(key))
             }
         }
+    }
+}
+
+/// Pretty print a `kad::RecordKey` as a hex string.
+/// So clients can use the hex string for xorname and record keys interchangeably.
+/// This makes errors actionable for clients.
+/// The only cost is converting kad::RecordKey into it before sending it in errors: `record_key.into()`
+#[derive(Clone)]
+pub struct PrettyPrintRecordKey(RecordKey);
+
+// seamless conversion from `kad::RecordKey` to `PrettyPrintRecordKey`
+impl From<RecordKey> for PrettyPrintRecordKey {
+    fn from(key: RecordKey) -> Self {
+        PrettyPrintRecordKey(key)
+    }
+}
+
+impl std::fmt::Display for PrettyPrintRecordKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let b: Vec<u8> = self.0.as_ref().to_vec();
+        let record_key_b = Bytes::from(b);
+        write!(f, "{:64x}", record_key_b)
+    }
+}
+
+impl std::fmt::Debug for PrettyPrintRecordKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }

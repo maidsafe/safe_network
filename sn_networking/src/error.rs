@@ -8,14 +8,13 @@
 
 use super::{cmd::SwarmCmd, NetworkEvent};
 
-use bytes::Bytes;
 use libp2p::{
     kad::{self, Record},
     request_response::{OutboundFailure, RequestId},
     swarm::DialError,
     TransportError,
 };
-use sn_protocol::messages::Response;
+use sn_protocol::{messages::Response, PrettyPrintRecordKey};
 use std::{io, path::PathBuf};
 use thiserror::Error;
 use tokio::sync::{mpsc, oneshot};
@@ -97,34 +96,6 @@ pub enum Error {
 
     #[error("Failed to sign the message with the PeerId keypair")]
     SigningFailed(#[from] libp2p::identity::SigningError),
-}
-
-/// Pretty print a `kad::RecordKey` as a hex string.
-/// So clients can use the hex string for xorname and record keys interchangeably.
-/// This makes errors actionable for clients.
-/// The only cost is converting ked::RecordKey into it before sending it in errors: `record_key.into()`
-#[derive(Clone)]
-pub struct PrettyPrintRecordKey(kad::RecordKey);
-
-// seamless conversion from `kad::RecordKey` to `PrettyPrintRecordKey`
-impl From<kad::RecordKey> for PrettyPrintRecordKey {
-    fn from(key: kad::RecordKey) -> Self {
-        PrettyPrintRecordKey(key)
-    }
-}
-
-impl std::fmt::Display for PrettyPrintRecordKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let b: Vec<u8> = self.0.as_ref().to_vec();
-        let record_key_b = Bytes::from(b);
-        write!(f, "{:64x}", record_key_b)
-    }
-}
-
-impl std::fmt::Debug for PrettyPrintRecordKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
-    }
 }
 
 #[cfg(test)]
