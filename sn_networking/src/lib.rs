@@ -629,9 +629,9 @@ impl Network {
         &self,
         key: RecordKey,
         target_record: Option<Record>,
-        re_attampt: bool,
+        re_attempt: bool,
     ) -> Result<Record> {
-        let total_attempts = if re_attampt { VERIFICATION_ATTEMPTS } else { 1 };
+        let total_attempts = if re_attempt { VERIFICATION_ATTEMPTS } else { 1 };
 
         let mut verification_attempts = 0;
 
