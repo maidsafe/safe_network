@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690577302129,
+  "lastUpdate": 1690826271436,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -3934,6 +3934,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 24.765524484805315,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "e98253fb8bd4609e5c4874e9310fe553c1e03433",
+          "message": "chore(CI): more tracable wallet setup for memcheck",
+          "timestamp": "2023-07-31T12:23:05Z",
+          "tree_id": "93faa221b9e490e930c70c16094535abf9c765cc",
+          "url": "https://github.com/maidsafe/safe_network/commit/e98253fb8bd4609e5c4874e9310fe553c1e03433"
+        },
+        "date": 1690826270701,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.875638684771374,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.033918956898621205,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 25.700643651395723,
             "unit": "MiB/s"
           }
         ]
