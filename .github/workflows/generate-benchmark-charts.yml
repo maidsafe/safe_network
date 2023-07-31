@@ -122,35 +122,13 @@ jobs:
         env:
           SN_LOG: "all"
 
-      ########################
-      ### Clean            ###
-      ########################
-      - name: Kill all nodes
-        shell: bash
-        timeout-minutes: 1
+      - name: Stop the local network and upload logs
         if: always()
-        continue-on-error: true
-        run: |
-          pkill safenode
-          echo "$(pgrep safenode | wc -l) nodes still running"
-
-      - name: Tar log files
-        shell: bash
-        continue-on-error: true
-        run: |
-          find $HEAPNODE_DATA_PATH -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
-          find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
-          find $CLIENT_DATA_PATH -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
-          find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
-        if: always()
-
-      - name: Upload Logs
-        uses: actions/upload-artifact@main
+        uses: maidsafe/sn-local-testnet-action@main
         with:
-          name: sn_logs_benchmark_chart_generation
-          path: log_files.tar.gz
-        if: always()
-        continue-on-error: true
+          action: stop
+          log_file_prefix: safe_test_logs_benchmark_charts
+          platform: ${{ matrix.os }}
       
       #########################
       ### Node Mem Analysis ###
