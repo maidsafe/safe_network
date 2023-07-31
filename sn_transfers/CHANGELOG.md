@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.19](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.18...sn_transfers-v0.10.19) - 2023-07-31
+
+### Fixed
+- *(test)* using proper wallets during data_with_churn test
+
 ## [0.10.18](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.17...sn_transfers-v0.10.18) - 2023-07-28
 
 ### Other

@@ -690,6 +690,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.88.4](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.3...sn_node-v0.88.4) - 2023-07-31
+
+### Added
+- carry out get_record re-attempts for critical record
+- for put_record verification, NotEnoughCopies is acceptable
+
+### Fixed
+- *(test)* using proper wallets during data_with_churn test
+
+### Other
+- move PrettyPrintRecordKey to sn_protocol
+- small refactors for failing CI
+- more tracable logs regarding chunk payment prove
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

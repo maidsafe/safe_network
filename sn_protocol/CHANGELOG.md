@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.4.0...sn_protocol-v0.4.1) - 2023-07-31
+
+### Other
+- move PrettyPrintRecordKey to sn_protocol
+
 ## [0.4.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.3.2...sn_protocol-v0.4.0) - 2023-07-28
 
 ### Added
