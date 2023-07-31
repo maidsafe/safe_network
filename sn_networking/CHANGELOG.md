@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.1...sn_networking-v0.4.2) - 2023-07-31
+
+### Added
+- *(node)* add marker for a network connection timeout
+
 ## [0.4.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.0...sn_networking-v0.4.1) - 2023-07-28
 
 ### Fixed
