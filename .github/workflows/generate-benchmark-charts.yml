@@ -65,13 +65,6 @@ jobs:
           faucet-path: target/release/faucet
           platform: ubuntu-latest
 
-
-      - name: Start a faucet client to claim genesis
-        run: cargo run --bin faucet --release -- claim-genesis
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
-
       - name: Create and fund a wallet to pay for files storage
         run: |
           cargo run --bin faucet --release -- send 1000 $(cargo run --bin safe --release -- wallet address | tail -n 1) | tail -n 1 > dbc_hex
