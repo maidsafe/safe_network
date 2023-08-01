@@ -358,9 +358,7 @@ impl Client {
             .get_record_from_network(key.clone(), None, false)
             .await
             .map_err(|err| {
-                Error::CouldNotVerifyTransfer(format!(
-                    "Can't find record for the dbc_id {dbc_id:?} with error {err:?}"
-                ))
+                Error::CouldNotVerifyTransfer(format!("dbc_id {dbc_id:?} errored: {err:?}"))
             })?;
         debug!(
             "For spend {dbc_id:?} got record from the network, {:?}",
