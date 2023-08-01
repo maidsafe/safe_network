@@ -11,6 +11,8 @@ use crate::{error::Result, Entry, Error, RegisterAddress, User};
 use bls::PublicKey;
 use crdts::merkle_reg::Node as MerkleDagEntry;
 use serde::{Deserialize, Serialize};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 /// Register mutation operation to apply to Register.
 /// CRDT Data operation applicable to other Register replica.
@@ -83,7 +85,13 @@ impl RegisterOp {
     /// Returns a bytes version of the RegisterOp used for signing
     /// Use this API when you want to sign a RegisterOp withtout providing a secret key to the RegisterOp API
     pub fn bytes_for_signing(&self) -> Vec<u8> {
-        self.crdt_op.hash().to_vec()
+        let mut hasher = DefaultHasher::new();
+        self.address.hash(&mut hasher);
+        self.crdt_op.hash().hash(&mut hasher);
+        self.source.hash(&mut hasher);
+        let hash_value = hasher.finish();
+        let bytes = hash_value.to_ne_bytes();
+        bytes.to_vec()
     }
 
     /// Check signature of register Op against provided public key
