@@ -131,7 +131,7 @@ jobs:
         with:
           action: stop
           log_file_prefix: safe_test_logs_benchmark_charts
-          platform: ${{ matrix.os }}
+          platform: ubuntu-latest
 
       - name: Tar heapnode log files
         shell: bash
