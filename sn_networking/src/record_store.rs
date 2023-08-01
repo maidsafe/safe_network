@@ -153,7 +153,7 @@ impl DiskBackedRecordStore {
         let content_hash = XorName::from_content(&r.value);
         trace!(
             "PUT a verified Record: {:?} (content_hash {content_hash:?})",
-            r.key
+            PrettyPrintRecordKey::from(r.key.clone())
         );
         if r.value.len() >= self.config.max_value_bytes {
             warn!(
@@ -295,7 +295,10 @@ impl RecordStore for DiskBackedRecordStore {
         // When a client calls GET, the request is forwarded to the nodes until one node returns
         // with the record. Thus a node can be bombarded with GET reqs for random keys. These can be safely
         // ignored if we don't have the record locally.
-        trace!("GET request for Record key: {k:?}");
+        trace!(
+            "GET request for Record key: {:?}",
+            PrettyPrintRecordKey::from(k.clone())
+        );
         if !self.records.contains(k) {
             trace!("Record not found locally");
             return None;

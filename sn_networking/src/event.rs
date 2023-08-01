@@ -21,8 +21,8 @@ use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{
-        GetRecordOk, InboundRequest, Kademlia, KademliaEvent, PeerRecord, QueryId, QueryResult,
-        Record, RecordKey, K_VALUE,
+        GetRecordError, GetRecordOk, InboundRequest, Kademlia, KademliaEvent, PeerRecord, QueryId,
+        QueryResult, Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
@@ -402,7 +402,7 @@ impl SwarmDriver {
                     if let Some((record, _)) = result_map.values().next() {
                         info!(
                             "Getting record {:?} early completed with {:?} copies received",
-                            record.key,
+                            PrettyPrintRecordKey::from(record.key.clone()),
                             usize::from(step.count) - 1
                         );
                         // Consider any early completion as Putting in progress or split.
@@ -424,7 +424,31 @@ impl SwarmDriver {
                 stats,
                 step,
             } => {
-                info!("Query task {id:?} failed to get record with error: {err:?}, {stats:?} - {step:?}");
+                match err {
+                    GetRecordError::NotFound { key, closest_peers } => {
+                        info!("Query task {id:?} NotFound record {:?} among peers {closest_peers:?}, {stats:?} - {step:?}",
+                            PrettyPrintRecordKey::from(key.clone()));
+                    }
+                    GetRecordError::QuorumFailed {
+                        key,
+                        records,
+                        quorum,
+                    } => {
+                        let peers = records
+                            .iter()
+                            .map(|peer_record| peer_record.peer)
+                            .collect_vec();
+                        info!("Query task {id:?} QuorumFailed record {:?} among peers {peers:?} with quorum {quorum:?}, {stats:?} - {step:?}",
+                            PrettyPrintRecordKey::from(key.clone()));
+                    }
+                    GetRecordError::Timeout { key } => {
+                        info!(
+                            "Query task {id:?} timed out when looking for record {:?}",
+                            PrettyPrintRecordKey::from(key.clone())
+                        );
+                    }
+                }
+
                 if let Some((sender, _)) = self.pending_get_record.remove(&id) {
                     sender
                         .send(Err(Error::RecordNotFound))
