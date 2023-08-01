@@ -353,11 +353,6 @@ impl Node {
                 let result = self.current_storecost().await;
                 QueryResponse::GetStoreCost(result)
             }
-            Query::GetChunk(address) => {
-                trace!("Got GetChunk query for {address:?}");
-                let result = self.get_chunk_from_network(address).await;
-                QueryResponse::GetChunk(result)
-            }
             Query::GetReplicatedData {
                 requester: _,
                 address,
