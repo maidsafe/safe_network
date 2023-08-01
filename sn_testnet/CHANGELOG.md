@@ -691,6 +691,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.2.35](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.34...sn_testnet-v0.2.35) - 2023-07-27
+
+### Other
+- update dependencies
+
+## [0.2.36](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.35...sn_testnet-v0.2.36) - 2023-07-28
+
+### Other
+- update dependencies
+
+## [0.2.37](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.36...sn_testnet-v0.2.37) - 2023-07-28
+
+### Other
+- *(testnet)* build only the provided binaries
+
+## [0.2.38](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.37...sn_testnet-v0.2.38) - 2023-07-28
+
+### Other
+- update dependencies
+
+## [0.2.39](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.38...sn_testnet-v0.2.39) - 2023-07-28
+
+### Other
+- update dependencies
+
+## [0.2.40](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.39...sn_testnet-v0.2.40) - 2023-07-31
+
+### Other
+- update dependencies
+
+## [0.2.41](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.40...sn_testnet-v0.2.41) - 2023-07-31
+
+### Other
+- update dependencies
+
+## [0.2.42](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.41...sn_testnet-v0.2.42) - 2023-07-31
+
+### Other
+- update dependencies
+
+## [0.2.43](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.42...sn_testnet-v0.2.43) - 2023-07-31
+
+### Other
+- update dependencies
+
+## [0.2.44](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.43...sn_testnet-v0.2.44) - 2023-08-01
+
+### Other
+- update dependencies
+
+## [0.2.45](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.44...sn_testnet-v0.2.45) - 2023-08-01
+
+### Other
+- update dependencies
+
+## [0.2.46](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.45...sn_testnet-v0.2.46) - 2023-08-01
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>

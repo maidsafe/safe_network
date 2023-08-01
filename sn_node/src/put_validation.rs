@@ -19,7 +19,7 @@ use sn_protocol::{
         try_deserialize_record, try_serialize_record, ChunkWithPayment, DbcAddress, RecordHeader,
         RecordKind,
     },
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{
@@ -33,7 +33,7 @@ use xor_name::XorName;
 impl Node {
     /// Validate and store a record to the RecordStore
     pub(crate) async fn validate_and_store_record(
-        &mut self,
+        &self,
         record: Record,
     ) -> Result<CmdOk, ProtocolError> {
         let record_header = RecordHeader::from_record(&record)?;
@@ -179,7 +179,7 @@ impl Node {
 
     /// Validate and store `Vec<SignedSpend>` to the RecordStore
     pub(crate) async fn validate_and_store_spends(
-        &mut self,
+        &self,
         signed_spends: Vec<SignedSpend>,
     ) -> Result<CmdOk, ProtocolError> {
         // make sure that the dbc_ids match
@@ -206,8 +206,12 @@ impl Node {
         };
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
-        debug!("validating and storing spends {:?}", dbc_addr.name());
         let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
+        debug!(
+            "validating and storing spends {:?} - {:?}",
+            dbc_addr.name(),
+            PrettyPrintRecordKey::from(key.clone())
+        );
 
         let present_locally = self
             .network
@@ -278,10 +282,15 @@ impl Node {
         // other info for verifications of valid payment.
         let mut tasks = JoinSet::new();
         spent_ids.iter().cloned().for_each(|dbc_id| {
+            trace!(
+                "Getting spend {:?} for chunk {:?} to prove payment",
+                dbc_id,
+                addr_name
+            );
             let self_clone = self.clone();
             let _ = tasks.spawn(async move {
                 let addr = DbcAddress::from_dbc_id(&dbc_id);
-                let signed_spend = self_clone.get_spend_from_network(addr).await?;
+                let signed_spend = self_clone.get_spend_from_network(addr, true).await?;
                 Ok::<DbcTransaction, ProtocolError>(signed_spend.spent_tx())
             });
         });
@@ -473,9 +482,10 @@ impl Node {
                 } else {
                     for parent_input in &signed_spend.spend.dbc_creation_tx.inputs {
                         let _ = parent_spends.insert(
-                            self.get_spend_from_network(DbcAddress::from_dbc_id(
-                                &parent_input.dbc_id(),
-                            ))
+                            self.get_spend_from_network(
+                                DbcAddress::from_dbc_id(&parent_input.dbc_id()),
+                                true,
+                            )
                             .await?,
                         );
                     }
@@ -486,11 +496,12 @@ impl Node {
 
                 // check the network if any spend has happened for the same dbc_id
                 // Does not return an error, instead the Vec<SignedSpend> is returned.
-                let mut spends = if let Ok(spend) = self.get_spend_from_network(dbc_addr).await {
-                    vec![spend]
-                } else {
-                    vec![]
-                };
+                let mut spends =
+                    if let Ok(spend) = self.get_spend_from_network(dbc_addr, false).await {
+                        vec![spend]
+                    } else {
+                        vec![]
+                    };
                 // aggregate the spends from the network with our own
                 spends.push(signed_spend);
                 aggregate_spends(spends, dbc_id)

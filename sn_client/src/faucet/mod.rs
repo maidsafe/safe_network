@@ -8,12 +8,15 @@ use sn_transfers::dbc_genesis::{create_faucet_wallet, load_genesis_wallet};
 use sn_transfers::wallet::LocalWallet;
 
 /// Returns a dbc with the requested number of tokens, for use by E2E test instances.
+/// Note this will create a faucet having a Genesis balance
 pub async fn get_tokens_from_faucet(amount: Token, to: PublicAddress, client: &Client) -> Dbc {
     send(
         load_faucet_wallet_from_genesis_wallet(client).await,
         amount,
         to,
         client,
+        // we should not need to wait for this
+        true,
     )
     .await
 }
@@ -38,15 +41,17 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWal
 
     let faucet_balance = genesis_wallet.balance();
     println!("Sending {faucet_balance} from genesis to faucet wallet..");
-    let tokens = send(
+    let dbc = send(
         genesis_wallet,
         faucet_balance,
         faucet_wallet.address(),
         client,
+        // we should not need to wait for this
+        true,
     )
     .await;
 
-    faucet_wallet.deposit(vec![tokens.clone()]);
+    faucet_wallet.deposit(vec![dbc.clone()]);
     faucet_wallet
         .store()
         .await
@@ -54,12 +59,12 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWal
     println!("Faucet wallet balance: {}", faucet_wallet.balance());
 
     println!("Verifying the transfer from genesis...");
-    if let Err(error) = client.verify(&tokens).await {
-        println!("Could not verify the transfer from genesis, retrying after 10 secs...");
+    if let Err(error) = client.verify(&dbc).await {
+        println!("Could not verify the transfer from genesis, retrying after 20 secs...");
         println!("The error was: {error:?}");
-        tokio::time::sleep(Duration::from_secs(10)).await;
-        if let Err(error) = client.verify(&tokens).await {
-            println!("Could not verify the transfer from genesis: {error:?}");
+        tokio::time::sleep(Duration::from_secs(20)).await;
+        if let Err(error) = client.verify(&dbc).await {
+            panic!("Could not verify the transfer from genesis: {error:?}");
         } else {
             println!("Successfully verified the transfer from genesis on the second try.");
         }

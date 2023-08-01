@@ -27,7 +27,7 @@ use self::{
     circular_vec::CircularVec,
     cmd::SwarmCmd,
     error::Result,
-    event::NodeBehaviour,
+    event::{GetRecordResultMap, NodeBehaviour},
     record_store::{
         DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
         REPLICATION_INTERVAL_UPPER_BOUND,
@@ -39,16 +39,20 @@ use futures::{future::select_all, StreamExt};
 use libp2p::mdns;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
+    kad::{
+        KBucketDistance as Distance, KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
+        RecordKey,
+    },
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
 use rand::Rng;
+use sn_dbc::Token;
 use sn_protocol::{
     messages::{Request, Response},
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -63,6 +67,7 @@ use tracing::warn;
 /// The maximum number of peers to return in a `GetClosestPeers` response.
 /// This is the group size used in safe network protocol to be responsible for
 /// an item in the network.
+/// The peer should be present among the CLOSE_GROUP_SIZE if we're fetching the close_group(peer)
 pub const CLOSE_GROUP_SIZE: usize = 8;
 
 // Timeout for requests sent/received through the request_response behaviour.
@@ -87,6 +92,9 @@ const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::fro
 /// Number of attempts to verify a record
 const VERIFICATION_ATTEMPTS: usize = 30;
 
+/// Number of attempts to re-put a record
+const PUT_RECORD_RETRIES: usize = 3;
+
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -95,6 +103,7 @@ pub const fn close_group_majority() -> usize {
 }
 
 type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
+type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRecordResultMap)>;
 
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
@@ -108,12 +117,12 @@ pub struct SwarmDriver {
     event_sender: mpsc::Sender<NetworkEvent>,
     pending_get_closest_peers: PendingGetClosest,
     pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
-    pending_query: HashMap<QueryId, oneshot::Sender<Result<Record>>>,
+    pending_get_record: PendingGetRecord,
     replication_fetcher: ReplicationFetcher,
     local: bool,
     /// A list of the most recent peers we have dialed ourselves.
     dialed_peers: CircularVec<PeerId>,
-    /// The peers that are closer to our PeerId
+    /// The peers that are closer to our PeerId. Includes self.
     close_group: Vec<PeerId>,
     is_client: bool,
 }
@@ -386,7 +395,7 @@ impl SwarmDriver {
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
-            pending_query: Default::default(),
+            pending_get_record: Default::default(),
             replication_fetcher: Default::default(),
             local,
             // We use 63 here, as in practice the capacity will be rounded to the nearest 2^n-1.
@@ -403,6 +412,7 @@ impl SwarmDriver {
                 swarm_cmd_sender,
                 peer_id,
                 root_dir_path,
+                keypair,
             },
             network_event_receiver,
             swarm_driver,
@@ -478,9 +488,15 @@ pub struct Network {
     pub swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
     pub peer_id: PeerId,
     pub root_dir_path: PathBuf,
+    keypair: Keypair,
 }
 
 impl Network {
+    /// Signs the given data with the node's keypair.
+    pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
+        self.keypair.sign(msg).map_err(Error::from)
+    }
+
     ///  Listen for incoming connections on the given address.
     pub async fn start_listening(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
@@ -606,13 +622,92 @@ impl Network {
     }
 
     /// Get the Record from the network
-    pub async fn get_record_from_network(&self, key: RecordKey) -> Result<Record> {
+    /// Carry out re-attempts if required
+    /// In case a target_record is provided, only return when fetched target.
+    /// Otherwise count it as a failure when all attempts completed.
+    pub async fn get_record_from_network(
+        &self,
+        key: RecordKey,
+        target_record: Option<Record>,
+        re_attempt: bool,
+    ) -> Result<Record> {
+        let total_attempts = if re_attempt { VERIFICATION_ATTEMPTS } else { 1 };
+
+        let mut verification_attempts = 0;
+
+        while verification_attempts < total_attempts {
+            verification_attempts += 1;
+            debug!(
+                "Getting record of {:?} attempts {verification_attempts:?}/{total_attempts:?}",
+                PrettyPrintRecordKey::from(key.clone()),
+            );
+
+            let (sender, receiver) = oneshot::channel();
+            self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
+                key: key.clone(),
+                sender,
+            })?;
+
+            match receiver
+                .await
+                .map_err(|_e| Error::InternalMsgChannelDropped)?
+            {
+                Ok(returned_record) => {
+                    // Returning OK whenever fulfill one of the followings:
+                    // 1, No targeting record
+                    // 2, Fetched record matches the targeting record
+                    //
+                    // Returning mismatched error when: completed all attempts
+                    if target_record.is_none()
+                        || (target_record.is_some()
+                            && target_record == Some(returned_record.clone()))
+                    {
+                        return Ok(returned_record);
+                    } else if verification_attempts >= total_attempts {
+                        return Err(Error::ReturnedRecordDoesNotMatch(
+                            returned_record.key.into(),
+                        ));
+                    }
+                }
+                Err(Error::RecordNotEnoughCopies(returned_record)) => {
+                    // Only return when completed all attempts
+                    if verification_attempts >= total_attempts {
+                        if target_record.is_none()
+                            || (target_record.is_some()
+                                && target_record == Some(returned_record.clone()))
+                        {
+                            return Ok(returned_record);
+                        } else {
+                            return Err(Error::ReturnedRecordDoesNotMatch(
+                                returned_record.key.into(),
+                            ));
+                        }
+                    }
+                }
+                Err(error) => {
+                    warn!(
+                        "Did not retrieve Record '{:?}' from network!. Retrying...",
+                        PrettyPrintRecordKey::from(key.clone()),
+                    );
+                    error!("{error:?}");
+                }
+            }
+
+            // wait for a bit before re-trying
+            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+        }
+
+        Err(Error::RecordNotFound)
+    }
+
+    /// Get the cost of storing the next record from the network
+    pub async fn get_local_storecost(&self) -> Result<Token> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetNetworkRecord { key, sender })?;
+        self.send_swarm_cmd(SwarmCmd::GetLocalStoreCost { sender })?;
 
         receiver
             .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)?
+            .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
     /// Get `Record` from the local RecordStore
@@ -631,54 +726,58 @@ impl Network {
     /// Put `Record` to network
     /// optionally verify the record is stored after putting it to network
     pub async fn put_record(&self, record: Record, verify_store: bool) -> Result<()> {
-        let the_record = record.clone();
+        if verify_store {
+            self.put_record_with_retries(record).await
+        } else {
+            self.put_record_once(record, false).await
+        }
+    }
+
+    /// Put `Record` to network
+    /// Verify the record is stored after putting it to network
+    /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
+    async fn put_record_with_retries(&self, record: Record) -> Result<()> {
+        let mut retries = 0;
+        while retries < PUT_RECORD_RETRIES {
+            let res = self.put_record_once(record.clone(), true).await;
+            if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
+                return res;
+            }
+            retries += 1;
+        }
+        Err(Error::FailedToVerifyRecordWasStored(record.key.into()))
+    }
+
+    async fn put_record_once(&self, record: Record, verify_store: bool) -> Result<()> {
         debug!(
-            "Putting record of {:?} - length {:?} to network",
-            the_record.key,
+            "Putting record of {} - length {:?} to network",
+            PrettyPrintRecordKey::from(record.key.clone()),
             record.value.len()
         );
+        let the_record = record.clone();
         // Waiting for a response to avoid flushing to network too quick that causing choke
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::PutRecord { record, sender })?;
+        self.send_swarm_cmd(SwarmCmd::PutRecord {
+            record: record.clone(),
+            sender,
+        })?;
         let response = receiver.await?;
 
-        if !verify_store {
-            return response;
-        }
-
-        // Verify the record is stored
-        let mut verification_attempts = 0;
-        let mut something_different_was_found = false;
-        while verification_attempts < VERIFICATION_ATTEMPTS {
-            something_different_was_found = false;
-            match self.get_record_from_network(the_record.key.clone()).await {
-                Ok(returned_record) => {
-                    // if the returned record is not _the same_ lets inform the user
-                    if the_record != returned_record {
-                        something_different_was_found = true;
-                        continue;
-                    }
-
-                    return Ok(());
-                }
-                Err(error) => {
-                    verification_attempts += 1;
-                    warn!(
-                        "Did not retrieve Record '{:?}' from all nodes in the close group!. Retrying...", the_record.key
+        if verify_store {
+            // Verify the record is stored, requiring re-attempts
+            let _ = self
+                .get_record_from_network(record.key.clone(), Some(record), true)
+                .await
+                .map_err(|e| {
+                    trace!(
+                        "Failing to verify the put record {:?} with error {e:?}",
+                        the_record.key
                     );
-                    error!("{error:?}");
-                }
-            }
-
-            // wait for a bit before trying againq
-            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+                    Error::FailedToVerifyRecordWasStored(the_record.key.into())
+                })?;
         }
 
-        if something_different_was_found {
-            Err(Error::ReturnedRecordDoesNotMatch(the_record.key))
-        } else {
-            Err(Error::FailedToVerifyRecordWasStored(the_record.key))
-        }
+        response
     }
 
     /// Put `Record` to the local RecordStore
@@ -686,7 +785,7 @@ impl Network {
     pub fn put_local_record(&self, record: Record) -> Result<()> {
         debug!(
             "Writing Record locally, for {:?} - length {:?}",
-            record.key,
+            PrettyPrintRecordKey::from(record.key.clone()),
             record.value.len()
         );
         self.send_swarm_cmd(SwarmCmd::PutLocalRecord { record })
@@ -724,7 +823,13 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { peer, keys })
     }
 
-    /// Send `Request` to the the given `PeerId` and await for the response. If `self` is the recipient,
+    /// Set the acceptable range of record entry. A record is removed from the storage if the
+    /// distance between the record and the node is greater than the provided `distance`.
+    pub fn set_record_distance_range(&self, distance: Distance) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::SetRecordDistanceRange { distance })
+    }
+
+    /// Send `Request` to the given `PeerId` and await for the response. If `self` is the recipient,
     /// then the `Request` is forwarded to itself and handled, and a corresponding `Response` is created
     /// and returned to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
@@ -738,7 +843,7 @@ impl Network {
         receiver.await?
     }
 
-    /// Send `Request` to the the given `PeerId` and do _not_ await a response here.
+    /// Send `Request` to the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
     pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let swarm_cmd = SwarmCmd::SendRequest {

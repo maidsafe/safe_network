@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::Node;
-use sn_dbc::SignedSpend;
+use sn_dbc::{SignedSpend, Token};
 use sn_protocol::{
     error::{Error, Result},
     messages::ReplicatedData,
@@ -15,19 +15,38 @@ use sn_protocol::{
         try_deserialize_record, Chunk, ChunkAddress, ChunkWithPayment, DbcAddress, RecordHeader,
         RecordKind,
     },
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
 
 impl Node {
+    /// Get the current storecost in nanos from our local kademlia store
+    /// Returns cost and our node's signature over that cost
+    pub(crate) async fn current_storecost(&self) -> Result<(Token, Vec<u8>)> {
+        let cost = self
+            .network
+            .get_local_storecost()
+            .await
+            .map_err(|_| Error::GetStoreCostFailed)?;
+
+        let signed_cost = match self.network.sign(&cost.to_bytes()) {
+            Ok(signed_cost) => signed_cost,
+            Err(_) => return Err(Error::SignStoreCostFailed),
+        };
+
+        Ok((cost, signed_cost))
+    }
     pub(crate) async fn get_chunk_from_network(&self, address: ChunkAddress) -> Result<Chunk> {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key)
+            .get_record_from_network(key, None, false)
             .await
             .map_err(|_| Error::ChunkNotFound(address))?;
-        debug!("Got record from the network, {:?}", record.key);
+        debug!(
+            "Got record from the network, {:?}",
+            PrettyPrintRecordKey::from(record.key.clone())
+        );
         let header =
             RecordHeader::from_record(&record).map_err(|_| Error::ChunkNotFound(address))?;
 
@@ -41,14 +60,21 @@ impl Node {
         }
     }
 
-    pub(crate) async fn get_spend_from_network(&self, address: DbcAddress) -> Result<SignedSpend> {
+    pub(crate) async fn get_spend_from_network(
+        &self,
+        address: DbcAddress,
+        re_attempt: bool,
+    ) -> Result<SignedSpend> {
         let key = NetworkAddress::from_dbc_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key)
+            .get_record_from_network(key, None, re_attempt)
             .await
             .map_err(|_| Error::SpendNotFound(address))?;
-        debug!("Got record from the network, {:?}", record.key);
+        debug!(
+            "Got record from the network, {:?}",
+            PrettyPrintRecordKey::from(record.key.clone())
+        );
         let header =
             RecordHeader::from_record(&record).map_err(|_| Error::SpendNotFound(address))?;
 
@@ -91,7 +117,7 @@ impl Node {
         let record_key = address.as_record_key().ok_or(error.clone())?;
         let record = self
             .network
-            .get_record_from_network(record_key)
+            .get_record_from_network(record_key, None, false)
             .await
             .map_err(|_| error.clone())?;
         let header = RecordHeader::from_record(&record).map_err(|_| error.clone())?;

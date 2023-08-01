@@ -67,10 +67,23 @@ async fn main() -> Result<()> {
 
     let client = Client::new(secret_key, Some(opt.peers.peers), opt.timeout).await?;
 
+    // default to verifying storage
+    let should_verify_store = !opt.no_verify;
+
     match opt.cmd {
-        SubCmd::Wallet(cmds) => wallet_cmds(cmds, &client, &client_data_dir_path).await?,
-        SubCmd::Files(cmds) => files_cmds(cmds, client.clone(), &client_data_dir_path).await?,
-        SubCmd::Register(cmds) => register_cmds(cmds, &client).await?,
+        SubCmd::Wallet(cmds) => {
+            wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+        }
+        SubCmd::Files(cmds) => {
+            files_cmds(
+                cmds,
+                client.clone(),
+                &client_data_dir_path,
+                should_verify_store,
+            )
+            .await?
+        }
+        SubCmd::Register(cmds) => register_cmds(cmds, &client, should_verify_store).await?,
     };
 
     Ok(())

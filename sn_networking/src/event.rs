@@ -12,8 +12,8 @@ use super::{
     SwarmDriver,
 };
 use crate::{
-    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
-    IDENTIFY_AGENT_STR,
+    close_group_majority, multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address,
+    CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
 };
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
@@ -21,8 +21,8 @@ use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{
-        GetRecordOk, InboundRequest, Kademlia, KademliaEvent, QueryResult, Record, RecordKey,
-        K_VALUE,
+        GetRecordOk, InboundRequest, Kademlia, KademliaEvent, PeerRecord, QueryId, QueryResult,
+        Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
@@ -31,12 +31,19 @@ use libp2p::{
 };
 use sn_protocol::{
     messages::{Request, Response},
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
-use std::collections::HashSet;
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    num::NonZeroUsize,
+};
 
 use tokio::sync::oneshot;
 use tracing::{info, warn};
+use xor_name::XorName;
+
+// Usig XorName to differentiate different record content under the same key.
+pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
 
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
@@ -288,7 +295,6 @@ impl SwarmDriver {
                 peer_id,
                 connection_id,
             } => trace!("Dialing {peer_id:?} on {connection_id:?}"),
-
             SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
                 autonat::Event::InboundProbe(e) => debug!("AutoNAT inbound probe: {e:?}"),
                 autonat::Event::OutboundProbe(e) => debug!("AutoNAT outbound probe: {e:?}"),
@@ -350,21 +356,66 @@ impl SwarmDriver {
                         .insert(id, (sender, current_closest));
                 }
             }
+            // For `get_record` returning behaviour:
+            //   1, targeting a non-existing entry
+            //     there will only be one event of `KademliaEvent::OutboundQueryProgressed`
+            //     with `ProgressStep::last` to be `true`
+            //          `QueryStats::requests` to be 20 (K-Value)
+            //          `QueryStats::success` to be over majority of the requests
+            //          `err::NotFound::closest_peers` contains a list of CLOSE_GROUP_SIZE peers
+            //   2, targeting an existing entry
+            //     there will a sequence of (at least CLOSE_GROUP_SIZE) events of
+            //     `KademliaEvent::OutboundQueryProgressed` to be received
+            //     with `QueryStats::end` always being `None`
+            //          `ProgressStep::last` all to be `false`
+            //          `ProgressStep::count` to be increased with step of 1
+            //             capped and stopped at CLOSE_GROUP_SIZE, may have duplicated counts
+            //          `PeerRecord::peer` could be None to indicate from self
+            //             in which case it always use a duplicated `PregressStep::count`
+            //     the sequence will be completed with `FinishedWithNoAdditionalRecord`
+            //     where: `cache_candidates`: being the peers supposed to hold the record but not
+            //            `ProgressStep::count`: to be `number of received copies plus one`
+            //            `ProgressStep::last` to be `true`
             KademliaEvent::OutboundQueryProgressed {
                 id,
                 result: QueryResult::GetRecord(Ok(GetRecordOk::FoundRecord(peer_record))),
                 stats,
                 step,
             } => {
-                if let Some(sender) = self.pending_query.remove(&id) {
-                    trace!(
-                        "Query task {id:?} returned with record {:?} from peer {:?}, {stats:?} - {step:?}",
-                        peer_record.record.key,
-                        peer_record.peer
-                    );
-                    sender
-                        .send(Ok(peer_record.record))
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                let content_hash = XorName::from_content(&peer_record.record.value);
+                trace!(
+                    "Query task {id:?} returned with record {:?}(content {content_hash:?}) from peer {:?}, {stats:?} - {step:?}",
+                    PrettyPrintRecordKey::from(peer_record.record.key.clone()),
+                    peer_record.peer
+                );
+                self.accumulate_get_record_ok(id, peer_record, step.count);
+            }
+            KademliaEvent::OutboundQueryProgressed {
+                id,
+                result:
+                    QueryResult::GetRecord(Ok(GetRecordOk::FinishedWithNoAdditionalRecord { .. })),
+                stats,
+                step,
+            } => {
+                trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?}");
+                if let Some((sender, result_map)) = self.pending_get_record.remove(&id) {
+                    if let Some((record, _)) = result_map.values().next() {
+                        info!(
+                            "Getting record {:?} early completed with {:?} copies received",
+                            record.key,
+                            usize::from(step.count) - 1
+                        );
+                        // Consider any early completion as Putting in progress or split.
+                        // Just send back the first record (for put verification only),
+                        // and not to update self
+                        sender
+                            .send(Err(Error::RecordNotEnoughCopies(record.clone())))
+                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    } else {
+                        sender
+                            .send(Err(Error::RecordNotFound))
+                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    }
                 }
             }
             KademliaEvent::OutboundQueryProgressed {
@@ -373,16 +424,12 @@ impl SwarmDriver {
                 stats,
                 step,
             } => {
-                warn!("Query task {id:?} failed to get record with error: {err:?}, {stats:?} - {step:?}");
-                if step.last {
-                    // To avoid the caller wait forever on a non-existing entry
-                    if let Some(sender) = self.pending_query.remove(&id) {
-                        sender
-                            .send(Err(Error::RecordNotFound))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
-                    }
+                info!("Query task {id:?} failed to get record with error: {err:?}, {stats:?} - {step:?}");
+                if let Some((sender, _)) = self.pending_get_record.remove(&id) {
+                    sender
+                        .send(Err(Error::RecordNotFound))
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
-                // TODO: send an error response back?
             }
             KademliaEvent::RoutingUpdated {
                 peer,
@@ -432,7 +479,7 @@ impl SwarmDriver {
         Ok(())
     }
 
-    // get all the peers from our local RoutingTable
+    // get all the peers from our local RoutingTable. Contains self
     pub(super) fn get_all_local_peers(&mut self) -> Vec<PeerId> {
         let mut all_peers: Vec<PeerId> = vec![];
         for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
@@ -451,7 +498,7 @@ impl SwarmDriver {
             sort_peers_by_address(
                 all_peers,
                 &NetworkAddress::from_peer(self.self_peer_id),
-                CLOSE_GROUP_SIZE + 1,
+                CLOSE_GROUP_SIZE,
             )
             .ok()?
         };
@@ -490,6 +537,93 @@ impl SwarmDriver {
             index += 1;
         }
         info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}");
+    }
+
+    // Completes when any of the following condition reaches first:
+    // 1, Return whenever reached majority of CLOSE_GROUP_SIZE
+    // 2, In case of split, return with NotFound,
+    //    whenever `ProgressStep::count` hits CLOSE_GROUP_SIZE
+    fn accumulate_get_record_ok(
+        &mut self,
+        query_id: QueryId,
+        peer_record: PeerRecord,
+        count: NonZeroUsize,
+    ) {
+        let peer_id = if let Some(peer_id) = peer_record.peer {
+            peer_id
+        } else {
+            self.self_peer_id
+        };
+        let record_content_hash = XorName::from_content(&peer_record.record.value);
+
+        if let Some((sender, mut result_map)) = self.pending_get_record.remove(&query_id) {
+            let peer_list =
+                if let Some((_, mut peer_list)) = result_map.remove(&record_content_hash) {
+                    let _ = peer_list.insert(peer_id);
+                    peer_list
+                } else {
+                    let mut peer_list = HashSet::new();
+                    let _ = peer_list.insert(peer_id);
+                    peer_list
+                };
+
+            let result = if peer_list.len() >= close_group_majority() {
+                Some(Ok(peer_record.record.clone()))
+            } else if usize::from(count) >= CLOSE_GROUP_SIZE {
+                Some(Err(Error::RecordNotFound))
+            } else {
+                None
+            };
+
+            let _ = result_map.insert(record_content_hash, (peer_record.record, peer_list));
+
+            if let Some(result) = result {
+                let _ = sender.send(result);
+                self.try_update_self_for_split_record(result_map);
+            } else {
+                let _ = self
+                    .pending_get_record
+                    .insert(query_id, (sender, result_map));
+            }
+        }
+    }
+
+    // Split resolvement policy:
+    // 1, Always choose the copy having the highest votes
+    // 2, If multiple having same votes, chose the lowest XorName one
+    //
+    // Only update self when is among the `non-majority list`.
+    // Trying to update other peers is un-necessary and may introduce extra holes.
+    fn try_update_self_for_split_record(&mut self, result_map: GetRecordResultMap) {
+        if result_map.len() == 1 {
+            // Do nothing as there is no split votes
+            return;
+        }
+
+        let mut highest_count = 0;
+        let mut highest_records = BTreeMap::new();
+        for (xor_name, (record, peer_list)) in &result_map {
+            if peer_list.len() > highest_count {
+                // Cleanup whenever there is a record got more votes
+                highest_records = BTreeMap::new();
+            }
+            if peer_list.len() >= highest_count {
+                highest_count = peer_list.len();
+                let _ = highest_records.insert(xor_name, (record, peer_list));
+            }
+        }
+
+        if let Some((_, (record, peer_list))) = highest_records.pop_first() {
+            if !peer_list.contains(&self.self_peer_id) {
+                warn!("Update self regarding a split record {:?}", record.key);
+                let _ = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .put_verified(record.clone());
+            }
+        }
     }
 }
 

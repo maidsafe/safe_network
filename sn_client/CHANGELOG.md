@@ -6,6 +6,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.0...sn_client-v0.87.1) - 2023-08-01
+
+### Added
+- *(cli)* add no-verify flag to cli
+
+### Other
+- fix double spend and remove arbitrary wait
+- *(node)* verify faucet transactions before continuing
+- *(netowrking)* change default re-attempt behaviour
+
+## [0.87.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.11...sn_client-v0.87.0) - 2023-08-01
+
+### Other
+- *(register)* [**breaking**] hashing the node of a Register to sign it instead of bincode-serialising it
+
+## [0.86.11](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.10...sn_client-v0.86.11) - 2023-07-31
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.86.10](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.9...sn_client-v0.86.10) - 2023-07-31
+
+### Added
+- carry out get_record re-attempts for critical record
+- for put_record verification, NotEnoughCopies is acceptable
+
+### Fixed
+- *(test)* using proper wallets during data_with_churn test
+
+### Other
+- move PrettyPrintRecordKey to sn_protocol
+- small refactors for failing CI
+- more tracable logs regarding chunk payment prove
+
+## [0.86.9](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.8...sn_client-v0.86.9) - 2023-07-31
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.86.8](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.7...sn_client-v0.86.8) - 2023-07-28
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.86.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.6...sn_client-v0.86.7) - 2023-07-28
+
+### Other
+- updated the following local packages: sn_networking, sn_protocol
+
+## [0.86.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.5...sn_client-v0.86.6) - 2023-07-28
+
+### Other
+- adapt all logging to use pretty record key
+
+## [0.86.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.4...sn_client-v0.86.5) - 2023-07-27
+
+### Other
+- updated the following local packages: sn_networking
+
 ## [0.86.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.3...sn_client-v0.86.4) - 2023-07-26
 
 ### Fixed

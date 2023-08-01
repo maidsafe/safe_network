@@ -6,6 +6,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.80.19](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.18...sn_cli-v0.80.19) - 2023-08-01
+
+### Other
+- update dependencies
+
+## [0.80.18](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.17...sn_cli-v0.80.18) - 2023-08-01
+
+### Added
+- *(cli)* add no-verify flag to cli
+
+### Other
+- *(cli)* update logs and ci for payments
+
+## [0.80.17](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.16...sn_cli-v0.80.17) - 2023-08-01
+
+### Other
+- update dependencies
+
+## [0.80.16](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.15...sn_cli-v0.80.16) - 2023-07-31
+
+### Other
+- update dependencies
+
+## [0.80.15](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.14...sn_cli-v0.80.15) - 2023-07-31
+
+### Other
+- update dependencies
+
+## [0.80.14](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.13...sn_cli-v0.80.14) - 2023-07-31
+
+### Other
+- update dependencies
+
+## [0.80.13](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.12...sn_cli-v0.80.13) - 2023-07-31
+
+### Other
+- update dependencies
+
+## [0.80.12](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.11...sn_cli-v0.80.12) - 2023-07-28
+
+### Other
+- update dependencies
+
+## [0.80.11](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.10...sn_cli-v0.80.11) - 2023-07-28
+
+### Other
+- update dependencies
+
+## [0.80.10](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.9...sn_cli-v0.80.10) - 2023-07-28
+
+### Other
+- update dependencies
+
+## [0.80.9](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.8...sn_cli-v0.80.9) - 2023-07-28
+
+### Other
+- update dependencies
+
+## [0.80.8](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.7...sn_cli-v0.80.8) - 2023-07-27
+
+### Other
+- update dependencies
+
 ## [0.80.7](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.6...sn_cli-v0.80.7) - 2023-07-26
 
 ### Other

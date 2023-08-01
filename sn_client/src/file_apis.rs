@@ -97,8 +97,9 @@ impl Files {
         &self,
         bytes: Bytes,
         payment_proofs: &PaymentProofsMap,
+        verify_store: bool,
     ) -> Result<ChunkAddress> {
-        self.upload_bytes(bytes, payment_proofs, false).await
+        self.upload_bytes(bytes, payment_proofs, verify_store).await
     }
 
     /// Directly writes [`Bytes`] to the network in the

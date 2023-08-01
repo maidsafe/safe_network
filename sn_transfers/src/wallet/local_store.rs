@@ -192,8 +192,16 @@ async fn load_from_path(wallet_dir: &Path) -> Result<(MainKey, KeyLessWallet)> {
         }
     };
     let wallet = match get_wallet(wallet_dir).await? {
-        Some(wallet) => wallet,
+        Some(wallet) => {
+            println!(
+                "Loaded wallet from {:#?} with balance {:?}",
+                wallet_dir,
+                wallet.balance()
+            );
+            wallet
+        }
         None => {
+            println!("Creating wallet at {:#?}", wallet_dir);
             let wallet = KeyLessWallet::new();
             store_wallet(wallet_dir, &wallet).await?;
             create_received_dbcs_dir(wallet_dir).await?;

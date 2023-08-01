@@ -26,7 +26,7 @@ use sn_protocol::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, ChunkWithPayment,
         DbcAddress, RecordHeader, RecordKind, RegisterAddress,
     },
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
 use sn_transfers::client_transfers::SpendRequest;
@@ -123,7 +123,7 @@ impl Client {
                         }
                     }
                     Err(_elapse_err) => {
-                        info!("Client experienced inactivity when waiting for a network event");
+                        debug!("Client inactivity... waiting for a network event");
                         if let Err(error) = client_clone
                             .events_channel
                             .broadcast(ClientEvent::InactiveClient(INACTIVITY_TIMEOUT))
@@ -250,10 +250,13 @@ impl Client {
 
         let record = self
             .network
-            .get_record_from_network(key)
+            .get_record_from_network(key, None, false)
             .await
             .map_err(|_| ProtocolError::RegisterNotFound(address))?;
-        debug!("Got record from the network, {:?}", record.key);
+        debug!(
+            "Got record from the network, {:?}",
+            PrettyPrintRecordKey::from(record.key.clone())
+        );
         let header = RecordHeader::from_record(&record)
             .map_err(|_| ProtocolError::RegisterNotFound(address))?;
 
@@ -276,9 +279,14 @@ impl Client {
     }
 
     /// Create a new Register on the Network.
-    pub async fn create_register(&self, xorname: XorName, tag: u64) -> Result<ClientRegister> {
+    pub async fn create_register(
+        &self,
+        xorname: XorName,
+        tag: u64,
+        verify_store: bool,
+    ) -> Result<ClientRegister> {
         info!("Instantiating a new Register replica with name {xorname} and tag {tag}");
-        ClientRegister::create_online(self.clone(), xorname, tag).await
+        ClientRegister::create_online(self.clone(), xorname, tag, verify_store).await
     }
 
     /// Store `Chunk` as a record.
@@ -305,7 +313,10 @@ impl Client {
     pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
-        let record = self.network.get_record_from_network(key).await?;
+        let record = self
+            .network
+            .get_record_from_network(key, None, false)
+            .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
             let chunk_with_payment: ChunkWithPayment = try_deserialize_record(&record)?;
@@ -341,16 +352,20 @@ impl Client {
         let address = DbcAddress::from_dbc_id(dbc_id);
         let key = NetworkAddress::from_dbc_address(address).to_record_key();
 
+        trace!("Getting spend {dbc_id:?} with record_key {key:?}");
         let record = self
             .network
-            .get_record_from_network(key)
+            .get_record_from_network(key.clone(), None, false)
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!(
                     "Can't find record for the dbc_id {dbc_id:?} with error {err:?}"
                 ))
             })?;
-        debug!("Got record from the network, {:?}", record.key);
+        debug!(
+            "For spend {dbc_id:?} got record from the network, {:?}",
+            PrettyPrintRecordKey::from(record.key.clone())
+        );
 
         let header = RecordHeader::from_record(&record).map_err(|err| {
             Error::CouldNotVerifyTransfer(format!(
@@ -370,7 +385,8 @@ impl Client {
                 [one, two, ..] => {
                     error!("Found double spend for {address:?}");
                     Err(Error::CouldNotVerifyTransfer(format!(
-                "Found double spend for the dbc_id {dbc_id:?}: spend_one {one:?} and spend_two {two:?}"
+                "Found double spend for the dbc_id {dbc_id:?} - {:?}: spend_one {:?} and spend_two {:?}",
+                PrettyPrintRecordKey::from(key), one.derived_key_sig, two.derived_key_sig
             )))
                 }
                 [signed_spend] => {

@@ -9,13 +9,14 @@
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 use crate::{error::Result, multiaddr_pop_p2p, CLOSE_GROUP_SIZE};
 use libp2p::{
-    kad::{store::RecordStore, Quorum, Record, RecordKey},
+    kad::{store::RecordStore, KBucketDistance as Distance, Quorum, Record, RecordKey},
     swarm::{
         dial_opts::{DialOpts, PeerCondition},
         DialError,
     },
     Multiaddr, PeerId,
 };
+use sn_dbc::Token;
 use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress,
@@ -86,6 +87,10 @@ pub enum SwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<Result<Record>>,
     },
+    /// GetLocalStoreCost from the Kad network
+    GetLocalStoreCost {
+        sender: oneshot::Sender<Token>,
+    },
     /// Get data from the local RecordStore
     GetLocalRecord {
         key: RecordKey,
@@ -104,6 +109,10 @@ pub enum SwarmCmd {
     AddKeysToReplicationFetcher {
         peer: PeerId,
         keys: Vec<NetworkAddress>,
+    },
+    // Set the acceptable range of `Record` entry. Records outside this range are pruned.
+    SetRecordDistanceRange {
+        distance: Distance,
     },
 }
 
@@ -132,9 +141,27 @@ impl SwarmDriver {
                     self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
                 }
             }
+            SwarmCmd::SetRecordDistanceRange { distance } => {
+                self.swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .set_distance_range(distance);
+            }
             SwarmCmd::GetNetworkRecord { key, sender } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
-                let _ = self.pending_query.insert(query_id, sender);
+                if self
+                    .pending_get_record
+                    .insert(query_id, (sender, Default::default()))
+                    .is_some()
+                {
+                    warn!("An existing get_record task {query_id:?} got replaced");
+                }
+            }
+            SwarmCmd::GetLocalStoreCost { sender } => {
+                let cost = self.swarm.behaviour_mut().kademlia.store_mut().store_cost();
+
+                let _res = sender.send(cost);
             }
             SwarmCmd::GetLocalRecord { key, sender } => {
                 let record = self

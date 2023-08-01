@@ -6,6 +6,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.4...sn_networking-v0.4.5) - 2023-08-01
+
+### Other
+- fix double spend and remove arbitrary wait
+- *(release)* sn_cli-v0.80.17/sn_client-v0.87.0/sn_registers-v0.2.0/sn_node-v0.88.6/sn_testnet-v0.2.44/sn_protocol-v0.4.2
+
+## [0.4.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.3...sn_networking-v0.4.4) - 2023-07-31
+
+### Fixed
+- *(test)* fix failing unit test
+- *(replication)* state should progress even if MAX_PARALLEL_FETCHES is reached
+
+### Other
+- *(replication)* add unit tests
+
+## [0.4.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.2...sn_networking-v0.4.3) - 2023-07-31
+
+### Added
+- carry out get_record re-attempts for critical record
+- for put_record verification, NotEnoughCopies is acceptable
+- cover the Kademlia completion of get_record
+- resolve get_record split results
+- accumulate get_record_ok to return with majority
+
+### Other
+- move PrettyPrintRecordKey to sn_protocol
+- fix typo
+- small refactors for failing CI
+
+## [0.4.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.1...sn_networking-v0.4.2) - 2023-07-31
+
+### Added
+- *(node)* add marker for a network connection timeout
+
+## [0.4.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.0...sn_networking-v0.4.1) - 2023-07-28
+
+### Fixed
+- *(replication)* fix incorrect fetch timeout condition
+
+## [0.4.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.34...sn_networking-v0.4.0) - 2023-07-28
+
+### Added
+- *(protocol)* Add GetStoreCost Query and QueryResponse
+
+### Other
+- remove duplicate the thes
+
+## [0.3.34](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.33...sn_networking-v0.3.34) - 2023-07-28
+
+### Added
+- retries in put records
+- actionable record key errors
+
+### Fixed
+- prettier logs
+
+### Other
+- adapt all logging to use pretty record key
+
+## [0.3.33](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.32...sn_networking-v0.3.33) - 2023-07-27
+
+### Fixed
+- *(network)* close group should only contain CLOSE_GROUP_SIZE elements
+- *(node)* set distance range to prune records
+
 ## [0.3.32](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.3.31...sn_networking-v0.3.32) - 2023-07-26
 
 ### Other

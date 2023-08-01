@@ -16,6 +16,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use std::collections::BTreeMap;
+use tokio::task::JoinHandle;
 
 // To reduce the number of messages exchanged, patch max 500 replication keys into one request.
 const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
@@ -54,6 +55,16 @@ impl Node {
             }
             self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())?;
         }
+
+        // set the distance range used for pruning
+        let distance_range = match our_close_group.get(CLOSE_GROUP_SIZE) {
+            Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
+            None => {
+                debug!("Could not obtain distance_range");
+                return Ok(());
+            }
+        };
+        self.network.set_record_distance_range(distance_range)?;
         Ok(())
     }
 
@@ -76,8 +87,7 @@ impl Node {
         Ok(())
     }
 
-    /// Utility to send `Query::GetReplicatedData` without awaiting for the `Response` at the call
-    /// site
+    /// Get the Record from a peer or from the network without waiting.
     pub(crate) fn fetch_replication_keys_without_wait(
         &self,
         keys_to_fetch: Vec<(RecordKey, Option<PeerId>)>,
@@ -93,7 +103,17 @@ impl Node {
                     self.network.send_req_ignore_reply(request, peer)?
                 }
                 None => {
-                    trace!("Fetching {key:?} from the network, to be implemented");
+                    let node = self.clone();
+                    let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
+                        trace!("Fetching replication {key:?} from the network");
+                        let record = node
+                            .network
+                            .get_record_from_network(key.clone(), None, false)
+                            .await?;
+                        trace!("Got Replication Record {key:?} from network, validating and storing it");
+                        let _ = node.validate_and_store_record(record).await?;
+                        Ok(())
+                    });
                 }
             }
         }

@@ -16,7 +16,7 @@ use libp2p::{
 };
 use rand::Rng;
 use sn_dbc::Token;
-use sn_protocol::NetworkAddress;
+use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{
     borrow::Cow,
     collections::{hash_set, HashSet},
@@ -26,6 +26,7 @@ use std::{
     vec,
 };
 use tokio::sync::mpsc;
+use xor_name::XorName;
 
 // Each node will have a replication interval between these bounds
 // This should serve to stagger the intense replication activity across the network
@@ -166,7 +167,11 @@ impl DiskBackedRecordStore {
     }
 
     pub fn put_verified(&mut self, r: Record) -> Result<()> {
-        trace!("PUT a verified Record: {:?}", r.key);
+        let content_hash = XorName::from_content(&r.value);
+        trace!(
+            "PUT a verified Record: {:?} (content_hash {content_hash:?})",
+            r.key
+        );
         if r.value.len() >= self.config.max_value_bytes {
             warn!(
                 "Record not stored. Value too large: {} bytes",
@@ -263,6 +268,11 @@ impl DiskBackedRecordStore {
         trace!("Cost is now {cost:?}");
         cost
     }
+
+    /// Setup the distance range.
+    pub fn set_distance_range(&mut self, distance_range: Distance) {
+        self.distance_range = Some(distance_range);
+    }
 }
 
 impl RecordStore for DiskBackedRecordStore {
@@ -284,13 +294,16 @@ impl RecordStore for DiskBackedRecordStore {
 
     fn put(&mut self, record: Record) -> Result<()> {
         if self.records.contains(&record.key) {
-            trace!("Unverified Record {:?} already exists.", record.key);
+            trace!(
+                "Unverified Record {:?} already exists.",
+                PrettyPrintRecordKey::from(record.key.clone())
+            );
             // Blindly sent to validation to allow double spend can be detected.
             // TODO: consider avoid throw duplicated chunk to validation.
         }
         trace!(
             "Unverified Record {:?} try to validate and store",
-            record.key
+            PrettyPrintRecordKey::from(record.key.clone())
         );
         if let Some(event_sender) = self.event_sender.clone() {
             // push the event off thread so as to be non-blocking
@@ -492,7 +505,13 @@ mod tests {
 
         // loop over store.get 10 times to make sure async disk write has had time to complete
         for _ in 0..10 {
-            if store.get(&r.key).is_some() {
+            // try to check if it is equal to the actual record. This is needed because, the file
+            // might not be fully written to the fs and would cause intermittent failures.
+            // If there is actually a problem with the PUT, the assert statement below would catch it.
+            if store
+                .get(&r.key)
+                .is_some_and(|record| Cow::Borrowed(&r) == record)
+            {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(100)).await;

@@ -62,12 +62,11 @@ impl RegisterOp {
     }
 
     /// Add signature to register Op using provided secret key
-    pub fn sign_with(&mut self, sk: &bls::SecretKey) -> Result<()> {
-        let bytes = self.bytes_for_signing()?;
+    pub fn sign_with(&mut self, sk: &bls::SecretKey) {
+        let bytes = self.bytes_for_signing();
         let signature = sk.sign(bytes);
         self.source = User::Key(sk.public_key());
         self.signature = Some(signature);
-        Ok(())
     }
 
     /// Manually add signature to register Op
@@ -83,13 +82,13 @@ impl RegisterOp {
 
     /// Returns a bytes version of the RegisterOp used for signing
     /// Use this API when you want to sign a RegisterOp withtout providing a secret key to the RegisterOp API
-    pub fn bytes_for_signing(&self) -> Result<Vec<u8>> {
-        bincode::serialize(&self.crdt_op).map_err(|_| Error::SerialisationFailed)
+    pub fn bytes_for_signing(&self) -> Vec<u8> {
+        self.crdt_op.hash().to_vec()
     }
 
     /// Check signature of register Op against provided public key
     pub fn verify_signature(&self, pk: &PublicKey) -> Result<()> {
-        let bytes = self.bytes_for_signing()?;
+        let bytes = self.bytes_for_signing();
         let sig = self.signature.as_ref().ok_or(Error::MissingSignature)?;
         if !pk.verify(sig, bytes) {
             return Err(Error::InvalidSignature);

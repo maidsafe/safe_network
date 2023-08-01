@@ -9,12 +9,12 @@
 use super::{cmd::SwarmCmd, NetworkEvent};
 
 use libp2p::{
-    kad,
+    kad::{self, Record},
     request_response::{OutboundFailure, RequestId},
     swarm::DialError,
     TransportError,
 };
-use sn_protocol::messages::Response;
+use sn_protocol::{messages::Response, PrettyPrintRecordKey};
 use std::{io, path::PathBuf};
 use thiserror::Error;
 use tokio::sync::{mpsc, oneshot};
@@ -37,13 +37,11 @@ pub enum Error {
     #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0}")]
     OutgoingResponseDropped(Response),
 
-    #[error("Could not retrieve the record after storing it: {0:?}")]
-    FailedToVerifyRecordWasStored(kad::RecordKey),
+    #[error("Could not retrieve the record after storing it: {0:}")]
+    FailedToVerifyRecordWasStored(PrettyPrintRecordKey),
 
-    #[error(
-        "Record retrieved from the network does not match the one we attempted to store {0:?}"
-    )]
-    ReturnedRecordDoesNotMatch(kad::RecordKey),
+    #[error("Record retrieved from the network does not match the one we attempted to store {0:}")]
+    ReturnedRecordDoesNotMatch(PrettyPrintRecordKey),
 
     #[error("Could not create storage dir: {path:?}, error: {source}")]
     FailedToCreateRecordStoreDir {
@@ -87,9 +85,37 @@ pub enum Error {
     #[error("Record was not found locally")]
     RecordNotFound,
 
+    #[error("Get Record completed with non enough copies")]
+    RecordNotEnoughCopies(Record),
+
     #[error("Error putting record")]
     PutRecordError(#[from] kad::PutRecordError),
 
     #[error("No SwarmCmd channel capacity")]
     NoSwarmCmdChannelCapacity,
+
+    #[error("Failed to sign the message with the PeerId keypair")]
+    SigningFailed(#[from] libp2p::identity::SigningError),
+}
+
+#[cfg(test)]
+mod tests {
+    use sn_protocol::{storage::ChunkAddress, NetworkAddress};
+    use xor_name::XorName;
+
+    use super::*;
+
+    #[test]
+    fn test_client_sees_same_hex_in_errors_for_xorname_and_record_keys() {
+        let mut rng = rand::thread_rng();
+        let xor_name = XorName::random(&mut rng);
+        let address = ChunkAddress::new(xor_name);
+        let record_key = NetworkAddress::from_chunk_address(address).to_record_key();
+        let pretty_record: PrettyPrintRecordKey = record_key.into();
+        let record_str = format!("{}", pretty_record);
+        let xor_name_str = format!("{:64x}", xor_name);
+        println!("record_str: {}", record_str);
+        println!("xor_name_str: {}", xor_name_str);
+        assert_eq!(record_str, xor_name_str);
+    }
 }

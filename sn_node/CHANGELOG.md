@@ -655,6 +655,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - centralising RecordKey creation logic to make sure we always use the same for all content type
 
+## [0.87.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.87.7...sn_node-v0.87.8) - 2023-07-27
+
+### Fixed
+- *(node)* set distance range to prune records
+
+## [0.87.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.87.8...sn_node-v0.87.9) - 2023-07-28
+
+### Other
+- adapt all logging to use pretty record key
+
+## [0.87.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.87.9...sn_node-v0.87.10) - 2023-07-28
+
+### Other
+- update dependencies
+
+## [0.88.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.87.10...sn_node-v0.88.0) - 2023-07-28
+
+### Added
+- *(protocol)* Add GetStoreCost Query and QueryResponse
+
+## [0.88.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.0...sn_node-v0.88.1) - 2023-07-28
+
+### Added
+- *(replication)* fetch Record from network if could not get from peer
+
+## [0.88.2](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.1...sn_node-v0.88.2) - 2023-07-31
+
+### Added
+- *(node)* add marker for a network connection timeout
+
+## [0.88.3](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.2...sn_node-v0.88.3) - 2023-07-31
+
+### Other
+- update dependencies
+
+## [0.88.4](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.3...sn_node-v0.88.4) - 2023-07-31
+
+### Added
+- carry out get_record re-attempts for critical record
+- for put_record verification, NotEnoughCopies is acceptable
+
+### Fixed
+- *(test)* using proper wallets during data_with_churn test
+
+### Other
+- move PrettyPrintRecordKey to sn_protocol
+- small refactors for failing CI
+- more tracable logs regarding chunk payment prove
+
+## [0.88.5](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.4...sn_node-v0.88.5) - 2023-07-31
+
+### Other
+- update dependencies
+
+## [0.88.6](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.5...sn_node-v0.88.6) - 2023-08-01
+
+### Other
+- update dependencies
+
+## [0.88.7](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.6...sn_node-v0.88.7) - 2023-08-01
+
+### Added
+- *(cli)* add no-verify flag to cli
+
+### Other
+- fix double spend and remove arbitrary wait
+
+## [0.88.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.7...sn_node-v0.88.8) - 2023-08-01
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

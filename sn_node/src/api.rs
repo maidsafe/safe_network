@@ -14,7 +14,7 @@ use sn_protocol::{
     error::Error as ProtocolError,
     messages::{Cmd, CmdResponse, Query, QueryResponse, ReplicatedData, Request, Response},
     storage::DbcAddress,
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
     collections::HashSet,
@@ -141,12 +141,15 @@ impl Node {
                         }
                     }
                     _ = tokio::time::sleep(inactivity_timeout) => {
-                        let random_target = NetworkAddress::from_peer(PeerId::random());
-
                         Marker::NoNetworkActivity( inactivity_timeout ).log();
+                        let random_target = NetworkAddress::from_peer(PeerId::random());
                         debug!("No network activity in the past {inactivity_timeout:?}, performing a random get_closest query to target: {random_target:?}");
-                        if let Ok(closest) = network_clone.node_get_closest_peers(&random_target).await {
-                            debug!("Network inactivity: get_closest returned {closest:?}");
+                        match network_clone.node_get_closest_peers(&random_target).await {
+                            Ok(closest) => debug!("Network inactivity: get_closest returned {closest:?}"),
+                            Err(e) => {
+                                warn!("get_closest query failed after network inactivity timeout - check your connection: {}", e);
+                                Marker::OperationFailedAfterNetworkInactivityTimeout.log();
+                            }
                         }
                     }
                 }
@@ -265,7 +268,7 @@ impl Node {
                 }
             }
             NetworkEvent::UnverifiedRecord(record) => {
-                let key = record.key.clone();
+                let key = PrettyPrintRecordKey::from(record.key.clone());
                 match self.validate_and_store_record(record).await {
                     Ok(cmdok) => trace!("UnverifiedRecord {key:?} stored with {cmdok:?}."),
                     Err(err) => {
@@ -344,7 +347,12 @@ impl Node {
     }
 
     async fn handle_query(&self, query: Query) -> Response {
-        let resp = match query {
+        let resp: QueryResponse = match query {
+            Query::GetStoreCost(_address) => {
+                trace!("Got GetStoreCost");
+                let result = self.current_storecost().await;
+                QueryResponse::GetStoreCost(result)
+            }
             Query::GetChunk(address) => {
                 trace!("Got GetChunk query for {address:?}");
                 let result = self.get_chunk_from_network(address).await;
