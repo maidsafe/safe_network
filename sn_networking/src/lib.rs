@@ -9,6 +9,7 @@
 #[macro_use]
 extern crate tracing;
 
+mod behavior;
 mod circular_vec;
 mod cmd;
 mod error;
@@ -378,6 +379,7 @@ impl SwarmDriver {
         let autonat = Toggle::from(autonat);
 
         let behaviour = NodeBehaviour {
+            debug_behavior: crate::behavior::ExternalAddrLogBehaviour,
             request_response,
             kademlia,
             identify,
