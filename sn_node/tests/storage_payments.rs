@@ -183,10 +183,8 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
     println!("Paying for {} random addresses...", chunks.len());
 
     let proofs = wallet_client
-        .pay_for_storage(chunks.iter().map(|c| c.name()), false)
+        .pay_for_storage(chunks.iter().map(|c| c.name()), true)
         .await?;
-
-    sleep(Duration::from_secs(5)).await;
 
     files_api
         .upload_with_proof(content_bytes, &proofs, true)
