@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1690923081024,
+  "lastUpdate": 1690923228525,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -7467,6 +7467,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 24.14,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "b5c09cdb650ce6e186108125b56021572d7148c3",
+          "message": "fix: relay attacks",
+          "timestamp": "2023-08-01T17:18:29+02:00",
+          "tree_id": "32e45184de3e023a59cc7bfef2fc4761af272f81",
+          "url": "https://github.com/maidsafe/safe_network/commit/b5c09cdb650ce6e186108125b56021572d7148c3"
+        },
+        "date": 1690923227602,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 25.34,
             "unit": "MB"
           }
         ]
