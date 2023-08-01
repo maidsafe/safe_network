@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.1.11...sn_registers-v0.2.0) - 2023-08-01
+
+### Other
+- *(register)* [**breaking**] hashing the node of a Register to sign it instead of bincode-serialising it
+
 ## [0.1.11](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.1.10...sn_registers-v0.1.11) - 2023-07-18
 
 ### Added
