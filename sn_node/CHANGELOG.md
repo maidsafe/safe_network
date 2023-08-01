@@ -714,6 +714,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.88.7](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.6...sn_node-v0.88.7) - 2023-08-01
+
+### Added
+- *(cli)* add no-verify flag to cli
+
+### Other
+- fix double spend and remove arbitrary wait
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.4...sn_networking-v0.4.5) - 2023-08-01
+
+### Other
+- fix double spend and remove arbitrary wait
+- *(release)* sn_cli-v0.80.17/sn_client-v0.87.0/sn_registers-v0.2.0/sn_node-v0.88.6/sn_testnet-v0.2.44/sn_protocol-v0.4.2
+
 ## [0.4.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.3...sn_networking-v0.4.4) - 2023-07-31
 
 ### Fixed

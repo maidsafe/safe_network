@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.0...sn_client-v0.87.1) - 2023-08-01
+
+### Added
+- *(cli)* add no-verify flag to cli
+
+### Other
+- fix double spend and remove arbitrary wait
+- *(node)* verify faucet transactions before continuing
+- *(netowrking)* change default re-attempt behaviour
+
 ## [0.87.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.86.11...sn_client-v0.87.0) - 2023-08-01
 
 ### Other
