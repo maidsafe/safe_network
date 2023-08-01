@@ -187,36 +187,51 @@ impl DiskBackedRecordStore {
     /// Prune the records in the store to ensure that we free up space
     /// for the incoming record.
     ///
-    /// An error is returned if we prune and we're _still_ at max_record count
+    /// An error is returned if we are full and the new record is not closer than
+    /// the furthest record
     fn prune_storage_if_needed_for_record(&mut self, r: &Key) -> Result<()> {
         let num_records = self.records.len();
 
+        // we're not full, so we don't need to prune
+        if num_records < self.config.max_records {
+            return Ok(());
+        }
+
         // sort records by distance to our local key
         let mut records = self.records.iter().cloned().collect::<Vec<_>>();
-        records.sort_by_key(|k| {
+        records.sort_unstable_by_key(|k| {
             let kbucket_key = KBucketKey::from(k.to_vec());
             self.local_key.distance(&kbucket_key)
         });
 
         // now check if the incoming record is closer than our furthest
         // if it is, we can prune
-        let furthest_record = records.last();
-        if let Some(furthest_record) = furthest_record {
+        if let Some(furthest_record) = records.last() {
             let furthest_record_key = KBucketKey::from(furthest_record.to_vec());
             let incoming_record_key = KBucketKey::from(r.to_vec());
+
             if incoming_record_key.distance(&self.local_key)
                 < furthest_record_key.distance(&self.local_key)
             {
+                trace!(
+                    "{:?} will be pruned to make space for new record: {:?}",
+                    PrettyPrintRecordKey::from(furthest_record.clone()),
+                    PrettyPrintRecordKey::from(r.clone())
+                );
                 // we should prune and make space
                 self.remove(furthest_record);
 
-                trace!("Data was pruned to make space for new record");
-            } else {
-                // we should not prune, but we should check if we're at max capacity
-                if num_records >= self.config.max_records {
-                    warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
-                    return Err(Error::MaxRecords);
+                // check if the furthest record is was within our distance range and if so
+                // warn
+                if let Some(distance_range) = self.distance_range {
+                    if furthest_record_key.distance(&self.local_key) < distance_range {
+                        warn!("Pruned record would also be within our distance range.");
+                    }
                 }
+            } else {
+                // we should not prune, but warn as we're at max capcaity
+                warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
+                return Err(Error::MaxRecords);
             }
         }
 
@@ -238,7 +253,6 @@ impl DiskBackedRecordStore {
         let relevant_records_len = if let Some(distance_range) = self.distance_range {
             self.records
                 .iter()
-                .cloned()
                 .filter(|key| {
                     let kbucket_key = KBucketKey::from(key.to_vec());
                     distance_range >= self.local_key.distance(&kbucket_key)
