@@ -22,9 +22,6 @@ pub async fn get_tokens_from_faucet(amount: Token, to: PublicAddress, client: &C
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
 pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWallet {
-    println!("Loading genesis...");
-    let genesis_wallet = load_genesis_wallet().await;
-
     println!("Loading faucet...");
     let mut faucet_wallet = create_faucet_wallet().await;
 
@@ -33,6 +30,9 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWal
         println!("Faucet wallet balance: {faucet_balance}");
         return faucet_wallet;
     }
+
+    println!("Loading genesis...");
+    let genesis_wallet = load_genesis_wallet().await;
 
     // Transfer to faucet. We will transfer almost all of the genesis wallet's
     // balance to the faucet,.
