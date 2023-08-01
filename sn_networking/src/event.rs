@@ -54,6 +54,7 @@ pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
 pub(super) struct NodeBehaviour {
+    pub(super) connection_limiter: crate::behaviour::connection_limiter::Behaviour,
     pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
     pub(super) kademlia: Kademlia<DiskBackedRecordStore>,
     #[cfg(feature = "local-discovery")]
@@ -65,12 +66,19 @@ pub(super) struct NodeBehaviour {
 /// NodeEvent enum
 #[derive(CustomDebug)]
 pub(super) enum NodeEvent {
+    NullEvent,
     MsgReceived(request_response::Event<Request, Response>),
     Kademlia(KademliaEvent),
     #[cfg(feature = "local-discovery")]
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
     Autonat(autonat::Event),
+}
+
+impl From<()> for NodeEvent {
+    fn from(_event: ()) -> Self {
+        NodeEvent::NullEvent
+    }
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
