@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{error::Result, messages::ReplicatedData, storage::Chunk, NetworkAddress};
+use crate::{error::Result, messages::ReplicatedData, NetworkAddress};
 use serde::{Deserialize, Serialize};
 use sn_dbc::Token;
 use std::fmt::Debug;
@@ -17,14 +17,6 @@ use std::fmt::Debug;
 pub enum QueryResponse {
     /// The store cost in nanos for storing the next record, and the node's singature over that cost.
     GetStoreCost(Result<(Token, Vec<u8>)>),
-    //
-    // ===== Chunk =====
-    //
-    /// Response to [`GetChunk`]
-    ///
-    /// [`GetChunk`]: crate::messages::Query::GetChunk
-    GetChunk(Result<Chunk>),
-    //
     // ===== ReplicatedData =====
     //
     /// Response to [`GetReplicatedData`]

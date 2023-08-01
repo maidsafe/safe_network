@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{storage::ChunkAddress, NetworkAddress};
+use crate::NetworkAddress;
 
 use serde::{Deserialize, Serialize};
 
@@ -21,13 +21,6 @@ use serde::{Deserialize, Serialize};
 pub enum Query {
     /// Retrieve the cost of storing a record at the given address.
     GetStoreCost(NetworkAddress),
-    /// Retrieve a [`Chunk`] at the given address.
-    ///
-    /// This should eventually lead to a [`GetChunk`] response.
-    ///
-    /// [`Chunk`]:  crate::storage::Chunk
-    /// [`GetChunk`]: super::QueryResponse::GetChunk
-    GetChunk(ChunkAddress),
     /// Retrieve a [`ReplicatedData`] at the given address.
     ///
     /// This should eventually lead to a [`GetReplicatedData`] response.
@@ -47,7 +40,6 @@ impl Query {
     pub fn dst(&self) -> NetworkAddress {
         match self {
             Query::GetStoreCost(address) => address.clone(),
-            Query::GetChunk(address) => NetworkAddress::from_chunk_address(*address),
             Query::GetReplicatedData { address, .. } => address.clone(),
         }
     }
@@ -58,9 +50,6 @@ impl std::fmt::Display for Query {
         match self {
             Query::GetStoreCost(address) => {
                 write!(f, "Query::GetStoreCost({address:?})")
-            }
-            Query::GetChunk(address) => {
-                write!(f, "Query::GetChunk({address:?})")
             }
             Query::GetReplicatedData { requester, address } => {
                 write!(

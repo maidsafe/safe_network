@@ -11,10 +11,7 @@ use sn_dbc::{SignedSpend, Token};
 use sn_protocol::{
     error::{Error, Result},
     messages::ReplicatedData,
-    storage::{
-        try_deserialize_record, Chunk, ChunkAddress, ChunkWithPayment, DbcAddress, RecordHeader,
-        RecordKind,
-    },
+    storage::{try_deserialize_record, ChunkWithPayment, DbcAddress, RecordHeader, RecordKind},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
@@ -35,29 +32,6 @@ impl Node {
         };
 
         Ok((cost, signed_cost))
-    }
-    pub(crate) async fn get_chunk_from_network(&self, address: ChunkAddress) -> Result<Chunk> {
-        let key = NetworkAddress::from_chunk_address(address).to_record_key();
-        let record = self
-            .network
-            .get_record_from_network(key, None, false)
-            .await
-            .map_err(|_| Error::ChunkNotFound(address))?;
-        debug!(
-            "Got record from the network, {:?}",
-            PrettyPrintRecordKey::from(record.key.clone())
-        );
-        let header =
-            RecordHeader::from_record(&record).map_err(|_| Error::ChunkNotFound(address))?;
-
-        if let RecordKind::Chunk = header.kind {
-            let chunk_with_payment = try_deserialize_record::<ChunkWithPayment>(&record)
-                .map_err(|_| Error::ChunkNotFound(address))?;
-            Ok(chunk_with_payment.chunk)
-        } else {
-            error!("RecordKind mismatch while trying to retrieve a chunk");
-            Err(Error::RecordKindMismatch(RecordKind::Chunk))
-        }
     }
 
     pub(crate) async fn get_spend_from_network(
