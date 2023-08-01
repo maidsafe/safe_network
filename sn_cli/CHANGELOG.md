@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.80.18](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.17...sn_cli-v0.80.18) - 2023-08-01
+
+### Added
+- *(cli)* add no-verify flag to cli
+
+### Other
+- *(cli)* update logs and ci for payments
+
 ## [0.80.17](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.16...sn_cli-v0.80.17) - 2023-08-01
 
 ### Other
