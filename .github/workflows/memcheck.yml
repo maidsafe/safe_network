@@ -75,7 +75,7 @@ jobs:
           interval: 2000
           node-path: target/release/safenode
           faucet-path: target/release/faucet
-          platform: "ubuntu-latest"
+          platform: ubuntu-latest
           set-safe-peers: false
 
       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
@@ -197,7 +197,7 @@ jobs:
         with:
           action: stop
           log_file_prefix: safe_test_logs_memcheck
-          platform: ${{ matrix.os }}
+          platform: ubuntu-latest
 
       - name: Check for heaptrack file
         run: ls -la
