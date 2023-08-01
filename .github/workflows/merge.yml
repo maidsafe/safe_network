@@ -336,10 +336,7 @@ jobs:
 
       - name: Chunks data integrity during nodes churn (during 10min) - Linux/MacOS
         if: matrix.os != 'windows-latest'
-        # wait little bit to allow the facuet created within testnet to be fully settled
-        run: |
-          sleep 10
-          cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 
+        run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 
         env:
           # new output folder to avoid linker issues w/ windows
           CARGO_TARGET_DIR: "./churn-target"
@@ -350,9 +347,7 @@ jobs:
 
       - name: Chunks data integrity during nodes churn (during 10min) - Windows
         if: matrix.os == 'windows-latest'
-        # wait little bit to allow the facuet created within testnet to be fully settled
-        run: |
-          cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 
+        run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 
         env:
           # new output folder to avoid linker issues w/ windows
           CARGO_TARGET_DIR: "./churn-target"

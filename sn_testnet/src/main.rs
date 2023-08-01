@@ -302,6 +302,9 @@ async fn run_faucet(bin_path: PathBuf) -> Result<()> {
     let launch_bin = testnet.node_bin_path;
     let args = vec!["server".to_string()];
     testnet.launcher.launch(&launch_bin, args)?;
+    // The launch will immediately complete after fire the cmd out.
+    // Have to wait some extra time to allow the faucet to be properly created and funded
+    std::thread::sleep(std::time::Duration::from_secs(30));
     Ok(())
 }
 
