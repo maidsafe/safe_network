@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.2...sn_client-v0.87.3) - 2023-08-01
+
+### Other
+- *(client)* reattempt to get_spend_from_network
+- add more verificaiton for payments
+
 ## [0.87.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.1...sn_client-v0.87.2) - 2023-08-01
 
 ### Other

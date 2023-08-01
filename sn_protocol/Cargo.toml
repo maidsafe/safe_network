@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "sn_protocol"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.4.3"
+version = "0.4.4"
 
 [dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
@@ -19,6 +19,6 @@ libp2p = { version="0.52", features = ["identify", "kad"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_dbc = { version = "19.1.1", features = ["serdes"] }
-sn_registers = { path = "../sn_registers", version = "0.2.0" }
+sn_registers = { path = "../sn_registers", version = "0.2.1" }
 thiserror = "1.0.23"
 xor_name = "5.0.0"
