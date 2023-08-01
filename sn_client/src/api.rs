@@ -355,7 +355,7 @@ impl Client {
         trace!("Getting spend {dbc_id:?} with record_key {key:?}");
         let record = self
             .network
-            .get_record_from_network(key.clone(), None, false)
+            .get_record_from_network(key.clone(), None, true)
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!("dbc_id {dbc_id:?} errored: {err:?}"))
