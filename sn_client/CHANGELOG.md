@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.3...sn_client-v0.87.4) - 2023-08-02
+
+### Fixed
+- do not create genesis when facuet already funded
+
 ## [0.87.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.2...sn_client-v0.87.3) - 2023-08-01
 
 ### Other
