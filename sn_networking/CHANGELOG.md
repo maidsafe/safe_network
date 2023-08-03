@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.8...sn_networking-v0.4.9) - 2023-08-03
+
+### Other
+- *(node)* remove peer_connected altogether during NodeEvent handler
+
 ## [0.4.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.7...sn_networking-v0.4.8) - 2023-08-02
 
 ### Other
