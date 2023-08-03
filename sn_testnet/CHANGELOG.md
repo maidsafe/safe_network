@@ -761,6 +761,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.2.49](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.48...sn_testnet-v0.2.49) - 2023-08-01
+
+### Other
+- update dependencies
+
+## [0.2.50](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.49...sn_testnet-v0.2.50) - 2023-08-02
+
+### Other
+- update dependencies
+
+## [0.2.51](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.50...sn_testnet-v0.2.51) - 2023-08-02
+
+### Fixed
+- waiting to allow faucet server to be settled
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>

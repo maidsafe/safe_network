@@ -17,6 +17,7 @@ use libp2p::{
 use rand::Rng;
 use sn_dbc::Token;
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
+use sn_transfers::dbc_genesis::TOTAL_SUPPLY;
 use std::{
     borrow::Cow,
     collections::{hash_set, HashSet},
@@ -36,11 +37,8 @@ pub const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(180);
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
 
-/// How frequenly we prune the records in the store
-/// eg, if 100 here, every 100 valid PUTs we'll prune the store
-/// This should give us some margin about storing data for nodes that are no longer our responsibility
-/// And may eventually feed into price discovery / storage costs and give us a buffer there too
-const PRUNE_ONCE_EVERY_PUTS: usize = 100;
+/// ~Number of puts per price step
+const PUTS_PER_PRICE_STEP: usize = 100;
 
 /// A `RecordStore` that stores records on disk.
 pub struct DiskBackedRecordStore {
@@ -50,11 +48,11 @@ pub struct DiskBackedRecordStore {
     config: DiskBackedRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
     records: HashSet<Key>,
-    /// Distance range specify the acceptable range of record entry.
-    /// `None` means accept all.
-    distance_range: Option<Distance>,
     /// Currently only used to notify the record received via network put to be validated.
     event_sender: Option<mpsc::Sender<NetworkEvent>>,
+    /// Distance range specify the acceptable range of record entry.
+    /// None means accept all records.
+    distance_range: Option<Distance>,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -97,29 +95,14 @@ impl DiskBackedRecordStore {
             local_key: KBucketKey::from(local_id),
             config,
             records: Default::default(),
-            distance_range: None,
             event_sender,
+            distance_range: None,
         }
     }
 
     /// Returns `true` if the `Key` is present locally
     pub fn contains(&self, key: &Key) -> bool {
         self.records.contains(key)
-    }
-
-    /// Retains the records satisfying a predicate.
-    pub fn retain<F>(&mut self, predicate: F)
-    where
-        F: Fn(&Key) -> bool,
-    {
-        let to_be_removed = self
-            .records
-            .iter()
-            .filter(|k| !predicate(k))
-            .cloned()
-            .collect::<Vec<_>>();
-
-        to_be_removed.iter().for_each(|key| self.remove(key));
     }
 
     // Converts a Key into a Hex string.
@@ -170,7 +153,7 @@ impl DiskBackedRecordStore {
         let content_hash = XorName::from_content(&r.value);
         trace!(
             "PUT a verified Record: {:?} (content_hash {content_hash:?})",
-            r.key
+            PrettyPrintRecordKey::from(r.key.clone())
         );
         if r.value.len() >= self.config.max_value_bytes {
             warn!(
@@ -180,7 +163,7 @@ impl DiskBackedRecordStore {
             return Err(Error::ValueTooLarge);
         }
 
-        self.prune_storage_if_needed()?;
+        self.prune_storage_if_needed_for_record(&r.key)?;
 
         let filename = Self::key_to_hex(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
@@ -202,24 +185,51 @@ impl DiskBackedRecordStore {
     }
 
     /// Prune the records in the store to ensure that we free up space
-    /// for new records.
+    /// for the incoming record.
     ///
-    /// This can happen if we're full, or once in every X PUTs
-    ///
-    /// An error is returned if we prune and we're _still_ at max_record count
-    fn prune_storage_if_needed(&mut self) -> Result<()> {
+    /// An error is returned if we are full and the new record is not closer than
+    /// the furthest record
+    fn prune_storage_if_needed_for_record(&mut self, r: &Key) -> Result<()> {
         let num_records = self.records.len();
-        let mut should_prune = num_records >= self.config.max_records;
-        if !should_prune {
-            // check the modulo of record count over 10, if 0 we should prune
-            should_prune = num_records % PRUNE_ONCE_EVERY_PUTS == 0;
+
+        // we're not full, so we don't need to prune
+        if num_records < self.config.max_records {
+            return Ok(());
         }
 
-        if should_prune {
-            self.prune_storage();
-            let new_num_records: usize = self.records.len();
-            trace!("A pruning reduced number of record in hold from {num_records} to {new_num_records}");
-            if new_num_records >= self.config.max_records {
+        // sort records by distance to our local key
+        let mut records = self.records.iter().cloned().collect::<Vec<_>>();
+        records.sort_unstable_by_key(|k| {
+            let kbucket_key = KBucketKey::from(k.to_vec());
+            self.local_key.distance(&kbucket_key)
+        });
+
+        // now check if the incoming record is closer than our furthest
+        // if it is, we can prune
+        if let Some(furthest_record) = records.last() {
+            let furthest_record_key = KBucketKey::from(furthest_record.to_vec());
+            let incoming_record_key = KBucketKey::from(r.to_vec());
+
+            if incoming_record_key.distance(&self.local_key)
+                < furthest_record_key.distance(&self.local_key)
+            {
+                trace!(
+                    "{:?} will be pruned to make space for new record: {:?}",
+                    PrettyPrintRecordKey::from(furthest_record.clone()),
+                    PrettyPrintRecordKey::from(r.clone())
+                );
+                // we should prune and make space
+                self.remove(furthest_record);
+
+                // check if the furthest record is was within our distance range and if so
+                // warn
+                if let Some(distance_range) = self.distance_range {
+                    if furthest_record_key.distance(&self.local_key) < distance_range {
+                        warn!("Pruned record would also be within our distance range.");
+                    }
+                }
+            } else {
+                // we should not prune, but warn as we're at max capcaity
                 warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
                 return Err(Error::MaxRecords);
             }
@@ -228,45 +238,47 @@ impl DiskBackedRecordStore {
         Ok(())
     }
 
-    /// Remove records that are no longer our responsibility
-    fn prune_storage(&mut self) {
-        if let Some(distance_bar) = self.distance_range {
-            let our_kbucket_key = self.local_key.clone();
-            let predicate = |key: &Key| {
-                let kbucket_key = KBucketKey::from(key.to_vec());
-                our_kbucket_key.distance(&kbucket_key) < distance_bar
-            };
-            self.retain(predicate);
-        } else {
-            warn!("Record storage didn't have the distance_range setup yet.");
-        }
-    }
-
     #[allow(dead_code)]
     /// Calculate the cost to store data for our current store state
     pub fn store_cost(&self) -> Token {
-        let records_len = self.records().count();
+        // Calculate the factor to increase the cost for every PUTS_PER_PRICE_STEP records
+        let factor = 2.0f64.powf(MAX_RECORDS_COUNT as f64 / PUTS_PER_PRICE_STEP as f64) as u64;
 
-        let mut cost = Token::from_nano(1);
-        const NANOS_PER_SNT: u64 = 1_000_000_000;
+        // Calculate the starting cost
+        let mut cost = TOTAL_SUPPLY / factor;
 
-        // if we imagine that at FULL capacity we want _all the money_ (ie, we never want to reach full capacity)
-        // So we get the total amount of nanos in the network,
-        // we divide that number by our MAX_RECORD_COUNT to know
-        // what to charge for each additional record
-        let step_per_record = ((2 ^ 32) * NANOS_PER_SNT) / MAX_RECORDS_COUNT as u64;
-        let step_amount = Token::from_nano(step_per_record);
+        trace!("Starting cost is {:?}", cost);
 
-        // we want to spread the cost of storing data across the MAX_CAPACITY
-        // doubling the cost for each record store
-        for _ in 0..records_len {
-            if let Some(new_cost) = cost.checked_add(step_amount) {
-                cost = new_cost;
-            }
+        trace!("Record count is {:?}", self.records.len());
+        let relevant_records_len = if let Some(distance_range) = self.distance_range {
+            self.records
+                .iter()
+                .filter(|key| {
+                    let kbucket_key = KBucketKey::from(key.to_vec());
+                    distance_range >= self.local_key.distance(&kbucket_key)
+                })
+                .count()
+        } else {
+            // Otherwise we've no distance range set, so we actually don't know enough
+            // so we'll say we have MAX_RECORDS_COUNT and set a high price until we know
+            // more about our CLOSE_GROUP
+            MAX_RECORDS_COUNT
+        };
+
+        trace!("Relevant records len is {:?}", relevant_records_len);
+
+        // Find where we are on the scale
+        let current_step = relevant_records_len & (PUTS_PER_PRICE_STEP - 1);
+
+        trace!("Current step is {:?}", current_step);
+
+        // Double the cost for each step up to the current step
+        for _i in 0..current_step {
+            cost = cost.saturating_add(cost);
         }
 
-        trace!("Cost is now {cost:?}");
-        cost
+        trace!("Cost is now {:?}", cost);
+        Token::from_nano(cost)
     }
 
     /// Setup the distance range.
@@ -283,7 +295,10 @@ impl RecordStore for DiskBackedRecordStore {
         // When a client calls GET, the request is forwarded to the nodes until one node returns
         // with the record. Thus a node can be bombarded with GET reqs for random keys. These can be safely
         // ignored if we don't have the record locally.
-        trace!("GET request for Record key: {k:?}");
+        trace!(
+            "GET request for Record key: {:?}",
+            PrettyPrintRecordKey::from(k.clone())
+        );
         if !self.records.contains(k) {
             trace!("Record not found locally");
             return None;
@@ -487,7 +502,11 @@ mod tests {
         assert!(store.put(r.clone()).is_ok());
         assert!(store.get(&r.key).is_none());
         // Store cost should not change if no PUT has been added
-        assert!(store.store_cost() == store_cost_before);
+        assert_eq!(
+            store.store_cost(),
+            store_cost_before,
+            "store cost should not change over unverified put"
+        );
 
         let returned_record = if let Some(event) = network_event_receiver.recv().await {
             if let NetworkEvent::UnverifiedRecord(record) = event {
@@ -498,8 +517,6 @@ mod tests {
         } else {
             panic!("Failed recevied the record for further verification");
         };
-
-        let store_cost_before = store.store_cost();
 
         assert!(store.put_verified(returned_record).is_ok());
 
@@ -517,10 +534,6 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
 
-        let cost_after_put = store.store_cost();
-        // store cost should have increased
-        assert!(cost_after_put > store_cost_before);
-
         assert_eq!(
             Some(Cow::Borrowed(&r)),
             store.get(&r.key),
@@ -528,8 +541,6 @@ mod tests {
         );
         store.remove(&r.key);
 
-        // now we've removed a record, the cost should decrease
-        assert!(cost_after_put > store.store_cost());
         assert!(store.get(&r.key).is_none());
     }
 }

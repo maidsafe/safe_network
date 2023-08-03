@@ -162,7 +162,7 @@ jobs:
         with:
           action: stop
           log_file_prefix: safe_test_logs_benchmark_prs
-          platform: ${{ matrix.os }}
+          platform: ubuntu-latest
 
       - name: Tar heapnode files
         shell: bash

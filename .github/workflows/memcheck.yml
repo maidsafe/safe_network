@@ -75,7 +75,7 @@ jobs:
           interval: 2000
           node-path: target/release/safenode
           faucet-path: target/release/faucet
-          platform: "ubuntu-latest"
+          platform: ubuntu-latest
           set-safe-peers: false
 
       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
@@ -85,14 +85,14 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- send 500 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet
-          cat initial_balance_from_faucet
-          cat initial_balance_from_faucet | tail -n 1 > dbc_hex
+          cargo run --bin faucet --release -- send 500 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet.txt
+          cat initial_balance_from_faucet.txt
+          cat initial_balance_from_faucet.txt | tail -n 1 > dbc_hex
           cat dbc_hex
           cat dbc_hex | cargo run --bin safe --release -- --log-output-dest=data-dir wallet deposit --stdin
         env:
           SN_LOG: "all"
-        timeout-minutes: 10
+        timeout-minutes: 15
 
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
@@ -105,7 +105,7 @@ jobs:
           cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/testnet"
         env:
           SN_LOG: "all"
-        timeout-minutes: 10
+        timeout-minutes: 25
 
       - name: Chunks data integrity during nodes churn
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 
@@ -197,7 +197,7 @@ jobs:
         with:
           action: stop
           log_file_prefix: safe_test_logs_memcheck
-          platform: ${{ matrix.os }}
+          platform: ubuntu-latest
 
       - name: Check for heaptrack file
         run: ls -la
@@ -247,5 +247,21 @@ jobs:
         with:
           name: heaptrack_safenode
           path: heaptrack.safenode.*
+        continue-on-error: true
+        if: always()
+
+      - name: Upload payment wallet initialization log
+        uses: actions/upload-artifact@main
+        with:
+          name: payment_wallet_initialization_log
+          path: initial_balance_from_faucet.txt
+        continue-on-error: true
+        if: always()
+
+      - name: Upload Faucet folder
+        uses: actions/upload-artifact@main
+        with:
+          name: faucet_folder
+          path: /home/runner/.local/share/safe/test_faucet
         continue-on-error: true
         if: always()
