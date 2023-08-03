@@ -170,28 +170,30 @@ impl Node {
         peers_connected: Arc<AtomicUsize>,
         initial_join_underway_or_done: Arc<AtomicBool>,
     ) {
-        // when the node has not been connected to enough peers, it should not perform activities
-        // that might require peers in the RT to succeed.
-        match &event {
-            // these activities requires the node to be connected to some peer to be able to carry
-            // out get kad.get_record etc. This happens during replication/PUT. So we should wait
-            // until we have enough nodes, else these might fail.
-            NetworkEvent::RequestReceived { .. }
-            | NetworkEvent::UnverifiedRecord(_)
-            | NetworkEvent::ResponseReceived { .. }
-            | NetworkEvent::CloseGroupUpdated(_)
-            | NetworkEvent::KeysForReplication(_) => loop {
-                if peers_connected.load(Ordering::Relaxed) >= k_value() {
-                    break;
+        if peers_connected.load(Ordering::Relaxed) < k_value() {
+            // when the node has not been connected to enough peers, it should not perform activities
+            // that might require peers in the RT to succeed.
+            match &event {
+                // these activities requires the node to be connected to some peer to be able to carry
+                // out get kad.get_record etc. This happens during replication/PUT. So we should wait
+                // until we have enough nodes, else these might fail.
+                NetworkEvent::RequestReceived { .. }
+                | NetworkEvent::UnverifiedRecord(_)
+                | NetworkEvent::ResponseReceived { .. }
+                | NetworkEvent::CloseGroupUpdated(_)
+                | NetworkEvent::KeysForReplication(_) => {
+                    warn!("Ignoring event {:?} as the node is not connected to enough peers yet", event);
+                    return;
                 }
-                tokio::time::sleep(Duration::from_millis(10)).await;
-            },
-            // These events do not need to wait until there are enough peers
-            NetworkEvent::PeerAdded(_)
-            | NetworkEvent::PeerRemoved(_)
-            | NetworkEvent::NewListenAddr(_)
-            | NetworkEvent::NatStatusChanged(_) => {}
+                ,
+                // These events do not need to wait until there are enough peers
+                NetworkEvent::PeerAdded(_)
+                | NetworkEvent::PeerRemoved(_)
+                | NetworkEvent::NewListenAddr(_)
+                | NetworkEvent::NatStatusChanged(_) => {}
+            }
         }
+
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
                 trace!("RequestReceived: {req:?}");
