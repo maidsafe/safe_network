@@ -74,6 +74,18 @@ impl WalletClient {
         }
     }
 
+    /// Get storecost from the network
+    /// this uses the largest DBC as the payment section
+    pub async fn get_store_cost(&mut self) -> Result<Token> {
+        // For now we simply just use the largest DBC we have...
+        let (dbc, _key) = self.wallet.largest_dbc()?;
+
+        self.client
+            .get_store_cost_for_dbc_id(&dbc.id())
+            .await
+            .map_err(|error| Error::CouldNotSendTokens(error.to_string()))
+    }
+
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_storage(
@@ -108,8 +120,9 @@ impl WalletClient {
         // For now, we just pay 1 nano per Chunk.
         let num_of_addrs = audit_trail_info.len() as u64;
         // We need to just "burn" the amount that corresponds for storage payment.
-        let storage_cost = Token::from_nano(num_of_addrs);
-        trace!("Making payment for {num_of_addrs} addreses");
+        let storage_cost = self.get_store_cost().await?;
+
+        trace!("Making payment for {num_of_addrs} addresses");
 
         let transfer = self
             .wallet

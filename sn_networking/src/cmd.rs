@@ -87,7 +87,7 @@ pub enum SwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<Result<Record>>,
     },
-    /// GetLocalStoreCost from the Kad network
+    /// GetLocalStoreCost for this node
     GetLocalStoreCost {
         sender: oneshot::Sender<Token>,
     },

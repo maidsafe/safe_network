@@ -14,6 +14,9 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 /// Transfer errors.
 #[derive(Debug, Error)]
 pub enum Error {
+    /// No DBCs available for spend
+    #[error("No DBCs available for spend")]
+    NoDbcsAvailable,
     /// Failed to create transfer.
     #[error("Transfer error {0}")]
     CreateTransfer(#[from] crate::client_transfers::Error),
@@ -23,6 +26,9 @@ pub enum Error {
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),
+    /// A general error when a retrieving a store cost fails
+    #[error("Failed to get store cost due to {0}")]
+    CouldNotGetStoreCost(String),
     /// A general error when verifying a transfer validity in the network.
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
@@ -37,7 +43,10 @@ pub enum Error {
     FailedToHexEncodeKey(String),
     /// Dbc error.
     #[error("Dbc error: {0}")]
-    Dbc(#[from] Box<sn_dbc::Error>),
+    BoxedDbc(#[from] Box<sn_dbc::Error>),
+    /// Dbc error.
+    #[error("Dbc error: {0}")]
+    Dbc(#[from] sn_dbc::Error),
     /// Bls error.
     #[error("Bls error: {0}")]
     Bls(#[from] bls::error::Error),

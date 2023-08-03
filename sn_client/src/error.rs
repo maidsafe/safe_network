@@ -56,4 +56,8 @@ pub enum Error {
 
     #[error("Missing a payment proof for address {0:?}")]
     MissingPaymentProof(ChunkAddress),
+
+    /// A general error when a transfer fails.
+    #[error("Failed to send tokens due to {0}")]
+    CouldNotSendTokens(String),
 }
