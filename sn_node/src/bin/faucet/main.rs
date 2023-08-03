@@ -8,15 +8,17 @@
 
 mod faucet_server;
 
-use faucet_server::run_faucet_server;
-
 use clap::{Parser, Subcommand};
-use eyre::Result;
+use eyre::{eyre, Result};
+use faucet_server::run_faucet_server;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
 use sn_dbc::Token;
+use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
 use sn_transfers::wallet::parse_public_address;
+use std::path::PathBuf;
 use tracing::{error, info};
+use tracing_core::Level;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -42,6 +44,17 @@ async fn main() -> Result<()> {
         }
     }
 
+    let _log_appender_guard = if let Some(log_output_dest) = opt.log_output_dest {
+        let logging_targets = vec![
+            ("safe".to_string(), Level::INFO),
+            ("sn_client".to_string(), Level::INFO),
+            ("sn_networking".to_string(), Level::INFO),
+        ];
+        init_logging(logging_targets, log_output_dest, LogFormat::Default)?
+    } else {
+        None
+    };
+
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
@@ -55,6 +68,18 @@ async fn main() -> Result<()> {
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Opt {
+    /// Specify the logging output destination.
+    ///
+    /// Valid values are "stdout", "data-dir", or a custom path.
+    ///
+    /// The data directory location is platform specific:
+    ///  - Linux: $HOME/.local/share/safe/client/logs
+    ///  - macOS: $HOME/Library/Application Support/safe/client/logs
+    ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
+    #[allow(rustdoc::invalid_html_tags)]
+    #[clap(long, value_parser = parse_log_output, verbatim_doc_comment)]
+    log_output_dest: Option<LogOutputDest>,
+
     #[command(flatten)]
     peers: PeersArgs,
 
@@ -119,4 +144,21 @@ async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> 
     println!("{dbc_hex}");
 
     Ok(dbc_hex)
+}
+
+fn parse_log_output(val: &str) -> Result<LogOutputDest> {
+    match val {
+        "stdout" => Ok(LogOutputDest::Stdout),
+        "data-dir" => {
+            let dir = dirs_next::data_dir()
+                .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+                .join("safe")
+                .join("test_faucet")
+                .join("logs");
+            Ok(LogOutputDest::Path(dir))
+        }
+        // The path should be a directory, but we can't use something like `is_dir` to check
+        // because the path doesn't need to exist. We can create it for the user.
+        value => Ok(LogOutputDest::Path(PathBuf::from(value))),
+    }
 }
