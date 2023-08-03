@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1691091756378,
+  "lastUpdate": 1691099111765,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4441,6 +4441,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 2.6372866211307717,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "6977ed35f66d4cfde79e5f1204aadb94be0176e5",
+          "message": "chore: reduce the wait after create faucet server\n\nThis is to confirm the delayed event handling is resolved.\nThe creation of faucet and balance update shall be completed\nquickly with the delaying resolved.",
+          "timestamp": "2023-08-03T15:29:30Z",
+          "tree_id": "7d2df7f5daad45f15397190739c24ff9948e67ab",
+          "url": "https://github.com/maidsafe/safe_network/commit/6977ed35f66d4cfde79e5f1204aadb94be0176e5"
+        },
+        "date": 1691099110873,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.06142402359653366,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.03210792246246715,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 2.6264239776918963,
             "unit": "MiB/s"
           }
         ]
