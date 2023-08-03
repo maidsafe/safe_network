@@ -3817,6 +3817,7 @@ dependencies = [
  "async-trait",
  "blsttc",
  "bytes",
+ "custom_debug",
  "eyre",
  "futures",
  "itertools",

@@ -116,8 +116,10 @@ impl Node {
             let inactivity_timeout = Duration::from_secs(inactivity_timeout as u64);
 
             loop {
+                trace!("NetworkEvent loop started");
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
+                        trace!("Handling NetworkEvent: {net_event:?}");
                         let initial_join_flows_done = initial_join_flows_done.clone();
                         match net_event {
                             Some(event) => {
@@ -133,6 +135,8 @@ impl Node {
                         }
                     }
                     _ = tokio::time::sleep(inactivity_timeout) => {
+                        trace!("NetworkEvent inactivity timeout hit");
+
                         let network_clone = network_clone.clone();
 
                         Marker::NoNetworkActivity( inactivity_timeout ).log();
