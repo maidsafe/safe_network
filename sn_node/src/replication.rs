@@ -23,7 +23,7 @@ const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
 
 impl Node {
     /// Replication is triggered when is there is a change in our close group
-    pub(crate) async fn try_trigger_replication(&mut self) -> Result<()> {
+    pub(crate) async fn try_trigger_replication(&self) -> Result<()> {
         Marker::ReplicationTriggered.log();
         let our_close_group = self.network.get_our_close_group().await?;
         let our_peer_id = self.network.peer_id;
@@ -71,7 +71,7 @@ impl Node {
     /// Add a list of keys to the Replication fetcher. These keys are later fetched from the peer through the
     /// replication process.
     pub(crate) fn add_keys_to_replication_fetcher(
-        &mut self,
+        &self,
         peer: NetworkAddress,
         keys: Vec<NetworkAddress>,
     ) -> Result<()> {
@@ -122,7 +122,7 @@ impl Node {
 
     // Utility to send `Cmd::Replicate` without awaiting for the `Response` at the call site.
     fn send_replicate_cmd_without_wait(
-        &mut self,
+        &self,
         our_address: &NetworkAddress,
         peer_id: &PeerId,
         keys: Vec<NetworkAddress>,

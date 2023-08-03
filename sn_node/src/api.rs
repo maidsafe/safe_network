@@ -129,7 +129,7 @@ impl Node {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
                             Some(event) => {
-                                let mut stateless_node_copy = node.clone();
+                                let stateless_node_copy = node.clone();
                                 let _handle =
                                     spawn(async move { stateless_node_copy.handle_network_event(event, peers_connected, initial_join_flows_done).await });
                             }
@@ -165,7 +165,7 @@ impl Node {
     // **** Private helpers *****
 
     async fn handle_network_event(
-        &mut self,
+        &self,
         event: NetworkEvent,
         peers_connected: Arc<AtomicUsize>,
         initial_join_underway_or_done: Arc<AtomicBool>,
@@ -280,7 +280,7 @@ impl Node {
     }
 
     // Handle the response that was not awaited at the call site
-    async fn handle_response(&mut self, response: Response) -> Result<()> {
+    async fn handle_response(&self, response: Response) -> Result<()> {
         match response {
             Response::Query(QueryResponse::GetReplicatedData(Ok((_holder, replicated_data)))) => {
                 match replicated_data {
@@ -337,7 +337,7 @@ impl Node {
         Ok(())
     }
 
-    async fn handle_request(&mut self, request: Request, response_channel: MsgResponder) {
+    async fn handle_request(&self, request: Request, response_channel: MsgResponder) {
         trace!("Handling request: {request:?}");
         let response = match request {
             Request::Cmd(cmd) => self.handle_node_cmd(cmd),
@@ -373,7 +373,7 @@ impl Node {
         Response::Query(resp)
     }
 
-    fn handle_node_cmd(&mut self, cmd: Cmd) -> Response {
+    fn handle_node_cmd(&self, cmd: Cmd) -> Response {
         Marker::NodeCmdReceived(&cmd).log();
         let resp = match cmd {
             Cmd::Replicate { holder, keys } => {
