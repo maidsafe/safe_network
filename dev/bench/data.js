@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1691099348533,
+  "lastUpdate": 1691099352033,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11034,6 +11034,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 227,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "6977ed35f66d4cfde79e5f1204aadb94be0176e5",
+          "message": "chore: reduce the wait after create faucet server\n\nThis is to confirm the delayed event handling is resolved.\nThe creation of faucet and balance update shall be completed\nquickly with the delaying resolved.",
+          "timestamp": "2023-08-03T15:29:30Z",
+          "tree_id": "7d2df7f5daad45f15397190739c24ff9948e67ab",
+          "url": "https://github.com/maidsafe/safe_network/commit/6977ed35f66d4cfde79e5f1204aadb94be0176e5"
+        },
+        "date": 1691099351642,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 279.96,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 243,
             "unit": "MB"
           }
         ]
