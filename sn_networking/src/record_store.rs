@@ -329,6 +329,8 @@ impl RecordStore for DiskBackedRecordStore {
                 {
                     error!("SwarmDriver failed to send event: {}", error);
                 }
+
+                debug!("Unverified record sent");
             });
         } else {
             error!("Record store doesn't have event_sender setup");
