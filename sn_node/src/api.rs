@@ -141,16 +141,20 @@ impl Node {
                         }
                     }
                     _ = tokio::time::sleep(inactivity_timeout) => {
+                        let network_clone = network_clone.clone();
+
                         Marker::NoNetworkActivity( inactivity_timeout ).log();
-                        let random_target = NetworkAddress::from_peer(PeerId::random());
-                        debug!("No network activity in the past {inactivity_timeout:?}, performing a random get_closest query to target: {random_target:?}");
-                        match network_clone.node_get_closest_peers(&random_target).await {
-                            Ok(closest) => debug!("Network inactivity: get_closest returned {closest:?}"),
-                            Err(e) => {
-                                warn!("get_closest query failed after network inactivity timeout - check your connection: {}", e);
-                                Marker::OperationFailedAfterNetworkInactivityTimeout.log();
+                        let _handle = spawn ( async move {
+                            let random_target = NetworkAddress::from_peer(PeerId::random());
+                            debug!("No network activity in the past {inactivity_timeout:?}, performing a random get_closest query to target: {random_target:?}");
+                            match network_clone.node_get_closest_peers(&random_target).await {
+                                Ok(closest) => debug!("Network inactivity: get_closest returned {closest:?}"),
+                                Err(e) => {
+                                    warn!("get_closest query failed after network inactivity timeout - check your connection: {}", e);
+                                    Marker::OperationFailedAfterNetworkInactivityTimeout.log();
+                                }
                             }
-                        }
+                        });
                     }
                 }
             }
