@@ -165,7 +165,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- send 1000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > dbc_hex
+          cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > dbc_hex
           cat dbc_hex | cargo run --bin safe --release -- --log-output-dest=data-dir wallet deposit --stdin
         env:
           SN_LOG: "all"
