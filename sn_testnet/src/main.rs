@@ -300,7 +300,20 @@ async fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
 async fn run_faucet(bin_path: PathBuf) -> Result<()> {
     let testnet = Testnet::configure().node_bin_path(bin_path).build()?;
     let launch_bin = testnet.node_bin_path;
-    let args = vec!["server".to_string()];
+
+    // server should write logs to a different log dir
+    let log_dir = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+        .join("safe")
+        .join("test_faucet")
+        .join("server_logs")
+        .into_os_string()
+        .into_string()
+        .map_err(|_| eyre!("Failed get faucet server_log dir"))?;
+
+    let mut args = vec!["--log-output-dest".to_string()];
+    args.push(log_dir);
+    args.push("server".to_string());
     testnet.launcher.launch(&launch_bin, args)?;
     // The launch will immediately complete after fire the cmd out.
     // Have to wait some extra time to allow the faucet to be properly created and funded
