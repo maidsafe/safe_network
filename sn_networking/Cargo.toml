@@ -19,6 +19,7 @@ async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
 futures = "~0.3.13"
 itertools = "~0.10.1"
+custom_debug = "~0.5.0"
 libp2p = { version="0.52", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux"] }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
