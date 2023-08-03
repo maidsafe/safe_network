@@ -11,10 +11,13 @@ use super::{
     record_store::DiskBackedRecordStore,
     SwarmDriver,
 };
+
 use crate::{
     close_group_majority, multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address,
     CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
 };
+
+use custom_debug::Debug;
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
@@ -113,6 +116,7 @@ pub enum NetworkEvent {
     /// Incoming `Request` from a peer
     RequestReceived {
         /// Request
+        #[debug(skip)]
         req: Request,
         /// The channel to send the `Response` through
         channel: MsgResponder,
@@ -120,6 +124,7 @@ pub enum NetworkEvent {
     /// Handles the responses that are not awaited at the call site
     ResponseReceived {
         /// Response
+        #[debug(skip)]
         res: Response,
     },
     /// Peer has been added to the Routing Table
@@ -135,6 +140,7 @@ pub enum NetworkEvent {
     /// AutoNAT status changed
     NatStatusChanged(NatStatus),
     /// Report unverified record
+    #[debug(format = "UnverifiedRecord")]
     UnverifiedRecord(Record),
 }
 
