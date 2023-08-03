@@ -161,9 +161,8 @@ impl Debug for NetworkAddress {
         };
         write!(
             f,
-            "{name_str} - {:?} - {:?})",
+            "{name_str} - {:?})",
             PrettyPrintRecordKey::from(self.to_record_key()),
-            self.as_kbucket_key()
         )
     }
 }

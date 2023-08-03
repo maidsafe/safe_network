@@ -24,7 +24,7 @@ use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Files, WalletClient};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
-use sn_protocol::storage::ChunkAddress;
+use sn_protocol::{storage::ChunkAddress, NetworkAddress, PrettyPrintRecordKey};
 use sn_transfers::wallet::LocalWallet;
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
@@ -140,12 +140,30 @@ async fn verify_data_location() -> Result<()> {
         // get the new set of holders
         get_record_holder_list(&mut record_holders).await?;
 
+        print_node_close_groups(&all_peers);
+
         verify_location(&record_holders, &all_peers).await?;
 
         node_index += 1;
         if node_index > NODE_COUNT as u16 {
             node_index = 1;
         }
+    }
+}
+
+fn print_node_close_groups(all_peers: &[PeerId]) {
+    let all_peers = all_peers.to_vec();
+    println!("\nNode close groups:");
+    for (node_index, peer) in all_peers.iter().enumerate() {
+        let node_index = node_index + 1;
+        let key = NetworkAddress::from_peer(*peer).as_kbucket_key();
+        let closest_peers = sort_peers_by_key(all_peers.clone(), &key, CLOSE_GROUP_SIZE)
+            .expect("failed to sort peer");
+        let closest_peers_idx = closest_peers
+            .iter()
+            .map(|peer| all_peers.iter().position(|p| p == peer).unwrap() + 1)
+            .collect::<Vec<_>>();
+        println!("Close for {node_index}: {peer:?} are {closest_peers_idx:?}");
     }
 }
 
@@ -203,7 +221,7 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
     while verification_attempts < VERIFICATION_ATTEMPTS {
         failed.clear();
         for (key, actual_closest_idx) in record_holders.iter() {
-            println!("Verifying {key:?}");
+            println!("Verifying {:?}", PrettyPrintRecordKey::from(key.clone()));
             let record_key = KBucketKey::from(key.to_vec());
             let expected_closest_peers =
                 sort_peers_by_key(all_peers.to_vec(), &record_key, CLOSE_GROUP_SIZE)?
@@ -230,13 +248,19 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
             println!("Verification failed");
 
             failed.iter().for_each(|(key, failed_peers)| {
-                failed_peers
-                    .iter()
-                    .for_each(|peer| println!("Record {key:?} is not stored inside {peer:?}"));
+                failed_peers.iter().for_each(|peer| {
+                    println!(
+                        "Record {:?} is not stored inside {peer:?}",
+                        PrettyPrintRecordKey::from(key.clone()),
+                    )
+                });
             });
             println!("State of each node:");
             record_holders.iter().for_each(|(key, node_index)| {
-                println!("Record {key:?} is currently held by node indexes {node_index:?}");
+                println!(
+                    "Record {:?} is currently held by node indexes {node_index:?}",
+                    PrettyPrintRecordKey::from(key.clone())
+                );
             });
             println!("Node index map:");
             all_peers
@@ -322,7 +346,7 @@ async fn store_chunk(client: Client, paying_wallet: LocalWallet, chunk_count: us
         );
 
         let addr = ChunkAddress::new(file_api.calculate_address(bytes.clone())?);
-        let key = RecordKey::new(addr.xorname());
+        let key = PrettyPrintRecordKey::from(RecordKey::new(addr.xorname()));
         file_api.upload_with_proof(bytes, &proofs, true).await?;
         uploaded_chunks_count += 1;
 
