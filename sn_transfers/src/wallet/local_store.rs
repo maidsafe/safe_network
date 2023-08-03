@@ -11,7 +11,7 @@ use super::{
     wallet_file::{
         create_received_dbcs_dir, get_wallet, load_received_dbcs, store_created_dbcs, store_wallet,
     },
-    KeyLessWallet, PaymentProofsMap, Result,
+    Error, KeyLessWallet, PaymentProofsMap, Result,
 };
 use crate::client_transfers::{create_storage_payment_transfer, create_transfer, TransferOutputs};
 use sn_dbc::{random_derivation_index, Dbc, DerivedKey, Hash, MainKey, PublicAddress, Token};
@@ -98,6 +98,36 @@ impl LocalWallet {
             }
         }
         available_dbcs
+    }
+
+    /// Get the largest DBC we have.
+    /// This can then be used to get an accurate storecost from those nodes
+    /// who would verify a transaction from this.
+    pub fn largest_dbc(&self) -> Result<(Dbc, DerivedKey)> {
+        let mut largest_dbc = None;
+        for dbc in self.wallet.available_dbcs.values() {
+            let dbc_and_key = if let Ok(derived_key) = dbc.derived_key(&self.key) {
+                (dbc.clone(), derived_key)
+            } else {
+                warn!(
+                    "Skipping DBC {:?} because we don't have the key to spend it",
+                    dbc.id()
+                );
+                continue;
+            };
+
+            if largest_dbc.is_none() {
+                largest_dbc = Some(dbc_and_key);
+                continue;
+            }
+
+            if let Some((big_dbc, _key)) = &largest_dbc {
+                if dbc.token()? > big_dbc.token()? {
+                    largest_dbc = Some(dbc_and_key);
+                }
+            }
+        }
+        largest_dbc.ok_or(Error::NoDbcsAvailable)
     }
 
     /// Add given storage payment proofs to the wallet's cache,

@@ -17,7 +17,7 @@ use libp2p::{
     kad::{Record, K_VALUE},
     Multiaddr,
 };
-use sn_dbc::{DbcId, SignedSpend};
+use sn_dbc::{DbcId, SignedSpend, Token};
 use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -417,5 +417,17 @@ impl Client {
             error!("RecordKind mismatch while trying to retrieve a dbc spend");
             Err(ProtocolError::RecordKindMismatch(RecordKind::DbcSpend).into())
         }
+    }
+    /// Get a dbc spend from network
+    pub async fn get_store_cost_for_dbc_id(&self, dbc_id: &DbcId) -> Result<Token> {
+        let address = DbcAddress::from_dbc_id(dbc_id);
+        let net_address = NetworkAddress::from_dbc_address(address);
+
+        trace!("Getting store cost at {dbc_id:?}");
+
+        Ok(self
+            .network
+            .get_store_cost_from_network(net_address.clone())
+            .await?)
     }
 }

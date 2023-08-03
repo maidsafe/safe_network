@@ -35,6 +35,7 @@ use self::{
     replication_fetcher::ReplicationFetcher,
 };
 use futures::{future::select_all, StreamExt};
+use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
@@ -51,7 +52,7 @@ use libp2p::{
 use rand::Rng;
 use sn_dbc::Token;
 use sn_protocol::{
-    messages::{Request, Response},
+    messages::{Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -619,6 +620,59 @@ impl Network {
         Ok(self
             .send_and_get_responses(closest_peers, request, expect_all_responses)
             .await)
+    }
+
+    pub async fn get_store_cost_from_network(&self, dbc_id_key: NetworkAddress) -> Result<Token> {
+        let (sender, receiver) = oneshot::channel();
+
+        // first we need to get CLOSE_GROUP of the dbc_id
+        self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
+            key: dbc_id_key.clone(),
+            sender,
+        })?;
+
+        let close_nodes = receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)?
+            .into_iter()
+            .collect_vec();
+
+        let request = Request::Query(Query::GetStoreCost(dbc_id_key));
+        let responses = self
+            .send_and_get_responses(close_nodes, &request, true)
+            .await;
+        info!(">>>> FEES RETURNED: {:?}", responses);
+
+        // loop over responses, generating an avergae fee and storing all responses along side
+        let mut all_costs = vec![];
+        for response in responses.into_iter().flatten() {
+            if let Response::Query(QueryResponse::GetStoreCost(Ok((cost, sig)))) = response {
+                all_costs.push((cost, sig));
+            }
+        }
+
+        // sort all costs by fee, lowest to highest
+        all_costs.sort_by(|a, b| a.0.cmp(&b.0));
+
+        // take the lowest majoriy of costs ie, lowest 5 of 8...
+        let useful_costs = all_costs
+            .into_iter()
+            .take((CLOSE_GROUP_SIZE / 2) + 1)
+            .collect_vec();
+        let costs_only = useful_costs.iter().map(|(cost, _)| cost).collect_vec();
+
+        // take the average of the useful costs
+        let fee = useful_costs
+            .iter()
+            .fold(0, |acc, (cost, _)| acc + cost.as_nano())
+            / useful_costs.len() as u64;
+        let token_fee = Token::from_nano(fee);
+
+        info!(
+            ">>>>>>>>>>>>>>>>>final fee: {fee:?}, averaged from: {:?}",
+            costs_only
+        );
+        Ok(token_fee)
     }
 
     /// Get the Record from the network
