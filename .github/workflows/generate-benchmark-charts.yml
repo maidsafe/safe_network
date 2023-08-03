@@ -17,7 +17,6 @@ env:
   RUST_BACKTRACE: 1
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
-  HEAPNODE_DATA_PATH: /home/runner/.local/share/safe/heapnode
 
 jobs:
   benchmark:
@@ -29,10 +28,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y heaptrack
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -73,15 +68,6 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      - name: Start a heaptracked node instance to compare memory usage
-        run: |
-          mkdir -p $HEAPNODE_DATA_PATH
-          heaptrack ./target/release/safenode \
-            --root-dir $HEAPNODE_DATA_PATH --log-output-dest $HEAPNODE_DATA_PATH --local &
-          sleep 10
-        env:
-          SN_LOG: "all"
-
       ########################
       ### Benchmark        ###
       ########################
@@ -116,15 +102,16 @@ jobs:
           auto-push: true
           max-items-in-chart: 300
 
-      - name: Start a heaptracked client instance to compare memory usage
+      - name: Start a client instance to compare memory usage
         shell: bash
-        run: heaptrack ./target/release/safe --log-output-dest=data-dir files upload the-test-data.zip
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload the-test-data.zip
         env:
           SN_LOG: "all"
+      
+      #########################
+      ### Mem Analysis      ###
+      #########################
 
-      ########################
-      ### Clean            ###
-      ########################
       - name: Stop the local network and upload logs
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
@@ -133,69 +120,27 @@ jobs:
           log_file_prefix: safe_test_logs_benchmark_charts
           platform: ubuntu-latest
 
-      - name: Tar heapnode log files
-        shell: bash
-        continue-on-error: true
-        run: |
-          find $HEAPNODE_DATA_PATH -iname '*.log*' | tar -zcvf heap_node_log_files.tar.gz --files-from -
-          find . -iname '*log_files.tar.gz' | tar -zcvf log_files.tar.gz --files-from -
-        if: always()
-
-      - name: Upload heapnode Logs
-        uses: actions/upload-artifact@main
-        with:
-          name: heapnode_benchmark_chart_generation
-          path: log_files.tar.gz
-        if: always()
-        continue-on-error: true
-      
-      #########################
-      ### Node Mem Analysis ###
-      #########################
-      - name: Check for Node heaptrack file
-        shell: bash
-        run: ls -la
-
-      - name: Analyze node memory usage
-        shell: bash
-        run: |
-          heaptrack_file=$(ls -t heaptrack.safenode.*.zst | head -1)
-          heaptrack --analyze $heaptrack_file > heaptrack.safenode.txt
-
-      - name: Upload Node Heaptrack
-        uses: actions/upload-artifact@main
-        with:
-          name: heaptrack_safenode
-          path: heaptrack.safenode.*
-        continue-on-error: true
-
       - name: Check node memory usage
         shell: bash
         run: |
-          node_mem_limit_mb="100" # mb
-          memory_usage=$(rg "peak heap memory consumption" ./heaptrack.safenode.txt | awk '{
-            if ($5 ~ /K/) {
-              sub(/K/, "", $5);
-              $5 = $5 / 1024;
-            } else if ($5 ~ /G/) {
-              sub(/G/, "", $5);
-              $5 = $5 * 1024;
-            } else if ($5 ~ /M/) {
-              sub(/M/, "", $5);
-              $5 = $5;
-            }
-            print $5;
-          }' )
-          echo "Memory usage: $memory_usage MB"
-          if (( $(echo "$memory_usage > $node_mem_limit_mb" | bc -l) )); then
-            echo "Node memory usage exceeded threshold: $memory_usage MB"
+          node_peak_mem_limit_mb="100" # mb
+          peak_mem_usage=$(
+            rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename | 
+            awk -F':' '/"memory_used_mb":/{print $2}' | 
+            sort -n | 
+            tail -n 1
+          )
+         
+          echo "Memory usage: $peak_mem_usage MB"
+          if (( $(echo "$peak_mem_usage > $node_peak_mem_limit_mb" | bc -l) )); then
+            echo "Node memory usage exceeded threshold: $peak_mem_usage MB"
             exit 1
           fi
           # Write the node memory usage to a file
           echo '[
               {
-                  "name": "Peak memory w/ `safe` benchmarks",
-                  "value": '$memory_usage',
+                  "name": "node-memory-usage-through-safe-benchmark",
+                  "value": '$peak_mem_usage',
                   "unit": "MB"
               }
           ]' > node_memory_usage.json
@@ -214,70 +159,38 @@ jobs:
           auto-push: true
           max-items-in-chart: 300
 
-      ###########################
-      ### Client Mem Analysis ###
-      ###########################
-      - name: Check for Client heaptrack file
-        shell: bash
-        run: ls -la
-
-      - name: Analyze client memory usage
-        shell: bash
-        run: |
-          heaptrack_file=$(ls -t heaptrack.safe.*.zst | head -1)
-          heaptrack --analyze $heaptrack_file > heaptrack.safe.txt
-
-      - name: Upload Client Heaptrack
-        uses: actions/upload-artifact@main
-        with:
-          name: heaptrack_safe
-          path: heaptrack.safe.*
-        continue-on-error: true
-
-      - run: cat ./heaptrack.safe.txt 
-        shell: bash
-
-      - run: rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{print $5}' 
-        shell: bash
-
       - name: Check client memory usage
         shell: bash
         run: |
-          peak_mem_usage=$(rg "peak heap memory consumption" ./heaptrack.safe.txt | awk '{
-            if ($5 ~ /K/) {
-              sub(/K/, "", $5);
-              $5 = $5 / 1024;
-            } else if ($5 ~ /G/) {
-              sub(/G/, "", $5);
-              $5 = $5 * 1024;
-            } else if ($5 ~ /M/) {
-              sub(/M/, "", $5);
-              $5 = $5;
-            }
-            print $5;
-          }')
           client_peak_mem_limit_mb="2000" # mb
+          client_avg_mem_limit_mb="700" # mb
+          
+          peak_mem_usage=$(
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs/safenode.* -o --no-line-number --no-filename | 
+            awk -F':' '/"memory_used_mb":/{print $2}' | 
+            sort -n | 
+            tail -n 1
+          )
           echo "Peak memory usage: $peak_mem_usage MB"
           if (( $(echo "$peak_mem_usage > $client_peak_mem_limit_mb" | bc -l) )); then
             echo "Client peak memory usage exceeded threshold: $client_peak_mem_limit_mb MB"
             exit 1
           fi
 
-          mem_reads=($(rg "\"memory_used_mb\":\d+" $CLIENT_DATA_PATH/logs/safenode.* \
-            -o --no-line-number --no-filename | rg "\d+" -o))
-          total_mem=$(ls heaptrack.safe.txt | wc -l)
-          echo "Total memory initial value is: $total_mem"
-          for mem in "${mem_reads[@]}"; do
-            total_mem=$((total_mem+$(($mem))))
-          done
-
-          client_avg_mem_limit_mb="700" # mb
-          num_of_times=$(rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs/safenode.* \
-            -c --stats | rg "(\d+) matches" | rg "\d+" -o)
+          total_mem=$(
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs/safenode.* -o --no-line-number --no-filename | 
+            awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
+          )
+          num_of_times=$(
+            rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs/safenode.* -c --stats |
+            rg "(\d+) matches" |
+            rg "\d+" -o
+          )
           echo "num_of_times: $num_of_times"
           echo "Total memory is: $total_mem"
           average_mem=$(($total_mem/$(($num_of_times))))
           echo "Average memory is: $average_mem"
+
           if (( $(echo "$average_mem > $client_avg_mem_limit_mb" | bc -l) )); then
             echo "Client average memory usage exceeded threshold: $client_avg_mem_limit_mb MB"
             exit 1
@@ -285,12 +198,12 @@ jobs:
           # Write the client memory usage to a file
           echo '[
               {
-                  "name": "Peak memory usage w/ upload",
+                  "name": "client-peak-memory-usage-during-upload",
                   "value": '$peak_mem_usage',
                   "unit": "MB"
               },
               {
-                  "name": "Average memory usage w/ upload",
+                  "name": "client-average-memory-usage-during-upload",
                   "value": '$average_mem',
                   "unit": "MB"
               }
