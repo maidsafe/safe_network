@@ -112,12 +112,11 @@ jobs:
       ### Mem Analysis      ###
       #########################
 
-      - name: Stop the local network and upload logs
+      - name: Stop the local network
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
-          log_file_prefix: safe_test_logs_benchmark_charts
           platform: ubuntu-latest
 
       - name: Check node memory usage
