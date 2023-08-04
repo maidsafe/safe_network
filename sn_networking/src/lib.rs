@@ -645,7 +645,7 @@ impl Network {
         // loop over responses, generating an avergae fee and storing all responses along side
         let mut all_costs = vec![];
         for response in responses.into_iter().flatten() {
-            if let Response::Query(QueryResponse::GetStoreCost(Ok((cost, _sig)))) = response {
+            if let Response::Query(QueryResponse::GetStoreCost(Ok(cost))) = response {
                 all_costs.push(cost);
             }
         }

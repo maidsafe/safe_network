@@ -16,7 +16,7 @@ use std::fmt::Debug;
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 pub enum QueryResponse {
     /// The store cost in nanos for storing the next record, and the node's singature over that cost.
-    GetStoreCost(Result<(Token, Vec<u8>)>),
+    GetStoreCost(Result<Token>),
     // ===== ReplicatedData =====
     //
     /// Response to [`GetReplicatedData`]
