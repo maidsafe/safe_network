@@ -91,8 +91,8 @@ impl RegisterCrdt {
         // Check the targetting address is correct
         if self.address != op.address {
             return Err(Error::RegisterAddrMismatch {
-                dst_addr: op.address,
-                reg_addr: self.address,
+                dst_addr: Box::new(op.address),
+                reg_addr: Box::new(self.address),
             });
         }
 
@@ -121,18 +121,19 @@ impl RegisterCrdt {
 mod tests {
     use super::*;
 
+    use bls::SecretKey;
     use xor_name::XorName;
 
     #[test]
     fn creating_entry_hash() -> Result<()> {
         let mut rng = rand::thread_rng();
         let address_1 = RegisterAddress {
-            name: XorName::random(&mut rng),
-            tag: 0,
+            meta: XorName::random(&mut rng),
+            owner: SecretKey::random().public_key(),
         };
         let address_2 = RegisterAddress {
-            name: XorName::random(&mut rng),
-            tag: 0,
+            meta: XorName::random(&mut rng),
+            owner: SecretKey::random().public_key(),
         };
 
         let mut crdt_1 = RegisterCrdt::new(address_1);

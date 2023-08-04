@@ -6,31 +6,42 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use bls::PublicKey;
 use clap::Subcommand;
 use color_eyre::Result;
 use sn_client::{Client, ClientRegister, Error as ClientError};
+use sn_protocol::storage::RegisterAddress;
 use xor_name::XorName;
 
 #[derive(Subcommand, Debug)]
 pub enum RegisterCmds {
-    /// Create a new register with the given pet name.
+    /// Create a new register with a name.
     Create {
-        /// The name of the register to create.
+        /// The name of the register to create. This could be the app's name.
+        /// This is used along with your public key to derive the address of the register
         #[clap(name = "name")]
         name: String,
     },
     Edit {
-        /// The name of the register to edit.
-        #[clap(name = "name")]
-        name: String,
+        /// The address of the register to edit.
+        #[clap(name = "address")]
+        address: String,
+        /// If you are the owner, the name of the register can be used as a shorthand to the address, as we can derive the address from the public key + name
+        /// Use this flag if you are providing the register name instead of the address
+        #[clap(name = "name", short = 'n')]
+        use_name: bool,
         /// The entry to add to the register.
         #[clap(name = "entry")]
         entry: String,
     },
     Get {
-        /// The register pet names to get.
-        #[clap(name = "names")]
-        names: Vec<String>,
+        /// The register addresses to get.
+        #[clap(name = "addresses")]
+        addresses: Vec<String>,
+        /// If you are the owner, the name of the register can be used as a shorthand to the address, as we can derive the address from the public key + name
+        /// Use this flag if you are providing the register names instead of the addresses
+        #[clap(name = "name", short = 'n')]
+        use_name: bool,
     },
 }
 
@@ -41,43 +52,44 @@ pub(crate) async fn register_cmds(
 ) -> Result<()> {
     match cmds {
         RegisterCmds::Create { name } => create_register(name, client, verify_store).await?,
-        RegisterCmds::Edit { name, entry } => {
-            edit_register(name, entry, client, verify_store).await?
-        }
-        RegisterCmds::Get { names } => get_registers(names, client).await?,
+        RegisterCmds::Edit {
+            address,
+            use_name,
+            entry,
+        } => edit_register(address, use_name, entry, client, verify_store).await?,
+        RegisterCmds::Get {
+            addresses,
+            use_name,
+        } => get_registers(addresses, use_name, client).await?,
     }
     Ok(())
 }
 
 async fn create_register(name: String, client: &Client, verify_store: bool) -> Result<()> {
-    let tag = 3006;
-    let xorname = XorName::from_content(name.as_bytes());
-    println!("Creating Register with '{name}' at xorname: {xorname:x} and tag {tag}");
-
-    // clients currently only support public registers as we create a new key at each run
-    let _register =
-        ClientRegister::create_public_online(client.clone(), xorname, tag, verify_store).await?;
-    println!("Successfully created register '{name}' at {xorname:?}, {tag}!");
+    let meta = XorName::from_content(name.as_bytes());
+    let register = ClientRegister::create_online(client.clone(), meta, verify_store).await?;
+    println!(
+        "Successfully created register '{name}' at {}!",
+        register.address()
+    );
     Ok(())
 }
 
 async fn edit_register(
-    name: String,
+    address: String,
+    use_name: bool,
     entry: String,
     client: &Client,
     verify_store: bool,
 ) -> Result<()> {
-    let tag = 3006;
-    let xorname = XorName::from_content(name.as_bytes());
-    println!("Trying to retrieve Register from {xorname:?}, {tag}");
+    let (address, printing_name) = parse_addr(&address, use_name, client.signer_pk())?;
 
-    match client.get_register(xorname, tag).await {
+    println!("Trying to retrieve Register from {address}");
+
+    match client.get_register(address).await {
         Ok(mut register) => {
-            println!(
-                "Successfully retrieved Register '{name}' from {:?}!",
-                register.address(),
-            );
-            println!("Editing Register '{name}' with: {entry}");
+            println!("Successfully retrieved Register {printing_name}",);
+            println!("Editing Register {printing_name} with: {entry}");
             match register.write_online(entry.as_bytes(), verify_store).await {
                 Ok(()) => {}
                 Err(ref err @ ClientError::ContentBranchDetected(ref branches)) => {
@@ -94,7 +106,7 @@ async fn edit_register(
         }
         Err(error) => {
             println!(
-                "Did not retrieve Register '{name}' from all nodes in the close group! {error}"
+                "Did not retrieve Register {printing_name} from all nodes in the close group! {error}"
             );
             return Err(error.into());
         }
@@ -103,20 +115,15 @@ async fn edit_register(
     Ok(())
 }
 
-async fn get_registers(names: Vec<String>, client: &Client) -> Result<()> {
-    let tag = 3006;
-    for name in names {
-        println!("Register name passed in via `register get` is '{name}'...");
-        let xorname = XorName::from_content(name.as_bytes());
+async fn get_registers(addresses: Vec<String>, use_name: bool, client: &Client) -> Result<()> {
+    for addr in addresses {
+        let (address, printing_name) = parse_addr(&addr, use_name, client.signer_pk())?;
 
-        println!("Trying to retrieve Register from {xorname:?}, {tag}");
+        println!("Trying to retrieve Register {printing_name}");
 
-        match client.get_register(xorname, tag).await {
+        match client.get_register(address).await {
             Ok(register) => {
-                println!(
-                    "Successfully retrieved Register '{name}' from {:?}!",
-                    register.address(),
-                );
+                println!("Successfully retrieved Register {printing_name}");
                 let entries = register.read();
                 println!("Register entries:");
                 for (hash, bytes) in entries {
@@ -129,7 +136,7 @@ async fn get_registers(names: Vec<String>, client: &Client) -> Result<()> {
             }
             Err(error) => {
                 println!(
-                    "Did not retrieve Register '{name}' from all nodes in the close group! {error}"
+                    "Did not retrieve Register {printing_name} from all nodes in the close group! {error}"
                 );
                 return Err(error.into());
             }
@@ -137,4 +144,16 @@ async fn get_registers(names: Vec<String>, client: &Client) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Parse str and return the address and the register info for printing
+fn parse_addr(str: &str, use_name: bool, pk: PublicKey) -> Result<(RegisterAddress, String)> {
+    if use_name {
+        let user_metadata = XorName::from_content(str.as_bytes());
+        let addr = RegisterAddress::new(user_metadata, pk);
+        Ok((addr, format!("'{str}' at {addr}")))
+    } else {
+        let addr = RegisterAddress::from_hex(str)?;
+        Ok((addr, format!("at {str}")))
+    }
 }

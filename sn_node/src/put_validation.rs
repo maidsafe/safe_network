@@ -150,7 +150,7 @@ impl Node {
             .await
             .map_err(|err| {
                 warn!("Error while checking if register's key is present locally {err}");
-                ProtocolError::RegisterNotStored(*reg_addr.name())
+                ProtocolError::RegisterNotStored(Box::new(*reg_addr))
             })?;
 
         // check register and merge if needed
@@ -171,7 +171,7 @@ impl Node {
         debug!("Storing register {reg_addr:?} as Record locally");
         self.network.put_local_record(record).map_err(|err| {
             warn!("Error while locally storing register as a Record {err}");
-            ProtocolError::RegisterNotStored(*reg_addr.name())
+            ProtocolError::RegisterNotStored(Box::new(*reg_addr))
         })?;
 
         Ok(CmdOk::StoredSuccessfully)
@@ -328,7 +328,7 @@ impl Node {
         let reg_addr = register.address();
         if let Err(e) = register.verify() {
             error!("Register with addr {reg_addr:?} is invalid: {e:?}");
-            return Err(ProtocolError::RegisterInvalid(*reg_addr));
+            return Err(ProtocolError::RegisterInvalid(Box::new(*reg_addr)));
         }
 
         // if we don't have it locally return it
@@ -343,13 +343,13 @@ impl Node {
         // get local register
         let maybe_record = self.network.get_local_record(&key).await.map_err(|err| {
             warn!("Error while fetching local record {err}");
-            ProtocolError::RegisterNotStored(*reg_addr.name())
+            ProtocolError::RegisterNotStored(Box::new(*reg_addr))
         })?;
         let record = match maybe_record {
             Some(r) => r,
             None => {
                 error!("Register with addr {reg_addr:?} already exists locally, but not found in local storage");
-                return Err(ProtocolError::RegisterNotStored(*reg_addr.name()));
+                return Err(ProtocolError::RegisterNotStored(Box::new(*reg_addr)));
             }
         };
         let local_register: SignedRegister = try_deserialize_record(&record)?;

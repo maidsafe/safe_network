@@ -9,7 +9,6 @@
 use sn_registers::{Register, RegisterAddress, RegisterOp};
 
 use serde::{Deserialize, Serialize};
-use xor_name::XorName;
 
 /// A register cmd that is sent over to the Network
 #[allow(clippy::large_enum_variant)]
@@ -27,12 +26,6 @@ pub enum RegisterCmd {
 }
 
 impl RegisterCmd {
-    /// Returns the name of the register.
-    /// This is not a unique identifier.
-    pub fn name(&self) -> XorName {
-        *self.dst().name()
-    }
-
     /// Returns the dst address of the register.
     pub fn dst(&self) -> RegisterAddress {
         match self {
