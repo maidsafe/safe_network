@@ -24,7 +24,7 @@ pub struct RegisterOp {
     pub(crate) crdt_op: MerkleDagEntry<Entry>,
     /// The PublicKey of the entity that generated the operation
     pub(crate) source: User,
-    /// The signature of source on the crdt_op, required to apply the op
+    /// The signature of source on hash(address, crdt_op, source) required to apply the op
     pub(crate) signature: Option<bls::Signature>,
 }
 
