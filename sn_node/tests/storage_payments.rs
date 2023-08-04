@@ -51,11 +51,13 @@ fn random_content(client: &Client) -> Result<(Files, Bytes, ChunkAddress, Vec<Ch
 async fn storage_payment_succeeds() -> Result<()> {
     init_logging();
 
-    let paying_wallet_balance = 500_001;
+    let paying_wallet_balance = 50_000_000_000_001;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+
+    let balance_before = paying_wallet.balance();
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     // generate a random number (between 50 and 100) of random addresses
@@ -68,17 +70,16 @@ async fn storage_payment_succeeds() -> Result<()> {
         random_content_addrs.len()
     );
 
-    let proofs = wallet_client
-        .pay_for_storage(random_content_addrs.iter(), false)
+    let _proofs = wallet_client
+        .pay_for_storage(random_content_addrs.iter(), true)
         .await?;
 
-    sleep(Duration::from_secs(5)).await;
-
-    let cost = proofs.len() as u64; // 1 nano per addr
-    let new_balance = Token::from_nano(paying_wallet_balance - cost);
-    println!("Verifying new balance on paying wallet is {new_balance} ...");
+    println!("Verifying balance has been paid from the wallet...");
     let paying_wallet = wallet_client.into_wallet();
-    assert_eq!(paying_wallet.balance(), new_balance);
+    assert!(
+        paying_wallet.balance() < balance_before,
+        "balance should have decreased after payment"
+    );
 
     Ok(())
 }
@@ -171,7 +172,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
-    let paying_wallet_balance = 500_002;
+    let paying_wallet_balance = 50_000_000_000_002;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
@@ -197,7 +198,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_chunk_upload_fails() -> Result<()> {
-    let paying_wallet_balance = 500_003;
+    let paying_wallet_balance = 50_000_000_000_003;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =

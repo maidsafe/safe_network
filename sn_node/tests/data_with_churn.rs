@@ -62,8 +62,8 @@ const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 // It can be overriden by setting the 'TEST_DURATION_MINS' env var.
 const TEST_DURATION: Duration = Duration::from_secs(60 * 60); // 1hr
 
-const PAYING_WALLET_INITIAL_BALANCE: u64 = 10_000_000;
-const TRANSFERS_WALLET_INITIAL_BALANCE: u64 = 2_000_000;
+const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
+const TRANSFERS_WALLET_INITIAL_BALANCE: u64 = 200_000_000_000;
 
 type ContentList = Arc<RwLock<VecDeque<NetworkAddress>>>;
 type DbcMap = Arc<RwLock<BTreeMap<DbcAddress, Dbc>>>;
