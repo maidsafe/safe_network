@@ -81,7 +81,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 500 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet.txt
+          cargo run --bin faucet --release -- --log-output-dest=data-dir send 5000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet.txt
           cat initial_balance_from_faucet.txt
           cat initial_balance_from_faucet.txt | tail -n 1 > dbc_hex
           cat dbc_hex
