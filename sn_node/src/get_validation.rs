@@ -19,19 +19,14 @@ use sn_registers::SignedRegister;
 impl Node {
     /// Get the current storecost in nanos from our local kademlia store
     /// Returns cost and our node's signature over that cost
-    pub(crate) async fn current_storecost(&self) -> Result<(Token, Vec<u8>)> {
+    pub(crate) async fn current_storecost(&self) -> Result<Token> {
         let cost = self
             .network
             .get_local_storecost()
             .await
             .map_err(|_| Error::GetStoreCostFailed)?;
 
-        let signed_cost = match self.network.sign(&cost.to_bytes()) {
-            Ok(signed_cost) => signed_cost,
-            Err(_) => return Err(Error::SignStoreCostFailed),
-        };
-
-        Ok((cost, signed_cost))
+        Ok(cost)
     }
 
     pub(crate) async fn get_spend_from_network(
