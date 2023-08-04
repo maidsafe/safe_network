@@ -471,7 +471,7 @@ impl Node {
                 }
 
                 // If this is a storage payment, then verify FeeOutput's id is the expected.
-                verify_fee_output_id(&signed_spend.spent_tx(), false)?;
+                verify_fee_output_id(&signed_spend.spent_tx(), true)?;
 
                 // Get parents
                 let mut parent_spends = BTreeSet::new();
@@ -528,7 +528,7 @@ impl Node {
 // If 'required' was set to 'true' then the fee output must be non-zero and valid.
 fn verify_fee_output_id(spent_tx: &DbcTransaction, required: bool) -> Result<(), ProtocolError> {
     let fee = &spent_tx.fee;
-    info!(">>>> FEE: {fee:?}");
+    debug!("Verification fee: {fee:?}");
     if fee.is_free() {
         if required {
             return Err(ProtocolError::PaymentProofInvalidFeeOutput(fee.id));
