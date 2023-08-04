@@ -129,6 +129,34 @@ impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
             SwarmCmd::AddKeysToReplicationFetcher { peer, keys } => {
+                let distance_range = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .distance_range();
+                // Only store record from Replication that close enough to us.
+                let keys_to_store = if let Some(distance_range) = distance_range {
+                    if let Some(distance_bar_ilog2) = distance_range.ilog2() {
+                        let self_address = NetworkAddress::from_peer(self.self_peer_id);
+                        keys.iter()
+                            .filter(|key| {
+                                if let Some(entry_distance_ilog2) =
+                                    self_address.distance(key).ilog2()
+                                {
+                                    entry_distance_ilog2 <= distance_bar_ilog2
+                                } else {
+                                    true
+                                }
+                            })
+                            .cloned()
+                            .collect()
+                    } else {
+                        keys
+                    }
+                } else {
+                    keys
+                };
                 #[allow(clippy::mutable_key_type)]
                 let all_keys = self
                     .swarm
@@ -136,7 +164,9 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .record_addresses_ref();
-                let keys_to_fetch = self.replication_fetcher.add_keys(peer, keys, all_keys);
+                let keys_to_fetch =
+                    self.replication_fetcher
+                        .add_keys(peer, keys_to_store, all_keys);
                 if !keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
                 }
