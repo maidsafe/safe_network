@@ -641,36 +641,20 @@ impl Network {
         let responses = self
             .send_and_get_responses(close_nodes, &request, true)
             .await;
-        info!(">>>> FEES RETURNED: {:?}", responses);
 
         // loop over responses, generating an avergae fee and storing all responses along side
         let mut all_costs = vec![];
         for response in responses.into_iter().flatten() {
-            if let Response::Query(QueryResponse::GetStoreCost(Ok((cost, sig)))) = response {
-                all_costs.push((cost, sig));
+            if let Response::Query(QueryResponse::GetStoreCost(Ok((cost, _sig)))) = response {
+                all_costs.push(cost);
             }
         }
 
-        // sort all costs by fee, lowest to highest
-        all_costs.sort_by(|a, b| a.0.cmp(&b.0));
-
-        // take the lowest majoriy of costs ie, lowest 5 of 8...
-        let useful_costs = all_costs
-            .into_iter()
-            .take((CLOSE_GROUP_SIZE / 2) + 1)
-            .collect_vec();
-        let costs_only = useful_costs.iter().map(|(cost, _)| cost).collect_vec();
-
-        // take the average of the useful costs
-        let fee = useful_costs
-            .iter()
-            .fold(0, |acc, (cost, _)| acc + cost.as_nano())
-            / useful_costs.len() as u64;
-        let token_fee = Token::from_nano(fee);
+        let token_fee = get_fee_from_store_cost_quotes(&mut all_costs);
 
         info!(
-            ">>>>>>>>>>>>>>>>>final fee: {fee:?}, averaged from: {:?}",
-            costs_only
+            "Final fee calculated as: {token_fee:?}, from: {:?}",
+            all_costs
         );
         Ok(token_fee)
     }
@@ -998,6 +982,23 @@ impl Network {
     }
 }
 
+/// Given `all_costs` it will return the CLOSE_GROUP majority cost.
+fn get_fee_from_store_cost_quotes(all_costs: &mut Vec<Token>) -> Token {
+    // sort all costs by fee, lowest to highest
+    all_costs.sort();
+
+    // we're zero indexed, so we want the middle index
+    let target_cost_index = CLOSE_GROUP_SIZE / 2;
+
+    let token_fee = all_costs[target_cost_index];
+
+    info!(
+        "Final fee calculated as: {token_fee:?}, from: {:?}",
+        all_costs
+    );
+    token_fee
+}
+
 /// Verifies if `Multiaddr` contains IPv4 address that is not global.
 /// This is used to filter out unroutable addresses from the Kademlia routing table.
 pub fn multiaddr_is_global(multiaddr: &Multiaddr) -> bool {
@@ -1033,4 +1034,28 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
         .iter()
         .filter(|p| !matches!(p, Protocol::P2p(_)))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_fee_from_store_cost_quotes() {
+        // for a vec of different costs of CLOUSE_GROUP size
+        // ensure we return the CLOSE_GROUP / 2 indexed price
+        let mut costs = vec![];
+        for i in 0..CLOSE_GROUP_SIZE {
+            println!("price: {}", i);
+            costs.push(Token::from_nano(i as u64));
+        }
+        let price = get_fee_from_store_cost_quotes(&mut costs);
+
+        assert_eq!(
+            price,
+            Token::from_nano(CLOSE_GROUP_SIZE as u64 / 2),
+            "price should be {}",
+            CLOSE_GROUP_SIZE / 2 + 1
+        );
+    }
 }
