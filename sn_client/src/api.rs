@@ -418,7 +418,8 @@ impl Client {
             Err(ProtocolError::RecordKindMismatch(RecordKind::DbcSpend).into())
         }
     }
-    /// Get a dbc spend from network
+
+    /// get_store_cost_for_dbc_id
     pub async fn get_store_cost_for_dbc_id(&self, dbc_id: &DbcId) -> Result<Token> {
         let address = DbcAddress::from_dbc_id(dbc_id);
         let net_address = NetworkAddress::from_dbc_address(address);
