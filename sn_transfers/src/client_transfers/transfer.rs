@@ -137,7 +137,10 @@ fn select_inputs(
 
     // Make sure total input amount gathered with input DBCs are enough for the output amount
     if total_output_amount > total_input_amount {
-        return Err(Error::NotEnoughBalance(total_input_amount.to_string()));
+        return Err(Error::NotEnoughBalance(
+            total_input_amount,
+            total_output_amount,
+        ));
     }
 
     Ok((dbcs_to_spend, change_amount))
