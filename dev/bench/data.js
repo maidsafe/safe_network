@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1691102074663,
+  "lastUpdate": 1691149979289,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4519,6 +4519,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 2.6477413979728377,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6b79e9527fabfeea44294584a210001bab09171c",
+          "message": "feat(ci): analyze node and client mem usage from logs",
+          "timestamp": "2023-08-04T05:25:49Z",
+          "tree_id": "b917be8f3b6674813b2d8bfcb4c0afac79975aac",
+          "url": "https://github.com/maidsafe/safe_network/commit/6b79e9527fabfeea44294584a210001bab09171c"
+        },
+        "date": 1691149977782,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.06136021976475154,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.03218787313520771,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 2.6577851664084875,
             "unit": "MiB/s"
           }
         ]
