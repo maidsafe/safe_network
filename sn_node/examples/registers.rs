@@ -11,6 +11,7 @@ use sn_client::{Client, Error};
 use bls::SecretKey;
 use clap::Parser;
 use eyre::Result;
+use sn_registers::RegisterAddress;
 use std::{io, time::Duration};
 use tokio::time::sleep;
 use xor_name::XorName;
@@ -44,21 +45,20 @@ async fn main() -> Result<()> {
 
     // we'll retrieve (or create if not found) a Register, and write on it
     // in offline mode, syncing with the network periodically.
-    let tag = 5000;
-    let xorname = XorName::from_content(reg_nickname.as_bytes());
+    let meta = XorName::from_content(reg_nickname.as_bytes());
+    let address = RegisterAddress::new(meta, client.signer_pk());
     println!("Retrieving Register '{reg_nickname}' from SAFE, as user '{user}'");
-    let mut reg_replica = match client.get_register(xorname, tag).await {
+    let mut reg_replica = match client.get_register(address).await {
         Ok(register) => {
             println!(
-                "Register '{reg_nickname}' found at {}, {}!",
-                register.name(),
-                register.tag(),
+                "Register '{reg_nickname}' found at {:?}!",
+                register.address(),
             );
             register
         }
         Err(_) => {
-            println!("Register '{reg_nickname}' not found, creating it at {xorname}, {tag}",);
-            client.create_register(xorname, tag, true).await?
+            println!("Register '{reg_nickname}' not found, creating it at {address}");
+            client.create_register(meta, true).await?
         }
     };
     println!("Register owned by: {:?}", reg_replica.owner());

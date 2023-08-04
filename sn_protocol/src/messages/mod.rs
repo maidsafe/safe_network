@@ -82,7 +82,7 @@ impl ReplicatedData {
                     return Err(Error::SpendIsEmpty);
                 }
             }
-            Self::Register(register) => *register.address().name(),
+            Self::Register(register) => register.address().name(),
         };
         Ok(name)
     }

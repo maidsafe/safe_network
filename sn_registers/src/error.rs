@@ -15,14 +15,14 @@ use crate::{EntryHash, RegisterAddress, User};
 pub enum Error {
     /// Register operation destination address mismatch
     #[error(
-        "The CRDT operation cannot be applied since the Register operation destination address ({dst_addr:?}) \
-         doesn't match the targeted Register's address: {reg_addr:?}"
+        "The CRDT operation cannot be applied since the Register operation destination address ({dst_addr}) \
+         doesn't match the targeted Register's address: {reg_addr}"
     )]
     RegisterAddrMismatch {
         /// Register operation destination address
-        dst_addr: RegisterAddress,
+        dst_addr: Box<RegisterAddress>,
         /// Targeted Register's address
-        reg_addr: RegisterAddress,
+        reg_addr: Box<RegisterAddress>,
     },
     /// Entry is too big to fit inside a register
     #[error("Entry is too big to fit inside a register: {size}, max: {max}")]
@@ -57,13 +57,14 @@ pub enum Error {
     #[error("Invalid SecretKey provided, signer is not the owner of the Register")]
     InvalidSecretKey,
     /// The register obtained was not the one requested
-    #[error(
-        "Got Register with an invalid register address, requested: {requested:?}, got: {got:?}"
-    )]
+    #[error("Got Register with an invalid register address, requested: {requested}, got: {got}")]
     InvalidRegisterAddress {
-        requested: RegisterAddress,
-        got: RegisterAddress,
+        requested: Box<RegisterAddress>,
+        got: Box<RegisterAddress>,
     },
+    /// The provided RegisterAddress is invalid
+    #[error("Failed to deserialize hex RegisterAddress")]
+    HexDeserializeFailed,
 }
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;

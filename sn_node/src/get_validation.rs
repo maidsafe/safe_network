@@ -84,8 +84,8 @@ impl Node {
         address: NetworkAddress,
     ) -> Result<ReplicatedData> {
         let error = Error::ReplicatedDataNotFound {
-            holder: NetworkAddress::from_peer(self.network.peer_id),
-            address: address.clone(),
+            holder: Box::new(NetworkAddress::from_peer(self.network.peer_id)),
+            address: Box::new(address.clone()),
         };
 
         let record_key = address.as_record_key().ok_or(error.clone())?;

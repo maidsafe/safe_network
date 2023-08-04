@@ -21,7 +21,6 @@ use libp2p::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display, Formatter};
-use xor_name::XorName;
 
 /// This is the address in the network by which proximity/distance
 /// to other items (whether nodes or data chunks) are calculated.
@@ -77,7 +76,7 @@ impl NetworkAddress {
             NetworkAddress::PeerId(bytes) | NetworkAddress::RecordKey(bytes) => bytes.to_vec(),
             NetworkAddress::ChunkAddress(chunk_address) => chunk_address.name().0.to_vec(),
             NetworkAddress::DbcAddress(dbc_address) => dbc_address.name().0.to_vec(),
-            NetworkAddress::RegisterAddress(register_address) => register_address.id().0.to_vec(),
+            NetworkAddress::RegisterAddress(register_address) => register_address.name().0.to_vec(),
         }
     }
 
@@ -106,9 +105,7 @@ impl NetworkAddress {
             NetworkAddress::RecordKey(bytes) => RecordKey::new(bytes),
             NetworkAddress::ChunkAddress(chunk_address) => RecordKey::new(chunk_address.name()),
             NetworkAddress::RegisterAddress(register_address) => {
-                let mut reg_name: Vec<u8> = register_address.name().to_vec();
-                reg_name.extend(register_address.tag.to_be_bytes());
-                RecordKey::new(&XorName::from_content(&reg_name))
+                RecordKey::new(&register_address.name())
             }
             NetworkAddress::DbcAddress(dbc_address) => RecordKey::new(dbc_address.name()),
             NetworkAddress::PeerId(bytes) => RecordKey::new(bytes),
@@ -153,7 +150,7 @@ impl Debug for NetworkAddress {
             }
             NetworkAddress::RegisterAddress(register_address) => format!(
                 "NetworkAddress::RegisterAddress({:?} - ",
-                register_address.id()
+                register_address.name()
             ),
             NetworkAddress::RecordKey(_) => "NetworkAddress::RecordKey(".to_string(),
         };

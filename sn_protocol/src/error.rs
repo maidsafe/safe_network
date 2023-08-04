@@ -29,12 +29,12 @@ pub enum Error {
     ChunkNotStored(XorName),
 
     // ---------- register errors
-    #[error("Register was not stored, xorname: {0:?}")]
-    RegisterNotStored(XorName),
-    #[error("Register not found: {0:?}")]
-    RegisterNotFound(RegisterAddress),
-    #[error("Register is Invalid: {0:?}")]
-    RegisterInvalid(RegisterAddress),
+    #[error("Register was not stored: {0}")]
+    RegisterNotStored(Box<RegisterAddress>),
+    #[error("Register not found: {0}")]
+    RegisterNotFound(Box<RegisterAddress>),
+    #[error("Register is Invalid: {0}")]
+    RegisterInvalid(Box<RegisterAddress>),
     #[error("Register is Invalid: {0}")]
     RegisterError(#[from] sn_registers::Error),
     #[error("The Register was already created by another owner: {0:?}")]
@@ -86,9 +86,9 @@ pub enum Error {
     #[error("Peer {holder:?} cannot find ReplicatedData {address:?}")]
     ReplicatedDataNotFound {
         /// Holder that being contacted
-        holder: NetworkAddress,
+        holder: Box<NetworkAddress>,
         /// Address of the missing data
-        address: NetworkAddress,
+        address: Box<NetworkAddress>,
     },
 
     // ---------- record errors
