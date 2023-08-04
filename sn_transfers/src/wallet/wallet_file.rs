@@ -65,7 +65,7 @@ pub(super) async fn store_created_dbcs(created_dbcs: Vec<Dbc>, wallet_dir: &Path
 
         let dbc_file_path = public_address_dir_path.join(dbc_id_file_name);
 
-        let hex = dbc.to_hex().map_err(|e| Error::BoxedDbc(Box::new(e)))?;
+        let hex = dbc.to_hex().map_err(Error::Dbc)?;
         fs::write(dbc_file_path, &hex).await?;
     }
     Ok(())

@@ -471,7 +471,7 @@ impl Node {
                 }
 
                 // If this is a storage payment, then verify FeeOutput's id is the expected.
-                verify_fee_output_id(&signed_spend.spent_tx(), true)?;
+                verify_fee_output_id(&signed_spend.spent_tx(), false)?;
 
                 // Get parents
                 let mut parent_spends = BTreeSet::new();
