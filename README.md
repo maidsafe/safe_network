@@ -23,10 +23,10 @@ Assuming you have `SAFE_PEERS` set as above:
 `cargo run --release --bin safe -- register create myregister`
 
 - Get Register using its name from the previous cmd:
-`cargo run --release --bin safe -- register get myregister`
+`cargo run --release --bin safe -- register get -n myregister`
 
 - Edit Register using its name from the previous cmd:
-`cargo run --release --bin safe -- register edit myregister somename`
+`cargo run --release --bin safe -- register edit -n myregister somename`
 
 - Upload files
 `cargo run --release --bin safe -- files upload ~/dir/with/files`
