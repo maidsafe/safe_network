@@ -117,12 +117,11 @@ jobs:
       ### Mem Analysis      ###
       #########################
       
-      - name: Stop the local network and upload logs
+      - name: Stop the local network
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
-          log_file_prefix: safe_test_logs_benchmark_prs
           platform: ubuntu-latest
 
       # The large file uploaded will increase node's peak mem usage a lot
