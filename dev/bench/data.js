@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1691149979289,
+  "lastUpdate": 1691188755913,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4558,6 +4558,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 2.6577851664084875,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "cd0a2f9580df40690550df3b2bc2c389a596fb65",
+          "message": "feat: only fetch close enough data during Replication",
+          "timestamp": "2023-08-04T16:20:42Z",
+          "tree_id": "cc876300721b8dc318b45f9c89bac0ab1f7e3fc4",
+          "url": "https://github.com/maidsafe/safe_network/commit/cd0a2f9580df40690550df3b2bc2c389a596fb65"
+        },
+        "date": 1691188754676,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.06163831738310222,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.032253152500515775,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 2.611786565565216,
             "unit": "MiB/s"
           }
         ]
