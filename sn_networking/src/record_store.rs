@@ -225,8 +225,7 @@ impl DiskBackedRecordStore {
                 // we should prune and make space
                 self.remove(furthest_record);
 
-                // check if the furthest record is was within our distance range and if so
-                // warn
+                // Warn if the furthest record was within our distance range
                 if let Some(distance_range) = self.distance_range {
                     if furthest_record_key.distance(&self.local_key) < distance_range {
                         warn!("Pruned record would also be within our distance range.");
@@ -414,7 +413,10 @@ impl<'a> Iterator for RecordsIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use libp2p::{core::multihash::Multihash, kad::KBucketKey};
+    use libp2p::{
+        core::multihash::Multihash,
+        kad::{KBucketKey, RecordKey},
+    };
     use quickcheck::*;
     use tokio::runtime::Runtime;
 
@@ -526,8 +528,10 @@ mod tests {
 
         assert!(store.put_verified(returned_record).is_ok());
 
-        // loop over store.get 10 times to make sure async disk write has had time to complete
-        for _ in 0..10 {
+        // loop over store.get max_iterations times to ensure async disk write had time to complete.
+        let max_iterations = 10;
+        let mut iteration = 0;
+        while iteration < max_iterations {
             // try to check if it is equal to the actual record. This is needed because, the file
             // might not be fully written to the fs and would cause intermittent failures.
             // If there is actually a problem with the PUT, the assert statement below would catch it.
@@ -538,6 +542,10 @@ mod tests {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(100)).await;
+            iteration += 1;
+        }
+        if iteration == max_iterations {
+            panic!("record_store test failed with stored record cann't be read back");
         }
 
         assert_eq!(
@@ -548,5 +556,92 @@ mod tests {
         store.remove(&r.key);
 
         assert!(store.get(&r.key).is_none());
+    }
+
+    #[tokio::test]
+    async fn pruning_on_full() -> Result<()> {
+        let max_iterations = 10;
+        let max_records = 50;
+
+        // Set the config::max_record to be 50, then generate 100 records
+        // On storing the 51st to 100th record,
+        // check there is an expected pruning behaviour got carried out.
+        let store_config = DiskBackedRecordStoreConfig {
+            max_records,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let mut store = DiskBackedRecordStore::with_config(self_id, store_config.clone(), None);
+
+        let mut stored_records: Vec<RecordKey> = vec![];
+        let self_address = NetworkAddress::from_peer(self_id);
+        for i in 0..100 {
+            let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
+            let record = Record {
+                key: record_key.clone(),
+                value: (0..50).map(|_| rand::random::<u8>()).collect(),
+                publisher: None,
+                expires: None,
+            };
+            let retained_key = if i < max_records {
+                assert!(store.put_verified(record).is_ok());
+                record_key
+            } else {
+                // The list is already sorted by distance, hence always shall only prune the last one
+                let furthest_key = stored_records.remove(stored_records.len() - 1);
+                let furthest_addr = NetworkAddress::from_record_key(furthest_key.clone());
+                let record_addr = NetworkAddress::from_record_key(record_key.clone());
+                let (retained_key, pruned_key) = if self_address.distance(&furthest_addr)
+                    > self_address.distance(&record_addr)
+                {
+                    // The new entry is closer, it shall replace the existing one
+                    assert!(store.put_verified(record).is_ok());
+                    (record_key, furthest_key)
+                } else {
+                    // The new entry is farther away, it shall not replace the existing one
+                    assert!(store.put_verified(record).is_err());
+                    (furthest_key, record_key)
+                };
+
+                // Confirm the pruned_key got removed, looping to allow async disk ops to complete.
+                let mut iteration = 0;
+                while iteration < max_iterations {
+                    if DiskBackedRecordStore::read_from_disk(&pruned_key, &store_config.storage_dir)
+                        .is_none()
+                    {
+                        break;
+                    }
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                    iteration += 1;
+                }
+                if iteration == max_iterations {
+                    panic!("record_store prune test failed with pruned record still exists.");
+                }
+
+                retained_key
+            };
+
+            // loop over max_iterations times to ensure async disk write had time to complete.
+            let mut iteration = 0;
+            while iteration < max_iterations {
+                if store.get(&retained_key).is_some() {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                iteration += 1;
+            }
+            if iteration == max_iterations {
+                panic!("record_store prune test failed with stored record cann't be read back");
+            }
+
+            stored_records.push(retained_key);
+            stored_records.sort_by(|a, b| {
+                let a = NetworkAddress::from_record_key(a.clone());
+                let b = NetworkAddress::from_record_key(b.clone());
+                self_address.distance(&a).cmp(&self_address.distance(&b))
+            });
+        }
+
+        Ok(())
     }
 }
