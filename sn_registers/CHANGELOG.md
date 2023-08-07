@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.2.1...sn_registers-v0.2.2) - 2023-08-07
+
+### Added
+- rework register addresses to include pk
+
+### Fixed
+- signature issue when owner was not signer
+
+### Other
+- rename network addresses confusing name method to xorname
+- cleanup comments and names
+
 ## [0.2.1](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.2.0...sn_registers-v0.2.1) - 2023-08-01
 
 ### Fixed

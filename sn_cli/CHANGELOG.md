@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.80.33](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.32...sn_cli-v0.80.33) - 2023-08-07
+
+### Added
+- rework register addresses to include pk
+
+### Other
+- cleanup comments and names
+
 ## [0.80.32](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.31...sn_cli-v0.80.32) - 2023-08-07
 
 ### Other

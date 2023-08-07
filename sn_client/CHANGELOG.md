@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.8](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.7...sn_client-v0.87.8) - 2023-08-07
+
+### Added
+- rework register addresses to include pk
+
+### Other
+- rename network addresses confusing name method to xorname
+
 ## [0.87.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.6...sn_client-v0.87.7) - 2023-08-04
 
 ### Other
