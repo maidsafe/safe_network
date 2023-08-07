@@ -208,6 +208,7 @@ impl Register {
     /// Write an entry to the Register, returning the generated unsigned
     /// CRDT operation so the caller can sign and broadcast it to other replicas,
     /// along with the hash of the entry just written.
+    /// The returned RegisterOp is not signed, it is up to the caller to sign it using: `sign_with`
     pub fn write(
         &mut self,
         entry: Entry,
@@ -302,7 +303,7 @@ mod tests {
     }
 
     #[test]
-    fn register_generate_entry_hash() -> Result<()> {
+    fn register_generate_entry_hash() -> eyre::Result<()> {
         let authority_sk = SecretKey::random();
         let authority = authority_sk.public_key();
 
@@ -335,7 +336,7 @@ mod tests {
     }
 
     #[test]
-    fn register_concurrent_write_ops() -> Result<()> {
+    fn register_concurrent_write_ops() -> eyre::Result<()> {
         let authority_sk1 = SecretKey::random();
         let authority1 = User::Key(authority_sk1.public_key());
         let authority_sk2 = SecretKey::random();
@@ -347,9 +348,9 @@ mod tests {
         // grant permissions for Write to 'authority2' in both replicas too
         let perms = Permissions::new_with([authority1, authority2]);
 
-        // Instantiate the same Register on two replicas with the two diff authorities
+        // Instantiate the same Register on two replicas
         let mut replica1 = Register::new(authority_sk1.public_key(), meta, perms.clone());
-        let mut replica2 = Register::new(authority_sk2.public_key(), meta, perms);
+        let mut replica2 = replica1.clone();
 
         // And let's write an item to replica1 with autority1
         let item1 = random_register_entry();
@@ -367,7 +368,7 @@ mod tests {
         let mut signed_write_op2 = op2;
         signed_write_op2.sign_with(&authority_sk2);
 
-        // Item should be writeed on replica2
+        // Item should be writed on replica2
         assert_eq!(replica2.size(), 1);
 
         // Write operations are now broadcasted and applied to both replicas
@@ -421,14 +422,14 @@ mod tests {
     fn register_query_public_perms() -> eyre::Result<()> {
         let meta = xor_name::rand::random();
 
-        // one replica will allow write ops to anyone
+        // one register will allow write ops to anyone
         let authority_sk1 = SecretKey::random();
         let authority_pk1 = authority_sk1.public_key();
         let owner1 = User::Key(authority_pk1);
         let perms1 = Permissions::new_anyone_can_write();
         let replica1 = create_reg_replica_with(meta, Some(authority_sk1), Some(perms1));
 
-        // the other replica will allow write ops to 'owner1' and 'owner2' only
+        // the other register will allow write ops to 'owner1' and 'owner2' only
         let authority_sk2 = SecretKey::random();
         let authority_pk2 = authority_sk2.public_key();
         let owner2 = User::Key(authority_pk2);
@@ -439,14 +440,14 @@ mod tests {
         let sk_rand = SecretKey::random();
         let random_user = User::Key(sk_rand.public_key());
 
-        // check replica 1 is public
+        // check register 1 is public
         assert_eq!(replica1.owner(), authority_pk1);
         assert_eq!(replica1.check_user_permissions(User::Anyone), Ok(()));
         assert_eq!(replica1.check_user_permissions(owner1), Ok(()));
         assert_eq!(replica1.check_user_permissions(owner2), Ok(()));
         assert_eq!(replica1.check_user_permissions(random_user), Ok(()));
 
-        // check replica 2 has only owner1 and owner2 write allowed
+        // check register 2 has only owner1 and owner2 write allowed
         assert_eq!(replica2.owner(), authority_pk2);
         assert_eq!(
             replica2.check_user_permissions(User::Anyone),
