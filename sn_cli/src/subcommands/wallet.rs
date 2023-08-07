@@ -302,7 +302,7 @@ pub(super) async fn chunk_and_pay_for_storage(
         chunked_files.len()
     );
 
-    let proofs = wallet_client
+    let (proofs, _cost) = wallet_client
         .pay_for_storage(
             chunked_files
                 .values()

@@ -647,10 +647,12 @@ impl Network {
         for response in responses.into_iter().flatten() {
             if let Response::Query(QueryResponse::GetStoreCost(Ok(cost))) = response {
                 all_costs.push(cost);
+            } else {
+                println!("other response was {:?}", response);
             }
         }
 
-        let token_fee = get_fee_from_store_cost_quotes(&mut all_costs);
+        let token_fee = get_fee_from_store_cost_quotes(&mut all_costs)?;
 
         info!(
             "Final fee calculated as: {token_fee:?}, from: {:?}",
@@ -983,20 +985,22 @@ impl Network {
 }
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
-fn get_fee_from_store_cost_quotes(all_costs: &mut Vec<Token>) -> Token {
-    // sort all costs by fee, lowest to highest
-    all_costs.sort();
-
+fn get_fee_from_store_cost_quotes(all_costs: &mut Vec<Token>) -> Result<Token> {
     // we're zero indexed, so we want the middle index
     let target_cost_index = CLOSE_GROUP_SIZE / 2;
 
-    let token_fee = all_costs[target_cost_index];
+    // sort all costs by fee, lowest to highest
+    all_costs.sort();
+
+    let token_fee = *all_costs
+        .get(target_cost_index)
+        .ok_or(Error::NotEnoughCostQuotes)?;
 
     info!(
         "Final fee calculated as: {token_fee:?}, from: {:?}",
         all_costs
     );
-    token_fee
+    Ok(token_fee)
 }
 
 /// Verifies if `Multiaddr` contains IPv4 address that is not global.
@@ -1041,7 +1045,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_fee_from_store_cost_quotes() {
+    fn test_get_fee_from_store_cost_quotes() -> Result<()> {
         // for a vec of different costs of CLOUSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
@@ -1049,7 +1053,7 @@ mod tests {
             println!("price: {}", i);
             costs.push(Token::from_nano(i as u64));
         }
-        let price = get_fee_from_store_cost_quotes(&mut costs);
+        let price = get_fee_from_store_cost_quotes(&mut costs)?;
 
         assert_eq!(
             price,
@@ -1057,5 +1061,7 @@ mod tests {
             "price should be {}",
             CLOSE_GROUP_SIZE / 2 + 1
         );
+
+        Ok(())
     }
 }

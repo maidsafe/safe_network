@@ -361,7 +361,7 @@ fn store_chunks_task(
                 bytes.len()
             );
             sleep(delay).await;
-            let proofs = wallet_client
+            let (proofs, _cost) = wallet_client
                 .pay_for_storage(chunks.iter().map(|c| c.name()), false)
                 .await
                 .expect("Failed to pay for storage for new file at {addr:?}");

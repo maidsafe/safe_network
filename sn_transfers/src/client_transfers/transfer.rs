@@ -61,12 +61,12 @@ pub fn create_transfer(
 pub fn create_storage_payment_transfer(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
     change_to: PublicAddress,
-    storage_cost: Token,
+    storage_payment: Token,
     root_hash: Hash,
     reason_hash: Hash,
 ) -> Result<TransferOutputs> {
     // We need to select the necessary number of dbcs from those that we were passed.
-    let (dbcs_to_spend, change_amount) = select_inputs(available_dbcs, storage_cost)?;
+    let (dbcs_to_spend, change_amount) = select_inputs(available_dbcs, storage_payment)?;
 
     // We build the recipients to contain just a single output which is for the network owned output.
     // This is a special output that spendbook peers validating the signed spends (inputs) will be
@@ -77,7 +77,11 @@ pub fn create_storage_payment_transfer(
         .iter()
         .for_each(|(dbc, _)| fee_id_bytes.extend(&dbc.id().to_bytes()));
 
-    let fee = FeeOutput::new(Hash::hash(&fee_id_bytes), storage_cost.as_nano(), root_hash);
+    let fee = FeeOutput::new(
+        Hash::hash(&fee_id_bytes),
+        storage_payment.as_nano(),
+        root_hash,
+    );
 
     let selected_inputs = Inputs {
         dbcs_to_spend,
