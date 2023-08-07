@@ -62,7 +62,7 @@ pub enum Error {
         requested: Box<RegisterAddress>,
         got: Box<RegisterAddress>,
     },
-    /// The provided RegisterAddress is invalid
+    /// The provided String can't be deserialized as a RegisterAddress
     #[error("Failed to deserialize hex RegisterAddress")]
     HexDeserializeFailed,
 }
