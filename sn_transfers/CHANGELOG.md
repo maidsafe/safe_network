@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.23](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.22...sn_transfers-v0.10.23) - 2023-08-07
+
+### Other
+- rename network addresses confusing name method to xorname
+
 ## [0.10.22](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.21...sn_transfers-v0.10.22) - 2023-08-01
 
 ### Other
