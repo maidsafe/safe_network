@@ -55,8 +55,6 @@ fn create_file(size_mb: u64) -> tempfile::TempDir {
 }
 
 fn fund_cli_wallet() {
-    println!("Setting up CLI wallet");
-
     let _ = Command::new("./target/release/safe")
         .arg("wallet")
         .arg("get-faucet")
