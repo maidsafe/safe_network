@@ -209,7 +209,7 @@ impl Node {
         let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
         debug!(
             "validating and storing spends {:?} - {:?}",
-            dbc_addr.name(),
+            dbc_addr.xorname(),
             PrettyPrintRecordKey::from(key.clone())
         );
 

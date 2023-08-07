@@ -29,7 +29,7 @@ impl DbcAddress {
     }
 
     /// Return the name, which is the hash of `DbcId`.
-    pub fn name(&self) -> &XorName {
+    pub fn xorname(&self) -> &XorName {
         &self.0
     }
 }

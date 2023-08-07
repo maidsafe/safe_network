@@ -21,7 +21,7 @@ impl ChunkAddress {
     }
 
     /// Returns the name.
-    pub fn name(&self) -> &XorName {
+    pub fn xorname(&self) -> &XorName {
         &self.0
     }
 }

@@ -589,7 +589,7 @@ mod tests {
 
         let public_address_name = public_address_name(&recipient_public_address);
         let public_address_dir = format!("public_address_{}", hex::encode(public_address_name));
-        let dbc_id_name = *DbcAddress::from_dbc_id(&dbc_id).name();
+        let dbc_id_name = *DbcAddress::from_dbc_id(&dbc_id).xorname();
         let dbc_id_file_name = format!("{}.dbc", hex::encode(dbc_id_name));
 
         let created_dbcs_dir = sender_root_dir.join(WALLET_DIR_NAME).join("created_dbcs");

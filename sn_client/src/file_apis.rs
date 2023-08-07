@@ -152,7 +152,7 @@ impl Files {
             let client = self.client.clone();
             let chunk_addr = *chunk.address();
             let payment = payment_proofs
-                .get(chunk_addr.name())
+                .get(chunk_addr.xorname())
                 .cloned()
                 .ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
 
@@ -212,7 +212,7 @@ impl Files {
         let chunk = package_small(small)?;
         let address = *chunk.address();
         let payment = payment_proofs
-            .get(address.name())
+            .get(address.xorname())
             .cloned()
             .ok_or(super::Error::MissingPaymentProof(address))?;
 

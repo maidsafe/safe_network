@@ -74,9 +74,11 @@ impl NetworkAddress {
     pub fn as_bytes(&self) -> Vec<u8> {
         match self {
             NetworkAddress::PeerId(bytes) | NetworkAddress::RecordKey(bytes) => bytes.to_vec(),
-            NetworkAddress::ChunkAddress(chunk_address) => chunk_address.name().0.to_vec(),
-            NetworkAddress::DbcAddress(dbc_address) => dbc_address.name().0.to_vec(),
-            NetworkAddress::RegisterAddress(register_address) => register_address.name().0.to_vec(),
+            NetworkAddress::ChunkAddress(chunk_address) => chunk_address.xorname().0.to_vec(),
+            NetworkAddress::DbcAddress(dbc_address) => dbc_address.xorname().0.to_vec(),
+            NetworkAddress::RegisterAddress(register_address) => {
+                register_address.xorname().0.to_vec()
+            }
         }
     }
 
@@ -103,11 +105,11 @@ impl NetworkAddress {
     pub fn to_record_key(&self) -> RecordKey {
         match self {
             NetworkAddress::RecordKey(bytes) => RecordKey::new(bytes),
-            NetworkAddress::ChunkAddress(chunk_address) => RecordKey::new(chunk_address.name()),
+            NetworkAddress::ChunkAddress(chunk_address) => RecordKey::new(chunk_address.xorname()),
             NetworkAddress::RegisterAddress(register_address) => {
-                RecordKey::new(&register_address.name())
+                RecordKey::new(&register_address.xorname())
             }
-            NetworkAddress::DbcAddress(dbc_address) => RecordKey::new(dbc_address.name()),
+            NetworkAddress::DbcAddress(dbc_address) => RecordKey::new(dbc_address.xorname()),
             NetworkAddress::PeerId(bytes) => RecordKey::new(bytes),
         }
     }
@@ -143,14 +145,17 @@ impl Debug for NetworkAddress {
         let name_str = match self {
             NetworkAddress::PeerId(_) => "NetworkAddress::PeerId(".to_string(),
             NetworkAddress::ChunkAddress(chunk_address) => {
-                format!("NetworkAddress::ChunkAddress({:?} - ", chunk_address.name())
+                format!(
+                    "NetworkAddress::ChunkAddress({:?} - ",
+                    chunk_address.xorname()
+                )
             }
             NetworkAddress::DbcAddress(dbc_address) => {
-                format!("NetworkAddress::DbcAddress({:?} - ", dbc_address.name())
+                format!("NetworkAddress::DbcAddress({:?} - ", dbc_address.xorname())
             }
             NetworkAddress::RegisterAddress(register_address) => format!(
                 "NetworkAddress::RegisterAddress({:?} - ",
-                register_address.name()
+                register_address.xorname()
             ),
             NetworkAddress::RecordKey(_) => "NetworkAddress::RecordKey(".to_string(),
         };
