@@ -622,7 +622,7 @@ impl Network {
             .await)
     }
 
-    pub async fn get_store_cost_from_network(&self, dbc_id_key: NetworkAddress) -> Result<Token> {
+    pub async fn get_store_cost_from_network(&self, record_address: NetworkAddress) -> Result<Token> {
         let (sender, receiver) = oneshot::channel();
         debug!("Attempting to get store cost");
         // first we need to get CLOSE_GROUP of the dbc_id
