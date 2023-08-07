@@ -91,7 +91,7 @@ impl Node {
     pub(crate) async fn validate_and_store_chunk(
         &self,
         chunk_with_payment: ChunkWithPayment,
-        validate_payment: bool,
+        validate_payment_amount: bool,
     ) -> Result<CmdOk, ProtocolError> {
         let chunk_name = *chunk_with_payment.chunk.name();
         debug!("validating and storing chunk {chunk_name:?}");
@@ -118,9 +118,8 @@ impl Node {
             return Ok(CmdOk::DataAlreadyPresent);
         }
 
-        if validate_payment {
-            self.chunk_payment_validation(&chunk_with_payment).await?;
-        }
+        self.chunk_payment_validation(&chunk_with_payment, validate_payment_amount)
+            .await?;
 
         let record = Record {
             key,
@@ -274,6 +273,7 @@ impl Node {
     async fn chunk_payment_validation(
         &self,
         chunk_with_payment: &ChunkWithPayment,
+        validate_payment_amount: bool,
     ) -> Result<(), ProtocolError> {
         let PaymentProof {
             spent_ids,
@@ -322,7 +322,22 @@ impl Node {
             // Check if the fee output id and amount are correct, as well as verify
             // the payment proof corresponds to the fee output and that
             // the fee is sufficient for this chunk.
-            verify_fee_output_and_proof(addr_name, acceptable_fee, &tx, audit_trail, path)?;
+            match verify_fee_output_and_proof(addr_name, acceptable_fee, &tx, audit_trail, path) {
+                Ok(tx) => tx,
+                Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected }) => {
+                    if !validate_payment_amount {
+                        return Ok(());
+                    } else {
+                        return Err(ProtocolError::PaymentProofInsufficientAmount {
+                            paid,
+                            expected,
+                        });
+                    }
+                }
+                Err(error) => {
+                    return Err(error);
+                }
+            }
         } else {
             return Err(ProtocolError::PaymentProofWithoutInputs(addr_name));
         }
@@ -585,10 +600,7 @@ fn verify_fee_output_and_proof(
     let expected = Token::from_nano(acceptable_fee.as_nano() * (leaf_index as u64 + 1));
     if paid < expected {
         // the payment amount is not enough, we expect `acceptable_fee` nanos per adddress
-        return Err(ProtocolError::PaymentProofInsufficientAmount {
-            paid,
-            expected,
-        });
+        return Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected });
     }
 
     Ok(())
