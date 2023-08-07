@@ -69,10 +69,10 @@ fn fund_cli_wallet() {
 
     let output = Command::new("./target/release/faucet")
         .arg("send")
-        .arg("10000")
+        .arg("10000000000000")
         .arg(addr)
         .output()
-        .expect("Failed to execute 'faucet send 10000' command");
+        .expect("Failed to execute 'faucet send 10000000000000' command");
 
     let str = String::from_utf8(output.stdout).unwrap();
     let dbc_hex = str.lines().last().unwrap();
