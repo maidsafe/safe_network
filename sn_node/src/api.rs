@@ -241,7 +241,7 @@ impl Node {
             }
             NetworkEvent::UnverifiedRecord(record) => {
                 let key = PrettyPrintRecordKey::from(record.key.clone());
-                match self.validate_and_store_record(record).await {
+                match self.validate_and_store_record(record, true).await {
                     Ok(cmdok) => trace!("UnverifiedRecord {key:?} stored with {cmdok:?}."),
                     Err(err) => {
                         trace!("UnverifiedRecord {key:?} failed to be stored with error {err:?}.")
@@ -260,7 +260,9 @@ impl Node {
                         let chunk_addr = *chunk_with_payment.chunk.address();
                         debug!("Chunk received for replication: {:?}", chunk_addr.xorname());
 
-                        let success = self.validate_and_store_chunk(chunk_with_payment).await?;
+                        let success = self
+                            .validate_and_store_chunk(chunk_with_payment, false)
+                            .await?;
                         trace!("ReplicatedData::Chunk with {chunk_addr:?} has been validated and stored. {success:?}");
                     }
                     ReplicatedData::DbcSpend(signed_spend) => {
