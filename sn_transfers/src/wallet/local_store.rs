@@ -169,7 +169,7 @@ impl LocalWallet {
 
     pub async fn local_send_storage_payment(
         &mut self,
-        storage_cost: Token,
+        storage_payment: Token,
         root_hash: Hash,
         reason_hash: Option<Hash>,
     ) -> Result<TransferOutputs> {
@@ -179,7 +179,7 @@ impl LocalWallet {
         let transfer = create_storage_payment_transfer(
             available_dbcs,
             self.address(),
-            storage_cost,
+            storage_payment,
             root_hash,
             reason_hash.unwrap_or_default(),
         )?;

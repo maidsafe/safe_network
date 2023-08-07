@@ -87,12 +87,15 @@ impl WalletClient {
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
+    ///
+    /// Returns (Proofs and an Option around Storage Cost), storage cost is _per record_, and only returned if required for this operation
+    ///
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = &XorName>,
         verify_store: bool,
-    ) -> Result<PaymentProofsMap> {
+    ) -> Result<(PaymentProofsMap, Option<Token>)> {
         // Let's filter the content addresses we hold payment proofs for, i.e. avoid
         // paying for those chunks we've already paid for with this wallet.
         let mut proofs = PaymentProofsMap::default();
@@ -107,10 +110,11 @@ impl WalletClient {
             })
             .collect();
 
+        let number_of_records_to_pay = addrs_to_pay.len() as u64;
         // If no addresses need to be paid for, we don't have to go further
         if addrs_to_pay.is_empty() {
             trace!("We already hold payment proofs for all the Chunks");
-            return Ok(proofs);
+            return Ok((proofs, None));
         }
 
         // Let's build the payment proofs for list of content addresses
@@ -119,14 +123,17 @@ impl WalletClient {
         // TODO: request an invoice to network which provides the amount to pay.
         // For now, we just pay 1 nano per Chunk.
         let num_of_addrs = audit_trail_info.len() as u64;
+
         // We need to just "burn" the amount that corresponds for storage payment.
         let storage_cost = self.get_store_cost().await?;
+
+        let amount_to_pay = number_of_records_to_pay * storage_cost.as_nano();
 
         trace!("Making payment for {num_of_addrs} addresses");
 
         let transfer = self
             .wallet
-            .local_send_storage_payment(storage_cost, root_hash, None)
+            .local_send_storage_payment(Token::from_nano(amount_to_pay), root_hash, None)
             .await?;
 
         // send to network
@@ -159,7 +166,7 @@ impl WalletClient {
         // return the set of payment proofs, including new ones, and the ones we had in cache
         proofs.extend(new_payment_proofs);
 
-        Ok(proofs)
+        Ok((proofs, Some(storage_cost)))
     }
 
     /// Resend failed txs
