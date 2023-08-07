@@ -258,7 +258,7 @@ impl Node {
                 match replicated_data {
                     ReplicatedData::Chunk(chunk_with_payment) => {
                         let chunk_addr = *chunk_with_payment.chunk.address();
-                        debug!("Chunk received for replication: {:?}", chunk_addr.name());
+                        debug!("Chunk received for replication: {:?}", chunk_addr.xorname());
 
                         let success = self.validate_and_store_chunk(chunk_with_payment).await?;
                         trace!("ReplicatedData::Chunk with {chunk_addr:?} has been validated and stored. {success:?}");
@@ -266,7 +266,10 @@ impl Node {
                     ReplicatedData::DbcSpend(signed_spend) => {
                         if let Some(spend) = signed_spend.first() {
                             let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-                            debug!("DbcSpend received for replication: {:?}", dbc_addr.name());
+                            debug!(
+                                "DbcSpend received for replication: {:?}",
+                                dbc_addr.xorname()
+                            );
                             let addr = NetworkAddress::from_dbc_address(dbc_addr);
 
                             let success = self.validate_and_store_spends(signed_spend).await?;
@@ -282,7 +285,7 @@ impl Node {
                         let register_addr = *register.address();
                         debug!(
                             "Register received for replication: {:?}",
-                            register_addr.name()
+                            register_addr.xorname()
                         );
 
                         let success = self.validate_and_store_register(register).await?;

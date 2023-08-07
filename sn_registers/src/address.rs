@@ -36,7 +36,7 @@ impl RegisterAddress {
 
     /// Return the network name of the register.
     /// This is used to locate the register on the network.
-    pub fn name(&self) -> XorName {
+    pub fn xorname(&self) -> XorName {
         let mut bytes = vec![];
         bytes.extend_from_slice(&self.meta.0);
         bytes.extend_from_slice(&self.owner.to_bytes());

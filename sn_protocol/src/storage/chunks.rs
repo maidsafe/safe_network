@@ -44,7 +44,7 @@ impl Chunk {
 
     /// Returns the name.
     pub fn name(&self) -> &XorName {
-        self.address.name()
+        self.address.xorname()
     }
 
     /// Returns size of contained value.
