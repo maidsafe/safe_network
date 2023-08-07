@@ -47,10 +47,9 @@ use libp2p::{
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
-    Multiaddr, PeerId, Transport, tcp, yamux, noise,
+    Multiaddr, PeerId, Transport, tcp, noise,
     relay::{self, client::Transport as ClientTransport },
 };
-use libp2p_quic as quic;
 use rand::Rng;
 use sn_dbc::Token;
 use sn_protocol::{
@@ -203,14 +202,6 @@ impl SwarmDriver {
             .listen_on(
                 Multiaddr::from(addr.ip())
                 .with(Protocol::Tcp(addr.port())),
-            )?;
-
-        let _listener_id = swarm_driver
-            .swarm
-            .listen_on(
-                Multiaddr::from(addr.ip())
-                .with(Protocol::Udp(addr.port()))
-                .with(Protocol::QuicV1),
             )
             .unwrap();
 
@@ -1008,23 +999,28 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
 }
 
 pub fn build_transport(keypair: Keypair, relay_transport: ClientTransport, local: bool) -> io::Result<Boxed<(PeerId, StreamMuxerBox)>> {
-    let relay_tcp_quic_transport = relay_transport
-        .or_transport(tcp::tokio::Transport::new(
-            tcp::Config::default(),
-        ))
-        .upgrade(upgrade::Version::V1)
-        .authenticate(noise::Config::new(&keypair).unwrap())
-        .multiplex(yamux::Config::default())
-        .or_transport(quic::tokio::Transport::new(quic::Config::new(
-            &keypair,
-    )));
+    let tcp_transport = tcp::tokio::Transport::default();
+    let tcp_transport = tcp_transport
+        .upgrade(upgrade::Version::V1Lazy)
+        .authenticate(
+        noise::Config::new(&keypair).expect("Signing libp2p-noise static DH keypair failed."),
+        )
+        .multiplex(libp2p::yamux::Config::default());
 
-   let mut transport = relay_tcp_quic_transport
-    .map(|either_output, _| match either_output {
-        Either::Left((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
-        Either::Right((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
-    })
-    .boxed();
+    let upgraded_relay_transport = relay_transport
+        .upgrade(upgrade::Version::V1Lazy)
+        .authenticate(
+            noise::Config::new(&keypair).expect("Signing libp2p-noise static DH keypair failed."),
+        )
+        .multiplex(libp2p::yamux::Config::default());
+
+    let mut transport = upgraded_relay_transport
+        .or_transport(tcp_transport)
+        .map(|either_output, _| match either_output {
+            Either::Left((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
+            Either::Right((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
+        })
+        .boxed();
 
     if !local {
         debug!("Preventing non-global dials");
