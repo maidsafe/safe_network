@@ -118,7 +118,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     // The download will download all uploaded files during bench.
     // If the previous bench executed with the default 100 sample size,
     // there will then be around 1.1GB in total, and may take around 40s for each iteratioin.
-    // Hence we have to reduce the number of iterations from the default 100 to 10,
+    // Hence the number of iterations from the default 100 to 10,
     // To avoid the benchmark test taking over one hour to complete.
     let total_size: u64 = sizes.iter().map(|size| SAMPLE_SIZE as u64 * size).sum();
     group.sample_size(SAMPLE_SIZE / 5);
