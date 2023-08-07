@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.12...sn_networking-v0.4.13) - 2023-08-07
+
+### Other
+- record store pruning test
+
 ## [0.4.12](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.11...sn_networking-v0.4.12) - 2023-08-07
 
 ### Other
