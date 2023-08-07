@@ -23,7 +23,9 @@ fn safe_files_upload(dir: &str) {
         .expect("Failed to execute command");
 
     if !output.status.success() {
-        panic!("Upload command executed with failing error code");
+        let err = output.stderr;
+        let err_string = String::from_utf8(err).unwrap();
+        panic!("Upload command executed with failing error code: {err_string:?}");
     }
 }
 
