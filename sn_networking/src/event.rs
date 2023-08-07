@@ -59,6 +59,7 @@ pub(super) struct NodeBehaviour {
     pub(super) identify: libp2p::identify::Behaviour,
     pub(super) autonat: Toggle<autonat::Behaviour>,
     pub(super) relay: Toggle<relay::Behaviour>,
+    pub(super) relay_client: Toggle<relay::client::Behaviour>,
 }
 
 #[derive(Debug)]
@@ -70,6 +71,7 @@ pub(super) enum NodeEvent {
     Identify(Box<libp2p::identify::Event>),
     Autonat(autonat::Event),
     Relay(relay::Event),
+    RelayClient(relay::client::Event),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -106,6 +108,12 @@ impl From<autonat::Event> for NodeEvent {
 impl From<relay::Event> for NodeEvent {
     fn from(event: relay::Event) -> Self {
         NodeEvent::Relay(event)
+    }
+}
+
+impl From<relay::client::Event> for NodeEvent {
+    fn from(event: relay::client::Event) -> Self {
+        NodeEvent::RelayClient(event)
     }
 }
 
@@ -172,6 +180,29 @@ impl SwarmDriver {
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
                         debug!(%peer_id, ?info, "identify: received info");
+                        
+                        if !self.local
+                            && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
+                        {
+                            info!("Peer has listen addresses: {:?}", info.listen_addrs.clone());
+                            let relayed_addrs: Vec<_> = info
+                                .listen_addrs
+                                .clone()
+                                .into_iter()
+                                .filter(multiaddr_is_global)
+                                .filter(|a| a.to_string().contains("/p2p-circuit/"))
+                                .collect();
+
+                            for relayed_addr in relayed_addrs {
+                            info!("Dialing peer id {} via relayed address {}", peer_id.clone(), relayed_addr.clone());
+                                self
+                                    .swarm
+                                    .dial(
+                                        relayed_addr.clone()
+                                    )
+                                    .unwrap();
+                            }
+                        }
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if (self.local || self.dialed_peers.contains(&peer_id))
@@ -186,6 +217,7 @@ impl SwarmDriver {
                                     .filter(multiaddr_is_global)
                                     .collect(),
                             };
+
                             // Strip the `/p2p/...` part of the multiaddresses
                             let addrs: Vec<_> = addrs
                                 .into_iter()
@@ -196,11 +228,13 @@ impl SwarmDriver {
 
                             debug!(%peer_id, ?addrs, "identify: adding addresses to routing table");
                             for multiaddr in addrs.clone() {
-                                let _routing_update = self
+                                if multiaddr.iter().any(|p| p != libp2p::multiaddr::Protocol::P2pCircuit) {
+                                    let _routing_update = self
                                     .swarm
                                     .behaviour_mut()
                                     .kademlia
                                     .add_address(&peer_id, multiaddr);
+                                } 
                             }
 
                             // If the peer supports AutoNAT, add it as server
@@ -210,11 +244,33 @@ impl SwarmDriver {
                                 let a = &mut self.swarm.behaviour_mut().autonat;
                                 // It could be that we are on a local network and have AutoNAT disabled.
                                 if let Some(autonat) = a.as_mut() {
-                                    for multiaddr in addrs {
+                                    for multiaddr in addrs.clone() {
                                         autonat.add_server(peer_id, Some(multiaddr));
                                     }
                                 }
                             }
+
+                            // If the peer supports providing Relay services, add it as server
+                            if info.protocols.iter().any(|protocol| {
+                                protocol.to_string().starts_with("/libp2p/circuit/relay/0.2.0/stop")
+                            }) {
+                                let r = &mut self.swarm.behaviour_mut().relay;
+                                if let Some(_relay) = r.as_mut() {
+                                    for multiaddr in addrs.clone() {
+                                        info!("Added Relay server {} with peer id {}", multiaddr.clone(), peer_id.clone());
+                                        self.relay_servers.insert(peer_id.clone(), multiaddr.clone());
+
+                                        if self.is_relay_client {
+                                            self
+                                            .swarm
+                                            .listen_on(multiaddr
+                                                .with(Protocol::P2p(peer_id))
+                                                .with(Protocol::P2pCircuit))
+                                            .unwrap();
+                                        }
+                                    }
+                                }
+                            }   
                         }
                     }
                     libp2p::identify::Event::Sent { .. } => trace!("identify: {iden:?}"),
@@ -243,26 +299,41 @@ impl SwarmDriver {
                 }
             },
             SwarmEvent::NewListenAddr { address, .. } => {
-                let local_peer_id = *self.swarm.local_peer_id();
-                let address = address.with(Protocol::P2p(local_peer_id));
+                if address.iter().any(|p| p == libp2p::multiaddr::Protocol::P2pCircuit) {
+                    info!("Relayed listen address added: {}", address.clone());
+//                    info!("Identify: pushing relay listening address {} to all connected peers", address.clone());
+//                    let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
+//                    self.swarm.behaviour_mut().identify.push(all_peers);
 
-                // Trigger server mode if we're not a client
-                if !self.is_client {
-                    if self.local {
-                        // all addresses are effectively external here...
-                        // this is needed for Kad Mode::Server
+                    if multiaddr_is_global(&address) {
                         self.swarm.add_external_address(address.clone());
-                    } else {
-                        // only add our global addresses
-                        if multiaddr_is_global(&address) {
+                    }
+
+                    self.send_event(NetworkEvent::NewListenAddr(address.clone()));
+
+                    info!("Local node is listening on {address:?}");
+                } else {
+                    let local_peer_id = *self.swarm.local_peer_id();
+                    let address = address.with(Protocol::P2p(local_peer_id));
+
+                    // Trigger server mode if we're not a client
+                    if !self.is_client {
+                        if self.local {
+                            // all addresses are effectively external here...
+                            // this is needed for Kad Mode::Server
                             self.swarm.add_external_address(address.clone());
+                        } else {
+                            // only add our global addresses
+                            if multiaddr_is_global(&address) {
+                                self.swarm.add_external_address(address.clone());
+                            }
                         }
                     }
+
+                    self.send_event(NetworkEvent::NewListenAddr(address.clone()));
+
+                    info!("Local node is listening on {address:?}");
                 }
-
-                self.send_event(NetworkEvent::NewListenAddr(address.clone()));
-
-                info!("Local node is listening on {address:?}");
             }
             SwarmEvent::IncomingConnection { .. } => {}
             SwarmEvent::ConnectionEstablished {
@@ -275,6 +346,10 @@ impl SwarmDriver {
 
                 if endpoint.is_dialer() {
                     self.dialed_peers.push(peer_id);
+                }
+
+                if endpoint.is_relayed() {
+                    info!("Relayed connection established to {} via {:?}", peer_id, endpoint)
                 }
             }
             SwarmEvent::ConnectionClosed {
@@ -319,21 +394,35 @@ impl SwarmDriver {
 
                     match new {
                         NatStatus::Public(_addr) => {
-                            // In theory, we could actively push our address to our peers now. But, which peers? All of them?
-                            // Or, should we just wait and let Identify do it on its own? But, what if we are not connected
-                            // to any peers anymore? (E.g., our connections timed out etc)
-                            // let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
-                            // self.swarm.behaviour_mut().identify.push(all_peers);
+                            info!("Relay operating in server mode");
+                            self.is_relay_client = false;
                         }
                         NatStatus::Private => {
-                            // We could just straight out error here. In the future we might try to activate a relay mechanism.
+                            info!("Relay operating in client mode");
+                            self.is_relay_client = true;
+
+                            for (peer_id, multiaddr) in self.relay_servers.clone() {
+                                if self.is_relay_client {
+                                    self
+                                    .swarm
+                                    .listen_on(multiaddr
+                                        .with(Protocol::P2p(peer_id))
+                                        .with(Protocol::P2pCircuit))
+                                    .unwrap();
+                                }
+                            }
                         }
                         NatStatus::Unknown => {}
                     };
                 }
             },
             SwarmEvent::Behaviour(NodeEvent::Relay(event)) => {
-                info!("{:?}", event)
+                info!("Relay event: {:?}", event)
+            },
+            SwarmEvent::Behaviour(NodeEvent::RelayClient(
+                relay::client::Event::ReservationReqAccepted { relay_peer_id, renewal, limit },
+            )) => {
+                info!("Relay peer id {} accepted our reservation request (renewal: {}, limit: {:?})", relay_peer_id, renewal, limit );
             },
             other => debug!("SwarmEvent has been ignored: {other:?}"),
         }
