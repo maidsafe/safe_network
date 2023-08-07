@@ -31,6 +31,7 @@ use libp2p::{
     request_response::{self, ResponseChannel as PeerResponseChannel},
     swarm::{behaviour::toggle::Toggle, NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
+    relay,
 };
 use sn_protocol::{
     messages::{Request, Response},
@@ -57,6 +58,7 @@ pub(super) struct NodeBehaviour {
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
     pub(super) autonat: Toggle<autonat::Behaviour>,
+    pub(super) relay: Toggle<relay::Behaviour>,
 }
 
 #[derive(Debug)]
@@ -67,6 +69,7 @@ pub(super) enum NodeEvent {
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
     Autonat(autonat::Event),
+    Relay(relay::Event),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -97,6 +100,12 @@ impl From<libp2p::identify::Event> for NodeEvent {
 impl From<autonat::Event> for NodeEvent {
     fn from(event: autonat::Event) -> Self {
         NodeEvent::Autonat(event)
+    }
+}
+
+impl From<relay::Event> for NodeEvent {
+    fn from(event: relay::Event) -> Self {
+        NodeEvent::Relay(event)
     }
 }
 
@@ -322,6 +331,9 @@ impl SwarmDriver {
                         NatStatus::Unknown => {}
                     };
                 }
+            },
+            SwarmEvent::Behaviour(NodeEvent::Relay(event)) => {
+                info!("{:?}", event)
             },
             other => debug!("SwarmEvent has been ignored: {other:?}"),
         }

@@ -48,6 +48,7 @@ use libp2p::{
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport, tcp, noise,
+    relay,
 };
 use libp2p_quic as quic;
 use rand::Rng;
@@ -377,6 +378,13 @@ impl SwarmDriver {
         };
         let autonat = Toggle::from(autonat);
 
+        let relay = if !local && !is_client {
+            Some(relay::Behaviour::new(peer_id, Default::default()))
+        } else {
+            None
+        };
+        let relay = Toggle::from(relay);
+
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
@@ -384,6 +392,7 @@ impl SwarmDriver {
             #[cfg(feature = "local-discovery")]
             mdns,
             autonat,
+            relay,
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
