@@ -34,7 +34,7 @@ use self::{
     },
     replication_fetcher::ReplicationFetcher,
 };
-use futures::{future::select_all, StreamExt};
+use futures::{future::{select_all, Either}, StreamExt};
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
@@ -43,11 +43,13 @@ use libp2p::{
         KBucketDistance as Distance, KBucketKey, Kademlia, KademliaConfig, QueryId, Record,
         RecordKey,
     },
+    core::{muxing::StreamMuxerBox, transport::Boxed, upgrade},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
-    Multiaddr, PeerId, Transport,
+    Multiaddr, PeerId, Transport, tcp, noise,
 };
+use libp2p_quic as quic;
 use rand::Rng;
 use sn_dbc::Token;
 use sn_protocol::{
@@ -60,6 +62,7 @@ use std::{
     num::NonZeroUsize,
     path::PathBuf,
     time::Duration,
+    io,
 };
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
@@ -191,11 +194,21 @@ impl SwarmDriver {
         )?;
 
         // Listen on the provided address
-        let addr = Multiaddr::from(addr.ip()).with(Protocol::Tcp(addr.port()));
         let _listener_id = swarm_driver
             .swarm
-            .listen_on(addr)
-            .expect("Failed to listen on the provided address");
+            .listen_on(
+                Multiaddr::from(addr.ip())
+                .with(Protocol::Tcp(addr.port())),
+            )?;
+
+        let _listener_id = swarm_driver
+            .swarm
+            .listen_on(
+                Multiaddr::from(addr.ip())
+                    .with(Protocol::Udp(addr.port()))
+                    .with(Protocol::QuicV1),
+            )
+            .unwrap();
 
         Ok((network, events_receiver, swarm_driver))
     }
@@ -342,20 +355,7 @@ impl SwarmDriver {
         };
 
         // Transport
-        let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
-            .upgrade(libp2p::core::upgrade::Version::V1)
-            .authenticate(
-                libp2p::noise::Config::new(&keypair)
-                    .expect("Signing libp2p-noise static DH keypair failed."),
-            )
-            .multiplex(libp2p::yamux::Config::default())
-            .boxed();
-
-        if !local {
-            debug!("Preventing non-global dials");
-            // Wrap TCP in a transport that prevents dialing local addresses.
-            transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
-        }
+        let transport = build_transport(keypair.clone(), local)?;
 
         // Disable AutoNAT if we are either running locally or a client.
         let autonat = if !local && !is_client {
@@ -979,4 +979,32 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
         .iter()
         .filter(|p| !matches!(p, Protocol::P2p(_)))
         .collect()
+}
+
+pub fn build_transport(keypair: Keypair, local: bool) -> io::Result<Boxed<(PeerId, StreamMuxerBox)>> {
+    let tcp_transport = tcp::tokio::Transport::default();
+    let tcp_transport = tcp_transport
+        .upgrade(upgrade::Version::V1Lazy)
+        .authenticate(
+        noise::Config::new(&keypair).expect("Signing libp2p-noise static DH keypair failed."),
+        )
+        .multiplex(libp2p::yamux::Config::default());
+
+    let quic_transport = libp2p_quic::tokio::Transport::new(quic::Config::new(&keypair));
+
+    let mut transport = tcp_transport
+        .or_transport(quic_transport)
+        .map(|either_output, _| match either_output {
+            Either::Left((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
+            Either::Right((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
+        })
+        .boxed();
+
+    if !local {
+        debug!("Preventing non-global dials");
+        // Wrap in a transport that prevents dialing local addresses.
+        transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
+    }
+
+    Ok(transport)
 }
