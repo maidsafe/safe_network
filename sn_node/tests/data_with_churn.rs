@@ -312,14 +312,14 @@ fn create_registers_task(client: Client, content: ContentList, churn_period: Dur
         let delay = churn_period / REGISTER_CREATION_RATIO_TO_CHURN;
 
         loop {
-            let xorname = XorName(rand::random());
-            let tag = rand::random();
+            let meta = XorName(rand::random());
+            let owner = client.signer_pk();
 
-            let addr = RegisterAddress { name: xorname, tag };
+            let addr = RegisterAddress::new(meta, owner);
             println!("Creating Register at {addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match client.create_register(xorname, tag, false).await {
+            match client.create_register(meta, false).await {
                 Ok(_) => content
                     .write()
                     .await
@@ -599,7 +599,7 @@ async fn query_content(
             }
         }
         NetworkAddress::RegisterAddress(addr) => {
-            let _ = client.get_register(*addr.name(), addr.tag()).await?;
+            let _ = client.get_register(*addr).await?;
             Ok(())
         }
         NetworkAddress::ChunkAddress(addr) => {

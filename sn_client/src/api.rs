@@ -252,17 +252,17 @@ impl Client {
             .network
             .get_record_from_network(key, None, false)
             .await
-            .map_err(|_| ProtocolError::RegisterNotFound(address))?;
+            .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
         debug!(
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(record.key.clone())
         );
         let header = RecordHeader::from_record(&record)
-            .map_err(|_| ProtocolError::RegisterNotFound(address))?;
+            .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
 
         if let RecordKind::Register = header.kind {
             let register = try_deserialize_record::<SignedRegister>(&record)
-                .map_err(|_| ProtocolError::RegisterNotFound(address))?;
+                .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
             Ok(register)
         } else {
             error!("RecordKind mismatch while trying to retrieve a signed register");
@@ -273,20 +273,19 @@ impl Client {
     }
 
     /// Retrieve a Register from the network.
-    pub async fn get_register(&self, xorname: XorName, tag: u64) -> Result<ClientRegister> {
-        info!("Retrieving a Register replica with name {xorname} and tag {tag}");
-        ClientRegister::retrieve(self.clone(), xorname, tag).await
+    pub async fn get_register(&self, address: RegisterAddress) -> Result<ClientRegister> {
+        info!("Retrieving a Register replica at {address}");
+        ClientRegister::retrieve(self.clone(), address).await
     }
 
     /// Create a new Register on the Network.
     pub async fn create_register(
         &self,
-        xorname: XorName,
-        tag: u64,
+        meta: XorName,
         verify_store: bool,
     ) -> Result<ClientRegister> {
-        info!("Instantiating a new Register replica with name {xorname} and tag {tag}");
-        ClientRegister::create_online(self.clone(), xorname, tag, verify_store).await
+        info!("Instantiating a new Register replica with meta {meta:?}");
+        ClientRegister::create_online(self.clone(), meta, verify_store).await
     }
 
     /// Store `Chunk` as a record.

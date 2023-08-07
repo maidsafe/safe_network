@@ -18,6 +18,7 @@ fn safe_files_upload(dir: &str) {
         .arg("files")
         .arg("upload")
         .arg(dir)
+        .arg("-n")
         .output()
         .expect("Failed to execute command");
 

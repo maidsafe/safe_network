@@ -26,8 +26,6 @@ const MAX_REG_NUM_ENTRIES: u16 = 1024;
 /// A Register on the SAFE Network
 #[derive(Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub struct Register {
-    /// Owner of the Register
-    owner: PublicKey,
     /// CRDT data of the Register
     crdt: RegisterCrdt,
     /// Permissions of the Register
@@ -79,8 +77,8 @@ impl SignedRegister {
     pub fn verify_with_address(&self, address: RegisterAddress) -> Result<()> {
         if self.base_register.address() != &address {
             return Err(Error::InvalidRegisterAddress {
-                requested: address,
-                got: *self.address(),
+                requested: Box::new(address),
+                got: Box::new(*self.address()),
             });
         }
         self.verify()
@@ -122,7 +120,7 @@ impl SignedRegister {
 
     /// Return the owner of the data.
     pub fn owner(&self) -> PublicKey {
-        self.base_register.owner
+        self.base_register.owner()
     }
 
     /// Check and add an Op to the SignedRegister
@@ -135,11 +133,10 @@ impl SignedRegister {
 
 impl Register {
     /// Create a new Register
-    pub fn new(owner: PublicKey, name: XorName, tag: u64, mut permissions: Permissions) -> Self {
-        let address = RegisterAddress { name, tag };
+    pub fn new(owner: PublicKey, meta: XorName, mut permissions: Permissions) -> Self {
+        let address = RegisterAddress { meta, owner };
         permissions.writers.insert(User::Key(owner));
         Self {
-            owner,
             crdt: RegisterCrdt::new(address),
             permissions,
         }
@@ -147,7 +144,7 @@ impl Register {
 
     /// Sign a Register and return the signature, makes sure the signer is the owner in the process
     pub fn sign(&self, secret_key: &SecretKey) -> Result<Signature> {
-        if self.owner != secret_key.public_key() {
+        if self.owner() != secret_key.public_key() {
             return Err(Error::InvalidSecretKey);
         }
         let bytes = self.bytes()?;
@@ -168,9 +165,9 @@ impl Register {
     }
 
     #[cfg(test)]
-    pub fn new_owned(owner: PublicKey, name: XorName, tag: u64) -> Self {
+    pub fn new_owned(owner: PublicKey, meta: XorName) -> Self {
         let permissions = Default::default();
-        Self::new(owner, name, tag, permissions)
+        Self::new(owner, meta, permissions)
     }
 
     /// Return the address.
@@ -178,19 +175,9 @@ impl Register {
         self.crdt.address()
     }
 
-    /// Return the name.
-    pub fn name(&self) -> &XorName {
-        self.address().name()
-    }
-
-    /// Return the tag.
-    pub fn tag(&self) -> u64 {
-        self.address().tag()
-    }
-
     /// Return the owner of the data.
     pub fn owner(&self) -> PublicKey {
-        self.owner
+        self.address().owner()
     }
 
     /// Return the number of items held in the register
@@ -221,13 +208,14 @@ impl Register {
     /// Write an entry to the Register, returning the generated unsigned
     /// CRDT operation so the caller can sign and broadcast it to other replicas,
     /// along with the hash of the entry just written.
+    /// The returned RegisterOp is not signed, it is up to the caller to sign it using: `sign_with`
     pub fn write(
         &mut self,
         entry: Entry,
         children: BTreeSet<EntryHash>,
     ) -> Result<(EntryHash, RegisterOp)> {
         self.check_entry_and_reg_sizes(&entry)?;
-        self.crdt.write(entry, children, User::Key(self.owner))
+        self.crdt.write(entry, children, User::Key(self.owner()))
     }
 
     /// Apply a signed data CRDT operation.
@@ -261,7 +249,7 @@ impl Register {
     /// `Ok(())` if the user can write to this register
     /// `Err::AccessDenied` if the user cannot write to this register
     pub fn check_user_permissions(&self, requester: User) -> Result<()> {
-        if requester == User::Key(self.owner) || self.permissions.can_write(&requester) {
+        if requester == User::Key(self.owner()) || self.permissions.can_write(&requester) {
             Ok(())
         } else {
             Err(Error::AccessDenied(requester))
@@ -303,31 +291,26 @@ mod tests {
 
     #[test]
     fn register_create() {
-        let name = xor_name::rand::random();
-        let tag = 43_000;
-        let (authority_sk, register) = &gen_reg_replicas(None, name, tag, None, 1)[0];
-
-        assert_eq!(*register.name(), name);
-        assert_eq!(register.tag(), tag);
+        let meta = xor_name::rand::random();
+        let (authority_sk, register) = &gen_reg_replicas(None, meta, None, 1)[0];
 
         let authority = authority_sk.public_key();
         assert_eq!(register.owner(), authority);
         assert_eq!(register.owner(), authority);
 
-        let address = RegisterAddress::new(name, tag);
+        let address = RegisterAddress::new(meta, authority);
         assert_eq!(*register.address(), address);
     }
 
     #[test]
-    fn register_generate_entry_hash() -> Result<()> {
+    fn register_generate_entry_hash() -> eyre::Result<()> {
         let authority_sk = SecretKey::random();
         let authority = authority_sk.public_key();
 
-        let name: XorName = xor_name::rand::random();
-        let tag = 43_000u64;
+        let meta: XorName = xor_name::rand::random();
 
-        let mut replica1 = Register::new_owned(authority, name, tag);
-        let mut replica2 = Register::new_owned(authority, name, tag);
+        let mut replica1 = Register::new_owned(authority, meta);
+        let mut replica2 = Register::new_owned(authority, meta);
 
         // Different item from same replica's root shall having different entry_hash
         let item1 = random_register_entry();
@@ -353,22 +336,21 @@ mod tests {
     }
 
     #[test]
-    fn register_concurrent_write_ops() -> Result<()> {
+    fn register_concurrent_write_ops() -> eyre::Result<()> {
         let authority_sk1 = SecretKey::random();
         let authority1 = User::Key(authority_sk1.public_key());
         let authority_sk2 = SecretKey::random();
         let authority2 = User::Key(authority_sk2.public_key());
 
-        let name: XorName = xor_name::rand::random();
-        let tag = 43_000u64;
+        let meta: XorName = xor_name::rand::random();
 
         // We'll have 'authority1' as the owner in both replicas and
         // grant permissions for Write to 'authority2' in both replicas too
         let perms = Permissions::new_with([authority1, authority2]);
 
-        // Instantiate the same Register on two replicas with the two diff authorities
-        let mut replica1 = Register::new(authority_sk1.public_key(), name, tag, perms.clone());
-        let mut replica2 = Register::new(authority_sk2.public_key(), name, tag, perms);
+        // Instantiate the same Register on two replicas
+        let mut replica1 = Register::new(authority_sk1.public_key(), meta, perms.clone());
+        let mut replica2 = replica1.clone();
 
         // And let's write an item to replica1 with autority1
         let item1 = random_register_entry();
@@ -386,7 +368,7 @@ mod tests {
         let mut signed_write_op2 = op2;
         signed_write_op2.sign_with(&authority_sk2);
 
-        // Item should be writeed on replica2
+        // Item should be writed on replica2
         assert_eq!(replica2.size(), 1);
 
         // Write operations are now broadcasted and applied to both replicas
@@ -438,35 +420,34 @@ mod tests {
 
     #[test]
     fn register_query_public_perms() -> eyre::Result<()> {
-        let name = xor_name::rand::random();
-        let tag = 43_666;
+        let meta = xor_name::rand::random();
 
-        // one replica will allow write ops to anyone
+        // one register will allow write ops to anyone
         let authority_sk1 = SecretKey::random();
         let authority_pk1 = authority_sk1.public_key();
         let owner1 = User::Key(authority_pk1);
         let perms1 = Permissions::new_anyone_can_write();
-        let replica1 = create_reg_replica_with(name, tag, Some(authority_sk1), Some(perms1));
+        let replica1 = create_reg_replica_with(meta, Some(authority_sk1), Some(perms1));
 
-        // the other replica will allow write ops to 'owner1' and 'owner2' only
+        // the other register will allow write ops to 'owner1' and 'owner2' only
         let authority_sk2 = SecretKey::random();
         let authority_pk2 = authority_sk2.public_key();
         let owner2 = User::Key(authority_pk2);
         let perms2 = Permissions::new_with([owner1]);
-        let replica2 = create_reg_replica_with(name, tag, Some(authority_sk2), Some(perms2));
+        let replica2 = create_reg_replica_with(meta, Some(authority_sk2), Some(perms2));
 
         // dummy owner
         let sk_rand = SecretKey::random();
         let random_user = User::Key(sk_rand.public_key());
 
-        // check replica 1 is public
+        // check register 1 is public
         assert_eq!(replica1.owner(), authority_pk1);
         assert_eq!(replica1.check_user_permissions(User::Anyone), Ok(()));
         assert_eq!(replica1.check_user_permissions(owner1), Ok(()));
         assert_eq!(replica1.check_user_permissions(owner2), Ok(()));
         assert_eq!(replica1.check_user_permissions(random_user), Ok(()));
 
-        // check replica 2 has only owner1 and owner2 write allowed
+        // check register 2 has only owner1 and owner2 write allowed
         assert_eq!(replica2.owner(), authority_pk2);
         assert_eq!(
             replica2.check_user_permissions(User::Anyone),
@@ -484,14 +465,13 @@ mod tests {
 
     #[test]
     fn exceeding_max_reg_entries_errors() -> eyre::Result<()> {
-        let name = xor_name::rand::random();
-        let tag = 43_666;
+        let meta = xor_name::rand::random();
 
         // one replica will allow write ops to anyone
         let authority_sk1 = SecretKey::random();
         let perms1 = Permissions::new_anyone_can_write();
 
-        let mut replica = create_reg_replica_with(name, tag, Some(authority_sk1), Some(perms1));
+        let mut replica = create_reg_replica_with(meta, Some(authority_sk1), Some(perms1));
 
         for _ in 0..MAX_REG_NUM_ENTRIES {
             let (_hash, _op) = replica
@@ -517,8 +497,7 @@ mod tests {
     // Helpers for tests
     fn gen_reg_replicas(
         authority_sk: Option<SecretKey>,
-        name: XorName,
-        tag: u64,
+        meta: XorName,
         perms: Option<Permissions>,
         count: usize,
     ) -> Vec<(SecretKey, Register)> {
@@ -527,7 +506,7 @@ mod tests {
                 let authority_sk = authority_sk.clone().unwrap_or_else(SecretKey::random);
                 let authority = authority_sk.public_key();
                 let perms = perms.clone().unwrap_or_default();
-                let register = Register::new(authority, name, tag, perms);
+                let register = Register::new(authority, meta, perms);
                 (authority_sk, register)
             })
             .collect();
@@ -537,19 +516,17 @@ mod tests {
     }
 
     fn create_reg_replicas(count: usize) -> Vec<(SecretKey, Register)> {
-        let name = xor_name::rand::random();
-        let tag = 43_000;
+        let meta = xor_name::rand::random();
 
-        gen_reg_replicas(None, name, tag, None, count)
+        gen_reg_replicas(None, meta, None, count)
     }
 
     fn create_reg_replica_with(
-        name: XorName,
-        tag: u64,
+        meta: XorName,
         authority_sk: Option<SecretKey>,
         perms: Option<Permissions>,
     ) -> Register {
-        let replicas = gen_reg_replicas(authority_sk, name, tag, perms, 1);
+        let replicas = gen_reg_replicas(authority_sk, meta, perms, 1);
         replicas[0].1.clone()
     }
 
@@ -574,7 +551,6 @@ mod tests {
         max_quantity: usize,
     ) -> impl Strategy<Value = Result<(Vec<Register>, Arc<SecretKey>)>> {
         let xorname = xor_name::rand::random();
-        let tag = 45_000u64;
 
         let owner_sk = Arc::new(SecretKey::random());
         let owner = owner_sk.public_key();
@@ -583,7 +559,7 @@ mod tests {
         (1..max_quantity + 1).prop_map(move |quantity| {
             let mut replicas = Vec::with_capacity(quantity);
             for _ in 0..quantity {
-                let replica = Register::new(owner, xorname, tag, perms.clone());
+                let replica = Register::new(owner, xorname, perms.clone());
 
                 replicas.push(replica);
             }
@@ -616,15 +592,13 @@ mod tests {
             _data in generate_reg_entry()
         ) {
             // Instantiate the same Register on two replicas
-            let name = xor_name::rand::random();
-            let tag = 45_000u64;
+            let meta = xor_name::rand::random();
             let owner_sk = SecretKey::random();
             let perms = Default::default();
 
             let mut replicas = gen_reg_replicas(
                 Some(owner_sk.clone()),
-                name,
-                tag,
+                meta,
                 Some(perms),
                 2);
             let (_, mut replica1) = replicas.remove(0);
@@ -644,16 +618,14 @@ mod tests {
             dataset in generate_dataset(1000)
         ) {
             // Instantiate the same Register on two replicas
-            let name = xor_name::rand::random();
-            let tag = 43_000u64;
+            let meta = xor_name::rand::random();
             let owner_sk = SecretKey::random();
             let perms = Default::default();
 
             // Instantiate the same Register on two replicas
             let mut replicas = gen_reg_replicas(
                 Some(owner_sk.clone()),
-                name,
-                tag,
+                meta,
                 Some(perms),
                 2);
             let (_, mut replica1) = replicas.remove(0);
@@ -681,16 +653,14 @@ mod tests {
             dataset in generate_dataset(1000)
         ) {
             // Instantiate the same Register on two replicas
-            let name = xor_name::rand::random();
-            let tag = 43_000u64;
+            let meta = xor_name::rand::random();
             let owner_sk = SecretKey::random();
             let perms = Default::default();
 
             // Instantiate the same Register on two replicas
             let mut replicas = gen_reg_replicas(
                 Some(owner_sk.clone()),
-                name,
-                tag,
+                meta,
                 Some(perms),
                 2);
             let (_, mut replica1) = replicas.remove(0);
@@ -822,16 +792,14 @@ mod tests {
             dataset in generate_dataset_and_probability(1000),
         ) {
             // Instantiate the same Register on two replicas
-            let name = xor_name::rand::random();
-            let tag = 43_000u64;
+            let meta = xor_name::rand::random();
             let owner_sk = SecretKey::random();
             let perms = Default::default();
 
             // Instantiate the same Register on two replicas
             let mut replicas = gen_reg_replicas(
                 Some(owner_sk.clone()),
-                name,
-                tag,
+                meta,
                 Some(perms),
                 2);
             let (_, mut replica1) = replicas.remove(0);
@@ -944,9 +912,8 @@ mod tests {
 
             // set up a replica that has nothing to do with the rest, random xor... different owner...
             let xorname = xor_name::rand::random();
-            let tag = 45_000u64;
             let random_owner_sk = SecretKey::random();
-            let mut bogus_replica = Register::new_owned(random_owner_sk.public_key(), xorname, tag);
+            let mut bogus_replica = Register::new_owned(random_owner_sk.public_key(), xorname);
 
             // add bogus ops from bogus replica + bogus data
             let mut children = BTreeSet::new();

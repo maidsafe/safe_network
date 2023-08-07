@@ -34,15 +34,10 @@ pub struct ClientRegister {
 
 impl ClientRegister {
     /// Central helper func to create a client register
-    fn create_register(
-        client: Client,
-        name: XorName,
-        tag: u64,
-        perms: Permissions,
-    ) -> Result<Self> {
+    fn create_register(client: Client, meta: XorName, perms: Permissions) -> Result<Self> {
         let public_key = client.signer_pk();
 
-        let register = Register::new(public_key, name, tag, perms);
+        let register = Register::new(public_key, meta, perms);
         let reg = Self {
             client,
             register,
@@ -53,38 +48,32 @@ impl ClientRegister {
     }
 
     /// Create a new Register Locally.
-    pub fn create(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        Self::create_register(client, name, tag, Permissions::new_owner_only())
+    pub fn create(client: Client, meta: XorName) -> Result<Self> {
+        Self::create_register(client, meta, Permissions::new_owner_only())
     }
 
     /// Create a new public Register (Anybody can write to it) and send it so the Network.
     /// This will optionally verify the Register was stored on the network.
     pub async fn create_public_online(
         client: Client,
-        name: XorName,
-        tag: u64,
+        meta: XorName,
         verify_store: bool,
     ) -> Result<Self> {
-        let mut reg = Self::create_register(client, name, tag, Permissions::new_owner_only())?;
+        let mut reg = Self::create_register(client, meta, Permissions::new_owner_only())?;
         reg.sync(verify_store).await?;
         Ok(reg)
     }
 
     /// Create a new Register and send it to the Network.
-    pub async fn create_online(
-        client: Client,
-        name: XorName,
-        tag: u64,
-        verify_store: bool,
-    ) -> Result<Self> {
-        let mut reg = Self::create_register(client, name, tag, Permissions::new_owner_only())?;
+    pub async fn create_online(client: Client, meta: XorName, verify_store: bool) -> Result<Self> {
+        let mut reg = Self::create_register(client, meta, Permissions::new_owner_only())?;
         reg.sync(verify_store).await?;
         Ok(reg)
     }
 
     /// Retrieve a Register from the network to work on it offline.
-    pub(super) async fn retrieve(client: Client, name: XorName, tag: u64) -> Result<Self> {
-        let register = Self::get_register_from_network(&client, name, tag).await?;
+    pub(super) async fn retrieve(client: Client, address: RegisterAddress) -> Result<Self> {
+        let register = Self::get_register_from_network(&client, address).await?;
 
         Ok(Self {
             client,
@@ -105,16 +94,6 @@ impl ClientRegister {
     /// Return the Permissions of the Register.
     pub fn permissions(&self) -> &Permissions {
         self.register.permissions()
-    }
-
-    /// Return the XorName of the Register.
-    pub fn name(&self) -> &XorName {
-        self.register.name()
-    }
-
-    /// Return the tag value of the Register.
-    pub fn tag(&self) -> u64 {
-        self.register.tag()
     }
 
     /// Return the number of items held in the register
@@ -186,16 +165,15 @@ impl ClientRegister {
     /// Sync this Register with the replicas on the network.
     /// This will optionally verify the stored Register on the network is the same as the local one.
     pub async fn sync(&mut self, verify_store: bool) -> Result<()> {
-        debug!("Syncing Register at {}, {}!", self.name(), self.tag());
+        debug!("Syncing Register at {:?}!", self.address());
         let remote_replica =
-            match Self::get_register_from_network(&self.client, *self.name(), self.tag()).await {
+            match Self::get_register_from_network(&self.client, *self.address()).await {
                 Ok(r) => r,
                 Err(err) => {
                     debug!("Failed to fetch register: {err:?}");
                     debug!(
-                        "Creating Register as it doesn't exist at {}, {}!",
-                        self.name(),
-                        self.tag()
+                        "Creating Register as it doesn't exist at {:?}!",
+                        self.address(),
                     );
                     let cmd = RegisterCmd::Create {
                         register: self.register.clone(),
@@ -214,9 +192,8 @@ impl ClientRegister {
     pub async fn push(&mut self, verify_store: bool) -> Result<()> {
         let ops_len = self.ops.len();
         if ops_len > 0 {
-            let name = *self.name();
-            let tag = self.tag();
-            debug!("Pushing {ops_len} cached Register cmds at {name}, {tag}!",);
+            let address = *self.address();
+            debug!("Pushing {ops_len} cached Register cmds at {address}!");
 
             // TODO: send them all concurrently
             while let Some(cmd) = self.ops.pop_back() {
@@ -230,7 +207,7 @@ impl ClientRegister {
                 }
             }
 
-            debug!("Successfully pushed {ops_len} Register cmds at {name}, {tag}!",);
+            debug!("Successfully pushed {ops_len} Register cmds at {address}!");
         }
 
         Ok(())
@@ -319,11 +296,9 @@ impl ClientRegister {
     // Retrieve a `Register` from the Network.
     async fn get_register_from_network(
         client: &Client,
-        name: XorName,
-        tag: u64,
+        address: RegisterAddress,
     ) -> Result<Register> {
-        let address = RegisterAddress { name, tag };
-        debug!("Retrieving Register from: {address:?}");
+        debug!("Retrieving Register from: {address}");
         let reg = client.get_signed_register_from_network(address).await?;
         reg.verify_with_address(address)?;
         Ok(reg.register()?)
