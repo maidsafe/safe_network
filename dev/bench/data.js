@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1691412393893,
+  "lastUpdate": 1691423995089,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4636,6 +4636,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 2.6636745938918907,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "cc7fc98bb2fcb330ab5be00a10e21e923d821e66",
+          "message": "fix: signature issue when owner was not signer",
+          "timestamp": "2023-08-07T09:22:53Z",
+          "tree_id": "a6577f4289d621f0b5c21d6d9a9be859025561f4",
+          "url": "https://github.com/maidsafe/safe_network/commit/cc7fc98bb2fcb330ab5be00a10e21e923d821e66"
+        },
+        "date": 1691423994290,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.06160013424820625,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.0321602589986804,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 2.6387815535485375,
             "unit": "MiB/s"
           }
         ]
