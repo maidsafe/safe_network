@@ -26,7 +26,8 @@ pub enum RegisterCmds {
         /// The address of the register to edit.
         #[clap(name = "address")]
         address: String,
-        /// If you are the owner, the name of the register can be used as a shorthand to the address, as we can derive the address from the public key + name
+        /// If you are the owner, the name of the register can be used as a shorthand to the address,
+        /// as we can derive the address from the public key + name
         /// Use this flag if you are providing the register name instead of the address
         #[clap(name = "name", short = 'n')]
         use_name: bool,
@@ -38,7 +39,8 @@ pub enum RegisterCmds {
         /// The register addresses to get.
         #[clap(name = "addresses")]
         addresses: Vec<String>,
-        /// If you are the owner, the name of the register can be used as a shorthand to the address, as we can derive the address from the public key + name
+        /// If you are the owner, the name of the register can be used as a shorthand to the address,
+        /// as we can derive the address from the public key + name
         /// Use this flag if you are providing the register names instead of the addresses
         #[clap(name = "name", short = 'n')]
         use_name: bool,
@@ -76,13 +78,13 @@ async fn create_register(name: String, client: &Client, verify_store: bool) -> R
 }
 
 async fn edit_register(
-    address: String,
+    address_str: String,
     use_name: bool,
     entry: String,
     client: &Client,
     verify_store: bool,
 ) -> Result<()> {
-    let (address, printing_name) = parse_addr(&address, use_name, client.signer_pk())?;
+    let (address, printing_name) = parse_addr(&address_str, use_name, client.signer_pk())?;
 
     println!("Trying to retrieve Register from {address}");
 
@@ -147,13 +149,17 @@ async fn get_registers(addresses: Vec<String>, use_name: bool, client: &Client) 
 }
 
 /// Parse str and return the address and the register info for printing
-fn parse_addr(str: &str, use_name: bool, pk: PublicKey) -> Result<(RegisterAddress, String)> {
+fn parse_addr(
+    address_str: &str,
+    use_name: bool,
+    pk: PublicKey,
+) -> Result<(RegisterAddress, String)> {
     if use_name {
-        let user_metadata = XorName::from_content(str.as_bytes());
+        let user_metadata = XorName::from_content(address_str.as_bytes());
         let addr = RegisterAddress::new(user_metadata, pk);
-        Ok((addr, format!("'{str}' at {addr}")))
+        Ok((addr, format!("'{address_str}' at {addr}")))
     } else {
-        let addr = RegisterAddress::from_hex(str)?;
-        Ok((addr, format!("at {str}")))
+        let addr = RegisterAddress::from_hex(address_str)?;
+        Ok((addr, format!("at {address_str}")))
     }
 }

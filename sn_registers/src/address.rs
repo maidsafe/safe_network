@@ -83,7 +83,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_register_address_tofro_hex() {
+    fn test_register_hex_conversion() {
         let mut rng = rand::thread_rng();
         let owner = SecretKey::random().public_key();
         let meta = XorName::random(&mut rng);
