@@ -622,12 +622,15 @@ impl Network {
             .await)
     }
 
-    pub async fn get_store_cost_from_network(&self, record_address: NetworkAddress) -> Result<Token> {
+    pub async fn get_store_cost_from_network(
+        &self,
+        record_address: NetworkAddress,
+    ) -> Result<Token> {
         let (sender, receiver) = oneshot::channel();
         debug!("Attempting to get store cost");
         // first we need to get CLOSE_GROUP of the dbc_id
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
-            key: dbc_id_key.clone(),
+            key: record_address.clone(),
             sender,
         })?;
 
@@ -637,7 +640,7 @@ impl Network {
             .into_iter()
             .collect_vec();
 
-        let request = Request::Query(Query::GetStoreCost(dbc_id_key));
+        let request = Request::Query(Query::GetStoreCost(record_address));
         let responses = self
             .send_and_get_responses(close_nodes, &request, true)
             .await;
