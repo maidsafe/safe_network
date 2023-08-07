@@ -77,12 +77,12 @@ impl ReplicatedData {
             Self::Chunk(chunk) => *chunk.chunk.name(),
             Self::DbcSpend(spends) => {
                 if let Some(spend) = spends.first() {
-                    *DbcAddress::from_dbc_id(spend.dbc_id()).name()
+                    *DbcAddress::from_dbc_id(spend.dbc_id()).xorname()
                 } else {
                     return Err(Error::SpendIsEmpty);
                 }
             }
-            Self::Register(register) => register.address().name(),
+            Self::Register(register) => register.address().xorname(),
         };
         Ok(name)
     }
