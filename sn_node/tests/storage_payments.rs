@@ -14,7 +14,7 @@ use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use sn_client::{Client, Error as ClientError, Files, WalletClient};
 use sn_dbc::{Hash, Token};
 use sn_networking::Error as NetworkError;
-use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_protocol::storage::{self, Chunk, ChunkAddress};
 
 use assert_fs::TempDir;
 use bytes::Bytes;

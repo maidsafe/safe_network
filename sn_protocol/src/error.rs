@@ -11,7 +11,7 @@ use crate::{
     NetworkAddress,
 };
 use serde::{Deserialize, Serialize};
-use sn_dbc::{Hash, SignedSpend};
+use sn_dbc::{Hash, SignedSpend, Token};
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -62,7 +62,7 @@ pub enum Error {
     SignStoreCostFailed,
     /// The amount paid by payment proof is not the required for the received content
     #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
-    PaymentProofInsufficientAmount { paid: usize, expected: usize },
+    PaymentProofInsufficientAmount { paid: Token, expected: Token },
     /// At least one input of payment proof provided has a mismatching spend Tx
     #[error("At least one input of payment proof provided for {0:?} has a mismatching spend Tx")]
     PaymentProofTxMismatch(XorName),

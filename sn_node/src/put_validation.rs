@@ -11,7 +11,7 @@ use crate::{
     Node,
 };
 use libp2p::kad::Record;
-use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend};
+use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend, Token};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{CmdOk, MerkleTreeNodesType, PaymentProof},
@@ -35,6 +35,7 @@ impl Node {
     pub(crate) async fn validate_and_store_record(
         &self,
         record: Record,
+        validate_payment: bool,
     ) -> Result<CmdOk, ProtocolError> {
         let record_header = RecordHeader::from_record(&record)?;
 
@@ -52,7 +53,8 @@ impl Node {
                     return Err(ProtocolError::RecordKeyMismatch);
                 }
 
-                self.validate_and_store_chunk(chunk_with_payment).await
+                self.validate_and_store_chunk(chunk_with_payment, validate_payment)
+                    .await
             }
             RecordKind::DbcSpend => {
                 let signed_spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
@@ -89,6 +91,7 @@ impl Node {
     pub(crate) async fn validate_and_store_chunk(
         &self,
         chunk_with_payment: ChunkWithPayment,
+        validate_payment: bool,
     ) -> Result<CmdOk, ProtocolError> {
         let chunk_name = *chunk_with_payment.chunk.name();
         debug!("validating and storing chunk {chunk_name:?}");
@@ -115,7 +118,9 @@ impl Node {
             return Ok(CmdOk::DataAlreadyPresent);
         }
 
-        self.chunk_payment_validation(&chunk_with_payment).await?;
+        if validate_payment {
+            self.chunk_payment_validation(&chunk_with_payment).await?;
+        }
 
         let record = Record {
             key,
@@ -309,9 +314,15 @@ impl Node {
         }
 
         if let Some(tx) = payment_tx {
+            let acceptable_fee = self
+                .network
+                .get_local_storecost()
+                .await
+                .map_err(|_| ProtocolError::ChunkNotStored(addr_name))?;
             // Check if the fee output id and amount are correct, as well as verify
-            // the payment proof corresponds to the fee output.
-            verify_fee_output_and_proof(addr_name, &tx, audit_trail, path)?;
+            // the payment proof corresponds to the fee output and that
+            // the fee is sufficient for this chunk.
+            verify_fee_output_and_proof(addr_name, acceptable_fee, &tx, audit_trail, path)?;
         } else {
             return Err(ProtocolError::PaymentProofWithoutInputs(addr_name));
         }
@@ -553,6 +564,7 @@ fn verify_fee_output_id(spent_tx: &DbcTransaction, required: bool) -> Result<(),
 // the proof's audit trail info.
 fn verify_fee_output_and_proof(
     addr_name: XorName,
+    acceptable_fee: Token,
     tx: &DbcTransaction,
     audit_trail: &[MerkleTreeNodesType],
     path: &[usize],
@@ -560,21 +572,22 @@ fn verify_fee_output_and_proof(
     // Check if the fee output id is correct
     verify_fee_output_id(tx, true)?;
 
+    // TODO: was there a reason we used leaf index here for payment calc?
     // Check the root hash verifies the merkle-tree audit trail and path against the content address name
-    let leaf_index = validate_payment_proof(addr_name, &tx.fee.root_hash, audit_trail, path)
+    let _leaf_index = validate_payment_proof(addr_name, &tx.fee.root_hash, audit_trail, path)
         .map_err(|err| ProtocolError::InvalidPaymentProof {
             addr_name,
             reason: err.to_string(),
         })?;
 
     // Check the expected amount of tokens was paid by the Tx, i.e. the amount of
-    // the fee output the expected 1 nano per Chunk/address.
-    let paid = tx.fee.token.as_nano() as usize;
-    if paid <= leaf_index {
-        // the payment amount is not enough, we expect 1 nano per adddress
+    // the fee output the expected `acceptable_fee` nano per Chunk/address.
+    let paid = tx.fee.token;
+    if paid <= acceptable_fee {
+        // the payment amount is not enough, we expect `acceptable_fee` nanos per adddress
         return Err(ProtocolError::PaymentProofInsufficientAmount {
             paid,
-            expected: leaf_index + 1,
+            expected: acceptable_fee,
         });
     }
 
