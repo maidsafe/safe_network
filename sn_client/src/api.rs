@@ -13,12 +13,9 @@ use super::{
 
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
-use libp2p::{
-    kad::{Record, K_VALUE},
-    Multiaddr,
-};
+use libp2p::{kad::Record, Multiaddr};
 use sn_dbc::{DbcId, SignedSpend, Token};
-use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver};
+use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::PaymentProof,
@@ -40,11 +37,6 @@ const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs
 
 /// The initial rounds of `get_random` allowing client to fill up the RT.
 const INITIAL_GET_RANDOM_ROUNDS: usize = 5;
-
-// returns the primitive K_VALUE
-const fn k_value() -> usize {
-    K_VALUE.get()
-}
 
 impl Client {
     /// Instantiate a new client.
@@ -201,7 +193,7 @@ impl Client {
             // it may take some time to fill up the RT.
             // To avoid such delay may fail the query with RecordNotFound,
             // wait till certain amount of peers populated into RT
-            if self.peers_added >= k_value() {
+            if self.peers_added >= CLOSE_GROUP_SIZE {
                 if let Some(progress) = &self.progress {
                     progress.finish_with_message("Connected to the Network");
                     // Remove the progress bar
@@ -211,12 +203,15 @@ impl Client {
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork)?;
             } else {
-                debug!("{}/{} initial peers found.", self.peers_added, K_VALUE);
+                debug!(
+                    "{}/{} initial peers found.",
+                    self.peers_added, CLOSE_GROUP_SIZE
+                );
 
                 if let Some(progress) = &self.progress {
                     progress.set_message(format!(
                         "{}/{} initial peers found.",
-                        self.peers_added, K_VALUE
+                        self.peers_added, CLOSE_GROUP_SIZE
                     ));
                 }
             }
