@@ -1,9 +1,11 @@
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
-use std::process::{exit, Command};
-use std::time::Duration;
+use std::{
+    fs::File,
+    io::Write,
+    path::Path,
+    process::{exit, Command},
+    time::Duration,
+};
 use tempfile::tempdir;
 
 const SAMPLE_SIZE: usize = 50;
@@ -53,37 +55,14 @@ fn create_file(size_mb: u64) -> tempfile::TempDir {
 }
 
 fn fund_cli_wallet() {
-    let output = Command::new("./target/release/safe")
-        .arg("wallet")
-        .arg("address")
-        .output()
-        .expect("Failed to execute 'safe wallet address' command");
-
-    let str = String::from_utf8(output.stdout).unwrap();
-    let addr = str.lines().last().unwrap();
-
-    let _ = Command::new("./target/release/faucet")
-        .arg("claim-genesis")
-        .output()
-        .expect("Failed to execute 'faucet claim-genesis");
-
-    let output = Command::new("./target/release/faucet")
-        .arg("send")
-        .arg("10000000000000")
-        .arg(addr)
-        .output()
-        .expect("Failed to execute 'faucet send 10000000000000' command");
-
-    let str = String::from_utf8(output.stdout).unwrap();
-    let dbc_hex = str.lines().last().unwrap();
+    println!("Setting up CLI wallet");
 
     let _ = Command::new("./target/release/safe")
         .arg("wallet")
-        .arg("deposit")
-        .arg("--dbc")
-        .arg(dbc_hex)
+        .arg("get-faucet")
+        .arg("127.0.0.1:8000")
         .output()
-        .expect("Failed to execute 'safe wallet deposit' command");
+        .expect("Failed to execute 'safe wallet get-faucet' command");
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
