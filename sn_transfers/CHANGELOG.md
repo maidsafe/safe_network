@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.24](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.23...sn_transfers-v0.10.24) - 2023-08-08
+
+### Added
+- *(transfers)* add get largest dbc for spending
+
+### Fixed
+- *(node)* prevent panic in storage calcs
+
+### Other
+- *(faucet)* provide more money
+- tidy store cost code
+
 ## [0.10.23](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.22...sn_transfers-v0.10.23) - 2023-08-07
 
 ### Other
