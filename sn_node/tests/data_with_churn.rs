@@ -352,13 +352,13 @@ fn store_chunks_task(
             );
             sleep(delay).await;
 
-            let (proofs, _storage_cost) = wallet_client
+            let (proofs, cost) = wallet_client
                 .pay_for_storage(chunks.iter().map(|c| c.name()), true)
                 .await
                 .expect("Failed to pay for storage for new file at {addr:?}");
 
             println!(
-                "Storing ({}) Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
+                "Storing ({}) Chunk/s at cost: {cost:?} of file ({} bytes) at {addr:?} in {delay:?}",
                 chunks.len(),
                 bytes.len()
             );

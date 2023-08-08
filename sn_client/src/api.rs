@@ -65,7 +65,7 @@ impl Client {
             signer,
             peers_added: 0,
             progress: Some(Self::setup_connection_progress()),
-            network_store_cost: None,
+            network_store_cost: 0,
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -433,12 +433,12 @@ impl Client {
     pub async fn get_store_cost_at_address(
         &mut self,
         address: NetworkAddress,
-        average_cost: bool,
+        only_update_cost_if_higher: bool,
     ) -> Result<Token> {
         trace!("Getting store cost at {address:?}");
 
         // if we're averaging over many samples across the network, any cost will do
-        let any_cost_will_do = average_cost;
+        let any_cost_will_do = only_update_cost_if_higher;
 
         let cost = self
             .network
@@ -446,14 +446,8 @@ impl Client {
             .await?
             .as_nano();
 
-        if average_cost {
-            if let Some(current_cost) = self.network_store_cost {
-                self.network_store_cost = Some((current_cost + cost) / 2);
-            } else {
-                self.network_store_cost = Some(cost);
-            }
-        } else {
-            self.network_store_cost = Some(cost);
+        if only_update_cost_if_higher && cost > self.network_store_cost {
+            self.network_store_cost = cost;
         }
 
         Ok(Token::from_nano(cost))
