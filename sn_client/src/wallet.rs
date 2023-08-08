@@ -45,8 +45,8 @@ impl WalletClient {
     }
 
     /// Get any known store cost estimate
-    pub fn store_cost(&self) -> Option<Token> {
-        self.client.network_store_cost.map(Token::from_nano)
+    pub fn store_cost(&self) -> Token {
+        Token::from_nano(self.client.network_store_cost)
     }
 
     /// Send tokens to another wallet.
@@ -129,10 +129,12 @@ impl WalletClient {
         let (root_hash, audit_trail_info) = build_payment_proofs(addrs_to_pay.into_iter())?;
         let num_of_addrs = audit_trail_info.len() as u64;
 
-        let storage_cost = if let Some(price) = self.store_cost() {
-            price
-        } else {
-            self.set_store_cost_from_random_address().await?
+        let mut storage_cost = self.store_cost();
+
+        // storage should not be free. Let's check...
+        if storage_cost.is_zero() {
+            self.set_store_cost_from_random_address().await?;
+            storage_cost = self.store_cost();
         };
 
         let amount_to_pay = number_of_records_to_pay * storage_cost.as_nano();
@@ -207,7 +209,7 @@ impl WalletClient {
 
 impl Client {
     /// Get any known store cost estimate
-    pub fn store_cost(&self) -> Option<u64> {
+    pub fn store_cost(&self) -> u64 {
         self.network_store_cost
     }
 
