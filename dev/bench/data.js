@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1691432328358,
+  "lastUpdate": 1691476081436,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4753,6 +4753,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 1.5730191964959088,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "31b3ba7cc13a88079c92d6645d1c9a53cc98e95f",
+          "message": "fix(cli): remove manual faucet claim from benchmarking.\n\nlocal testnets already start a faucet and make that claim",
+          "timestamp": "2023-08-08T06:45:26+02:00",
+          "tree_id": "1abf5f4d1e455afcd8f4510c051f45170f0e90db",
+          "url": "https://github.com/maidsafe/safe_network/commit/31b3ba7cc13a88079c92d6645d1c9a53cc98e95f"
+        },
+        "date": 1691476079960,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.06210404555679542,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6183409636933748,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 1.572130873333435,
             "unit": "MiB/s"
           }
         ]
