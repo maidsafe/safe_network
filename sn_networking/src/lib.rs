@@ -1061,6 +1061,8 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
 
 #[cfg(test)]
 mod tests {
+    use eyre::bail;
+
     use super::*;
 
     #[test]
@@ -1072,13 +1074,42 @@ mod tests {
             println!("price: {}", i);
             costs.push(Token::from_nano(i as u64));
         }
-        let price = get_fee_from_store_cost_quotes(&mut costs)?;
+        let price = get_fee_from_store_cost_quotes(&mut costs, false)?;
 
         assert_eq!(
             price,
             Token::from_nano(CLOSE_GROUP_SIZE as u64 / 2),
             "price should be {}",
             CLOSE_GROUP_SIZE / 2 + 1
+        );
+
+        Ok(())
+    }
+    #[test]
+    fn test_get_any_fee_from_store_cost_quotes() -> eyre::Result<()> {
+        // for a vec of different costs of CLOUSE_GROUP size
+        // ensure we return the CLOSE_GROUP / 2 indexed price
+        let mut costs = vec![];
+        for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
+            println!("price: {}", i);
+            costs.push(Token::from_nano(i as u64));
+        }
+        match get_fee_from_store_cost_quotes(&mut costs, false) {
+            Ok(_) => bail!("Should have errored as we have too few quotes"),
+            Err(_) => (),
+        }
+
+        let price = match get_fee_from_store_cost_quotes(&mut costs, true) {
+            Err(_) => bail!("Should have errored as we have too few quotes"),
+            Ok(cost) => cost,
+        };
+
+        // as we use zero indexing above, the actual price is _two_ less
+        assert_eq!(
+            price,
+            Token::from_nano((CLOSE_GROUP_SIZE as u64 / 2) - 2),
+            "price should be {}",
+            (CLOSE_GROUP_SIZE as u64 / 2) - 2
         );
 
         Ok(())
