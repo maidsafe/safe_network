@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.14](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.13...sn_networking-v0.4.14) - 2023-08-08
+
+### Added
+- *(networking)* remove sign over store cost
+- *(networking)* take prices[majority_index] price to avoid node quote validation
+- *(transfers)* add get largest dbc for spending
+
+### Fixed
+- *(node)* prevent panic in storage calcs
+
+### Other
+- tidy store cost code
+
 ## [0.4.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.12...sn_networking-v0.4.13) - 2023-08-07
 
 ### Other

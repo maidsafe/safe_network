@@ -811,6 +811,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.88.25](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.24...sn_node-v0.88.25) - 2023-08-08
+
+### Added
+- *(node)* verify fee is suffcient
+- *(networking)* remove sign over store cost
+
+### Fixed
+- *(node)* prevent panic in storage calcs
+- *(tests)* increase tokens supplied for testing
+
+### Other
+- *(faucet)* provide more money
+- tidy store cost code
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

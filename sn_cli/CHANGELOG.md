@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.80.36](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.35...sn_cli-v0.80.36) - 2023-08-08
+
+### Fixed
+- *(cli)* remove manual faucet claim from benchmarking.
+- *(node)* prevent panic in storage calcs
+
+### Other
+- *(cli)* get more money for benching
+- log bench errors
+
 ## [0.80.35](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.34...sn_cli-v0.80.35) - 2023-08-07
 
 ### Other
