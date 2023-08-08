@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1691477381910,
+  "lastUpdate": 1691477384195,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11574,6 +11574,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 117,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "31b3ba7cc13a88079c92d6645d1c9a53cc98e95f",
+          "message": "fix(cli): remove manual faucet claim from benchmarking.\n\nlocal testnets already start a faucet and make that claim",
+          "timestamp": "2023-08-08T06:45:26+02:00",
+          "tree_id": "1abf5f4d1e455afcd8f4510c051f45170f0e90db",
+          "url": "https://github.com/maidsafe/safe_network/commit/31b3ba7cc13a88079c92d6645d1c9a53cc98e95f"
+        },
+        "date": 1691477383390,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 344.10495,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 152,
             "unit": "MB"
           }
         ]
