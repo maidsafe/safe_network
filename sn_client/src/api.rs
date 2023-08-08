@@ -59,12 +59,13 @@ impl Client {
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 
-        let client = Self {
+        let mut client = Self {
             network: network.clone(),
             events_channel,
             signer,
             peers_added: 0,
             progress: Some(Self::setup_connection_progress()),
+            network_store_cost: None,
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -131,11 +132,15 @@ impl Client {
         let mut is_connected = false;
         loop {
             let mut rng = rand::thread_rng();
-            // Carry out 5 rounds of random get to fill up the RT at the beginning.
+            // Carry out 5 rounds of random get to fill up the RT at the beginning and sample the network
+            // for store costs
             for _ in 0..INITIAL_GET_RANDOM_ROUNDS {
                 let random_target = ChunkAddress::new(XorName::random(&mut rng));
-                let _ = client.get_chunk(random_target).await;
+                let _ = client
+                    .get_store_cost_at_address(NetworkAddress::ChunkAddress(random_target), true)
+                    .await?;
             }
+
             match client_events_rx.recv().await {
                 Ok(ClientEvent::ConnectedToNetwork) => {
                     is_connected = true;
@@ -150,7 +155,14 @@ impl Client {
                     } else {
                         println!("The client still does not know enough network nodes.");
                     }
-                    let _ = client.get_chunk(random_target).await;
+
+                    let _ = client
+                        .get_store_cost_at_address(
+                            NetworkAddress::ChunkAddress(random_target),
+                            true,
+                        )
+                        .await?;
+
                     continue;
                 }
                 Err(err) => {
@@ -414,16 +426,31 @@ impl Client {
         }
     }
 
-    /// get_store_cost_for_dbc_id
-    pub async fn get_store_cost_for_dbc_id(&self, dbc_id: &DbcId) -> Result<Token> {
-        let address = DbcAddress::from_dbc_id(dbc_id);
-        let net_address = NetworkAddress::from_dbc_address(address);
+    /// Get the store cost at a given address
+    /// Replaces current network_store_cost with the new one, unless average is set to true
+    pub async fn get_store_cost_at_address(
+        &mut self,
+        address: NetworkAddress,
+        average_cost: bool,
+    ) -> Result<Token> {
+        trace!("Getting store cost at {address:?}");
 
-        trace!("Getting store cost at {dbc_id:?}");
-
-        Ok(self
+        let cost = self
             .network
-            .get_store_cost_from_network(net_address.clone())
-            .await?)
+            .get_store_cost_from_network(address.clone())
+            .await?
+            .as_nano();
+
+        if average_cost {
+            if let Some(current_cost) = self.network_store_cost {
+                self.network_store_cost = Some((current_cost + cost) / 2);
+            } else {
+                self.network_store_cost = Some(cost);
+            }
+        } else {
+            self.network_store_cost = Some(cost);
+        }
+
+        Ok(Token::from_nano(cost))
     }
 }
