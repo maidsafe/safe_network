@@ -136,9 +136,11 @@ impl Client {
             // for store costs
             for _ in 0..INITIAL_GET_RANDOM_ROUNDS {
                 let random_target = ChunkAddress::new(XorName::random(&mut rng));
+
+                // ignore errors here, as we're just trying to fill up the RT
                 let _ = client
                     .get_store_cost_at_address(NetworkAddress::ChunkAddress(random_target), true)
-                    .await?;
+                    .await;
             }
 
             match client_events_rx.recv().await {
@@ -435,9 +437,12 @@ impl Client {
     ) -> Result<Token> {
         trace!("Getting store cost at {address:?}");
 
+        // if we're averaging over many samples across the network, any cost will do
+        let any_cost_will_do = average_cost;
+
         let cost = self
             .network
-            .get_store_cost_from_network(address.clone())
+            .get_store_cost_from_network(address.clone(), any_cost_will_do)
             .await?
             .as_nano();
 
