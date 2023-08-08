@@ -121,7 +121,7 @@ impl WalletClient {
         let number_of_records_to_pay = addrs_to_pay.len() as u64;
         // If no addresses need to be paid for, we don't have to go further
         if addrs_to_pay.is_empty() {
-            trace!("We already hold payment proofs for all the Chunks");
+            trace!("We already hold payment proofs for all the Chunks.");
             return Ok((proofs, None));
         }
 
