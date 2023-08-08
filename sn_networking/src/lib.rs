@@ -1003,7 +1003,7 @@ fn get_fee_from_store_cost_quotes(
         let first_try = all_costs
             .get(target_cost_index)
             .ok_or(Error::NotEnoughCostQuotes);
-        // first try our ideal, otherwise just use the last one
+        // Prefer the value from first_try, otherwise just use the last one
         if let Err(_error) = first_try {
             *all_costs.last().ok_or(Error::NotEnoughCostQuotes)?
         } else {
@@ -1071,7 +1071,6 @@ mod tests {
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..CLOSE_GROUP_SIZE {
-            println!("price: {}", i);
             costs.push(Token::from_nano(i as u64));
         }
         let price = get_fee_from_store_cost_quotes(&mut costs, false)?;
@@ -1091,12 +1090,11 @@ mod tests {
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
-            println!("price: {}", i);
             costs.push(Token::from_nano(i as u64));
         }
-        match get_fee_from_store_cost_quotes(&mut costs, false) {
-            Ok(_) => bail!("Should have errored as we have too few quotes"),
-            Err(_) => (),
+
+        if get_fee_from_store_cost_quotes(&mut costs, false).is_ok() {
+            bail!("Should have errored as we have too few quotes")
         }
 
         let price = match get_fee_from_store_cost_quotes(&mut costs, true) {
