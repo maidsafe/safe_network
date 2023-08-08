@@ -48,7 +48,7 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
         );
         let key = request.url().trim_matches(path::is_separator);
 
-        match send_tokens(client, "1000000", key).await {
+        match send_tokens(client, "1000000000", key).await {
             Ok(dbc) => {
                 println!("Sent tokens to {}", key);
                 let response = Response::from_string(dbc);
