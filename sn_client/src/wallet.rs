@@ -83,7 +83,6 @@ impl WalletClient {
     /// Get storecost from the network
     /// Stores this value as the new baseline at the client
     pub async fn set_store_cost_from_random_address(&mut self) -> Result<Token> {
-        // For now we simply just use the largest DBC we have...
         let random_target = ChunkAddress::new(XorName::random(&mut OsRng));
 
         self.client
@@ -97,7 +96,7 @@ impl WalletClient {
     /// Returns (Proofs and an Option around Storage Cost), storage cost is _per record_, and only returned if required for this operation
     ///
     /// `pay_store_cost_at` is the cost to pay for the storage, if None, the cost will be retrieved from the network.
-    /// Normally this will be a cast sampled at client init. It may be this has been user set and passed into the Client.
+    /// Normally this will be a cost sampled at client init. It may be this has been user set and passed into the Client.
     ///
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_storage(
