@@ -625,6 +625,7 @@ impl Network {
     pub async fn get_store_cost_from_network(
         &self,
         record_address: NetworkAddress,
+        any_cost_will_do: bool,
     ) -> Result<Token> {
         let (sender, receiver) = oneshot::channel();
         debug!("Attempting to get store cost");
@@ -655,7 +656,7 @@ impl Network {
             }
         }
 
-        let token_fee = get_fee_from_store_cost_quotes(&mut all_costs)?;
+        let token_fee = get_fee_from_store_cost_quotes(&mut all_costs, any_cost_will_do)?;
 
         info!(
             "Final fee calculated as: {token_fee:?}, from: {:?}",
@@ -988,16 +989,31 @@ impl Network {
 }
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
-fn get_fee_from_store_cost_quotes(all_costs: &mut Vec<Token>) -> Result<Token> {
+fn get_fee_from_store_cost_quotes(
+    all_costs: &mut Vec<Token>,
+    any_cost_will_do: bool,
+) -> Result<Token> {
     // we're zero indexed, so we want the middle index
     let target_cost_index = CLOSE_GROUP_SIZE / 2;
 
     // sort all costs by fee, lowest to highest
     all_costs.sort();
 
-    let token_fee = *all_costs
-        .get(target_cost_index)
-        .ok_or(Error::NotEnoughCostQuotes)?;
+    let token_fee = if any_cost_will_do {
+        let first_try = all_costs
+            .get(target_cost_index)
+            .ok_or(Error::NotEnoughCostQuotes);
+        // first try our ideal, otherwise just use the last one
+        if let Err(_error) = first_try {
+            *all_costs.last().ok_or(Error::NotEnoughCostQuotes)?
+        } else {
+            *first_try?
+        }
+    } else {
+        *all_costs
+            .get(target_cost_index)
+            .ok_or(Error::NotEnoughCostQuotes)?
+    };
 
     info!(
         "Final fee calculated as: {token_fee:?}, from: {:?}",
