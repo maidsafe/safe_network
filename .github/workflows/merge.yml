@@ -261,7 +261,7 @@ jobs:
             echo "SAFE_PEERS has been set to $SAFE_PEERS"
           fi
 
-      - name: execute the dbc spend test
+      - name: execute the dbc spend tests
         run: cargo test --release --features="local-discovery" --test sequential_transfers -- --nocapture
         env:
           SN_LOG: "all"
