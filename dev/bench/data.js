@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1691498199238,
+  "lastUpdate": 1691590667024,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4909,6 +4909,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 1.5726174103990205,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "3c4b3c17af86f4a1be0440e13716549b42db03c3",
+          "message": "fix(testnet): provide bootstrap peer when launching faucet",
+          "timestamp": "2023-08-09T11:39:51Z",
+          "tree_id": "2a3455d02412071d4b02398e61fbea12fd9a7ab4",
+          "url": "https://github.com/maidsafe/safe_network/commit/3c4b3c17af86f4a1be0440e13716549b42db03c3"
+        },
+        "date": 1691590666078,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.062107296773284276,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6185041303847805,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 1.5725471556281803,
             "unit": "MiB/s"
           }
         ]
