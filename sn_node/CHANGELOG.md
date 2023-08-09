@@ -825,6 +825,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(faucet)* provide more money
 - tidy store cost code
 
+## [0.88.26](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.25...sn_node-v0.88.26) - 2023-08-09
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
