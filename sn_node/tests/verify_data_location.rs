@@ -14,6 +14,7 @@ use bytes::Bytes;
 use common::{
     get_client_and_wallet, node_restart,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
+    PAYING_WALLET_INITIAL_BALANCE,
 };
 use eyre::{eyre, Result};
 use libp2p::{
@@ -36,8 +37,6 @@ use tracing_core::Level;
 
 const NODE_COUNT: u8 = 25;
 const CHUNK_SIZE: usize = 1024;
-
-const PAYING_WALLET_INITIAL_BALANCE: u64 = 1_000_000;
 
 // VERIFICATION_DELAY is set based on the dead peer detection interval
 // Once a node has been restarted, it takes VERIFICATION_DELAY time

@@ -29,6 +29,8 @@ use tracing_core::Level;
 
 static TEST_INIT_LOGGER: Once = Once::new();
 
+pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
+
 pub fn init_logging() {
     TEST_INIT_LOGGER.call_once(|| {
         let logging_targets = vec![

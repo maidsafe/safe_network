@@ -33,17 +33,40 @@ impl Node {
         let all_records = self.network.get_all_local_record_addresses().await?;
         trace!("Replication triggred, all records: {all_records:?}");
 
-        // a key is sent to a peer if the peer is considered to be close to that key
+        // a key is sent to a peer if the peer is considered to be close to that key,
+        // and that peer is close enough to us as well.
         let mut replicate_to: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
+        let furthest_close_distance = if let Some(furthest_peer) = our_close_group.last() {
+            if let Some(dist_ilog2) = NetworkAddress::from_peer(*furthest_peer)
+                .distance(&our_address)
+                .ilog2()
+            {
+                dist_ilog2
+            } else {
+                warn!("Cannot calculate ilog2 for the distance");
+                return Ok(());
+            }
+        } else {
+            warn!("our_close_group doesn't have last entry");
+            return Ok(());
+        };
         for key in all_records {
             let sorted_based_on_key =
                 sort_peers_by_address(all_peers.clone(), &key, CLOSE_GROUP_SIZE)?;
             trace!("replication: close for {key:?} are: {sorted_based_on_key:?}");
 
-            for peer in our_close_group.iter().filter(|&p| p != &our_peer_id) {
-                if sorted_based_on_key.contains(peer) {
-                    let keys_to_replicate = replicate_to.entry(*peer).or_insert(Default::default());
-                    keys_to_replicate.push(key.clone());
+            for peer in sorted_based_on_key.iter().filter(|&p| p != &our_peer_id) {
+                if let Some(peer_dist_ilog2) = NetworkAddress::from_peer(*peer)
+                    .distance(&our_address)
+                    .ilog2()
+                {
+                    if peer_dist_ilog2 <= furthest_close_distance {
+                        let keys_to_replicate =
+                            replicate_to.entry(*peer).or_insert(Default::default());
+                        keys_to_replicate.push(key.clone());
+                    }
+                } else {
+                    warn!("Cannot calculate ilog2 for the peer distance");
                 }
             }
         }
@@ -63,7 +86,7 @@ impl Node {
         let distance_range = match our_close_group.get(CLOSE_GROUP_SIZE) {
             Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
             None => {
-                debug!("Could not obtain distance_range");
+                warn!("Could not obtain distance_range");
                 return Ok(());
             }
         };
@@ -137,8 +160,10 @@ impl Node {
             holder: our_address.clone(),
             keys,
         });
-        self.network.send_req_ignore_reply(request, *peer_id)?;
+
         debug!("Sending a replication list with {len:?} keys to {peer_id:?}");
+        self.network.send_req_ignore_reply(request, *peer_id)?;
+
         Ok(())
     }
 }
