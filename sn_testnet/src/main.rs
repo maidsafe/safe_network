@@ -190,7 +190,7 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    run_network(
+    let gen_multi_addr = run_network(
         node_bin_path,
         args.node_launch_interval
             .unwrap_or(DEFAULT_NODE_LAUNCH_INTERVAL),
@@ -214,7 +214,7 @@ async fn main() -> Result<()> {
     }
 
     info!("Launching DBC faucet server");
-    run_faucet(faucet_bin_path).await?;
+    run_faucet(gen_multi_addr, faucet_bin_path).await?;
 
     println!("Testnet and faucet launched successfully");
     Ok(())
@@ -297,7 +297,8 @@ async fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
     Ok(())
 }
 
-async fn run_faucet(bin_path: PathBuf) -> Result<()> {
+/// Start the faucet from the provided bin_path and with the given bootstrap peer
+async fn run_faucet(gen_multi_addr: String, bin_path: PathBuf) -> Result<()> {
     let testnet = Testnet::configure().node_bin_path(bin_path).build()?;
     let launch_bin = testnet.node_bin_path;
 
@@ -313,6 +314,8 @@ async fn run_faucet(bin_path: PathBuf) -> Result<()> {
 
     let mut args = vec!["--log-output-dest".to_string()];
     args.push(log_dir);
+    args.push("--peer".to_string());
+    args.push(gen_multi_addr);
     args.push("server".to_string());
     testnet.launcher.launch(&launch_bin, args)?;
     // The launch will immediately complete after fire the cmd out.
@@ -321,13 +324,14 @@ async fn run_faucet(bin_path: PathBuf) -> Result<()> {
     Ok(())
 }
 
+// Start the network and return the MultiAddr of the genesis node
 async fn run_network(
     node_bin_path: PathBuf,
     node_launch_interval: u64,
     node_count: u32,
     mut node_args: Vec<String>,
     flamegraph_mode: bool,
-) -> Result<()> {
+) -> Result<String> {
     let mut testnet = Testnet::configure()
         .node_bin_path(node_bin_path)
         .node_launch_interval(node_launch_interval)
@@ -337,12 +341,12 @@ async fn run_network(
     let gen_multi_addr = testnet.launch_genesis(node_args.clone()).await?;
 
     node_args.push("--peer".to_string());
-    node_args.push(gen_multi_addr);
+    node_args.push(gen_multi_addr.clone());
     testnet.launch_nodes(node_count as usize, node_args)?;
 
     sn_testnet::check_testnet::run(&testnet.nodes_dir_path, node_count).await?;
 
-    Ok(())
+    Ok(gen_multi_addr)
 }
 
 async fn join_network(
