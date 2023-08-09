@@ -83,7 +83,9 @@ impl Node {
         }
 
         // set the distance range used for pruning
-        let distance_range = match our_close_group.get(CLOSE_GROUP_SIZE) {
+        // our_close_group now only have CLOSE_GROUP_SIZE entries,
+        // which makes `our_close_group.get(CLOSE_GROUP_SIZE)` return None always.
+        let distance_range = match our_close_group.last() {
             Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
             None => {
                 warn!("Could not obtain distance_range");
