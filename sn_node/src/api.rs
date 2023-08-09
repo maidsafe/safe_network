@@ -206,11 +206,19 @@ impl Node {
             }
             NetworkEvent::PeerRemoved(peer_id) => {
                 Marker::PeerRemovedFromRoutingTable(peer_id).log();
+                // During a node restart, the new node got added before the old one got removed.
+                // If the old one is `pushed out of close_group by the new one`, then the records
+                // that being close to the old one won't got replicated during the CloseGroupUpdate
+                // of the new one, as the old one still sits in the local kBuckets.
+                // Hence, the replication attempts shall also be undertaken when PeerRemoved.
+                if let Err(err) = self.try_trigger_replication().await {
+                    error!("During PeerRemoved, error while triggering replication {err:?}");
+                }
             }
             NetworkEvent::CloseGroupUpdated(new_members) => {
                 Marker::CloseGroupUpdated(&new_members).log();
                 if let Err(err) = self.try_trigger_replication().await {
-                    error!("Error while triggering replication {err:?}");
+                    error!("During CloseGroupUpdate, error while triggering replication {err:?}");
                 }
             }
             NetworkEvent::KeysForReplication(keys) => {
