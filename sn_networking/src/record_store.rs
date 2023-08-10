@@ -245,7 +245,8 @@ impl DiskBackedRecordStore {
     /// Calculate the cost to store data for our current store state
     pub fn store_cost(&self) -> Token {
         // Calculate the factor to increase the cost for every PUTS_PER_PRICE_STEP records
-        let factor = 2.0f64.powf(MAX_RECORDS_COUNT as f64 / PUTS_PER_PRICE_STEP as f64) as u64;
+        let factor =
+            10.0f64.powf(MAX_RECORDS_COUNT as f64 / PUTS_PER_PRICE_STEP as f64 - 2.0_f64) as u64;
 
         // Calculate the starting cost
         let mut cost = TOTAL_SUPPLY / factor;
