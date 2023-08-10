@@ -835,6 +835,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.88.28](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.27...sn_node-v0.88.28) - 2023-08-10
+
+### Fixed
+- using proper close_group distance
+- *(test)* have multiple verification attempts
+- *(test)* get the keys stored
+
+### Other
+- *(test)* set chunk_count using env var
+- *(test)* log the entire state
+- *(node)* verify data location
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
