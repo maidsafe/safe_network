@@ -8379,35 +8379,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "cd0a2f9580df40690550df3b2bc2c389a596fb65",
-          "message": "feat: only fetch close enough data during Replication",
-          "timestamp": "2023-08-04T16:20:42Z",
-          "tree_id": "cc876300721b8dc318b45f9c89bac0ab1f7e3fc4",
-          "url": "https://github.com/maidsafe/safe_network/commit/cd0a2f9580df40690550df3b2bc2c389a596fb65"
-        },
-        "date": 1691190059084,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "node-memory-usage-through-safe-benchmark",
-            "value": 68.63667,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -11623,40 +11594,6 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 243,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "cd0a2f9580df40690550df3b2bc2c389a596fb65",
-          "message": "feat: only fetch close enough data during Replication",
-          "timestamp": "2023-08-04T16:20:42Z",
-          "tree_id": "cc876300721b8dc318b45f9c89bac0ab1f7e3fc4",
-          "url": "https://github.com/maidsafe/safe_network/commit/cd0a2f9580df40690550df3b2bc2c389a596fb65"
-        },
-        "date": 1691190061113,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "client-peak-memory-usage-during-upload",
-            "value": 378.11404,
-            "unit": "MB"
-          },
-          {
-            "name": "client-average-memory-usage-during-upload",
-            "value": 188,
             "unit": "MB"
           }
         ]
