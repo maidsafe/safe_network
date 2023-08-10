@@ -70,11 +70,24 @@ async fn storage_payment_succeeds() -> Result<()> {
         random_content_addrs.len()
     );
 
-    let _proofs = wallet_client
+    let (_proofs, _cost) = wallet_client
         .pay_for_storage(random_content_addrs.iter(), true)
         .await?;
 
     println!("Verifying balance has been paid from the wallet...");
+
+    let mut attempts = 0;
+    while wallet_client.unconfirmed_txs_exist() {
+        sleep(Duration::from_secs(1)).await;
+        wallet_client.resend_pending_txs(true).await;
+
+        if attempts > 10 {
+            return Err(eyre!("Failed to verify payment in 10 attempts"));
+        }
+
+        attempts += 1;
+    }
+
     let paying_wallet = wallet_client.into_wallet();
     assert!(
         paying_wallet.balance() < balance_before,

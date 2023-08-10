@@ -49,6 +49,11 @@ impl WalletClient {
         Token::from_nano(self.client.network_store_cost)
     }
 
+    /// Do we have any uncomfirmed transactions?
+    pub fn unconfirmed_txs_exist(&self) -> bool {
+        !self.unconfirmed_txs.is_empty()
+    }
+
     /// Send tokens to another wallet.
     /// Can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn send(
@@ -181,7 +186,7 @@ impl WalletClient {
 
     /// Resend failed txs
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
-    async fn resend_pending_txs(&mut self, verify_store: bool) {
+    pub async fn resend_pending_txs(&mut self, verify_store: bool) {
         for (index, transfer) in self.unconfirmed_txs.clone().into_iter().enumerate() {
             let tx_hash = transfer.tx.hash();
             println!("Trying to republish pending tx: {tx_hash:?}..");
