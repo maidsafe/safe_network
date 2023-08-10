@@ -272,7 +272,7 @@ impl DiskBackedRecordStore {
         trace!("Relevant records len is {:?}", relevant_records_len);
 
         // Find where we are on the scale
-        let current_step = relevant_records_len & (PUTS_PER_PRICE_STEP - 1);
+        let current_step = relevant_records_len / PUTS_PER_PRICE_STEP + 1;
 
         trace!("Current step is {:?}", current_step);
 
