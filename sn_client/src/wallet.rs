@@ -125,7 +125,13 @@ impl WalletClient {
         let num_of_addrs = audit_trail_info.len() as u64;
 
         // We need to just "burn" the amount that corresponds for storage payment.
-        let storage_cost = self.get_store_cost().await?;
+        // Paying extra in advance to avoid:
+        // 1, inconsistent charge across the network
+        // 2, too many chunks of the file that `surpass` certain charging step (100 puts per step)
+        let storage_cost = Token::from_nano(
+            self.get_store_cost().await?.as_nano()
+                * 2.0f64.powf(1.0 + number_of_records_to_pay as f64 / 100.0) as u64,
+        );
 
         let amount_to_pay = number_of_records_to_pay * storage_cost.as_nano();
 
