@@ -78,6 +78,8 @@ async fn storage_payment_succeeds() -> Result<()> {
 
     let mut attempts = 0;
     while wallet_client.unconfirmed_txs_exist() {
+
+        println!("Unconfirmed txs exist, waiting for 1 second...");
         sleep(Duration::from_secs(1)).await;
         wallet_client.resend_pending_txs(true).await;
 

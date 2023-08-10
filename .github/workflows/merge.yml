@@ -269,7 +269,7 @@ jobs:
         timeout-minutes: 25
 
       - name: execute the storage payment tests
-        run: cargo test --release --features="local-discovery" --test storage_payments -- --nocapture
+        run: cargo test --release --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
           CARGO_TARGET_DIR: "./transfer-target"
