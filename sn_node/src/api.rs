@@ -203,6 +203,10 @@ impl Node {
                         initial_join_underway_or_done.store(false, Ordering::SeqCst);
                     }
                 }
+
+                if let Err(err) = self.try_trigger_replication(peer_id, false).await {
+                    error!("During CloseGroupUpdate, error while triggering replication {err:?}");
+                }
             }
             NetworkEvent::PeerRemoved(peer_id) => {
                 Marker::PeerRemovedFromRoutingTable(peer_id).log();
@@ -211,15 +215,12 @@ impl Node {
                 // that being close to the old one won't got replicated during the CloseGroupUpdate
                 // of the new one, as the old one still sits in the local kBuckets.
                 // Hence, the replication attempts shall also be undertaken when PeerRemoved.
-                if let Err(err) = self.try_trigger_replication().await {
+                if let Err(err) = self.try_trigger_replication(peer_id, true).await {
                     error!("During PeerRemoved, error while triggering replication {err:?}");
                 }
             }
             NetworkEvent::CloseGroupUpdated(new_members) => {
                 Marker::CloseGroupUpdated(&new_members).log();
-                if let Err(err) = self.try_trigger_replication().await {
-                    error!("During CloseGroupUpdate, error while triggering replication {err:?}");
-                }
             }
             NetworkEvent::KeysForReplication(keys) => {
                 Marker::fetching_keys_for_replication(&keys).log();
