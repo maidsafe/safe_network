@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1691668715654,
+  "lastUpdate": 1691674524358,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -4987,6 +4987,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 1.5713059832532772,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d7576121b9d04be12c638e33cd25e961e41230f3",
+          "message": "fix: using proper close_group distance\n\nThis commit including following fixes:\n1, location_verification test using proper wallet initial balance\n2, within try_trigger_relocation, using ilog2 to decide whether a peer\n   is close enough to us to become a replication destination.\n3, in case of PeerRemoved, call try_trigger_replication as well",
+          "timestamp": "2023-08-10T10:50:26Z",
+          "tree_id": "978e5a25bb6f8d0f226ef55d4a1e233883c7bd71",
+          "url": "https://github.com/maidsafe/safe_network/commit/d7576121b9d04be12c638e33cd25e961e41230f3"
+        },
+        "date": 1691674522910,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.06205831169652932,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6177117921758767,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 1.572045967531255,
             "unit": "MiB/s"
           }
         ]
