@@ -43,8 +43,7 @@ async fn dbc_transfer_multiple_sequential_succeed() -> Result<()> {
         &client,
         true,
     )
-    .await;
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    .await?;
     println!("Verifying the transfer from first wallet...");
     client.verify(&tokens).await?;
     second_wallet.deposit(vec![tokens]);

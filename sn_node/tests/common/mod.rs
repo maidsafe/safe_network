@@ -88,7 +88,7 @@ pub async fn get_funded_wallet(
     let mut local_wallet = get_wallet(root_dir).await;
 
     println!("Getting {wallet_balance} tokens from the faucet...");
-    let tokens = send(from, wallet_balance, local_wallet.address(), client, true).await;
+    let tokens = send(from, wallet_balance, local_wallet.address(), client, true).await?;
 
     println!("Verifying the transfer from faucet...");
     client.verify(&tokens).await?;
@@ -103,7 +103,7 @@ pub async fn get_client_and_wallet(root_dir: &Path, amount: u64) -> Result<(Clie
     let _guard = FAUCET_WALLET_MUTEX.lock().await;
 
     let client = get_client().await;
-    let faucet = load_faucet_wallet_from_genesis_wallet(&client).await;
+    let faucet = load_faucet_wallet_from_genesis_wallet(&client).await?;
     let local_wallet = get_funded_wallet(&client, faucet, root_dir, amount).await?;
 
     Ok((client, local_wallet))
