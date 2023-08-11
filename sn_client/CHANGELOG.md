@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.13](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.12...sn_client-v0.87.13) - 2023-08-11
+
+### Added
+- *(transfers)* add resend loop for unconfirmed txs
+- *(networking)* ensure we always use the highest price we find
+- *(networking)* enable returning less than majority for store_cost
+- *(client)* use store cost queries to pre populate cost and RT
+
+### Fixed
+- *(client)* only_store_cost_if_higher missing else added
+
+### Other
+- remove client inactivity random storage query
+- *(node)* resend unconfirmed txs before asserting
+- *(cli)* print cost info
+- *(networking)* remove logs, fix typos and clippy issues
+- overpay in advance to avoid storage cost calculation inconsistent
+
 ## [0.87.12](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.11...sn_client-v0.87.12) - 2023-08-10
 
 ### Other

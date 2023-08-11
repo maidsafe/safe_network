@@ -852,6 +852,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - optimize replication algorithm
 
+## [0.88.30](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.29...sn_node-v0.88.30) - 2023-08-11
+
+### Added
+- *(transfers)* add resend loop for unconfirmed txs
+- *(networking)* ensure we always use the highest price we find
+- *(client)* use store cost queries to pre populate cost and RT
+
+### Fixed
+- distance_range caculated from proper last entry of close_group
+
+### Other
+- improve NetworkEvent logging
+- bit more logging ang single thread
+- *(node)* resend unconfirmed txs before asserting
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
