@@ -11,8 +11,8 @@ mod common;
 use assert_fs::TempDir;
 use bytes::Bytes;
 use common::{
-    get_client_and_wallet, get_funded_wallet, get_wallet, node_restart,
-    PAYING_WALLET_INITIAL_BALANCE,
+    get_client_and_wallet, get_funded_wallet, get_wallet, node_restart, DataLocationVerification,
+    DATA_LOCATION_VERIFICATION_DELAY, PAYING_WALLET_INITIAL_BALANCE,
 };
 use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
@@ -102,7 +102,8 @@ async fn data_availability_during_churn() -> Result<()> {
     let chunks_only = std::env::var("CHUNKS_ONLY").is_ok();
 
     println!(
-        "Running this test for {test_duration:?}{}...",
+        "Running this test for {:?}{}...",
+        test_duration + DATA_LOCATION_VERIFICATION_DELAY,
         if chunks_only { " (Chunks only)" } else { "" }
     );
 
@@ -194,7 +195,7 @@ async fn data_availability_during_churn() -> Result<()> {
     );
 
     // Spawn a task to retry querying the content that failed, up to 'MAX_NUM_OF_QUERY_ATTEMPTS' times,
-    // and mark them as failures if they effectivelly cannot be retrieved.
+    // and mark them as failures if they effectively cannot be retrieved.
     retry_query_content_task(
         client.clone(),
         content_erred.clone(),
@@ -256,6 +257,13 @@ async fn data_availability_during_churn() -> Result<()> {
         content_queried_count, uploaded_content_count,
         "Not all content was queried"
     );
+
+    // Data location verification is a stricter check, hence performed at the last
+    println!("\nPerforming data location verification after {DATA_LOCATION_VERIFICATION_DELAY:?}");
+    tokio::time::sleep(DATA_LOCATION_VERIFICATION_DELAY).await;
+
+    let mut data_verification = DataLocationVerification::new(NODE_COUNT as usize).await?;
+    data_verification.verify().await?;
 
     drop(log_appender_guard);
 
