@@ -76,20 +76,6 @@ async fn storage_payment_succeeds() -> Result<()> {
 
     println!("Verifying balance has been paid from the wallet...");
 
-    let mut attempts = 0;
-    while wallet_client.unconfirmed_txs_exist() {
-
-        println!("Unconfirmed txs exist, waiting for 1 second...");
-        sleep(Duration::from_secs(1)).await;
-        wallet_client.resend_pending_txs(true).await;
-
-        if attempts > 10 {
-            return Err(eyre!("Failed to verify payment in 10 attempts"));
-        }
-
-        attempts += 1;
-    }
-
     let paying_wallet = wallet_client.into_wallet();
     assert!(
         paying_wallet.balance() < balance_before,

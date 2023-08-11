@@ -18,7 +18,8 @@ use sn_transfers::{
 };
 
 use futures::future::join_all;
-use std::iter::Iterator;
+use std::{iter::Iterator, time::Duration};
+use tokio::time::sleep;
 use xor_name::XorName;
 
 /// A wallet client can be used to send and
@@ -285,7 +286,7 @@ pub async fn send(
     to: PublicAddress,
     client: &Client,
     verify_store: bool,
-) -> Dbc {
+) -> Result<Dbc> {
     if amount.as_nano() == 0 {
         panic!("Amount must be more than zero.");
     }
@@ -295,6 +296,21 @@ pub async fn send(
         .send(amount, to, verify_store)
         .await
         .expect("Tokens shall be successfully sent.");
+
+    if verify_store {
+        let mut attempts = 0;
+        while wallet_client.unconfirmed_txs_exist() {
+            info!("Unconfirmed txs exist, sending again after 1 second...");
+            sleep(Duration::from_secs(1)).await;
+            wallet_client.resend_pending_txs(verify_store).await;
+
+            if attempts > 10 {
+                return Err(Error::UnconfirmedTxAfterRetries);
+            }
+
+            attempts += 1;
+        }
+    }
 
     let mut wallet = wallet_client.into_wallet();
     wallet
@@ -306,5 +322,5 @@ pub async fn send(
         .await
         .expect("Created dbc shall be successfully stored.");
 
-    new_dbc
+    Ok(new_dbc)
 }

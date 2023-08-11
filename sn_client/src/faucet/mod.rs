@@ -1,4 +1,4 @@
-use super::wallet::send;
+use super::{wallet::send, Result};
 use crate::Client;
 
 use sn_dbc::{Dbc, PublicAddress, Token};
@@ -7,28 +7,32 @@ use sn_transfers::wallet::LocalWallet;
 
 /// Returns a dbc with the requested number of tokens, for use by E2E test instances.
 /// Note this will create a faucet having a Genesis balance
-pub async fn get_tokens_from_faucet(amount: Token, to: PublicAddress, client: &Client) -> Dbc {
-    send(
-        load_faucet_wallet_from_genesis_wallet(client).await,
+pub async fn get_tokens_from_faucet(
+    amount: Token,
+    to: PublicAddress,
+    client: &Client,
+) -> Result<Dbc> {
+    Ok(send(
+        load_faucet_wallet_from_genesis_wallet(client).await?,
         amount,
         to,
         client,
         // we should not need to wait for this
         true,
     )
-    .await
+    .await?)
 }
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
-pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWallet {
+pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<LocalWallet> {
     println!("Loading faucet...");
     let mut faucet_wallet = create_faucet_wallet().await;
 
     let faucet_balance = faucet_wallet.balance();
     if !faucet_balance.is_zero() {
         println!("Faucet wallet balance: {faucet_balance}");
-        return faucet_wallet;
+        return Ok(faucet_wallet);
     }
 
     println!("Loading genesis...");
@@ -46,7 +50,7 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWal
         client,
         true,
     )
-    .await;
+    .await?;
 
     faucet_wallet.deposit(vec![dbc.clone()]);
     faucet_wallet
@@ -62,5 +66,5 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> LocalWal
         println!("Successfully verified the transfer from genesis on the second try.");
     }
 
-    faucet_wallet
+    Ok(faucet_wallet)
 }
