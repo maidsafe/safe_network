@@ -150,8 +150,6 @@ impl Client {
                     break;
                 }
                 Ok(ClientEvent::InactiveClient(timeout)) => {
-                    let random_target = ChunkAddress::new(XorName::random(&mut rng));
-                    debug!("No ClientEvent activity in the past {timeout:?}, performing a random get_store_cost query to target: {random_target:?}");
                     if is_connected {
                         info!("The client was inactive for {timeout:?}.");
                     } else {
@@ -428,7 +426,7 @@ impl Client {
         address: NetworkAddress,
         only_update_cost_if_higher: bool,
     ) -> Result<Token> {
-        trace!("Getting store cost at {address:?}");
+        trace!("Getting store cost at {address:?}, will update only if higher cost?: {only_update_cost_if_higher:?}");
 
         // if we're averaging over many samples across the network, any cost will do
         let any_cost_will_do = only_update_cost_if_higher;
@@ -439,9 +437,15 @@ impl Client {
             .await?
             .as_nano();
 
-        if only_update_cost_if_higher && cost > self.network_store_cost {
+        if cost > self.network_store_cost {
             self.network_store_cost = cost;
         }
+
+        if !only_update_cost_if_higher {
+            self.network_store_cost = cost;
+        }
+
+        trace!("Set store cost: {}", self.network_store_cost);
 
         Ok(Token::from_nano(cost))
     }
