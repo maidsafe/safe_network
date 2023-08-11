@@ -656,13 +656,7 @@ impl Network {
             }
         }
 
-        let token_fee = get_fee_from_store_cost_quotes(&mut all_costs, any_cost_will_do)?;
-
-        info!(
-            "Final fee calculated as: {token_fee:?}, from: {:?}",
-            all_costs
-        );
-        Ok(token_fee)
+        get_fee_from_store_cost_quotes(&mut all_costs, any_cost_will_do)
     }
 
     /// Get the Record from the network
