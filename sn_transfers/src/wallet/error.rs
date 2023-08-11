@@ -33,6 +33,9 @@ pub enum Error {
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
     /// Failed to parse bytes into a bls key.
+    #[error("Unconfirmed transactions still persist even after retries")]
+    UnconfirmedTxAfterRetries,
+    /// Failed to parse bytes into a bls key.
     #[error("Failed to parse bls key")]
     FailedToParseBlsKey,
     /// Failed to decode a hex string to a key.

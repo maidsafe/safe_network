@@ -139,7 +139,7 @@ async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> 
         ));
     }
 
-    let dbc = get_tokens_from_faucet(amount, to, client).await;
+    let dbc = get_tokens_from_faucet(amount, to, client).await?;
     let dbc_hex = dbc.to_hex()?;
     println!("{dbc_hex}");
 
