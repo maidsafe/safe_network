@@ -104,9 +104,7 @@ pub async fn get_client_and_wallet(root_dir: &Path, amount: u64) -> Result<(Clie
 
     let client = get_client().await;
     let faucet = load_faucet_wallet_from_genesis_wallet(&client).await;
-    std::thread::sleep(std::time::Duration::from_secs(10));
     let local_wallet = get_funded_wallet(&client, faucet, root_dir, amount).await?;
-    std::thread::sleep(std::time::Duration::from_secs(10));
 
     Ok((client, local_wallet))
 }

@@ -20,6 +20,9 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
+    #[error("Transfer Error {0}.")]
+    Transfers(#[from] sn_transfers::wallet::Error),
+
     #[error("Network Error {0}.")]
     Network(#[from] sn_networking::Error),
 
