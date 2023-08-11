@@ -847,6 +847,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(test)* log the entire state
 - *(node)* verify data location
 
+## [0.88.29](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.28...sn_node-v0.88.29) - 2023-08-11
+
+### Other
+- optimize replication algorithm
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
