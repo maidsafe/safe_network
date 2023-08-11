@@ -33,7 +33,7 @@ use tracing::trace;
 use xor_name::XorName;
 
 /// The timeout duration for the client to receive any response from the network.
-const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(10);
+const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(30);
 
 /// The initial rounds of `get_random` allowing client to fill up the RT.
 const INITIAL_GET_RANDOM_ROUNDS: usize = 5;
@@ -151,19 +151,12 @@ impl Client {
                 }
                 Ok(ClientEvent::InactiveClient(timeout)) => {
                     let random_target = ChunkAddress::new(XorName::random(&mut rng));
-                    debug!("No ClientEvent activity in the past {timeout:?}, performing a random get_chunk query to target: {random_target:?}");
+                    debug!("No ClientEvent activity in the past {timeout:?}, performing a random get_store_cost query to target: {random_target:?}");
                     if is_connected {
-                        println!("The client experienced inactivity in the past {timeout:?}.");
+                        info!("The client was inactive for {timeout:?}.");
                     } else {
-                        println!("The client still does not know enough network nodes.");
+                        info!("The client still does not know enough network nodes.");
                     }
-
-                    let _ = client
-                        .get_store_cost_at_address(
-                            NetworkAddress::ChunkAddress(random_target),
-                            true,
-                        )
-                        .await?;
 
                     continue;
                 }
