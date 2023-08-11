@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.17](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.16...sn_networking-v0.4.17) - 2023-08-11
+
+### Added
+- *(networking)* add test for any_cost_will_do
+- *(networking)* enable returning less than majority for store_cost
+
+### Fixed
+- *(client)* only_store_cost_if_higher missing else added
+- correct the storage_cost stepping calculation
+
+### Other
+- improve NetworkEvent logging
+- *(networking)* remove logs, fix typos and clippy issues
+
 ## [0.4.16](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.15...sn_networking-v0.4.16) - 2023-08-10
 
 ### Fixed
