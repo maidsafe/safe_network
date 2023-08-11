@@ -50,7 +50,7 @@ impl WalletClient {
         Token::from_nano(self.client.network_store_cost)
     }
 
-    /// Do we have any uncomfirmed transactions?
+    /// Do we have any unconfirmed transactions?
     pub fn unconfirmed_txs_exist(&self) -> bool {
         !self.unconfirmed_txs.is_empty()
     }
@@ -101,9 +101,6 @@ impl WalletClient {
     ///
     /// Returns (Proofs and an Option around Storage Cost), storage cost is _per record_, and only returned if required for this operation
     ///
-    /// `pay_store_cost_at` is the cost to pay for the storage, if None, the cost will be retrieved from the network.
-    /// Normally this will be a cost sampled at client init. It may be this has been user set and passed into the Client.
-    ///
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_storage(
         &mut self,
@@ -143,9 +140,11 @@ impl WalletClient {
             storage_cost = self.store_cost();
         };
 
+        info!("Storage cost per record: {}", storage_cost);
+
         let amount_to_pay = number_of_records_to_pay * storage_cost.as_nano();
 
-        trace!("Making payment for {num_of_addrs} addresses");
+        trace!("Making payment for {num_of_addrs} addresses of {amount_to_pay:?} nano tokens.");
 
         let transfer = self
             .wallet
