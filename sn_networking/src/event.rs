@@ -17,6 +17,7 @@ use crate::{
     CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
 };
 
+use core::fmt;
 use custom_debug::Debug;
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
@@ -140,8 +141,15 @@ pub enum NetworkEvent {
     /// AutoNAT status changed
     NatStatusChanged(NatStatus),
     /// Report unverified record
-    #[debug(format = "UnverifiedRecord")]
+    #[debug(with = "unverified_record_fmt")]
     UnverifiedRecord(Record),
+}
+
+// This isn't dead code, it's used in the custom formatter above
+#[allow(dead_code)]
+fn unverified_record_fmt(r: &Record, f: &mut fmt::Formatter) -> fmt::Result {
+    let key = PrettyPrintRecordKey::from(r.key.clone());
+    write!(f, "Unverified Record Event: {key:?}")
 }
 
 impl SwarmDriver {
