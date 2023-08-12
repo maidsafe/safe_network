@@ -13,6 +13,7 @@ version = "0.4.28"
 [features]
 default=[]
 local-discovery=["libp2p/mdns"]
+quic=["libp2p-quic"]
 
 [dependencies]
 async-trait = "0.1"
@@ -21,6 +22,7 @@ futures = "~0.3.13"
 itertools = "~0.10.1"
 custom_debug = "~0.5.0"
 libp2p = { version="0.52", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux"] }
+libp2p-quic = { version = "0.8.0-alpha", features = ["tokio"], optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
