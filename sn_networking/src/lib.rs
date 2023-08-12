@@ -36,6 +36,8 @@ use self::{
 };
 use futures::{future::select_all, StreamExt};
 use itertools::Itertools;
+#[cfg(feature = "quic")]
+use libp2p::core::muxing::StreamMuxerBox;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
@@ -46,6 +48,8 @@ use libp2p::{
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
+#[cfg(feature = "quic")]
+use libp2p_quic as quic;
 use rand::Rng;
 use sn_dbc::Token;
 use sn_protocol::{
@@ -196,7 +200,19 @@ impl SwarmDriver {
         )?;
 
         // Listen on the provided address
+        #[cfg(not(feature = "quic"))]
         let addr = Multiaddr::from(addr.ip()).with(Protocol::Tcp(addr.port()));
+        #[cfg(not(feature = "quic"))]
+        let _listener_id = swarm_driver
+            .swarm
+            .listen_on(addr)
+            .expect("Failed to listen on the provided address");
+
+        #[cfg(feature = "quic")]
+        let addr = Multiaddr::from(addr.ip())
+            .with(Protocol::Udp(addr.port()))
+            .with(Protocol::QuicV1);
+        #[cfg(feature = "quic")]
         let _listener_id = swarm_driver
             .swarm
             .listen_on(addr)
@@ -347,6 +363,7 @@ impl SwarmDriver {
         };
 
         // Transport
+        #[cfg(not(feature = "quic"))]
         let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(
@@ -356,9 +373,16 @@ impl SwarmDriver {
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
 
+        #[cfg(feature = "quic")]
+        let quic_transport = libp2p_quic::tokio::Transport::new(quic::Config::new(&keypair));
+        #[cfg(feature = "quic")]
+        let mut transport = quic_transport
+            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+            .boxed();
+
         if !local {
             debug!("Preventing non-global dials");
-            // Wrap TCP in a transport that prevents dialing local addresses.
+            // Wrap TCP or UDP in a transport that prevents dialing local addresses.
             transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
         }
 

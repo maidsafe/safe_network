@@ -16,6 +16,7 @@ chaos = []
 statemap = []
 otlp = []
 local-discovery = []
+quic = []
 
 [[bin]]
 path="src/main.rs"
