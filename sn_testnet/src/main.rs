@@ -272,6 +272,9 @@ async fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
     if cfg!(feature = "local-discovery") {
         args.extend(["--features", "local-discovery"]);
     }
+    if cfg!(feature = "quic") {
+        args.extend(["--features", "quic"]);
+    }
 
     let bins_string = binaries_to_build.join(", ");
     info!("Building the following binaries: {bins_string}");

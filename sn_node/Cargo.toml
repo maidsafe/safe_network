@@ -22,6 +22,7 @@ default=["metrics"]
 local-discovery=["sn_networking/local-discovery"]
 otlp = ["sn_logging/otlp"]
 metrics = ["sn_logging/process-metrics"]
+quic=["sn_networking/quic"]
 
 [dependencies]
 async-trait = "0.1"
