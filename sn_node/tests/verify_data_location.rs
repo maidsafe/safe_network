@@ -21,8 +21,7 @@ use libp2p::{kad::RecordKey, PeerId};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Files, WalletClient};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
-use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
-use sn_protocol::{storage::ChunkAddress, NetworkAddress, PrettyPrintRecordKey};
+use sn_protocol::{storage::ChunkAddress, PrettyPrintRecordKey};
 use sn_transfers::wallet::LocalWallet;
 use std::{
     collections::{HashMap, HashSet},
@@ -117,9 +116,7 @@ async fn verify_data_location() -> Result<()> {
             .node_info(Request::new(NodeInfoRequest {}))
             .await?;
         let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
-        data_verification.update_peer_index(node_index as usize, peer_id);
-
-        print_node_close_groups(&data_verification.all_peers);
+        data_verification.update_peer_index(node_index as usize, peer_id)?;
 
         // get the new set of holders and verify
         data_verification.verify().await?;
@@ -128,22 +125,6 @@ async fn verify_data_location() -> Result<()> {
         if node_index > NODE_COUNT as u16 {
             node_index = 1;
         }
-    }
-}
-
-fn print_node_close_groups(all_peers: &[PeerId]) {
-    let all_peers = all_peers.to_vec();
-    println!("\nNode close groups:");
-    for (node_index, peer) in all_peers.iter().enumerate() {
-        let node_index = node_index + 1;
-        let key = NetworkAddress::from_peer(*peer).as_kbucket_key();
-        let closest_peers = sort_peers_by_key(all_peers.clone(), &key, CLOSE_GROUP_SIZE)
-            .expect("failed to sort peer");
-        let closest_peers_idx = closest_peers
-            .iter()
-            .map(|peer| all_peers.iter().position(|p| p == peer).unwrap() + 1)
-            .collect::<Vec<_>>();
-        println!("Close for {node_index}: {peer:?} are {closest_peers_idx:?}");
     }
 }
 

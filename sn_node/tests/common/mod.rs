@@ -26,9 +26,9 @@ use safenode_proto::{
 use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client};
 use sn_dbc::Token;
 use sn_logging::{LogFormat, LogOutputDest};
-use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
+use sn_networking::{sort_peers_by_address, sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_peers_acquisition::parse_peer_addr;
-use sn_protocol::PrettyPrintRecordKey;
+use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use sn_transfers::wallet::LocalWallet;
 
 use std::{
@@ -181,18 +181,29 @@ pub struct DataLocationVerification {
 
 impl DataLocationVerification {
     pub async fn new(node_count: usize) -> Result<Self> {
-        let mut ver = Self {
+        let mut data_verification = Self {
             node_count,
             all_peers: Default::default(),
             record_holders: Default::default(),
         };
-        ver.collect_all_peer_ids().await?;
-        ver.collect_initial_record_keys().await?;
-        Ok(ver)
+        data_verification.collect_all_peer_ids().await?;
+        data_verification.collect_initial_record_keys().await?;
+        data_verification.debug_close_groups();
+        Ok(data_verification)
     }
 
-    pub fn update_peer_index(&mut self, node_index: NodeIndex, peer_id: PeerId) {
-        self.all_peers[node_index - 1] = peer_id;
+    pub fn update_peer_index(&mut self, node_index: NodeIndex, peer_id: PeerId) -> Result<()> {
+        // new peer is added first, so debug replication on addition of new peer
+        let mut temp_all_peers = self.all_peers.clone();
+        println!("######Printing Replication on peer addition######");
+        self.debug_replication(peer_id, false)?;
+
+        temp_all_peers[node_index - 1] = peer_id;
+        self.all_peers = temp_all_peers;
+        println!("\n######Printing Replication on peer removal######");
+        self.debug_replication(peer_id, true)?;
+
+        Ok(())
     }
 
     // Verifies that the chunk is stored by the actual closest peers to the RecordKey
@@ -340,5 +351,61 @@ impl DataLocationVerification {
         }
         println!("Obtained the current set of Record Key holders");
         Ok(())
+    }
+
+    fn debug_replication(&self, peer_id: PeerId, is_removal: bool) -> Result<()> {
+        let mut replicate_to: HashMap<PeerId, Vec<NetworkAddress>> = HashMap::new();
+        for key in self.record_holders.keys() {
+            let key = NetworkAddress::from_record_key(key.clone());
+            let sorted_based_on_key =
+                sort_peers_by_address(self.all_peers.clone(), &key, CLOSE_GROUP_SIZE + 1)?;
+            println!("replication: close for {key:?} are: {sorted_based_on_key:?}");
+
+            if sorted_based_on_key.contains(&peer_id) {
+                let target_peer = if is_removal {
+                    // For dead peer, only replicate to farthest close_group peer,
+                    // when the dead peer was one of the close_group peers to the record.
+                    if let Some(farthest_peer) = sorted_based_on_key.last() {
+                        if *farthest_peer != peer_id {
+                            *farthest_peer
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+                } else {
+                    // For new peer, always replicate to it when it is close_group of the record.
+                    if Some(&peer_id) != sorted_based_on_key.last() {
+                        peer_id
+                    } else {
+                        continue;
+                    }
+                };
+
+                let keys_to_replicate = replicate_to
+                    .entry(target_peer)
+                    .or_insert(Default::default());
+                keys_to_replicate.push(key.clone());
+            }
+        }
+        println!("replicate: to {replicate_to:?}");
+
+        Ok(())
+    }
+
+    fn debug_close_groups(&self) {
+        println!("Node close groups:");
+        for (node_index, peer) in self.all_peers.iter().enumerate() {
+            let node_index = node_index + 1;
+            let key = NetworkAddress::from_peer(*peer).as_kbucket_key();
+            let closest_peers = sort_peers_by_key(self.all_peers.clone(), &key, CLOSE_GROUP_SIZE)
+                .expect("failed to sort peer");
+            let closest_peers_idx = closest_peers
+                .iter()
+                .map(|peer| self.all_peers.iter().position(|p| p == peer).unwrap() + 1)
+                .collect::<Vec<_>>();
+            println!("Close for {node_index}: {peer:?} are {closest_peers_idx:?}");
+        }
     }
 }
