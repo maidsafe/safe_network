@@ -9,7 +9,7 @@
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
 use crate::{error::Result, multiaddr_pop_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE};
 use libp2p::{
-    kad::{store::RecordStore, KBucketDistance as Distance, Quorum, Record, RecordKey},
+    kad::{store::RecordStore, Quorum, Record, RecordKey},
     swarm::{
         dial_opts::{DialOpts, PeerCondition},
         DialError,
@@ -110,10 +110,6 @@ pub enum SwarmCmd {
         peer: PeerId,
         keys: Vec<NetworkAddress>,
     },
-    // Set the acceptable range of `Record` entry. Records outside this range are pruned.
-    SetRecordDistanceRange {
-        distance: Distance,
-    },
 }
 
 /// Snapshot of information kept in the Swarm's local state
@@ -149,13 +145,6 @@ impl SwarmDriver {
                 if !keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
                 }
-            }
-            SwarmCmd::SetRecordDistanceRange { distance } => {
-                self.swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .set_distance_range(distance);
             }
             SwarmCmd::GetNetworkRecord { key, sender } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
