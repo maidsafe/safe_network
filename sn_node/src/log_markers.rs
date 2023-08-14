@@ -44,9 +44,6 @@ pub enum Marker<'a> {
     /// Replication trigger was fired
     ReplicationTriggered,
 
-    /// The new members added to our close group
-    CloseGroupUpdated(&'a Vec<PeerId>),
-
     /// Keys of Records we are fetching to replicate locally
     FetchingKeysForReplication {
         /// fetching_keys_len: number of keys we are fetching
