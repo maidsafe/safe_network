@@ -182,9 +182,6 @@ impl Node {
                     error!("During PeerRemoved, error while triggering replication {err:?}");
                 }
             }
-            NetworkEvent::CloseGroupUpdated(new_members) => {
-                Marker::CloseGroupUpdated(&new_members).log();
-            }
             NetworkEvent::KeysForReplication(keys) => {
                 Marker::fetching_keys_for_replication(&keys).log();
 
