@@ -129,34 +129,13 @@ impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
             SwarmCmd::AddKeysToReplicationFetcher { peer, keys } => {
-                let distance_range = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .distance_range();
                 // Only store record from Replication that close enough to us.
-                let keys_to_store = if let Some(distance_range) = distance_range {
-                    if let Some(distance_bar_ilog2) = distance_range.ilog2() {
-                        let self_address = NetworkAddress::from_peer(self.self_peer_id);
-                        keys.iter()
-                            .filter(|key| {
-                                if let Some(entry_distance_ilog2) =
-                                    self_address.distance(key).ilog2()
-                                {
-                                    entry_distance_ilog2 <= distance_bar_ilog2
-                                } else {
-                                    true
-                                }
-                            })
-                            .cloned()
-                            .collect()
-                    } else {
-                        keys
-                    }
-                } else {
-                    keys
-                };
+                let close_range = self.get_close_range();
+                let keys_to_store = keys
+                    .iter()
+                    .filter(|key| self.is_in_close_range(key, close_range))
+                    .cloned()
+                    .collect();
                 #[allow(clippy::mutable_key_type)]
                 let all_keys = self
                     .swarm
@@ -372,5 +351,34 @@ impl SwarmDriver {
         };
 
         self.swarm.dial(opts)
+    }
+
+    // Target record is considered as in close range when:
+    // its distance to node is not higher than the ilog2 of the kBucket that the farthest
+    // close_group peer sits in.
+    fn is_in_close_range(&self, target: &NetworkAddress, close_range: Option<u32>) -> bool {
+        let distance = NetworkAddress::from_peer(self.self_peer_id).distance(target);
+
+        match (distance.ilog2(), close_range) {
+            (Some(target_ilog2), Some(range_ilog2)) => target_ilog2 <= range_ilog2,
+            _ => {
+                // This shall never happen.
+                error!("Cannot get ilog2 from one of {distance:?} or {close_range:?} ???!!!");
+                true
+            }
+        }
+    }
+
+    fn get_close_range(&mut self) -> Option<u32> {
+        let mut total_peers = 0;
+        // Buckets are already sorted from close to far away.
+        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+            total_peers += kbucket.num_entries();
+            if total_peers > CLOSE_GROUP_SIZE + 1 {
+                let range = kbucket.range();
+                return range.0.ilog2();
+            }
+        }
+        None
     }
 }
