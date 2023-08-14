@@ -104,18 +104,6 @@ impl Node {
             self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())?;
         }
 
-        // set the distance range used for pruning
-        // our_close_group only has CLOSE_GROUP_SIZE entries, so we just grab the last one
-        let our_close_group = self.network.get_our_close_group().await?;
-        let distance_range = match our_close_group.last() {
-            Some(peer) => NetworkAddress::from_peer(*peer).distance(&our_address),
-            None => {
-                warn!("Could not obtain distance_range");
-                return Ok(());
-            }
-        };
-        self.network.set_record_distance_range(distance_range)?;
-        debug!("Set record distance range");
         Ok(())
     }
 

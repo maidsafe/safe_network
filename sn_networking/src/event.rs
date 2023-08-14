@@ -604,10 +604,30 @@ impl SwarmDriver {
             debug!("The close group has been updated. The new members are {new_members:?}");
             debug!("New close group: {new_closest_peers:?}");
             self.close_group = new_closest_peers;
+            let _ = self.update_record_distance_range();
             Some(new_members)
         } else {
             None
         }
+    }
+
+    /// Set the acceptable range of record entry. A record is removed from the storage if the
+    /// distance between the record and the node is greater than the `distance_range`
+    fn update_record_distance_range(&mut self) -> Option<()> {
+        debug!("setting record distance range on close group change");
+        let our_address = NetworkAddress::from_peer(self.self_peer_id);
+        let distance_range = self
+            .close_group
+            .last()
+            .map(|peer| NetworkAddress::from_peer(*peer).distance(&our_address))?;
+
+        self.swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .set_distance_range(distance_range);
+        trace!("set distance_range successfully");
+        Some(())
     }
 
     fn log_kbuckets(&mut self, peer: &PeerId) {
