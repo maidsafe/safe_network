@@ -222,7 +222,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            node_data_path: /home/runner/.local/share/safe/node
+          - os: windows-latest
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+          - os: macos-latest
+            node_data_path: /Users/runner/Library/Application Support/safe/node
     steps:
       - uses: actions/checkout@v3
 
@@ -238,6 +244,13 @@ jobs:
         run: cargo build --release --features local-discovery --bin safenode --bin faucet
         timeout-minutes: 30
 
+      - name: Build churn tests 
+        run: cargo test --release -p sn_node --features=local-discovery --test data_with_churn --no-run
+        timeout-minutes: 30
+        # new output folder to avoid linker issues w/ windows
+        env:
+          CARGO_TARGET_DIR: "./churn-target"
+
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
         with:
@@ -246,13 +259,6 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
-
-      - name: Build churn tests 
-        run: cargo test --release -p sn_node --features=local-discovery --test data_with_churn --no-run
-        timeout-minutes: 30
-        # new output folder to avoid linker issues w/ windows
-        env:
-          CARGO_TARGET_DIR: "./churn-target"
 
       - name: Chunks data integrity during nodes churn (during 10min) (in theory)
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture
@@ -327,7 +333,13 @@ jobs:
       runs-on: ${{ matrix.os }}
       strategy:
         matrix:
-          os: [ubuntu-latest, windows-latest, macos-latest]
+          include:
+            - os: ubuntu-latest
+              node_data_path: /home/runner/.local/share/safe/node
+            - os: windows-latest
+              node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+            - os: macos-latest
+              node_data_path: /Users/runner/Library/Application Support/safe/node
       steps:
         - uses: actions/checkout@v3
 

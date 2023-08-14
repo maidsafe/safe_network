@@ -298,6 +298,7 @@ jobs:
             node_data_path: /Users/runner/Library/Application Support/safe/node
     steps:
       - uses: actions/checkout@v3
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
