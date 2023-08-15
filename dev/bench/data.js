@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1692051782415,
+  "lastUpdate": 1692108793925,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5182,6 +5182,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 0.6696145988684571,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "f05602035638c703944cdba5eea9694a7231cb55",
+          "message": "fix: using proper distance range for filtering",
+          "timestamp": "2023-08-15T10:27:53Z",
+          "tree_id": "bee7e9ef7e6d4e32f6bc13705781e71f098d1144",
+          "url": "https://github.com/maidsafe/safe_network/commit/f05602035638c703944cdba5eea9694a7231cb55"
+        },
+        "date": 1692108792608,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 2.778957248022096,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 22.759137753454162,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 0.6197361021566841,
             "unit": "MiB/s"
           }
         ]
