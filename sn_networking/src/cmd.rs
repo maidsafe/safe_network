@@ -21,7 +21,7 @@ use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress,
 };
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use tokio::sync::oneshot;
 
 /// Commands to send to the Swarm
@@ -32,9 +32,15 @@ pub enum SwarmCmd {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
     },
+    // Dials the given MultiAddress. If address contains a peer ID, simultaneous
+    // dials to that peer are prevented.
     Dial {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
+    },
+    // Return the MultiAddresses for all the peers in the local Routing Table.
+    GetAllLocalPeerAddresses {
+        sender: oneshot::Sender<HashMap<PeerId, Vec<Multiaddr>>>,
     },
     // Get closest peers from the network
     GetClosestPeers {
@@ -263,6 +269,17 @@ impl SwarmDriver {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(e.into())),
                 };
+            }
+            SwarmCmd::GetAllLocalPeerAddresses { sender } => {
+                let mut all_peer_addresses: HashMap<PeerId, Vec<Multiaddr>> = HashMap::new();
+                for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+                    for entry in kbucket.iter() {
+                        let peer = entry.node.key.clone().into_preimage();
+                        let addresses = entry.node.value.iter().cloned().collect();
+                        all_peer_addresses.insert(peer, addresses);
+                    }
+                }
+                let _ = sender.send(all_peer_addresses);
             }
             SwarmCmd::GetClosestPeers { key, sender } => {
                 let query_id = self

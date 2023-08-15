@@ -512,6 +512,15 @@ impl Network {
         receiver.await?
     }
 
+    /// Return the MultiAddresses for all the peers in the local Routing Table.
+    pub async fn get_all_local_peer_addresses(&self) -> Result<HashMap<PeerId, Vec<Multiaddr>>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetAllLocalPeerAddresses { sender })?;
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// Excludes the client's `PeerId` while calculating the closest peers.
     pub async fn client_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
@@ -1043,6 +1052,11 @@ pub(crate) fn multiaddr_pop_p2p(multiaddr: &mut Multiaddr) -> Option<PeerId> {
     } else {
         None
     }
+}
+
+/// Returns true if the multiaddr contains the PeerId, i.e., `/p2p/<peer_id>`
+pub fn multiaddr_contains_peer_id(multiaddr: &Multiaddr) -> bool {
+    multiaddr.iter().any(|p| matches!(p, Protocol::P2p(_)))
 }
 
 /// Build a `Multiaddr` with the p2p protocol filtered out.

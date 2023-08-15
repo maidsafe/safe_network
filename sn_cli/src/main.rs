@@ -48,6 +48,7 @@ async fn main() -> Result<()> {
     #[cfg(feature = "metrics")]
     tokio::spawn(init_metrics(std::process::id()));
 
+    info!("\n\n");
     debug!("Built with git version: {}", sn_build_info::git_info());
     println!("Built with git version: {}", sn_build_info::git_info());
     println!("Instantiating a SAFE client...");
@@ -55,7 +56,13 @@ async fn main() -> Result<()> {
     let client_data_dir_path = get_client_data_dir_path().await?;
     let secret_key = get_client_secret_key(&client_data_dir_path).await?;
 
-    if opt.peers.peers.is_empty() {
+    let mut network_contacts = opt.peers.peers;
+    match Client::read_network_contacts(&client_data_dir_path).await {
+        Ok(contacts) => network_contacts.extend(contacts),
+        Err(err) => error!("Failed to read network contacts, {err:?}"),
+    }
+
+    if network_contacts.is_empty() {
         if !cfg!(feature = "local-discovery") {
             let log_str = "No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.";
             warn!(log_str);
@@ -65,14 +72,14 @@ async fn main() -> Result<()> {
         }
     }
 
-    let client = Client::new(secret_key, Some(opt.peers.peers), opt.timeout).await?;
+    let client = Client::new(secret_key, Some(network_contacts), opt.timeout).await?;
 
     // default to verifying storage
     let should_verify_store = !opt.no_verify;
 
-    match opt.cmd {
+    let result = match opt.cmd {
         SubCmd::Wallet(cmds) => {
-            wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+            wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
         SubCmd::Files(cmds) => {
             files_cmds(
@@ -81,12 +88,15 @@ async fn main() -> Result<()> {
                 &client_data_dir_path,
                 should_verify_store,
             )
-            .await?
+            .await
         }
-        SubCmd::Register(cmds) => register_cmds(cmds, &client, should_verify_store).await?,
+        SubCmd::Register(cmds) => register_cmds(cmds, &client, should_verify_store).await,
     };
 
-    Ok(())
+    if let Err(err) = client.store_network_contacts(&client_data_dir_path).await {
+        error!("Failed to cache network contacts due to {err:?}");
+    }
+    result
 }
 
 async fn get_client_secret_key(root_dir: &PathBuf) -> Result<SecretKey> {

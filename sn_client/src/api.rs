@@ -15,7 +15,9 @@ use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
 use libp2p::{kad::Record, Multiaddr};
 use sn_dbc::{DbcId, SignedSpend, Token};
-use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
+use sn_networking::{
+    multiaddr_contains_peer_id, multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
+};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::PaymentProof,
@@ -27,7 +29,7 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::client_transfers::SpendRequest;
-use std::time::Duration;
+use std::{path::Path, time::Duration};
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
@@ -37,6 +39,12 @@ const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs
 
 /// The initial rounds of `get_random` allowing client to fill up the RT.
 const INITIAL_GET_RANDOM_ROUNDS: usize = 5;
+
+/// The number of unique peer MultiAddr to store inside the network contact file
+const NETWORK_CONTACT_LENGTH: usize = 20;
+
+/// Network Contacts filename
+const NETWORK_CONTACT_FILENAME: &str = "network_contacts";
 
 impl Client {
     /// Instantiate a new client.
@@ -448,5 +456,41 @@ impl Client {
         trace!("Set store cost: {}", self.network_store_cost);
 
         Ok(Token::from_nano(cost))
+    }
+
+    /// Store the MultiAddr of some of the peers we're currently connected to.
+    /// This is used to speed up the subsequent connections to the network by the client.
+    pub async fn store_network_contacts(&self, root_dir: &Path) -> Result<()> {
+        let addresses = self
+            .network
+            .get_all_local_peer_addresses()
+            .await?
+            .into_values()
+            .filter_map(|addresses_per_peer| {
+                addresses_per_peer
+                    .into_iter()
+                    .find(multiaddr_contains_peer_id)
+            })
+            .take(NETWORK_CONTACT_LENGTH)
+            .collect::<Vec<_>>();
+
+        trace!("Writing network contacts: {addresses:?}");
+        let contacts_path = root_dir.join(NETWORK_CONTACT_FILENAME);
+        let bytes = bincode::serialize(&addresses)?;
+        tokio::fs::write(&contacts_path, bytes).await.unwrap();
+        debug!("Wrote network contacts file");
+
+        Ok(())
+    }
+
+    /// Read the network contact file and get peer multi addresses.
+    pub async fn read_network_contacts(root_dir: &Path) -> Result<Vec<Multiaddr>> {
+        let contact_path = root_dir.join(NETWORK_CONTACT_FILENAME);
+        if !contact_path.is_file() {
+            return Ok(vec![]);
+        }
+        let bytes = tokio::fs::read(&contact_path).await.unwrap();
+        let addresses: Vec<Multiaddr> = bincode::deserialize(&bytes)?;
+        Ok(addresses)
     }
 }

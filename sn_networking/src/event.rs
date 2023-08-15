@@ -46,7 +46,7 @@ use tokio::sync::oneshot;
 use tracing::{info, warn};
 use xor_name::XorName;
 
-// Usig XorName to differentiate different record content under the same key.
+// Using XorName to differentiate different record content under the same key.
 pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
 
 #[derive(NetworkBehaviour)]
