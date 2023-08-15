@@ -115,6 +115,8 @@ async fn storage_payment_fails() -> Result<()> {
     Ok(())
 }
 
+// TODO: reenable
+#[ignore = "Currently we do not cache the proofs in the wallet"]
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     let wallet_original_balance = 100_000_000_000_000_000;

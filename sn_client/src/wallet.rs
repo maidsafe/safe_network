@@ -110,21 +110,25 @@ impl WalletClient {
         // Let's filter the content addresses we hold payment proofs for, i.e. avoid
         // paying for those chunks we've already paid for with this wallet.
         let mut proofs = PaymentProofsMap::default();
-        let addrs_to_pay: Vec<&XorName> = content_addrs
-            .filter(|name| {
-                if let Some(proof) = self.wallet.get_payment_proof(name) {
-                    proofs.insert(**name, proof.clone());
-                    false
-                } else {
-                    true
-                }
-            })
-            .collect();
+
+        let addrs_to_pay: Vec<&XorName> = content_addrs.collect();
+        // TODO: reenable this when we have a way to get the store cost from the network
+        // per chunk, and can readily check what we've paid here.
+        // .filter(|name| {
+        //     if let Some(proof) = self.wallet.get_payment_proof(name) {
+        //         proofs.insert(**name, proof.clone());
+        //         false
+        //     } else {
+        //         true
+        //     }
+        // })
+        // .collect();
 
         let number_of_records_to_pay = addrs_to_pay.len() as u64;
+
         // If no addresses need to be paid for, we don't have to go further
         if addrs_to_pay.is_empty() {
-            trace!("We already hold payment proofs for all the Chunks.");
+            trace!("We already hold payment proofs for all the records.");
             return Ok((proofs, None));
         }
 
