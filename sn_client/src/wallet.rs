@@ -132,13 +132,11 @@ impl WalletClient {
         let (root_hash, audit_trail_info) = build_payment_proofs(addrs_to_pay.into_iter())?;
         let num_of_addrs = audit_trail_info.len() as u64;
 
-        let mut storage_cost = self.store_cost();
-
-        // storage should not be free. Let's check...
-        if storage_cost.is_zero() {
-            self.set_store_cost_from_random_address().await?;
-            storage_cost = self.store_cost();
-        };
+        // Always check storage cost, and overpay to allow margin when validation.
+        self.set_store_cost_from_random_address().await?;
+        let storage_cost = Token::from_nano(
+            self.store_cost().as_nano() * (2.0f64.powf((num_of_addrs / 100 + 1) as f64)) as u64,
+        );
 
         info!("Storage cost per record: {}", storage_cost);
 
