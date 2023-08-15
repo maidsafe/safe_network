@@ -172,27 +172,27 @@ impl SwarmDriver {
                     libp2p::identify::Event::Received { peer_id, info } => {
                         debug!(%peer_id, ?info, "identify: received info");
 
+                        let addrs = match self.local {
+                            true => info.listen_addrs,
+                            // If we're not in local mode, only add globally reachable addresses
+                            false => info
+                                .listen_addrs
+                                .into_iter()
+                                .filter(multiaddr_is_global)
+                                .collect(),
+                        };
+                        // Strip the `/p2p/...` part of the multiaddresses
+                        let addrs: Vec<_> = addrs
+                            .into_iter()
+                            .map(|addr| multiaddr_strip_p2p(&addr))
+                            // And deduplicate the list
+                            .unique()
+                            .collect();
+
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if (self.local || self.dialed_peers.contains(&peer_id))
                             && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
                         {
-                            let addrs = match self.local {
-                                true => info.listen_addrs,
-                                // If we're not in local mode, only add globally reachable addresses
-                                false => info
-                                    .listen_addrs
-                                    .into_iter()
-                                    .filter(multiaddr_is_global)
-                                    .collect(),
-                            };
-                            // Strip the `/p2p/...` part of the multiaddresses
-                            let addrs: Vec<_> = addrs
-                                .into_iter()
-                                .map(|addr| multiaddr_strip_p2p(&addr))
-                                // And deduplicate the list
-                                .unique()
-                                .collect();
-
                             debug!(%peer_id, ?addrs, "identify: adding addresses to routing table");
                             for multiaddr in addrs.clone() {
                                 let _routing_update = self
@@ -213,6 +213,13 @@ impl SwarmDriver {
                                         autonat.add_server(peer_id, Some(multiaddr));
                                     }
                                 }
+                            }
+                        } else if !self.dialed_peers.contains(&peer_id)
+                            && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
+                        {
+                            // try and dial
+                            for addr in addrs {
+                                let _result = self.dial(addr.clone());
                             }
                         }
                     }
@@ -272,7 +279,7 @@ impl SwarmDriver {
             } => {
                 debug!(%peer_id, num_established, "ConnectionEstablished: {}", endpoint_str(&endpoint));
 
-                if endpoint.is_dialer() {
+                if endpoint.is_dialer() && !self.dialed_peers.contains(&peer_id) {
                     self.dialed_peers.push(peer_id);
                 }
             }
