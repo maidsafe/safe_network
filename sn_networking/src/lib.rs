@@ -17,12 +17,6 @@ mod msg;
 mod record_store;
 mod replication_fetcher;
 
-pub use self::{
-    cmd::SwarmLocalState,
-    error::Error,
-    event::{MsgResponder, NetworkEvent},
-};
-
 use self::{
     circular_vec::CircularVec,
     cmd::SwarmCmd,
@@ -34,12 +28,17 @@ use self::{
     },
     replication_fetcher::ReplicationFetcher,
 };
+pub use self::{
+    cmd::SwarmLocalState,
+    error::Error,
+    event::{MsgResponder, NetworkEvent},
+};
 use futures::{future::select_all, StreamExt};
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
-    identity::{Keypair, PublicKey},
+    identity::Keypair,
     kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
@@ -47,6 +46,7 @@ use libp2p::{
     Multiaddr, PeerId, Transport,
 };
 use rand::Rng;
+use sn_dbc::PublicAddress;
 use sn_dbc::Token;
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
@@ -630,7 +630,7 @@ impl Network {
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
-    ) -> Result<Vec<(PublicKey, Token)>> {
+    ) -> Result<Vec<(PublicAddress, Token)>> {
         let (sender, receiver) = oneshot::channel();
         debug!("Attempting to get store cost");
         // first we need to get CLOSE_GROUP of the dbc_id
@@ -655,12 +655,11 @@ impl Network {
         for response in responses.into_iter().flatten() {
             if let Response::Query(QueryResponse::GetStoreCost {
                 store_cost: Ok(cost),
-                pk_bytes,
+                payment_address,
             }) = response
             {
                 // TODO: handle this error
-                let pk = PublicKey::try_decode_protobuf(&pk_bytes)?;
-                all_costs.push((pk, cost));
+                all_costs.push((payment_address, cost));
             } else {
                 println!("other response was {:?}", response);
             }
@@ -997,8 +996,8 @@ impl Network {
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
 fn get_fee_from_store_cost_quotes(
-    mut all_costs: Vec<(PublicKey, Token)>,
-) -> Result<Vec<(PublicKey, Token)>> {
+    mut all_costs: Vec<(PublicAddress, Token)>,
+) -> Result<Vec<(PublicAddress, Token)>> {
     // we're zero indexed, so we want the middle index
     let desired_quote_count = (CLOSE_GROUP_SIZE / 2) + 1;
 
@@ -1072,15 +1071,21 @@ mod tests {
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..CLOSE_GROUP_SIZE {
-            costs.push(Token::from_nano(i as u64));
+            let addr = PublicAddress::new(bls::SecretKey::random().public_key());
+            costs.push((addr, Token::from_nano(i as u64)));
         }
-        let price = get_fee_from_store_cost_quotes(&mut costs)?;
+        let prices = get_fee_from_store_cost_quotes(costs)?;
+        let total_price: u64 = prices
+            .iter()
+            .fold(0, |acc, (_, price)| acc + price.as_nano());
+
+        // sum all the numbers from 0 to CLOSE_GROUP_SIZE / 2 + 1
+        let expected_price = (CLOSE_GROUP_SIZE / 2) * (CLOSE_GROUP_SIZE / 2 + 1) / 2;
 
         assert_eq!(
-            price,
-            Token::from_nano(CLOSE_GROUP_SIZE as u64 / 2),
+            total_price, expected_price as u64,
             "price should be {}",
-            CLOSE_GROUP_SIZE / 2 + 1
+            expected_price
         );
 
         Ok(())
@@ -1091,10 +1096,11 @@ mod tests {
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
-            costs.push(Token::from_nano(i as u64));
+            let addr = PublicAddress::new(bls::SecretKey::random().public_key());
+            costs.push((addr, Token::from_nano(i as u64)));
         }
 
-        if get_fee_from_store_cost_quotes(&mut costs).is_ok() {
+        if get_fee_from_store_cost_quotes(costs).is_ok() {
             bail!("Should have errored as we have too few quotes")
         }
 
@@ -1106,23 +1112,28 @@ mod tests {
         let quotes_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
         for i in 0..quotes_count {
-            costs.push(Token::from_nano(i));
+            // push random PublicAddress and Token
+            let addr = PublicAddress::new(bls::SecretKey::random().public_key());
+            costs.push((addr, Token::from_nano(i)));
             println!("price added {}", i);
         }
 
-        let price = match get_fee_from_store_cost_quotes(&mut costs) {
+        let prices = match get_fee_from_store_cost_quotes(costs) {
             Err(_) => bail!("Should not have errored as we have enough quotes"),
             Ok(cost) => cost,
         };
 
-        // as we use zero indexing above, the actual price should be the majority covering
-        // index, ie, w/ 8 it would be 5. But we're 0 indexed, so 4.
-        let actual_price = CLOSE_GROUP_SIZE as u64 / 2;
+        let total_price: u64 = prices
+            .iter()
+            .fold(0, |acc, (_, price)| acc + price.as_nano());
+
+        // sum all the numbers from 0 to CLOSE_GROUP_SIZE / 2 + 1
+        let expected_price = (CLOSE_GROUP_SIZE / 2) * (CLOSE_GROUP_SIZE / 2 + 1) / 2;
+
         assert_eq!(
-            price,
-            Token::from_nano(actual_price),
+            total_price, expected_price as u64,
             "price should be {}",
-            actual_price
+            total_price
         );
 
         Ok(())
