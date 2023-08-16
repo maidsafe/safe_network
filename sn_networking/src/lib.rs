@@ -630,7 +630,6 @@ impl Network {
     pub async fn get_store_cost_from_network(
         &self,
         record_address: NetworkAddress,
-        any_cost_will_do: bool,
     ) -> Result<Token> {
         let (sender, receiver) = oneshot::channel();
         debug!("Attempting to get store cost");
@@ -661,7 +660,7 @@ impl Network {
             }
         }
 
-        get_fee_from_store_cost_quotes(&mut all_costs, any_cost_will_do)
+        get_fee_from_store_cost_quotes(&mut all_costs)
     }
 
     /// Get the Record from the network
@@ -784,6 +783,8 @@ impl Network {
     /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
     async fn put_record_with_retries(&self, record: Record) -> Result<()> {
         let mut retries = 0;
+
+        // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
         while retries < PUT_RECORD_RETRIES {
             let res = self.put_record_once(record.clone(), true).await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
@@ -931,7 +932,11 @@ impl Network {
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// If `client` is false, then include `self` among the `closest_peers`
-    async fn get_closest_peers(&self, key: &NetworkAddress, client: bool) -> Result<Vec<PeerId>> {
+    pub async fn get_closest_peers(
+        &self,
+        key: &NetworkAddress,
+        client: bool,
+    ) -> Result<Vec<PeerId>> {
         trace!("Getting the closest peers to {key:?}");
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
@@ -985,31 +990,16 @@ impl Network {
 }
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
-fn get_fee_from_store_cost_quotes(
-    all_costs: &mut Vec<Token>,
-    any_cost_will_do: bool,
-) -> Result<Token> {
+fn get_fee_from_store_cost_quotes(all_costs: &mut Vec<Token>) -> Result<Token> {
     // we're zero indexed, so we want the middle index
     let target_cost_index = CLOSE_GROUP_SIZE / 2;
 
     // sort all costs by fee, lowest to highest
     all_costs.sort();
 
-    let token_fee = if any_cost_will_do {
-        let first_try = all_costs
-            .get(target_cost_index)
-            .ok_or(Error::NotEnoughCostQuotes);
-        // Prefer the value from first_try, otherwise just use the last one
-        if let Err(_error) = first_try {
-            *all_costs.last().ok_or(Error::NotEnoughCostQuotes)?
-        } else {
-            *first_try?
-        }
-    } else {
-        *all_costs
-            .get(target_cost_index)
-            .ok_or(Error::NotEnoughCostQuotes)?
-    };
+    let token_fee = *all_costs
+        .get(target_cost_index)
+        .ok_or(Error::NotEnoughCostQuotes)?;
 
     info!(
         "Final fee calculated as: {token_fee:?}, from: {:?}",
@@ -1069,7 +1059,7 @@ mod tests {
         for i in 0..CLOSE_GROUP_SIZE {
             costs.push(Token::from_nano(i as u64));
         }
-        let price = get_fee_from_store_cost_quotes(&mut costs, false)?;
+        let price = get_fee_from_store_cost_quotes(&mut costs)?;
 
         assert_eq!(
             price,
@@ -1081,7 +1071,7 @@ mod tests {
         Ok(())
     }
     #[test]
-    fn test_get_any_fee_from_store_cost_quotes() -> eyre::Result<()> {
+    fn test_get_any_fee_from_store_cost_quotes_errs_if_insufficient_quotes() -> eyre::Result<()> {
         // for a vec of different costs of CLOUSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
@@ -1089,21 +1079,35 @@ mod tests {
             costs.push(Token::from_nano(i as u64));
         }
 
-        if get_fee_from_store_cost_quotes(&mut costs, false).is_ok() {
+        if get_fee_from_store_cost_quotes(&mut costs).is_ok() {
             bail!("Should have errored as we have too few quotes")
         }
 
-        let price = match get_fee_from_store_cost_quotes(&mut costs, true) {
-            Err(_) => bail!("Should have errored as we have too few quotes"),
+        Ok(())
+    }
+    #[test]
+    fn test_get_some_fee_from_store_cost_quotes_errs_if_suffcient() -> eyre::Result<()> {
+        // for a vec of different costs of CLOUSE_GROUP size
+        let quotes_count = CLOSE_GROUP_SIZE as u64 - 1;
+        let mut costs = vec![];
+        for i in 0..quotes_count {
+            costs.push(Token::from_nano(i));
+            println!("price added {}", i);
+        }
+
+        let price = match get_fee_from_store_cost_quotes(&mut costs) {
+            Err(_) => bail!("Should not have errored as we have enough quotes"),
             Ok(cost) => cost,
         };
 
-        // as we use zero indexing above, the actual price is _two_ less
+        // as we use zero indexing above, the actual price should be the majority covering
+        // index, ie, w/ 8 it would be 5. But we're 0 indexed, so 4.
+        let actual_price = CLOSE_GROUP_SIZE as u64 / 2;
         assert_eq!(
             price,
-            Token::from_nano((CLOSE_GROUP_SIZE as u64 / 2) - 2),
+            Token::from_nano(actual_price),
             "price should be {}",
-            (CLOSE_GROUP_SIZE as u64 / 2) - 2
+            actual_price
         );
 
         Ok(())

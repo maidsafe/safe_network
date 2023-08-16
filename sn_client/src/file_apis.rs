@@ -12,7 +12,10 @@ use super::{
     Client,
 };
 
-use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_protocol::{
+    storage::{Chunk, ChunkAddress},
+    NetworkAddress,
+};
 use sn_transfers::wallet::PaymentTransactionsMap;
 
 use bincode::deserialize;
@@ -98,7 +101,7 @@ impl Files {
         bytes: Bytes,
         payment_proofs: &PaymentTransactionsMap,
         verify_store: bool,
-    ) -> Result<ChunkAddress> {
+    ) -> Result<NetworkAddress> {
         self.upload_bytes(bytes, payment_proofs, verify_store).await
     }
 
@@ -111,7 +114,7 @@ impl Files {
         &self,
         bytes: Bytes,
         payment_proofs: &PaymentTransactionsMap,
-    ) -> Result<ChunkAddress> {
+    ) -> Result<NetworkAddress> {
         self.upload_bytes(bytes, payment_proofs, true).await
     }
 
@@ -150,11 +153,11 @@ impl Files {
         for chunk in chunks {
             next_batch_size += 1;
             let client = self.client.clone();
-            let chunk_addr = *chunk.address();
+            let chunk_addr = chunk.network_address();
             let payment = payment_proofs
-                .get(chunk_addr.xorname())
+                .get(&chunk_addr)
                 .cloned()
-                .ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
+                .ok_or(super::Error::MissingPaymentProof(format!("{chunk_addr}")))?;
 
             tasks.push(task::spawn(async move {
                 client.store_chunk(chunk, payment, verify_store).await?;
@@ -192,7 +195,7 @@ impl Files {
         bytes: Bytes,
         payment_proofs: &PaymentTransactionsMap,
         verify: bool,
-    ) -> Result<ChunkAddress> {
+    ) -> Result<NetworkAddress> {
         if bytes.len() < MIN_ENCRYPTABLE_BYTES {
             let file = SmallFile::new(bytes)?;
             self.upload_small(file, payment_proofs, verify).await
@@ -200,7 +203,9 @@ impl Files {
             let (head_address, chunks) = encrypt_large(bytes)?;
             self.upload_chunks_in_batches(chunks.into_iter(), payment_proofs, verify)
                 .await?;
-            Ok(ChunkAddress::new(head_address))
+            Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
+                head_address,
+            )))
         }
     }
 
@@ -212,13 +217,13 @@ impl Files {
         small: SmallFile,
         payment_proofs: &PaymentTransactionsMap,
         verify_store: bool,
-    ) -> Result<ChunkAddress> {
+    ) -> Result<NetworkAddress> {
         let chunk = package_small(small)?;
-        let address = *chunk.address();
+        let address = chunk.network_address();
         let payment = payment_proofs
-            .get(address.xorname())
+            .get(&address)
             .cloned()
-            .ok_or(super::Error::MissingPaymentProof(address))?;
+            .ok_or(super::Error::MissingPaymentProof(format!("{address}")))?;
 
         self.client
             .store_chunk(chunk, payment, verify_store)

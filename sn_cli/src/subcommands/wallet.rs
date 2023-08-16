@@ -8,6 +8,7 @@
 
 use sn_client::{Client, Files, WalletClient};
 use sn_dbc::Token;
+use sn_protocol::storage::ChunkAddress;
 use sn_transfers::wallet::{parse_public_address, LocalWallet, PaymentTransactionsMap};
 
 use bytes::Bytes;
@@ -307,20 +308,18 @@ pub(super) async fn chunk_and_pay_for_storage(
             chunked_files
                 .values()
                 .flat_map(|chunked_file| &chunked_file.chunks)
-                .map(|(name, _)| name),
+                .map(|(name, _)| {
+                    sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
+                }),
             verify_store,
         )
         .await?;
 
-    if let Some(cost) = cost {
-        let total_cost = proofs.len() as u64 * cost.as_nano();
-        println!(
+    let total_cost = proofs.len() as u64 * cost.as_nano();
+    println!(
             "Successfully made payment of {total_cost} for {} records. (At a cost per record of {cost:?}.)",
             proofs.len(),
         );
-    } else {
-        println!("No payment needed for {} records.", proofs.len(),);
-    }
 
     let wallet = wallet_client.into_wallet();
     if let Err(err) = wallet.store().await {
