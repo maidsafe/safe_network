@@ -334,7 +334,7 @@ async fn store_chunk(client: Client, paying_wallet: LocalWallet, chunk_count: us
         );
 
         let (proofs, _) = wallet_client
-            .pay_for_storage(chunks.iter().map(|c| c.name()), true)
+            .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
             .await
             .expect("Failed to pay for storage for new file at {addr:?}");
 

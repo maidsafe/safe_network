@@ -41,5 +41,4 @@ pub struct Client {
     signer: bls::SecretKey,
     peers_added: usize,
     progress: Option<ProgressBar>,
-    network_store_cost: u64,
 }
