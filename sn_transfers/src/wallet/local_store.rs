@@ -11,11 +11,11 @@ use super::{
     wallet_file::{
         create_received_dbcs_dir, get_wallet, load_received_dbcs, store_created_dbcs, store_wallet,
     },
-    Error, KeyLessWallet, PaymentProofsMap, Result,
+    Error, KeyLessWallet, PaymentTransactionsMap, Result,
 };
 use crate::client_transfers::{create_storage_payment_transfer, create_transfer, TransferOutputs};
 use sn_dbc::{random_derivation_index, Dbc, DerivedKey, Hash, MainKey, PublicAddress, Token};
-use sn_protocol::messages::PaymentProof;
+use sn_protocol::messages::PaymentTransactions;
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -132,12 +132,12 @@ impl LocalWallet {
 
     /// Add given storage payment proofs to the wallet's cache,
     /// so they can be used when uploading the paid content.
-    pub fn add_payment_proofs(&mut self, proofs: PaymentProofsMap) {
+    pub fn add_payment_proofs(&mut self, proofs: PaymentTransactionsMap) {
         self.wallet.paymet_proofs.extend(proofs);
     }
 
     /// Return the payment proof for the given content address name if cached.
-    pub fn get_payment_proof(&self, name: &XorName) -> Option<&PaymentProof> {
+    pub fn get_payment_proof(&self, name: &XorName) -> Option<&PaymentTransactions> {
         self.wallet.paymet_proofs.get(name)
     }
 
@@ -170,7 +170,6 @@ impl LocalWallet {
     pub async fn local_send_storage_payment(
         &mut self,
         storage_payment: Token,
-        root_hash: Hash,
         reason_hash: Option<Hash>,
     ) -> Result<TransferOutputs> {
         let available_dbcs = self.available_dbcs();
@@ -180,7 +179,6 @@ impl LocalWallet {
             available_dbcs,
             self.address(),
             storage_payment,
-            root_hash,
             reason_hash.unwrap_or_default(),
         )?;
 
@@ -249,7 +247,7 @@ impl KeyLessWallet {
             spent_dbcs: BTreeMap::new(),
             available_dbcs: BTreeMap::new(),
             dbcs_created_for_others: vec![],
-            paymet_proofs: PaymentProofsMap::default(),
+            paymet_proofs: PaymentTransactionsMap::default(),
         }
     }
 
