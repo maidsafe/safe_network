@@ -149,10 +149,6 @@ impl DiskBackedRecordStore {
         }
     }
 
-    pub fn distance_range(&self) -> Option<Distance> {
-        self.distance_range
-    }
-
     pub fn put_verified(&mut self, r: Record) -> Result<()> {
         let content_hash = XorName::from_content(&r.value);
         trace!(

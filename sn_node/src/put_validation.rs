@@ -509,13 +509,20 @@ impl Node {
                 {
                     trace!("GENESIS_DBC {dbc_addr:?} doesn't have a parent");
                 } else {
+                    trace!(
+                        "Checking dbc {dbc_addr:?} parent transaction {:?}",
+                        signed_spend.spend.dbc_creation_tx
+                    );
                     for parent_input in &signed_spend.spend.dbc_creation_tx.inputs {
+                        let parent_dbc_address = DbcAddress::from_dbc_id(&parent_input.dbc_id());
+                        trace!(
+                            "Checking parent input at {:?} - {:?}",
+                            parent_input.dbc_id(),
+                            parent_dbc_address
+                        );
                         let _ = parent_spends.insert(
-                            self.get_spend_from_network(
-                                DbcAddress::from_dbc_id(&parent_input.dbc_id()),
-                                true,
-                            )
-                            .await?,
+                            self.get_spend_from_network(parent_dbc_address, true)
+                                .await?,
                         );
                     }
                 }

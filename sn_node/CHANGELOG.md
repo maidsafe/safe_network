@@ -867,6 +867,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - bit more logging ang single thread
 - *(node)* resend unconfirmed txs before asserting
 
+## [0.88.31](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.30...sn_node-v0.88.31) - 2023-08-14
+
+### Other
+- *(faucet)* reduce token handout
+
+## [0.88.32](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.31...sn_node-v0.88.32) - 2023-08-14
+
+### Other
+- update dependencies
+
+## [0.88.33](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.32...sn_node-v0.88.33) - 2023-08-15
+
+### Other
+- update dependencies
+
+## [0.88.34](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.33...sn_node-v0.88.34) - 2023-08-16
+
+### Other
+- logging for checking parent inputs
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
