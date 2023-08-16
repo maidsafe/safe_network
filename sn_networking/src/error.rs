@@ -9,10 +9,11 @@
 use super::{cmd::SwarmCmd, NetworkEvent};
 
 use libp2p::{
+    identity::DecodingError,
     kad::{self, Record},
     request_response::{OutboundFailure, RequestId},
     swarm::DialError,
-    TransportError, identity::DecodingError,
+    TransportError,
 };
 use sn_protocol::{messages::Response, PrettyPrintRecordKey};
 use std::{io, path::PathBuf};

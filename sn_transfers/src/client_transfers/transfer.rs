@@ -54,45 +54,6 @@ pub fn create_transfer(
     create_transfer_with(selected_inputs, reason_hash, None)
 }
 
-/// A function for creating an offline transfer of tokens for a storage payment.
-/// This is done by creating a new network owned output (and a change dbc if any)
-/// by selecting from the available input dbcs, and creating the necessary
-/// spends to do so.
-pub fn create_storage_payment_transfer(
-    available_dbcs: Vec<(Dbc, DerivedKey)>,
-    change_to: PublicAddress,
-    storage_payment: Token,
-    reason_hash: Hash,
-) -> Result<TransferOutputs> {
-    // We need to select the necessary number of dbcs from those that we were passed.
-    let (dbcs_to_spend, change_amount) = select_inputs(available_dbcs, storage_payment)?;
-
-    // TODO: Clear all this up when we've removed this
-    let root_hash = sn_dbc::Hash::hash(b"nonsense");
-    // We build the recipients to contain just a single output which is for the network owned output.
-    // This is a special output that spendbook peers validating the signed spends (inputs) will be
-    // verifying before accepting them as valid spends for a storage payment. This special output is
-    // expected to be built from hashing: root_hash + input DBCs ids
-    let mut fee_id_bytes = root_hash.slice().to_vec();
-    dbcs_to_spend
-        .iter()
-        .for_each(|(dbc, _)| fee_id_bytes.extend(&dbc.id().to_bytes()));
-
-    let fee = FeeOutput::new(
-        Hash::hash(&fee_id_bytes),
-        storage_payment.as_nano(),
-        root_hash,
-    );
-
-    let selected_inputs = Inputs {
-        dbcs_to_spend,
-        recipients: vec![],
-        change: (change_amount, change_to),
-    };
-
-    create_transfer_with(selected_inputs, reason_hash, Some(fee))
-}
-
 /// Select the necessary number of dbcs from those that we were passed.
 fn select_inputs(
     available_dbcs: Vec<(Dbc, DerivedKey)>,

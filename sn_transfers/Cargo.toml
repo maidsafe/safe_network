@@ -17,8 +17,8 @@ bls = { package = "blsttc", version = "8.0.1" }
 custom_debug = "~0.5.0"
 dirs-next = "~2.0.0"
 hex = "~0.4.3"
+itertools = "~0.10.1"
 lazy_static = "~1.4.0"
-merkletree = "~0.23.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_dbc = { version = "19.1.1", features = ["serdes"] }
@@ -34,4 +34,3 @@ xor_name = "5.0.0"
 [dev-dependencies]
 assert_fs = "1.0.0"
 eyre = "0.6.8"
-proptest = { version = "1.0.0" }
