@@ -39,7 +39,7 @@ use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
-    identity::Keypair,
+    identity::{Keypair, PublicKey},
     kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
@@ -627,10 +627,10 @@ impl Network {
             .await)
     }
 
-    pub async fn get_store_cost_from_network(
+    pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
-    ) -> Result<Token> {
+    ) -> Result<Vec<(PublicKey, Token)>> {
         let (sender, receiver) = oneshot::channel();
         debug!("Attempting to get store cost");
         // first we need to get CLOSE_GROUP of the dbc_id
@@ -653,14 +653,20 @@ impl Network {
         // loop over responses, generating an avergae fee and storing all responses along side
         let mut all_costs = vec![];
         for response in responses.into_iter().flatten() {
-            if let Response::Query(QueryResponse::GetStoreCost(Ok(cost))) = response {
-                all_costs.push(cost);
+            if let Response::Query(QueryResponse::GetStoreCost {
+                store_cost: Ok(cost),
+                pk_bytes,
+            }) = response
+            {
+                // TODO: handle this error
+                let pk = PublicKey::try_decode_protobuf(&pk_bytes)?;
+                all_costs.push((pk, cost));
             } else {
                 println!("other response was {:?}", response);
             }
         }
 
-        get_fee_from_store_cost_quotes(&mut all_costs)
+        get_fee_from_store_cost_quotes(all_costs)
     }
 
     /// Get the Record from the network
@@ -990,22 +996,31 @@ impl Network {
 }
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
-fn get_fee_from_store_cost_quotes(all_costs: &mut Vec<Token>) -> Result<Token> {
+fn get_fee_from_store_cost_quotes(
+    mut all_costs: Vec<(PublicKey, Token)>,
+) -> Result<Vec<(PublicKey, Token)>> {
     // we're zero indexed, so we want the middle index
-    let target_cost_index = CLOSE_GROUP_SIZE / 2;
+    let desired_quote_count = (CLOSE_GROUP_SIZE / 2) + 1;
 
     // sort all costs by fee, lowest to highest
-    all_costs.sort();
+    all_costs.sort_by(|(_, cost_a), (_, cost_b)| {
+        cost_a
+            .partial_cmp(cost_b)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
-    let token_fee = *all_costs
-        .get(target_cost_index)
-        .ok_or(Error::NotEnoughCostQuotes)?;
+    // get the first desired_quote_count of all_costs
+    all_costs.truncate(desired_quote_count);
+
+    if all_costs.len() < desired_quote_count {
+        return Err(Error::NotEnoughCostQuotes);
+    }
 
     info!(
-        "Final fee calculated as: {token_fee:?}, from: {:?}",
+        "Final fees calculated as: {all_costs:?}, from: {:?}",
         all_costs
     );
-    Ok(token_fee)
+    Ok(all_costs)
 }
 
 /// Verifies if `Multiaddr` contains IPv4 address that is not global.
