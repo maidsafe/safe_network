@@ -10,7 +10,6 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 use super::ClientEvent;
 
-use sn_protocol::storage::ChunkAddress;
 use sn_registers::{Entry, EntryHash};
 
 use std::collections::BTreeSet;
@@ -58,7 +57,7 @@ pub enum Error {
     ContentBranchDetected(BTreeSet<(EntryHash, Entry)>),
 
     #[error("Missing a payment proof for address {0:?}")]
-    MissingPaymentProof(ChunkAddress),
+    MissingPaymentProof(String),
 
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
