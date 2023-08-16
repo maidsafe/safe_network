@@ -17,12 +17,12 @@ pub enum Error {
     /// No DBCs available for spend
     #[error("No DBCs available for spend")]
     NoDbcsAvailable,
+    /// Dbc add would overflow
+    #[error("Total price exceed possible token amount")]
+    TotalPriceTooHigh,
     /// Failed to create transfer.
     #[error("Transfer error {0}")]
     CreateTransfer(#[from] crate::client_transfers::Error),
-    /// Could not build storage payment proof for content
-    #[error("Could not build storage payment proof for content: {0}")]
-    StoragePaymentProof(#[from] crate::payment_proof::error::Error),
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),

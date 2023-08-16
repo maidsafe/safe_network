@@ -57,6 +57,8 @@ mod keys;
 mod local_store;
 mod wallet_file;
 
+use crate::client_transfers::TransferOutputsMap;
+
 pub use self::{
     error::{Error, Result},
     keys::{bls_secret_from_hex, parse_public_address},
@@ -64,12 +66,7 @@ pub use self::{
 };
 
 use sn_dbc::{Dbc, DbcId, PublicAddress, Token};
-use sn_protocol::NetworkAddress;
-
 use std::collections::BTreeMap;
-
-/// Map from content address name to its corresponding PaymentProof.
-pub type PaymentTransactionsMap = BTreeMap<NetworkAddress, Vec<DbcId>>;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub(super) struct KeyLessWallet {
@@ -87,7 +84,7 @@ pub(super) struct KeyLessWallet {
     /// transfer history.
     dbcs_created_for_others: Vec<Dbc>,
     /// Cached proofs of storage transactions made to be used for uploading the paid content.
-    payment_transactions: PaymentTransactionsMap,
+    payment_transactions: TransferOutputsMap,
 }
 
 /// Return the name of a PublicAddress.

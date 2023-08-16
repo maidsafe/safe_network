@@ -7,8 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{error::Result, messages::ReplicatedData, NetworkAddress};
+
 use serde::{Deserialize, Serialize};
-use sn_dbc::Token;
+use sn_dbc::{PublicAddress, Token};
 use std::fmt::Debug;
 
 /// The response to a query, containing the query result.
@@ -18,8 +19,8 @@ pub enum QueryResponse {
     GetStoreCost {
         /// The store cost in nanos for storing the next record.
         store_cost: Result<Token>,
-        /// The libp2p protobuf encoded PublicKey to pay this node's store cost to.
-        pk_bytes: Vec<u8>,
+        /// The dbc PublicAddress to pay this node's store cost to.
+        payment_address: PublicAddress,
     },
     // ===== ReplicatedData =====
     //
