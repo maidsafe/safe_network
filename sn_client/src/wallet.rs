@@ -8,9 +8,8 @@
 
 use super::Client;
 
-use rand::rngs::OsRng;
-use sn_dbc::{Dbc, PublicAddress, Token};
-use sn_protocol::{messages::PaymentTransactions, storage::ChunkAddress, NetworkAddress};
+use sn_dbc::{Dbc, DbcId, PublicAddress, Token};
+use sn_protocol::NetworkAddress;
 use sn_transfers::{
     client_transfers::TransferOutputs,
     wallet::{Error, LocalWallet, PaymentTransactionsMap, Result},
@@ -19,7 +18,6 @@ use sn_transfers::{
 use futures::future::join_all;
 use std::{iter::Iterator, time::Duration};
 use tokio::time::sleep;
-use xor_name::XorName;
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
@@ -42,11 +40,6 @@ impl WalletClient {
             wallet,
             unconfirmed_txs: vec![],
         }
-    }
-
-    /// Get any known store cost estimate
-    pub fn store_cost(&self) -> Token {
-        Token::from_nano(self.client.network_store_cost)
     }
 
     /// Do we have any unconfirmed transactions?
@@ -87,11 +80,9 @@ impl WalletClient {
 
     /// Get storecost from the network
     /// Stores this value as the new baseline at the client
-    pub async fn set_store_cost_from_random_address(&mut self) -> Result<Token> {
-        let random_target = ChunkAddress::new(XorName::random(&mut OsRng));
-
+    pub async fn get_store_cost_at_address(&mut self, address: &NetworkAddress) -> Result<Token> {
         self.client
-            .get_store_cost_at_address(NetworkAddress::ChunkAddress(random_target), false)
+            .get_store_cost_at_address(address)
             .await
             .map_err(|error| Error::CouldNotSendTokens(error.to_string()))
     }
@@ -103,55 +94,66 @@ impl WalletClient {
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_storage(
         &mut self,
-        content_addrs: impl Iterator<Item = &XorName>,
+        content_addrs: impl Iterator<Item = NetworkAddress>,
         verify_store: bool,
-    ) -> Result<(PaymentTransactionsMap, Option<Token>)> {
+    ) -> Result<(PaymentTransactionsMap, Token)> {
         // Let's filter the content addresses we hold payment proofs for, i.e. avoid
         // paying for those chunks we've already paid for with this wallet.
-        let mut proofs = PaymentProofsMap::default();
+        let mut proofs = PaymentTransactionsMap::default();
+        // // let addrs_to_pay: Vec<NetworkAddress> = content_addrs
+        // //     .filter(|name| {
+        // //         if let Some(proof) = self.wallet.get_payment_proof(name) {
+        // //             proofs.insert(name.clone(), proof.clone());
+        // //             false
+        // //         } else {
+        // //             true
+        // //         }
+        // //     })
+        // //     .collect();
 
-        let addrs_to_pay: Vec<&XorName> = content_addrs.collect();
-        // TODO: reenable this when we have a way to get the store cost from the network
-        // per chunk, and can readily check what we've paid here.
-        // .filter(|name| {
-        //     if let Some(proof) = self.wallet.get_payment_proof(name) {
-        //         proofs.insert(**name, proof.clone());
-        //         false
-        //     } else {
-        //         true
-        //     }
-        // })
-        // .collect();
+        // // If no addresses need to be paid for, we don't have to go further
+        // if addrs_to_pay.is_empty() {
+        //     trace!("We already hold payment proofs for all the records.");
+        //     return Ok((proofs, None));
+        // }
 
-        let number_of_records_to_pay = addrs_to_pay.len() as u64;
+        let mut total_cost = Token::zero();
 
-        // If no addresses need to be paid for, we don't have to go further
-        if addrs_to_pay.is_empty() {
-            trace!("We already hold payment proofs for all the records.");
-            return Ok((proofs, None));
+        for content_addr in content_addrs {
+            // TODO: parallelise this
+            let (payments, cost) = self
+                .pay_for_storage_at_address(&content_addr, verify_store)
+                .await?;
+
+            if let Some(cost) = total_cost.checked_add(cost) {
+                total_cost = cost;
+            }
+
+            // store the payment proof
+            proofs.insert(content_addr.clone(), payments);
         }
 
-        // Let's build the payment proofs for list of content addresses
-        // let (root_hash, audit_trail_info) = build_payment_proofs(addrs_to_pay.into_iter())?;
-        // let num_of_addrs = audit_trail_info.len() as u64;
+        Ok((proofs, total_cost))
+    }
 
-        let num_of_addrs = addrs_to_pay.len();
+    /// Send tokens to nodes closest to the data we want to make storage payment for.
+    ///
+    /// Returns DbcId created for the payment, storage cost is for that record
+    ///
+    /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
+    pub async fn pay_for_storage_at_address(
+        &mut self,
+        content_addr: &NetworkAddress,
+        verify_store: bool,
+    ) -> Result<(Vec<DbcId>, Token)> {
+        let amount_to_pay = self.get_store_cost_at_address(content_addr).await?;
 
-        // Always check storage cost, and overpay to allow margin when validation.
-        self.set_store_cost_from_random_address().await?;
-        let storage_cost = Token::from_nano(
-            self.store_cost().as_nano() * (2.0f64.powf((num_of_addrs / 100 + 1) as f64)) as u64,
-        );
-
-        info!("Storage cost per record: {}", storage_cost);
-
-        let amount_to_pay = number_of_records_to_pay * storage_cost.as_nano();
-        trace!("Making payment for {num_of_addrs} addresses of {amount_to_pay:?} nano tokens.");
+        trace!("Making payment for of {amount_to_pay:?} nano tokens to each node in close group at {content_addr:?}.");
 
         // TODO: This needs to go out to each CLOSEGROUP of addresses
         let transfer = self
             .wallet
-            .local_send_storage_payment(Token::from_nano(amount_to_pay), None)
+            .local_send_storage_payment(amount_to_pay, None)
             .await?;
 
         // send to network
@@ -164,19 +166,7 @@ impl WalletClient {
 
         let spent_ids: Vec<_> = transfer.tx.inputs.iter().map(|i| i.dbc_id()).collect();
 
-        for addr in addrs_to_pay.into_iter() {
-            proofs.insert(
-                *addr,
-                PaymentTransactions {
-                    spent_ids: spent_ids.clone(),
-                },
-            );
-        }
-
-        // cache the new set of payment proofs
-        self.wallet.add_payment_proofs(proofs.clone());
-
-        Ok((proofs, Some(storage_cost)))
+        Ok((spent_ids, amount_to_pay))
     }
 
     /// Resend failed txs
@@ -208,11 +198,6 @@ impl WalletClient {
 }
 
 impl Client {
-    /// Get any known store cost estimate
-    pub fn store_cost(&self) -> u64 {
-        self.network_store_cost
-    }
-
     /// Send a spend request to the network.
     /// This can optionally verify the spend has been correctly stored before returning
     pub async fn send(&self, transfer: TransferOutputs, verify_store: bool) -> Result<()> {

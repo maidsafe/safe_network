@@ -14,14 +14,15 @@ use super::{
     Error, KeyLessWallet, PaymentTransactionsMap, Result,
 };
 use crate::client_transfers::{create_storage_payment_transfer, create_transfer, TransferOutputs};
-use sn_dbc::{random_derivation_index, Dbc, DerivedKey, Hash, MainKey, PublicAddress, Token};
-use sn_protocol::messages::PaymentTransactions;
+use sn_dbc::{
+    random_derivation_index, Dbc, DbcId, DerivedKey, Hash, MainKey, PublicAddress, Token,
+};
+use sn_protocol::NetworkAddress;
 
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
-use xor_name::XorName;
 
 const WALLET_DIR_NAME: &str = "wallet";
 
@@ -133,12 +134,12 @@ impl LocalWallet {
     /// Add given storage payment proofs to the wallet's cache,
     /// so they can be used when uploading the paid content.
     pub fn add_payment_proofs(&mut self, proofs: PaymentTransactionsMap) {
-        self.wallet.paymet_proofs.extend(proofs);
+        self.wallet.paymet_transactions.extend(proofs);
     }
 
     /// Return the payment proof for the given content address name if cached.
-    pub fn get_payment_proof(&self, name: &XorName) -> Option<&PaymentTransactions> {
-        self.wallet.paymet_proofs.get(name)
+    pub fn get_payment_proof(&self, name: &NetworkAddress) -> Option<&Vec<DbcId>> {
+        self.wallet.paymet_transactions.get(name)
     }
 
     pub async fn local_send(
@@ -169,7 +170,7 @@ impl LocalWallet {
 
     pub async fn local_send_storage_payment(
         &mut self,
-        storage_payment: Token,
+        storage_cost_per_record: Token,
         reason_hash: Option<Hash>,
     ) -> Result<TransferOutputs> {
         let available_dbcs = self.available_dbcs();
@@ -178,7 +179,7 @@ impl LocalWallet {
         let transfer = create_storage_payment_transfer(
             available_dbcs,
             self.address(),
-            storage_payment,
+            storage_cost_per_record,
             reason_hash.unwrap_or_default(),
         )?;
 
@@ -247,7 +248,7 @@ impl KeyLessWallet {
             spent_dbcs: BTreeMap::new(),
             available_dbcs: BTreeMap::new(),
             dbcs_created_for_others: vec![],
-            paymet_proofs: PaymentTransactionsMap::default(),
+            paymet_transactions: PaymentTransactionsMap::default(),
         }
     }
 
