@@ -83,6 +83,7 @@ impl Node {
         local: bool,
         root_dir: PathBuf,
     ) -> Result<RunningNode> {
+        let reward_main_key = keypair.public();
         let (network, mut network_event_receiver, swarm_driver) =
             SwarmDriver::new(keypair, addr, local, root_dir)?;
         let node_events_channel = NodeEventsChannel::default();
@@ -91,6 +92,7 @@ impl Node {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
             initial_peers,
+            reward_main_key,
         };
 
         let network_clone = network.clone();
@@ -296,8 +298,12 @@ impl Node {
         let resp: QueryResponse = match query {
             Query::GetStoreCost(_address) => {
                 trace!("Got GetStoreCost");
-                let result = self.current_storecost().await;
-                QueryResponse::GetStoreCost(result)
+                let pk = self.reward_main_key.encode_protobuf();
+                let store_cost = self.current_storecost().await;
+                QueryResponse::GetStoreCost {
+                    store_cost,
+                    pk_bytes: pk,
+                }
             }
             Query::GetReplicatedData {
                 requester: _,

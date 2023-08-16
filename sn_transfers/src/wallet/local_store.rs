@@ -134,12 +134,12 @@ impl LocalWallet {
     /// Add given storage payment proofs to the wallet's cache,
     /// so they can be used when uploading the paid content.
     pub fn add_payment_proofs(&mut self, proofs: PaymentTransactionsMap) {
-        self.wallet.paymet_transactions.extend(proofs);
+        self.wallet.payment_transactions.extend(proofs);
     }
 
     /// Return the payment proof for the given content address name if cached.
     pub fn get_payment_proof(&self, name: &NetworkAddress) -> Option<&Vec<DbcId>> {
-        self.wallet.paymet_transactions.get(name)
+        self.wallet.payment_transactions.get(name)
     }
 
     pub async fn local_send(
@@ -248,7 +248,7 @@ impl KeyLessWallet {
             spent_dbcs: BTreeMap::new(),
             available_dbcs: BTreeMap::new(),
             dbcs_created_for_others: vec![],
-            paymet_transactions: PaymentTransactionsMap::default(),
+            payment_transactions: PaymentTransactionsMap::default(),
         }
     }
 

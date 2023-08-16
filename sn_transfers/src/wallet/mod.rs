@@ -87,7 +87,7 @@ pub(super) struct KeyLessWallet {
     /// transfer history.
     dbcs_created_for_others: Vec<Dbc>,
     /// Cached proofs of storage transactions made to be used for uploading the paid content.
-    paymet_transactions: PaymentTransactionsMap,
+    payment_transactions: PaymentTransactionsMap,
 }
 
 /// Return the name of a PublicAddress.

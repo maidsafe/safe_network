@@ -402,11 +402,10 @@ impl Client {
     pub async fn get_store_cost_at_address(&self, address: &NetworkAddress) -> Result<Token> {
         trace!("Getting store cost at {address:?}");
 
-        let cost = self
+        let costs = self
             .network
-            .get_store_cost_from_network(address.clone())
-            .await?
-            .as_nano();
+            .get_store_costs_from_network(address.clone())
+            .await?;
 
         trace!("Store cost at address {address:?} is: {cost:?}");
 

@@ -15,8 +15,12 @@ use std::fmt::Debug;
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 pub enum QueryResponse {
-    /// The store cost in nanos for storing the next record, and the node's singature over that cost.
-    GetStoreCost(Result<Token>),
+    GetStoreCost {
+        /// The store cost in nanos for storing the next record.
+        store_cost: Result<Token>,
+        /// The libp2p protobuf encoded PublicKey to pay this node's store cost to.
+        pk_bytes: Vec<u8>,
+    },
     // ===== ReplicatedData =====
     //
     /// Response to [`GetReplicatedData`]

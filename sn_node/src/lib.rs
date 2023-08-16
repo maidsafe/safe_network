@@ -58,7 +58,7 @@ pub use self::{
     log_markers::Marker,
 };
 
-use libp2p::Multiaddr;
+use libp2p::{identity::PublicKey, Multiaddr};
 use sn_networking::Network;
 
 /// `Node` represents a single node in the distributed network. It handles
@@ -70,4 +70,5 @@ pub struct Node {
     events_channel: NodeEventsChannel,
     /// Peers that are dialed at startup of node.
     initial_peers: Vec<Multiaddr>,
+    reward_main_key: PublicKey,
 }
