@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1692178504124,
+  "lastUpdate": 1692198079860,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5260,6 +5260,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 0.2835616551630987,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "23aecf455cbbc2f2cdf8e552cff48e926ae51c12",
+          "message": "feat(client): do not use cached proofs\n\nPayments may well be out of date. We can check this\nagain once we have DBCs paying per chunk and readily\nknow the price we've paid previously",
+          "timestamp": "2023-08-16T11:15:44Z",
+          "tree_id": "e0b84db9123f3e1715fb147f87ad456486419ce2",
+          "url": "https://github.com/maidsafe/safe_network/commit/23aecf455cbbc2f2cdf8e552cff48e926ae51c12"
+        },
+        "date": 1692198078191,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.0318598893644837,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 7.7230169393725046,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 0.2515083838005849,
             "unit": "MiB/s"
           }
         ]
