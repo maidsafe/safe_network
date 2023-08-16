@@ -8,7 +8,7 @@ use std::{
 };
 use tempfile::tempdir;
 
-const SAMPLE_SIZE: usize = 50;
+const SAMPLE_SIZE: usize = 20;
 
 // This procedure includes the client startup, which will be measured by criterion as well.
 // As normal user won't care much about initial client startup,
@@ -101,7 +101,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     // Hence we have to reduce the number of iterations from the default 100 to 10,
     // To avoid the benchmark test taking over one hour to complete.
     let total_size: u64 = sizes.iter().map(|size| SAMPLE_SIZE as u64 * size).sum();
-    group.sample_size(SAMPLE_SIZE / 5);
+    group.sample_size(SAMPLE_SIZE / 2);
 
     // Set the throughput to be reported in terms of bytes
     group.throughput(Throughput::Bytes(total_size * 1024 * 1024));
