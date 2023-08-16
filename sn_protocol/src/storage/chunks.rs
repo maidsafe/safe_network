@@ -7,9 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::ChunkAddress;
-use crate::messages::PaymentTransactions;
+use crate::NetworkAddress;
 use bytes::Bytes;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use sn_dbc::DbcId;
 use xor_name::XorName;
 
 /// Chunk, an immutable chunk of data
@@ -40,6 +41,11 @@ impl Chunk {
     /// Returns the address.
     pub fn address(&self) -> &ChunkAddress {
         &self.address
+    }
+
+    /// Returns the NetworkAddress
+    pub fn network_address(&self) -> NetworkAddress {
+        NetworkAddress::ChunkAddress(self.address)
     }
 
     /// Returns the name.
@@ -76,5 +82,5 @@ impl<'de> Deserialize<'de> for Chunk {
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ChunkWithPayment {
     pub chunk: Chunk,
-    pub payment: PaymentTransactions,
+    pub payment: Vec<DbcId>,
 }

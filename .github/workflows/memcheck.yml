@@ -101,7 +101,7 @@ jobs:
           cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/testnet"
         env:
           SN_LOG: "all"
-        timeout-minutes: 25
+        timeout-minutes: 40
 
       - name: Chunks data integrity during nodes churn
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 

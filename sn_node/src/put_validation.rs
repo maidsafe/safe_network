@@ -14,7 +14,7 @@ use libp2p::kad::Record;
 use sn_dbc::{DbcId, DbcTransaction, Hash, SignedSpend, Token};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{CmdOk, PaymentTransactions},
+    messages::CmdOk,
     storage::{
         try_deserialize_record, try_serialize_record, ChunkWithPayment, DbcAddress, RecordHeader,
         RecordKind,
@@ -274,7 +274,7 @@ impl Node {
         chunk_with_payment: &ChunkWithPayment,
         validate_payment_amount: bool,
     ) -> Result<(), ProtocolError> {
-        let PaymentTransactions { spent_ids } = &chunk_with_payment.payment;
+        let spent_ids = &chunk_with_payment.payment;
 
         let addr_name = *chunk_with_payment.chunk.name();
 
