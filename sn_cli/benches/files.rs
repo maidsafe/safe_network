@@ -33,13 +33,16 @@ fn safe_files_upload(dir: &str) {
 
 fn safe_files_download() {
     let output = Command::new("./target/release/safe")
+        .arg("--log-output-dest=data-dir")
         .arg("files")
         .arg("download")
         .output()
         .expect("Failed to execute command");
 
     if !output.status.success() {
-        panic!("Download command executed with failing error code");
+        let err = output.stderr;
+        let err_string = String::from_utf8(err).unwrap();
+        panic!("Download command executed with failing error code: {err_string:?}");
     }
 }
 
@@ -79,7 +82,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
         let mut group = c.benchmark_group(format!("Upload Benchmark {}MB", size));
         group.sampling_mode(criterion::SamplingMode::Flat);
-        group.measurement_time(Duration::from_secs(120));
+        // One sample may compose of multiple iterations, and this is decided by `measurement_time`.
+        // Set this to a lower value to ensure each sample only contains one iteration.
+        // To ensure the download throughput calculation is correct.
+        group.measurement_time(Duration::from_secs(5));
         group.warm_up_time(Duration::from_secs(5));
         group.sample_size(SAMPLE_SIZE);
 
@@ -92,7 +98,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("Download Benchmark".to_string());
     group.sampling_mode(criterion::SamplingMode::Flat);
-    group.measurement_time(Duration::from_secs(120));
+    group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(5));
 
     // The download will download all uploaded files during bench.

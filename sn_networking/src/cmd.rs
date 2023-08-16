@@ -360,7 +360,10 @@ impl SwarmDriver {
         let distance = NetworkAddress::from_peer(self.self_peer_id).distance(target);
 
         match (distance.ilog2(), close_range) {
-            (Some(target_ilog2), Some(range_ilog2)) => target_ilog2 <= range_ilog2,
+            (Some(target_ilog2), Some(range_ilog2)) => {
+                trace!("Record {target:?} is {target_ilog2:?} distance to us, while our close range is {range_ilog2:?}");
+                target_ilog2 <= range_ilog2
+            }
             _ => {
                 // This shall never happen.
                 error!("Cannot get ilog2 from one of {distance:?} or {close_range:?} ???!!!");
@@ -375,8 +378,7 @@ impl SwarmDriver {
         for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
             total_peers += kbucket.num_entries();
             if total_peers > CLOSE_GROUP_SIZE + 1 {
-                let range = kbucket.range();
-                return range.0.ilog2();
+                return kbucket.range().0.ilog2();
             }
         }
         None
