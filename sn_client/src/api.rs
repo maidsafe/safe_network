@@ -18,7 +18,6 @@ use sn_dbc::{DbcId, SignedSpend, Token};
 use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::PaymentTransactions,
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, ChunkWithPayment,
         DbcAddress, RecordHeader, RecordKind, RegisterAddress,
@@ -62,7 +61,6 @@ impl Client {
             signer,
             peers_added: 0,
             progress: Some(Self::setup_connection_progress()),
-            network_store_cost: 0,
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -273,7 +271,7 @@ impl Client {
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
-        payment: PaymentTransactions,
+        payment: Vec<DbcId>,
         verify_store: bool,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
@@ -401,32 +399,16 @@ impl Client {
     }
 
     /// Get the store cost at a given address
-    /// Replaces current network_store_cost with the new one, unless average is set to true
-    pub async fn get_store_cost_at_address(
-        &mut self,
-        address: NetworkAddress,
-        only_update_cost_if_higher: bool,
-    ) -> Result<Token> {
-        trace!("Getting store cost at {address:?}, will update only if higher cost?: {only_update_cost_if_higher:?}");
-
-        // if we're averaging over many samples across the network, any cost will do
-        let any_cost_will_do = only_update_cost_if_higher;
+    pub async fn get_store_cost_at_address(&self, address: &NetworkAddress) -> Result<Token> {
+        trace!("Getting store cost at {address:?}");
 
         let cost = self
             .network
-            .get_store_cost_from_network(address.clone(), any_cost_will_do)
+            .get_store_cost_from_network(address.clone())
             .await?
             .as_nano();
 
-        if cost > self.network_store_cost {
-            self.network_store_cost = cost;
-        }
-
-        if !only_update_cost_if_higher {
-            self.network_store_cost = cost;
-        }
-
-        trace!("Set store cost: {}", self.network_store_cost);
+        trace!("Store cost at address {address:?} is: {cost:?}");
 
         Ok(Token::from_nano(cost))
     }
