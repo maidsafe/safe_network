@@ -77,6 +77,10 @@ jobs:
         env:
           SN_LOG: "all"
 
+      - name: Cleanup uploaded_files folder to avoid pollute download benchmark
+        shell: bash
+        run: rm -rf /home/runner/.local/share/safe/client/uploaded_files
+
       ###########################
       ### Client Mem Analysis ###
       ###########################
