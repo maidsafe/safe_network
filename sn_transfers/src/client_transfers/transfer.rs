@@ -62,12 +62,13 @@ pub fn create_storage_payment_transfer(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
     change_to: PublicAddress,
     storage_payment: Token,
-    root_hash: Hash,
     reason_hash: Hash,
 ) -> Result<TransferOutputs> {
     // We need to select the necessary number of dbcs from those that we were passed.
     let (dbcs_to_spend, change_amount) = select_inputs(available_dbcs, storage_payment)?;
 
+    // TODO: Clear all this up when we've removed this
+    let root_hash = sn_dbc::Hash::hash(b"nonsense");
     // We build the recipients to contain just a single output which is for the network owned output.
     // This is a special output that spendbook peers validating the signed spends (inputs) will be
     // verifying before accepting them as valid spends for a storage payment. This special output is
