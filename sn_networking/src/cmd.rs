@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
-use crate::{error::Result, multiaddr_pop_p2p, CLOSE_GROUP_SIZE};
+use crate::{error::Result, multiaddr_pop_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE};
 use libp2p::{
     kad::{store::RecordStore, KBucketDistance as Distance, Quorum, Record, RecordKey},
     swarm::{
@@ -130,10 +130,10 @@ impl SwarmDriver {
         match cmd {
             SwarmCmd::AddKeysToReplicationFetcher { peer, keys } => {
                 // Only store record from Replication that close enough to us.
-                let close_range = self.get_close_range();
+                let all_peers = self.get_all_local_peers();
                 let keys_to_store = keys
                     .iter()
-                    .filter(|key| self.is_in_close_range(key, close_range))
+                    .filter(|key| self.is_in_close_range(key, all_peers.clone()))
                     .cloned()
                     .collect();
                 #[allow(clippy::mutable_key_type)]
@@ -353,34 +353,25 @@ impl SwarmDriver {
         self.swarm.dial(opts)
     }
 
-    // Target record is considered as in close range when:
-    // its distance to node is not higher than the ilog2 of the kBucket that the farthest
-    // close_group peer sits in.
-    fn is_in_close_range(&self, target: &NetworkAddress, close_range: Option<u32>) -> bool {
-        let distance = NetworkAddress::from_peer(self.self_peer_id).distance(target);
+    // A close target doesn't falls into the close peers range:
+    // For example, a node b11111X has an RT: [(1, b1111), (2, b111), (5, b11), (9, b1), (7, b0)]
+    // Then for a target bearing b011111 as prefix, all nodes in (7, b0) are its close_group peers.
+    // Then the node b11111X. But b11111X's close_group peers [(1, b1111), (2, b111), (5, b11)]
+    // are none among target b011111's close range.
+    // Hence, the ilog2 calculation based on close_range cann't cover such case.
+    // And have to sort all nodes to figure out whether self is among the close_group to the target.
+    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: Vec<PeerId>) -> bool {
+        if all_peers.len() <= CLOSE_GROUP_SIZE + 2 {
+            return true;
+        }
 
-        match (distance.ilog2(), close_range) {
-            (Some(target_ilog2), Some(range_ilog2)) => {
-                trace!("Record {target:?} is {target_ilog2:?} distance to us, while our close range is {range_ilog2:?}");
-                target_ilog2 <= range_ilog2
-            }
-            _ => {
-                // This shall never happen.
-                error!("Cannot get ilog2 from one of {distance:?} or {close_range:?} ???!!!");
+        // Margin of 2 to allow our RT being bit lagging.
+        match sort_peers_by_address(all_peers, target, CLOSE_GROUP_SIZE + 2) {
+            Ok(close_group) => close_group.contains(&self.self_peer_id),
+            Err(err) => {
+                warn!("Cann't get sorted peers for {target:?} with error {err:?}");
                 true
             }
         }
-    }
-
-    fn get_close_range(&mut self) -> Option<u32> {
-        let mut total_peers = 0;
-        // Buckets are already sorted from close to far away.
-        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
-            total_peers += kbucket.num_entries();
-            if total_peers > CLOSE_GROUP_SIZE + 1 {
-                return kbucket.range().0.ilog2();
-            }
-        }
-        None
     }
 }
