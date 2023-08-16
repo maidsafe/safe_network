@@ -10,7 +10,8 @@ use super::ChunkAddress;
 use crate::NetworkAddress;
 use bytes::Bytes;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use sn_dbc::DbcId;
+use sn_dbc::Dbc;
+
 use xor_name::XorName;
 
 /// Chunk, an immutable chunk of data
@@ -82,5 +83,6 @@ impl<'de> Deserialize<'de> for Chunk {
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ChunkWithPayment {
     pub chunk: Chunk,
-    pub payment: Vec<DbcId>,
+    /// TODO: encrypt this or supply only encrypted derivation index
+    pub payment: Vec<Dbc>,
 }

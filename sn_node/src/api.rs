@@ -9,6 +9,7 @@
 use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, NodeEvent};
 use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr, PeerId};
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use sn_dbc::MainKey;
 use sn_networking::{MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -83,7 +84,9 @@ impl Node {
         local: bool,
         root_dir: PathBuf,
     ) -> Result<RunningNode> {
-        let reward_main_key = keypair.public();
+        // TODO: Make this key settable, and accessible via API
+        let reward_key = MainKey::random();
+
         let (network, mut network_event_receiver, swarm_driver) =
             SwarmDriver::new(keypair, addr, local, root_dir)?;
         let node_events_channel = NodeEventsChannel::default();
@@ -92,7 +95,7 @@ impl Node {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
             initial_peers,
-            reward_main_key,
+            reward_address: reward_key.public_address(),
         };
 
         let network_clone = network.clone();
@@ -107,7 +110,6 @@ impl Node {
             let inactivity_timeout = Duration::from_secs(inactivity_timeout as u64);
 
             loop {
-                trace!("NetworkEvent loop started");
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
                         trace!("Handling NetworkEvent: {net_event:?}");
@@ -298,11 +300,11 @@ impl Node {
         let resp: QueryResponse = match query {
             Query::GetStoreCost(_address) => {
                 trace!("Got GetStoreCost");
-                let pk = self.reward_main_key.encode_protobuf();
+                let payment_address = self.reward_address;
                 let store_cost = self.current_storecost().await;
                 QueryResponse::GetStoreCost {
                     store_cost,
-                    pk_bytes: pk,
+                    payment_address,
                 }
             }
             Query::GetReplicatedData {

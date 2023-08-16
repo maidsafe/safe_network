@@ -14,7 +14,7 @@ use super::{
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
 use libp2p::{kad::Record, Multiaddr};
-use sn_dbc::{DbcId, SignedSpend, Token};
+use sn_dbc::{Dbc, DbcId, PublicAddress, SignedSpend, Token};
 use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -271,7 +271,7 @@ impl Client {
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
-        payment: Vec<DbcId>,
+        payment: Vec<Dbc>,
         verify_store: bool,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
@@ -399,16 +399,15 @@ impl Client {
     }
 
     /// Get the store cost at a given address
-    pub async fn get_store_cost_at_address(&self, address: &NetworkAddress) -> Result<Token> {
+    pub async fn get_store_costs_at_address(
+        &self,
+        address: &NetworkAddress,
+    ) -> Result<Vec<(PublicAddress, Token)>> {
         trace!("Getting store cost at {address:?}");
 
-        let costs = self
+        Ok(self
             .network
             .get_store_costs_from_network(address.clone())
-            .await?;
-
-        trace!("Store cost at address {address:?} is: {cost:?}");
-
-        Ok(Token::from_nano(cost))
+            .await?)
     }
 }
