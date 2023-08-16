@@ -5,18 +5,16 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-
 use super::{
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
         create_received_dbcs_dir, get_wallet, load_received_dbcs, store_created_dbcs, store_wallet,
     },
-    Error, KeyLessWallet, PaymentTransactionsMap, Result,
+    Error, KeyLessWallet, Result, TransferOutputsMap,
 };
-use crate::client_transfers::{create_storage_payment_transfer, create_transfer, TransferOutputs};
-use sn_dbc::{
-    random_derivation_index, Dbc, DbcId, DerivedKey, Hash, MainKey, PublicAddress, Token,
-};
+use crate::client_transfers::{create_transfer, TransferOutputs};
+use itertools::Itertools;
+use sn_dbc::{random_derivation_index, Dbc, DerivedKey, Hash, MainKey, PublicAddress, Token};
 use sn_protocol::NetworkAddress;
 
 use std::{
@@ -133,12 +131,12 @@ impl LocalWallet {
 
     /// Add given storage payment proofs to the wallet's cache,
     /// so they can be used when uploading the paid content.
-    pub fn add_payment_proofs(&mut self, proofs: PaymentTransactionsMap) {
+    pub fn add_payment_proofs(&mut self, proofs: TransferOutputsMap) {
         self.wallet.payment_transactions.extend(proofs);
     }
 
     /// Return the payment proof for the given content address name if cached.
-    pub fn get_payment_proof(&self, name: &NetworkAddress) -> Option<&Vec<DbcId>> {
+    pub fn get_payment_proof(&self, name: &NetworkAddress) -> Option<&TransferOutputs> {
         self.wallet.payment_transactions.get(name)
     }
 
@@ -168,24 +166,38 @@ impl LocalWallet {
         Ok(transfer)
     }
 
+    /// Performs a DBC payment for each content address, returning outputs for each.
     pub async fn local_send_storage_payment(
         &mut self,
-        storage_cost_per_record: Token,
+        all_data_payments: BTreeMap<NetworkAddress, Vec<(PublicAddress, Token)>>,
         reason_hash: Option<Hash>,
-    ) -> Result<TransferOutputs> {
-        let available_dbcs = self.available_dbcs();
-        trace!("Available DBCs: {:#?}", available_dbcs);
+    ) -> Result<BTreeMap<NetworkAddress, TransferOutputs>> {
+        let mut rng = &mut rand::thread_rng();
 
-        let transfer = create_storage_payment_transfer(
-            available_dbcs,
-            self.address(),
-            storage_cost_per_record,
-            reason_hash.unwrap_or_default(),
-        )?;
+        // create a unique key for each output
+        let mut to_unique_keys = BTreeMap::default();
 
-        self.update_local_wallet(&transfer);
+        for (content_addr, payees) in all_data_payments.into_iter() {
+            let unique_key_vec: Vec<(Token, PublicAddress, [u8; 32])> = payees
+                .into_iter()
+                .map(|(address, amount)| (amount, address, random_derivation_index(&mut rng)))
+                .collect_vec();
+            to_unique_keys.insert(content_addr.clone(), unique_key_vec);
+        }
 
-        Ok(transfer)
+        let reason_hash = reason_hash.unwrap_or_default();
+
+        let mut all_transfers = BTreeMap::default();
+        for (content_addr, payees) in to_unique_keys.into_iter() {
+            let available_dbcs = self.available_dbcs();
+            trace!("Available DBCs: {:#?}", available_dbcs);
+            let transfer_outputs =
+                create_transfer(available_dbcs.clone(), payees, self.address(), reason_hash)?;
+            self.update_local_wallet(&transfer_outputs);
+            all_transfers.insert(content_addr.clone(), transfer_outputs);
+        }
+
+        Ok(all_transfers)
     }
 
     fn update_local_wallet(&mut self, transfer: &TransferOutputs) {
@@ -248,7 +260,7 @@ impl KeyLessWallet {
             spent_dbcs: BTreeMap::new(),
             available_dbcs: BTreeMap::new(),
             dbcs_created_for_others: vec![],
-            payment_transactions: PaymentTransactionsMap::default(),
+            payment_transactions: TransferOutputsMap::default(),
         }
     }
 

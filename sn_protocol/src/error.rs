@@ -11,7 +11,7 @@ use crate::{
     NetworkAddress,
 };
 use serde::{Deserialize, Serialize};
-use sn_dbc::{Hash, SignedSpend, Token};
+use sn_dbc::{SignedSpend, Token};
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -68,10 +68,10 @@ pub enum Error {
     PaymentProofTxMismatch(XorName),
     /// Payment proof received has no inputs
     #[error("Payment proof received for {0:?} has no inputs in its transaction")]
-    PaymentProofWithoutInputs(XorName),
+    NoPaymentForNodeToStore(XorName),
     /// The id of the fee output found in a storage payment proof is invalid
-    #[error("The id of the fee output found in a storage payment proof is invalid: {}", .0.to_hex())]
-    PaymentProofInvalidFeeOutput(Hash),
+    #[error("The id of the fee output found in a storage payment proof is invalid: {0:?}")]
+    PaymentProofInvalidFee(Token),
     /// Payment proof provided deemed invalid
     #[error("Payment proof provided deemed invalid for item's name {addr_name:?}: {reason}")]
     InvalidPaymentProof {

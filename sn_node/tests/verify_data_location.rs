@@ -346,7 +346,7 @@ async fn store_chunk(client: Client, paying_wallet: LocalWallet, chunk_count: us
 
         let addr = ChunkAddress::new(file_api.calculate_address(bytes.clone())?);
         let key = PrettyPrintRecordKey::from(RecordKey::new(addr.xorname()));
-        file_api.upload_with_proof(bytes, &proofs, true).await?;
+        file_api.upload_with_transfers(bytes, &proofs, true).await?;
         uploaded_chunks_count += 1;
 
         println!("Stored Chunk with {addr:?} / {key:?}");
