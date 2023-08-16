@@ -12,7 +12,7 @@ use common::{get_client_and_wallet, init_logging};
 
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use sn_client::{Client, Error as ClientError, Files, WalletClient};
-use sn_dbc::{Hash, Token};
+use sn_dbc::Token;
 use sn_networking::Error as NetworkError;
 use sn_protocol::storage::{Chunk, ChunkAddress};
 
@@ -97,7 +97,7 @@ async fn storage_payment_fails() -> Result<()> {
     let storage_cost = Token::from_nano(random_num_of_addrs);
 
     let mut transfer = wallet_client
-        .local_send_storage_payment(storage_cost, Hash::default(), None)
+        .local_send_storage_payment(storage_cost, None)
         .await?;
     assert!(transfer.created_dbcs.is_empty());
 
@@ -243,48 +243,12 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         Err(ClientError::Network(NetworkError::RecordNotFound))
     ));
 
-    // let's corrupt the proofs' audit trail
-    let invalid_proofs: std::collections::BTreeMap<_, _> = proofs
-        .clone()
-        .into_iter()
-        .map(|(a, mut p)| {
-            p.audit_trail = vec![];
-            (a, p)
-        })
-        .collect();
-
-    files_api
-        .upload_with_proof(content_bytes.clone(), &invalid_proofs, false)
-        .await?;
-    assert!(matches!(
-        files_api.read_bytes(content_addr).await,
-        Err(ClientError::Network(NetworkError::RecordNotFound))
-    ));
-
-    // let's corrupt the proofs' audit trail path
-    let invalid_proofs: std::collections::BTreeMap<_, _> = proofs
-        .clone()
-        .into_iter()
-        .map(|(a, mut p)| {
-            p.path = vec![];
-            (a, p)
-        })
-        .collect();
-
-    files_api
-        .upload_with_proof(content_bytes.clone(), &invalid_proofs, false)
-        .await?;
-    assert!(matches!(
-        files_api.read_bytes(content_addr).await,
-        Err(ClientError::Network(NetworkError::RecordNotFound))
-    ));
-
     // let's make a payment but only for one chunk/address,
-    let (root_hash, _) =
+    let (_root_hash, _) =
         sn_transfers::payment_proof::build_payment_proofs(chunks.iter().map(|c| c.name()))?;
     let transfer = wallet_client
         .into_wallet()
-        .local_send_storage_payment(Token::from_nano(1), root_hash, None)
+        .local_send_storage_payment(Token::from_nano(1), None)
         .await?;
     client.send(transfer.clone(), false).await?;
     let spent_ids: Vec<_> = transfer.tx.inputs.iter().map(|i| i.dbc_id()).collect();

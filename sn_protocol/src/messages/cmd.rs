@@ -60,13 +60,8 @@ impl std::fmt::Display for Cmd {
 pub type MerkleTreeNodesType = [u8; 32];
 
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
-pub struct PaymentProof {
+pub struct PaymentTransactions {
     // Ids of the DBCs spent, for nodes to check the storage payment is valid and inputs have
     // been effectivelly spent on the network.
     pub spent_ids: Vec<DbcId>,
-    // Merkletree audit trail to prove the content storage has been paid by the
-    // given DBC (using DBC's parent/s 'reason' field)
-    pub audit_trail: Vec<MerkleTreeNodesType>,
-    // Path of the audit trail
-    pub path: Vec<usize>,
 }
