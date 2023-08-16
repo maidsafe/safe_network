@@ -13,7 +13,7 @@ use super::{
 };
 
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::wallet::PaymentProofsMap;
+use sn_transfers::wallet::PaymentTransactionsMap;
 
 use bincode::deserialize;
 use bytes::Bytes;
@@ -96,7 +96,7 @@ impl Files {
     pub async fn upload_with_proof(
         &self,
         bytes: Bytes,
-        payment_proofs: &PaymentProofsMap,
+        payment_proofs: &PaymentTransactionsMap,
         verify_store: bool,
     ) -> Result<ChunkAddress> {
         self.upload_bytes(bytes, payment_proofs, verify_store).await
@@ -110,7 +110,7 @@ impl Files {
     pub async fn upload_and_verify(
         &self,
         bytes: Bytes,
-        payment_proofs: &PaymentProofsMap,
+        payment_proofs: &PaymentTransactionsMap,
     ) -> Result<ChunkAddress> {
         self.upload_bytes(bytes, payment_proofs, true).await
     }
@@ -141,7 +141,7 @@ impl Files {
     pub async fn upload_chunks_in_batches(
         &self,
         chunks: impl Iterator<Item = Chunk>,
-        payment_proofs: &PaymentProofsMap,
+        payment_proofs: &PaymentTransactionsMap,
         verify_store: bool,
     ) -> Result<()> {
         trace!("Client upload in batches started");
@@ -190,7 +190,7 @@ impl Files {
     async fn upload_bytes(
         &self,
         bytes: Bytes,
-        payment_proofs: &PaymentProofsMap,
+        payment_proofs: &PaymentTransactionsMap,
         verify: bool,
     ) -> Result<ChunkAddress> {
         if bytes.len() < MIN_ENCRYPTABLE_BYTES {
@@ -210,7 +210,7 @@ impl Files {
     async fn upload_small(
         &self,
         small: SmallFile,
-        payment_proofs: &PaymentProofsMap,
+        payment_proofs: &PaymentTransactionsMap,
         verify_store: bool,
     ) -> Result<ChunkAddress> {
         let chunk = package_small(small)?;

@@ -18,7 +18,7 @@ use sn_dbc::{DbcId, SignedSpend, Token};
 use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::PaymentProof,
+    messages::PaymentTransactions,
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, ChunkWithPayment,
         DbcAddress, RecordHeader, RecordKind, RegisterAddress,
@@ -273,7 +273,7 @@ impl Client {
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
-        payment: PaymentProof,
+        payment: PaymentTransactions,
         verify_store: bool,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());

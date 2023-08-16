@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::ChunkAddress;
-use crate::messages::PaymentProof;
+use crate::messages::PaymentTransactions;
 use bytes::Bytes;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use xor_name::XorName;
@@ -76,5 +76,5 @@ impl<'de> Deserialize<'de> for Chunk {
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ChunkWithPayment {
     pub chunk: Chunk,
-    pub payment: PaymentProof,
+    pub payment: PaymentTransactions,
 }

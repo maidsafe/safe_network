@@ -64,13 +64,13 @@ pub use self::{
 };
 
 use sn_dbc::{Dbc, DbcId, PublicAddress, Token};
-use sn_protocol::messages::PaymentProof;
+use sn_protocol::messages::PaymentTransactions;
 
 use std::collections::BTreeMap;
 use xor_name::XorName;
 
 /// Map from content address name to its corresponding PaymentProof.
-pub type PaymentProofsMap = BTreeMap<XorName, PaymentProof>;
+pub type PaymentTransactionsMap = BTreeMap<XorName, PaymentTransactions>;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub(super) struct KeyLessWallet {
@@ -88,7 +88,7 @@ pub(super) struct KeyLessWallet {
     /// transfer history.
     dbcs_created_for_others: Vec<Dbc>,
     /// Cached proofs of storage payments made to be used for uploading the paid content.
-    paymet_proofs: PaymentProofsMap,
+    paymet_proofs: PaymentTransactionsMap,
 }
 
 /// Return the name of a PublicAddress.

@@ -15,7 +15,7 @@ mod response;
 mod utxo;
 
 pub use self::{
-    cmd::{Cmd, Hash, MerkleTreeNodesType, PaymentProof},
+    cmd::{Cmd, Hash, MerkleTreeNodesType, PaymentTransactions},
     node_id::NodeId,
     query::Query,
     register::RegisterCmd,
