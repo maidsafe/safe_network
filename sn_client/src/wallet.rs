@@ -10,11 +10,10 @@ use super::Client;
 
 use rand::rngs::OsRng;
 use sn_dbc::{Dbc, PublicAddress, Token};
-use sn_protocol::{messages::PaymentProof, storage::ChunkAddress, NetworkAddress};
+use sn_protocol::{messages::PaymentTransactions, storage::ChunkAddress, NetworkAddress};
 use sn_transfers::{
     client_transfers::TransferOutputs,
-    payment_proof::build_payment_proofs,
-    wallet::{Error, LocalWallet, PaymentProofsMap, Result},
+    wallet::{Error, LocalWallet, PaymentTransactionsMap, Result},
 };
 
 use futures::future::join_all;
@@ -106,7 +105,7 @@ impl WalletClient {
         &mut self,
         content_addrs: impl Iterator<Item = &XorName>,
         verify_store: bool,
-    ) -> Result<(PaymentProofsMap, Option<Token>)> {
+    ) -> Result<(PaymentTransactionsMap, Option<Token>)> {
         // Let's filter the content addresses we hold payment proofs for, i.e. avoid
         // paying for those chunks we've already paid for with this wallet.
         let mut proofs = PaymentProofsMap::default();
@@ -133,8 +132,10 @@ impl WalletClient {
         }
 
         // Let's build the payment proofs for list of content addresses
-        let (root_hash, audit_trail_info) = build_payment_proofs(addrs_to_pay.into_iter())?;
-        let num_of_addrs = audit_trail_info.len() as u64;
+        // let (root_hash, audit_trail_info) = build_payment_proofs(addrs_to_pay.into_iter())?;
+        // let num_of_addrs = audit_trail_info.len() as u64;
+
+        let num_of_addrs = addrs_to_pay.len();
 
         // Always check storage cost, and overpay to allow margin when validation.
         self.set_store_cost_from_random_address().await?;
@@ -145,12 +146,12 @@ impl WalletClient {
         info!("Storage cost per record: {}", storage_cost);
 
         let amount_to_pay = number_of_records_to_pay * storage_cost.as_nano();
-
         trace!("Making payment for {num_of_addrs} addresses of {amount_to_pay:?} nano tokens.");
 
+        // TODO: This needs to go out to each CLOSEGROUP of addresses
         let transfer = self
             .wallet
-            .local_send_storage_payment(Token::from_nano(amount_to_pay), root_hash, None)
+            .local_send_storage_payment(Token::from_nano(amount_to_pay), None)
             .await?;
 
         // send to network
@@ -163,25 +164,17 @@ impl WalletClient {
 
         let spent_ids: Vec<_> = transfer.tx.inputs.iter().map(|i| i.dbc_id()).collect();
 
-        let new_payment_proofs: PaymentProofsMap = audit_trail_info
-            .into_iter()
-            .map(|(addr, (audit_trail, path))| {
-                (
-                    addr,
-                    PaymentProof {
-                        spent_ids: spent_ids.clone(),
-                        audit_trail,
-                        path,
-                    },
-                )
-            })
-            .collect();
+        for addr in addrs_to_pay.into_iter() {
+            proofs.insert(
+                *addr,
+                PaymentTransactions {
+                    spent_ids: spent_ids.clone(),
+                },
+            );
+        }
 
         // cache the new set of payment proofs
-        self.wallet.add_payment_proofs(new_payment_proofs.clone());
-
-        // return the set of payment proofs, including new ones, and the ones we had in cache
-        proofs.extend(new_payment_proofs);
+        self.wallet.add_payment_proofs(proofs.clone());
 
         Ok((proofs, Some(storage_cost)))
     }
