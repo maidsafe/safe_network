@@ -12,7 +12,7 @@ use libp2p::{
     kad::{self, Record},
     request_response::{OutboundFailure, RequestId},
     swarm::DialError,
-    TransportError,
+    TransportError, identity::DecodingError,
 };
 use sn_protocol::{messages::Response, PrettyPrintRecordKey};
 use std::{io, path::PathBuf};
@@ -64,6 +64,8 @@ pub enum Error {
 
     #[error("Dial Error")]
     DialError(#[from] DialError),
+    #[error("Libp2p Idendity Decode Error")]
+    LIbp2pDecode(#[from] DecodingError),
 
     #[error("This peer is already being dialed: {0}")]
     AlreadyDialingPeer(libp2p::PeerId),
