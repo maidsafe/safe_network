@@ -30,10 +30,15 @@
 mod error;
 mod transfer;
 
+use std::collections::BTreeMap;
+
 pub(crate) use self::error::{Error, Result};
-pub use self::transfer::{create_storage_payment_transfer, create_transfer};
+pub use self::transfer::create_transfer;
 
 use sn_dbc::{Dbc, DbcTransaction, DerivationIndex, DerivedKey, PublicAddress, SignedSpend, Token};
+use sn_protocol::NetworkAddress;
+
+pub type TransferOutputsMap = BTreeMap<NetworkAddress, TransferOutputs>;
 
 /// The input details necessary to
 /// carry out a transfer of tokens.
@@ -50,7 +55,7 @@ pub struct Inputs {
 
 /// The created dbcs and change dbc from a transfer
 /// of tokens from one or more dbcs, into one or more new dbcs.
-#[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct TransferOutputs {
     /// This is the transaction where all the below
     /// spends were made and dbcs created.
@@ -68,7 +73,7 @@ pub struct TransferOutputs {
 }
 
 /// The parameters necessary to send a spend request to the network.
-#[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct SpendRequest {
     /// The dbc to register in the network as spent.
     pub signed_spend: SignedSpend,

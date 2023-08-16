@@ -8,8 +8,11 @@
 
 use sn_client::{Client, Files, WalletClient};
 use sn_dbc::Token;
-use sn_protocol::storage::ChunkAddress;
-use sn_transfers::wallet::{parse_public_address, LocalWallet, PaymentTransactionsMap};
+use sn_protocol::{storage::ChunkAddress, NetworkAddress};
+use sn_transfers::{
+    client_transfers::TransferOutputs,
+    wallet::{parse_public_address, LocalWallet},
+};
 
 use bytes::Bytes;
 use clap::Parser;
@@ -237,7 +240,10 @@ pub(super) async fn chunk_and_pay_for_storage(
     root_dir: &Path,
     files_path: &Path,
     verify_store: bool,
-) -> Result<(BTreeMap<XorName, ChunkedFile>, PaymentTransactionsMap)> {
+) -> Result<(
+    BTreeMap<XorName, ChunkedFile>,
+    BTreeMap<NetworkAddress, TransferOutputs>,
+)> {
     let wallet = LocalWallet::load_from(root_dir)
         .await
         .wrap_err("Unable to read wallet file in {path:?}")
@@ -303,7 +309,7 @@ pub(super) async fn chunk_and_pay_for_storage(
         chunked_files.len()
     );
 
-    let (proofs, cost) = wallet_client
+    let (transfer_outputs_map, cost) = wallet_client
         .pay_for_storage(
             chunked_files
                 .values()
@@ -315,11 +321,10 @@ pub(super) async fn chunk_and_pay_for_storage(
         )
         .await?;
 
-    let total_cost = proofs.len() as u64 * cost.as_nano();
     println!(
-            "Successfully made payment of {total_cost} for {} records. (At a cost per record of {cost:?}.)",
-            proofs.len(),
-        );
+        "Successfully made payment of {cost} for {} records. (At a cost per record of {cost:?}.)",
+        transfer_outputs_map.len(),
+    );
 
     let wallet = wallet_client.into_wallet();
     if let Err(err) = wallet.store().await {
@@ -332,5 +337,5 @@ pub(super) async fn chunk_and_pay_for_storage(
     }
 
     println!("Successfully paid for storage and generated the proofs. They can now be sent to the storage nodes when uploading paid chunks.");
-    Ok((chunked_files, proofs))
+    Ok((chunked_files, transfer_outputs_map))
 }

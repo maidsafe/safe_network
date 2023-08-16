@@ -12,10 +12,14 @@ use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
 use sn_client::{Client, Files};
-use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::wallet::PaymentTransactionsMap;
+use sn_protocol::{
+    storage::{Chunk, ChunkAddress},
+    NetworkAddress,
+};
+use sn_transfers::client_transfers::TransferOutputs;
 
 use std::{
+    collections::BTreeMap,
     fs,
     path::{Path, PathBuf},
 };
@@ -114,8 +118,14 @@ async fn upload_files(
             chunks.len()
         );
 
-        if let Err(error) =
-            upload_chunks(&file_api, &file_name, chunks, &payment_proofs, verify_store).await
+        if let Err(error) = upload_chunks(
+            &file_api,
+            &file_name,
+            chunks,
+            &payment_proofs,
+            verify_store,
+        )
+        .await
         {
             println!("Failed to store all chunks of file '{file_name}' to all nodes in the close group: {error}")
         } else {
@@ -140,7 +150,7 @@ async fn upload_chunks(
     file_api: &Files,
     file_name: &str,
     chunks_paths: Vec<(XorName, PathBuf)>,
-    payment_proofs: &PaymentTransactionsMap,
+    transfer_outputs_map: &BTreeMap<NetworkAddress, TransferOutputs>,
     verify_store: bool,
 ) -> Result<()> {
     let chunks_reader = chunks_paths
@@ -159,7 +169,7 @@ async fn upload_chunks(
         });
 
     file_api
-        .upload_chunks_in_batches(chunks_reader, payment_proofs, verify_store)
+        .upload_chunks_in_batches(chunks_reader, transfer_outputs_map, verify_store)
         .await?;
     Ok(())
 }
