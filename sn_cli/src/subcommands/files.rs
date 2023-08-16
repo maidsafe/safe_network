@@ -13,7 +13,7 @@ use clap::Parser;
 use color_eyre::Result;
 use sn_client::{Client, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::wallet::PaymentProofsMap;
+use sn_transfers::wallet::PaymentTransactionsMap;
 
 use std::{
     fs,
@@ -140,7 +140,7 @@ async fn upload_chunks(
     file_api: &Files,
     file_name: &str,
     chunks_paths: Vec<(XorName, PathBuf)>,
-    payment_proofs: &PaymentProofsMap,
+    payment_proofs: &PaymentTransactionsMap,
     verify_store: bool,
 ) -> Result<()> {
     let chunks_reader = chunks_paths

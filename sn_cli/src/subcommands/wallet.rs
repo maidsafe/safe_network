@@ -8,7 +8,7 @@
 
 use sn_client::{Client, Files, WalletClient};
 use sn_dbc::Token;
-use sn_transfers::wallet::{parse_public_address, LocalWallet, PaymentProofsMap};
+use sn_transfers::wallet::{parse_public_address, LocalWallet, PaymentTransactionsMap};
 
 use bytes::Bytes;
 use clap::Parser;
@@ -236,7 +236,7 @@ pub(super) async fn chunk_and_pay_for_storage(
     root_dir: &Path,
     files_path: &Path,
     verify_store: bool,
-) -> Result<(BTreeMap<XorName, ChunkedFile>, PaymentProofsMap)> {
+) -> Result<(BTreeMap<XorName, ChunkedFile>, PaymentTransactionsMap)> {
     let wallet = LocalWallet::load_from(root_dir)
         .await
         .wrap_err("Unable to read wallet file in {path:?}")
