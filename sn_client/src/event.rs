@@ -39,8 +39,6 @@ impl ClientEventsChannel {
 pub enum ClientEvent {
     /// The client has been connected to the network
     ConnectedToNetwork,
-    /// ConnectingToNetwork
-    ConnectingToNetwork,
     /// No network activity has been received for a given duration
     /// we should error out
     InactiveClient(std::time::Duration),
