@@ -1,3 +1,11 @@
+// Copyright 2023 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use std::{
     fs::File,
@@ -33,7 +41,6 @@ fn safe_files_upload(dir: &str) {
 
 fn safe_files_download() {
     let output = Command::new("./target/release/safe")
-        .arg("--log-output-dest=data-dir")
         .arg("files")
         .arg("download")
         .output()
@@ -48,7 +55,9 @@ fn safe_files_download() {
 
 fn create_file(size_mb: u64) -> tempfile::TempDir {
     let dir = tempdir().expect("Failed to create temporary directory");
-    let file_path = dir.path().join("tempfile");
+
+    let time_stamp = chrono::Local::now().format("%H-%M-%S_%6f").to_string();
+    let file_path = dir.path().join(format!("tempfile_{time_stamp}"));
 
     let mut file = File::create(file_path).expect("Failed to create file");
     let data = vec![0u8; (size_mb * 1024 * 1024) as usize]; // Create a vector with size_mb MB of data
@@ -79,6 +88,9 @@ fn criterion_benchmark(c: &mut Criterion) {
         let dir = create_file(*size);
         let dir_path = dir.path().to_str().unwrap();
         fund_cli_wallet();
+
+        // Wait little bit for the fund to be settled.
+        std::thread::sleep(Duration::from_secs(10));
 
         let mut group = c.benchmark_group(format!("Upload Benchmark {}MB", size));
         group.sampling_mode(criterion::SamplingMode::Flat);

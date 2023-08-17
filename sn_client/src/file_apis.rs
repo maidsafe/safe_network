@@ -25,7 +25,7 @@ use tracing::trace;
 use xor_name::XorName;
 
 // Maximum number of concurrent chunks to be uploaded/retrieved for a file
-const CHUNKS_BATCH_MAX_SIZE: usize = 32;
+const CHUNKS_BATCH_MAX_SIZE: usize = 4;
 
 /// File APIs.
 pub struct Files {
@@ -165,6 +165,10 @@ impl Files {
             if next_batch_size == CHUNKS_BATCH_MAX_SIZE {
                 let tasks_to_poll = tasks;
                 join_all_tasks(tasks_to_poll).await?;
+                // In case of not verifying, sleep for a little bit to let the network settle down.
+                if !verify_store {
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                }
                 tasks = vec![];
                 next_batch_size = 0;
             }
