@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1692271124419,
+  "lastUpdate": 1692279281763,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5416,6 +5416,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 1.5607451401604198,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8df0944d710b66fb08310d35d48f7727e9d84f7f",
+          "message": "fix: manual impl Debug for NetworkEvent",
+          "timestamp": "2023-08-17T12:09:29Z",
+          "tree_id": "f46c9697531740e0dc4e8d6c4961e62b97580092",
+          "url": "https://github.com/maidsafe/safe_network/commit/8df0944d710b66fb08310d35d48f7727e9d84f7f"
+        },
+        "date": 1692279280985,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3125881297840063,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.584126145236013,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 1.5266707880588868,
             "unit": "MiB/s"
           }
         ]
