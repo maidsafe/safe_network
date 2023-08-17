@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.19](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.18...sn_networking-v0.4.19) - 2023-08-17
+
+### Fixed
+- correct calculation of is_in_close_range
+- avoid download bench result polluted
+
 ## [0.4.18](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.17...sn_networking-v0.4.18) - 2023-08-15
 
 ### Fixed
