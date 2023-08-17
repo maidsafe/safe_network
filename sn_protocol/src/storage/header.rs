@@ -70,6 +70,9 @@ impl RecordHeader {
     }
 
     pub fn from_record(record: &Record) -> Result<Self, Error> {
+        if record.value.len() <= RecordHeader::SIZE {
+            return Err(Error::RecordHeaderParsingFailed);
+        }
         Self::try_deserialize(&record.value[..RecordHeader::SIZE + 1])
             .map_err(|_| Error::RecordHeaderParsingFailed)
     }
@@ -78,6 +81,9 @@ impl RecordHeader {
 /// Utility to deserialize a `KAD::Record` into any type.
 /// Use `RecordHeader::from_record` if you want the `RecordHeader` instead.
 pub fn try_deserialize_record<T: serde::de::DeserializeOwned>(record: &Record) -> Result<T, Error> {
+    if record.value.len() <= RecordHeader::SIZE {
+        return Err(Error::RecordParsingFailed);
+    }
     let bytes = &record.value[RecordHeader::SIZE..];
     rmp_serde::from_slice(bytes).map_err(|_| Error::RecordParsingFailed)
 }

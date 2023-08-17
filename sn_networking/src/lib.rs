@@ -733,11 +733,14 @@ impl Network {
                     }
                 }
                 Err(error) => {
+                    error!("{error:?}");
+                    if verification_attempts >= total_attempts {
+                        break;
+                    }
                     warn!(
                         "Did not retrieve Record '{:?}' from network!. Retrying...",
                         PrettyPrintRecordKey::from(key.clone()),
                     );
-                    error!("{error:?}");
                 }
             }
 

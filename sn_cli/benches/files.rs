@@ -33,7 +33,6 @@ fn safe_files_upload(dir: &str) {
 
 fn safe_files_download() {
     let output = Command::new("./target/release/safe")
-        .arg("--log-output-dest=data-dir")
         .arg("files")
         .arg("download")
         .output()

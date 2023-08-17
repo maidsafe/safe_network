@@ -176,6 +176,7 @@ jobs:
       - name: Confirming the number of files got uploaded and downloaded during the benchmark test
         shell: bash
         run: |
+          ls -l $CLIENT_DATA_PATH
           ls -l $CLIENT_DATA_PATH/uploaded_files
           ls -l $CLIENT_DATA_PATH/downloaded_files
 
@@ -197,6 +198,10 @@ jobs:
           alert-threshold: '200%'
           # Enable Job Summary for PRs
           summary-always: true
+
+      - name: Start a client to carry out download to output the logs
+        shell: bash
+        run: target/release/safe --log-output-dest=data-dir files download
 
       #########################
       ### Stop Network      ###
