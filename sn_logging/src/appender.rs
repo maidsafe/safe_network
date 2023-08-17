@@ -12,6 +12,8 @@ use file_rotate::{
     ContentLimit, FileRotate,
 };
 use std::{
+    env,
+    ffi::OsStr,
     fmt::Debug,
     io,
     io::Write,
@@ -35,9 +37,18 @@ pub(super) fn file_rotater(
     uncompressed_files: usize,
     max_files: usize,
 ) -> (NonBlocking, WorkerGuard) {
+    let binary_name = env::current_exe()
+        .map(|path| {
+            path.file_stem()
+                .unwrap_or(OsStr::new("safe"))
+                .to_string_lossy()
+                .into_owned()
+        })
+        .unwrap_or_else(|_| "safe".to_string());
+
     let file_appender = FileRotateAppender::make_rotate_appender(
         dir,
-        "safenode.log",
+        format!("{binary_name}.log"),
         AppendTimestamp::default(FileLimit::MaxFiles(max_files)),
         ContentLimit::Lines(max_lines),
         Compression::OnRotate(uncompressed_files),
