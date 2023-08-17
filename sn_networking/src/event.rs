@@ -18,7 +18,7 @@ use crate::{
 };
 
 use core::fmt;
-use custom_debug::Debug;
+use custom_debug::Debug as CustomDebug;
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
@@ -39,6 +39,7 @@ use sn_protocol::{
 };
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
+    fmt::{Debug, Formatter},
     num::NonZeroUsize,
 };
 
@@ -60,7 +61,7 @@ pub(super) struct NodeBehaviour {
     pub(super) autonat: Toggle<autonat::Behaviour>,
 }
 
-#[derive(Debug)]
+#[derive(CustomDebug)]
 pub(super) enum NodeEvent {
     MsgReceived(request_response::Event<Request, Response>),
     Kademlia(KademliaEvent),
@@ -101,7 +102,7 @@ impl From<autonat::Event> for NodeEvent {
     }
 }
 
-#[derive(Debug)]
+#[derive(CustomDebug)]
 /// Channel to send the `Response` through.
 pub enum MsgResponder {
     /// Respond to a request from `self` through a simple one-shot channel.
@@ -111,13 +112,11 @@ pub enum MsgResponder {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug)]
 /// Events forwarded by the underlying Network; to be used by the upper layers
 pub enum NetworkEvent {
     /// Incoming `Request` from a peer
     RequestReceived {
         /// Request
-        #[debug(skip)]
         req: Request,
         /// The channel to send the `Response` through
         channel: MsgResponder,
@@ -125,7 +124,6 @@ pub enum NetworkEvent {
     /// Handles the responses that are not awaited at the call site
     ResponseReceived {
         /// Response
-        #[debug(skip)]
         res: Response,
     },
     /// Peer has been added to the Routing Table
@@ -141,15 +139,50 @@ pub enum NetworkEvent {
     /// AutoNAT status changed
     NatStatusChanged(NatStatus),
     /// Report unverified record
-    #[debug(with = "unverified_record_fmt")]
     UnverifiedRecord(Record),
 }
 
-// This isn't dead code, it's used in the custom formatter above
-#[allow(dead_code)]
-fn unverified_record_fmt(r: &Record, f: &mut fmt::Formatter) -> fmt::Result {
-    let key = PrettyPrintRecordKey::from(r.key.clone());
-    write!(f, "Unverified Record Event: {key:?}")
+// Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
+impl Debug for NetworkEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            NetworkEvent::RequestReceived { req, .. } => {
+                write!(f, "NetworkEvent::RequestReceived({req:?})")
+            }
+            NetworkEvent::ResponseReceived { res, .. } => {
+                write!(f, "NetworkEvent::ResponseReceived({res:?})")
+            }
+            NetworkEvent::PeerAdded(peer_id) => {
+                write!(f, "NetworkEvent::PeerAdded({peer_id:?})")
+            }
+            NetworkEvent::PeerRemoved(peer_id) => {
+                write!(f, "NetworkEvent::PeerRemoved({peer_id:?})")
+            }
+            NetworkEvent::CloseGroupUpdated(peer_ids) => {
+                write!(f, "NetworkEvent::CloseGroupUpdated({peer_ids:?})")
+            }
+            NetworkEvent::KeysForReplication(list) => {
+                let pretty_list: Vec<_> = list
+                    .iter()
+                    .map(|(key, peer_id)| {
+                        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+                        (pretty_key, *peer_id)
+                    })
+                    .collect();
+                write!(f, "NetworkEvent::KeysForReplication({pretty_list:?})")
+            }
+            NetworkEvent::NewListenAddr(addr) => {
+                write!(f, "NetworkEvent::NewListenAddr({addr:?})")
+            }
+            NetworkEvent::NatStatusChanged(nat_status) => {
+                write!(f, "NetworkEvent::NatStatusChanged({nat_status:?})")
+            }
+            NetworkEvent::UnverifiedRecord(record) => {
+                let pretty_key = PrettyPrintRecordKey::from(record.key.clone());
+                write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
+            }
+        }
+    }
 }
 
 impl SwarmDriver {
