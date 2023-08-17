@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1692268563925,
+  "lastUpdate": 1692271124419,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5377,6 +5377,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 1.398585122043794,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "e1eba0c2f0415a95f90b6d7329766ffc232d6bd6",
+          "message": "ci: fix client log naming",
+          "timestamp": "2023-08-17T09:09:17Z",
+          "tree_id": "28799ea6755584ccf77baddd5b78c11caa279dd5",
+          "url": "https://github.com/maidsafe/safe_network/commit/e1eba0c2f0415a95f90b6d7329766ffc232d6bd6"
+        },
+        "date": 1692271123626,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3227666050798395,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.903139863892653,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 1.5607451401604198,
             "unit": "MiB/s"
           }
         ]
