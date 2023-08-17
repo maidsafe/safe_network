@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.21](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.20...sn_networking-v0.4.21) - 2023-08-17
+
+### Fixed
+- manual impl Debug for NetworkEvent
+
 ## [0.4.20](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.19...sn_networking-v0.4.20) - 2023-08-17
 
 ### Fixed
