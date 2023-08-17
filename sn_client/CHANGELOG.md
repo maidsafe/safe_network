@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.20](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.19...sn_client-v0.87.20) - 2023-08-17
+
+### Fixed
+- *(client)* start bootstrap when we are connected to one peer
+
 ## [0.87.19](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.18...sn_client-v0.87.19) - 2023-08-17
 
 ### Other
