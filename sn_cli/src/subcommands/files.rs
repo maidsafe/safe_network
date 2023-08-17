@@ -78,7 +78,7 @@ pub(crate) async fn files_cmds(
     Ok(())
 }
 
-/// Givena directory, upload all files contained
+/// Given a directory, upload all files contained
 /// Optionally verifies data was stored successfully
 async fn upload_files(
     files_path: PathBuf,
@@ -95,8 +95,9 @@ async fn upload_files(
     // The input files_path has to be a dir
     let file_names_path = root_dir.join("uploaded_files");
 
+    // Payment shall always be verified.
     let (chunks_to_upload, payment_proofs) =
-        chunk_and_pay_for_storage(&client, root_dir, &files_path, verify_store).await?;
+        chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
 
     let mut chunks_to_fetch = Vec::new();
     for (

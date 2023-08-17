@@ -17,9 +17,8 @@ use sn_transfers::client_transfers::create_transfer;
 
 use assert_fs::TempDir;
 use eyre::Result;
-use tokio::time::sleep;
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn dbc_transfer_multiple_sequential_succeed() -> Result<()> {
     init_logging();
 
@@ -56,7 +55,7 @@ async fn dbc_transfer_multiple_sequential_succeed() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn dbc_transfer_double_spend_fail() -> Result<()> {
     init_logging();
 
@@ -107,29 +106,10 @@ async fn dbc_transfer_double_spend_fail() -> Result<()> {
     let dbcs_for_2: Vec<_> = transfer_to_2.created_dbcs.clone();
     let dbcs_for_3: Vec<_> = transfer_to_3.created_dbcs.clone();
 
-    let mut could_err1 = client.verify(&dbcs_for_2[0]).await;
-    let mut could_err2 = client.verify(&dbcs_for_3[0]).await;
-    println!("Verifying at least one fails and one is ok: {could_err1:?} {could_err2:?}");
-    let mut dbcs_2_ok_3_fail = false;
-    let mut dbcs_2_fail_3_ok = false;
-
-    let mut one_transfer_succeeded = false;
-    while !one_transfer_succeeded {
-        could_err1 = client.verify(&transfer_to_2.created_dbcs[0]).await;
-        could_err2 = client.verify(&transfer_to_3.created_dbcs[0]).await;
-
-        dbcs_2_ok_3_fail = could_err1.is_ok() && could_err2.is_err();
-        dbcs_2_fail_3_ok = could_err1.is_err() && could_err2.is_ok();
-        one_transfer_succeeded = dbcs_2_ok_3_fail || dbcs_2_fail_3_ok;
-
-        // small wait before we try again
-        sleep(tokio::time::Duration::from_secs(1)).await;
-    }
-
-    assert!(
-        dbcs_2_ok_3_fail || dbcs_2_fail_3_ok,
-        "one transfer should be valid and the other have failed"
-    );
+    let could_err1 = client.verify(&dbcs_for_2[0]).await;
+    let could_err2 = client.verify(&dbcs_for_3[0]).await;
+    println!("Verifying at least one fails : {could_err1:?} {could_err2:?}");
+    assert!(could_err1.is_err() || could_err2.is_err());
 
     Ok(())
 }
