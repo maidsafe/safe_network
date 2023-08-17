@@ -465,6 +465,7 @@ jobs:
             # new output folder to avoid linker issues w/ windows
             CARGO_TARGET_DIR: "./data-location-target"
             CHURN_COUNT: 4
+            CHUNK_COUNT: 100
             SN_LOG: "all"
           timeout-minutes: 30
 
