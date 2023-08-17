@@ -28,6 +28,7 @@ use tokio::sync::oneshot;
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum SwarmCmd {
+    Bootstrap,
     StartListening {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
@@ -149,6 +150,9 @@ impl SwarmDriver {
                 if !keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
                 }
+            }
+            SwarmCmd::Bootstrap => {
+                let _res = self.swarm.behaviour_mut().kademlia.bootstrap();
             }
             SwarmCmd::SetRecordDistanceRange { distance } => {
                 self.swarm

@@ -35,9 +35,6 @@ use xor_name::XorName;
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(30);
 
-/// The initial rounds of `get_random` allowing client to fill up the RT.
-const INITIAL_GET_RANDOM_ROUNDS: usize = 5;
-
 impl Client {
     /// Instantiate a new client.
     pub async fn new(
@@ -59,7 +56,7 @@ impl Client {
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 
-        let mut client = Self {
+        let client = Self {
             network: network.clone(),
             events_channel,
             signer,
@@ -131,23 +128,17 @@ impl Client {
         // loop to connect to the network
         let mut is_connected = false;
         loop {
-            let mut rng = rand::thread_rng();
-            // Carry out 5 rounds of random get to fill up the RT at the beginning and sample the network
-            // for store costs
-            for _ in 0..INITIAL_GET_RANDOM_ROUNDS {
-                let random_target = ChunkAddress::new(XorName::random(&mut rng));
-
-                // ignore errors here, as we're just trying to fill up the RT
-                let _ = client
-                    .get_store_cost_at_address(NetworkAddress::ChunkAddress(random_target), true)
-                    .await;
-            }
+            let _res = client.network.bootstrap();
 
             match client_events_rx.recv().await {
                 Ok(ClientEvent::ConnectedToNetwork) => {
                     is_connected = true;
                     info!("Client connected to the Network {is_connected:?}.");
                     break;
+                }
+                Ok(ClientEvent::ConnectingToNetwork) => {
+                    info!("Client connecting to the Network {is_connected:?}.");
+                    continue;
                 }
                 Ok(ClientEvent::InactiveClient(timeout)) => {
                     if is_connected {
@@ -208,6 +199,8 @@ impl Client {
                 self.events_channel
                     .broadcast(ClientEvent::ConnectedToNetwork)?;
             } else {
+                self.events_channel
+                    .broadcast(ClientEvent::ConnectingToNetwork)?;
                 debug!(
                     "{}/{} initial peers found.",
                     self.peers_added, CLOSE_GROUP_SIZE

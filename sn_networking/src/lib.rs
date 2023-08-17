@@ -505,6 +505,13 @@ impl Network {
         receiver.await?
     }
 
+    /// Bootstrap us onto the network via an address
+    pub fn bootstrap(&self) -> Result<()> {
+        info!("Bootstrapping onto the network");
+        self.send_swarm_cmd(SwarmCmd::Bootstrap)?;
+        Ok(())
+    }
+
     /// Dial the given peer at the given address.
     pub async fn dial(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
