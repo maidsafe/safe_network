@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.22](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.21...sn_networking-v0.4.22) - 2023-08-18
+
+### Other
+- updated the following local packages: sn_protocol
+
+## [0.4.21](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.20...sn_networking-v0.4.21) - 2023-08-17
+
+### Fixed
+- manual impl Debug for NetworkEvent
+
+## [0.4.20](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.19...sn_networking-v0.4.20) - 2023-08-17
+
+### Fixed
+- *(client)* use boostrap and fire Connecting event
+
+## [0.4.19](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.18...sn_networking-v0.4.19) - 2023-08-17
+
+### Fixed
+- correct calculation of is_in_close_range
+- avoid download bench result polluted
+
 ## [0.4.18](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.17...sn_networking-v0.4.18) - 2023-08-15
 
 ### Fixed

@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.21](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.20...sn_client-v0.87.21) - 2023-08-18
+
+### Other
+- updated the following local packages: sn_protocol
+
+## [0.87.20](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.19...sn_client-v0.87.20) - 2023-08-17
+
+### Fixed
+- *(client)* start bootstrap when we are connected to one peer
+
+## [0.87.19](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.18...sn_client-v0.87.19) - 2023-08-17
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.87.18](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.17...sn_client-v0.87.18) - 2023-08-17
+
+### Fixed
+- *(client)* use boostrap and fire Connecting event
+
+## [0.87.17](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.16...sn_client-v0.87.17) - 2023-08-17
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.87.16](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.15...sn_client-v0.87.16) - 2023-08-16
+
+### Added
+- *(client)* do not use cached proofs
+
 ## [0.87.15](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.14...sn_client-v0.87.15) - 2023-08-16
 
 ### Added

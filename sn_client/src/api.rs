@@ -35,9 +35,6 @@ use xor_name::XorName;
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(30);
 
-/// The initial rounds of `get_random` allowing client to fill up the RT.
-const INITIAL_GET_RANDOM_ROUNDS: usize = 5;
-
 impl Client {
     /// Instantiate a new client.
     pub async fn new(
@@ -59,7 +56,7 @@ impl Client {
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 
-        let mut client = Self {
+        let client = Self {
             network: network.clone(),
             events_channel,
             signer,
@@ -73,34 +70,29 @@ impl Client {
         // (eg, if PeerAdded happens faster than our events channel is created)
         let mut client_events_rx = client.events_channel();
 
-        let mut must_dial_network = true;
-
-        let mut client_clone = client.clone();
-
         let _swarm_driver = spawn({
             trace!("Starting up client swarm_driver");
             swarm_driver.run()
         });
 
+        // spawn task to dial to the given peers
+        let network_clone = network.clone();
+        let _handle = spawn(async move {
+            if let Some(peers) = peers {
+                for addr in peers {
+                    trace!(%addr, "dialing initial peer");
+
+                    if let Err(err) = network_clone.dial(addr.clone()).await {
+                        tracing::error!(%addr, "Failed to dial: {err:?}");
+                    };
+                }
+            }
+        });
+
+        // spawn task to wait for NetworkEvent and check for inactivity
+        let mut client_clone = client.clone();
         let _event_handler = spawn(async move {
             loop {
-                if let Some(peers) = peers.clone() {
-                    if must_dial_network {
-                        let network = network.clone();
-                        let _handle = spawn(async move {
-                            for addr in peers {
-                                trace!(%addr, "dialing initial peer");
-
-                                if let Err(err) = network.dial(addr.clone()).await {
-                                    tracing::error!(%addr, "Failed to dial: {err:?}");
-                                };
-                            }
-                        });
-
-                        must_dial_network = false;
-                    }
-                }
-
                 match tokio::time::timeout(INACTIVITY_TIMEOUT, network_event_receiver.recv()).await
                 {
                     Ok(event) => {
@@ -131,18 +123,6 @@ impl Client {
         // loop to connect to the network
         let mut is_connected = false;
         loop {
-            let mut rng = rand::thread_rng();
-            // Carry out 5 rounds of random get to fill up the RT at the beginning and sample the network
-            // for store costs
-            for _ in 0..INITIAL_GET_RANDOM_ROUNDS {
-                let random_target = ChunkAddress::new(XorName::random(&mut rng));
-
-                // ignore errors here, as we're just trying to fill up the RT
-                let _ = client
-                    .get_store_cost_at_address(NetworkAddress::ChunkAddress(random_target), true)
-                    .await;
-            }
-
             match client_events_rx.recv().await {
                 Ok(ClientEvent::ConnectedToNetwork) => {
                     is_connected = true;
@@ -193,7 +173,14 @@ impl Client {
 
     fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
         if let NetworkEvent::PeerAdded(peer_id) = event {
+            self.peers_added += 1;
             debug!("PeerAdded: {peer_id}");
+
+            // we need at least 1 peer to be able to start the bootstrap process
+            if self.peers_added == 1 {
+                let _ = self.network.bootstrap();
+            }
+
             // In case client running in non-local-discovery mode,
             // it may take some time to fill up the RT.
             // To avoid such delay may fail the query with RecordNotFound,
@@ -220,7 +207,6 @@ impl Client {
                     ));
                 }
             }
-            self.peers_added += 1;
         }
 
         Ok(())

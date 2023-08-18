@@ -201,8 +201,10 @@ async fn download_file(
         "Downloading file {file_name:?} with address {:64x}",
         xorname
     );
+    debug!("Downloading file {file_name:?}");
     match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
         Ok(bytes) => {
+            debug!("Successfully got file {file_name}!");
             println!("Successfully got file {file_name}!");
             let file_name_path = download_path.join(file_name);
             println!("Writing {} bytes to {file_name_path:?}", bytes.len());
@@ -211,6 +213,7 @@ async fn download_file(
             }
         }
         Err(error) => {
+            error!("Did not get file {file_name:?} from the network! {error}");
             println!("Did not get file {file_name:?} from the network! {error}")
         }
     }

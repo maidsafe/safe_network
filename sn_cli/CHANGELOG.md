@@ -6,6 +6,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.80.52](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.51...sn_cli-v0.80.52) - 2023-08-18
+
+### Other
+- update dependencies
+
+## [0.80.51](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.50...sn_cli-v0.80.51) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.80.50](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.49...sn_cli-v0.80.50) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.80.49](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.48...sn_cli-v0.80.49) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.80.48](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.47...sn_cli-v0.80.48) - 2023-08-17
+
+### Fixed
+- avoid download bench result polluted
+
+### Other
+- more client logs
+
+## [0.80.47](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.46...sn_cli-v0.80.47) - 2023-08-16
+
+### Other
+- update dependencies
+
+## [0.80.46](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.45...sn_cli-v0.80.46) - 2023-08-16
+
+### Other
+- update dependencies
+
 ## [0.80.45](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.44...sn_cli-v0.80.45) - 2023-08-16
 
 ### Other

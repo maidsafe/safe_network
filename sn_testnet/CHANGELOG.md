@@ -881,6 +881,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.2.73](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.72...sn_testnet-v0.2.73) - 2023-08-16
+
+### Other
+- update dependencies
+
+## [0.2.74](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.73...sn_testnet-v0.2.74) - 2023-08-16
+
+### Other
+- update dependencies
+
+## [0.2.75](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.74...sn_testnet-v0.2.75) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.2.76](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.75...sn_testnet-v0.2.76) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.2.77](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.76...sn_testnet-v0.2.77) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.2.78](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.77...sn_testnet-v0.2.78) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.2.79](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.78...sn_testnet-v0.2.79) - 2023-08-18
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>

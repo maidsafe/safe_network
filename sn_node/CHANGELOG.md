@@ -887,6 +887,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - logging for checking parent inputs
 
+## [0.88.35](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.34...sn_node-v0.88.35) - 2023-08-16
+
+### Added
+- *(client)* do not use cached proofs
+
+## [0.88.36](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.35...sn_node-v0.88.36) - 2023-08-16
+
+### Other
+- update dependencies
+
+## [0.88.37](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.36...sn_node-v0.88.37) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.88.38](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.37...sn_node-v0.88.38) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.88.39](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.38...sn_node-v0.88.39) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.88.40](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.39...sn_node-v0.88.40) - 2023-08-17
+
+### Other
+- update dependencies
+
+## [0.88.41](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.40...sn_node-v0.88.41) - 2023-08-18
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
