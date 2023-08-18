@@ -658,10 +658,9 @@ impl Network {
                 payment_address,
             }) = response
             {
-                // TODO: handle this error
                 all_costs.push((payment_address, cost));
             } else {
-                println!("other response was {:?}", response);
+                error!("Non store cost response received,  was {:?}", response);
             }
         }
 
