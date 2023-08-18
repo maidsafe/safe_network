@@ -12,7 +12,6 @@ use crate::{
 };
 use libp2p::kad::Record;
 use sn_dbc::{DbcId, DbcTransaction, SignedSpend, Token};
-use sn_networking::CLOSE_GROUP_SIZE;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::CmdOk,
@@ -275,7 +274,8 @@ impl Node {
         chunk_with_payment: &ChunkWithPayment,
         validate_payment_amount: bool,
     ) -> Result<(), ProtocolError> {
-        let spent_dbcs = &chunk_with_payment.payment;
+        // Dbcs produce in TransferOutputs.created_dbcs
+        let created_dbcs = &chunk_with_payment.payment;
 
         let addr_name = *chunk_with_payment.chunk.name();
 
@@ -283,13 +283,8 @@ impl Node {
         // other info for verifications of valid payment.
         let mut tasks = JoinSet::new();
 
-        // Naive check to see if a majority of the section should store this
-        // if so, we'll relent on the payment proof check (and so be in line with the CLOSE_GROUP)
-        let there_is_majority_storing = spent_dbcs.len() > CLOSE_GROUP_SIZE / 2;
-        // TODO: Could we verify that the dbcs go to each member of the CLOSE_GROUP?
-
-        spent_dbcs.iter().cloned().for_each(|dbc| {
-            let dbc_ids = dbc
+        created_dbcs.iter().cloned().for_each(|dbc| {
+            let spent_dbc_ids = dbc
                 .signed_spends
                 .iter()
                 .map(|s| *s.dbc_id())
@@ -303,10 +298,10 @@ impl Node {
                 trace!("Payment proof for chunk {:?} is for us", addr_name);
                 trace!(
                     "Getting spends {:?} for chunk {:?} to prove payment",
-                    dbc_ids,
+                    spent_dbc_ids,
                     addr_name
                 );
-                for dbc_id in dbc_ids {
+                for dbc_id in spent_dbc_ids {
                     let self_clone = self.clone();
                     let _ = tasks.spawn(async move {
                         let addr = DbcAddress::from_dbc_id(&dbc_id);
@@ -317,11 +312,10 @@ impl Node {
             }
         });
 
-        if !there_is_majority_storing {
-            return Err(ProtocolError::NoPaymentForMajority(addr_name));
-        }
-
         let mut payment_tx = None;
+
+        // Check the spent transactions for our payment proof for double spend
+        // error out if there's a mismatch over the tx
         while let Some(result) = tasks.join_next().await {
             // TODO: since we are not sending these errors as a response, return sn_node::Error instead.
             let spent_tx = result.map_err(|_| ProtocolError::ChunkNotStored(addr_name))??;
@@ -334,6 +328,7 @@ impl Node {
             }
         }
 
+        // There is a payment for us, lets validate it's enough
         if let Some(tx) = payment_tx {
             info!("Checking if payment is sufficient for {:?}", addr_name);
             let acceptable_fee = self
@@ -359,8 +354,8 @@ impl Node {
                 }
             }
         } else {
-            // There is a majority storing this, established above. So no error to be had
-            // TODO: verify that majority are our close group.
+            // There is no DBC for us, so we dont store it.
+            return Err(ProtocolError::NoPaymentToThisNode(addr_name));
         }
 
         Ok(())
@@ -585,6 +580,7 @@ fn verify_fee_is_sufficient(
     // Check the expected amount of tokens was paid by the Tx, i.e. the amount of
     // the fee output the expected `acceptable_fee` nano per record.
     for output in tx.outputs.iter() {
+        // TODO: Is an output
         if output.token > highest_fee {
             highest_fee = output.token;
         }
