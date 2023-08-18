@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.5.1...sn_protocol-v0.5.2) - 2023-08-18
+
+### Added
+- UTXO and Transfer
+
 ## [0.5.1](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.5.0...sn_protocol-v0.5.1) - 2023-08-10
 
 ### Fixed
