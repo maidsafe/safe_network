@@ -23,7 +23,7 @@ use std::{
     iter::Iterator,
     time::{Duration, Instant},
 };
-use tokio::time::sleep;
+use tokio::{task::JoinSet, time::sleep};
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
@@ -87,7 +87,7 @@ impl WalletClient {
     /// Get storecost from the network
     /// Returns a Vec of proofs
     pub async fn get_store_cost_at_address(
-        &mut self,
+        &self,
         address: &NetworkAddress,
     ) -> Result<Vec<(PublicAddress, Token)>> {
         self.client
@@ -110,17 +110,28 @@ impl WalletClient {
 
         let mut payment_map = BTreeMap::default();
 
+        let mut tasks = JoinSet::new();
         // we can collate all the payments together into one transfer
         for content_addr in content_addrs {
-            // TODO: parallelise this
-            let amounts_to_pay = self.get_store_cost_at_address(&content_addr).await?;
-
-            // TODO: We put an empty vec for now as we're not validating.
-            // We'll need to map dbcs to content addrs though.
-            payment_map.insert(content_addr, amounts_to_pay);
+            let client = self.client.clone();
+            tasks.spawn(async move {
+                let costs = client
+                    .get_store_costs_at_address(&content_addr)
+                    .await
+                    .map_err(|error| Error::CouldNotSendTokens(error.to_string()));
+                (content_addr, costs)
+            });
         }
 
-        // TODO: This needs to map returned Dbcs to target addrs
+        while let Some(res) = tasks.join_next().await {
+            let (content_addr, amounts_to_pay) = match res {
+                Ok(c) => c,
+                Err(e) => return Err(Error::CouldNotGetStoreCost(e.to_string())),
+            };
+            // let amounts_to_pay = amounts_to_pay;
+            payment_map.insert(content_addr, amounts_to_pay?);
+        }
+
         let (payments, cost) = self.pay_for_records(payment_map, verify_store).await?;
 
         if let Some(cost) = total_cost.checked_add(cost) {
