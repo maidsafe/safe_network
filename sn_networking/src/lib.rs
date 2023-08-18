@@ -49,6 +49,7 @@ use libp2p::{
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport, tcp, noise,
     relay::{self, client::Transport as ClientTransport },
+    dcutr,
 };
 use rand::Rng;
 use sn_dbc::Token;
@@ -390,6 +391,13 @@ impl SwarmDriver {
         };
         let relay_client = Toggle::from(relay_client);
 
+        let dcutr = if !local && !is_client {
+            Some(dcutr::Behaviour::new(peer_id))
+        } else {
+            None
+        };
+        let dcutr = Toggle::from(dcutr);
+
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
@@ -399,6 +407,7 @@ impl SwarmDriver {
             autonat,
             relay,
             relay_client,
+            dcutr,
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
@@ -1000,26 +1009,16 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
 
 pub fn build_transport(keypair: Keypair, relay_transport: ClientTransport, local: bool) -> io::Result<Boxed<(PeerId, StreamMuxerBox)>> {
     let tcp_transport = tcp::tokio::Transport::default();
-    let tcp_transport = tcp_transport
+    let tcp_relay_transport = relay_transport
+        .or_transport(tcp_transport)
         .upgrade(upgrade::Version::V1Lazy)
         .authenticate(
         noise::Config::new(&keypair).expect("Signing libp2p-noise static DH keypair failed."),
         )
         .multiplex(libp2p::yamux::Config::default());
 
-    let upgraded_relay_transport = relay_transport
-        .upgrade(upgrade::Version::V1Lazy)
-        .authenticate(
-            noise::Config::new(&keypair).expect("Signing libp2p-noise static DH keypair failed."),
-        )
-        .multiplex(libp2p::yamux::Config::default());
-
-    let mut transport = upgraded_relay_transport
-        .or_transport(tcp_transport)
-        .map(|either_output, _| match either_output {
-            Either::Left((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
-            Either::Right((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
-        })
+    let mut transport = tcp_relay_transport
+        .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
         .boxed();
 
     if !local {

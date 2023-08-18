@@ -361,21 +361,16 @@ impl SwarmDriver {
     pub(crate) fn dial(&mut self, mut addr: Multiaddr) -> Result<(), DialError> {
         debug!(%addr, "Dialing manually");
 
-        if addr.to_string().contains("/p2p-circuit/") {
-            info!("Dialing manually relay address: {}", addr.clone());
-            self.swarm.dial(addr.clone())
-        } else {
-            let peer_id = multiaddr_pop_p2p(&mut addr);
-            let opts = match peer_id {
-                Some(peer_id) => DialOpts::peer_id(peer_id)
-                    // If we have a peer ID, we can prevent simultaneous dials.
-                    .condition(PeerCondition::NotDialing)
-                    .addresses(vec![addr])
-                    .build(),
-                None => DialOpts::unknown_peer_id().address(addr).build(),
-            };
-    
-            self.swarm.dial(opts)
-        }
+        let peer_id = multiaddr_pop_p2p(&mut addr);
+        let opts = match peer_id {
+            Some(peer_id) => DialOpts::peer_id(peer_id)
+                // If we have a peer ID, we can prevent simultaneous dials.
+                .condition(PeerCondition::NotDialing)
+                .addresses(vec![addr])
+                .build(),
+            None => DialOpts::unknown_peer_id().address(addr).build(),
+        };
+        
+        self.swarm.dial(opts)
     }
 }
