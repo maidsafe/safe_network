@@ -45,7 +45,7 @@ use libp2p::{
     kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
-    swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
+    swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder, dial_opts::DialOpts},
     Multiaddr, PeerId, Transport,
 };
 #[cfg(feature = "quic")]
@@ -129,6 +129,7 @@ pub struct SwarmDriver {
     local: bool,
     /// A list of the most recent peers we have dialed ourselves.
     dialed_peers: CircularVec<PeerId>,
+    unroutable_peers: CircularVec<PeerId>,
     /// The peers that are closer to our PeerId. Includes self.
     close_group: Vec<PeerId>,
     /// Perform initial kad bootstrap process on adding the first peer
@@ -425,6 +426,7 @@ impl SwarmDriver {
             // 63 will mean at least 63 most recent peers we have dialed, which should be allow for enough time for the
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
+            unroutable_peers: CircularVec::new(127),
             close_group: Default::default(),
             bootstrap_done: false,
             is_client,

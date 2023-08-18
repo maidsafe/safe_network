@@ -30,7 +30,7 @@ use libp2p::{
     },
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
-    swarm::{behaviour::toggle::Toggle, NetworkBehaviour, SwarmEvent},
+    swarm::{behaviour::toggle::Toggle, dial_opts::DialOpts, NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
 use sn_protocol::{
@@ -203,7 +203,9 @@ impl SwarmDriver {
                         debug!(%peer_id, ?info, "identify: received info");
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
-                        if (self.local || self.dialed_peers.contains(&peer_id))
+                        if (self.local
+                            || self.dialed_peers.contains(&peer_id)
+                            || self.unroutable_peers.contains(&peer_id))
                             && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
                         {
                             let addrs = match self.local {
@@ -225,11 +227,37 @@ impl SwarmDriver {
 
                             debug!(%peer_id, ?addrs, "identify: adding addresses to routing table");
                             for multiaddr in addrs.clone() {
-                                let _routing_update = self
-                                    .swarm
-                                    .behaviour_mut()
-                                    .kademlia
-                                    .add_address(&peer_id, multiaddr);
+                                // If the peer was unroutable, we dial it.
+                                if !self.dialed_peers.contains(&peer_id)
+                                    && self.unroutable_peers.contains(&peer_id)
+                                {
+                                    debug!("identify: dialing unroutable peer by its announced listen address");
+                                    if let Err(err) = self.dial_with_opts(
+                                        DialOpts::peer_id(peer_id)
+                                            // By default the condition is 'Disconnected'. But we still want to establish an outbound connection,
+                                            // even if there already is an inbound connection
+                                            .condition(
+                                                libp2p::swarm::dial_opts::PeerCondition::NotDialing,
+                                            )
+                                            .build(),
+                                    ) {
+                                        match err {
+                                            // If we are already dialing the peer, that's fine, otherwise report error.
+                                            libp2p::swarm::DialError::DialPeerConditionFalse(
+                                                libp2p::swarm::dial_opts::PeerCondition::NotDialing,
+                                            ) => {}
+                                            _ => {
+                                                error!(%peer_id, "identify: dial attempt error: {err:?}");
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    let _routing_update = self
+                                        .swarm
+                                        .behaviour_mut()
+                                        .kademlia
+                                        .add_address(&peer_id, multiaddr);
+                                }
                             }
 
                             // If the peer supports AutoNAT, add it as server
@@ -552,6 +580,10 @@ impl SwarmDriver {
                 if !present_locally && num_closer_peers < CLOSE_GROUP_SIZE {
                     trace!("InboundRequest::GetRecord doesn't have local record, with {num_closer_peers:?} closer_peers");
                 }
+            }
+            KademliaEvent::UnroutablePeer { peer } => {
+                trace!(peer_id = %peer, "KademliaEvent: UnroutablePeer");
+                self.unroutable_peers.push(peer);
             }
             other => {
                 trace!("KademliaEvent ignored: {other:?}");
