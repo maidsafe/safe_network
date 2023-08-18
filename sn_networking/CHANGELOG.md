@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.23](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.22...sn_networking-v0.4.23) - 2023-08-18
+
+### Added
+- remove client and node initial join flow
+- *(network)* perform `kad bootstrap` from the network layer
+
 ## [0.4.22](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.21...sn_networking-v0.4.22) - 2023-08-18
 
 ### Other
