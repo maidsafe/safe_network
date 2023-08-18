@@ -125,6 +125,8 @@ pub struct SwarmDriver {
     dialed_peers: CircularVec<PeerId>,
     /// The peers that are closer to our PeerId. Includes self.
     close_group: Vec<PeerId>,
+    /// Perform initial kad bootstrap process on adding the first peer
+    bootstrap_done: bool,
     is_client: bool,
 }
 
@@ -405,6 +407,7 @@ impl SwarmDriver {
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             close_group: Default::default(),
+            bootstrap_done: false,
             is_client,
         };
 
