@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1692352023321,
+  "lastUpdate": 1692373994728,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5533,6 +5533,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 1.3974169570793396,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4a0324ed70dfcab6655167b8e358c20977de785b",
+          "message": "feat: remove client and node initial join flow\n- we rely on the lower layer kad bootstrap process instead",
+          "timestamp": "2023-08-18T14:28:36Z",
+          "tree_id": "7742345607a9bf0f1c60bca5f8ba79e973a69a40",
+          "url": "https://github.com/maidsafe/safe_network/commit/4a0324ed70dfcab6655167b8e358c20977de785b"
+        },
+        "date": 1692373993053,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.168443948919258,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 10.91803753435403,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 1.3987326462196923,
             "unit": "MiB/s"
           }
         ]
