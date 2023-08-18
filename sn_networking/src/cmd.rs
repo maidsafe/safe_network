@@ -36,6 +36,10 @@ pub enum SwarmCmd {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
     },
+    DialWithOpts {
+        opts: DialOpts,
+        sender: oneshot::Sender<Result<()>>,
+    },
     // Get closest peers from the network
     GetClosestPeers {
         key: NetworkAddress,
@@ -247,6 +251,12 @@ impl SwarmDriver {
                     Err(e) => sender.send(Err(e.into())),
                 };
             }
+            SwarmCmd::DialWithOpts { opts, sender } => {
+                let _ = match self.dial_with_opts(opts) {
+                    Ok(_) => sender.send(Ok(())),
+                    Err(e) => sender.send(Err(e.into())),
+                };
+            }
             SwarmCmd::GetClosestPeers { key, sender } => {
                 let query_id = self
                     .swarm
@@ -353,6 +363,13 @@ impl SwarmDriver {
                 .build(),
             None => DialOpts::unknown_peer_id().address(addr).build(),
         };
+
+        self.swarm.dial(opts)
+    }
+
+    /// Dials with the `DialOpts` given.
+    pub(crate) fn dial_with_opts(&mut self, opts: DialOpts) -> Result<(), DialError> {
+        debug!(?opts, "Dialing manually");
 
         self.swarm.dial(opts)
     }
