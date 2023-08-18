@@ -505,7 +505,6 @@ impl SwarmDriver {
             KademliaEvent::OutboundQueryProgressed {
                 id,
                 result: QueryResult::Bootstrap(bootstrap_result),
-
                 step,
                 ..
             } => {
@@ -527,7 +526,8 @@ impl SwarmDriver {
                     info!("Connected peers: {connected_peers}");
                     // kad bootstrap process needs at least one peer in the RT be carried out.
                     if !self.bootstrap_done {
-                        let _res = self.swarm.behaviour_mut().kademlia.bootstrap();
+                        let res = self.swarm.behaviour_mut().kademlia.bootstrap();
+                        debug!("Initiated kad bootstrap process {res:?}");
                         self.bootstrap_done = true;
                     }
                 }
