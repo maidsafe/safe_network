@@ -80,6 +80,10 @@ pub enum Error {
         /// Reason why the payment proof was deemed invalid
         reason: String,
     },
+    #[error("UTXO serialisation failed")]
+    UtxoSerialisationFailed,
+    #[error("UTXO decryption failed")]
+    UtxoDecryptionFailed,
 
     // ---------- replication errors
     /// Replication not found.
