@@ -12,6 +12,7 @@ use crate::{
 };
 use libp2p::kad::Record;
 use sn_dbc::{DbcId, DbcTransaction, SignedSpend, Token};
+use sn_networking::CLOSE_GROUP_SIZE;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::CmdOk,
@@ -282,7 +283,11 @@ impl Node {
         // other info for verifications of valid payment.
         let mut tasks = JoinSet::new();
 
-        let mut there_is_a_payment = false;
+        // Naive check to see if a majority of the section should store this
+        // if so, we'll relent on the payment proof check (and so be in line with the CLOSE_GROUP)
+        let there_is_majority_storing = spent_dbcs.len() > CLOSE_GROUP_SIZE / 2;
+        // TODO: Could we verify that the dbcs go to each member of the CLOSE_GROUP?
+
         spent_dbcs.iter().cloned().for_each(|dbc| {
             let dbc_ids = dbc
                 .signed_spends
@@ -295,7 +300,6 @@ impl Node {
             let dbc_is_for_us = dbc_target == self.reward_address;
 
             if dbc_is_for_us {
-                there_is_a_payment = true;
                 trace!("Payment proof for chunk {:?} is for us", addr_name);
                 trace!(
                     "Getting spends {:?} for chunk {:?} to prove payment",
@@ -313,7 +317,7 @@ impl Node {
             }
         });
 
-        if !there_is_a_payment {
+        if !there_is_majority_storing {
             return Err(ProtocolError::NoPaymentForNodeToStore(addr_name));
         }
 
@@ -337,9 +341,7 @@ impl Node {
                 .get_local_storecost()
                 .await
                 .map_err(|_| ProtocolError::ChunkNotStored(addr_name))?;
-            // Check if the fee output id and amount are correct, as well as verify
-            // the payment proof corresponds to the fee output and that
-            // the fee is sufficient for this chunk.
+            // Check if any of the dbcs sent are sufficient for this chunk.
             match verify_fee_is_sufficient(acceptable_fee, &tx) {
                 Ok(tx) => tx,
                 Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected }) => {
@@ -587,7 +589,10 @@ fn verify_fee_is_sufficient(
             highest_fee = output.token;
         }
     }
-    let expected = Token::from_nano(acceptable_fee.as_nano());
+
+    // We expect at least the current step or one down. This should smooth over any
+    // issues that might arise with payment going up and down.
+    let expected = Token::from_nano(acceptable_fee.as_nano() / 2);
 
     if highest_fee < acceptable_fee {
         return Err(ProtocolError::PaymentProofInsufficientAmount {
