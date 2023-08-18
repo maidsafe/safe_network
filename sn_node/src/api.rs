@@ -16,16 +16,7 @@ use sn_protocol::{
     storage::DbcAddress,
     NetworkAddress, PrettyPrintRecordKey,
 };
-use std::{
-    collections::HashSet,
-    net::SocketAddr,
-    path::PathBuf,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-    time::Duration,
-};
+use std::{collections::HashSet, net::SocketAddr, path::PathBuf, time::Duration};
 use tokio::task::spawn;
 
 /// Once a node is started and running, the user obtains
@@ -106,8 +97,6 @@ impl Node {
         let node_event_sender = node_events_channel.clone();
         let mut rng = StdRng::from_entropy();
 
-        let initial_join_flows_done = Arc::new(AtomicBool::new(false));
-
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
             // use a random inactivity timeout to ensure that the nodes do not sync when messages
@@ -120,12 +109,11 @@ impl Node {
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
                         trace!("Handling NetworkEvent: {net_event:?}");
-                        let initial_join_flows_done = initial_join_flows_done.clone();
                         match net_event {
                             Some(event) => {
                                 let stateless_node_copy = node.clone();
                                 let _handle =
-                                    spawn(async move { stateless_node_copy.handle_network_event(event, initial_join_flows_done).await });
+                                    spawn(async move { stateless_node_copy.handle_network_event(event).await });
                             }
                             None => {
                                 error!("The `NetworkEvent` channel is closed");
@@ -164,11 +152,7 @@ impl Node {
 
     // **** Private helpers *****
 
-    async fn handle_network_event(
-        &self,
-        event: NetworkEvent,
-        initial_join_underway_or_done: Arc<AtomicBool>,
-    ) {
+    async fn handle_network_event(&self, event: NetworkEvent) {
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
                 trace!("RequestReceived: {req:?}");
@@ -182,27 +166,6 @@ impl Node {
             }
             NetworkEvent::PeerAdded(peer_id) => {
                 Marker::PeerAddedToRoutingTable(peer_id).log();
-
-                // perform a get_closest query to self on node join. This should help populate the node's RT
-                // since this only runs once, we don't need to make it run in a background task
-                debug!(
-                    "Initial join query underway or complete: {initial_join_underway_or_done:?}"
-                );
-                if !initial_join_underway_or_done.load(Ordering::SeqCst) {
-                    debug!("Performing a get_closest query to self on node join");
-                    initial_join_underway_or_done.store(true, Ordering::SeqCst);
-
-                    if let Ok(closest) = self
-                        .network
-                        .node_get_closest_peers(&NetworkAddress::from_peer(self.network.peer_id))
-                        .await
-                    {
-                        debug!("closest to self on join returned: {closest:?}");
-                    } else {
-                        error!("Error while performing a get_closest query to self on node join");
-                        initial_join_underway_or_done.store(false, Ordering::SeqCst);
-                    }
-                }
 
                 if let Err(err) = self.try_trigger_replication(peer_id, false).await {
                     error!("During CloseGroupUpdate, error while triggering replication {err:?}");
