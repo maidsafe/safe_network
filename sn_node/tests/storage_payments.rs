@@ -89,42 +89,57 @@ async fn storage_payment_succeeds() -> Result<()> {
     Ok(())
 }
 
-// #[tokio::test(flavor = "multi_thread")]
-// async fn storage_payment_fails() -> Result<()> {
-//     init_logging();
+#[tokio::test(flavor = "multi_thread")]
+async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
+    init_logging();
+    let wallet_original_balance = 100_000_000_000;
 
-//     let wallet_dir = TempDir::new()?;
-//     let (client, mut wallet_client) = get_client_and_wallet(wallet_dir.path(), 15_000).await?;
+    let paying_wallet_dir: TempDir = TempDir::new()?;
 
-//     // generate a random number (between 50 and 100) of random addresses
-//     let random_num_of_addrs = rand::thread_rng().gen_range(50..100);
-//     let storage_cost = Token::from_nano(random_num_of_addrs);
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
+    let (files_api, content_bytes, _random_content_addrs, chunks) = random_content(&client)?;
 
-//     // // let mut transfer = wallet_client
-//     // //     .local_send_storage_payment(storage_cost, None)
-//     // //     .await?;
-//     // assert!(transfer.created_dbcs.is_empty());
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+    let subset_len = chunks.len() / 3;
+    let (subset_of_transfer_outputs_map, _storage_cost) = wallet_client
+        .pay_for_storage(
+            chunks
+                .clone()
+                .into_iter()
+                .take(subset_len)
+                .map(|c| c.network_address()),
+            true,
+        )
+        .await?;
 
-//     // let's corrupt the generated spend in any way
-//     let mut invalid_signed_spend = transfer.all_spend_requests[0].signed_spend.clone();
-//     invalid_signed_spend.spend.spent_tx.fee.token = Token::from_nano(random_num_of_addrs + 1);
-//     transfer.all_spend_requests[0].signed_spend = invalid_signed_spend;
+    assert_eq!(subset_of_transfer_outputs_map.len(), subset_len);
 
-//     // Sending now verifies
-//     let should_err = client.send(transfer.clone(), true).await;
+    // Sending transfers subset should be fine
+    for transfers_outputs in subset_of_transfer_outputs_map.values() {
+        if let Err(err) = client.send(transfers_outputs.clone(), true).await {
+            eyre::bail!("Failed to send transfer: {}", err);
+        }
+    }
 
-//     println!("Verified with fail: {should_err:?}");
-//     assert!(should_err.is_err());
-
-//     Ok(())
-// }
+    // now let's request to pay for all addresses, even that we've already paid for a subset of them
+    let verify_store = false;
+    let res = files_api
+        .upload_with_transfers(content_bytes, &subset_of_transfer_outputs_map, verify_store)
+        .await;
+    assert!(
+        res.is_err(),
+        "Should have failed to store as we didnt pay for everything"
+    );
+    Ok(())
+}
 
 // TODO: reenable
 #[ignore = "Currently we do not cache the proofs in the wallet"]
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     let wallet_original_balance = 100_000_000_000_000_000;
-    let paying_wallet_dir = TempDir::new()?;
+    let paying_wallet_dir: TempDir = TempDir::new()?;
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
@@ -197,12 +212,12 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 
     println!("Paying for {} random addresses...", chunks.len());
 
-    let (proofs, _cost) = wallet_client
+    let (transfer_outputs_map, _cost) = wallet_client
         .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
         .await?;
 
     files_api
-        .upload_with_transfers(content_bytes, &proofs, true)
+        .upload_with_transfers(content_bytes, &transfer_outputs_map, true)
         .await?;
 
     files_api.read_bytes(content_addr).await?;

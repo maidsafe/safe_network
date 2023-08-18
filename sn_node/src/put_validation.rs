@@ -359,8 +359,7 @@ impl Node {
                 }
             }
         } else {
-            //TODO: we're not verifying at the moment
-            // return Err(ProtocolError::PaymentProofWithoutInputs(addr_name));
+            return Err(ProtocolError::NoPaymentForNodeToStore(addr_name));
         }
 
         Ok(())
