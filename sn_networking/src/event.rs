@@ -502,6 +502,17 @@ impl SwarmDriver {
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
             }
+            KademliaEvent::OutboundQueryProgressed {
+                id,
+                result: QueryResult::Bootstrap(bootstrap_result),
+
+                step,
+                ..
+            } => {
+                // here BootstrapOk::num_remaining refers to the remaining random peer IDs to query, one per
+                // bucket that still needs refreshing.
+                trace!("Kademlia Bootstrap with {id:?} progressed with {bootstrap_result:?} and step {step:?}");
+            }
             KademliaEvent::RoutingUpdated {
                 peer,
                 is_new_peer,
@@ -514,6 +525,11 @@ impl SwarmDriver {
                     let connected_peers = self.swarm.connected_peers().count();
 
                     info!("Connected peers: {connected_peers}");
+                    // kad bootstrap process needs at least one peer in the RT be carried out.
+                    if !self.bootstrap_done {
+                        let _res = self.swarm.behaviour_mut().kademlia.bootstrap();
+                        self.bootstrap_done = true;
+                    }
                 }
 
                 if old_peer.is_some() {
