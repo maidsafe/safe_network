@@ -318,7 +318,7 @@ impl Node {
         });
 
         if !there_is_majority_storing {
-            return Err(ProtocolError::NoPaymentForNodeToStore(addr_name));
+            return Err(ProtocolError::NoPaymentForMajority(addr_name));
         }
 
         let mut payment_tx = None;
@@ -359,7 +359,8 @@ impl Node {
                 }
             }
         } else {
-            return Err(ProtocolError::NoPaymentForNodeToStore(addr_name));
+            // There is a majority storing this, established above. So no error to be had
+            // TODO: verify that majority are our close group.
         }
 
         Ok(())

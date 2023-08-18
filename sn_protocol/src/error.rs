@@ -67,6 +67,11 @@ pub enum Error {
     #[error("At least one input of payment proof provided for {0:?} has a mismatching spend Tx")]
     PaymentProofTxMismatch(XorName),
     /// Payment proof received has no inputs
+    #[error(
+        "Payment proof received for {0:?} has insufficient dbcs to pay the majority of holders"
+    )]
+    NoPaymentForMajority(XorName),
+    /// Payment proof received has no inputs
     #[error("Payment proof received for {0:?} has no dbc for this node in its transaction")]
     NoPaymentForNodeToStore(XorName),
     /// The id of the fee output found in a storage payment proof is invalid
