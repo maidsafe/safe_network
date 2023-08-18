@@ -176,11 +176,6 @@ impl Client {
             self.peers_added += 1;
             debug!("PeerAdded: {peer_id}");
 
-            // we need at least 1 peer to be able to start the bootstrap process
-            if self.peers_added == 1 {
-                let _ = self.network.bootstrap();
-            }
-
             // In case client running in non-local-discovery mode,
             // it may take some time to fill up the RT.
             // To avoid such delay may fail the query with RecordNotFound,
