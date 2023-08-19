@@ -47,9 +47,10 @@ use tokio::sync::oneshot;
 use tracing::{info, warn};
 use xor_name::XorName;
 
-// Usig XorName to differentiate different record content under the same key.
+/// Using XorName to differentiate different record content under the same key.
 pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
 
+/// NodeBehaviour struct
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
 pub(super) struct NodeBehaviour {
@@ -61,6 +62,7 @@ pub(super) struct NodeBehaviour {
     pub(super) autonat: Toggle<autonat::Behaviour>,
 }
 
+/// NodeEvent enum
 #[derive(CustomDebug)]
 pub(super) enum NodeEvent {
     MsgReceived(request_response::Event<Request, Response>),
@@ -306,7 +308,9 @@ impl SwarmDriver {
                 debug!(%peer_id, num_established, "ConnectionEstablished: {}", endpoint_str(&endpoint));
 
                 if endpoint.is_dialer() {
-                    self.dialed_peers.push(peer_id);
+                    self.dialed_peers
+                        .push(peer_id)
+                        .map_err(|_| Error::CircularVecPopFrontError)?;
                 }
             }
             SwarmEvent::ConnectionClosed {

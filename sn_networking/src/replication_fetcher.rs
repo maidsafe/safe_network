@@ -128,6 +128,8 @@ impl ReplicationFetcher {
             {
                 match holder_status {
                     HolderStatus::Pending => {
+                        // Check if the fetch for the key is ongoing and the FETCH_TIMEOUT is not hit
+                        let fetch_will_end_now = fetch_for_key_is_ongoing.unwrap_or(false);
                         if no_more_fetches_left
                             || key_added_to_list
                             || keys_to_fetch.len() >= fetches_left
@@ -136,7 +138,7 @@ impl ReplicationFetcher {
                             // continue. This is to make sure that we queue up that key as soon as
                             // the FETCH_TIMEOUT is hit, else we might have to wait till the next
                             // call to `next_keys_to_fetch` 
-                            || fetch_for_key_is_ongoing.is_some_and(|fetch_will_end_now| !fetch_will_end_now)
+                            || (fetch_for_key_is_ongoing.is_some() && !fetch_will_end_now)
                         {
                             continue;
                         }

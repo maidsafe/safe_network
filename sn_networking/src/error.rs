@@ -103,6 +103,9 @@ pub enum Error {
 
     #[error("Failed to sign the message with the PeerId keypair")]
     SigningFailed(#[from] libp2p::identity::SigningError),
+
+    #[error("Failed to pop from front of CircularVec")]
+    CircularVecPopFrontError,
 }
 
 #[cfg(test)]
