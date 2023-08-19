@@ -53,11 +53,14 @@ use tracing::warn;
 /// This is the group size used in safe network protocol to be responsible for
 /// an item in the network.
 /// The peer should be present among the CLOSE_GROUP_SIZE if we're fetching the close_group(peer)
-pub const CLOSE_GROUP_SIZE: usize = 8;
+/// The size has been set to 5 for improved performance.
+pub const CLOSE_GROUP_SIZE: usize = 5;
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
 pub const fn close_group_majority() -> usize {
+    // Calculate the majority of the close group size by dividing it by 2 and adding 1.
+    // This ensures that the majority is always greater than half.
     CLOSE_GROUP_SIZE / 2 + 1
 }
 
