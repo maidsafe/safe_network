@@ -91,12 +91,12 @@ const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PK
 const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
 /// Duration to wait for verification
-const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
+const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(500);
 /// Number of attempts to verify a record
-const VERIFICATION_ATTEMPTS: usize = 30;
+const VERIFICATION_ATTEMPTS: usize = 10;
 
 /// Number of attempts to re-put a record
-const PUT_RECORD_RETRIES: usize = 3;
+const PUT_RECORD_RETRIES: usize = 5;
 
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 /// Majority of a given group (i.e. > 1/2).
@@ -676,6 +676,7 @@ impl Network {
         key: RecordKey,
         target_record: Option<Record>,
         re_attempt: bool,
+        expect_no_prior_record: bool,
     ) -> Result<Record> {
         let total_attempts = if re_attempt { VERIFICATION_ATTEMPTS } else { 1 };
 
@@ -709,6 +710,13 @@ impl Network {
                             && target_record == Some(returned_record.clone()))
                     {
                         return Ok(returned_record);
+                    } else if expect_no_prior_record
+                        && (target_record.is_some()
+                            && target_record != Some(returned_record.clone()))
+                    {
+                        error!("Record check: expected {target_record:?}");
+                        error!("Returned: {returned_record:?}");
+                        return Err(Error::ExpectedNoRecordToExist(returned_record.key.into()));
                     } else if verification_attempts >= total_attempts {
                         return Err(Error::ReturnedRecordDoesNotMatch(
                             returned_record.key.into(),
@@ -774,23 +782,37 @@ impl Network {
 
     /// Put `Record` to network
     /// optionally verify the record is stored after putting it to network
-    pub async fn put_record(&self, record: Record, verify_store: bool) -> Result<()> {
+    pub async fn put_record(
+        &self,
+        record: Record,
+        verify_store: bool,
+        expect_no_prior_record: bool,
+    ) -> Result<()> {
         if verify_store {
-            self.put_record_with_retries(record).await
+            self.put_record_with_retries(record, expect_no_prior_record)
+                .await
         } else {
-            self.put_record_once(record, false).await
+            self.put_record_once(record, false, expect_no_prior_record)
+                .await
         }
     }
 
     /// Put `Record` to network
     /// Verify the record is stored after putting it to network
     /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
-    async fn put_record_with_retries(&self, record: Record) -> Result<()> {
+    /// If there should be no existing record (ie, with transfers), then expect_no_prior_record should be true
+    async fn put_record_with_retries(
+        &self,
+        record: Record,
+        expect_no_prior_record: bool,
+    ) -> Result<()> {
         let mut retries = 0;
 
         // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
         while retries < PUT_RECORD_RETRIES {
-            let res = self.put_record_once(record.clone(), true).await;
+            let res = self
+                .put_record_once(record.clone(), true, expect_no_prior_record)
+                .await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
             }
@@ -799,7 +821,12 @@ impl Network {
         Err(Error::FailedToVerifyRecordWasStored(record.key.into()))
     }
 
-    async fn put_record_once(&self, record: Record, verify_store: bool) -> Result<()> {
+    async fn put_record_once(
+        &self,
+        record: Record,
+        verify_store: bool,
+        expect_no_prior_record: bool,
+    ) -> Result<()> {
         debug!(
             "Putting record of {} - length {:?} to network",
             PrettyPrintRecordKey::from(record.key.clone()),
@@ -816,16 +843,31 @@ impl Network {
 
         if verify_store {
             // Verify the record is stored, requiring re-attempts
-            let _ = self
-                .get_record_from_network(record.key.clone(), Some(record), true)
+            let _ = match self
+                .get_record_from_network(
+                    record.key.clone(),
+                    Some(record),
+                    true,
+                    expect_no_prior_record,
+                )
                 .await
-                .map_err(|e| {
-                    trace!(
-                        "Failing to verify the put record {:?} with error {e:?}",
-                        the_record.key
-                    );
-                    Error::FailedToVerifyRecordWasStored(the_record.key.into())
-                })?;
+            {
+                Ok(ok) => Ok(ok),
+                Err(error) => match error {
+                    Error::ExpectedNoRecordToExist(key) => {
+                        error!("ExpectedNoRecordToExist {key:?}");
+                        return Err(Error::ExpectedNoRecordToExist(key));
+                    }
+                    _ => Err(error),
+                },
+            }
+            .map_err(|e| {
+                trace!(
+                    "Failing to verify the put record {:?} with error {e:?}",
+                    PrettyPrintRecordKey::from(the_record.key.clone())
+                );
+                Error::FailedToVerifyRecordWasStored(the_record.key.into())
+            })?;
         }
 
         response
