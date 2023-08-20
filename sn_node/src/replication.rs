@@ -147,7 +147,7 @@ impl Node {
                         trace!("Fetching replication {key:?} from the network");
                         let record = node
                             .network
-                            .get_record_from_network(key.clone(), None, false)
+                            .get_record_from_network(key.clone(), None, false, false)
                             .await?;
                         trace!("Got Replication Record {key:?} from network, validating and storing it");
                         let _ = node.validate_and_store_record(record, false).await?;

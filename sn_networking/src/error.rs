@@ -51,6 +51,9 @@ pub enum Error {
     #[error("Record retrieved from the network does not match the one we attempted to store {0:}")]
     ReturnedRecordDoesNotMatch(PrettyPrintRecordKey),
 
+    #[error("Record returned when none was expected (likely a Dbc spend eg) {0:}")]
+    ExpectedNoRecordToExist(PrettyPrintRecordKey),
+
     #[error("Could not create storage dir: {path:?}, error: {source}")]
     FailedToCreateRecordStoreDir {
         path: PathBuf,
