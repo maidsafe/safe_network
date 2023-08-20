@@ -6,8 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::collections::BTreeMap;
-
 use super::{
     chunks::{to_chunk, DataMapLevel, Error, SmallFile},
     error::Result,
@@ -18,7 +16,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress},
     NetworkAddress,
 };
-use sn_transfers::client_transfers::{TransferOutputs, TransferOutputsMap};
+use sn_transfers::client_transfers::ContentPaymentsMap;
 
 use bincode::deserialize;
 use bytes::Bytes;
@@ -98,13 +96,13 @@ impl Files {
     /// Directly writes [`Bytes`] to the network in the
     /// form of immutable chunks, without any batching.
     #[instrument(skip(self, bytes), level = "debug")]
-    pub async fn upload_with_transfers(
+    pub async fn upload_with_payments(
         &self,
         bytes: Bytes,
-        transfer_outputs_map: &TransferOutputsMap,
+        content_payments_map: &ContentPaymentsMap,
         verify_store: bool,
     ) -> Result<NetworkAddress> {
-        self.upload_bytes(bytes, transfer_outputs_map, verify_store)
+        self.upload_bytes(bytes, content_payments_map, verify_store)
             .await
     }
 
@@ -116,7 +114,7 @@ impl Files {
     pub async fn upload_and_verify(
         &self,
         bytes: Bytes,
-        transfer_outputs_map: &TransferOutputsMap,
+        transfer_outputs_map: &ContentPaymentsMap,
     ) -> Result<NetworkAddress> {
         self.upload_bytes(bytes, transfer_outputs_map, true).await
     }
@@ -147,7 +145,7 @@ impl Files {
     pub async fn upload_chunks_in_batches(
         &self,
         chunks: impl Iterator<Item = Chunk>,
-        transfer_outputs_map: &TransferOutputsMap,
+        content_payments_map: &ContentPaymentsMap,
         verify_store: bool,
     ) -> Result<()> {
         trace!("Client upload in batches started");
@@ -157,16 +155,14 @@ impl Files {
             next_batch_size += 1;
             let client = self.client.clone();
             let chunk_addr = chunk.network_address();
-            let payment = transfer_outputs_map
+            let payment = content_payments_map
                 .get(&chunk_addr)
                 .cloned()
                 .ok_or(super::Error::MissingPaymentProof(format!("{chunk_addr}")))?;
 
             trace!("Payment for {chunk:?}: {:?}", payment);
             tasks.push(task::spawn(async move {
-                client
-                    .store_chunk(chunk, payment.created_dbcs.clone(), verify_store)
-                    .await?;
+                client.store_chunk(chunk, payment, verify_store).await?;
 
                 Ok::<(), super::error::Error>(())
             }));
@@ -199,15 +195,15 @@ impl Files {
     async fn upload_bytes(
         &self,
         bytes: Bytes,
-        payment_dbcs: &BTreeMap<NetworkAddress, TransferOutputs>,
+        content_payments_map: &ContentPaymentsMap,
         verify: bool,
     ) -> Result<NetworkAddress> {
         if bytes.len() < MIN_ENCRYPTABLE_BYTES {
             let file = SmallFile::new(bytes)?;
-            self.upload_small(file, payment_dbcs, verify).await
+            self.upload_small(file, content_payments_map, verify).await
         } else {
             let (head_address, chunks) = encrypt_large(bytes)?;
-            self.upload_chunks_in_batches(chunks.into_iter(), payment_dbcs, verify)
+            self.upload_chunks_in_batches(chunks.into_iter(), content_payments_map, verify)
                 .await?;
             Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
                 head_address,
@@ -221,18 +217,18 @@ impl Files {
     async fn upload_small(
         &self,
         small: SmallFile,
-        payment_proofs: &BTreeMap<NetworkAddress, TransferOutputs>,
+        content_payments_map: &ContentPaymentsMap,
         verify_store: bool,
     ) -> Result<NetworkAddress> {
         let chunk = package_small(small)?;
         let address = chunk.network_address();
-        let payment = payment_proofs
+        let payment = content_payments_map
             .get(&address)
             .cloned()
             .ok_or(super::Error::MissingPaymentProof(format!("{address}")))?;
 
         self.client
-            .store_chunk(chunk, payment.created_dbcs.clone(), verify_store)
+            .store_chunk(chunk, payment, verify_store)
             .await?;
 
         Ok(address)

@@ -531,7 +531,7 @@ impl Node {
                             parent_dbc_address
                         );
                         let _ = parent_spends.insert(
-                            self.get_spend_from_network(parent_dbc_address, true)
+                            self.get_spend_from_network(parent_dbc_address, false)
                                 .await?,
                         );
                     }

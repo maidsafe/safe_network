@@ -68,8 +68,9 @@ pub enum Error {
 
     #[error("Dial Error")]
     DialError(#[from] DialError),
-    #[error("Libp2p Idendity Decode Error")]
-    LIbp2pDecode(#[from] DecodingError),
+
+    #[error("Libp2p Identity Decode Error")]
+    Libp2pDecode(#[from] DecodingError),
 
     #[error("This peer is already being dialed: {0}")]
     AlreadyDialingPeer(libp2p::PeerId),
@@ -103,6 +104,9 @@ pub enum Error {
 
     #[error("Error putting record")]
     PutRecordError(#[from] kad::PutRecordError),
+
+    #[error("SnProtocol Error")]
+    ProtocolError(#[from] sn_protocol::error::Error),
 
     #[error("No SwarmCmd channel capacity")]
     NoSwarmCmdChannelCapacity,
