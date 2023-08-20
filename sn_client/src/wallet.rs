@@ -172,6 +172,16 @@ impl WalletClient {
         trace!("Sending storage payment transfer to the network");
 
         for transfer in transfer_map.values() {
+            // first push all to the network, then try again and verify.
+            // otherwise all pushes are waiting on all prior verifications
+            self.client.send(transfer.clone(), false).await?;
+
+        }
+
+        trace!("All unverified sends away, now verifying..");
+
+        // now run and verify if needs be.
+        for transfer in transfer_map.values() {
             let mut tasks = Vec::new();
 
             tasks.push(self.client.send(transfer.clone(), verify_store));
@@ -302,6 +312,7 @@ pub async fn send(
         .await
         .expect("Tokens shall be successfully sent.");
 
+    let mut did_error = false;
     if verify_store {
         let mut attempts = 0;
         while wallet_client.unconfirmed_txs_exist() {
@@ -310,7 +321,10 @@ pub async fn send(
             wallet_client.resend_pending_txs(verify_store).await;
 
             if attempts > 10 {
-                return Err(Error::UnconfirmedTxAfterRetries);
+                // save the error state, but break out of the loop so we can save
+                did_error = true;
+                break;
+
             }
 
             attempts += 1;
@@ -326,6 +340,10 @@ pub async fn send(
         .store_created_dbc(new_dbc.clone())
         .await
         .expect("Created dbc shall be successfully stored.");
+
+    if did_error {
+        return Err(Error::UnconfirmedTxAfterRetries);
+    }
 
     Ok(new_dbc)
 }
