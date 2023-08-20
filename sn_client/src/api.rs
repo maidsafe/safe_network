@@ -143,6 +143,7 @@ impl Client {
                 }
             }
         }
+
         // The above loop breaks if `ConnectedToNetwork` is received, but we might need the
         // receiver to still be active for us to not get any error if any other event is sent
         let mut client_events_rx = client.events_channel();
@@ -229,7 +230,7 @@ impl Client {
 
         let record = self
             .network
-            .get_record_from_network(key, None, false, false)
+            .get_record_from_network(key, None, false)
             .await
             .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
         debug!(
@@ -284,7 +285,7 @@ impl Client {
             expires: None,
         };
 
-        Ok(self.network.put_record(record, verify_store, true).await?)
+        Ok(self.network.put_record(record, verify_store).await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.
@@ -293,7 +294,7 @@ impl Client {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, false, false)
+            .get_record_from_network(key, None, false)
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
@@ -313,8 +314,7 @@ impl Client {
         let dbc_id = *spend.signed_spend.dbc_id();
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
-        trace!("---> Sending spend {dbc_id:?} to the network via put_record, with addr of {dbc_addr:?}");
-        trace!("---> Signed spend {dbc_id:?} is: {:?}", spend.signed_spend);
+        trace!("Sending spend {dbc_id:?} to the network via put_record, with addr of {dbc_addr:?}");
         let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
         let record = Record {
             key,
@@ -322,11 +322,10 @@ impl Client {
             publisher: None,
             expires: None,
         };
-        Ok(self.network.put_record(record, verify_store, true).await?)
+        Ok(self.network.put_record(record, verify_store).await?)
     }
 
     /// Get a dbc spend from network
-    /// Optionally pass in an expected Dbc if we're verifying a spend from the client
     pub async fn get_spend_from_network(&self, dbc_id: &DbcId) -> Result<SignedSpend> {
         let address = DbcAddress::from_dbc_id(dbc_id);
         let key = NetworkAddress::from_dbc_address(address).to_record_key();
@@ -334,7 +333,7 @@ impl Client {
         trace!("Getting spend {dbc_id:?} with record_key {key:?}");
         let record = self
             .network
-            .get_record_from_network(key.clone(), None, true, false)
+            .get_record_from_network(key.clone(), None, true)
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!("dbc_id {dbc_id:?} errored: {err:?}"))

@@ -12,14 +12,10 @@ use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
 use sn_client::{Client, Files};
-use sn_protocol::{
-    storage::{Chunk, ChunkAddress},
-    NetworkAddress,
-};
-use sn_transfers::client_transfers::TransferOutputs;
+use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_transfers::client_transfers::ContentPaymentsMap;
 
 use std::{
-    collections::BTreeMap,
     fs,
     path::{Path, PathBuf},
 };
@@ -100,7 +96,7 @@ async fn upload_files(
     let file_names_path = root_dir.join("uploaded_files");
 
     // Payment shall always be verified.
-    let (chunks_to_upload, payment_proofs) =
+    let (chunks_to_upload, content_payments_map) =
         chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
 
     let mut chunks_to_fetch = Vec::new();
@@ -122,7 +118,7 @@ async fn upload_files(
             &file_api,
             &file_name,
             chunks,
-            &payment_proofs,
+            &content_payments_map,
             verify_store,
         )
         .await
@@ -150,7 +146,7 @@ async fn upload_chunks(
     file_api: &Files,
     file_name: &str,
     chunks_paths: Vec<(XorName, PathBuf)>,
-    transfer_outputs_map: &BTreeMap<NetworkAddress, TransferOutputs>,
+    content_payments_map: &ContentPaymentsMap,
     verify_store: bool,
 ) -> Result<()> {
     let chunks_reader = chunks_paths
@@ -169,7 +165,7 @@ async fn upload_chunks(
         });
 
     file_api
-        .upload_chunks_in_batches(chunks_reader, transfer_outputs_map, verify_store)
+        .upload_chunks_in_batches(chunks_reader, content_payments_map, verify_store)
         .await?;
     Ok(())
 }
