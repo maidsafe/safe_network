@@ -314,6 +314,7 @@ impl RecordStore for DiskBackedRecordStore {
                 "Unverified Record {:?} already exists.",
                 PrettyPrintRecordKey::from(record.key.clone())
             );
+
             // Blindly sent to validation to allow double spend can be detected.
             // TODO: consider avoid throw duplicated chunk to validation.
         }

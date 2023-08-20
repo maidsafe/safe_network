@@ -10,7 +10,7 @@ use super::{
     wallet_file::{
         create_received_dbcs_dir, get_wallet, load_received_dbcs, store_created_dbcs, store_wallet,
     },
-    Error, KeyLessWallet, Result, TransferOutputsMap,
+    ContentPaymentsMap, Error, KeyLessWallet, Result,
 };
 use crate::client_transfers::{create_transfer, TransferOutputs};
 use itertools::Itertools;
@@ -131,12 +131,12 @@ impl LocalWallet {
 
     /// Add given storage payment proofs to the wallet's cache,
     /// so they can be used when uploading the paid content.
-    pub fn add_payment_proofs(&mut self, proofs: TransferOutputsMap) {
+    pub fn add_payment_proofs(&mut self, proofs: ContentPaymentsMap) {
         self.wallet.payment_transactions.extend(proofs);
     }
 
     /// Return the payment proof for the given content address name if cached.
-    pub fn get_payment_proof(&self, name: &NetworkAddress) -> Option<&TransferOutputs> {
+    pub fn get_payment_proof(&self, name: &NetworkAddress) -> Option<&Vec<Dbc>> {
         self.wallet.payment_transactions.get(name)
     }
 
@@ -171,33 +171,54 @@ impl LocalWallet {
         &mut self,
         all_data_payments: BTreeMap<NetworkAddress, Vec<(PublicAddress, Token)>>,
         reason_hash: Option<Hash>,
-    ) -> Result<BTreeMap<NetworkAddress, TransferOutputs>> {
+    ) -> Result<(TransferOutputs, ContentPaymentsMap)> {
         let mut rng = &mut rand::thread_rng();
 
         // create a unique key for each output
         let mut to_unique_keys = BTreeMap::default();
-
-        for (content_addr, payees) in all_data_payments.into_iter() {
+        let mut all_payees_only = vec![];
+        for (content_addr, payees) in all_data_payments.clone().into_iter() {
             let unique_key_vec: Vec<(Token, PublicAddress, [u8; 32])> = payees
                 .into_iter()
                 .map(|(address, amount)| (amount, address, random_derivation_index(&mut rng)))
                 .collect_vec();
+            all_payees_only.extend(unique_key_vec.clone());
             to_unique_keys.insert(content_addr.clone(), unique_key_vec);
         }
 
         let reason_hash = reason_hash.unwrap_or_default();
 
-        let mut all_transfers = BTreeMap::default();
-        for (content_addr, payees) in to_unique_keys.into_iter() {
-            let available_dbcs = self.available_dbcs();
-            trace!("Available DBCs: {:#?}", available_dbcs);
-            let transfer_outputs =
-                create_transfer(available_dbcs.clone(), payees, self.address(), reason_hash)?;
-            self.update_local_wallet(&transfer_outputs);
-            all_transfers.insert(content_addr.clone(), transfer_outputs);
+        let available_dbcs = self.available_dbcs();
+        trace!("Available DBCs: {:#?}", available_dbcs);
+        let transfer_outputs = create_transfer(
+            available_dbcs.clone(),
+            all_payees_only,
+            self.address(),
+            reason_hash,
+        )?;
+
+        self.update_local_wallet(&transfer_outputs);
+        println!("Transfers applied locally");
+
+        let mut all_transfers_per_address = BTreeMap::default();
+
+        let mut used_dbcs = std::collections::HashSet::new();
+
+        for (content_addr, payees) in all_data_payments {
+            for (payee, _token) in payees {
+                if let Some(dbc) = transfer_outputs.created_dbcs.iter().find(|dbc| {
+                    dbc.public_address() == &payee && !used_dbcs.contains(&dbc.id().to_bytes())
+                }) {
+                    used_dbcs.insert(dbc.id().to_bytes());
+                    let dbcs_for_content: &mut Vec<Dbc> = all_transfers_per_address
+                        .entry(content_addr.clone())
+                        .or_default();
+                    dbcs_for_content.push(dbc.clone());
+                }
+            }
         }
 
-        Ok(all_transfers)
+        Ok((transfer_outputs, all_transfers_per_address))
     }
 
     fn update_local_wallet(&mut self, transfer: &TransferOutputs) {
@@ -260,7 +281,7 @@ impl KeyLessWallet {
             spent_dbcs: BTreeMap::new(),
             available_dbcs: BTreeMap::new(),
             dbcs_created_for_others: vec![],
-            payment_transactions: TransferOutputsMap::default(),
+            payment_transactions: ContentPaymentsMap::default(),
         }
     }
 
