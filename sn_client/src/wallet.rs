@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_transfers::client_transfers::TransferOutputsMap;
+use sn_transfers::client_transfers::ContentPaymentsMap;
 
 use super::Client;
 
@@ -105,7 +105,7 @@ impl WalletClient {
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
         verify_store: bool,
-    ) -> Result<(TransferOutputsMap, Token)> {
+    ) -> Result<(ContentPaymentsMap, Token)> {
         let mut total_cost = Token::zero();
 
         let mut payment_map = BTreeMap::default();
@@ -122,7 +122,7 @@ impl WalletClient {
                 (content_addr, costs)
             });
         }
-
+        info!("Storecosts retrieved");
         while let Some(res) = tasks.join_next().await {
             let (content_addr, amounts_to_pay) = match res {
                 Ok(c) => c,
@@ -150,9 +150,8 @@ impl WalletClient {
         &mut self,
         all_data_payments: BTreeMap<NetworkAddress, Vec<(PublicAddress, Token)>>,
         verify_store: bool,
-    ) -> Result<(BTreeMap<NetworkAddress, TransferOutputs>, Token)> {
+    ) -> Result<(BTreeMap<NetworkAddress, Vec<Dbc>>, Token)> {
         let now = Instant::now();
-
         let mut total_cost = Token::zero();
         for (_data, costs) in all_data_payments.iter() {
             for (_target, cost) in costs {
@@ -163,7 +162,7 @@ impl WalletClient {
                 }
             }
         }
-        let transfer_map = self
+        let (transfers, address_payment_map) = self
             .wallet
             .local_send_storage_payment(all_data_payments, None)
             .await?;
@@ -171,35 +170,18 @@ impl WalletClient {
         // send to network
         trace!("Sending storage payment transfer to the network");
 
-        for transfer in transfer_map.values() {
-            // first push all to the network, then try again and verify.
-            // otherwise all pushes are waiting on all prior verifications
-            self.client.send(transfer.clone(), false).await?;
-
-        }
-
-        trace!("All unverified sends away, now verifying..");
-
-        // now run and verify if needs be.
-        for transfer in transfer_map.values() {
-            let mut tasks = Vec::new();
-
-            tasks.push(self.client.send(transfer.clone(), verify_store));
-
-            for spend_attempt_result in join_all(tasks).await {
-                debug!("Spend has completed: {:?}", spend_attempt_result);
-                if let Err(error) = spend_attempt_result {
-                    warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
-                    self.unconfirmed_txs.push(transfer.clone());
-                    return Err(error);
-                }
-            }
+        let spend_attempt_result = self.client.send(transfers.clone(), verify_store).await;
+        info!("Spend has completed: {:?}", spend_attempt_result);
+        if let Err(error) = spend_attempt_result {
+            warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
+            self.unconfirmed_txs.push(transfers.clone());
+            return Err(error);
         }
 
         let elapsed = now.elapsed();
         println!("After {elapsed:?}, All transfers made for total payment of {total_cost:?} nano tokens. ");
 
-        Ok((transfer_map, total_cost))
+        Ok((address_payment_map, total_cost))
     }
 
     /// Resend failed txs
@@ -235,6 +217,7 @@ impl Client {
     /// This can optionally verify the spend has been correctly stored before returning
     pub async fn send(&self, transfer: TransferOutputs, verify_store: bool) -> Result<()> {
         let mut tasks = Vec::new();
+
         for spend_request in &transfer.all_spend_requests {
             trace!(
                 "sending spend request to the network: {:?}: {spend_request:#?}",
@@ -255,7 +238,10 @@ impl Client {
     pub async fn send_without_verify(&self, transfer: TransferOutputs) -> Result<()> {
         let mut tasks = Vec::new();
         for spend_request in &transfer.all_spend_requests {
-            trace!("sending spend request to the network: {spend_request:#?}");
+            trace!(
+                "sending spend request to the network: {:?}: {spend_request:#?}",
+                spend_request.signed_spend.dbc_id()
+            );
             tasks.push(self.network_store_spend(spend_request.clone(), false));
         }
 
@@ -324,7 +310,6 @@ pub async fn send(
                 // save the error state, but break out of the loop so we can save
                 did_error = true;
                 break;
-
             }
 
             attempts += 1;

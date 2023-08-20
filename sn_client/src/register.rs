@@ -292,12 +292,7 @@ impl ClientRegister {
         };
 
         // Register edits might exist so we cannot be sure that jsut because we get a record back that this should fail
-        let expect_no_prior_record = false;
-        Ok(self
-            .client
-            .network
-            .put_record(record, verify_store, expect_no_prior_record)
-            .await?)
+        Ok(self.client.network.put_record(record, verify_store).await?)
     }
 
     // Retrieve a `Register` from the Network.

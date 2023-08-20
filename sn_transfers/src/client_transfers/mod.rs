@@ -38,7 +38,7 @@ pub use self::transfer::create_transfer;
 use sn_dbc::{Dbc, DbcTransaction, DerivationIndex, DerivedKey, PublicAddress, SignedSpend, Token};
 use sn_protocol::NetworkAddress;
 
-pub type TransferOutputsMap = BTreeMap<NetworkAddress, TransferOutputs>;
+pub type ContentPaymentsMap = BTreeMap<NetworkAddress, Vec<Dbc>>;
 
 /// The input details necessary to
 /// carry out a transfer of tokens.

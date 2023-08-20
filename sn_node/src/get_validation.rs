@@ -37,7 +37,7 @@ impl Node {
         let key = NetworkAddress::from_dbc_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, re_attempt, false)
+            .get_record_from_network(key, None, re_attempt)
             .await
             .map_err(|_| Error::SpendNotFound(address))?;
         debug!(
@@ -86,7 +86,7 @@ impl Node {
         let record_key = address.as_record_key().ok_or(error.clone())?;
         let record = self
             .network
-            .get_record_from_network(record_key, None, false, false)
+            .get_record_from_network(record_key, None, false)
             .await
             .map_err(|_| error.clone())?;
         let header = RecordHeader::from_record(&record).map_err(|_| error.clone())?;
