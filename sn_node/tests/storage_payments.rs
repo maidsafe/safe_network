@@ -115,17 +115,10 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
 
     assert_eq!(subset_of_transfer_outputs_map.len(), subset_len);
 
-    // Sending transfers subset should be fine
-    for transfers_outputs in subset_of_transfer_outputs_map.values() {
-        if let Err(err) = client.send(transfers_outputs.clone(), true).await {
-            eyre::bail!("Failed to send transfer: {}", err);
-        }
-    }
-
-    // now let's request to pay for all addresses, even that we've already paid for a subset of them
+    // now let's request to upload all addresses, even that we've already paid for a subset of them
     let verify_store = false;
     let res = files_api
-        .upload_with_transfers(content_bytes, &subset_of_transfer_outputs_map, verify_store)
+        .upload_with_payments(content_bytes, &subset_of_transfer_outputs_map, verify_store)
         .await;
     assert!(
         res.is_err(),
@@ -217,7 +210,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         .await?;
 
     files_api
-        .upload_with_transfers(content_bytes, &transfer_outputs_map, true)
+        .upload_with_payments(content_bytes, &transfer_outputs_map, true)
         .await?;
 
     files_api.read_bytes(content_addr).await?;
@@ -253,20 +246,18 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         );
     }
 
-    let bad_transfer_outputs_map = wallet_client
+    let (bad_transfer_outputs, contents_payment_map) = wallet_client
         .into_wallet()
         .local_send_storage_payment(no_data_payments, None)
         .await?;
 
-    // valid spends
-    for transfers_outputs in bad_transfer_outputs_map.values() {
-        client.send(transfers_outputs.clone(), false).await?;
-    }
+    // invalid spends
+    client.send(bad_transfer_outputs.clone(), false).await?;
 
     sleep(Duration::from_secs(5)).await;
     // it should fail to store as the amount paid is not enough
     files_api
-        .upload_with_transfers(content_bytes.clone(), &bad_transfer_outputs_map, false)
+        .upload_with_payments(content_bytes.clone(), &contents_payment_map, false)
         .await?;
 
     assert!(matches!(

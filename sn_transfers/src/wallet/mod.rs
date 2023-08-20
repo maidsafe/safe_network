@@ -57,7 +57,7 @@ mod keys;
 mod local_store;
 mod wallet_file;
 
-use crate::client_transfers::TransferOutputsMap;
+use crate::client_transfers::ContentPaymentsMap;
 
 pub use self::{
     error::{Error, Result},
@@ -84,7 +84,7 @@ pub(super) struct KeyLessWallet {
     /// transfer history.
     dbcs_created_for_others: Vec<Dbc>,
     /// Cached proofs of storage transactions made to be used for uploading the paid content.
-    payment_transactions: TransferOutputsMap,
+    payment_transactions: ContentPaymentsMap,
 }
 
 /// Return the name of a PublicAddress.

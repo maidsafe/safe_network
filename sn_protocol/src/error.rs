@@ -69,9 +69,6 @@ pub enum Error {
     /// Payment proof received has no inputs
     #[error("Payment proof received for {0:?} has no dbc for this node in its transaction")]
     NoPaymentToThisNode(XorName),
-    /// The id of the fee output found in a storage payment proof is invalid
-    #[error("The id of the fee output found in a storage payment proof is invalid: {0:?}")]
-    PaymentProofInvalidFee(Token),
     /// Payment proof provided deemed invalid
     #[error("Payment proof provided deemed invalid for item's name {addr_name:?}: {reason}")]
     InvalidPaymentProof {
