@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.25](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.24...sn_networking-v0.4.25) - 2023-08-21
+
+### Fixed
+- *(replication)* set distance range on close group change
+
+### Other
+- *(network)* remove unused `NetworkEvent::CloseGroupUpdated`
+
 ## [0.4.24](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.23...sn_networking-v0.4.24) - 2023-08-21
 
 ### Other
