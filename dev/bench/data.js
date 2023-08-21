@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1692373994728,
+  "lastUpdate": 1692623355455,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5572,6 +5572,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 1.3987326462196923,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "david.irvine@maidsafe.net",
+            "name": "David Irvine",
+            "username": "dirvine"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "55421d3881188bd44dd693ba591a5bfb3c5d52cf",
+          "message": "chore: update circular vec to handle errors.\n\nAlso update replication fetchers to not use is_some_and (unstable)",
+          "timestamp": "2023-08-21T11:45:48Z",
+          "tree_id": "372ee9bf5f7bab01e90598f6a4fde217046db244",
+          "url": "https://github.com/maidsafe/safe_network/commit/55421d3881188bd44dd693ba591a5bfb3c5d52cf"
+        },
+        "date": 1692623354180,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.192177638371307,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.108638558363696,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 1.4282176065749361,
             "unit": "MiB/s"
           }
         ]
