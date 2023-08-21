@@ -932,6 +932,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.88.44](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.43...sn_node-v0.88.44) - 2023-08-21
+
+### Fixed
+- *(replication)* set distance range on close group change
+
+### Other
+- *(network)* remove unused `NetworkEvent::CloseGroupUpdated`
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
