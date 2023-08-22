@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.26](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.25...sn_client-v0.87.26) - 2023-08-22
+
+### Other
+- updated the following local packages: sn_networking
+
 ## [0.87.25](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.24...sn_client-v0.87.25) - 2023-08-22
 
 ### Fixed
