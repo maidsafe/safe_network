@@ -940,6 +940,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(network)* remove unused `NetworkEvent::CloseGroupUpdated`
 
+## [0.88.45](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.44...sn_node-v0.88.45) - 2023-08-22
+
+### Fixed
+- fixes to allow upload file works properly
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
