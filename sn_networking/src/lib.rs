@@ -68,6 +68,11 @@ use tracing::warn;
 /// The peer should be present among the CLOSE_GROUP_SIZE if we're fetching the close_group(peer)
 pub const CLOSE_GROUP_SIZE: usize = 8;
 
+/// What is the largest packet to send over the network.
+/// Records larger than this will be rejected.
+// TODO: revisit once utxo is in
+pub const MAX_PACKET_SIZE: usize = 1024 * 1024 * 2; // the chunk size is 1mb, so should be higher than that to prevent failures
+
 // Timeout for requests sent/received through the request_response behaviour.
 const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
 // Sets the keep-alive timeout of idle connections.
@@ -162,7 +167,7 @@ impl SwarmDriver {
             // Set to `None` to ensure periodic publish disabled.
             .set_publication_interval(None)
             // 1mb packet size
-            .set_max_packet_size(1024 * 1024)
+            .set_max_packet_size(MAX_PACKET_SIZE)
             // How many nodes _should_ store data.
             .set_replication_factor(
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
@@ -211,7 +216,7 @@ impl SwarmDriver {
 
         // 1mb packet size
         let _ = kad_cfg
-            .set_max_packet_size(1024 * 1024)
+            .set_max_packet_size(MAX_PACKET_SIZE)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
             // How many nodes _should_ store data.
@@ -304,7 +309,7 @@ impl SwarmDriver {
             }
 
             let store_cfg = DiskBackedRecordStoreConfig {
-                max_value_bytes: 1024 * 1024,
+                max_value_bytes: MAX_PACKET_SIZE, // TODO, does this need to be _less_ than MAX_PACKET_SIZE
                 storage_dir: storage_dir_path,
                 replication_interval,
                 ..Default::default()
