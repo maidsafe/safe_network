@@ -583,7 +583,7 @@ impl SwarmDriver {
             }
             KademliaEvent::UnroutablePeer { peer } => {
                 trace!(peer_id = %peer, "KademliaEvent: UnroutablePeer");
-                self.unroutable_peers.push(peer);
+                let _ = self.unroutable_peers.push(peer);
             }
             other => {
                 trace!("KademliaEvent ignored: {other:?}");

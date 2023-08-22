@@ -45,7 +45,7 @@ use libp2p::{
     kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
-    swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder, dial_opts::DialOpts},
+    swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport,
 };
 #[cfg(feature = "quic")]
