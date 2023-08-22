@@ -151,17 +151,8 @@ impl DiskBackedRecordStore {
 
     pub fn put_verified(&mut self, r: Record) -> Result<()> {
         let content_hash = XorName::from_content(&r.value);
-        trace!(
-            "PUT a verified Record: {:?} (content_hash {content_hash:?})",
-            PrettyPrintRecordKey::from(r.key.clone())
-        );
-        if r.value.len() >= self.config.max_value_bytes {
-            warn!(
-                "Record not stored. Value too large: {} bytes",
-                r.value.len()
-            );
-            return Err(Error::ValueTooLarge);
-        }
+        let record_key = PrettyPrintRecordKey::from(r.key.clone());
+        trace!("PUT a verified Record: {record_key:?} (content_hash {content_hash:?})");
 
         self.prune_storage_if_needed_for_record(&r.key)?;
 
@@ -173,10 +164,12 @@ impl DiskBackedRecordStore {
         tokio::spawn(async move {
             match fs::write(file_path, r.value) {
                 Ok(_) => {
-                    trace!("Wrote record to disk! filename: {filename}");
+                    trace!("Wrote record {record_key:?} to disk! filename: {filename}");
                 }
                 Err(err) => {
-                    error!("Error writing file. filename: {filename}, error: {err:?}");
+                    error!(
+                        "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
+                    );
                 }
             }
         });
@@ -308,6 +301,14 @@ impl RecordStore for DiskBackedRecordStore {
     }
 
     fn put(&mut self, record: Record) -> Result<()> {
+        if record.value.len() >= self.config.max_value_bytes {
+            warn!(
+                "Record not stored. Value too large: {} bytes",
+                record.value.len()
+            );
+            return Err(Error::ValueTooLarge);
+        }
+
         if self.records.contains(&record.key) {
             trace!(
                 "Unverified Record {:?} already exists.",

@@ -19,7 +19,7 @@ use libp2p::{
 use sn_dbc::Token;
 use sn_protocol::{
     messages::{Request, Response},
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use std::collections::HashSet;
 use tokio::sync::oneshot;
@@ -172,14 +172,29 @@ impl SwarmDriver {
                 let _ = sender.send(record);
             }
             SwarmCmd::PutRecord { record, sender } => {
-                let request_id = self
+                let record_key = PrettyPrintRecordKey::from(record.key.clone());
+                trace!(
+                    "Putting record sized: {:?} to network {:?}",
+                    record.value.len(),
+                    record_key
+                );
+                let res = match self
                     .swarm
                     .behaviour_mut()
                     .kademlia
-                    .put_record(record, Quorum::All)?;
-                trace!("Sending record {request_id:?} to network");
+                    .put_record(record, Quorum::All)
+                {
+                    Ok(request_id) => {
+                        trace!("Sent record {record_key:?} to network. Request id: {request_id:?} to network");
+                        Ok(())
+                    }
+                    Err(error) => {
+                        error!("Error sending record {record_key:?} to network");
+                        Err(Error::from(error))
+                    }
+                };
 
-                if let Err(err) = sender.send(Ok(())) {
+                if let Err(err) = sender.send(res) {
                     error!("Could not send response to PutRecord cmd: {:?}", err);
                 }
             }
@@ -347,7 +362,7 @@ impl SwarmDriver {
     // Then for a target bearing b011111 as prefix, all nodes in (7, b0) are its close_group peers.
     // Then the node b11111X. But b11111X's close_group peers [(1, b1111), (2, b111), (5, b11)]
     // are none among target b011111's close range.
-    // Hence, the ilog2 calculation based on close_range cann't cover such case.
+    // Hence, the ilog2 calculation based on close_range cannot cover such case.
     // And have to sort all nodes to figure out whether self is among the close_group to the target.
     fn is_in_close_range(&self, target: &NetworkAddress, all_peers: Vec<PeerId>) -> bool {
         if all_peers.len() <= CLOSE_GROUP_SIZE + 2 {
@@ -358,7 +373,7 @@ impl SwarmDriver {
         match sort_peers_by_address(all_peers, target, CLOSE_GROUP_SIZE + 2) {
             Ok(close_group) => close_group.contains(&self.self_peer_id),
             Err(err) => {
-                warn!("Cann't get sorted peers for {target:?} with error {err:?}");
+                warn!("Could not get sorted peers for {target:?} with error {err:?}");
                 true
             }
         }
