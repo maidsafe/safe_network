@@ -82,12 +82,13 @@ fn criterion_benchmark(c: &mut Criterion) {
         exit(1);
     }
 
+    fund_cli_wallet();
+
     let sizes = vec![1, 10]; // File sizes in MB. Add more sizes as needed
 
     for size in sizes.iter() {
         let dir = create_file(*size);
         let dir_path = dir.path().to_str().unwrap();
-        fund_cli_wallet();
 
         // Wait little bit for the fund to be settled.
         std::thread::sleep(Duration::from_secs(10));

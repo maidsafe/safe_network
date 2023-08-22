@@ -162,7 +162,7 @@ impl SwarmDriver {
             // Set to `None` to ensure periodic publish disabled.
             .set_publication_interval(None)
             // 1mb packet size
-            .set_max_packet_size(1024 * 1024)
+            .set_max_packet_size(1024 * 1024 * 20)
             // How many nodes _should_ store data.
             .set_replication_factor(
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
@@ -211,7 +211,7 @@ impl SwarmDriver {
 
         // 1mb packet size
         let _ = kad_cfg
-            .set_max_packet_size(1024 * 1024)
+            .set_max_packet_size(1024 * 1024 * 20)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
             // How many nodes _should_ store data.
@@ -304,7 +304,7 @@ impl SwarmDriver {
             }
 
             let store_cfg = DiskBackedRecordStoreConfig {
-                max_value_bytes: 1024 * 1024,
+                max_value_bytes: 1024 * 1024 * 20,
                 storage_dir: storage_dir_path,
                 replication_interval,
                 ..Default::default()
