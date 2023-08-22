@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1692704736622,
+  "lastUpdate": 1692704738267,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -12558,6 +12558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 206,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "20ea0a69d87f43c70963b4dbce97e0169f2aef3d",
+          "message": "fix: fixes to allow upload file works properly\n\nThis commit contains couple of fixes to make upload file\nwithout verification works as expected.\n1, Avoid extra wait on spend existence check via get_record\n2, Pause between batch uploads to allow network settle down\n3, Avoid out of index panic when try parse RecordHead",
+          "timestamp": "2023-08-22T10:27:56Z",
+          "tree_id": "a53852d01fd1dd71b9d3f42f4946c6471b5f5168",
+          "url": "https://github.com/maidsafe/safe_network/commit/20ea0a69d87f43c70963b4dbce97e0169f2aef3d"
+        },
+        "date": 1692704737866,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 75.710464,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 63,
             "unit": "MB"
           }
         ]
