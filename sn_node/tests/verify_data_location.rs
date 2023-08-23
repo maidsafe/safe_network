@@ -44,7 +44,7 @@ const CHUNK_SIZE: usize = 1024;
 // for the old peer to be removed from the routing table.
 // Replication is then kicked off to distribute the data to the new closest
 // nodes, hence verification has to be performed after this.
-const VERIFICATION_DELAY: Duration = Duration::from_secs(300);
+const VERIFICATION_DELAY: Duration = Duration::from_secs(90);
 
 // Number of times to retry verification if it fails
 const VERIFICATION_ATTEMPTS: usize = 3;
@@ -225,8 +225,14 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
                     .filter(|expected| !actual_holders.contains(expected))
                     .for_each(|expected| missing_peers.push(*expected));
 
-                error!("Record {:?} is not stored by {missing_peers:?}", key,);
-                println!("Record {:?} is not stored by {missing_peers:?}", key,);
+                error!(
+                    "Record {:?} is not stored by {missing_peers:?}",
+                    PrettyPrintRecordKey::from(key.clone()),
+                );
+                println!(
+                    "Record {:?} is not stored by {missing_peers:?}",
+                    PrettyPrintRecordKey::from(key.clone()),
+                );
             }
 
             let mut failed_peers = Vec::new();
