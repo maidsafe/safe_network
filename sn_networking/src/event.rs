@@ -536,6 +536,10 @@ impl SwarmDriver {
                 // here BootstrapOk::num_remaining refers to the remaining random peer IDs to query, one per
                 // bucket that still needs refreshing.
                 trace!("Kademlia Bootstrap with {id:?} progressed with {bootstrap_result:?} and step {step:?}");
+                // set to false to enable another bootstrap step to be started if required.
+                if step.last {
+                    self.bootstrap_ongoing = false;
+                }
             }
             KademliaEvent::RoutingUpdated {
                 peer,
@@ -550,10 +554,20 @@ impl SwarmDriver {
 
                     info!("Connected peers: {connected_peers}");
                     // kad bootstrap process needs at least one peer in the RT be carried out.
-                    if !self.bootstrap_done {
-                        let res = self.swarm.behaviour_mut().kademlia.bootstrap();
-                        debug!("Initiated kad bootstrap process {res:?}");
-                        self.bootstrap_done = true;
+                    // Carry out bootstrap until we have at least CLOSE_GROUP_SIZE peers
+                    if connected_peers <= CLOSE_GROUP_SIZE && !self.bootstrap_ongoing {
+                        debug!("Trying to initiate bootstrap as we have less than {CLOSE_GROUP_SIZE} peers");
+                        match self.swarm.behaviour_mut().kademlia.bootstrap() {
+                            Ok(query_id) => {
+                                debug!(
+                                    "Initiated kad bootstrap process with query id {query_id:?}"
+                                );
+                                self.bootstrap_ongoing = true;
+                            }
+                            Err(err) => {
+                                error!("Failed to initiate kad bootstrap with error: {err:?}")
+                            }
+                        };
                     }
                 }
 
