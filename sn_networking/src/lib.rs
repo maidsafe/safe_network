@@ -41,11 +41,12 @@ use libp2p::mdns;
 use libp2p::{
     identity::Keypair,
     kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
+    core::{muxing::StreamMuxerBox, transport::Boxed, upgrade},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
-    Multiaddr, PeerId, Transport,
-    relay,
+    Multiaddr, PeerId, Transport, tcp, noise,
+    relay::{self, client::Transport as ClientTransport},
 };
 use rand::Rng;
 use sn_dbc::Token;
@@ -59,6 +60,7 @@ use std::{
     num::NonZeroUsize,
     path::PathBuf,
     time::Duration,
+    io,
 };
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
@@ -131,6 +133,8 @@ pub struct SwarmDriver {
     /// Perform initial kad bootstrap process on adding the first peer
     bootstrap_done: bool,
     is_client: bool,
+    is_relay_client: bool,
+    relay_servers: HashMap<PeerId, Multiaddr>,
 }
 
 impl SwarmDriver {
@@ -190,6 +194,7 @@ impl SwarmDriver {
             kad_cfg,
             local,
             false,
+            false,
             replication_interval,
             None,
             ProtocolSupport::Full,
@@ -231,6 +236,7 @@ impl SwarmDriver {
             kad_cfg,
             local,
             true,
+            false,
             // Nonsense interval for the client which never replicates
             Duration::from_secs(1000),
             request_timeout,
@@ -271,6 +277,7 @@ impl SwarmDriver {
         kad_cfg: KademliaConfig,
         local: bool,
         is_client: bool,
+        is_relay_client: bool,
         replication_interval: Duration,
         request_response_timeout: Option<Duration>,
         req_res_protocol: ProtocolSupport,
@@ -348,20 +355,9 @@ impl SwarmDriver {
         };
 
         // Transport
-        let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
-            .upgrade(libp2p::core::upgrade::Version::V1)
-            .authenticate(
-                libp2p::noise::Config::new(&keypair)
-                    .expect("Signing libp2p-noise static DH keypair failed."),
-            )
-            .multiplex(libp2p::yamux::Config::default())
-            .boxed();
+        let (relay_transport, relay_client) = relay::client::new(peer_id);
 
-        if !local {
-            debug!("Preventing non-global dials");
-            // Wrap TCP in a transport that prevents dialing local addresses.
-            transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
-        }
+        let transport = build_transport(keypair.clone(), relay_transport, local)?;
 
         // Disable AutoNAT if we are either running locally or a client.
         let autonat = if !local && !is_client {
@@ -390,6 +386,13 @@ impl SwarmDriver {
         };
         let relay = Toggle::from(relay);
 
+        let relay_client = if !local && !is_client {
+            Some(relay_client)
+        } else {
+            None
+        };
+        let relay_client = Toggle::from(relay_client);
+
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
@@ -398,6 +401,7 @@ impl SwarmDriver {
             mdns,
             autonat,
             relay,
+            relay_client,
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
@@ -420,6 +424,8 @@ impl SwarmDriver {
             close_group: Default::default(),
             bootstrap_done: false,
             is_client,
+            is_relay_client,
+            relay_servers: HashMap::new(),
         };
 
         Ok((
@@ -1062,6 +1068,30 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
         .iter()
         .filter(|p| !matches!(p, Protocol::P2p(_)))
         .collect()
+}
+
+// Build transport from options provided
+pub fn build_transport(keypair: Keypair, relay_transport: ClientTransport, local: bool) -> io::Result<Boxed<(PeerId, StreamMuxerBox)>> {
+    let tcp_transport = tcp::tokio::Transport::default();
+    let tcp_relay_transport = relay_transport
+        .or_transport(tcp_transport)
+        .upgrade(upgrade::Version::V1Lazy)
+        .authenticate(
+        noise::Config::new(&keypair).expect("Signing libp2p-noise static DH keypair failed."),
+        )
+        .multiplex(libp2p::yamux::Config::default());
+
+    let mut transport = tcp_relay_transport
+        .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+        .boxed();
+
+    if !local {
+        debug!("Preventing non-global dials");
+        // Wrap in a transport that prevents dialing local addresses.
+        transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
+    }
+
+    Ok(transport)
 }
 
 #[cfg(test)]
