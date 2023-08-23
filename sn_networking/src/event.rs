@@ -32,7 +32,7 @@ use libp2p::{
     request_response::{self, ResponseChannel as PeerResponseChannel},
     swarm::{behaviour::toggle::Toggle, NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
-    relay,
+    relay, dcutr,
 };
 use sn_protocol::{
     messages::{Request, Response},
@@ -63,6 +63,7 @@ pub(super) struct NodeBehaviour {
     pub(super) autonat: Toggle<autonat::Behaviour>,
     pub(super) relay: Toggle<relay::Behaviour>,
     pub(super) relay_client: Toggle<relay::client::Behaviour>,
+    pub(super) dcutr: Toggle<dcutr::Behaviour>,
 }
 
 /// NodeEvent enum
@@ -76,6 +77,7 @@ pub(super) enum NodeEvent {
     Autonat(autonat::Event),
     Relay(relay::Event),
     RelayClient(relay::client::Event),
+    Dcutr(dcutr::Event),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -118,6 +120,12 @@ impl From<relay::Event> for NodeEvent {
 impl From<relay::client::Event> for NodeEvent {
     fn from(event: relay::client::Event) -> Self {
         NodeEvent::RelayClient(event)
+    }
+}
+
+impl From<dcutr::Event> for NodeEvent {
+    fn from(event: dcutr::Event) -> Self {
+        NodeEvent::Dcutr(event)
     }
 }
 
@@ -459,12 +467,15 @@ impl SwarmDriver {
             }
             SwarmEvent::Behaviour(NodeEvent::Relay(event)) => {
                 info!("Relay event: {:?}", event)
-            },
+            }
             SwarmEvent::Behaviour(NodeEvent::RelayClient(
                 relay::client::Event::ReservationReqAccepted { relay_peer_id, renewal, limit },
             )) => {
                 info!("Relay peer id {} accepted our reservation request (renewal: {}, limit: {:?})", relay_peer_id, renewal, limit );
-            },
+            }
+            SwarmEvent::Behaviour(NodeEvent::Dcutr(event)) => {
+                info!("Dcutr event: {:?}", event)
+            }
             other => debug!("SwarmEvent has been ignored: {other:?}"),
         }
         Ok(())

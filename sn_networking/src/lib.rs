@@ -47,6 +47,7 @@ use libp2p::{
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
     Multiaddr, PeerId, Transport, tcp, noise,
     relay::{self, client::Transport as ClientTransport},
+    dcutr,
 };
 use rand::Rng;
 use sn_dbc::Token;
@@ -393,6 +394,13 @@ impl SwarmDriver {
         };
         let relay_client = Toggle::from(relay_client);
 
+        let dcutr = if !local && !is_client {
+            Some(dcutr::Behaviour::new(peer_id))
+        } else {
+            None
+        };
+        let dcutr = Toggle::from(dcutr);
+
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
@@ -402,6 +410,7 @@ impl SwarmDriver {
             autonat,
             relay,
             relay_client,
+            dcutr,
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
