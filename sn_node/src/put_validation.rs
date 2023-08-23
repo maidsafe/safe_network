@@ -64,7 +64,7 @@ impl Node {
                     return Err(ProtocolError::RecordKeyMismatch);
                 }
 
-                self.validate_and_store_spends(signed_spends).await
+                self.validate_and_store_spends(signed_spends, true).await
             }
             RecordKind::Register => {
                 let register = try_deserialize_record::<SignedRegister>(&record)?;
@@ -184,6 +184,7 @@ impl Node {
     pub(crate) async fn validate_and_store_spends(
         &self,
         signed_spends: Vec<SignedSpend>,
+        is_new_put: bool,
     ) -> Result<CmdOk, ProtocolError> {
         // make sure that the dbc_ids match
         let dbc_id = if let Some((first, elements)) = signed_spends.split_first() {
@@ -230,15 +231,31 @@ impl Node {
 
         // validate the signed spends against the network and the local copy
         let validated_spends = match self
-            .signed_spend_validation(signed_spends, dbc_id, present_locally)
+            .signed_spend_validation(signed_spends.clone(), dbc_id, present_locally)
             .await?
         {
             Some(spends) => spends,
             None => {
                 // data is already present
-                return Ok(CmdOk::DataAlreadyPresent);
+                if is_new_put {
+                    return Ok(CmdOk::DataAlreadyPresent);
+                } else {
+                    debug!(
+                        "Trust replictated spend for {:?}",
+                        PrettyPrintRecordKey::from(key.clone())
+                    );
+                    // TODO: may need to tweak the `signed_spend_validation` function,
+                    //       instead of trusting replicated spend directly
+                    signed_spends
+                }
             }
         };
+
+        debug!(
+            "Got {} validated spends for {:?}",
+            validated_spends.len(),
+            PrettyPrintRecordKey::from(key.clone())
+        );
 
         // store the record into the local storage
         let record = Record {
