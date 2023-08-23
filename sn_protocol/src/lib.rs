@@ -193,7 +193,7 @@ impl Display for NetworkAddress {
 /// So clients can use the hex string for xorname and record keys interchangeably.
 /// This makes errors actionable for clients.
 /// The only cost is converting kad::RecordKey into it before sending it in errors: `record_key.into()`
-#[derive(Clone)]
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub struct PrettyPrintRecordKey(RecordKey);
 
 // seamless conversion from `kad::RecordKey` to `PrettyPrintRecordKey`
