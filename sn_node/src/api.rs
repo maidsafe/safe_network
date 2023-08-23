@@ -241,19 +241,18 @@ impl Node {
                     ReplicatedData::DbcSpend(signed_spend) => {
                         if let Some(spend) = signed_spend.first() {
                             let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-                            debug!(
-                                "DbcSpend received for replication: {:?}",
-                                dbc_addr.xorname()
-                            );
+                            let dbc_name = dbc_addr.xorname();
+                            debug!("DbcSpend received for replication: {:?}", dbc_name);
                             let addr = NetworkAddress::from_dbc_address(dbc_addr);
 
-                            let success = self.validate_and_store_spends(signed_spend).await?;
-                            trace!("ReplicatedData::Dbc with {addr:?} has been validated and stored. {success:?}");
+                            match self.validate_and_store_spends(signed_spend, false).await {
+                                Ok(success) => trace!("ReplicatedData::Dbc with {addr:?}({dbc_name:?}) has been validated and stored. {success:?}"),
+                                Err(err) => trace!("ReplicatedData::Dbc with {addr:?}({dbc_name:?}) failed with validation {err:?}"),
+                            }
                         } else {
                             // Put validations make sure that we have >= 1 spends and with the same
                             // dbc_id
                             error!("Got ReplicatedData::DbcSpend with zero elements");
-                            return Ok(());
                         }
                     }
                     ReplicatedData::Register(register) => {
@@ -280,7 +279,6 @@ impl Node {
             }
             other => {
                 warn!("handle_response not implemented for {other:?}");
-                return Ok(());
             }
         };
 
