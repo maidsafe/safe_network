@@ -353,7 +353,7 @@ impl Node {
                     return Err(error);
                 }
             }
-        } else {
+        } else if validate_payment_amount {
             // There is no DBC for us, so we dont store it.
             return Err(ProtocolError::NoPaymentToThisNode(addr_name));
         }

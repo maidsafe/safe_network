@@ -15,7 +15,7 @@ use libp2p::{
 use sn_networking::{sort_peers_by_address, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, Request},
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use std::collections::BTreeMap;
 use tokio::task::JoinHandle;
@@ -134,7 +134,10 @@ impl Node {
         for (key, maybe_peer) in keys_to_fetch {
             match maybe_peer {
                 Some(peer) => {
-                    trace!("Fetching replication {key:?} from {peer:?}");
+                    trace!(
+                        "Fetching replication {:?} from {peer:?}",
+                        PrettyPrintRecordKey::from(key.clone())
+                    );
                     let request = Request::Query(Query::GetReplicatedData {
                         requester: NetworkAddress::from_peer(self.network.peer_id),
                         address: NetworkAddress::from_record_key(key),
@@ -144,12 +147,18 @@ impl Node {
                 None => {
                     let node = self.clone();
                     let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
-                        trace!("Fetching replication {key:?} from the network");
+                        trace!(
+                            "Fetching replication {:?} from the network",
+                            PrettyPrintRecordKey::from(key.clone())
+                        );
                         let record = node
                             .network
                             .get_record_from_network(key.clone(), None, false)
                             .await?;
-                        trace!("Got Replication Record {key:?} from network, validating and storing it");
+                        trace!(
+                            "Got Replication Record {:?} from network, validating and storing it",
+                            PrettyPrintRecordKey::from(key)
+                        );
                         let _ = node.validate_and_store_record(record, false).await?;
                         Ok(())
                     });
