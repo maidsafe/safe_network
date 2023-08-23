@@ -202,17 +202,12 @@ impl SwarmDriver {
         // Listen on the provided address
         #[cfg(not(feature = "quic"))]
         let addr = Multiaddr::from(addr.ip()).with(Protocol::Tcp(addr.port()));
-        #[cfg(not(feature = "quic"))]
-        let _listener_id = swarm_driver
-            .swarm
-            .listen_on(addr)
-            .expect("Failed to listen on the provided address");
 
         #[cfg(feature = "quic")]
         let addr = Multiaddr::from(addr.ip())
             .with(Protocol::Udp(addr.port()))
             .with(Protocol::QuicV1);
-        #[cfg(feature = "quic")]
+
         let _listener_id = swarm_driver
             .swarm
             .listen_on(addr)
@@ -374,9 +369,7 @@ impl SwarmDriver {
             .boxed();
 
         #[cfg(feature = "quic")]
-        let quic_transport = libp2p_quic::tokio::Transport::new(quic::Config::new(&keypair));
-        #[cfg(feature = "quic")]
-        let mut transport = quic_transport
+        let mut transport = libp2p_quic::tokio::Transport::new(quic::Config::new(&keypair))
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
 
