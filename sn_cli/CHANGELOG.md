@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.80.59](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.58...sn_cli-v0.80.59) - 2023-08-24
+
+### Other
+- rust 1.72.0 fixes
+
 ## [0.80.58](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.57...sn_cli-v0.80.58) - 2023-08-24
 
 ### Other
