@@ -6,13 +6,20 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
-
-use libp2p::request_response::{self, Message};
+use crate::{
+    error::Error, record_store_api::RecordStoreAPI, MsgResponder, NetworkEvent, SwarmDriver,
+};
+use libp2p::{
+    kad::store::RecordStore,
+    request_response::{self, Message},
+};
 use sn_protocol::messages::{Request, Response};
 use tracing::{trace, warn};
 
-impl SwarmDriver {
+impl<TRecordStore> SwarmDriver<TRecordStore>
+where
+    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
+{
     /// Forwards `Request` to the upper layers using `Sender<NetworkEvent>`. Sends `Response` to the peers
     #[allow(clippy::result_large_err)]
     pub fn handle_msg(
