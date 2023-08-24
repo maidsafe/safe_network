@@ -235,7 +235,7 @@ async fn start_node(
     let started_instant = std::time::Instant::now();
 
     info!("Starting node ...");
-    let running_node = Node::run(keypair, node_socket_addr, peers, local, root_dir).await?;
+    let running_node = Node::run(keypair, node_socket_addr, peers, local, root_dir)?;
 
     // write the PID to the root dir
     let pid = std::process::id();

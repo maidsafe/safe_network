@@ -76,7 +76,7 @@ impl Node {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
-    pub async fn run(
+    pub fn run(
         keypair: Keypair,
         addr: SocketAddr,
         initial_peers: Vec<Multiaddr>,
