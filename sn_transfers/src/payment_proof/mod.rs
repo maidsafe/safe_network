@@ -209,7 +209,7 @@ mod tests {
     #[test]
     fn test_payment_proof_basic() -> Result<()> {
         assert!(
-            matches!(build_payment_proofs(vec![].iter()), Err(Error::ProofTree(err)) if err == "Cannot build payment proofs with an empty list of addresses")
+            matches!(build_payment_proofs([].iter()), Err(Error::ProofTree(err)) if err == "Cannot build payment proofs with an empty list of addresses")
         );
 
         let name0 = XorName([11; 32]);

@@ -98,7 +98,7 @@ impl SignedRegister {
         if self.base_register != other.base_register {
             return Err(Error::DifferentBaseRegister);
         }
-        self.ops.extend(other.ops.into_iter());
+        self.ops.extend(other.ops);
         Ok(())
     }
 
@@ -109,7 +109,7 @@ impl SignedRegister {
             return Err(Error::DifferentBaseRegister);
         }
         other.verify()?;
-        self.ops.extend(other.ops.into_iter());
+        self.ops.extend(other.ops);
         Ok(())
     }
 
