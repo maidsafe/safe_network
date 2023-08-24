@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1692887736080,
+  "lastUpdate": 1692897580893,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5767,6 +5767,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 12.55573083904391,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "7b863cd9e11ecaa51e6ec042f077b17bdbeb3f1e",
+          "message": "chore: rust 1.72.0 fixes",
+          "timestamp": "2023-08-24T16:14:55Z",
+          "tree_id": "c428a2e1a3c80db3915b47721af3d1a2ed8e1eb6",
+          "url": "https://github.com/maidsafe/safe_network/commit/7b863cd9e11ecaa51e6ec042f077b17bdbeb3f1e"
+        },
+        "date": 1692897579477,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11812468731173048,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.9176627479413746,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 12.659207568794187,
             "unit": "MiB/s"
           }
         ]
