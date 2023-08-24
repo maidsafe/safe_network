@@ -444,13 +444,16 @@ impl SwarmDriver {
                     if let Err(err) = self.handle_swarm_events(swarm_event) {
                         warn!("Error while handling swarm event: {err}");
                     }
+
+                    trace!("SwarmDriver finshed handling event.");
                 },
                 some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
-                        trace!("Swarm Driver received a SwarmCmd from upper layer {cmd}");
+                        trace!("CmdReceiver received a SwarmCmd from upper layer {cmd}");
                         if let Err(err) = self.handle_cmd(cmd) {
                             warn!("Error while handling cmd: {err}");
                         }
+                        trace!("CmdReceiver finshed handling cmd.");
                     },
                     None =>  {
                         trace!("SwarmDriver: The SwarmCmd channel has been closed.");
