@@ -5,7 +5,7 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-use crate::event::NetworkEvent;
+use crate::{event::NetworkEvent, record_store_api::RecordStoreAPI};
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -41,11 +41,11 @@ const MAX_RECORDS_COUNT: usize = 2048;
 const PUTS_PER_PRICE_STEP: usize = 100;
 
 /// A `RecordStore` that stores records on disk.
-pub struct DiskBackedRecordStore {
+pub struct NodeRecordStore {
     /// The identity of the peer owning the store.
     local_key: KBucketKey<PeerId>,
     /// The configuration of the store.
-    config: DiskBackedRecordStoreConfig,
+    config: NodeRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
     records: HashSet<Key>,
     /// Currently only used to notify the record received via network put to be validated.
@@ -57,7 +57,7 @@ pub struct DiskBackedRecordStore {
 
 /// Configuration for a `DiskBackedRecordStore`.
 #[derive(Debug, Clone)]
-pub struct DiskBackedRecordStoreConfig {
+pub struct NodeRecordStoreConfig {
     /// The directory where the records are stored.
     pub storage_dir: PathBuf,
     /// The maximum number of records.
@@ -69,7 +69,7 @@ pub struct DiskBackedRecordStoreConfig {
     pub replication_interval: Duration,
 }
 
-impl Default for DiskBackedRecordStoreConfig {
+impl Default for NodeRecordStoreConfig {
     fn default() -> Self {
         // get a random integer between REPLICATION_INTERVAL_LOWER_BOUND and REPLICATION_INTERVAL_UPPER_BOUND
         let replication_interval = rand::thread_rng()
@@ -84,25 +84,20 @@ impl Default for DiskBackedRecordStoreConfig {
     }
 }
 
-impl DiskBackedRecordStore {
+impl NodeRecordStore {
     /// Creates a new `DiskBackedStore` with the given configuration.
     pub fn with_config(
         local_id: PeerId,
-        config: DiskBackedRecordStoreConfig,
+        config: NodeRecordStoreConfig,
         event_sender: Option<mpsc::Sender<NetworkEvent>>,
     ) -> Self {
-        DiskBackedRecordStore {
+        NodeRecordStore {
             local_key: KBucketKey::from(local_id),
             config,
             records: Default::default(),
             event_sender,
             distance_range: None,
         }
-    }
-
-    /// Returns `true` if the `Key` is present locally
-    pub fn contains(&self, key: &Key) -> bool {
-        self.records.contains(key)
     }
 
     // Converts a Key into a Hex string.
@@ -113,18 +108,6 @@ impl DiskBackedRecordStore {
             hex_string.push_str(&format!("{:02x}", byte));
         }
         hex_string
-    }
-
-    pub fn record_addresses(&self) -> HashSet<NetworkAddress> {
-        self.records
-            .iter()
-            .map(|record_key| NetworkAddress::from_record_key(record_key.clone()))
-            .collect()
-    }
-
-    #[allow(clippy::mutable_key_type)]
-    pub fn record_addresses_ref(&self) -> &HashSet<Key> {
-        &self.records
     }
 
     pub fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {
@@ -147,34 +130,6 @@ impl DiskBackedRecordStore {
                 None
             }
         }
-    }
-
-    pub fn put_verified(&mut self, r: Record) -> Result<()> {
-        let content_hash = XorName::from_content(&r.value);
-        let record_key = PrettyPrintRecordKey::from(r.key.clone());
-        trace!("PUT a verified Record: {record_key:?} (content_hash {content_hash:?})");
-
-        self.prune_storage_if_needed_for_record(&r.key)?;
-
-        let filename = Self::key_to_hex(&r.key);
-        let file_path = self.config.storage_dir.join(&filename);
-        let _ = self.records.insert(r.key);
-
-        // TODO: How could we clean up records if we fail to insert?
-        tokio::spawn(async move {
-            match fs::write(file_path, r.value) {
-                Ok(_) => {
-                    trace!("Wrote record {record_key:?} to disk! filename: {filename}");
-                }
-                Err(err) => {
-                    error!(
-                        "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
-                    );
-                }
-            }
-        });
-
-        Ok(())
     }
 
     /// Prune the records in the store to ensure that we free up space
@@ -229,10 +184,56 @@ impl DiskBackedRecordStore {
 
         Ok(())
     }
+}
 
-    #[allow(dead_code)]
+impl RecordStoreAPI for NodeRecordStore {
+    /// Returns `true` if the `Key` is present locally
+    fn contains(&self, key: &Key) -> bool {
+        self.records.contains(key)
+    }
+
+    fn record_addresses(&self) -> HashSet<NetworkAddress> {
+        self.records
+            .iter()
+            .map(|record_key| NetworkAddress::from_record_key(record_key.clone()))
+            .collect()
+    }
+
+    #[allow(clippy::mutable_key_type)]
+    fn record_addresses_ref(&self) -> &HashSet<Key> {
+        &self.records
+    }
+
+    fn put_verified(&mut self, r: Record) -> Result<()> {
+        let content_hash = XorName::from_content(&r.value);
+        let record_key = PrettyPrintRecordKey::from(r.key.clone());
+        trace!("PUT a verified Record: {record_key:?} (content_hash {content_hash:?})");
+
+        self.prune_storage_if_needed_for_record(&r.key)?;
+
+        let filename = Self::key_to_hex(&r.key);
+        let file_path = self.config.storage_dir.join(&filename);
+        let _ = self.records.insert(r.key);
+
+        // TODO: How could we clean up records if we fail to insert?
+        tokio::spawn(async move {
+            match fs::write(file_path, r.value) {
+                Ok(_) => {
+                    trace!("Wrote record {record_key:?} to disk! filename: {filename}");
+                }
+                Err(err) => {
+                    error!(
+                        "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
+                    );
+                }
+            }
+        });
+
+        Ok(())
+    }
+
     /// Calculate the cost to store data for our current store state
-    pub fn store_cost(&self) -> Token {
+    fn store_cost(&self) -> Token {
         // Calculate the factor to increase the cost for every PUTS_PER_PRICE_STEP records
         let factor =
             10.0f64.powf(MAX_RECORDS_COUNT as f64 / PUTS_PER_PRICE_STEP as f64 - 2.0_f64) as u64;
@@ -275,12 +276,12 @@ impl DiskBackedRecordStore {
     }
 
     /// Setup the distance range.
-    pub fn set_distance_range(&mut self, distance_range: Distance) {
+    fn set_distance_range(&mut self, distance_range: Distance) {
         self.distance_range = Some(distance_range);
     }
 }
 
-impl RecordStore for DiskBackedRecordStore {
+impl RecordStore for NodeRecordStore {
     type RecordsIter<'a> = vec::IntoIter<Cow<'a, Record>>;
     type ProvidedIter<'a> = vec::IntoIter<Cow<'a, ProviderRecord>>;
 
@@ -381,6 +382,69 @@ impl RecordStore for DiskBackedRecordStore {
     }
 }
 
+/// A place holder RecordStore impl for the client that does nothing
+pub struct ClientRecordStore {}
+
+impl RecordStoreAPI for ClientRecordStore {
+    fn contains(&self, key: &Key) -> bool {
+        false
+    }
+
+    fn record_addresses(&self) -> HashSet<NetworkAddress> {
+        HashSet::new()
+    }
+
+    #[allow(clippy::mutable_key_type)]
+    fn record_addresses_ref(&self) -> &HashSet<Key> {
+        &HashSet::new()
+    }
+
+    fn put_verified(&mut self, r: Record) -> Result<()> {
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    fn store_cost(&self) -> Token {
+        Token::zero()
+    }
+
+    /// Setup the distance range.
+    fn set_distance_range(&mut self, distance_range: Distance) {}
+}
+
+impl RecordStore for ClientRecordStore {
+    type RecordsIter<'a> = vec::IntoIter<Cow<'a, Record>>;
+    type ProvidedIter<'a> = vec::IntoIter<Cow<'a, ProviderRecord>>;
+
+    fn get(&self, _k: &Key) -> Option<Cow<'_, Record>> {
+        None
+    }
+
+    fn put(&mut self, _record: Record) -> Result<()> {
+        Ok(())
+    }
+
+    fn remove(&mut self, k: &Key) {}
+
+    fn records(&self) -> Self::RecordsIter<'_> {
+        vec![].into_iter()
+    }
+
+    fn add_provider(&mut self, _record: ProviderRecord) -> Result<()> {
+        Ok(())
+    }
+
+    fn providers(&self, _key: &Key) -> Vec<ProviderRecord> {
+        vec![]
+    }
+
+    fn provided(&self) -> Self::ProvidedIter<'_> {
+        vec![].into_iter()
+    }
+
+    fn remove_provider(&mut self, _key: &Key, _provider: &PeerId) {}
+}
+
 #[allow(trivial_casts)]
 #[cfg(test)]
 mod tests {
@@ -471,7 +535,7 @@ mod tests {
     async fn testing_thread(r: ArbitraryRecord) {
         let r = r.0;
         let (network_event_sender, mut network_event_receiver) = mpsc::channel(1);
-        let mut store = DiskBackedRecordStore::with_config(
+        let mut store = NodeRecordStore::with_config(
             PeerId::random(),
             Default::default(),
             Some(network_event_sender),
@@ -538,12 +602,12 @@ mod tests {
         // Set the config::max_record to be 50, then generate 100 records
         // On storing the 51st to 100th record,
         // check there is an expected pruning behaviour got carried out.
-        let store_config = DiskBackedRecordStoreConfig {
+        let store_config = NodeRecordStoreConfig {
             max_records,
             ..Default::default()
         };
         let self_id = PeerId::random();
-        let mut store = DiskBackedRecordStore::with_config(self_id, store_config.clone(), None);
+        let mut store = NodeRecordStore::with_config(self_id, store_config.clone(), None);
 
         let mut stored_records: Vec<RecordKey> = vec![];
         let self_address = NetworkAddress::from_peer(self_id);
@@ -578,7 +642,7 @@ mod tests {
                 // Confirm the pruned_key got removed, looping to allow async disk ops to complete.
                 let mut iteration = 0;
                 while iteration < max_iterations {
-                    if DiskBackedRecordStore::read_from_disk(&pruned_key, &store_config.storage_dir)
+                    if NodeRecordStore::read_from_disk(&pruned_key, &store_config.storage_dir)
                         .is_none()
                     {
                         break;

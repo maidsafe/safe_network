@@ -6,17 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{
-    error::{Error, Result},
-    record_store::DiskBackedRecordStore,
-    SwarmDriver,
-};
-
 use crate::{
-    close_group_majority, multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address,
-    CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
+    close_group_majority,
+    error::{Error, Result},
+    multiaddr_is_global, multiaddr_strip_p2p,
+    record_store_api::RecordStoreAPI,
+    sort_peers_by_address, SwarmDriver, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
 };
-
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
 use itertools::Itertools;
@@ -25,8 +21,8 @@ use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{
-        GetRecordError, GetRecordOk, InboundRequest, Kademlia, KademliaEvent, PeerRecord, QueryId,
-        QueryResult, Record, RecordKey, K_VALUE,
+        store::RecordStore, GetRecordError, GetRecordOk, InboundRequest, Kademlia, KademliaEvent,
+        PeerRecord, QueryId, QueryResult, Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
@@ -42,7 +38,6 @@ use std::{
     fmt::{Debug, Formatter},
     num::NonZeroUsize,
 };
-
 use tokio::sync::oneshot;
 use tracing::{info, warn};
 use xor_name::XorName;
@@ -53,9 +48,12 @@ pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>
 /// NodeBehaviour struct
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
-pub(super) struct NodeBehaviour {
+pub(super) struct NodeBehaviour<TRecordStore>
+where
+    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
+{
     pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
-    pub(super) kademlia: Kademlia<DiskBackedRecordStore>,
+    pub(super) kademlia: Kademlia<TRecordStore>,
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
@@ -179,7 +177,10 @@ impl Debug for NetworkEvent {
     }
 }
 
-impl SwarmDriver {
+impl<TRecordStore> SwarmDriver<TRecordStore>
+where
+    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
+{
     // Handle `SwarmEvents`
     #[allow(clippy::result_large_err)]
     pub(super) fn handle_swarm_events<EventError: std::error::Error>(
