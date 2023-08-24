@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1692887446603,
+  "lastUpdate": 1692887734154,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9365,6 +9365,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 37.863422,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "37ed749758eef212a013b5495629ef3f0797a883",
+          "message": "chore(deps): bump rustls-webpki from 0.101.3 to 0.101.4\n\nBumps [rustls-webpki](https://github.com/rustls/webpki) from 0.101.3 to 0.101.4.\n- [Release notes](https://github.com/rustls/webpki/releases)\n- [Commits](https://github.com/rustls/webpki/compare/v/0.101.3...v/0.101.4)\n\n---\nupdated-dependencies:\n- dependency-name: rustls-webpki\n  dependency-type: indirect\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2023-08-24T13:08:44Z",
+          "tree_id": "877456b29c5a83cfa64fb73de49436425e3d5d91",
+          "url": "https://github.com/maidsafe/safe_network/commit/37ed749758eef212a013b5495629ef3f0797a883"
+        },
+        "date": 1692887733485,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 37.040127,
             "unit": "MB"
           }
         ]
