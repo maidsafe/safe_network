@@ -960,6 +960,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - rust 1.72.0 fixes
 
+## [0.88.49](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.48...sn_node-v0.88.49) - 2023-08-24
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
