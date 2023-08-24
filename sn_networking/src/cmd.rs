@@ -6,8 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{error::Error, MsgResponder, NetworkEvent, SwarmDriver};
-use crate::{error::Result, multiaddr_pop_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE};
+use crate::{
+    error::{Error, Result},
+    multiaddr_pop_p2p,
+    record_store_api::RecordStoreAPI,
+    sort_peers_by_address, MsgResponder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
+};
 use libp2p::{
     kad::{store::RecordStore, Quorum, Record, RecordKey},
     swarm::{
@@ -124,7 +128,10 @@ pub struct SwarmLocalState {
     pub listeners: Vec<Multiaddr>,
 }
 
-impl SwarmDriver {
+impl<TRecordStore> SwarmDriver<TRecordStore>
+where
+    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
+{
     #[allow(clippy::result_large_err)]
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         let drives_forward_replication = matches!(

@@ -15,6 +15,7 @@ mod error;
 mod event;
 mod msg;
 mod record_store;
+mod record_store_api;
 mod replication_fetcher;
 
 use self::{
@@ -23,9 +24,10 @@ use self::{
     error::Result,
     event::{GetRecordResultMap, NodeBehaviour},
     record_store::{
-        DiskBackedRecordStore, DiskBackedRecordStoreConfig, REPLICATION_INTERVAL_LOWER_BOUND,
-        REPLICATION_INTERVAL_UPPER_BOUND,
+        ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig,
+        REPLICATION_INTERVAL_LOWER_BOUND, REPLICATION_INTERVAL_UPPER_BOUND,
     },
+    record_store_api::RecordStoreAPI,
     replication_fetcher::ReplicationFetcher,
 };
 pub use self::{
@@ -41,7 +43,7 @@ use libp2p::core::muxing::StreamMuxerBox;
 use libp2p::mdns;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
+    kad::{store::RecordStore, KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
@@ -64,10 +66,7 @@ use std::{
     path::PathBuf,
     time::Duration,
 };
-use tokio::{
-    sync::{mpsc, oneshot},
-    time::sleep,
-};
+use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
@@ -119,9 +118,12 @@ type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRe
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
 /// tasks. It serves as the core component for the network functionality.
-pub struct SwarmDriver {
+pub struct SwarmDriver<TRecordStore>
+where
+    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
+{
     self_peer_id: PeerId,
-    swarm: Swarm<NodeBehaviour>,
+    swarm: Swarm<NodeBehaviour<TRecordStore>>,
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     // Do not access this directly to send. Use `send_event` instead.
     // This wraps the call and pushes it off thread so as to be non-blocking
@@ -141,7 +143,10 @@ pub struct SwarmDriver {
     is_client: bool,
 }
 
-impl SwarmDriver {
+impl<TRecordStore> SwarmDriver<TRecordStore>
+where
+    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
+{
     /// Creates a new `SwarmDriver` instance, along with a `Network` handle
     /// for sending commands and an `mpsc::Receiver<NetworkEvent>` for receiving
     /// network events. It initializes the swarm, sets up the transport, and
@@ -193,10 +198,28 @@ impl SwarmDriver {
             // Disable provider records publication job
             .set_provider_publication_interval(None);
 
+        let store_cfg = {
+            // Configures the disk_store to store records under the provided path and increase the max record size
+            let storage_dir_path = root_dir.join("record_store");
+            if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
+                return Err(Error::FailedToCreateRecordStoreDir {
+                    path: storage_dir_path,
+                    source: error,
+                });
+            }
+            NodeRecordStoreConfig {
+                max_value_bytes: MAX_PACKET_SIZE, // TODO, does this need to be _less_ than MAX_PACKET_SIZE
+                storage_dir: storage_dir_path,
+                replication_interval,
+                ..Default::default()
+            }
+        };
+
         let (network, events_receiver, mut swarm_driver) = Self::with(
             root_dir,
             keypair,
             kad_cfg,
+            Some(store_cfg),
             local,
             false,
             replication_interval,
@@ -246,6 +269,7 @@ impl SwarmDriver {
             std::env::temp_dir(),
             Keypair::generate_ed25519(),
             kad_cfg,
+            None,
             local,
             true,
             // Nonsense interval for the client which never replicates
@@ -286,6 +310,7 @@ impl SwarmDriver {
         root_dir_path: PathBuf,
         keypair: Keypair,
         kad_cfg: KademliaConfig,
+        record_store_cfg: Option<NodeRecordStoreConfig>,
         local: bool,
         is_client: bool,
         replication_interval: Duration,
@@ -316,32 +341,19 @@ impl SwarmDriver {
         let (network_event_sender, network_event_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
 
         // Kademlia Behaviour
-        let kademlia = {
-            // Configures the disk_store to store records under the provided path and increase the max record size
-            let storage_dir_path = root_dir_path.join("record_store");
-            if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
-                return Err(Error::FailedToCreateRecordStoreDir {
-                    path: storage_dir_path,
-                    source: error,
-                });
+        let kademlia: Kademlia<TRecordStore> = {
+            match record_store_cfg {
+                Some(store_cfg) => {
+                    let store = NodeRecordStore::with_config(
+                        peer_id,
+                        store_cfg,
+                        Some(network_event_sender.clone()),
+                    );
+                    Kademlia::with_config(peer_id, store, kad_cfg)
+                }
+                // no cfg provided for client
+                None => Kademlia::with_config(peer_id, ClientRecordStore {}, kad_cfg),
             }
-
-            let store_cfg = DiskBackedRecordStoreConfig {
-                max_value_bytes: MAX_PACKET_SIZE, // TODO, does this need to be _less_ than MAX_PACKET_SIZE
-                storage_dir: storage_dir_path,
-                replication_interval,
-                ..Default::default()
-            };
-
-            Kademlia::with_config(
-                peer_id,
-                DiskBackedRecordStore::with_config(
-                    peer_id,
-                    store_cfg,
-                    Some(network_event_sender.clone()),
-                ),
-                kad_cfg,
-            )
         };
 
         #[cfg(feature = "local-discovery")]
@@ -831,7 +843,7 @@ impl Network {
         let response = receiver.await?;
         if verify_store {
             // small wait before we attempt to verify
-            sleep(Duration::from_millis(100)).await;
+            tokio::time::sleep(Duration::from_millis(100)).await;
             trace!("attempting to verify {record_key:?}");
             // Verify the record is stored, requiring re-attempts
             self.get_record_from_network(record.key.clone(), Some(record), true)
