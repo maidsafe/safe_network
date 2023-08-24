@@ -833,13 +833,18 @@ impl Network {
             record_key,
             record.value.len()
         );
+
+        debug!("Record cloning...");
         let the_record = record.clone();
         // Waiting for a response to avoid flushing to network too quick that causing choke
         let (sender, receiver) = oneshot::channel();
+
+        debug!("Channel made");
         self.send_swarm_cmd(SwarmCmd::PutRecord {
             record: record.clone(),
             sender,
         })?;
+        debug!("Cmd sent... await response");
         let response = receiver.await?;
         if verify_store {
             // small wait before we attempt to verify
@@ -943,7 +948,9 @@ impl Network {
 
     // Helper to send SwarmCmd
     fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
+        debug!("Sending out swarm cmd: {cmd:?}");
         let capacity = self.swarm_cmd_sender.capacity();
+        debug!("Capacity is {capacity}");
 
         if capacity == 0 {
             error!("SwarmCmd channel is full. Dropping SwarmCmd: {:?}", cmd);
@@ -951,6 +958,7 @@ impl Network {
             // Lets error out just now.
             return Err(Error::NoSwarmCmdChannelCapacity);
         }
+
         let cmd_sender = self.swarm_cmd_sender.clone();
 
         // Spawn a task to send the SwarmCmd and keep this fn sync
