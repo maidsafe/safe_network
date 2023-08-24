@@ -460,6 +460,8 @@ impl SwarmDriver {
                             .send(Err(Error::RecordNotFound))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
                     }
+                } else {
+                    error!("FinishedWithNoAdditionalRecord, could not find {id:?} in pending_get_record.");
                 }
             }
             KademliaEvent::OutboundQueryProgressed {
@@ -702,6 +704,8 @@ impl SwarmDriver {
                     .pending_get_record
                     .insert(query_id, (sender, result_map));
             }
+        } else {
+            error!("Accumulate get_record, could not find {query_id:?} in pending_get_record.");
         }
     }
 
