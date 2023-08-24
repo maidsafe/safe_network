@@ -21,7 +21,7 @@ use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 use tokio::sync::oneshot;
 
 /// Commands to send to the Swarm
@@ -110,6 +110,34 @@ pub enum SwarmCmd {
         peer: PeerId,
         keys: Vec<NetworkAddress>,
     },
+}
+
+impl Display for SwarmCmd {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SwarmCmd::StartListening { .. } => write!(f, "SwarmCmd::StartListening"),
+            SwarmCmd::Dial { .. } => write!(f, "SwarmCmd::Dial"),
+            SwarmCmd::GetClosestPeers { .. } => write!(f, "SwarmCmd::GetClosestPeers"),
+            SwarmCmd::GetClosestLocalPeers { .. } => write!(f, "SwarmCmd::GetClosestLocalPeers"),
+            SwarmCmd::GetAllLocalPeers { .. } => write!(f, "SwarmCmd::GetAllLocalPeers"),
+            SwarmCmd::GetOurCloseGroup { .. } => write!(f, "SwarmCmd::GetOurCloseGroup"),
+            SwarmCmd::GetSwarmLocalState(_) => write!(f, "SwarmCmd::GetSwarmLocalState"),
+            SwarmCmd::SendRequest { .. } => write!(f, "SwarmCmd::SendRequest"),
+            SwarmCmd::SendResponse { .. } => write!(f, "SwarmCmd::SendResponse"),
+            SwarmCmd::RecordStoreHasKey { .. } => write!(f, "SwarmCmd::RecordStoreHasKey"),
+            SwarmCmd::GetAllLocalRecordAddresses { .. } => {
+                write!(f, "SwarmCmd::GetAllLocalRecordAddresses")
+            }
+            SwarmCmd::GetNetworkRecord { .. } => write!(f, "SwarmCmd::GetNetworkRecord"),
+            SwarmCmd::GetLocalStoreCost { .. } => write!(f, "SwarmCmd::GetLocalStoreCost"),
+            SwarmCmd::GetLocalRecord { .. } => write!(f, "SwarmCmd::GetLocalRecord"),
+            SwarmCmd::PutRecord { .. } => write!(f, "SwarmCmd::PutRecord"),
+            SwarmCmd::PutLocalRecord { .. } => write!(f, "SwarmCmd::PutLocalRecord"),
+            SwarmCmd::AddKeysToReplicationFetcher { .. } => {
+                write!(f, "SwarmCmd::AddKeysToReplicationFetcher")
+            }
+        }
+    }
 }
 
 /// Snapshot of information kept in the Swarm's local state

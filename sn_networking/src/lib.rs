@@ -440,17 +440,22 @@ impl SwarmDriver {
         loop {
             tokio::select! {
                 swarm_event = self.swarm.select_next_some() => {
+                    trace!("SwarmDriver received an event from the swarm.");
                     if let Err(err) = self.handle_swarm_events(swarm_event) {
                         warn!("Error while handling swarm event: {err}");
                     }
                 },
                 some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
+                        trace!("Swarm Driver received a SwarmCmd from upper layer {cmd}");
                         if let Err(err) = self.handle_cmd(cmd) {
                             warn!("Error while handling cmd: {err}");
                         }
                     },
-                    None =>  continue,
+                    None =>  {
+                        trace!("SwarmDriver: The SwarmCmd channel has been closed.");
+                        continue
+                    },
                 },
             }
         }
@@ -947,9 +952,12 @@ impl Network {
 
         // Spawn a task to send the SwarmCmd and keep this fn sync
         let _handle = tokio::spawn(async move {
+            let cmd_str = cmd.to_string();
+            trace!("Spawned task to send {cmd_str}");
             if let Err(error) = cmd_sender.send(cmd).await {
                 error!("Failed to send SwarmCmd: {}", error);
             }
+            trace!("Sent {cmd_str} to the swarm");
         });
 
         Ok(())
