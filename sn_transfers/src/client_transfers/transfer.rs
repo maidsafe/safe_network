@@ -33,8 +33,8 @@ pub fn create_transfer(
 ) -> Result<TransferOutputs> {
     let total_output_amount = recipients
         .iter()
-        .fold(Some(Token::zero()), |total, (amount, _, _)| {
-            total.and_then(|t| t.checked_add(*amount))
+        .try_fold(Token::zero(), |total, (amount, _, _)| {
+            total.checked_add(*amount)
         })
         .ok_or_else(|| {
             Error::DbcReissueFailed(

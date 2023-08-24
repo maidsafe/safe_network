@@ -82,7 +82,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         exit(1);
     }
 
-    let sizes = vec![1, 10]; // File sizes in MB. Add more sizes as needed
+    let sizes = [1, 10]; // File sizes in MB. Add more sizes as needed
 
     for size in sizes.iter() {
         let dir = create_file(*size);
