@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.28](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.27...sn_transfers-v0.10.28) - 2023-08-24
+
+### Other
+- rust 1.72.0 fixes
+
 ## [0.10.27](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.10.26...sn_transfers-v0.10.27) - 2023-08-18
 
 ### Other
