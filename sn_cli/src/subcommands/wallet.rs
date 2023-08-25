@@ -326,6 +326,7 @@ pub(super) async fn chunk_and_pay_for_storage(
     );
 
     let wallet = wallet_client.into_wallet();
+
     if let Err(err) = wallet.store().await {
         println!("Failed to store wallet: {err:?}");
     } else {

@@ -105,7 +105,7 @@ impl ReplicationFetcher {
         let fetches_left = MAX_PARALLEL_FETCH - self.on_going_fetches;
 
         debug!(
-            "Number of records awaiting fetch: {:?}",
+            "Number of records still missing: {:?}",
             self.to_be_fetched.len()
         );
         // Randomize the order of keys to fetch
