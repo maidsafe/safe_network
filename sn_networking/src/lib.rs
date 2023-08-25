@@ -947,6 +947,7 @@ impl Network {
 
         // Spawn a task to send the SwarmCmd and keep this fn sync
         let _handle = tokio::spawn(async move {
+            trace!("Spwaned thread to send cmd");
             if let Err(error) = cmd_sender.send(cmd).await {
                 error!("Failed to send SwarmCmd: {}", error);
             }
