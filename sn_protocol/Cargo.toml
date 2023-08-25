@@ -21,4 +21,5 @@ serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_dbc = { version = "19.1.1", features = ["serdes"] }
 sn_registers = { path = "../sn_registers", version = "0.2.3" }
 thiserror = "1.0.23"
+tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
