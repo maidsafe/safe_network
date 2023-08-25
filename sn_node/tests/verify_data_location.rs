@@ -37,7 +37,7 @@ use tracing::error;
 use tracing_core::Level;
 
 const NODE_COUNT: u8 = 25;
-const CHUNK_SIZE: usize = 1024;
+const CHUNK_SIZE: usize = 1024 * 1024;
 
 // VERIFICATION_DELAY is set based on the dead peer detection interval
 // Once a node has been restarted, it takes VERIFICATION_DELAY time
@@ -56,7 +56,7 @@ const CHURN_COUNT: u8 = 4;
 
 /// Default number of chunks that should be PUT to the netowrk.
 // It can be overridden by setting the 'CHUNK_COUNT' env var.
-const CHUNK_COUNT: usize = 5;
+const CHUNK_COUNT: usize = 15;
 
 type NodeIndex = u8;
 type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
@@ -70,11 +70,8 @@ async fn verify_data_location() -> Result<()> {
         ("sn_networking".to_string(), Level::TRACE),
         ("sn_node".to_string(), Level::TRACE),
     ];
-    let _log_appender_guard = init_logging(
-        logging_targets,
-        LogOutputDest::Path(tmp_dir.to_path_buf()),
-        LogFormat::Default,
-    )?;
+    let _log_appender_guard =
+        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
 
     let churn_count = if let Ok(str) = std::env::var("CHURN_COUNT") {
         str.parse::<u8>()?
