@@ -8,7 +8,10 @@
 
 use itertools::Itertools;
 use sn_dbc::{DbcId, SignedSpend};
-use sn_protocol::error::{Error, Result};
+use sn_protocol::{
+    error::{Error, Result},
+    storage::DbcAddress,
+};
 use sn_transfers::dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC};
 use std::{
     collections::{BTreeSet, HashSet},
@@ -24,6 +27,10 @@ pub(crate) fn aggregate_spends<I>(spends: I, valid_dbc_id: DbcId) -> Vec<SignedS
 where
     I: IntoIterator<Item = SignedSpend>,
 {
+    trace!(
+        "aggregating spends for {:?}",
+        DbcAddress::from_dbc_id(&valid_dbc_id)
+    );
     let spends = spends.into_iter().collect::<HashSet<_>>();
     // on the unique set of SignedSpends, perform the below filter + sort
     spends
@@ -31,11 +38,13 @@ where
         // make sure the dbc_id and the signature are valid.
         .filter(|signed_spend| {
             // make sure the dbc_ids are the same
-            signed_spend.dbc_id() == &valid_dbc_id
-                // make sure the spent_tx hash matches
-                && signed_spend
-                    .verify(signed_spend.spent_tx_hash())
-                    .is_ok()
+            let is_valid_dbc_id = signed_spend.dbc_id() == &valid_dbc_id;
+            // make sure the spent_tx hash matches
+            let spent_tx_hash_matches = signed_spend
+            .verify(signed_spend.spent_tx_hash())
+            .is_ok();
+            trace!("Aggregating spend, is_valid_dbc_id: {is_valid_dbc_id}, spent_tx_hash_matches: {spent_tx_hash_matches} ");
+            is_valid_dbc_id && spent_tx_hash_matches
         })
         // must be ordered to just store 2 of them.
         .sorted_by(|a, b| a.cmp(b))
