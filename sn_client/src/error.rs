@@ -10,8 +10,8 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 use super::ClientEvent;
 
+use sn_protocol::PrettyPrintRecordKey;
 use sn_registers::{Entry, EntryHash};
-
 use std::collections::BTreeSet;
 use thiserror::Error;
 
@@ -19,6 +19,10 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
+    /// Could not acquire a Semaphore permit.
+    #[error("Could not acquire a Semaphore permit.")]
+    CouldNotAcquireSemaphorePermit(#[from] tokio::sync::AcquireError),
+
     #[error("Transfer Error {0}.")]
     Transfers(#[from] sn_transfers::wallet::Error),
 
@@ -62,4 +66,8 @@ pub enum Error {
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),
+
+    /// A general error when a transfer fails.
+    #[error("Could not verify record was stored on the network {0}")]
+    CouldNotVerifyRecord(PrettyPrintRecordKey),
 }

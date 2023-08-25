@@ -341,6 +341,7 @@ fn store_chunks_task(
 
         let file_api = Files::new(client);
         let mut rng = OsRng;
+
         loop {
             let random_bytes: Vec<u8> = ::std::iter::repeat(())
                 .map(|()| rng.gen::<u8>())
@@ -372,7 +373,7 @@ fn store_chunks_task(
             sleep(delay).await;
 
             match file_api
-                .upload_chunks_in_batches(chunks.into_iter(), &mut content_payments_map, false)
+                .upload_chunk_in_parallel(chunks.into_iter(), &mut content_payments_map, false)
                 .await
             {
                 Ok(()) => content
