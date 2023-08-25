@@ -232,6 +232,11 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      # fixes the linker issue on windows
+      - name: Change default linker on windows
+        if: matrix.os == 'windows-latest'
+        run: rustup toolchain install stable-x86_64-pc-windows-gnu && rustup default stable-x86_64-pc-windows-gnu && rustup component add rustfmt
+
       - name: Build safe bins
         run: cargo build --release --features local-discovery --bin safenode --bin faucet
         timeout-minutes: 30
