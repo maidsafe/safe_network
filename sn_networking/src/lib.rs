@@ -963,6 +963,7 @@ impl Network {
 
         // Spawn a task to send the SwarmCmd and keep this fn sync
         let _handle = tokio::spawn(async move {
+            info!("spawwwwwnnn");
             let cmd_str = cmd.to_string();
             trace!("Spawned task to send {cmd_str}");
             if let Err(error) = cmd_sender.send(cmd).await {
