@@ -234,21 +234,28 @@ async fn data_availability_during_churn() -> Result<()> {
     // i.e. the test may pass even without any replication
     // Hence, we carry out a final round of query all data to confirm storage.
     println!("Final querying confirmation of content");
-    let mut content_queried_count = 0;
 
     // take one read lock to avoid holding the lock for the whole loop
     // prevent any late content uploads being added to the list
     let content = content.read().await;
     let uploaded_content_count = content.len();
+    let mut handles = Vec::new();
     for net_addr in content.iter() {
-        let result = final_retry_query_content(&client, net_addr, dbcs.clone(), churn_period).await;
-        assert!(
-            result.is_ok(),
-            "Failed to query content at {net_addr:?} with error {result:?}"
-        );
-
-        content_queried_count += 1;
+        let client = client.clone();
+        let net_addr = net_addr.clone();
+        let dbcs = dbcs.clone();
+        let churn_period = churn_period;
+        let handle = tokio::spawn(async move {
+            final_retry_query_content(&client, &net_addr, dbcs, churn_period).await
+        });
+        handles.push(handle);
     }
+    let results: Vec<_> = futures::future::join_all(handles).await;
+    let content_queried_count = results.iter().filter(|r| r.is_ok()).count();
+    assert_eq!(
+        content_queried_count, uploaded_content_count,
+        "Not all content was queried successfully"
+    );
 
     println!("{:?} pieces of content queried", content_queried_count);
 
