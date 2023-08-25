@@ -47,13 +47,6 @@ jobs:
       - uses: wagoid/commitlint-github-action@f114310111fdbd07e99f47f9ca13d62b3ec98372
  
 
-
-
-
-
-
-
-      
   checks:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: various checks
