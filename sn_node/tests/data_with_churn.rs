@@ -359,7 +359,7 @@ fn store_chunks_task(
             );
             sleep(delay).await;
 
-            let (proofs, cost) = wallet_client
+            let (mut content_payments_map, cost) = wallet_client
                 .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
                 .await
                 .expect("Failed to pay for storage for new file at {addr:?}");
@@ -372,7 +372,7 @@ fn store_chunks_task(
             sleep(delay).await;
 
             match file_api
-                .upload_chunks_in_batches(chunks.into_iter(), &proofs, false)
+                .upload_chunks_in_batches(chunks.into_iter(), &mut content_payments_map, false)
                 .await
             {
                 Ok(()) => content
