@@ -16,7 +16,7 @@ use std::{
 };
 
 // Max parallel fetches that can be undertaken at the same time.
-const MAX_PARALLEL_FETCH: usize = 8;
+const MAX_PARALLEL_FETCH: usize = 20;
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
@@ -28,7 +28,7 @@ const MAX_RETRIES_PER_PEER: u8 = 1;
 
 // If we have failed to fetch the key from <= PEERS_TRIED_BEFORE_NETWORK_FETCH number of peers, then it is sent out
 // to be fetched from the network
-const PEERS_TRIED_BEFORE_NETWORK_FETCH: u8 = 3;
+const PEERS_TRIED_BEFORE_NETWORK_FETCH: u8 = 5;
 
 // The number of failed attempts while fetching the key from a peer.
 type FailedAttempts = u8;
@@ -60,7 +60,7 @@ impl ReplicationFetcher {
         incoming_keys: Vec<NetworkAddress>,
         locally_stored_keys: &HashSet<RecordKey>,
     ) -> Vec<(RecordKey, Option<PeerId>)> {
-        self.retain_keys(locally_stored_keys);
+        self.remove_stored_keys(locally_stored_keys);
 
         // add non existing keys to the fetcher
         incoming_keys
@@ -153,6 +153,7 @@ impl ReplicationFetcher {
                     }
                     HolderStatus::OnGoing => {
                         if Instant::now() > *replication_req_time + FETCH_TIMEOUT {
+                            warn!("Failed replication fetch! {key:?} from {peer_id:?}");
                             *failed_attempts += 1;
                             // allows it to be re-queued
                             *holder_status = HolderStatus::Pending;
@@ -191,7 +192,7 @@ impl ReplicationFetcher {
     }
 
     /// Remove keys that we hold already and no longer need to be replicated.
-    fn retain_keys(&mut self, existing_keys: &HashSet<RecordKey>) {
+    fn remove_stored_keys(&mut self, existing_keys: &HashSet<RecordKey>) {
         self.to_be_fetched
             .retain(|key, _| !existing_keys.contains(key));
     }
