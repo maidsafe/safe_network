@@ -135,7 +135,7 @@ impl Node {
             match maybe_peer {
                 Some(peer) => {
                     trace!(
-                        "Fetching replication {:?} from {peer:?}",
+                        "Fetching data for replication {:?} from {peer:?}",
                         PrettyPrintRecordKey::from(key.clone())
                     );
                     let request = Request::Query(Query::GetReplicatedData {
@@ -148,7 +148,7 @@ impl Node {
                     let node = self.clone();
                     let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
                         trace!(
-                            "Fetching replication {:?} from the network",
+                            "Fetching data for replication {:?} from the network",
                             PrettyPrintRecordKey::from(key.clone())
                         );
                         let record = node
