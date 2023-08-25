@@ -242,10 +242,11 @@ impl Node {
             None => {
                 // data is already present
                 if is_new_put {
+                    debug!("Data is already present");
                     return Ok(CmdOk::DataAlreadyPresent);
                 } else {
                     debug!(
-                        "Trust replictated spend for {:?}",
+                        "Trust replicated spend for {:?}",
                         PrettyPrintRecordKey::from(key.clone())
                     );
                     // TODO: may need to tweak the `signed_spend_validation` function,
@@ -295,6 +296,7 @@ impl Node {
         chunk_with_payment: &ChunkWithPayment,
         validate_payment_amount: bool,
     ) -> Result<(), ProtocolError> {
+        debug!("Validating chunk payment");
         // Dbcs produce in TransferOutputs.created_dbcs
         let created_dbcs = &chunk_with_payment.payment;
 
@@ -449,6 +451,7 @@ impl Node {
         // get the DbcId; used for validation
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
         let record_key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
+        debug!("Validating and storing spend {dbc_addr:?}, present_locally: {present_locally}");
 
         if present_locally {
             debug!("DbcSpend with DbcId {dbc_id:?} already exists, checking if it's the same spend/double spend",);
@@ -527,10 +530,12 @@ impl Node {
 
                 // check the spend
                 if let Err(e) = signed_spend.verify(signed_spend.spent_tx_hash()) {
-                    return Err(ProtocolError::SpendSignatureInvalid(format!(
+                    let err = Err(ProtocolError::SpendSignatureInvalid(format!(
                         "while verifying spend for {:?}: {e:?}",
                         signed_spend.dbc_id()
                     )));
+                    error!("Error while verifying signed spend signature {err:?}");
+                    return err;
                 }
 
                 // Get parents
@@ -547,28 +552,40 @@ impl Node {
                     for parent_input in &signed_spend.spend.dbc_creation_tx.inputs {
                         let parent_dbc_address = DbcAddress::from_dbc_id(&parent_input.dbc_id());
                         trace!(
-                            "Checking parent input at {:?} - {:?}",
+                            "Checking parent input at {:?} - {parent_dbc_address:?}",
                             parent_input.dbc_id(),
-                            parent_dbc_address
                         );
-                        let _ = parent_spends.insert(
-                            self.get_spend_from_network(parent_dbc_address, false)
-                                .await?,
+                        let parent = self
+                            .get_spend_from_network(parent_dbc_address, false)
+                            .await?;
+                        trace!(
+                            "Got parent input at {:?} - {parent_dbc_address:?}",
+                            parent_input.dbc_id(),
                         );
+                        let _ = parent_spends.insert(parent);
                     }
                 }
 
                 // Check parents
-                check_parent_spends(&parent_spends, &signed_spend)?;
+                if let Err(err) = check_parent_spends(&parent_spends, &signed_spend) {
+                    error!("Error while checking parent spends {err:?}");
+                    return Err(err);
+                }
 
                 // check the network if any spend has happened for the same dbc_id
                 // Does not return an error, instead the Vec<SignedSpend> is returned.
-                let mut spends =
-                    if let Ok(spend) = self.get_spend_from_network(dbc_addr, false).await {
+                debug!("Check if any spend exist for the same dbc_id {dbc_addr:?}");
+                let mut spends = match self.get_spend_from_network(dbc_addr, false).await {
+                    Ok(spend) => {
+                        debug!("Got spend from network for the same dbc_id");
                         vec![spend]
-                    } else {
+                    }
+                    // Q: Should we not aggregate the double spends instead of using vec![]
+                    Err(err) => {
+                        debug!("Got error while fetching spend for the same dbc_id {err:?}");
                         vec![]
-                    };
+                    }
+                };
                 // aggregate the spends from the network with our own
                 spends.push(signed_spend);
                 aggregate_spends(spends, dbc_id)
