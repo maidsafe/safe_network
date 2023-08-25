@@ -16,6 +16,9 @@ pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
+    #[error("Failed to get chunk permit")]
+    CouldNotGetChunkPermit,
+
     #[error(transparent)]
     SelfEncryption(#[from] self_encryption::Error),
 

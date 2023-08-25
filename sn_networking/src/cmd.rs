@@ -342,8 +342,8 @@ impl SwarmDriver {
             }
         }
 
-        // in case we're not driving forward and there are keys to replicate, let's fire events for that
-        if !drives_forward_replication {
+        // in case we're a node and not driving forward and there are keys to replicate, let's fire events for that
+        if !self.is_client && !drives_forward_replication {
             let keys_to_fetch = self.replication_fetcher.next_keys_to_fetch();
             if !keys_to_fetch.is_empty() {
                 self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));

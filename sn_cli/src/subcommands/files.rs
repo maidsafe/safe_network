@@ -8,16 +8,19 @@
 
 use super::wallet::{chunk_and_pay_for_storage, ChunkedFile};
 
-use bytes::Bytes;
+use bytes::{Bytes, BytesMut};
 use clap::Parser;
 use color_eyre::Result;
-use sn_client::{Client, Files};
+use libp2p::futures::future::join_all;
+use sn_client::{Client, Files, MAX_CONCURRENT_CHUNK_UPLOAD};
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::client_transfers::ContentPaymentsMap;
+use tokio::{fs, io::AsyncReadExt, sync::Semaphore};
 
 use std::{
-    fs,
+    // fs,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 use walkdir::WalkDir;
 use xor_name::XorName;
@@ -86,8 +89,6 @@ async fn upload_files(
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
-    let file_api: Files = Files::new(client.clone());
-
     debug!(
         "Uploading files from {:?}, will verify?: {verify_store}",
         files_path
@@ -96,10 +97,14 @@ async fn upload_files(
     let file_names_path = root_dir.join("uploaded_files");
 
     // Payment shall always be verified.
-    let (chunks_to_upload, mut content_payments_map) =
+    let (chunks_to_upload, content_payments_map) =
         chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
 
-    let mut chunks_to_fetch = Vec::new();
+    let chunk_semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_CHUNK_UPLOAD));
+
+    let mut uploads = Vec::new();
+
+    // Iterate over each file to be uploaded
     for (
         file_addr,
         ChunkedFile {
@@ -107,36 +112,54 @@ async fn upload_files(
             size,
             chunks,
         },
-    ) in chunks_to_upload.into_iter()
+    ) in chunks_to_upload
     {
         println!(
-            "Storing file '{file_name}' of {size} bytes ({} chunk/s)..",
+            "Preparing to store file '{file_name}' of {size} bytes ({} chunk/s)..",
             chunks.len()
         );
 
-        if let Err(error) = upload_chunks(
-            &file_api,
-            &file_name,
-            chunks,
-            &mut content_payments_map,
-            verify_store,
-        )
-        .await
-        {
-            println!("Failed to store all chunks of file '{file_name}' to all nodes in the close group: {error}")
-        } else {
-            println!("Successfully stored '{file_name}' to {file_addr:64x}");
-        }
+        // Clone necessary variables for each file upload
+        let file_api: Files = Files::new(client.clone());
+        let mut content_payments_map = content_payments_map.clone();
+        let chunk_semaphore = chunk_semaphore.clone();
 
-        chunks_to_fetch.push((file_addr, file_name));
+        // Spawn a new task for each file upload
+        let upload = tokio::spawn(async move {
+            match upload_chunks(
+                &file_api,
+                &file_name,
+                chunks,
+                &mut content_payments_map,
+                verify_store,
+                chunk_semaphore.clone(),
+            )
+            .await
+            {
+                Err(error) => {
+                    println!("Failed to store all chunks of file '{file_name}' to all nodes in the close group: {error}");
+                    None
+                }
+                _ => {
+                    println!("Successfully stored '{file_name}' to {file_addr:64x}");
+                    Some((file_addr, file_name))
+                }
+            }
+        });
+
+        // Add the upload task to the list of uploads
+        uploads.push(upload);
     }
 
+    let results = join_all(uploads).await;
+    let chunks_to_fetch: Vec<_> = results.into_iter().filter_map(Result::ok).collect();
+
     let content = bincode::serialize(&chunks_to_fetch)?;
-    tokio::fs::create_dir_all(file_names_path.as_path()).await?;
+    fs::create_dir_all(file_names_path.as_path()).await?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
     println!("Writing {} bytes to {file_names_path:?}", content.len());
-    fs::write(file_names_path, content)?;
+    fs::write(file_names_path, content).await?;
 
     Ok(())
 }
@@ -144,29 +167,68 @@ async fn upload_files(
 /// Upload chunks of an individual file to the network.
 async fn upload_chunks(
     file_api: &Files,
-    file_name: &str,
+    _file_name: &str,
     chunks_paths: Vec<(XorName, PathBuf)>,
     content_payments_map: &mut ContentPaymentsMap,
     verify_store: bool,
+    // here we use a semaphore to limit the number of concurrent chunk uploads (but not concurrent verifications!)
+    chunk_semaphore: Arc<Semaphore>,
 ) -> Result<()> {
-    let chunks_reader = chunks_paths
-        .into_iter()
-        .map(|(name, chunk_path)| (name, fs::read(chunk_path)))
-        .filter_map(|x| match x {
-            (name, Ok(file)) => Some(Chunk {
-                address: ChunkAddress::new(name),
-                value: Bytes::from(file),
-            }),
-            (_, Err(err)) => {
-                // FIXME: this error won't be seen/reported, thus assumed all chunks were read and stored.
-                println!("Could not upload generated chunk of file '{file_name}': {err}");
-                None
-            }
-        });
+    for (name, path) in chunks_paths {
+        // limit pulling of chunks into mem if we cannot handle more!
+        let start_time = std::time::Instant::now();
+        let _permit = chunk_semaphore.clone().acquire_owned().await?;
+        let elapsed = start_time.elapsed();
+        println!("Time taken to get a permit for {name:?}: {:?}", elapsed);
 
-    file_api
-        .upload_chunks_in_batches(chunks_reader, content_payments_map, verify_store)
-        .await?;
+        // This is pre chunked, so we don't need to worry about the size of the file here being overly large.
+        let mut file = fs::File::open(path).await?;
+        let size = file.metadata().await?.len();
+        let mut buffer = BytesMut::with_capacity(size as usize);
+
+        loop {
+            let bytes_read = file.read(&mut buffer).await?;
+            if bytes_read == 0 {
+                break;
+            }
+        }
+
+        // fs::read(file, &mut buffer).await?;
+        // let mut reader = fs::ReaderStream::new(file);
+        let chunk = Chunk {
+            address: ChunkAddress::new(name),
+            // value: reader.collect::<Result<Bytes, _>>().await?,
+            value: buffer.freeze(),
+        };
+
+        file_api
+            .upload_chunk_in_parallel(chunk, content_payments_map, verify_store)
+            .await?;
+
+        // drop(permit);
+
+        // (name, fs::read(chunk_path), semaphore)
+    }
+
+    // let chunks_reader = chunks_paths
+    //     .into_iter()
+    //     .map(|(name, chunk_path)| {
+    //     })
+    //     .filter_map(|x| match x {
+    //         (name, Ok(file), semaphore) => Some((
+    //             Chunk {
+    //                 address: ChunkAddress::new(name),
+    //                 value: Bytes::from(file),
+    //             },
+    //             semaphore,
+    //         )),
+    //         (_, Err(err), _) => {
+    //             // FIXME: this error won't be seen/reported, thus assumed all chunks were read and stored.
+    //             println!("Could not upload generated chunk of file '{file_name}': {err}");
+    //             None
+    //         }
+    //     });
+
     Ok(())
 }
 
@@ -180,7 +242,7 @@ async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
         .flatten()
     {
         if entry.file_type().is_file() {
-            let index_doc_bytes = Bytes::from(fs::read(entry.path())?);
+            let index_doc_bytes = Bytes::from(fs::read(entry.path()).await?);
             let index_doc_name = entry.file_name();
 
             println!("Loading file names from index doc {index_doc_name:?}");
@@ -215,7 +277,7 @@ async fn download_file(
             println!("Successfully got file {file_name}!");
             let file_name_path = download_path.join(file_name);
             println!("Writing {} bytes to {file_name_path:?}", bytes.len());
-            if let Err(err) = fs::write(file_name_path, bytes) {
+            if let Err(err) = fs::write(file_name_path, bytes).await {
                 println!("Failed to create file {file_name:?} with error {err:?}");
             }
         }
