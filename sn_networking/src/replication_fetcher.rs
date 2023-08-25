@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)]
 
+use crate::CLOSE_GROUP_SIZE;
 use libp2p::{kad::RecordKey, PeerId};
 use rand::{seq::SliceRandom, thread_rng};
 use sn_protocol::NetworkAddress;
@@ -16,11 +17,11 @@ use std::{
 };
 
 // Max parallel fetches that can be undertaken at the same time.
-const MAX_PARALLEL_FETCH: usize = 20;
+const MAX_PARALLEL_FETCH: usize = CLOSE_GROUP_SIZE * 2;
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
-const FETCH_TIMEOUT: Duration = Duration::from_secs(15);
+const FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 
 // The maximum number of retries that is performed per peer.
 // Else the key is fetched from the Network
@@ -28,7 +29,7 @@ const MAX_RETRIES_PER_PEER: u8 = 1;
 
 // If we have failed to fetch the key from <= PEERS_TRIED_BEFORE_NETWORK_FETCH number of peers, then it is sent out
 // to be fetched from the network
-const PEERS_TRIED_BEFORE_NETWORK_FETCH: u8 = 5;
+const PEERS_TRIED_BEFORE_NETWORK_FETCH: u8 = 3;
 
 // The number of failed attempts while fetching the key from a peer.
 type FailedAttempts = u8;
@@ -99,7 +100,7 @@ impl ReplicationFetcher {
     // For a key, if we have failed `MAX_RETRIES_PER_PEER` number of times from all holders or
     // `PEERS_TRIED_BEFORE_NETWORK_FETCH` number of holders, then we queue the key to be fetched from the Network.
     // If the key is returned None as the peer, then it has to be fetched from the network.
-    fn next_keys_to_fetch(&mut self) -> Vec<(RecordKey, Option<PeerId>)> {
+    pub(crate) fn next_keys_to_fetch(&mut self) -> Vec<(RecordKey, Option<PeerId>)> {
         let no_more_fetches_left = self.on_going_fetches >= MAX_PARALLEL_FETCH;
         let fetches_left = MAX_PARALLEL_FETCH - self.on_going_fetches;
 
