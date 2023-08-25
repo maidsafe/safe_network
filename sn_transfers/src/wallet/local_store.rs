@@ -12,9 +12,11 @@ use super::{
     },
     ContentPaymentsMap, Error, KeyLessWallet, Result,
 };
-use crate::client_transfers::{create_transfer, TransferOutputs};
+use crate::client_transfers::{create_transfer, ContentPaymentsIdMap, TransferOutputs};
 use itertools::Itertools;
-use sn_dbc::{random_derivation_index, Dbc, DerivedKey, Hash, MainKey, PublicAddress, Token};
+use sn_dbc::{
+    random_derivation_index, Dbc, DbcId, DerivedKey, Hash, MainKey, PublicAddress, Token,
+};
 use sn_protocol::NetworkAddress;
 
 use std::{
@@ -171,7 +173,7 @@ impl LocalWallet {
         &mut self,
         all_data_payments: BTreeMap<NetworkAddress, Vec<(PublicAddress, Token)>>,
         reason_hash: Option<Hash>,
-    ) -> Result<(TransferOutputs, ContentPaymentsMap)> {
+    ) -> Result<(TransferOutputs, ContentPaymentsIdMap)> {
         let mut rng = &mut rand::thread_rng();
 
         // create a unique key for each output
@@ -210,10 +212,10 @@ impl LocalWallet {
                     dbc.public_address() == &payee && !used_dbcs.contains(&dbc.id().to_bytes())
                 }) {
                     used_dbcs.insert(dbc.id().to_bytes());
-                    let dbcs_for_content: &mut Vec<Dbc> = all_transfers_per_address
+                    let dbcs_for_content: &mut Vec<DbcId> = all_transfers_per_address
                         .entry(content_addr.clone())
                         .or_default();
-                    dbcs_for_content.push(dbc.clone());
+                    dbcs_for_content.push(dbc.id());
                 }
             }
         }
