@@ -4100,6 +4100,7 @@ dependencies = [
  "sn_dbc",
  "sn_registers",
  "thiserror",
+ "tracing",
  "xor_name",
 ]
 
