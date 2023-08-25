@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_transfers::client_transfers::{ContentPaymentsMap, SpendRequest};
+use sn_transfers::client_transfers::{ContentPaymentsIdMap, ContentPaymentsMap, SpendRequest};
 
 use super::Client;
 
@@ -19,7 +19,7 @@ use sn_transfers::{
 
 use futures::future::join_all;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     iter::Iterator,
     time::{Duration, Instant},
 };
@@ -185,7 +185,30 @@ impl WalletClient {
         let elapsed = now.elapsed();
         println!("After {elapsed:?}, All transfers made for total payment of {total_cost:?} nano tokens. ");
 
-        Ok((address_payment_map, total_cost))
+        let content_payment_map =
+            Self::build_content_payments_map(address_payment_map, transfers.created_dbcs);
+
+        Ok((content_payment_map, total_cost))
+    }
+
+    /// Build ContentPayment map from ContentPaymentId map and TransferOutputs
+    pub fn build_content_payments_map(
+        content_payments_id_map: ContentPaymentsIdMap,
+        created_dbcs: Vec<Dbc>,
+    ) -> ContentPaymentsMap {
+        let mut content_payments_map = ContentPaymentsMap::new();
+        let mut dbc_map: HashMap<_, Dbc> = created_dbcs
+            .into_iter()
+            .map(|dbc| (dbc.id().to_bytes(), dbc))
+            .collect();
+        for (network_address, dbc_ids) in content_payments_id_map {
+            let dbcs = dbc_ids
+                .into_iter()
+                .filter_map(|dbc_id| dbc_map.remove(&dbc_id.to_bytes()))
+                .collect();
+            content_payments_map.insert(network_address, dbcs);
+        }
+        content_payments_map
     }
 
     /// Resend failed txs

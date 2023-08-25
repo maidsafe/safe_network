@@ -99,7 +99,7 @@ impl Files {
     pub async fn upload_with_payments(
         &self,
         bytes: Bytes,
-        content_payments_map: &ContentPaymentsMap,
+        content_payments_map: ContentPaymentsMap,
         verify_store: bool,
     ) -> Result<NetworkAddress> {
         self.upload_bytes(bytes, content_payments_map, verify_store)
@@ -114,9 +114,9 @@ impl Files {
     pub async fn upload_and_verify(
         &self,
         bytes: Bytes,
-        transfer_outputs_map: &ContentPaymentsMap,
+        content_payments_map: ContentPaymentsMap,
     ) -> Result<NetworkAddress> {
-        self.upload_bytes(bytes, transfer_outputs_map, true).await
+        self.upload_bytes(bytes, content_payments_map, true).await
     }
 
     /// Calculates a LargeFile's/SmallFile's address from self encrypted chunks,
@@ -145,7 +145,7 @@ impl Files {
     pub async fn upload_chunks_in_batches(
         &self,
         chunks: impl Iterator<Item = Chunk>,
-        content_payments_map: &ContentPaymentsMap,
+        content_payments_map: &mut ContentPaymentsMap,
         verify_store: bool,
     ) -> Result<()> {
         trace!("Client upload in batches started");
@@ -156,8 +156,7 @@ impl Files {
             let client = self.client.clone();
             let chunk_addr = chunk.network_address();
             let payment = content_payments_map
-                .get(&chunk_addr)
-                .cloned()
+                .remove(&chunk_addr)
                 .ok_or(super::Error::MissingPaymentProof(format!("{chunk_addr}")))?;
 
             trace!("Payment for {chunk:?}: {:?}", payment);
@@ -195,7 +194,7 @@ impl Files {
     async fn upload_bytes(
         &self,
         bytes: Bytes,
-        content_payments_map: &ContentPaymentsMap,
+        mut content_payments_map: ContentPaymentsMap,
         verify: bool,
     ) -> Result<NetworkAddress> {
         if bytes.len() < MIN_ENCRYPTABLE_BYTES {
@@ -203,7 +202,7 @@ impl Files {
             self.upload_small(file, content_payments_map, verify).await
         } else {
             let (head_address, chunks) = encrypt_large(bytes)?;
-            self.upload_chunks_in_batches(chunks.into_iter(), content_payments_map, verify)
+            self.upload_chunks_in_batches(chunks.into_iter(), &mut content_payments_map, verify)
                 .await?;
             Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
                 head_address,
@@ -217,7 +216,7 @@ impl Files {
     async fn upload_small(
         &self,
         small: SmallFile,
-        content_payments_map: &ContentPaymentsMap,
+        content_payments_map: ContentPaymentsMap,
         verify_store: bool,
     ) -> Result<NetworkAddress> {
         let chunk = package_small(small)?;
