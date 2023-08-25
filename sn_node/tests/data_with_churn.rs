@@ -106,7 +106,6 @@ async fn data_availability_during_churn() -> Result<()> {
         if chunks_only { " (Chunks only)" } else { "" }
     );
 
-    let tmp_dir = std::env::temp_dir();
     let logging_targets = vec![
         ("safenode".to_string(), Level::TRACE),
         ("sn_transfers".to_string(), Level::TRACE),
