@@ -35,9 +35,12 @@ use std::collections::BTreeMap;
 pub(crate) use self::error::{Error, Result};
 pub use self::transfer::create_transfer;
 
-use sn_dbc::{Dbc, DbcTransaction, DerivationIndex, DerivedKey, PublicAddress, SignedSpend, Token};
+use sn_dbc::{
+    Dbc, DbcId, DbcTransaction, DerivationIndex, DerivedKey, PublicAddress, SignedSpend, Token,
+};
 use sn_protocol::NetworkAddress;
 
+pub type ContentPaymentsIdMap = BTreeMap<NetworkAddress, Vec<DbcId>>;
 pub type ContentPaymentsMap = BTreeMap<NetworkAddress, Vec<Dbc>>;
 
 /// The input details necessary to

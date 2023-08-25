@@ -339,7 +339,7 @@ async fn store_chunks(
             bytes.len()
         );
 
-        let (proofs, _) = wallet_client
+        let (contents_payment_map, _) = wallet_client
             .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
             .await
             .expect("Failed to pay for storage for new file at {addr:?}");
@@ -352,7 +352,9 @@ async fn store_chunks(
 
         let addr = ChunkAddress::new(file_api.calculate_address(bytes.clone())?);
         let key = PrettyPrintRecordKey::from(RecordKey::new(addr.xorname()));
-        file_api.upload_with_payments(bytes, &proofs, true).await?;
+        file_api
+            .upload_with_payments(bytes, contents_payment_map, true)
+            .await?;
         uploaded_chunks_count += 1;
 
         println!("Stored Chunk with {addr:?} / {key:?}");

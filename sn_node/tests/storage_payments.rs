@@ -118,7 +118,7 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
     // now let's request to upload all addresses, even that we've already paid for a subset of them
     let verify_store = false;
     let res = files_api
-        .upload_with_payments(content_bytes, &subset_of_transfer_outputs_map, verify_store)
+        .upload_with_payments(content_bytes, subset_of_transfer_outputs_map, verify_store)
         .await;
     assert!(
         res.is_err(),
@@ -210,7 +210,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         .await?;
 
     files_api
-        .upload_with_payments(content_bytes, &transfer_outputs_map, true)
+        .upload_with_payments(content_bytes, transfer_outputs_map, true)
         .await?;
 
     files_api.read_bytes(content_addr).await?;
@@ -246,18 +246,25 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         );
     }
 
-    let (bad_transfer_outputs, contents_payment_map) = wallet_client
+    let (bad_transfer_outputs, contents_payment_id_map) = wallet_client
         .into_wallet()
         .local_send_storage_payment(no_data_payments, None)
         .await?;
 
     // invalid spends
-    client.send(bad_transfer_outputs.clone(), false).await?;
+    client
+        .send(&bad_transfer_outputs.all_spend_requests, true)
+        .await?;
 
     sleep(Duration::from_secs(5)).await;
-    // it should fail to store as the amount paid is not enough
+
+    let contents_payments_map = WalletClient::build_content_payments_map(
+        contents_payment_id_map,
+        bad_transfer_outputs.created_dbcs,
+    );
+    // this should fail to store as the amount paid is not enough
     files_api
-        .upload_with_payments(content_bytes.clone(), &contents_payment_map, false)
+        .upload_with_payments(content_bytes.clone(), contents_payments_map, false)
         .await?;
 
     assert!(matches!(

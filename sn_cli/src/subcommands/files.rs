@@ -96,7 +96,7 @@ async fn upload_files(
     let file_names_path = root_dir.join("uploaded_files");
 
     // Payment shall always be verified.
-    let (chunks_to_upload, content_payments_map) =
+    let (chunks_to_upload, mut content_payments_map) =
         chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
 
     let mut chunks_to_fetch = Vec::new();
@@ -118,7 +118,7 @@ async fn upload_files(
             &file_api,
             &file_name,
             chunks,
-            &content_payments_map,
+            &mut content_payments_map,
             verify_store,
         )
         .await
@@ -146,7 +146,7 @@ async fn upload_chunks(
     file_api: &Files,
     file_name: &str,
     chunks_paths: Vec<(XorName, PathBuf)>,
-    content_payments_map: &ContentPaymentsMap,
+    content_payments_map: &mut ContentPaymentsMap,
     verify_store: bool,
 ) -> Result<()> {
     let chunks_reader = chunks_paths
