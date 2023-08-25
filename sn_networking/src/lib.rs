@@ -809,17 +809,17 @@ impl Network {
     /// Put `Record` to network
     /// optionally verify the record is stored after putting it to network
     pub async fn put_record(&self, record: Record, verify_store: bool) -> Result<()> {
-        if verify_store {
-            self.put_record_with_retries(record).await
-        } else {
-            self.put_record_once(record, false).await
-        }
+        // if verify_store {
+        self.put_record_with_retries(record, verify_store).await
+        // } else {
+        //     self.put_record_once(record, false).await
+        // }
     }
 
     /// Put `Record` to network
     /// Verify the record is stored after putting it to network
     /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
-    async fn put_record_with_retries(&self, record: Record) -> Result<()> {
+    async fn put_record_with_retries(&self, record: Record, verify_store: bool) -> Result<()> {
         let mut retries = 0;
         // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
         while retries < PUT_RECORD_RETRIES {
@@ -828,7 +828,7 @@ impl Network {
                 PrettyPrintRecordKey::from(record.key.clone())
             );
 
-            let res = self.put_record_once(record.clone(), true).await;
+            let res = self.put_record_once(record.clone(), verify_store).await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
             }
