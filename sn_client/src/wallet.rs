@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_transfers::client_transfers::ContentPaymentsMap;
+use sn_transfers::client_transfers::{ContentPaymentsMap, SpendRequest};
 
 use super::Client;
 
@@ -70,7 +70,11 @@ impl WalletClient {
 
         // send to network
         trace!("Sending transfer to the network: {transfer:#?}");
-        if let Err(error) = self.client.send(transfer.clone(), verify_store).await {
+        if let Err(error) = self
+            .client
+            .send(&transfer.all_spend_requests, verify_store)
+            .await
+        {
             warn!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
             self.unconfirmed_txs.push(transfer);
         }
@@ -88,6 +92,7 @@ impl WalletClient {
     /// Returns a Vec of proofs
     pub async fn get_store_cost_at_address(
         &self,
+
         address: &NetworkAddress,
     ) -> Result<Vec<(PublicAddress, Token)>> {
         self.client
@@ -128,7 +133,6 @@ impl WalletClient {
                 Ok(c) => c,
                 Err(e) => return Err(Error::CouldNotGetStoreCost(e.to_string())),
             };
-            // let amounts_to_pay = amounts_to_pay;
             payment_map.insert(content_addr, amounts_to_pay?);
         }
 
@@ -169,12 +173,12 @@ impl WalletClient {
 
         // send to network
         trace!("Sending storage payment transfer to the network");
-
-        let spend_attempt_result = self.client.send(transfers.clone(), verify_store).await;
+        let spend_requests = &transfers.all_spend_requests;
+        let spend_attempt_result = self.client.send(spend_requests, verify_store).await;
         info!("Spend has completed: {:?}", spend_attempt_result);
         if let Err(error) = spend_attempt_result {
             warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
-            self.unconfirmed_txs.push(transfers.clone());
+            self.unconfirmed_txs.push(transfers);
             return Err(error);
         }
 
@@ -192,7 +196,7 @@ impl WalletClient {
             println!("Trying to republish pending tx: {tx_hash:?}..");
             if self
                 .client
-                .send(transfer.clone(), verify_store)
+                .send(&transfer.all_spend_requests, verify_store)
                 .await
                 .is_ok()
             {
@@ -215,10 +219,10 @@ impl WalletClient {
 impl Client {
     /// Send a spend request to the network.
     /// This can optionally verify the spend has been correctly stored before returning
-    pub async fn send(&self, transfer: TransferOutputs, verify_store: bool) -> Result<()> {
+    pub async fn send(&self, spend_requests: &Vec<SpendRequest>, verify_store: bool) -> Result<()> {
         let mut tasks = Vec::new();
 
-        for spend_request in &transfer.all_spend_requests {
+        for spend_request in spend_requests {
             trace!(
                 "sending spend request to the network: {:?}: {spend_request:#?}",
                 spend_request.signed_spend.dbc_id()
