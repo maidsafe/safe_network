@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1692974443421,
+  "lastUpdate": 1692974752754,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9569,6 +9569,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 37.77741,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f9bb98a690dc4d54c1d199a9ac3db2fa7a1a3695",
+          "message": "fix(workspace): use new feature resolver\n- more details here: https://doc.rust-lang.org/cargo/reference/resolver.html#feature-resolver-version-2",
+          "timestamp": "2023-08-25T10:06:24Z",
+          "tree_id": "1bea59ab174b80af5f5b2ca762790084b8838e4a",
+          "url": "https://github.com/maidsafe/safe_network/commit/f9bb98a690dc4d54c1d199a9ac3db2fa7a1a3695"
+        },
+        "date": 1692974752081,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 38.354942,
             "unit": "MB"
           }
         ]
