@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = [
     "sn_build_info",
     "sn_cli",
