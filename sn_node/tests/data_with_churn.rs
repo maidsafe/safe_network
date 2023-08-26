@@ -28,6 +28,7 @@ use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -164,14 +165,15 @@ async fn data_availability_during_churn() -> Result<()> {
         );
     }
 
-    // The paying wallet could be updated to pay for the transfer_wallet.
-    // Hence reload it here to avoid double spend, AND the clippy complains.
-    let paying_wallet = get_wallet(paying_wallet_dir.path()).await;
-
     println!("Uploading some chunks before carry out node churning");
 
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
-    store_chunks_task(client.clone(), paying_wallet, content.clone(), churn_period);
+    store_chunks_task(
+        client.clone(),
+        content.clone(),
+        churn_period,
+        paying_wallet_dir.path().to_path_buf(),
+    );
 
     // Spawn a task to churn nodes
     churn_nodes_task(churn_count.clone(), test_duration, churn_period);
@@ -330,13 +332,16 @@ fn create_registers_task(client: Client, content: ContentList, churn_period: Dur
 // Spawns a task which periodically stores Chunks at random locations.
 fn store_chunks_task(
     client: Client,
-    paying_wallet: LocalWallet,
     content: ContentList,
     churn_period: Duration,
+    paying_wallet_dir: PathBuf,
 ) {
     let _handle = tokio::spawn(async move {
         // Store Chunks at a higher frequency than the churning events
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
+
+        let paying_wallet = get_wallet(&paying_wallet_dir).await;
+
         let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
         let file_api = Files::new(client);
@@ -360,7 +365,7 @@ fn store_chunks_task(
             );
             sleep(delay).await;
 
-            let (mut content_payments_map, cost) = wallet_client
+            let cost = wallet_client
                 .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
                 .await
                 .expect("Failed to pay for storage for new file at {addr:?}");
@@ -372,15 +377,17 @@ fn store_chunks_task(
             );
             sleep(delay).await;
 
-            match file_api
-                .upload_chunk_in_parallel(chunks.into_iter(), &mut content_payments_map, false)
-                .await
-            {
-                Ok(()) => content
-                    .write()
+            for chunk in chunks {
+                match file_api
+                    .upload_chunk_in_parallel(chunk, &wallet_client, true)
                     .await
-                    .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(addr))),
-                Err(err) => println!("Discarding new Chunk ({addr:?}) due to error: {err:?}"),
+                {
+                    Ok(()) => content
+                        .write()
+                        .await
+                        .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(addr))),
+                    Err(err) => println!("Discarding new Chunk ({addr:?}) due to error: {err:?}"),
+                }
             }
         }
     });

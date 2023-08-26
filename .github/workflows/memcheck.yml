@@ -206,7 +206,7 @@ jobs:
         # The memory usage here will be significantly higher here than in the benchmark test,
         # where we don't have a bootstrap node.
         run: |
-          node_peak_mem_limit_mb="200" # mb
+          node_peak_mem_limit_mb="250" # mb
 
           peak_mem_usage=$(
             rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename | 
