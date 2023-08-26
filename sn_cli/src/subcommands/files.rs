@@ -7,15 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::wallet::{chunk_and_pay_for_storage, ChunkedFile};
-
-use bytes::{Bytes, BytesMut};
+use bytes::Bytes;
 use clap::Parser;
 use color_eyre::Result;
 use libp2p::futures::future::join_all;
 use sn_client::{Client, Files, MAX_CONCURRENT_CHUNK_UPLOAD};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::client_transfers::ContentPaymentsMap;
-use tokio::{fs, io::AsyncReadExt, sync::Semaphore};
+use tokio::{fs, sync::Semaphore};
 
 use std::{
     // fs,
@@ -97,8 +95,7 @@ async fn upload_files(
     let file_names_path = root_dir.join("uploaded_files");
 
     // Payment shall always be verified.
-    let (chunks_to_upload, content_payments_map) =
-        chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
+    let chunks_to_upload = chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
 
     let chunk_semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_CHUNK_UPLOAD));
 
@@ -121,18 +118,19 @@ async fn upload_files(
 
         // Clone necessary variables for each file upload
         let file_api: Files = Files::new(client.clone());
-        let mut content_payments_map = content_payments_map.clone();
-        let chunk_semaphore = chunk_semaphore.clone();
 
+        let wallet_dir = root_dir.to_path_buf();
+
+        let semaphore = chunk_semaphore.clone();
         // Spawn a new task for each file upload
         let upload = tokio::spawn(async move {
             match upload_chunks(
                 &file_api,
                 &file_name,
+                &wallet_dir,
                 chunks,
-                &mut content_payments_map,
                 verify_store,
-                chunk_semaphore.clone(),
+                semaphore,
             )
             .await
             {
@@ -152,7 +150,11 @@ async fn upload_files(
     }
 
     let results = join_all(uploads).await;
-    let chunks_to_fetch: Vec<_> = results.into_iter().filter_map(Result::ok).collect();
+
+    let chunks_to_fetch: Vec<_> = results
+        .into_iter()
+        .filter_map(|x| x.unwrap_or(None))
+        .collect();
 
     let content = bincode::serialize(&chunks_to_fetch)?;
     fs::create_dir_all(file_names_path.as_path()).await?;
@@ -167,67 +169,32 @@ async fn upload_files(
 /// Upload chunks of an individual file to the network.
 async fn upload_chunks(
     file_api: &Files,
-    _file_name: &str,
+    file_name: &str,
+    wallet_dir: &Path,
     chunks_paths: Vec<(XorName, PathBuf)>,
-    content_payments_map: &mut ContentPaymentsMap,
     verify_store: bool,
     // here we use a semaphore to limit the number of concurrent chunk uploads (but not concurrent verifications!)
     chunk_semaphore: Arc<Semaphore>,
 ) -> Result<()> {
-    for (name, path) in chunks_paths {
-        // limit pulling of chunks into mem if we cannot handle more!
+    println!("Awaiting to start uploading chunks of {file_name:?}");
+    for (_name, path) in chunks_paths {
         let start_time = std::time::Instant::now();
+
         let _permit = chunk_semaphore.clone().acquire_owned().await?;
         let elapsed = start_time.elapsed();
-        println!("Time taken to get a permit for {name:?}: {:?}", elapsed);
+        println!(
+            "Starting to upload chunks from {file_name:?}. ({:?} elapsed)",
+            elapsed
+        );
 
-        // This is pre chunked, so we don't need to worry about the size of the file here being overly large.
-        let mut file = fs::File::open(path).await?;
-        let size = file.metadata().await?.len();
-        let mut buffer = BytesMut::with_capacity(size as usize);
+        let wallet_client = file_api.wallet(wallet_dir).await?;
 
-        loop {
-            let bytes_read = file.read(&mut buffer).await?;
-            if bytes_read == 0 {
-                break;
-            }
-        }
-
-        // fs::read(file, &mut buffer).await?;
-        // let mut reader = fs::ReaderStream::new(file);
-        let chunk = Chunk {
-            address: ChunkAddress::new(name),
-            // value: reader.collect::<Result<Bytes, _>>().await?,
-            value: buffer.freeze(),
-        };
+        let chunk = Chunk::new(Bytes::from(fs::read(path).await?));
 
         file_api
-            .upload_chunk_in_parallel(chunk, content_payments_map, verify_store)
+            .upload_chunk_in_parallel(chunk, &wallet_client, verify_store)
             .await?;
-
-        // drop(permit);
-
-        // (name, fs::read(chunk_path), semaphore)
     }
-
-    // let chunks_reader = chunks_paths
-    //     .into_iter()
-    //     .map(|(name, chunk_path)| {
-    //     })
-    //     .filter_map(|x| match x {
-    //         (name, Ok(file), semaphore) => Some((
-    //             Chunk {
-    //                 address: ChunkAddress::new(name),
-    //                 value: Bytes::from(file),
-    //             },
-    //             semaphore,
-    //         )),
-    //         (_, Err(err), _) => {
-    //             // FIXME: this error won't be seen/reported, thus assumed all chunks were read and stored.
-    //             println!("Could not upload generated chunk of file '{file_name}': {err}");
-    //             None
-    //         }
-    //     });
 
     Ok(())
 }

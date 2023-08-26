@@ -47,6 +47,9 @@ pub enum Error {
     /// The dbc error reason that parsing failed.
     #[error("Failed to parse reason: {0}")]
     FailedToParseReason(#[from] Box<DbcError>),
+
+    #[error("Failed to perform wallet action: {0}")]
+    WalletError(String),
 }
 
 lazy_static! {
@@ -71,12 +74,15 @@ pub fn is_genesis_parent_tx(parent_tx: &DbcTransaction) -> bool {
     parent_tx == &GENESIS_DBC.src_tx
 }
 
-pub async fn load_genesis_wallet() -> LocalWallet {
+pub async fn load_genesis_wallet() -> Result<LocalWallet, Error> {
     info!("Loading genesis...");
     let mut genesis_wallet = create_genesis_wallet().await;
 
     info!("Depositing genesis DBC: {:#?}", GENESIS_DBC.id());
-    genesis_wallet.deposit(vec![GENESIS_DBC.clone()]);
+    genesis_wallet
+        .deposit(vec![GENESIS_DBC.clone()])
+        .await
+        .map_err(|err| Error::WalletError(err.to_string()))?;
     genesis_wallet
         .store()
         .await
@@ -85,7 +91,7 @@ pub async fn load_genesis_wallet() -> LocalWallet {
     let genesis_balance = genesis_wallet.balance();
     info!("Genesis wallet balance: {genesis_balance}");
 
-    genesis_wallet
+    Ok(genesis_wallet)
 }
 
 pub async fn create_genesis_wallet() -> LocalWallet {

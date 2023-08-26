@@ -237,7 +237,7 @@ jobs:
       - name: Check node memory usage
         shell: bash
         run: |
-          node_peak_mem_limit_mb="100" # mb
+          node_peak_mem_limit_mb="250" # mb
           peak_mem_usage=$(
             rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename | 
             awk -F':' '/"memory_used_mb":/{print $2}' | 

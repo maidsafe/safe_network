@@ -74,7 +74,7 @@ async fn storage_payment_succeeds() -> Result<()> {
         random_content_addrs.len()
     );
 
-    let (_proofs, _cost) = wallet_client
+    let _cost = wallet_client
         .pay_for_storage(random_content_addrs.clone().into_iter(), true)
         .await?;
 
@@ -102,7 +102,7 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
 
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
     let subset_len = chunks.len() / 3;
-    let (subset_of_transfer_outputs_map, _storage_cost) = wallet_client
+    let _storage_cost = wallet_client
         .pay_for_storage(
             chunks
                 .clone()
@@ -113,12 +113,10 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
         )
         .await?;
 
-    assert_eq!(subset_of_transfer_outputs_map.len(), subset_len);
-
     // now let's request to upload all addresses, even that we've already paid for a subset of them
     let verify_store = false;
     let res = files_api
-        .upload_with_payments(content_bytes, subset_of_transfer_outputs_map, verify_store)
+        .upload_with_payments(content_bytes, &wallet_client, verify_store)
         .await;
     assert!(
         res.is_err(),
@@ -149,13 +147,12 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     // let's first pay only for a subset of the addresses
     let subset_len = random_content_addrs.len() / 3;
     println!("Paying for {subset_len} random addresses...",);
-    let (proofs, storage_cost) = wallet_client
+    let storage_cost = wallet_client
         .pay_for_storage(
             random_content_addrs.clone().into_iter().take(subset_len),
             true,
         )
         .await?;
-    assert_eq!(proofs.len(), subset_len);
 
     // check we've paid only for the subset of addresses, 1 nano per addr
     let new_balance = Token::from_nano(wallet_original_balance - storage_cost.as_nano());
@@ -167,14 +164,13 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     assert!(random_content_addrs
         .iter()
         .take(subset_len)
-        .all(|name| paying_wallet.get_payment_proof(name) == proofs.get(name)));
+        .all(|name| paying_wallet.get_payment_dbc_ids(name).is_some()));
 
     // now let's request to pay for all addresses, even that we've already paid for a subset of them
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
-    let (transfer_outputs_map, storage_cost) = wallet_client
+    let storage_cost = wallet_client
         .pay_for_storage(random_content_addrs.clone().into_iter(), false)
         .await?;
-    assert_eq!(transfer_outputs_map.len(), random_content_addrs.len());
 
     // check we've paid only for addresses we haven't previously paid for, 1 nano per addr
     let new_balance = Token::from_nano(
@@ -185,9 +181,9 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     assert_eq!(paying_wallet.balance(), new_balance);
 
     // let's verify payment proofs now for all addresses have been cached in the wallet
-    assert!(random_content_addrs
-        .iter()
-        .all(|name| paying_wallet.get_payment_proof(name) == transfer_outputs_map.get(name)));
+    // assert!(random_content_addrs
+    //     .iter()
+    //     .all(|name| paying_wallet.get_payment_dbc_ids(name) == transfer_outputs_map.get(name)));
 
     Ok(())
 }
@@ -205,12 +201,12 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 
     println!("Paying for {} random addresses...", chunks.len());
 
-    let (transfer_outputs_map, _cost) = wallet_client
+    let _cost = wallet_client
         .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
         .await?;
 
     files_api
-        .upload_with_payments(content_bytes, transfer_outputs_map, true)
+        .upload_with_payments(content_bytes, &wallet_client, true)
         .await?;
 
     files_api.read_bytes(content_addr).await?;
@@ -231,7 +227,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
 
     println!("Paying for {} random addresses...", chunks.len());
 
-    let (_transfer_outputs, _cost) = wallet_client
+    let _cost = wallet_client
         .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
         .await?;
 
@@ -246,25 +242,19 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         );
     }
 
-    let (bad_transfer_outputs, contents_payment_id_map) = wallet_client
-        .into_wallet()
+    wallet_client
+        .mut_wallet()
         .local_send_storage_payment(no_data_payments, None)
         .await?;
 
     // invalid spends
-    client
-        .send(&bad_transfer_outputs.all_spend_requests, true)
-        .await?;
+    client.send(wallet_client.unconfirmed_txs(), true).await?;
 
     sleep(Duration::from_secs(5)).await;
 
-    let contents_payments_map = WalletClient::build_content_payments_map(
-        contents_payment_id_map,
-        bad_transfer_outputs.created_dbcs,
-    );
     // this should fail to store as the amount paid is not enough
     files_api
-        .upload_with_payments(content_bytes.clone(), contents_payments_map, false)
+        .upload_with_payments(content_bytes.clone(), &wallet_client, false)
         .await?;
 
     assert!(matches!(

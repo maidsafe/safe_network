@@ -9,10 +9,7 @@
 use sn_client::{Client, Files, WalletClient};
 use sn_dbc::Token;
 use sn_protocol::storage::ChunkAddress;
-use sn_transfers::{
-    client_transfers::ContentPaymentsMap,
-    wallet::{parse_public_address, LocalWallet},
-};
+use sn_transfers::wallet::{parse_public_address, LocalWallet};
 
 use bytes::Bytes;
 use clap::Parser;
@@ -178,7 +175,7 @@ async fn deposit_from_dbc_hex(root_dir: &Path, input: String) -> Result<()> {
     let dbc = sn_dbc::Dbc::from_hex(input.trim())?;
 
     let old_balance = wallet.balance();
-    wallet.deposit(vec![dbc]);
+    wallet.deposit(vec![dbc]).await?;
     let new_balance = wallet.balance();
     wallet.store().await?;
 
@@ -218,7 +215,7 @@ async fn send(
                 println!("Successfully stored wallet with new balance {new_balance}.");
             }
 
-            wallet.store_created_dbc(new_dbc).await?;
+            wallet.store_dbc(new_dbc).await?;
             println!("Successfully stored new dbc to wallet dir. It can now be sent to the recipient, using any channel of choice.");
         }
         Err(err) => {
@@ -240,7 +237,7 @@ pub(super) async fn chunk_and_pay_for_storage(
     root_dir: &Path,
     files_path: &Path,
     verify_store: bool,
-) -> Result<(BTreeMap<XorName, ChunkedFile>, ContentPaymentsMap)> {
+) -> Result<BTreeMap<XorName, ChunkedFile>> {
     trace!("Starting to chunk_and_pay_for_storage");
     let wallet = LocalWallet::load_from(root_dir)
         .await
@@ -249,6 +246,7 @@ pub(super) async fn chunk_and_pay_for_storage(
             "If you have an old wallet file, it may no longer be compatible. Try removing it",
         )?;
 
+    debug!("Wallet readdddd!!!!!");
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
     let file_api: Files = Files::new(client.clone());
 
@@ -308,7 +306,7 @@ pub(super) async fn chunk_and_pay_for_storage(
         chunked_files.len()
     );
 
-    let (content_payments_map, cost) = wallet_client
+    let cost = wallet_client
         .pay_for_storage(
             chunked_files
                 .values()
@@ -322,20 +320,18 @@ pub(super) async fn chunk_and_pay_for_storage(
 
     println!(
         "Successfully made payment of {cost} for {} records. (At a cost per record of {cost:?}.)",
-        content_payments_map.len(),
+        chunked_files.len(),
     );
 
-    let wallet = wallet_client.into_wallet();
-
-    if let Err(err) = wallet.store().await {
+    if let Err(err) = wallet_client.store_local_wallet().await {
         println!("Failed to store wallet: {err:?}");
     } else {
         println!(
             "Successfully stored wallet with cached payment proofs, and new balance {}.",
-            wallet.balance()
+            wallet_client.balance()
         );
     }
 
     println!("Successfully paid for storage and generated the proofs. They can now be sent to the storage nodes when uploading paid chunks.");
-    Ok((chunked_files, content_payments_map))
+    Ok(chunked_files)
 }

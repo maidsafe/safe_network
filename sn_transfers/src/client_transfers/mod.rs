@@ -41,7 +41,6 @@ use sn_dbc::{
 use sn_protocol::NetworkAddress;
 
 pub type ContentPaymentsIdMap = BTreeMap<NetworkAddress, Vec<DbcId>>;
-pub type ContentPaymentsMap = BTreeMap<NetworkAddress, Vec<Dbc>>;
 
 /// The input details necessary to
 /// carry out a transfer of tokens.
