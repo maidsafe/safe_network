@@ -36,7 +36,7 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
     }
 
     println!("Loading genesis...");
-    let genesis_wallet = load_genesis_wallet().await;
+    let genesis_wallet = load_genesis_wallet().await?;
 
     // Transfer to faucet. We will transfer almost all of the genesis wallet's
     // balance to the faucet,.
@@ -52,7 +52,7 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
     )
     .await?;
 
-    faucet_wallet.deposit(vec![dbc.clone()]);
+    faucet_wallet.deposit(vec![dbc.clone()]).await?;
     faucet_wallet
         .store()
         .await
