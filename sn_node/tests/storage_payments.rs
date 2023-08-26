@@ -167,7 +167,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     assert!(random_content_addrs
         .iter()
         .take(subset_len)
-        .all(|name| paying_wallet.get_payment_proof(name) == proofs.get(name)));
+        .all(|name| paying_wallet.get_payment_dbc_ids(name) == proofs.get(name)));
 
     // now let's request to pay for all addresses, even that we've already paid for a subset of them
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
@@ -187,7 +187,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     // let's verify payment proofs now for all addresses have been cached in the wallet
     assert!(random_content_addrs
         .iter()
-        .all(|name| paying_wallet.get_payment_proof(name) == transfer_outputs_map.get(name)));
+        .all(|name| paying_wallet.get_payment_dbc_ids(name) == transfer_outputs_map.get(name)));
 
     Ok(())
 }
@@ -246,7 +246,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         );
     }
 
-    let (bad_transfer_outputs, contents_payment_id_map) = wallet_client
+    let bad_transfer_outputs = wallet_client
         .into_wallet()
         .local_send_storage_payment(no_data_payments, None)
         .await?;
@@ -258,13 +258,16 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
 
     sleep(Duration::from_secs(5)).await;
 
-    let contents_payments_map = WalletClient::build_content_payments_map(
-        contents_payment_id_map,
-        bad_transfer_outputs.created_dbcs,
-    );
+    // let contents_payments_map = WalletClient::store_content_payments_map(
+    //     contents_payment_id_map,
+    //     bad_transfer_outputs.created_dbcs,
+    // );
+
+    // let contents_payments_map = wallet_client.store_content_payments_map(
+
     // this should fail to store as the amount paid is not enough
     files_api
-        .upload_with_payments(content_bytes.clone(), contents_payments_map, false)
+        .upload_with_payments(content_bytes.clone(), wallet_client, false)
         .await?;
 
     assert!(matches!(

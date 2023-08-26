@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use sn_protocol::PrettyPrintRecordKey;
 use std::io;
 use thiserror::Error;
 use xor_name::XorName;
@@ -16,6 +17,12 @@ pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
+    #[error("Failed to get find payment for record: {0:?}")]
+    NoPaymentForRecord(PrettyPrintRecordKey),
+
+    #[error("Failed to get chunk permit")]
+    CouldNotGetChunkPermit,
+
     #[error(transparent)]
     SelfEncryption(#[from] self_encryption::Error),
 

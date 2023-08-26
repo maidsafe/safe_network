@@ -63,8 +63,11 @@ fn select_inputs(
     let mut total_input_amount = Token::zero();
     let mut change_amount = total_output_amount;
 
+    println!("Selecitn inputs frommmm: {:?}", available_dbcs.len());
     for (dbc, derived_key) in available_dbcs {
         let input_key = dbc.id();
+
+        println!("avilable: {:?} : {:?}", dbc.id(), dbc.token());
 
         let dbc_balance = match dbc.token() {
             Ok(token) => token,

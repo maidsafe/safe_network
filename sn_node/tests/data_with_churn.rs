@@ -372,7 +372,7 @@ fn store_chunks_task(
             sleep(delay).await;
 
             match file_api
-                .upload_chunks_in_batches(chunks.into_iter(), &mut content_payments_map, false)
+                .get_payment_and_upload_chunk(chunks.into_iter(), &mut content_payments_map, false)
                 .await
             {
                 Ok(()) => content

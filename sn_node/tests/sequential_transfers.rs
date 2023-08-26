@@ -80,7 +80,7 @@ async fn dbc_transfer_double_spend_fail() -> Result<()> {
     let to2 = second_wallet.address();
     let to3 = third_wallet.address();
 
-    let some_dbcs = first_wallet.available_dbcs();
+    let some_dbcs = first_wallet.get_available_dbcs();
     let same_dbcs = some_dbcs.clone();
 
     let mut rng = rng::thread_rng();

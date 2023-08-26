@@ -13,12 +13,9 @@ use clap::Parser;
 use color_eyre::Result;
 use sn_client::{Client, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::client_transfers::ContentPaymentsMap;
+use tokio::fs;
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -83,11 +80,10 @@ pub(crate) async fn files_cmds(
 async fn upload_files(
     files_path: PathBuf,
     client: Client,
+    // wallet_client: &WalletClient,
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
-    let file_api: Files = Files::new(client.clone());
-
     debug!(
         "Uploading files from {:?}, will verify?: {verify_store}",
         files_path
@@ -96,10 +92,9 @@ async fn upload_files(
     let file_names_path = root_dir.join("uploaded_files");
 
     // Payment shall always be verified.
-    let (chunks_to_upload, mut content_payments_map) =
-        chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
+    let chunks_to_upload = chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
 
-    let mut chunks_to_fetch = Vec::new();
+    let mut uploads = vec![];
     for (
         file_addr,
         ChunkedFile {
@@ -114,29 +109,35 @@ async fn upload_files(
             chunks.len()
         );
 
-        if let Err(error) = upload_chunks(
-            &file_api,
-            &file_name,
-            chunks,
-            &mut content_payments_map,
-            verify_store,
-        )
-        .await
+        // Clone necessary variables for each file upload
+        let file_api: Files = Files::new(client.clone());
+        let wallet_dir = root_dir.to_path_buf();
+        // Spawn a new task for each file upload
+        let upload = match upload_chunks(&file_api, &file_name, &wallet_dir, chunks, verify_store)
+            .await
         {
-            println!("Failed to store all chunks of file '{file_name}' to all nodes in the close group: {error}")
-        } else {
-            println!("Successfully stored '{file_name}' to {file_addr:64x}");
-        }
+            Err(error) => {
+                println!("Failed to store all chunks of file '{file_name}' to all nodes in the close group: {error}");
+                None
+            }
+            _ => {
+                println!("Successfully stored '{file_name}' to {file_addr:64x}");
+                Some((file_addr, file_name))
+            }
+        };
 
-        chunks_to_fetch.push((file_addr, file_name));
+        // Add the upload task to the list of uploads
+        uploads.push(upload);
     }
+
+    let chunks_to_fetch: Vec<_> = uploads.into_iter().filter(|x| x.is_some()).collect();
 
     let content = bincode::serialize(&chunks_to_fetch)?;
     tokio::fs::create_dir_all(file_names_path.as_path()).await?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
     println!("Writing {} bytes to {file_names_path:?}", content.len());
-    fs::write(file_names_path, content)?;
+    fs::write(file_names_path, content).await?;
 
     Ok(())
 }
@@ -145,28 +146,21 @@ async fn upload_files(
 async fn upload_chunks(
     file_api: &Files,
     file_name: &str,
+    wallet_dir: &Path,
     chunks_paths: Vec<(XorName, PathBuf)>,
-    content_payments_map: &mut ContentPaymentsMap,
     verify_store: bool,
 ) -> Result<()> {
-    let chunks_reader = chunks_paths
-        .into_iter()
-        .map(|(name, chunk_path)| (name, fs::read(chunk_path)))
-        .filter_map(|x| match x {
-            (name, Ok(file)) => Some(Chunk {
-                address: ChunkAddress::new(name),
-                value: Bytes::from(file),
-            }),
-            (_, Err(err)) => {
-                // FIXME: this error won't be seen/reported, thus assumed all chunks were read and stored.
-                println!("Could not upload generated chunk of file '{file_name}': {err}");
-                None
-            }
-        });
+    println!("Awaiting to start uploading chunks of {file_name:?}");
+    for (_name, path) in chunks_paths {
+        let wallet_client = file_api.wallet(wallet_dir).await?;
 
-    file_api
-        .upload_chunks_in_batches(chunks_reader, content_payments_map, verify_store)
-        .await?;
+        // This is pre chunked, so we don't need to worry about the size of the file here being overly large.
+        let chunk = Chunk::new(Bytes::from(fs::read(path).await?));
+
+        file_api
+            .get_payment_and_upload_chunk(chunk, &wallet_client, verify_store)
+            .await?;
+    }
     Ok(())
 }
 
@@ -180,7 +174,7 @@ async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
         .flatten()
     {
         if entry.file_type().is_file() {
-            let index_doc_bytes = Bytes::from(fs::read(entry.path())?);
+            let index_doc_bytes = Bytes::from(fs::read(entry.path()).await?);
             let index_doc_name = entry.file_name();
 
             println!("Loading file names from index doc {index_doc_name:?}");
@@ -215,7 +209,7 @@ async fn download_file(
             println!("Successfully got file {file_name}!");
             let file_name_path = download_path.join(file_name);
             println!("Writing {} bytes to {file_name_path:?}", bytes.len());
-            if let Err(err) = fs::write(file_name_path, bytes) {
+            if let Err(err) = fs::write(file_name_path, bytes).await {
                 println!("Failed to create file {file_name:?} with error {err:?}");
             }
         }
