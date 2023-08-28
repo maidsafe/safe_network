@@ -104,12 +104,12 @@ jobs:
         timeout-minutes: 25
 
       - name: Chunks data integrity during nodes churn
-        run: cargo test --release -p sn_node --test data_with_churn -- --nocapture 
+        run: cargo test --release -p sn_node --test data_with_churn -- --nocapture
         env:
           TEST_DURATION_MINS: 15
           TEST_TOTAL_CHURN_CYCLES: 15
           SN_LOG: "all"
-        timeout-minutes: 20
+        timeout-minutes: 30
 
       - name: Verify restart of nodes using rg
         shell: bash
@@ -151,7 +151,7 @@ jobs:
           received_list_count=$(rg "Replicate list received from" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Received $received_list_count replication lists"
-          fetching_attempt_count=$(rg "Fetching replication" $NODE_DATA_PATH -c --stats | \
+          fetching_attempt_count=$(rg "FetchingKeysForReplication" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Carried out $fetching_attempt_count fetching attempts"
           replication_attempt_count=$(rg "Replicating chunk" $NODE_DATA_PATH -c --stats | \

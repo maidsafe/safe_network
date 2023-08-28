@@ -43,7 +43,7 @@ const EXTRA_CHURN_COUNT: u32 = 5;
 const CHURN_CYCLES: u32 = 1;
 const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 2;
 const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 5;
-const DBC_CREATION_RATIO_TO_CHURN: u32 = 2;
+const DBC_CREATION_RATIO_TO_CHURN: u32 = 1;
 
 const CHUNKS_SIZE: usize = 1024 * 1024;
 
@@ -129,6 +129,9 @@ async fn data_availability_during_churn() -> Result<()> {
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE).await?;
 
+    // Waiting for the paying_wallet funded.
+    sleep(std::time::Duration::from_secs(10)).await;
+
     println!(
         "Client and paying_wallet created with signing key: {:?}",
         client.signer_pk()
@@ -153,6 +156,9 @@ async fn data_availability_during_churn() -> Result<()> {
         )
         .await?;
         println!("Transfer wallet created");
+
+        // Waiting for the transfers_wallet funded.
+        sleep(std::time::Duration::from_secs(10)).await;
 
         create_registers_task(client.clone(), content.clone(), churn_period);
 
