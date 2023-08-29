@@ -27,7 +27,7 @@ pub async fn get_tokens_from_faucet(
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
 pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<LocalWallet> {
     println!("Loading faucet...");
-    let mut faucet_wallet = create_faucet_wallet().await;
+    let mut faucet_wallet = create_faucet_wallet();
 
     let faucet_balance = faucet_wallet.balance();
     if !faucet_balance.is_zero() {
@@ -36,7 +36,7 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
     }
 
     println!("Loading genesis...");
-    let genesis_wallet = load_genesis_wallet().await?;
+    let genesis_wallet = load_genesis_wallet()?;
 
     // Transfer to faucet. We will transfer almost all of the genesis wallet's
     // balance to the faucet,.
@@ -52,10 +52,9 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
     )
     .await?;
 
-    faucet_wallet.deposit(vec![dbc.clone()]).await?;
+    faucet_wallet.deposit(vec![dbc.clone()])?;
     faucet_wallet
         .store()
-        .await
         .expect("Faucet wallet shall be stored successfully.");
     println!("Faucet wallet balance: {}", faucet_wallet.balance());
 

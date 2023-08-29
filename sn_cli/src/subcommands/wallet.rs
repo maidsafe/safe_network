@@ -96,21 +96,21 @@ pub(crate) async fn wallet_cmds(
 }
 
 async fn address(root_dir: &Path) -> Result<()> {
-    let wallet = LocalWallet::load_from(root_dir).await?;
+    let wallet = LocalWallet::load_from(root_dir)?;
     let address_hex = hex::encode(wallet.address().to_bytes());
     println!("{address_hex}");
     Ok(())
 }
 
 async fn balance(root_dir: &Path) -> Result<()> {
-    let wallet = LocalWallet::load_from(root_dir).await?;
+    let wallet = LocalWallet::load_from(root_dir)?;
     let balance = wallet.balance();
     println!("{balance}");
     Ok(())
 }
 
 async fn get_faucet(root_dir: &Path, url: String) -> Result<()> {
-    let wallet = LocalWallet::load_from(root_dir).await?;
+    let wallet = LocalWallet::load_from(root_dir)?;
     let address_hex = hex::encode(wallet.address().to_bytes());
     let url = if !url.contains("://") {
         format!("{}://{}", "http", url)
@@ -144,17 +144,17 @@ async fn deposit(root_dir: &Path, read_from_stdin: bool, dbc: Option<String>) ->
         return deposit_from_dbc_hex(root_dir, dbc_hex).await;
     }
 
-    let mut wallet = LocalWallet::load_from(root_dir).await?;
+    let mut wallet = LocalWallet::load_from(root_dir)?;
 
     let previous_balance = wallet.balance();
 
-    wallet.try_load_deposits().await?;
+    wallet.try_load_deposits()?;
 
     let deposited =
         sn_dbc::Token::from_nano(wallet.balance().as_nano() - previous_balance.as_nano());
     if deposited.is_zero() {
         println!("Nothing deposited.");
-    } else if let Err(err) = wallet.store().await {
+    } else if let Err(err) = wallet.store() {
         println!("Failed to store deposited ({deposited}) amount: {:?}", err);
     } else {
         println!("Deposited {deposited}.");
@@ -171,13 +171,13 @@ async fn read_dbc_from_stdin(root_dir: &Path) -> Result<()> {
 }
 
 async fn deposit_from_dbc_hex(root_dir: &Path, input: String) -> Result<()> {
-    let mut wallet = LocalWallet::load_from(root_dir).await?;
+    let mut wallet = LocalWallet::load_from(root_dir)?;
     let dbc = sn_dbc::Dbc::from_hex(input.trim())?;
 
     let old_balance = wallet.balance();
-    wallet.deposit(vec![dbc]).await?;
+    wallet.deposit(vec![dbc])?;
     let new_balance = wallet.balance();
-    wallet.store().await?;
+    wallet.store()?;
 
     println!("Successfully stored dbc to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
 
@@ -200,7 +200,7 @@ async fn send(
         return Ok(());
     }
 
-    let wallet = LocalWallet::load_from(root_dir).await?;
+    let wallet = LocalWallet::load_from(root_dir)?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
 
     match wallet_client.send(amount, address, verify_store).await {
@@ -209,13 +209,13 @@ async fn send(
             let mut wallet = wallet_client.into_wallet();
             let new_balance = wallet.balance();
 
-            if let Err(err) = wallet.store().await {
+            if let Err(err) = wallet.store() {
                 println!("Failed to store wallet: {err:?}");
             } else {
                 println!("Successfully stored wallet with new balance {new_balance}.");
             }
 
-            wallet.store_dbc(new_dbc).await?;
+            wallet.store_dbc(new_dbc)?;
             println!("Successfully stored new dbc to wallet dir. It can now be sent to the recipient, using any channel of choice.");
         }
         Err(err) => {
@@ -240,7 +240,6 @@ pub(super) async fn chunk_and_pay_for_storage(
 ) -> Result<BTreeMap<XorName, ChunkedFile>> {
     trace!("Starting to chunk_and_pay_for_storage");
     let wallet = LocalWallet::load_from(root_dir)
-        .await
         .wrap_err("Unable to read wallet file in {path:?}")
         .suggestion(
             "If you have an old wallet file, it may no longer be compatible. Try removing it",
