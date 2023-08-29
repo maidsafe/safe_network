@@ -84,11 +84,16 @@ impl Node {
         };
 
         let record_key = address.as_record_key().ok_or(error.clone())?;
-        let record = self
+        let record = if let Some(result) = self
             .network
-            .get_record_from_network(record_key, None, false)
+            .get_local_record(&record_key)
             .await
-            .map_err(|_| error.clone())?;
+            .map_err(|_| error.clone())?
+        {
+            result
+        } else {
+            return Err(error);
+        };
         let header = RecordHeader::from_record(&record).map_err(|_| error.clone())?;
 
         match header.kind {
