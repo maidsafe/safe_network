@@ -30,7 +30,7 @@ sn_protocol = { path = "../sn_protocol", version = "0.5.3" }
 sn_dbc = { version = "19.1.1", features = ["serdes"] }
 sn_transfers = { path = "../sn_transfers", version = "0.10.28" }
 thiserror = "1.0.23"
-tokio = { version = "1.17.0", features = ["fs", "io-util", "macros", "parking_lot", "rt", "sync", "time"] }
+tokio = { version = "1.32.0", features = ["fs", "io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
 
