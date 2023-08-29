@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693317267873,
+  "lastUpdate": 1693317270216,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -13170,6 +13170,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 75,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "aed@countermail.com",
+            "name": "Lu",
+            "username": "aed900"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "300dc94641f7255cab62821d2284dfca15576d4d",
+          "message": "fix(node): refactoring code\n\nRefactored code related to the \"add feature flag for tcp/quic\" commit for this PR.",
+          "timestamp": "2023-08-29T09:21:27Z",
+          "tree_id": "bce41fe5b4a1b5ddcbe0e8600c885bf1c4eb083b",
+          "url": "https://github.com/maidsafe/safe_network/commit/300dc94641f7255cab62821d2284dfca15576d4d"
+        },
+        "date": 1693317269312,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 84.56602,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 74,
             "unit": "MB"
           }
         ]
