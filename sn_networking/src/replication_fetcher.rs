@@ -10,7 +10,7 @@
 use crate::CLOSE_GROUP_SIZE;
 use libp2p::{kad::RecordKey, PeerId};
 use rand::{seq::SliceRandom, thread_rng};
-use sn_protocol::NetworkAddress;
+use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
     time::{Duration, Instant},
@@ -154,7 +154,10 @@ impl ReplicationFetcher {
                     }
                     HolderStatus::OnGoing => {
                         if Instant::now() > *replication_req_time + FETCH_TIMEOUT {
-                            warn!("Failed replication fetch! {key:?} from {peer_id:?}");
+                            warn!(
+                                "Failed replication fetch! {:?} from {peer_id:?}",
+                                PrettyPrintRecordKey::from(key.clone())
+                            );
                             *failed_attempts += 1;
                             // allows it to be re-queued
                             *holder_status = HolderStatus::Pending;
