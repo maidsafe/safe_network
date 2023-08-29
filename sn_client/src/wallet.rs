@@ -40,7 +40,7 @@ impl WalletClient {
 
     /// Stores the wallet to disk.
     pub async fn store_local_wallet(&self) -> Result<()> {
-        self.wallet.store().await
+        self.wallet.store()
     }
 
     /// Get the wallet balance
@@ -59,7 +59,7 @@ impl WalletClient {
 
     /// Get the payment dbc for a given network address
     pub async fn get_payment_dbcs(&self, address: &NetworkAddress) -> Vec<Dbc> {
-        self.wallet.get_payment_dbcs(address).await
+        self.wallet.get_payment_dbcs(address)
     }
 
     /// Send tokens to another wallet.
@@ -70,7 +70,7 @@ impl WalletClient {
         to: PublicAddress,
         verify_store: bool,
     ) -> Result<Dbc> {
-        let transfer = self.wallet.local_send(vec![(amount, to)], None).await?;
+        let transfer = self.wallet.local_send(vec![(amount, to)], None)?;
 
         let created_dbcs = transfer.created_dbcs.clone();
 
@@ -176,8 +176,7 @@ impl WalletClient {
         }
 
         self.wallet
-            .local_send_storage_payment(all_data_payments, None)
-            .await?;
+            .local_send_storage_payment(all_data_payments, None)?;
 
         // send to network
         trace!("Sending storage payment transfer to the network");
@@ -335,11 +334,9 @@ pub async fn send(
     let mut wallet = wallet_client.into_wallet();
     wallet
         .store()
-        .await
         .expect("Wallet shall be successfully stored.");
     wallet
         .store_dbc(new_dbc.clone())
-        .await
         .expect("Created dbc shall be successfully stored.");
 
     if did_error {

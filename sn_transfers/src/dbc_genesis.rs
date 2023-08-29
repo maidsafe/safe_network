@@ -74,18 +74,16 @@ pub fn is_genesis_parent_tx(parent_tx: &DbcTransaction) -> bool {
     parent_tx == &GENESIS_DBC.src_tx
 }
 
-pub async fn load_genesis_wallet() -> Result<LocalWallet, Error> {
+pub fn load_genesis_wallet() -> Result<LocalWallet, Error> {
     info!("Loading genesis...");
-    let mut genesis_wallet = create_genesis_wallet().await;
+    let mut genesis_wallet = create_genesis_wallet();
 
     info!("Depositing genesis DBC: {:#?}", GENESIS_DBC.id());
     genesis_wallet
         .deposit(vec![GENESIS_DBC.clone()])
-        .await
         .map_err(|err| Error::WalletError(err.to_string()))?;
     genesis_wallet
         .store()
-        .await
         .expect("Genesis wallet shall be stored successfully.");
 
     let genesis_balance = genesis_wallet.balance();
@@ -94,23 +92,19 @@ pub async fn load_genesis_wallet() -> Result<LocalWallet, Error> {
     Ok(genesis_wallet)
 }
 
-pub async fn create_genesis_wallet() -> LocalWallet {
-    let root_dir = get_genesis_dir().await;
+pub fn create_genesis_wallet() -> LocalWallet {
+    let root_dir = get_genesis_dir();
     let wallet_dir = root_dir.join("wallet");
-    tokio::fs::create_dir_all(&wallet_dir)
-        .await
-        .expect("Genesis wallet path to be successfully created.");
+    std::fs::create_dir_all(&wallet_dir).expect("Genesis wallet path to be successfully created.");
 
     let secret_key = bls::SecretKey::from_hex(GENESIS_DBC_SK)
         .expect("Genesis key hex shall be successfully parsed.");
     let main_key = MainKey::new(secret_key);
     let main_key_path = wallet_dir.join("main_key");
-    tokio::fs::write(main_key_path, hex::encode(main_key.to_bytes()))
-        .await
+    std::fs::write(main_key_path, hex::encode(main_key.to_bytes()))
         .expect("Genesis key hex shall be successfully stored.");
 
     LocalWallet::load_from(&root_dir)
-        .await
         .expect("Faucet wallet (after genesis) shall be created successfully.")
 }
 
@@ -214,35 +208,31 @@ pub(super) fn split(
     Ok(output_dbcs)
 }
 
-pub async fn create_faucet_wallet() -> LocalWallet {
-    let root_dir = get_faucet_dir().await;
+pub fn create_faucet_wallet() -> LocalWallet {
+    let root_dir = get_faucet_dir();
 
     println!("Loading faucet wallet... {:#?}", root_dir);
-    LocalWallet::load_from(&root_dir)
-        .await
-        .expect("Faucet wallet shall be created successfully.")
+    LocalWallet::load_from(&root_dir).expect("Faucet wallet shall be created successfully.")
 }
 
 // We need deterministic and fix path for the genesis wallet.
 // Otherwise the test instances will not be able to find the same genesis instance.
-async fn get_genesis_dir() -> PathBuf {
+fn get_genesis_dir() -> PathBuf {
     let mut data_dirs = dirs_next::data_dir().expect("A homedir to exist.");
     data_dirs.push("safe");
     data_dirs.push("test_genesis");
-    tokio::fs::create_dir_all(data_dirs.as_path())
-        .await
+    std::fs::create_dir_all(data_dirs.as_path())
         .expect("Genesis test path to be successfully created.");
     data_dirs
 }
 
 // We need deterministic and fix path for the faucet wallet.
 // Otherwise the test instances will not be able to find the same faucet instance.
-async fn get_faucet_dir() -> PathBuf {
+fn get_faucet_dir() -> PathBuf {
     let mut data_dirs = dirs_next::data_dir().expect("A homedir to exist.");
     data_dirs.push("safe");
     data_dirs.push("test_faucet");
-    tokio::fs::create_dir_all(data_dirs.as_path())
-        .await
+    std::fs::create_dir_all(data_dirs.as_path())
         .expect("Faucet test path to be successfully created.");
     data_dirs
 }

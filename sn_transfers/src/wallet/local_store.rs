@@ -48,24 +48,24 @@ pub struct LocalWallet {
 
 impl LocalWallet {
     /// Stores the wallet to disk.
-    pub async fn store(&self) -> Result<()> {
-        store_wallet(&self.wallet_dir, &self.wallet).await
+    pub fn store(&self) -> Result<()> {
+        store_wallet(&self.wallet_dir, &self.wallet)
     }
 
     /// Stores the given dbc to the `created dbcs dir` in the wallet dir.
     /// Each recipient has their own dir, containing all dbcs for them.
     /// These can then be sent to the recipients out of band, over any channel preferred.
-    pub async fn store_dbc(&mut self, dbc: Dbc) -> Result<()> {
-        store_created_dbcs(vec![dbc], &self.wallet_dir).await
+    pub fn store_dbc(&mut self, dbc: Dbc) -> Result<()> {
+        store_created_dbcs(vec![dbc], &self.wallet_dir)
     }
 
-    pub async fn get_dbc(&mut self, dbc_id: &DbcId) -> Option<Dbc> {
-        load_dbc(dbc_id, &self.wallet_dir).await
+    pub fn get_dbc(&mut self, dbc_id: &DbcId) -> Option<Dbc> {
+        load_dbc(dbc_id, &self.wallet_dir)
     }
 
     /// Store unconfirmed_txs to disk.
-    pub async fn store_unconfirmed_txs(&mut self) -> Result<()> {
-        store_unconfirmed_txs(&self.wallet_dir, self.unconfirmed_txs()).await
+    pub fn store_unconfirmed_txs(&mut self) -> Result<()> {
+        store_unconfirmed_txs(&self.wallet_dir, self.unconfirmed_txs())
     }
 
     /// Unconfirmed txs exist
@@ -74,18 +74,18 @@ impl LocalWallet {
     }
 
     /// Try to load any new dbcs from the `received dbcs dir` in the wallet dir.
-    pub async fn try_load_deposits(&mut self) -> Result<()> {
-        let deposited = load_received_dbcs(&self.wallet_dir).await?;
-        self.deposit(deposited).await?;
+    pub fn try_load_deposits(&mut self) -> Result<()> {
+        let deposited = load_received_dbcs(&self.wallet_dir)?;
+        self.deposit(deposited)?;
         Ok(())
     }
 
     /// Loads a serialized wallet from a path.
-    pub async fn load_from(root_dir: &Path) -> Result<Self> {
+    pub fn load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
         // This creates the received_dbcs dir if it doesn't exist.
-        tokio::fs::create_dir_all(&wallet_dir).await?;
-        let (key, wallet, unconfirmed_txs) = load_from_path(&wallet_dir).await?;
+        std::fs::create_dir_all(&wallet_dir)?;
+        let (key, wallet, unconfirmed_txs) = load_from_path(&wallet_dir)?;
         Ok(Self {
             key,
             wallet,
@@ -114,11 +114,11 @@ impl LocalWallet {
         self.key.sign(msg)
     }
 
-    pub async fn available_dbcs(&self) -> Vec<(Dbc, DerivedKey)> {
+    pub fn available_dbcs(&self) -> Vec<(Dbc, DerivedKey)> {
         let mut available_dbcs = vec![];
 
         for (id, _token) in self.wallet.available_dbcs.iter() {
-            let held_dbc = load_dbc(id, &self.wallet_dir).await;
+            let held_dbc = load_dbc(id, &self.wallet_dir);
             if let Some(dbc) = held_dbc {
                 if let Ok(derived_key) = dbc.derived_key(&self.key) {
                     available_dbcs.push((dbc.clone(), derived_key));
@@ -147,14 +147,14 @@ impl LocalWallet {
     }
 
     /// Return the payment dbc ids for the given content address name if cached.
-    pub async fn get_payment_dbcs(&self, name: &NetworkAddress) -> Vec<Dbc> {
+    pub fn get_payment_dbcs(&self, name: &NetworkAddress) -> Vec<Dbc> {
         let ids = self.get_payment_dbc_ids(name);
         // now grab all those dbcs
         let mut dbcs = vec![];
 
         if let Some(ids) = ids {
             for id in ids {
-                if let Some(dbc) = load_dbc(id, &self.wallet_dir).await {
+                if let Some(dbc) = load_dbc(id, &self.wallet_dir) {
                     dbcs.push(dbc);
                 }
             }
@@ -163,7 +163,7 @@ impl LocalWallet {
         dbcs
     }
 
-    pub async fn local_send(
+    pub fn local_send(
         &mut self,
         to: Vec<(Token, PublicAddress)>,
         reason_hash: Option<Hash>,
@@ -175,7 +175,7 @@ impl LocalWallet {
             .map(|(amount, address)| (amount, address, random_derivation_index(&mut rng)))
             .collect();
 
-        let available_dbcs = self.available_dbcs().await;
+        let available_dbcs = self.available_dbcs();
         trace!("Available DBCs for local send: {:#?}", available_dbcs);
 
         let reason_hash = reason_hash.unwrap_or_default();
@@ -183,13 +183,13 @@ impl LocalWallet {
         let transfer =
             create_transfer(available_dbcs, to_unique_keys, self.address(), reason_hash)?;
 
-        self.update_local_wallet(&transfer).await?;
+        self.update_local_wallet(&transfer)?;
 
         Ok(transfer)
     }
 
     /// Performs a DBC payment for each content address, returning outputs for each.
-    pub async fn local_send_storage_payment(
+    pub fn local_send_storage_payment(
         &mut self,
         all_data_payments: BTreeMap<NetworkAddress, Vec<(PublicAddress, Token)>>,
         reason_hash: Option<Hash>,
@@ -209,12 +209,12 @@ impl LocalWallet {
 
         let reason_hash = reason_hash.unwrap_or_default();
 
-        let available_dbcs = self.available_dbcs().await;
+        let available_dbcs = self.available_dbcs();
         trace!("Available DBCs: {:#?}", available_dbcs);
         let transfer_outputs =
             create_transfer(available_dbcs, all_payees_only, self.address(), reason_hash)?;
 
-        self.update_local_wallet(&transfer_outputs).await?;
+        self.update_local_wallet(&transfer_outputs)?;
         println!("Transfers applied locally");
 
         let mut all_transfers_per_address = BTreeMap::default();
@@ -244,7 +244,7 @@ impl LocalWallet {
         Ok(())
     }
 
-    async fn update_local_wallet(&mut self, transfer: &TransferOutputs) -> Result<()> {
+    fn update_local_wallet(&mut self, transfer: &TransferOutputs) -> Result<()> {
         let TransferOutputs {
             change_dbc,
             created_dbcs,
@@ -260,11 +260,11 @@ impl LocalWallet {
             self.wallet.spent_dbcs.insert(spent);
         }
 
-        self.deposit(change_dbc.into_iter().collect()).await?;
+        self.deposit(change_dbc.into_iter().collect())?;
 
         for dbc in created_dbcs {
             self.wallet.dbcs_created_for_others.insert(dbc.id());
-            self.store_dbc(dbc).await?;
+            self.store_dbc(dbc)?;
         }
 
         self.unconfirmed_txs.extend(all_spend_requests);
@@ -272,7 +272,7 @@ impl LocalWallet {
         Ok(())
     }
 
-    pub async fn deposit(&mut self, dbcs: Vec<Dbc>) -> Result<()> {
+    pub fn deposit(&mut self, dbcs: Vec<Dbc>) -> Result<()> {
         if dbcs.is_empty() {
             return Ok(());
         }
@@ -280,7 +280,7 @@ impl LocalWallet {
         for dbc in dbcs {
             let id = dbc.id();
 
-            if let Some(_dbc) = load_dbc(&id, &self.wallet_dir).await {
+            if let Some(_dbc) = load_dbc(&id, &self.wallet_dir) {
                 println!("dbc exists");
                 return Ok(());
             }
@@ -295,7 +295,7 @@ impl LocalWallet {
             }
 
             let token = dbc.token()?;
-            self.store_dbc(dbc).await?;
+            self.store_dbc(dbc)?;
             self.wallet.available_dbcs.insert(id, token);
         }
 
@@ -304,23 +304,23 @@ impl LocalWallet {
 }
 
 /// Loads a serialized wallet from a path.
-async fn load_from_path(wallet_dir: &Path) -> Result<(MainKey, KeyLessWallet, Vec<SpendRequest>)> {
-    let key = match get_main_key(wallet_dir).await? {
+fn load_from_path(wallet_dir: &Path) -> Result<(MainKey, KeyLessWallet, Vec<SpendRequest>)> {
+    let key = match get_main_key(wallet_dir)? {
         Some(key) => key,
         None => {
             let key = MainKey::random();
-            store_new_keypair(wallet_dir, &key).await?;
+            store_new_keypair(wallet_dir, &key)?;
             key
         }
     };
-    let unconfirmed_txs = match get_unconfirmed_txs(wallet_dir).await? {
+    let unconfirmed_txs = match get_unconfirmed_txs(wallet_dir)? {
         Some(unconfirmed_txs) => unconfirmed_txs,
         None => {
             let unconfirmed_txs = vec![];
             unconfirmed_txs
         }
     };
-    let wallet = match get_wallet(wallet_dir).await? {
+    let wallet = match get_wallet(wallet_dir)? {
         Some(wallet) => {
             debug!(
                 "Loaded wallet from {:#?} with balance {:?}",
@@ -331,8 +331,8 @@ async fn load_from_path(wallet_dir: &Path) -> Result<(MainKey, KeyLessWallet, Ve
         }
         None => {
             let wallet = KeyLessWallet::new();
-            store_wallet(wallet_dir, &wallet).await?;
-            create_received_dbcs_dir(wallet_dir).await?;
+            store_wallet(wallet_dir, &wallet)?;
+            create_received_dbcs_dir(wallet_dir)?;
             wallet
         }
     };
@@ -399,11 +399,9 @@ mod tests {
 
         wallet.available_dbcs.insert(genesis.id(), genesis.token()?);
 
-        store_wallet(&wallet_dir, &wallet).await?;
+        store_wallet(&wallet_dir, &wallet)?;
 
-        let deserialized = get_wallet(&wallet_dir)
-            .await?
-            .expect("There to be a wallet on disk.");
+        let deserialized = get_wallet(&wallet_dir)?.expect("There to be a wallet on disk.");
 
         assert_eq!(GENESIS_DBC_AMOUNT, wallet.balance().as_nano());
         assert_eq!(GENESIS_DBC_AMOUNT, deserialized.balance().as_nano());
@@ -451,7 +449,7 @@ mod tests {
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        deposit_only.deposit(vec![]).await?;
+        deposit_only.deposit(vec![])?;
 
         assert_eq!(Token::zero(), deposit_only.balance());
 
@@ -475,7 +473,7 @@ mod tests {
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        deposit_only.deposit(vec![genesis]).await?;
+        deposit_only.deposit(vec![genesis])?;
 
         assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
 
@@ -495,7 +493,7 @@ mod tests {
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        local_wallet.deposit(vec![genesis]).await?;
+        local_wallet.deposit(vec![genesis])?;
 
         assert_eq!(Token::zero(), local_wallet.balance());
 
@@ -516,13 +514,13 @@ mod tests {
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        deposit_only.deposit(vec![genesis_0.clone()]).await?;
+        deposit_only.deposit(vec![genesis_0.clone()])?;
         assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
 
-        deposit_only.deposit(vec![genesis_0]).await?;
+        deposit_only.deposit(vec![genesis_0])?;
         assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
 
-        deposit_only.deposit(vec![genesis_1]).await?;
+        deposit_only.deposit(vec![genesis_1])?;
         assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
 
         Ok(())
@@ -533,13 +531,13 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut depositor = LocalWallet::load_from(&root_dir).await?;
+        let mut depositor = LocalWallet::load_from(&root_dir)?;
         let genesis =
             create_first_dbc_from_key(&depositor.key).expect("Genesis creation to succeed.");
-        depositor.deposit(vec![genesis]).await?;
-        depositor.store().await?;
+        depositor.deposit(vec![genesis])?;
+        depositor.store()?;
 
-        let deserialized = LocalWallet::load_from(&root_dir).await?;
+        let deserialized = LocalWallet::load_from(&root_dir)?;
 
         assert_eq!(depositor.address(), deserialized.address());
         assert_eq!(GENESIS_DBC_AMOUNT, depositor.balance().as_nano());
@@ -579,10 +577,10 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut sender = LocalWallet::load_from(&root_dir).await?;
+        let mut sender = LocalWallet::load_from(&root_dir)?;
         let sender_dbc =
             create_first_dbc_from_key(&sender.key).expect("Genesis creation to succeed.");
-        sender.deposit(vec![sender_dbc]).await?;
+        sender.deposit(vec![sender_dbc])?;
 
         assert_eq!(GENESIS_DBC_AMOUNT, sender.balance().as_nano());
 
@@ -591,7 +589,7 @@ mod tests {
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let transfer = sender.local_send(to, None).await?;
+        let transfer = sender.local_send(to, None)?;
         let created_dbcs = transfer.created_dbcs;
 
         assert_eq!(1, created_dbcs.len());
@@ -609,21 +607,21 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut sender = LocalWallet::load_from(&root_dir).await?;
+        let mut sender = LocalWallet::load_from(&root_dir)?;
         let sender_dbc =
             create_first_dbc_from_key(&sender.key).expect("Genesis creation to succeed.");
-        sender.deposit(vec![sender_dbc]).await?;
+        sender.deposit(vec![sender_dbc])?;
 
         // We send to a new address.
         let send_amount = 100;
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let _created_dbcs = sender.local_send(to, None).await?;
+        let _created_dbcs = sender.local_send(to, None)?;
 
-        sender.store().await?;
+        sender.store()?;
 
-        let deserialized = LocalWallet::load_from(&root_dir).await?;
+        let deserialized = LocalWallet::load_from(&root_dir)?;
 
         assert_eq!(sender.address(), deserialized.address());
         assert_eq!(GENESIS_DBC_AMOUNT - send_amount, sender.balance().as_nano());
@@ -680,25 +678,25 @@ mod tests {
         let sender_root_dir = create_temp_dir();
         let sender_root_dir = sender_root_dir.path().to_path_buf();
 
-        let mut sender = LocalWallet::load_from(&sender_root_dir).await?;
+        let mut sender = LocalWallet::load_from(&sender_root_dir)?;
         let sender_dbc =
             create_first_dbc_from_key(&sender.key).expect("Genesis creation to succeed.");
-        sender.deposit(vec![sender_dbc]).await?;
+        sender.deposit(vec![sender_dbc])?;
 
         let send_amount = 100;
 
         // Send to a new address.
         let recipient_root_dir = create_temp_dir();
         let recipient_root_dir = recipient_root_dir.path().to_path_buf();
-        let mut recipient = LocalWallet::load_from(&recipient_root_dir).await?;
+        let mut recipient = LocalWallet::load_from(&recipient_root_dir)?;
         let recipient_public_address = recipient.key.public_address();
 
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let transfer = sender.local_send(to, None).await?;
+        let transfer = sender.local_send(to, None)?;
         let created_dbcs = transfer.created_dbcs;
         let dbc = created_dbcs[0].clone();
         let dbc_id = dbc.id();
-        sender.store_dbc(dbc).await?;
+        sender.store_dbc(dbc)?;
 
         let dbc_id_name = *DbcAddress::from_dbc_id(&dbc_id).xorname();
         let dbc_id_file_name = format!("{}.dbc", hex::encode(dbc_id_name));
@@ -710,15 +708,15 @@ mod tests {
             .join(WALLET_DIR_NAME)
             .join("received_dbcs");
 
-        tokio::fs::create_dir_all(&received_dbc_dir).await?;
+        std::fs::create_dir_all(&received_dbc_dir)?;
         let received_dbc_file = received_dbc_dir.join(&dbc_id_file_name);
 
         // Move the created dbc to the recipient's received_dbcs dir.
-        tokio::fs::rename(created_dbc_file, &received_dbc_file).await?;
+        std::fs::rename(created_dbc_file, received_dbc_file)?;
 
         assert_eq!(0, recipient.wallet.balance().as_nano());
 
-        recipient.try_load_deposits().await?;
+        recipient.try_load_deposits()?;
 
         assert_eq!(1, recipient.wallet.available_dbcs.len());
 

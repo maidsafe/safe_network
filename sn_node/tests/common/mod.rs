@@ -23,7 +23,7 @@ use lazy_static::lazy_static;
 use sn_dbc::Token;
 use sn_logging::{LogFormat, LogOutputDest};
 use std::{net::SocketAddr, path::Path, sync::Once};
-use tokio::{fs::remove_dir_all, sync::Mutex};
+use tokio::sync::Mutex;
 use tonic::Request;
 use tracing_core::Level;
 
@@ -73,9 +73,7 @@ pub async fn get_client() -> Client {
 }
 
 pub async fn get_wallet(root_dir: &Path) -> LocalWallet {
-    LocalWallet::load_from(root_dir)
-        .await
-        .expect("Wallet shall be successfully created.")
+    LocalWallet::load_from(root_dir).expect("Wallet shall be successfully created.")
 }
 
 pub async fn get_funded_wallet(
@@ -92,7 +90,7 @@ pub async fn get_funded_wallet(
 
     println!("Verifying the transfer from faucet...");
     client.verify(&tokens).await?;
-    local_wallet.deposit(vec![tokens]).await?;
+    local_wallet.deposit(vec![tokens])?;
     assert_eq!(local_wallet.balance(), wallet_balance);
     println!("Tokens deposited to the wallet that'll pay for storage: {wallet_balance}.");
 
@@ -123,7 +121,7 @@ pub async fn node_restart(addr: SocketAddr) -> Result<()> {
     let chunks_records = root_dir.join("record_store");
     if let Ok(true) = chunks_records.try_exists() {
         println!("Removing Chunks records from {}", chunks_records.display());
-        remove_dir_all(chunks_records).await?;
+        std::fs::remove_dir_all(chunks_records)?;
     }
 
     // remove Registers records
@@ -133,7 +131,7 @@ pub async fn node_restart(addr: SocketAddr) -> Result<()> {
             "Removing Registers records from {}",
             registers_records.display()
         );
-        remove_dir_all(registers_records).await?;
+        std::fs::remove_dir_all(registers_records)?;
     }
 
     let _response = client

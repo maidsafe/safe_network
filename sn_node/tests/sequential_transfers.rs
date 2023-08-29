@@ -45,7 +45,7 @@ async fn dbc_transfer_multiple_sequential_succeed() -> Result<()> {
     .await?;
     println!("Verifying the transfer from first wallet...");
     client.verify(&tokens).await?;
-    second_wallet.deposit(vec![tokens]).await?;
+    second_wallet.deposit(vec![tokens])?;
     assert_eq!(second_wallet.balance(), second_wallet_balance);
     println!("Tokens deposited to second wallet: {second_wallet_balance}.");
 
@@ -80,7 +80,7 @@ async fn dbc_transfer_double_spend_fail() -> Result<()> {
     let to2 = second_wallet.address();
     let to3 = third_wallet.address();
 
-    let some_dbcs = first_wallet.available_dbcs().await;
+    let some_dbcs = first_wallet.available_dbcs();
     let same_dbcs = some_dbcs.clone();
 
     let mut rng = rng::thread_rng();
