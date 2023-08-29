@@ -34,6 +34,6 @@ sn_registers = { path = "../sn_registers", version = "0.2.3" }
 sn_transfers = { path = "../sn_transfers", version = "0.10.28" }
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"
-tokio = { version = "1.32.0", features = ["fs", "io-util", "macros", "parking_lot", "rt", "sync", "time"] }
+tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"

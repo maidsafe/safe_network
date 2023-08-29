@@ -41,7 +41,7 @@ sn_transfers = { path = "../sn_transfers", version = "0.10.28" }
 sn_logging = { path = "../sn_logging", version = "0.2.4" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.1.6" }
 sn_protocol = { path = "../sn_protocol", version = "0.5.3" }
-tokio = { version = "1.32.0", features = ["fs", "io-util", "macros", "parking_lot", "rt", "sync", "time"] }
+tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
 tracing-core = "0.1.30"
 url = "2.4.0"

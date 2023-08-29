@@ -50,7 +50,7 @@ impl Files {
 
     /// Create a new WalletClient for a given root directory.
     pub async fn wallet(&self, root_dir: &Path) -> Result<WalletClient> {
-        let wallet = LocalWallet::load_from(root_dir).await?;
+        let wallet = LocalWallet::load_from(root_dir)?;
         Ok(WalletClient::new(self.client.clone(), wallet))
     }
 

@@ -13,7 +13,8 @@ use color_eyre::Result;
 use libp2p::futures::future::join_all;
 use sn_client::{Client, Files, MAX_CONCURRENT_CHUNK_UPLOAD};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use tokio::{fs, sync::Semaphore};
+use std::fs;
+use tokio::sync::Semaphore;
 
 use std::{
     // fs,
@@ -157,11 +158,11 @@ async fn upload_files(
         .collect();
 
     let content = bincode::serialize(&chunks_to_fetch)?;
-    fs::create_dir_all(file_names_path.as_path()).await?;
+    fs::create_dir_all(file_names_path.as_path())?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
     println!("Writing {} bytes to {file_names_path:?}", content.len());
-    fs::write(file_names_path, content).await?;
+    fs::write(file_names_path, content)?;
 
     Ok(())
 }
@@ -189,7 +190,7 @@ async fn upload_chunks(
 
         let wallet_client = file_api.wallet(wallet_dir).await?;
 
-        let chunk = Chunk::new(Bytes::from(fs::read(path).await?));
+        let chunk = Chunk::new(Bytes::from(fs::read(path)?));
 
         file_api
             .upload_chunk_in_parallel(chunk, &wallet_client, verify_store)
@@ -202,14 +203,14 @@ async fn upload_chunks(
 async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
     let docs_of_uploaded_files_path = root_dir.join("uploaded_files");
     let download_path = root_dir.join("downloaded_files");
-    tokio::fs::create_dir_all(download_path.as_path()).await?;
+    std::fs::create_dir_all(download_path.as_path())?;
 
     for entry in WalkDir::new(docs_of_uploaded_files_path)
         .into_iter()
         .flatten()
     {
         if entry.file_type().is_file() {
-            let index_doc_bytes = Bytes::from(fs::read(entry.path()).await?);
+            let index_doc_bytes = Bytes::from(fs::read(entry.path())?);
             let index_doc_name = entry.file_name();
 
             println!("Loading file names from index doc {index_doc_name:?}");
@@ -244,7 +245,7 @@ async fn download_file(
             println!("Successfully got file {file_name}!");
             let file_name_path = download_path.join(file_name);
             println!("Writing {} bytes to {file_name_path:?}", bytes.len());
-            if let Err(err) = fs::write(file_name_path, bytes).await {
+            if let Err(err) = fs::write(file_name_path, bytes) {
                 println!("Failed to create file {file_name:?} with error {err:?}");
             }
         }

@@ -28,8 +28,6 @@ use std::{
     time::Duration,
 };
 use tokio::{
-    fs::File,
-    io::AsyncWriteExt,
     runtime::Runtime,
     sync::{broadcast::error::RecvError, mpsc},
     time::sleep,
@@ -240,8 +238,7 @@ async fn start_node(
     // write the PID to the root dir
     let pid = std::process::id();
     let pid_file = running_node.root_dir_path().join("safenode.pid");
-    let mut file = File::create(&pid_file).await?;
-    file.write_all(pid.to_string().as_bytes()).await?;
+    std::fs::write(pid_file, pid.to_string().as_bytes())?;
 
     // Channel to receive node ctrl cmds from RPC service (if enabled), and events monitoring task
     let (ctrl_tx, mut ctrl_rx) = mpsc::channel::<NodeCtrl>(5);

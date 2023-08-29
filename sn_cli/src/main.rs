@@ -52,8 +52,8 @@ async fn main() -> Result<()> {
     println!("Built with git version: {}", sn_build_info::git_info());
     println!("Instantiating a SAFE client...");
 
-    let client_data_dir_path = get_client_data_dir_path().await?;
-    let secret_key = get_client_secret_key(&client_data_dir_path).await?;
+    let client_data_dir_path = get_client_data_dir_path()?;
+    let secret_key = get_client_secret_key(&client_data_dir_path)?;
 
     if opt.peers.peers.is_empty() {
         if !cfg!(feature = "local-discovery") {
@@ -89,27 +89,27 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn get_client_secret_key(root_dir: &PathBuf) -> Result<SecretKey> {
+fn get_client_secret_key(root_dir: &PathBuf) -> Result<SecretKey> {
     // create the root directory if it doesn't exist
-    tokio::fs::create_dir_all(&root_dir).await?;
+    std::fs::create_dir_all(root_dir)?;
     let key_path = root_dir.join(CLIENT_KEY);
     let secret_key = if key_path.is_file() {
         info!("Client key found. Loading from file...");
-        let secret_hex_bytes = tokio::fs::read(key_path).await?;
+        let secret_hex_bytes = std::fs::read(key_path)?;
         bls_secret_from_hex(secret_hex_bytes)?
     } else {
         info!("No key found. Generating a new client key...");
         let secret_key = SecretKey::random();
-        tokio::fs::write(key_path, hex::encode(secret_key.to_bytes())).await?;
+        std::fs::write(key_path, hex::encode(secret_key.to_bytes()))?;
         secret_key
     };
     Ok(secret_key)
 }
 
-async fn get_client_data_dir_path() -> Result<PathBuf> {
+fn get_client_data_dir_path() -> Result<PathBuf> {
     let mut home_dirs = dirs_next::data_dir().expect("Data directory is obtainable");
     home_dirs.push("safe");
     home_dirs.push("client");
-    tokio::fs::create_dir_all(home_dirs.as_path()).await?;
+    std::fs::create_dir_all(home_dirs.as_path())?;
     Ok(home_dirs)
 }

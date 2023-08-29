@@ -15,8 +15,10 @@ use super::{
 
 use sn_dbc::{Dbc, DbcId};
 use sn_protocol::storage::DbcAddress;
-use std::path::{Path, PathBuf};
-use tokio::fs;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 // Filename for storing a wallet.
 const WALLET_FILE_NAME: &str = "wallet";
@@ -24,51 +26,51 @@ const CREATED_DBCS_DIR_NAME: &str = "created_dbcs";
 const RECEIVED_DBCS_DIR_NAME: &str = "received_dbcs";
 const UNCONFRIMED_TX_NAME: &str = "unconfirmed_txs";
 
-pub(super) async fn create_received_dbcs_dir(wallet_dir: &Path) -> Result<()> {
+pub(super) fn create_received_dbcs_dir(wallet_dir: &Path) -> Result<()> {
     let received_dbcs_dir = wallet_dir.join(RECEIVED_DBCS_DIR_NAME);
-    fs::create_dir_all(&received_dbcs_dir).await?;
+    fs::create_dir_all(received_dbcs_dir)?;
     Ok(())
 }
 /// Writes the `KeyLessWallet` to the specified path.
-pub(super) async fn store_wallet(wallet_dir: &Path, wallet: &KeyLessWallet) -> Result<()> {
+pub(super) fn store_wallet(wallet_dir: &Path, wallet: &KeyLessWallet) -> Result<()> {
     let wallet_path = wallet_dir.join(WALLET_FILE_NAME);
     let bytes = bincode::serialize(&wallet)?;
-    fs::write(&wallet_path, bytes).await?;
+    fs::write(wallet_path, bytes)?;
     Ok(())
 }
 
 /// Returns `Some(KeyLessWallet)` or None if file doesn't exist.
-pub(super) async fn get_wallet(wallet_dir: &Path) -> Result<Option<KeyLessWallet>> {
+pub(super) fn get_wallet(wallet_dir: &Path) -> Result<Option<KeyLessWallet>> {
     let path = wallet_dir.join(WALLET_FILE_NAME);
     if !path.is_file() {
         return Ok(None);
     }
 
-    let bytes = fs::read(&path).await?;
+    let bytes = fs::read(&path)?;
     let wallet = bincode::deserialize(&bytes)?;
 
     Ok(Some(wallet))
 }
 
 /// Writes the `unconfirmed_txs` to the specified path.
-pub(super) async fn store_unconfirmed_txs(
+pub(super) fn store_unconfirmed_txs(
     wallet_dir: &Path,
     unconfirmed_txs: &Vec<SpendRequest>,
 ) -> Result<()> {
     let unconfirmed_txs_path = wallet_dir.join(UNCONFRIMED_TX_NAME);
     let bytes = bincode::serialize(&unconfirmed_txs)?;
-    fs::write(&unconfirmed_txs_path, bytes).await?;
+    fs::write(unconfirmed_txs_path, bytes)?;
     Ok(())
 }
 
 /// Returns `Some(Vec<SpendRequest>)` or None if file doesn't exist.
-pub(super) async fn get_unconfirmed_txs(wallet_dir: &Path) -> Result<Option<Vec<SpendRequest>>> {
+pub(super) fn get_unconfirmed_txs(wallet_dir: &Path) -> Result<Option<Vec<SpendRequest>>> {
     let path = wallet_dir.join(UNCONFRIMED_TX_NAME);
     if !path.is_file() {
         return Ok(None);
     }
 
-    let bytes = fs::read(&path).await?;
+    let bytes = fs::read(&path)?;
     let unconfirmed_txs = bincode::deserialize(&bytes)?;
 
     Ok(Some(unconfirmed_txs))
@@ -76,25 +78,25 @@ pub(super) async fn get_unconfirmed_txs(wallet_dir: &Path) -> Result<Option<Vec<
 
 /// Hex encode and write each `Dbc` to a separate file in respective
 /// recipient public address dir in the created dbcs dir. Each file is named after the dbc id.
-pub(super) async fn store_created_dbcs(created_dbcs: Vec<Dbc>, wallet_dir: &Path) -> Result<()> {
+pub(super) fn store_created_dbcs(created_dbcs: Vec<Dbc>, wallet_dir: &Path) -> Result<()> {
     // The create dbcs dir within the wallet dir.
     let created_dbcs_path = wallet_dir.join(CREATED_DBCS_DIR_NAME);
     for dbc in created_dbcs.into_iter() {
         let dbc_id_name = *DbcAddress::from_dbc_id(&dbc.id()).xorname();
         let dbc_id_file_name = format!("{}.dbc", hex::encode(dbc_id_name));
 
-        fs::create_dir_all(&created_dbcs_path).await?;
+        fs::create_dir_all(&created_dbcs_path)?;
 
         let dbc_file_path = created_dbcs_path.join(dbc_id_file_name);
 
         let hex = dbc.to_hex().map_err(Error::Dbc)?;
-        fs::write(dbc_file_path, &hex).await?;
+        fs::write(dbc_file_path, &hex)?;
     }
     Ok(())
 }
 
 /// Loads all the dbcs found in the received dbcs dir.
-pub(super) async fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
+pub(super) fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
     let received_dbcs_path = match std::env::var("RECEIVED_DBCS_PATH") {
         Ok(path) => PathBuf::from(path),
         Err(_) => wallet_dir.join(RECEIVED_DBCS_DIR_NAME),
@@ -109,7 +111,7 @@ pub(super) async fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
             let file_name = entry.file_name();
             println!("Reading deposited tokens from {file_name:?}.");
 
-            let dbc_data = fs::read_to_string(entry.path()).await?;
+            let dbc_data = fs::read_to_string(entry.path())?;
             let dbc = match Dbc::from_hex(dbc_data.trim()) {
                 Ok(dbc) => dbc,
                 Err(_) => {
@@ -133,7 +135,7 @@ pub(super) async fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
 }
 
 /// Loads a specific dbc from path
-pub async fn load_dbc(dbc_id: &DbcId, wallet_dir: &Path) -> Option<Dbc> {
+pub fn load_dbc(dbc_id: &DbcId, wallet_dir: &Path) -> Option<Dbc> {
     let created_dbcs_path = wallet_dir.join(CREATED_DBCS_DIR_NAME);
     let dbc_id_name = *DbcAddress::from_dbc_id(dbc_id).xorname();
     let dbc_id_file_name = format!("{}.dbc", hex::encode(dbc_id_name));
@@ -141,7 +143,7 @@ pub async fn load_dbc(dbc_id: &DbcId, wallet_dir: &Path) -> Option<Dbc> {
     let dbc_file_path = created_dbcs_path.join(dbc_id_file_name);
 
     // Read the dbc data from the file
-    match fs::read_to_string(dbc_file_path).await {
+    match fs::read_to_string(dbc_file_path) {
         Ok(dbc_data) => {
             // Convert the dbc data from hex to Dbc
             match Dbc::from_hex(dbc_data.trim()) {
