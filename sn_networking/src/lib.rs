@@ -606,34 +606,6 @@ impl Network {
             .await)
     }
 
-    /// Send `Request` to the closest peers and ignore reply
-    /// If `self` is among the closest_peers, the `Request` is
-    /// forwarded to itself and handled. Then a corresponding `Response` is created and is
-    /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
-    /// layers.
-    pub async fn send_req_no_reply_to_closest(&self, request: &Request) -> Result<()> {
-        debug!(
-            "Sending {request:?} with dst {:?} to the closest peers.",
-            request.dst()
-        );
-        let closest_peers = self.node_get_closest_peers(&request.dst()).await?;
-        for peer in closest_peers {
-            self.send_req_ignore_reply(request.clone(), peer)?;
-        }
-        Ok(())
-    }
-
-    /// Send `Request` to the closest peers to self
-    pub async fn send_req_no_reply_to_self_closest(&self, request: &Request) -> Result<()> {
-        debug!("Sending {request:?} to self closest peers.");
-        // Using `client_get_closest_peers` to filter self out.
-        let closest_peers = self.client_get_closest_peers(&request.dst()).await?;
-        for peer in closest_peers {
-            self.send_req_ignore_reply(request.clone(), peer)?;
-        }
-        Ok(())
-    }
-
     /// Send `Request` to the closest peers. `Self` is not present among the recipients.
     pub async fn client_send_to_closest(
         &self,
