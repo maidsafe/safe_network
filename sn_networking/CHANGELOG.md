@@ -6,6 +6,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.30...sn_networking-v0.5.0) - 2023-08-30
+
+### Added
+- refactor to allow greater upload parallelisation
+- one transfer per data set, mapped dbcs to content addrs
+- [**breaking**] pay each chunk holder direct
+- feat!(protocol): gets keys with GetStoreCost
+- feat!(protocol): get price and pay for each chunk individually
+
+### Fixed
+- *(tokio)* remove tokio fs
+- *(network)* trigger bootstrap until we have enough peers
+
+### Other
+- *(networking)* increase FETCH_TIMEOUT to 10s
+- trival clean ups
+- *(deps)* bump tokio to 1.32.0
+- *(client)* reduce transferoutputs cloning
+- *(networking)* ensure we're always driving forward replication if pending
+- increase concurrent fetches for replication data
+- *(client)* error out early for invalid transfers
+- *(networking)* return all GetStoreCost prices and use them
+- *(node)* clarify payment errors
+
 ## [0.4.30](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.29...sn_networking-v0.4.30) - 2023-08-30
 
 ### Added
