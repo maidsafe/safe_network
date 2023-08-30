@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::path::Path;
+use std::path::PathBuf;
 
 use crate::WalletClient;
 
@@ -31,13 +31,14 @@ use tokio::task;
 use tracing::trace;
 use xor_name::XorName;
 
-// Maximum number of concurrent chunks to be uploaded/retrieved for a file
+// Maximum number of concurrent chunks to be retrieved for a file
 const CHUNKS_BATCH_MAX_SIZE: usize = 10;
 
 // Maximum number of concurrent chunks to be uploaded at any one time, managed by a semaphore
-pub const MAX_CONCURRENT_CHUNK_UPLOAD: usize = 1;
+pub const MAX_CONCURRENT_CHUNK_UPLOAD: usize = 10;
 
 /// File APIs.
+#[derive(Clone)]
 pub struct Files {
     client: Client,
 }
@@ -49,8 +50,8 @@ impl Files {
     }
 
     /// Create a new WalletClient for a given root directory.
-    pub async fn wallet(&self, root_dir: &Path) -> Result<WalletClient> {
-        let wallet = LocalWallet::load_from(root_dir)?;
+    pub async fn wallet(&self, root_dir: PathBuf) -> Result<WalletClient> {
+        let wallet = LocalWallet::load_from(root_dir.as_path())?;
         Ok(WalletClient::new(self.client.clone(), wallet))
     }
 
@@ -142,7 +143,6 @@ impl Files {
     /// Directly writes Chunks to the network in the
     /// form of immutable self encrypted chunks.
     ///
-    /// Each chunk should be accompanied by a semaphore permit, which will be released
     #[instrument(skip_all, level = "trace")]
     pub async fn upload_chunk_in_parallel(
         &self,
