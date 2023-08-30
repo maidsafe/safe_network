@@ -367,6 +367,7 @@ impl Node {
                             replicated_data,
                         )
                     });
+                trace!("GetReplicatedData response: {result:?}");
                 QueryResponse::GetReplicatedData(result)
             }
         };
