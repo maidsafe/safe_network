@@ -390,12 +390,12 @@ jobs:
         # then check we have an expected level of replication
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          replication_count=$(rg "Chunk received for replication" "${{ matrix.node_data_path }}" -c --stats | \
+          fetching_attempt_count=$(rg "FetchingKeysForReplication" "${{ matrix.node_data_path }}" -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
-          echo "Replicated $replication_count copies"
+          echo "Carried out $fetching_attempt_count fetching attempts"
           node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
-          if [ $replication_count -lt $node_count ]; then
-            echo "Replication count of: $replication_count is less than the node count of: $node_count"
+          if [ $fetching_attempt_count -lt $node_count ]; then
+            echo "Replication fetching attempts of: $fetching_attempt_count is less than the node count of: $node_count"
             exit 1
           fi
 

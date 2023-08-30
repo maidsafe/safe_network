@@ -109,9 +109,8 @@ pub enum SwarmCmd {
     PutLocalRecord {
         record: Record,
     },
-    /// The keys added to the replication fetcher are later used to fetch the Record from the peer/network
+    /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
-        peer: PeerId,
         keys: Vec<NetworkAddress>,
     },
 }
@@ -126,6 +125,7 @@ pub struct SwarmLocalState {
 }
 
 impl SwarmDriver {
+    #[allow(clippy::result_large_err)]
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         let drives_forward_replication = matches!(
             cmd,
@@ -133,7 +133,7 @@ impl SwarmDriver {
         );
 
         match cmd {
-            SwarmCmd::AddKeysToReplicationFetcher { peer, keys } => {
+            SwarmCmd::AddKeysToReplicationFetcher { keys } => {
                 // Only store record from Replication that close enough to us.
                 let all_peers = self.get_all_local_peers();
                 let keys_to_store = keys
@@ -148,9 +148,7 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .record_addresses_ref();
-                let keys_to_fetch =
-                    self.replication_fetcher
-                        .add_keys(peer, keys_to_store, all_keys);
+                let keys_to_fetch = self.replication_fetcher.add_keys(keys_to_store, all_keys);
                 if !keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
                 }
@@ -217,7 +215,7 @@ impl SwarmDriver {
                     .put_verified(record)
                 {
                     Ok(_) => {
-                        let new_keys_to_fetch = self.replication_fetcher.notify_about_new_put(key);
+                        let new_keys_to_fetch = self.replication_fetcher.notify_about_new_put(&key);
                         if !new_keys_to_fetch.is_empty() {
                             self.send_event(NetworkEvent::KeysForReplication(new_keys_to_fetch));
                         }
