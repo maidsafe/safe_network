@@ -308,7 +308,7 @@ impl SwarmDriver {
             SwarmCmd::SendResponse { resp, channel } => match channel {
                 // If the response is for `self`, send it directly through the oneshot channel.
                 MsgResponder::FromSelf(channel) => {
-                    trace!("Sending response to self");
+                    trace!("Sending response {resp:?} to self");
                     match channel {
                         Some(channel) => {
                             channel
@@ -323,6 +323,7 @@ impl SwarmDriver {
                     }
                 }
                 MsgResponder::FromPeer(channel) => {
+                    trace!("Sending response {resp:?} to {channel:?}");
                     self.swarm
                         .behaviour_mut()
                         .request_response

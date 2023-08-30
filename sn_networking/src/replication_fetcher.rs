@@ -21,7 +21,7 @@ const MAX_PARALLEL_FETCH: usize = CLOSE_GROUP_SIZE * 2;
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
-const FETCH_TIMEOUT: Duration = Duration::from_secs(5);
+const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
 
 // The maximum number of retries that is performed per peer.
 // Else the key is fetched from the Network
