@@ -77,6 +77,9 @@ pub enum Error {
         /// Reason why the payment proof was deemed invalid
         reason: String,
     },
+    /// Payments received could not be stored on node's local wallet
+    #[error("Payments received could not be stored on node's local wallet: {0}")]
+    FailedToStorePaymentIntoNodeWallet(String),
     #[error("UTXO serialisation failed")]
     UtxoSerialisationFailed,
     #[error("UTXO decryption failed")]

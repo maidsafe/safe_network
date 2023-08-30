@@ -80,12 +80,27 @@ impl LocalWallet {
         Ok(())
     }
 
+    /// Loads a serialized wallet from a path and given main key.
+    pub fn load_from_main_key(root_dir: &Path, main_key: MainKey) -> Result<Self> {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        // This creates the received_dbcs dir if it doesn't exist.
+        std::fs::create_dir_all(&wallet_dir)?;
+        // This creates the main_key file if it doesn't exist.
+        let (key, wallet, unconfirmed_txs) = load_from_path(&wallet_dir, Some(main_key))?;
+        Ok(Self {
+            key,
+            wallet,
+            wallet_dir: wallet_dir.to_path_buf(),
+            unconfirmed_txs,
+        })
+    }
+
     /// Loads a serialized wallet from a path.
     pub fn load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
         // This creates the received_dbcs dir if it doesn't exist.
         std::fs::create_dir_all(&wallet_dir)?;
-        let (key, wallet, unconfirmed_txs) = load_from_path(&wallet_dir)?;
+        let (key, wallet, unconfirmed_txs) = load_from_path(&wallet_dir, None)?;
         Ok(Self {
             key,
             wallet,
@@ -304,11 +319,14 @@ impl LocalWallet {
 }
 
 /// Loads a serialized wallet from a path.
-fn load_from_path(wallet_dir: &Path) -> Result<(MainKey, KeyLessWallet, Vec<SpendRequest>)> {
+fn load_from_path(
+    wallet_dir: &Path,
+    main_key: Option<MainKey>,
+) -> Result<(MainKey, KeyLessWallet, Vec<SpendRequest>)> {
     let key = match get_main_key(wallet_dir)? {
         Some(key) => key,
         None => {
-            let key = MainKey::random();
+            let key = main_key.unwrap_or(MainKey::random());
             store_new_keypair(wallet_dir, &key)?;
             key
         }
