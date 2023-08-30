@@ -975,6 +975,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(node)* add feature flag for tcp/quic
 
+## [0.88.52](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.51...sn_node-v0.88.52) - 2023-08-30
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
