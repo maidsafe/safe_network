@@ -75,7 +75,6 @@ impl WalletClient {
         let created_dbcs = transfer.created_dbcs.clone();
 
         // send to network
-        println!("Sending transfer to the network: {transfer:#?}");
         if let Err(error) = self
             .client
             .send(self.wallet.unconfirmed_txs(), verify_store)
