@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693317270216,
+  "lastUpdate": 1693414244688,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -5923,6 +5923,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 4.4604898802103925,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9c687c1d9f490b8f9f70551da73a46f018bda84d",
+          "message": "chore: cargo fmt and clippy",
+          "timestamp": "2023-08-30T12:32:26Z",
+          "tree_id": "7abf0dbe714347c36258ebfb20b2b2fab9e91c48",
+          "url": "https://github.com/maidsafe/safe_network/commit/9c687c1d9f490b8f9f70551da73a46f018bda84d"
+        },
+        "date": 1693414243801,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.003413963817712515,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.03412894434587737,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 4.489787398271895,
             "unit": "MiB/s"
           }
         ]
