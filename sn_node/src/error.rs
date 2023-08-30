@@ -8,7 +8,7 @@
 
 use sn_networking::Error as NetworkError;
 use sn_protocol::error::Error as ProtocolError;
-use sn_transfers::dbc_genesis::Error as GenesisError;
+use sn_transfers::{dbc_genesis::Error as GenesisError, wallet::Error as RewardsWalletError};
 use thiserror::Error;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
@@ -28,4 +28,7 @@ pub enum Error {
 
     #[error("Failed to parse NodeEvent")]
     NodeEventParsingFailed,
+
+    #[error("Node's rewards wallet error {0}")]
+    RewardsWallet(#[from] RewardsWalletError),
 }
