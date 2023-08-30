@@ -239,19 +239,22 @@ jobs:
       # - name: Change default linker on windows
       #   if: matrix.os == 'windows-latest'
       #   run: rustup toolchain install stable-x86_64-pc-windows-gnu && rustup default stable-x86_64-pc-windows-gnu && rustup component add rustfmt
-      - name: Setup msys2
+      # - name: Setup msys2
+      #   if: matrix.os == 'windows-latest'
+      #   uses: msys2/setup-msys2@v2
+      #   with:
+      #     msystem: UCRT64
+      #     update: true
+      #     install: >-
+      #       make
+      #       git
+      #     pacboy: >-
+      #       toolchain:p
+      #       cmake:p
+      #       ninja:p
+      - name: Add llvm path on Windows
         if: matrix.os == 'windows-latest'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          update: true
-          install: >-
-            make
-            git
-          pacboy: >-
-            toolchain:p
-            cmake:p
-            ninja:p
+        run: echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Build safe bins
         run: cargo build --release --features local-discovery --bin safenode --bin faucet
