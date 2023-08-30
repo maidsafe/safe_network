@@ -155,6 +155,7 @@ impl SwarmDriver {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
+    #[allow(clippy::result_large_err)]
     pub fn new(
         keypair: Keypair,
         addr: SocketAddr,
@@ -222,6 +223,7 @@ impl SwarmDriver {
     }
 
     /// Same as `new` API but creates the network components in client mode
+    #[allow(clippy::result_large_err)]
     pub fn new_client(
         local: bool,
         request_timeout: Option<Duration>,
@@ -278,7 +280,7 @@ impl SwarmDriver {
         });
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::result_large_err)]
     /// Private helper to create the network components with the provided config and req/res behaviour
     fn with(
         root_dir_path: PathBuf,
@@ -478,6 +480,7 @@ impl SwarmDriver {
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
+#[allow(clippy::result_large_err)]
 pub fn sort_peers_by_address(
     peers: Vec<PeerId>,
     address: &NetworkAddress,
@@ -488,6 +491,7 @@ pub fn sort_peers_by_address(
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
 /// Return with the closest expected number of entries if has.
+#[allow(clippy::result_large_err)]
 pub fn sort_peers_by_key<T>(
     mut peers: Vec<PeerId>,
     key: &KBucketKey<T>,
@@ -522,6 +526,7 @@ pub struct Network {
 
 impl Network {
     /// Signs the given data with the node's keypair.
+    #[allow(clippy::result_large_err)]
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         self.keypair.sign(msg).map_err(Error::from)
     }
@@ -845,6 +850,7 @@ impl Network {
 
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
+    #[allow(clippy::result_large_err)]
     pub fn put_local_record(&self, record: Record) -> Result<()> {
         debug!(
             "Writing Record locally, for {:?} - length {:?}",
@@ -878,12 +884,9 @@ impl Network {
     }
 
     // Add a list of keys of a holder to Replication Fetcher.
-    pub fn add_keys_to_replication_fetcher(
-        &self,
-        peer: PeerId,
-        keys: Vec<NetworkAddress>,
-    ) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { peer, keys })
+    #[allow(clippy::result_large_err)]
+    pub fn add_keys_to_replication_fetcher(&self, keys: Vec<NetworkAddress>) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { keys })
     }
 
     /// Send `Request` to the given `PeerId` and await for the response. If `self` is the recipient,
@@ -902,6 +905,7 @@ impl Network {
 
     /// Send `Request` to the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
+    #[allow(clippy::result_large_err)]
     pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let swarm_cmd = SwarmCmd::SendRequest {
             req,
@@ -912,6 +916,7 @@ impl Network {
     }
 
     /// Send a `Response` through the channel opened by the requester.
+    #[allow(clippy::result_large_err)]
     pub fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
     }
@@ -925,6 +930,7 @@ impl Network {
     }
 
     // Helper to send SwarmCmd
+    #[allow(clippy::result_large_err)]
     fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
         let capacity = self.swarm_cmd_sender.capacity();
 
@@ -1006,6 +1012,7 @@ impl Network {
 }
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
+#[allow(clippy::result_large_err)]
 fn get_fee_from_store_cost_quotes(
     mut all_costs: Vec<(PublicAddress, Token)>,
 ) -> Result<Vec<(PublicAddress, Token)>> {
@@ -1078,6 +1085,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[allow(clippy::result_large_err)]
     fn test_get_fee_from_store_cost_quotes() -> Result<()> {
         // for a vec of different costs of CLOUSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price

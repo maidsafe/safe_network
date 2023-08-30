@@ -132,8 +132,8 @@ pub enum NetworkEvent {
     PeerAdded(PeerId),
     // Peer has been removed from the Routing Table
     PeerRemoved(PeerId),
-    /// The Records for the these keys are to be fetched from the provided Peer or from the network
-    KeysForReplication(Vec<(RecordKey, Option<PeerId>)>),
+    /// The Records for the these keys are to be fetched from the network
+    KeysForReplication(Vec<RecordKey>),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
     /// AutoNAT status changed
@@ -161,10 +161,7 @@ impl Debug for NetworkEvent {
             NetworkEvent::KeysForReplication(list) => {
                 let pretty_list: Vec<_> = list
                     .iter()
-                    .map(|(key, peer_id)| {
-                        let pretty_key = PrettyPrintRecordKey::from(key.clone());
-                        (pretty_key, *peer_id)
-                    })
+                    .map(|key| PrettyPrintRecordKey::from(key.clone()))
                     .collect();
                 write!(f, "NetworkEvent::KeysForReplication({pretty_list:?})")
             }
@@ -184,6 +181,7 @@ impl Debug for NetworkEvent {
 
 impl SwarmDriver {
     // Handle `SwarmEvents`
+    #[allow(clippy::result_large_err)]
     pub(super) fn handle_swarm_events<EventError: std::error::Error>(
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
@@ -394,6 +392,7 @@ impl SwarmDriver {
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
         match kad_event {
             ref event @ KademliaEvent::OutboundQueryProgressed {

@@ -21,18 +21,6 @@ use serde::{Deserialize, Serialize};
 pub enum Query {
     /// Retrieve the cost of storing a record at the given address.
     GetStoreCost(NetworkAddress),
-    /// Retrieve a [`ReplicatedData`] at the given address.
-    ///
-    /// This should eventually lead to a [`GetReplicatedData`] response.
-    ///
-    /// [`ReplicatedData`]:  crate::messages::ReplicatedData
-    /// [`GetReplicatedData`]: super::QueryResponse::GetReplicatedData
-    GetReplicatedData {
-        /// Sender of the query
-        requester: NetworkAddress,
-        /// Address of the data to be fetched
-        address: NetworkAddress,
-    },
 }
 
 impl Query {
@@ -40,7 +28,6 @@ impl Query {
     pub fn dst(&self) -> NetworkAddress {
         match self {
             Query::GetStoreCost(address) => address.clone(),
-            Query::GetReplicatedData { address, .. } => address.clone(),
         }
     }
 }
@@ -50,12 +37,6 @@ impl std::fmt::Display for Query {
         match self {
             Query::GetStoreCost(address) => {
                 write!(f, "Query::GetStoreCost({address:?})")
-            }
-            Query::GetReplicatedData { requester, address } => {
-                write!(
-                    f,
-                    "Query::GetReplicatedData({requester:?} querying {address:?})"
-                )
             }
         }
     }

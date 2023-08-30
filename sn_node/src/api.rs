@@ -12,9 +12,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_dbc::MainKey;
 use sn_networking::{MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState, CLOSE_GROUP_SIZE};
 use sn_protocol::{
-    error::Error as ProtocolError,
-    messages::{Cmd, CmdResponse, Query, QueryResponse, ReplicatedData, Request, Response},
-    storage::DbcAddress,
+    messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -207,7 +205,7 @@ impl Node {
             }
             NetworkEvent::ResponseReceived { res } => {
                 trace!("NetworkEvent::ResponseReceived {res:?}");
-                if let Err(err) = self.handle_response(res).await {
+                if let Err(err) = self.handle_response(res) {
                     error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
                 }
             }
@@ -273,53 +271,8 @@ impl Node {
     }
 
     // Handle the response that was not awaited at the call site
-    async fn handle_response(&self, response: Response) -> Result<()> {
+    fn handle_response(&self, response: Response) -> Result<()> {
         match response {
-            Response::Query(QueryResponse::GetReplicatedData(Ok((_holder, replicated_data)))) => {
-                match replicated_data {
-                    ReplicatedData::Chunk(chunk_with_payment) => {
-                        let chunk_addr = *chunk_with_payment.chunk.address();
-                        debug!("Chunk received for replication: {:?}", chunk_addr.xorname());
-
-                        let success = self
-                            .validate_and_store_chunk(chunk_with_payment, false)
-                            .await?;
-                        trace!("ReplicatedData::Chunk with {chunk_addr:?} has been validated and stored. {success:?}");
-                    }
-                    ReplicatedData::DbcSpend(signed_spend) => {
-                        if let Some(spend) = signed_spend.first() {
-                            let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-                            let dbc_name = dbc_addr.xorname();
-                            debug!("DbcSpend received for replication: {:?}", dbc_name);
-                            let addr = NetworkAddress::from_dbc_address(dbc_addr);
-
-                            match self.validate_and_store_spends(signed_spend, false).await {
-                                Ok(success) => trace!("ReplicatedData::Dbc with {addr:?}({dbc_name:?}) has been validated and stored. {success:?}"),
-                                Err(err) => trace!("ReplicatedData::Dbc with {addr:?}({dbc_name:?}) failed with validation {err:?}"),
-                            }
-                        } else {
-                            // Put validations make sure that we have >= 1 spends and with the same
-                            // dbc_id
-                            error!("Got ReplicatedData::DbcSpend with zero elements");
-                        }
-                    }
-                    ReplicatedData::Register(register) => {
-                        let register_addr = *register.address();
-                        debug!(
-                            "Register received for replication: {:?}",
-                            register_addr.xorname()
-                        );
-
-                        let success = self.validate_and_store_register(register).await?;
-                        trace!("ReplicatedData::Register with {register_addr:?} has been validated and stored. {success:?}");
-                    }
-                }
-            }
-            Response::Query(QueryResponse::GetReplicatedData(Err(
-                ProtocolError::ReplicatedDataNotFound { holder, address },
-            ))) => {
-                warn!("Replicated data {address:?} could not be retrieved from peer: {holder:?}");
-            }
             Response::Cmd(CmdResponse::Replicate(Ok(()))) => {
                 // Nothing to do, response was fine
                 // This only exists to ensure we dont drop the handle and
@@ -353,22 +306,6 @@ impl Node {
                     payment_address,
                 }
             }
-            Query::GetReplicatedData {
-                requester: _,
-                address,
-            } => {
-                trace!("Got GetReplicatedData query for {address:?}");
-                let result = self
-                    .get_replicated_data(address)
-                    .await
-                    .map(|replicated_data| {
-                        (
-                            NetworkAddress::from_peer(self.network.peer_id),
-                            replicated_data,
-                        )
-                    });
-                QueryResponse::GetReplicatedData(result)
-            }
         };
         Response::Query(resp)
     }
@@ -376,16 +313,12 @@ impl Node {
     fn handle_node_cmd(&self, cmd: Cmd) -> Response {
         Marker::NodeCmdReceived(&cmd).log();
         let resp = match cmd {
-            Cmd::Replicate { holder, keys } => {
-                debug!(
-                    "Replicate list received from {:?} of {} keys",
-                    holder.as_peer_id(),
-                    keys.len()
-                );
+            Cmd::Replicate { keys, .. } => {
+                debug!("Replicate list received {} keys", keys.len());
                 trace!("received replication keys {keys:?}");
 
                 // todo: error is not propagated to the caller here
-                let _ = self.add_keys_to_replication_fetcher(holder, keys);
+                let _ = self.add_keys_to_replication_fetcher(keys);
                 // if we do not send a response, we can cause connection failures.
                 CmdResponse::Replicate(Ok(()))
             }

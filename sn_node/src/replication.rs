@@ -14,7 +14,7 @@ use libp2p::{
 };
 use sn_networking::{sort_peers_by_address, CLOSE_GROUP_SIZE};
 use sn_protocol::{
-    messages::{Cmd, Query, Request},
+    messages::{Cmd, Request},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::collections::BTreeMap;
@@ -107,63 +107,36 @@ impl Node {
         Ok(())
     }
 
-    /// Add a list of keys to the Replication fetcher. These keys are later fetched from the peer through the
-    /// replication process.
-    pub(crate) fn add_keys_to_replication_fetcher(
-        &self,
-        peer: NetworkAddress,
-        keys: Vec<NetworkAddress>,
-    ) -> Result<()> {
-        let peer_id = if let Some(peer_id) = peer.as_peer_id() {
-            peer_id
-        } else {
-            warn!("Can't parse PeerId from NetworkAddress {peer:?}");
-            return Ok(());
-        };
-
-        self.network
-            .add_keys_to_replication_fetcher(peer_id, keys)?;
+    /// Add a list of keys to the Replication fetcher.
+    /// These keys are later fetched from network.
+    pub(crate) fn add_keys_to_replication_fetcher(&self, keys: Vec<NetworkAddress>) -> Result<()> {
+        self.network.add_keys_to_replication_fetcher(keys)?;
         Ok(())
     }
 
     /// Get the Record from a peer or from the network without waiting.
     pub(crate) fn fetch_replication_keys_without_wait(
         &self,
-        keys_to_fetch: Vec<(RecordKey, Option<PeerId>)>,
+        keys_to_fetch: Vec<RecordKey>,
     ) -> Result<()> {
-        for (key, maybe_peer) in keys_to_fetch {
-            match maybe_peer {
-                Some(peer) => {
-                    trace!(
-                        "Fetching data for replication {:?} from {peer:?}",
-                        PrettyPrintRecordKey::from(key.clone())
-                    );
-                    let request = Request::Query(Query::GetReplicatedData {
-                        requester: NetworkAddress::from_peer(self.network.peer_id),
-                        address: NetworkAddress::from_record_key(key),
-                    });
-                    self.network.send_req_ignore_reply(request, peer)?
-                }
-                None => {
-                    let node = self.clone();
-                    let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
-                        trace!(
-                            "Fetching data for replication {:?} from the network",
-                            PrettyPrintRecordKey::from(key.clone())
-                        );
-                        let record = node
-                            .network
-                            .get_record_from_network(key.clone(), None, false)
-                            .await?;
-                        trace!(
-                            "Got Replication Record {:?} from network, validating and storing it",
-                            PrettyPrintRecordKey::from(key)
-                        );
-                        let _ = node.validate_and_store_record(record, false).await?;
-                        Ok(())
-                    });
-                }
-            }
+        for key in keys_to_fetch {
+            let node = self.clone();
+            let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
+                trace!(
+                    "Fetching data for replication {:?} from the network",
+                    PrettyPrintRecordKey::from(key.clone())
+                );
+                let record = node
+                    .network
+                    .get_record_from_network(key.clone(), None, false)
+                    .await?;
+                trace!(
+                    "Got Replication Record {:?} from network, validating and storing it",
+                    PrettyPrintRecordKey::from(key)
+                );
+                let _ = node.validate_and_store_record(record, false).await?;
+                Ok(())
+            });
         }
         Ok(())
     }
