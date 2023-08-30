@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693414244688,
+  "lastUpdate": 1693414527066,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9705,6 +9705,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 37.740543,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9c687c1d9f490b8f9f70551da73a46f018bda84d",
+          "message": "chore: cargo fmt and clippy",
+          "timestamp": "2023-08-30T12:32:26Z",
+          "tree_id": "7abf0dbe714347c36258ebfb20b2b2fab9e91c48",
+          "url": "https://github.com/maidsafe/safe_network/commit/9c687c1d9f490b8f9f70551da73a46f018bda84d"
+        },
+        "date": 1693414526511,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 36.58957,
             "unit": "MB"
           }
         ]
