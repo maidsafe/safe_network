@@ -22,7 +22,10 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC};
+use sn_transfers::{
+    dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC},
+    wallet::LocalWallet,
+};
 use std::collections::{BTreeSet, HashSet};
 use tokio::task::JoinSet;
 
@@ -306,7 +309,10 @@ impl Node {
         // other info for verifications of valid payment.
         let mut tasks = JoinSet::new();
 
-        created_dbcs.iter().cloned().for_each(|dbc| {
+        let mut wallet = LocalWallet::load_from(&self.network.root_dir_path)
+            .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
+
+        for dbc in created_dbcs.iter() {
             let spent_dbc_ids = dbc
                 .signed_spends
                 .iter()
@@ -332,8 +338,12 @@ impl Node {
                         Ok::<DbcTransaction, ProtocolError>(signed_spend.spent_tx())
                     });
                 }
+
+                wallet.deposit(vec![dbc.clone()]).map_err(|err| {
+                    ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string())
+                })?;
             }
-        });
+        }
 
         let mut payment_tx = None;
 
@@ -361,11 +371,9 @@ impl Node {
                 .map_err(|_| ProtocolError::ChunkNotStored(addr_name))?;
             // Check if any of the dbcs sent are sufficient for this chunk.
             match verify_fee_is_sufficient(acceptable_fee, &tx) {
-                Ok(tx) => tx,
+                Ok(_) => {}
                 Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected }) => {
-                    if !validate_payment_amount {
-                        return Ok(());
-                    } else {
+                    if validate_payment_amount {
                         return Err(ProtocolError::PaymentProofInsufficientAmount {
                             paid,
                             expected,
@@ -380,6 +388,10 @@ impl Node {
             // There is no DBC for us, so we dont store it.
             return Err(ProtocolError::NoPaymentToThisNode(addr_name));
         }
+
+        wallet
+            .store()
+            .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
 
         Ok(())
     }

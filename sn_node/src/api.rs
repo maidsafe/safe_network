@@ -15,6 +15,7 @@ use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
+use sn_transfers::wallet::LocalWallet;
 use std::{
     collections::HashSet,
     net::SocketAddr,
@@ -93,6 +94,10 @@ impl Node {
     ) -> Result<RunningNode> {
         // TODO: Make this key settable, and accessible via API
         let reward_key = MainKey::random();
+        let reward_address = reward_key.public_address();
+
+        let wallet = LocalWallet::load_from_main_key(&root_dir, reward_key)?;
+        wallet.store()?;
 
         let (network, mut network_event_receiver, swarm_driver) =
             SwarmDriver::new(keypair, addr, local, root_dir)?;
@@ -102,7 +107,7 @@ impl Node {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
             initial_peers,
-            reward_address: reward_key.public_address(),
+            reward_address,
         };
 
         let network_clone = network.clone();
