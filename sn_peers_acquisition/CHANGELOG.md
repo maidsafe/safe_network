@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.1.5...sn_peers_acquisition-v0.1.6) - 2023-08-30
+
+### Other
+- *(docs)* adjust --peer docs
+
 ## [0.1.5](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.1.4...sn_peers_acquisition-v0.1.5) - 2023-08-29
 
 ### Added
