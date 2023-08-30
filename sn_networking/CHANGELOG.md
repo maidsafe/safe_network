@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.30](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.29...sn_networking-v0.4.30) - 2023-08-30
+
+### Added
+- *(networking)* dial unroutable peer
+
+### Other
+- cargo fmt and clippy
+
 ## [0.4.29](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.4.28...sn_networking-v0.4.29) - 2023-08-29
 
 ### Added
