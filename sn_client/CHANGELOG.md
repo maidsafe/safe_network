@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.88.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.29...sn_client-v0.88.0) - 2023-08-30
+
+### Added
+- refactor to allow greater upload parallelisation
+- one transfer per data set, mapped dbcs to content addrs
+- [**breaking**] pay each chunk holder direct
+- feat!(protocol): gets keys with GetStoreCost
+- feat!(protocol): get price and pay for each chunk individually
+- feat!(protocol): remove chunk merkletree to simplify payment
+
+### Fixed
+- *(tokio)* remove tokio fs
+
+### Other
+- *(node)* refactor churn test order
+- *(deps)* bump tokio to 1.32.0
+- *(client)* refactor client wallet to reduce dbc clones
+- *(client)* pass around content payments map mut ref
+- *(client)* reduce transferoutputs cloning
+- *(client)* error out early for invalid transfers
+- *(node)* reenable payment fail check
+
 ## [0.87.29](https://github.com/maidsafe/safe_network/compare/sn_client-v0.87.28...sn_client-v0.87.29) - 2023-08-30
 
 ### Other

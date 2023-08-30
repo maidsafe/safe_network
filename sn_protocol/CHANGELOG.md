@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.5.3...sn_protocol-v0.6.0) - 2023-08-30
+
+### Added
+- *(protocol)* add logs for `RecordHeader` serde
+- one transfer per data set, mapped dbcs to content addrs
+- [**breaking**] pay each chunk holder direct
+- feat!(protocol): gets keys with GetStoreCost
+- feat!(protocol): get price and pay for each chunk individually
+- feat!(protocol): remove chunk merkletree to simplify payment
+
+### Fixed
+- *(protocol)* avoid panics
+
+### Other
+- *(node)* data verification test refactors for readability
+- *(node)* only store paid for data, ignore maj
+- *(node)* clarify payment errors
+- *(node)* reenable payment fail check
+
 ## [0.5.3](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.5.2...sn_protocol-v0.5.3) - 2023-08-24
 
 ### Other

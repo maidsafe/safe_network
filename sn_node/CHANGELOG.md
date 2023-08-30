@@ -985,6 +985,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.89.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.88.53...sn_node-v0.89.0) - 2023-08-30
+
+### Added
+- refactor to allow greater upload parallelisation
+- one transfer per data set, mapped dbcs to content addrs
+- *(node)* store data if the majority of CLOSE_GROUP will
+- [**breaking**] pay each chunk holder direct
+- feat!(protocol): gets keys with GetStoreCost
+- feat!(protocol): get price and pay for each chunk individually
+- feat!(protocol): remove chunk merkletree to simplify payment
+
+### Fixed
+- *(tokio)* remove tokio fs
+- *(node)* handling events should wait before connected to the network
+- correct replicated spend validation
+- not check payment for relocated holder
+
+### Other
+- *(node)* refactor churn test order
+- *(logs)* add more spend PUT validation logs
+- trival clean ups
+- *(deps)* bump tokio to 1.32.0
+- mem_check test update
+- *(client)* refactor client wallet to reduce dbc clones
+- *(client)* pass around content payments map mut ref
+- parallelise churn data final query
+- increase concurrent fetches for replication data
+- *(node)* data verification log tweaks
+- *(node)* data verification test refactors for readability
+- *(client)* error out early for invalid transfers
+- *(node)* only store paid for data, ignore maj
+- *(node)* clarify payment errors
+- *(node)* reenable payment fail check
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
