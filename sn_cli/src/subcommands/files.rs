@@ -9,7 +9,7 @@
 use super::wallet::{chunk_and_pay_for_storage, ChunkedFile};
 use bytes::Bytes;
 use clap::Parser;
-use color_eyre::Result;
+use color_eyre::{eyre::Error, Result};
 use libp2p::futures::future::join_all;
 use sn_client::{Client, Files, MAX_CONCURRENT_CHUNK_UPLOAD};
 use sn_protocol::storage::{Chunk, ChunkAddress};
@@ -177,26 +177,49 @@ async fn upload_chunks(
     // here we use a semaphore to limit the number of concurrent chunk uploads (but not concurrent verifications!)
     chunk_semaphore: Arc<Semaphore>,
 ) -> Result<()> {
-    println!("Awaiting to start uploading chunks of {file_name:?}");
-    for (_name, path) in chunks_paths {
-        let start_time = std::time::Instant::now();
+    let start_time = std::time::Instant::now();
+    let mut handles = Vec::new();
+    for (i, (_name, path)) in chunks_paths.into_iter().enumerate() {
+        let file_name = file_name.to_string();
+        let file_api = file_api.clone();
+        let wallet_dir = wallet_dir.to_path_buf();
+        let semaphore = chunk_semaphore.clone();
 
-        let _permit = chunk_semaphore.clone().acquire_owned().await?;
-        let elapsed = start_time.elapsed();
-        println!(
-            "Starting to upload chunks from {file_name:?}. ({:?} elapsed)",
-            elapsed
-        );
+        let handle = tokio::spawn(async move {
+            let _permit = semaphore.acquire_owned().await?;
 
-        let wallet_client = file_api.wallet(wallet_dir).await?;
+            println!(
+                "Starting to upload chunk #{i} from {file_name:?}. (after {:.2}mins elapsed)",
+                start_time.elapsed().as_secs_f64() / 60.0
+            );
 
-        let chunk = Chunk::new(Bytes::from(fs::read(path)?));
+            let upload_start_time = std::time::Instant::now();
 
-        file_api
-            .upload_chunk_in_parallel(chunk, &wallet_client, verify_store)
-            .await?;
+            let wallet_client = file_api.wallet(wallet_dir).await?;
+            let chunk = Chunk::new(Bytes::from(fs::read(path)?));
+
+            file_api
+                .upload_chunk_in_parallel(chunk, &wallet_client, verify_store)
+                .await?;
+
+            println!(
+                "Uploaded chunk #{i} from {file_name:?} in {:.2} seconds)",
+                upload_start_time.elapsed().as_secs_f64()
+            );
+            Ok::<(), Error>(())
+        });
+        handles.push(handle);
+    }
+    let results = join_all(handles).await;
+
+    for result in results {
+        result??;
     }
 
+    println!(
+        "Uploaded {file_name:?} in {:.2} minutes",
+        start_time.elapsed().as_secs_f64() / 60.0
+    );
     Ok(())
 }
 
