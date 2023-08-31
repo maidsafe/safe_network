@@ -65,7 +65,13 @@ async fn main() -> Result<()> {
         }
     }
 
-    let client = Client::new(secret_key, Some(opt.peers.peers), opt.timeout).await?;
+    let client = Client::new(
+        secret_key,
+        Some(opt.peers.peers),
+        opt.timeout,
+        opt.concurrency,
+    )
+    .await?;
 
     // default to verifying storage
     let should_verify_store = !opt.no_verify;

@@ -18,13 +18,16 @@ mod file_apis;
 mod register;
 mod wallet;
 
+use std::sync::Arc;
+
 pub(crate) use error::Result;
+use tokio::sync::Semaphore;
 
 pub use self::{
     error::Error,
     event::{ClientEvent, ClientEventsReceiver},
     faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
-    file_apis::{Files, DEFAULT_NETWORK_CONCURRENCY},
+    file_apis::Files,
     register::ClientRegister,
     wallet::{send, WalletClient},
 };
@@ -41,4 +44,5 @@ pub struct Client {
     signer: bls::SecretKey,
     peers_added: usize,
     progress: Option<ProgressBar>,
+    concurrency_limiter: Arc<Semaphore>,
 }
