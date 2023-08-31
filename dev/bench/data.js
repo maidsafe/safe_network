@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693501901561,
+  "lastUpdate": 1693502291577,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6274,6 +6274,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 4.263012182910301,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "bccd3e81d8ade296ae7de69b9e98a34ed3ec30ef",
+          "message": "feat(store): implement `UnifiedRecordStore`\n- an enum containing either the client or the node record store",
+          "timestamp": "2023-08-31T16:03:04Z",
+          "tree_id": "85f5608ff38b4eb43752bb036f4fcbf3a6750421",
+          "url": "https://github.com/maidsafe/safe_network/commit/bccd3e81d8ade296ae7de69b9e98a34ed3ec30ef"
+        },
+        "date": 1693502290269,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.12703676646699189,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5059387483650466,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 4.528664172319382,
             "unit": "MiB/s"
           }
         ]
