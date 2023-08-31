@@ -368,28 +368,28 @@ impl Client {
         })?;
 
         if let RecordKind::DbcSpend = header.kind {
-            match try_deserialize_record::<Vec<SignedSpend>>(&record)
+            let mut deserialized_record = try_deserialize_record::<Vec<SignedSpend>>(&record)
                 .map_err(|err| {
                     Error::CouldNotVerifyTransfer(format!(
                         "Can't deserialize record for the dbc_id {dbc_id:?} with error {err:?}"
                     ))
-                })?
-                .as_slice()
-            {
-                [one, two, ..] => {
-                    error!("Found double spend for {address:?}");
+                })?;
+
+            match deserialized_record.len() {
+                0 => {
+                    trace!("Found no spend for {address:?}");
                     Err(Error::CouldNotVerifyTransfer(format!(
-                "Found double spend for the dbc_id {dbc_id:?} - {:?}: spend_one {:?} and spend_two {:?}",
-                PrettyPrintRecordKey::from(key), one.derived_key_sig, two.derived_key_sig
-            )))
+                        "Fetched record shows no spend for dbc {dbc_id:?}."
+                    )))
                 }
-                [signed_spend] => {
+                1 => {
+                    let signed_spend = deserialized_record.remove(0);
                     trace!("Spend get for address: {address:?} successful");
                     if dbc_id == signed_spend.dbc_id() {
                         match signed_spend.verify(signed_spend.spent_tx_hash()) {
                             Ok(_) => {
                                 trace!("Verified signed spend got from networkfor {dbc_id:?}");
-                                Ok(signed_spend.clone())
+                                Ok(signed_spend)
                             }
                             Err(err) => {
                                 warn!("Invalid signed spend got from network for {dbc_id:?}: {err:?}.");
@@ -404,10 +404,14 @@ impl Client {
                     }
                 }
                 _ => {
-                    trace!("Found no spend for {address:?}");
+                    // each one is 0 as it shifts remaining elements
+                    let one = deserialized_record.remove(0);
+                    let two = deserialized_record.remove(0);
+                    error!("Found double spend for {address:?}");
                     Err(Error::CouldNotVerifyTransfer(format!(
-                        "Fetched record shows no spend for dbc {dbc_id:?}."
-                    )))
+                "Found double spend for the dbc_id {dbc_id:?} - {:?}: spend_one {:?} and spend_two {:?}",
+                PrettyPrintRecordKey::from(key), one.derived_key_sig, two.derived_key_sig
+            )))
                 }
             }
         } else {
