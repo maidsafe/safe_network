@@ -146,15 +146,18 @@ impl NodeRecordStore {
         }
 
         // sort records by distance to our local key
-        let mut records = self.records.iter().cloned().collect::<Vec<_>>();
-        records.sort_unstable_by_key(|k| {
-            let kbucket_key = KBucketKey::from(k.to_vec());
-            self.local_key.distance(&kbucket_key)
-        });
+        let furthest = self
+            .records
+            .iter()
+            .max_by_key(|k| {
+                let kbucket_key = KBucketKey::from(k.to_vec());
+                self.local_key.distance(&kbucket_key)
+            })
+            .cloned();
 
         // now check if the incoming record is closer than our furthest
         // if it is, we can prune
-        if let Some(furthest_record) = records.last() {
+        if let Some(furthest_record) = furthest {
             let furthest_record_key = KBucketKey::from(furthest_record.to_vec());
             let incoming_record_key = KBucketKey::from(r.to_vec());
 
@@ -167,7 +170,7 @@ impl NodeRecordStore {
                     PrettyPrintRecordKey::from(r.clone())
                 );
                 // we should prune and make space
-                self.remove(furthest_record);
+                self.remove(&furthest_record);
 
                 // Warn if the furthest record was within our distance range
                 if let Some(distance_range) = self.distance_range {
