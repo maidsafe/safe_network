@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693504948246,
+  "lastUpdate": 1693505257970,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6313,6 +6313,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 4.528664172319382,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "63d4a0117c348b691a19a1649f85dc186ab1ac9d",
+          "message": "fix(cli): don't try to create wallet paths when checking balance",
+          "timestamp": "2023-08-31T16:07:42Z",
+          "tree_id": "9bdfd4db955acd84d00bcddfcc5fa51a9da1b735",
+          "url": "https://github.com/maidsafe/safe_network/commit/63d4a0117c348b691a19a1649f85dc186ab1ac9d"
+        },
+        "date": 1693505256983,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11966013904334206,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6148305178007698,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 5.140448584166704,
             "unit": "MiB/s"
           }
         ]
