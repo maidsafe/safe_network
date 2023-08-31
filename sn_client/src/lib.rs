@@ -24,7 +24,7 @@ pub use self::{
     error::Error,
     event::{ClientEvent, ClientEventsReceiver},
     faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
-    file_apis::{Files, MAX_CONCURRENT_CHUNK_UPLOAD},
+    file_apis::{Files, DEFAULT_NETWORK_CONCURRENCY},
     register::ClientRegister,
     wallet::{send, WalletClient},
 };

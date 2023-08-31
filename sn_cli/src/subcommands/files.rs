@@ -11,7 +11,7 @@ use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{eyre::Error, Result};
 use libp2p::futures::future::join_all;
-use sn_client::{Client, Files, MAX_CONCURRENT_CHUNK_UPLOAD};
+use sn_client::{Client, Files, DEFAULT_NETWORK_CONCURRENCY};
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use std::fs;
 use tokio::sync::Semaphore;
@@ -98,7 +98,7 @@ async fn upload_files(
     // Payment shall always be verified.
     let chunks_to_upload = chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
 
-    let chunk_semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_CHUNK_UPLOAD));
+    let chunk_semaphore = Arc::new(Semaphore::new(DEFAULT_NETWORK_CONCURRENCY));
 
     let mut uploads = Vec::new();
 
@@ -152,10 +152,7 @@ async fn upload_files(
 
     let results = join_all(uploads).await;
 
-    let chunks_to_fetch: Vec<_> = results
-        .into_iter()
-        .filter_map(|x| x.unwrap_or(None))
-        .collect();
+    let chunks_to_fetch: Vec<_> = results.into_iter().flatten().collect();
 
     let content = bincode::serialize(&chunks_to_fetch)?;
     fs::create_dir_all(file_names_path.as_path())?;
