@@ -21,3 +21,5 @@ settings.json
 *.log
 
 bump_version_output
+
+heaptrack.*.gz
