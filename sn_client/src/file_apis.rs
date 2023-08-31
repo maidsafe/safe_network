@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{path::PathBuf, sync::Arc};
+use std::path::PathBuf;
 
 use crate::WalletClient;
 
@@ -27,12 +27,9 @@ use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
-use tokio::{sync::Semaphore, task};
+use tokio::task;
 use tracing::trace;
 use xor_name::XorName;
-
-// Maximum number of concurrent chunks to be uploaded at any one time, managed by a semaphore
-pub const DEFAULT_NETWORK_CONCURRENCY: usize = 5;
 
 /// File APIs.
 #[derive(Clone)]
@@ -280,7 +277,7 @@ impl Files {
     async fn try_get_chunks(&self, chunks_info: Vec<ChunkInfo>) -> Result<Vec<EncryptedChunk>> {
         let expected_count = chunks_info.len();
         let mut retrieved_chunks = vec![];
-        let semaphore = Arc::new(Semaphore::new(DEFAULT_NETWORK_CONCURRENCY));
+        let semaphore = self.client.concurrency_limiter();
 
         let mut tasks = Vec::new();
         for chunk_info in chunks_info.clone().into_iter() {
