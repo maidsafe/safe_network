@@ -210,7 +210,7 @@ fn deposit_from_dbc_hex(root_dir: &Path, input: String) -> Result<()> {
     let dbc = sn_dbc::Dbc::from_hex(input.trim())?;
 
     let old_balance = wallet.balance();
-    wallet.deposit(vec![dbc])?;
+    wallet.deposit(&vec![dbc])?;
     let new_balance = wallet.balance();
     wallet.store()?;
 
@@ -250,7 +250,7 @@ async fn send(
                 println!("Successfully stored wallet with new balance {new_balance}.");
             }
 
-            wallet.store_dbc(new_dbc)?;
+            wallet.store_dbc(&new_dbc)?;
             println!("Successfully stored new dbc to wallet dir. It can now be sent to the recipient, using any channel of choice.");
         }
         Err(err) => {
