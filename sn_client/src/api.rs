@@ -345,7 +345,10 @@ impl Client {
         let address = DbcAddress::from_dbc_id(dbc_id);
         let key = NetworkAddress::from_dbc_address(address).to_record_key();
 
-        trace!("Getting spend {dbc_id:?} with record_key {key:?}");
+        trace!(
+            "Getting spend {dbc_id:?} with record_key {:?}",
+            PrettyPrintRecordKey::from(key.clone())
+        );
         let record = self
             .network
             .get_record_from_network(key.clone(), None, true)
