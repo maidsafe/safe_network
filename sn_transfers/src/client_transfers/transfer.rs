@@ -124,15 +124,13 @@ fn create_transfer_with(
     fee: Option<FeeOutput>,
 ) -> Result<TransferOutputs> {
     let Inputs {
-        dbcs_to_spend,
-        recipients,
         change: (change, change_to),
         ..
     } = selected_inputs;
 
     let mut inputs = vec![];
     let mut src_txs = BTreeMap::new();
-    for (dbc, derived_key) in dbcs_to_spend {
+    for (dbc, derived_key) in selected_inputs.dbcs_to_spend {
         let token = match dbc.token() {
             Ok(token) => token,
             Err(err) => {
@@ -150,7 +148,7 @@ fn create_transfer_with(
 
     let mut tx_builder = TransactionBuilder::default()
         .add_inputs(inputs)
-        .add_outputs(recipients);
+        .add_outputs(selected_inputs.recipients);
 
     if let Some(fee_output) = fee {
         tx_builder = tx_builder.set_fee_output(fee_output);
