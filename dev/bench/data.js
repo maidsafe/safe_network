@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693509440346,
+  "lastUpdate": 1693512454707,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6391,6 +6391,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 4.112943974284759,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "85e5cb436d9118dadc39ba8e6bea26ea2b6b6270",
+          "message": "feat(cli): perform wallet actions without connecting to the network",
+          "timestamp": "2023-08-31T18:52:26Z",
+          "tree_id": "61a8d0efee3c211b76c760bf2109710aed311111",
+          "url": "https://github.com/maidsafe/safe_network/commit/85e5cb436d9118dadc39ba8e6bea26ea2b6b6270"
+        },
+        "date": 1693512453252,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.13775348231031564,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.49954783110355244,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 4.115416100414475,
             "unit": "MiB/s"
           }
         ]
