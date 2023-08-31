@@ -13,14 +13,12 @@ use color_eyre::{eyre::Error, Result};
 use libp2p::futures::future::join_all;
 use sn_client::{Client, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use std::fs;
-use tokio::sync::Semaphore;
-
 use std::{
-    // fs,
+    fs,
     path::{Path, PathBuf},
     sync::Arc,
 };
+use tokio::sync::Semaphore;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
