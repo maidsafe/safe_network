@@ -239,6 +239,8 @@ jobs:
       - name: Build testing executable
         run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --no-run
         timeout-minutes: 30
+        env:
+          CARGO_TARGET_DIR: "./transfer-target"
 
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
@@ -263,12 +265,14 @@ jobs:
         run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture
         env:
           SN_LOG: "all"
+          CARGO_TARGET_DIR: "./transfer-target"
         timeout-minutes: 25
 
       - name: execute the storage payment tests
         run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
+          CARGO_TARGET_DIR: "./transfer-target"
         timeout-minutes: 25
 
       - name: Stop the local network and upload logs
@@ -308,6 +312,9 @@ jobs:
       - name: Build churn tests
         run: cargo test --release -p sn_node --features=local-discovery --test data_with_churn --no-run
         timeout-minutes: 30
+        # new output folder to avoid linker issues w/ windows
+        env:
+          CARGO_TARGET_DIR: "./churn-target"
 
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
@@ -332,6 +339,8 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 
         env:
+          # new output folder to avoid linker issues w/ windows
+          CARGO_TARGET_DIR: "./churn-target"
           TEST_DURATION_MINS: 10
           TEST_TOTAL_CHURN_CYCLES: 15
           SN_LOG: "all"
@@ -341,6 +350,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture 
         env:
+          # new output folder to avoid linker issues w/ windows
+          CARGO_TARGET_DIR: "./churn-target"
           TEST_DURATION_MINS: 10
           TEST_TOTAL_CHURN_CYCLES: 15
           SN_LOG: "all"
@@ -425,6 +436,9 @@ jobs:
         - name: Build data location test
           run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --no-run  
           timeout-minutes: 30
+          # new output folder to avoid linker issues w/ windows
+          env:
+            CARGO_TARGET_DIR: "./data-location-target"
 
         - name: Start a local network
           uses: maidsafe/sn-local-testnet-action@main
@@ -448,6 +462,8 @@ jobs:
         - name: Verify the location of the data on the network (4 * 5 mins)
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_data_location -- --nocapture 
           env:
+            # new output folder to avoid linker issues w/ windows
+            CARGO_TARGET_DIR: "./data-location-target"
             CHURN_COUNT: 4
             SN_LOG: "all"
           timeout-minutes: 30
