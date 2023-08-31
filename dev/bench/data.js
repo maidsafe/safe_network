@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693502442532,
+  "lastUpdate": 1693504946260,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -10317,6 +10317,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 70.78707,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "bccd3e81d8ade296ae7de69b9e98a34ed3ec30ef",
+          "message": "feat(store): implement `UnifiedRecordStore`\n- an enum containing either the client or the node record store",
+          "timestamp": "2023-08-31T16:03:04Z",
+          "tree_id": "85f5608ff38b4eb43752bb036f4fcbf3a6750421",
+          "url": "https://github.com/maidsafe/safe_network/commit/bccd3e81d8ade296ae7de69b9e98a34ed3ec30ef"
+        },
+        "date": 1693504945504,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 73.36755,
             "unit": "MB"
           }
         ]
