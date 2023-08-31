@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693502441009,
+  "lastUpdate": 1693502442532,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -14127,6 +14127,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 1312,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "98b24620115acf5479a649b5e114ee06ad171e59",
+          "message": "Revert \"fix(ci): disable `CARGO_TARGET_DIR` to speedup build time\"\n\nThis reverts commit caf42044554bc6ee082db9800443a089a77bbe31.",
+          "timestamp": "2023-08-31T17:58:36+02:00",
+          "tree_id": "b9d8244b8fe11923b62913a220e777b46f64636e",
+          "url": "https://github.com/maidsafe/safe_network/commit/98b24620115acf5479a649b5e114ee06ad171e59"
+        },
+        "date": 1693502442100,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 1374.212,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 1297,
             "unit": "MB"
           }
         ]
