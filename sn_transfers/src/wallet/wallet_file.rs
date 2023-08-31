@@ -16,6 +16,7 @@ use super::{
 use sn_dbc::{Dbc, DbcId};
 use sn_protocol::storage::DbcAddress;
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
@@ -55,7 +56,7 @@ pub(super) fn get_wallet(wallet_dir: &Path) -> Result<Option<KeyLessWallet>> {
 /// Writes the `unconfirmed_txs` to the specified path.
 pub(super) fn store_unconfirmed_txs(
     wallet_dir: &Path,
-    unconfirmed_txs: &Vec<SpendRequest>,
+    unconfirmed_txs: &BTreeSet<SpendRequest>,
 ) -> Result<()> {
     let unconfirmed_txs_path = wallet_dir.join(UNCONFRIMED_TX_NAME);
     let bytes = bincode::serialize(&unconfirmed_txs)?;
@@ -64,7 +65,7 @@ pub(super) fn store_unconfirmed_txs(
 }
 
 /// Returns `Some(Vec<SpendRequest>)` or None if file doesn't exist.
-pub(super) fn get_unconfirmed_txs(wallet_dir: &Path) -> Result<Option<Vec<SpendRequest>>> {
+pub(super) fn get_unconfirmed_txs(wallet_dir: &Path) -> Result<Option<BTreeSet<SpendRequest>>> {
     let path = wallet_dir.join(UNCONFRIMED_TX_NAME);
     if !path.is_file() {
         return Ok(None);

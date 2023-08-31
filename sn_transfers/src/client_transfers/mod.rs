@@ -75,7 +75,9 @@ pub struct TransferOutputs {
 }
 
 /// The parameters necessary to send a spend request to the network.
-#[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(
+    custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, PartialOrd, Ord,
+)]
 pub struct SpendRequest {
     /// The dbc to register in the network as spent.
     pub signed_spend: SignedSpend,

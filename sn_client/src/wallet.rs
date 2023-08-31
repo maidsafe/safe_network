@@ -19,7 +19,7 @@ use sn_transfers::{
 
 use futures::future::join_all;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     iter::Iterator,
     time::{Duration, Instant},
 };
@@ -53,7 +53,7 @@ impl WalletClient {
         self.wallet.unconfirmed_txs_exist()
     }
     /// Get unconfirmed txs
-    pub fn unconfirmed_txs(&self) -> &Vec<SpendRequest> {
+    pub fn unconfirmed_txs(&self) -> &BTreeSet<SpendRequest> {
         self.wallet.unconfirmed_txs()
     }
 
@@ -70,9 +70,7 @@ impl WalletClient {
         to: PublicAddress,
         verify_store: bool,
     ) -> Result<Dbc> {
-        let transfer = self.wallet.local_send(vec![(amount, to)], None)?;
-
-        let created_dbcs = transfer.created_dbcs.clone();
+        let created_dbcs = self.wallet.local_send(vec![(amount, to)], None)?;
 
         // send to network
         if let Err(error) = self
@@ -229,7 +227,11 @@ impl WalletClient {
 impl Client {
     /// Send a spend request to the network.
     /// This can optionally verify the spend has been correctly stored before returning
-    pub async fn send(&self, spend_requests: &Vec<SpendRequest>, verify_store: bool) -> Result<()> {
+    pub async fn send(
+        &self,
+        spend_requests: &BTreeSet<SpendRequest>,
+        verify_store: bool,
+    ) -> Result<()> {
         let mut tasks = Vec::new();
 
         for spend_request in spend_requests {

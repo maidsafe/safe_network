@@ -43,7 +43,7 @@ pub struct LocalWallet {
     /// We maintain the order they were added in, as to republish
     /// them in the correct order, in case any later spend was
     /// dependent on an earlier spend.
-    unconfirmed_txs: Vec<SpendRequest>,
+    unconfirmed_txs: BTreeSet<SpendRequest>,
 }
 
 impl LocalWallet {
@@ -129,12 +129,12 @@ impl LocalWallet {
         self.key.public_address()
     }
 
-    pub fn unconfirmed_txs(&self) -> &Vec<SpendRequest> {
+    pub fn unconfirmed_txs(&self) -> &BTreeSet<SpendRequest> {
         &self.unconfirmed_txs
     }
 
     pub fn clear_unconfirmed_txs(&mut self) {
-        self.unconfirmed_txs = vec![];
+        self.unconfirmed_txs = Default::default();
     }
 
     pub fn balance(&self) -> Token {
@@ -194,11 +194,12 @@ impl LocalWallet {
         dbcs
     }
 
+    /// Make a transfer and return all created dbcs
     pub fn local_send(
         &mut self,
         to: Vec<(Token, PublicAddress)>,
         reason_hash: Option<Hash>,
-    ) -> Result<TransferOutputs> {
+    ) -> Result<Vec<Dbc>> {
         let mut rng = &mut rand::rngs::OsRng;
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
@@ -214,9 +215,11 @@ impl LocalWallet {
         let transfer =
             create_transfer(available_dbcs, to_unique_keys, self.address(), reason_hash)?;
 
-        self.update_local_wallet(&transfer)?;
+        let created_dbcs = transfer.created_dbcs.clone();
 
-        Ok(transfer)
+        self.update_local_wallet(transfer)?;
+
+        Ok(created_dbcs)
     }
 
     /// Performs a DBC payment for each content address, returning outputs for each.
@@ -245,18 +248,13 @@ impl LocalWallet {
         let transfer_outputs =
             create_transfer(available_dbcs, all_payees_only, self.address(), reason_hash)?;
 
-        self.update_local_wallet(&transfer_outputs)?;
-        println!("Transfers applied locally");
-
         let mut all_transfers_per_address = BTreeMap::default();
 
         let mut used_dbcs = std::collections::HashSet::new();
-        self.unconfirmed_txs
-            .extend(transfer_outputs.all_spend_requests.clone());
 
         for (content_addr, payees) in all_data_payments {
             for (payee, _token) in payees {
-                if let Some(dbc) = transfer_outputs.created_dbcs.iter().find(|dbc| {
+                if let Some(dbc) = &transfer_outputs.created_dbcs.iter().find(|dbc| {
                     dbc.public_address() == &payee && !used_dbcs.contains(&dbc.id().to_bytes())
                 }) {
                     used_dbcs.insert(dbc.id().to_bytes());
@@ -268,6 +266,9 @@ impl LocalWallet {
             }
         }
 
+        self.update_local_wallet(transfer_outputs)?;
+        println!("Transfers applied locally");
+
         self.wallet
             .payment_transactions
             .extend(all_transfers_per_address);
@@ -275,13 +276,13 @@ impl LocalWallet {
         Ok(())
     }
 
-    fn update_local_wallet(&mut self, transfer: &TransferOutputs) -> Result<()> {
+    fn update_local_wallet(&mut self, transfer: TransferOutputs) -> Result<()> {
         let TransferOutputs {
             change_dbc,
             created_dbcs,
             tx,
             all_spend_requests,
-        } = transfer.clone();
+        } = transfer;
 
         // First of all, update client local state.
         let spent_dbc_ids: BTreeSet<_> = tx.inputs.iter().map(|input| input.dbc_id()).collect();
@@ -304,8 +305,9 @@ impl LocalWallet {
         }
         self.store_dbcs(created_dbcs_batch)?;
 
-        self.unconfirmed_txs.extend(all_spend_requests);
-
+        for request in all_spend_requests {
+            self.unconfirmed_txs.insert(request);
+        }
         Ok(())
     }
 
@@ -344,7 +346,7 @@ impl LocalWallet {
 fn load_from_path(
     wallet_dir: &Path,
     main_key: Option<MainKey>,
-) -> Result<(MainKey, KeyLessWallet, Vec<SpendRequest>)> {
+) -> Result<(MainKey, KeyLessWallet, BTreeSet<SpendRequest>)> {
     let key = match get_main_key(wallet_dir)? {
         Some(key) => key,
         None => {
@@ -355,10 +357,7 @@ fn load_from_path(
     };
     let unconfirmed_txs = match get_unconfirmed_txs(wallet_dir)? {
         Some(unconfirmed_txs) => unconfirmed_txs,
-        None => {
-            let unconfirmed_txs = vec![];
-            unconfirmed_txs
-        }
+        None => Default::default(),
     };
     let wallet = match get_wallet(wallet_dir)? {
         Some(wallet) => {
