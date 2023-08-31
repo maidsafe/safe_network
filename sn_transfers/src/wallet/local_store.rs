@@ -53,10 +53,14 @@ impl LocalWallet {
     }
 
     /// Stores the given dbc to the `created dbcs dir` in the wallet dir.
-    /// Each recipient has their own dir, containing all dbcs for them.
     /// These can then be sent to the recipients out of band, over any channel preferred.
     pub fn store_dbc(&mut self, dbc: Dbc) -> Result<()> {
         store_created_dbcs(vec![dbc], &self.wallet_dir)
+    }
+    /// Stores the given dbcs to the `created dbcs dir` in the wallet dir.
+    /// These can then be sent to the recipients out of band, over any channel preferred.
+    pub fn store_dbcs(&mut self, dbc: Vec<Dbc>) -> Result<()> {
+        store_created_dbcs(dbc, &self.wallet_dir)
     }
 
     pub fn get_dbc(&mut self, dbc_id: &DbcId) -> Option<Dbc> {
@@ -282,17 +286,23 @@ impl LocalWallet {
         // First of all, update client local state.
         let spent_dbc_ids: BTreeSet<_> = tx.inputs.iter().map(|input| input.dbc_id()).collect();
 
+        // Use retain to remove spent DBCs in one pass, improving performance
+        self.wallet
+            .available_dbcs
+            .retain(|k, _| !spent_dbc_ids.contains(k));
         for spent in spent_dbc_ids {
-            self.wallet.available_dbcs.remove(&spent);
             self.wallet.spent_dbcs.insert(spent);
         }
 
         self.deposit(change_dbc.into_iter().collect())?;
 
+        // Store created DBCs in a batch, improving IO performance
+        let mut created_dbcs_batch = Vec::new();
         for dbc in created_dbcs {
             self.wallet.dbcs_created_for_others.insert(dbc.id());
-            self.store_dbc(dbc)?;
+            created_dbcs_batch.push(dbc);
         }
+        self.store_dbcs(created_dbcs_batch)?;
 
         self.unconfirmed_txs.extend(all_spend_requests);
 
