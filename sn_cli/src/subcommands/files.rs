@@ -192,7 +192,7 @@ async fn upload_chunks(
 
             let upload_start_time = std::time::Instant::now();
 
-            let wallet_client = file_api.wallet(wallet_dir).await?;
+            let wallet_client = file_api.wallet(wallet_dir)?;
             let chunk = Chunk::new(Bytes::from(fs::read(path)?));
 
             file_api

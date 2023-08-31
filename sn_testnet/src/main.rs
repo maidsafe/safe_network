@@ -146,7 +146,7 @@ async fn main() -> Result<()> {
 
     if args.flame {
         #[cfg(not(target_os = "windows"))]
-        check_flamegraph_prerequisites().await?;
+        check_flamegraph_prerequisites()?;
         #[cfg(target_os = "windows")]
         return Err(eyre!("Flamegraph cannot be used on Windows"));
     }
@@ -166,7 +166,7 @@ async fn main() -> Result<()> {
     if let Some(node_path) = args.node_path {
         node_bin_path.push(node_path);
     } else if args.build_node {
-        build_binaries(vec![SAFENODE_BIN_NAME.to_owned()]).await?;
+        build_binaries(vec![SAFENODE_BIN_NAME.to_owned()])?;
         node_bin_path.push("target");
         node_bin_path.push("release");
         node_bin_path.push(SAFENODE_BIN_NAME);
@@ -185,8 +185,7 @@ async fn main() -> Result<()> {
                 .unwrap_or(DEFAULT_NODE_LAUNCH_INTERVAL),
             node_count,
             args.node_args,
-        )
-        .await?;
+        )?;
         return Ok(());
     }
 
@@ -205,7 +204,7 @@ async fn main() -> Result<()> {
     if let Some(faucet_path) = args.faucet_path {
         faucet_bin_path.push(faucet_path);
     } else if args.build_faucet {
-        build_binaries(vec![FAUCET_BIN_NAME.to_owned()]).await?;
+        build_binaries(vec![FAUCET_BIN_NAME.to_owned()])?;
         faucet_bin_path.push("target");
         faucet_bin_path.push("release");
         faucet_bin_path.push(FAUCET_BIN_NAME);
@@ -214,14 +213,14 @@ async fn main() -> Result<()> {
     }
 
     info!("Launching DBC faucet server");
-    run_faucet(gen_multi_addr, faucet_bin_path).await?;
+    run_faucet(gen_multi_addr, faucet_bin_path)?;
 
     println!("Testnet and faucet launched successfully");
     Ok(())
 }
 
 #[cfg(not(target_os = "windows"))]
-async fn check_flamegraph_prerequisites() -> Result<()> {
+fn check_flamegraph_prerequisites() -> Result<()> {
     let output = Command::new("cargo")
         .arg("install")
         .arg("--list")
@@ -250,7 +249,7 @@ async fn check_flamegraph_prerequisites() -> Result<()> {
 }
 
 // Calls cargo build on the given binaries.
-async fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
+fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
     let mut args = vec!["build", "--release"];
     for bin in &binaries_to_build {
         args.push("--bin");
@@ -301,7 +300,7 @@ async fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
 }
 
 /// Start the faucet from the provided bin_path and with the given bootstrap peer
-async fn run_faucet(gen_multi_addr: String, bin_path: PathBuf) -> Result<()> {
+fn run_faucet(gen_multi_addr: String, bin_path: PathBuf) -> Result<()> {
     let testnet = Testnet::configure().node_bin_path(bin_path).build()?;
     let launch_bin = testnet.node_bin_path;
 
@@ -352,7 +351,7 @@ async fn run_network(
     Ok(gen_multi_addr)
 }
 
-async fn join_network(
+fn join_network(
     node_bin_path: PathBuf,
     node_launch_interval: u64,
     node_count: u32,

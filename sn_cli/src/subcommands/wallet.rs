@@ -92,10 +92,10 @@ pub(crate) async fn wallet_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        WalletCmds::Address => address(root_dir).await?,
+        WalletCmds::Address => address(root_dir)?,
         WalletCmds::Balance { peer_id } => {
             if peer_id.is_empty() {
-                let balance = balance(root_dir).await?;
+                let balance = balance(root_dir)?;
                 println!("{balance}");
             } else {
                 let default_node_dir_path = dirs_next::data_dir()
@@ -105,12 +105,12 @@ pub(crate) async fn wallet_cmds(
 
                 for id in peer_id {
                     let path = default_node_dir_path.join(&id);
-                    let rewards = balance(&path).await?;
+                    let rewards = balance(&path)?;
                     println!("Node's rewards wallet balance (PeerId: {id}): {rewards}");
                 }
             }
         }
-        WalletCmds::Deposit { stdin, dbc } => deposit(root_dir, stdin, dbc).await?,
+        WalletCmds::Deposit { stdin, dbc } => deposit(root_dir, stdin, dbc)?,
         WalletCmds::GetFaucet { url } => get_faucet(root_dir, url).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
         WalletCmds::Pay { path } => {
@@ -120,14 +120,14 @@ pub(crate) async fn wallet_cmds(
     Ok(())
 }
 
-async fn address(root_dir: &Path) -> Result<()> {
+fn address(root_dir: &Path) -> Result<()> {
     let wallet = LocalWallet::load_from(root_dir)?;
     let address_hex = hex::encode(wallet.address().to_bytes());
     println!("{address_hex}");
     Ok(())
 }
 
-async fn balance(root_dir: &Path) -> Result<Token> {
+fn balance(root_dir: &Path) -> Result<Token> {
     let wallet = LocalWallet::try_load_from(root_dir)?;
     let balance = wallet.balance();
     Ok(balance)
@@ -148,7 +148,7 @@ async fn get_faucet(root_dir: &Path, url: String) -> Result<()> {
     let is_ok = response.status().is_success();
     let body = response.text().await?;
     if is_ok {
-        deposit_from_dbc_hex(root_dir, body).await?;
+        deposit_from_dbc_hex(root_dir, body)?;
         println!("Successfully got tokens from faucet.");
     } else {
         println!(
@@ -159,13 +159,13 @@ async fn get_faucet(root_dir: &Path, url: String) -> Result<()> {
     Ok(())
 }
 
-async fn deposit(root_dir: &Path, read_from_stdin: bool, dbc: Option<String>) -> Result<()> {
+fn deposit(root_dir: &Path, read_from_stdin: bool, dbc: Option<String>) -> Result<()> {
     if read_from_stdin {
-        return read_dbc_from_stdin(root_dir).await;
+        return read_dbc_from_stdin(root_dir);
     }
 
     if let Some(dbc_hex) = dbc {
-        return deposit_from_dbc_hex(root_dir, dbc_hex).await;
+        return deposit_from_dbc_hex(root_dir, dbc_hex);
     }
 
     let mut wallet = LocalWallet::load_from(root_dir)?;
@@ -187,14 +187,14 @@ async fn deposit(root_dir: &Path, read_from_stdin: bool, dbc: Option<String>) ->
     Ok(())
 }
 
-async fn read_dbc_from_stdin(root_dir: &Path) -> Result<()> {
+fn read_dbc_from_stdin(root_dir: &Path) -> Result<()> {
     println!("Please paste your DBC below:");
     let mut input = String::new();
     std::io::stdin().read_to_string(&mut input)?;
-    deposit_from_dbc_hex(root_dir, input).await
+    deposit_from_dbc_hex(root_dir, input)
 }
 
-async fn deposit_from_dbc_hex(root_dir: &Path, input: String) -> Result<()> {
+fn deposit_from_dbc_hex(root_dir: &Path, input: String) -> Result<()> {
     let mut wallet = LocalWallet::load_from(root_dir)?;
     let dbc = sn_dbc::Dbc::from_hex(input.trim())?;
 
@@ -346,7 +346,7 @@ pub(super) async fn chunk_and_pay_for_storage(
         chunked_files.len(),
     );
 
-    if let Err(err) = wallet_client.store_local_wallet().await {
+    if let Err(err) = wallet_client.store_local_wallet() {
         println!("Failed to store wallet: {err:?}");
     } else {
         println!(
