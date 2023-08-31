@@ -394,29 +394,14 @@ impl KeyLessWallet {
 #[cfg(test)]
 mod tests {
     use super::{get_wallet, store_wallet, LocalWallet};
-
     use crate::{
-        client_transfers::TransferOutputs,
         dbc_genesis::{create_first_dbc_from_key, GENESIS_DBC_AMOUNT},
         wallet::{local_store::WALLET_DIR_NAME, KeyLessWallet},
     };
-
-    use sn_dbc::{MainKey, Token};
-    use sn_protocol::storage::DbcAddress;
-
     use assert_fs::TempDir;
     use eyre::Result;
-
-    #[derive(Clone)]
-    struct MockSendClient;
-
-    impl MockSendClient {
-        async fn send(&self, _transfer: TransferOutputs) -> super::Result<()> {
-            // Here we just return Ok(()), without network calls,
-            // and without sending it to the network.
-            Ok(())
-        }
-    }
+    use sn_dbc::{MainKey, Token};
+    use sn_protocol::storage::DbcAddress;
 
     #[tokio::test]
     async fn keyless_wallet_to_and_from_file() -> Result<()> {

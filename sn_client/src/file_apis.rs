@@ -44,7 +44,7 @@ impl Files {
     }
 
     /// Create a new WalletClient for a given root directory.
-    pub async fn wallet(&self, root_dir: PathBuf) -> Result<WalletClient> {
+    pub fn wallet(&self, root_dir: PathBuf) -> Result<WalletClient> {
         let wallet = LocalWallet::load_from(root_dir.as_path())?;
         Ok(WalletClient::new(self.client.clone(), wallet))
     }
@@ -148,7 +148,7 @@ impl Files {
         let chunk_addr = chunk.network_address();
         trace!("Client upload started for chunk: {chunk_addr:?}");
 
-        let payment = wallet_client.get_payment_dbcs(&chunk_addr).await;
+        let payment = wallet_client.get_payment_dbcs(&chunk_addr);
 
         if payment.is_empty() {
             warn!(
@@ -210,7 +210,7 @@ impl Files {
     ) -> Result<NetworkAddress> {
         let chunk = package_small(small)?;
         let address = chunk.network_address();
-        let payment = wallet_client.get_payment_dbcs(&address).await;
+        let payment = wallet_client.get_payment_dbcs(&address);
 
         if payment.is_empty() {
             return Err(super::Error::MissingPaymentProof(format!("{address}")));
