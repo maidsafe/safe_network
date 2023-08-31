@@ -79,10 +79,10 @@ pub(super) fn get_unconfirmed_txs(wallet_dir: &Path) -> Result<Option<BTreeSet<S
 
 /// Hex encode and write each `Dbc` to a separate file in respective
 /// recipient public address dir in the created dbcs dir. Each file is named after the dbc id.
-pub(super) fn store_created_dbcs(created_dbcs: Vec<Dbc>, wallet_dir: &Path) -> Result<()> {
+pub(super) fn store_created_dbcs(created_dbcs: Vec<&Dbc>, wallet_dir: &Path) -> Result<()> {
     // The create dbcs dir within the wallet dir.
     let created_dbcs_path = wallet_dir.join(CREATED_DBCS_DIR_NAME);
-    for dbc in created_dbcs.into_iter() {
+    for dbc in created_dbcs.iter() {
         let dbc_id_name = *DbcAddress::from_dbc_id(&dbc.id()).xorname();
         let dbc_id_file_name = format!("{}.dbc", hex::encode(dbc_id_name));
 

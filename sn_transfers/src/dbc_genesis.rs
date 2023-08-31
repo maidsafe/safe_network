@@ -80,7 +80,7 @@ pub fn load_genesis_wallet() -> Result<LocalWallet, Error> {
 
     info!("Depositing genesis DBC: {:#?}", GENESIS_DBC.id());
     genesis_wallet
-        .deposit(vec![GENESIS_DBC.clone()])
+        .deposit(&vec![GENESIS_DBC.clone()])
         .map_err(|err| Error::WalletError(err.to_string()))?;
     genesis_wallet
         .store()
