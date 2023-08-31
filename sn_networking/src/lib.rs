@@ -27,7 +27,7 @@ use self::{
         ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig,
         REPLICATION_INTERVAL_LOWER_BOUND, REPLICATION_INTERVAL_UPPER_BOUND,
     },
-    record_store_api::RecordStoreAPI,
+    record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
 };
 pub use self::{
@@ -43,7 +43,7 @@ use libp2p::core::muxing::StreamMuxerBox;
 use libp2p::mdns;
 use libp2p::{
     identity::Keypair,
-    kad::{store::RecordStore, KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
+    kad::{KBucketKey, Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{behaviour::toggle::Toggle, StreamProtocol, Swarm, SwarmBuilder},
@@ -118,12 +118,9 @@ type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRe
 /// `SwarmDriver` is responsible for managing the swarm of peers, handling
 /// swarm events, processing commands, and maintaining the state of pending
 /// tasks. It serves as the core component for the network functionality.
-pub struct SwarmDriver<TRecordStore>
-where
-    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
-{
+pub struct SwarmDriver {
     self_peer_id: PeerId,
-    swarm: Swarm<NodeBehaviour<TRecordStore>>,
+    swarm: Swarm<NodeBehaviour>,
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     // Do not access this directly to send. Use `send_event` instead.
     // This wraps the call and pushes it off thread so as to be non-blocking
@@ -143,10 +140,7 @@ where
     is_client: bool,
 }
 
-impl<TRecordStore> SwarmDriver<TRecordStore>
-where
-    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
-{
+impl SwarmDriver {
     /// Creates a new `SwarmDriver` instance, along with a `Network` handle
     /// for sending commands and an `mpsc::Receiver<NetworkEvent>` for receiving
     /// network events. It initializes the swarm, sets up the transport, and
@@ -341,18 +335,24 @@ where
         let (network_event_sender, network_event_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
 
         // Kademlia Behaviour
-        let kademlia: Kademlia<TRecordStore> = {
+        let kademlia = {
             match record_store_cfg {
                 Some(store_cfg) => {
-                    let store = NodeRecordStore::with_config(
+                    let node_record_store = NodeRecordStore::with_config(
                         peer_id,
                         store_cfg,
                         Some(network_event_sender.clone()),
                     );
+                    let store = UnifiedRecordStore::Node(node_record_store);
+                    debug!("Using Kademlia with NodeRecordStore!");
                     Kademlia::with_config(peer_id, store, kad_cfg)
                 }
                 // no cfg provided for client
-                None => Kademlia::with_config(peer_id, ClientRecordStore {}, kad_cfg),
+                None => {
+                    let store = UnifiedRecordStore::Client(ClientRecordStore::default());
+                    debug!("Using Kademlia with ClientRecordStore!");
+                    Kademlia::with_config(peer_id, store, kad_cfg)
+                }
             }
         };
 

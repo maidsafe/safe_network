@@ -10,7 +10,7 @@ use crate::{
     close_group_majority,
     error::{Error, Result},
     multiaddr_is_global, multiaddr_strip_p2p,
-    record_store_api::RecordStoreAPI,
+    record_store_api::{RecordStoreAPI, UnifiedRecordStore},
     sort_peers_by_address, SwarmDriver, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
 };
 use core::fmt;
@@ -21,8 +21,8 @@ use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{
-        store::RecordStore, GetRecordError, GetRecordOk, InboundRequest, Kademlia, KademliaEvent,
-        PeerRecord, QueryId, QueryResult, Record, RecordKey, K_VALUE,
+        GetRecordError, GetRecordOk, InboundRequest, Kademlia, KademliaEvent, PeerRecord, QueryId,
+        QueryResult, Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
@@ -48,12 +48,9 @@ pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>
 /// NodeBehaviour struct
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
-pub(super) struct NodeBehaviour<TRecordStore>
-where
-    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
-{
+pub(super) struct NodeBehaviour {
     pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
-    pub(super) kademlia: Kademlia<TRecordStore>,
+    pub(super) kademlia: Kademlia<UnifiedRecordStore>,
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
@@ -177,10 +174,7 @@ impl Debug for NetworkEvent {
     }
 }
 
-impl<TRecordStore> SwarmDriver<TRecordStore>
-where
-    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
-{
+impl SwarmDriver {
     // Handle `SwarmEvents`
     #[allow(clippy::result_large_err)]
     pub(super) fn handle_swarm_events<EventError: std::error::Error>(
