@@ -26,10 +26,14 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::client_transfers::SpendRequest;
-use std::time::Duration;
-use tokio::task::spawn;
+use std::{sync::Arc, time::Duration};
+use tokio::{sync::Semaphore, task::spawn};
 use tracing::trace;
 use xor_name::XorName;
+
+// Maximum number of concurrency to be allowed at any time
+// eg, concurrent uploads/downloads of chunks, managed by a semaphore
+pub const DEFAULT_CLIENT_CONCURRENCY: usize = 5;
 
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(30);
@@ -40,6 +44,7 @@ impl Client {
         signer: SecretKey,
         peers: Option<Vec<Multiaddr>>,
         req_response_timeout: Option<Duration>,
+        custom_concurrency_limit: Option<usize>,
     ) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
         let local = match peers {
@@ -55,12 +60,17 @@ impl Client {
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 
+        // use passed concurrency limit or default
+        let concurrency_limit = custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY);
+        let concurrency_limiter = Arc::new(Semaphore::new(concurrency_limit));
+
         let client = Self {
             network: network.clone(),
             events_channel,
             signer,
             peers_added: 0,
             progress: Some(Self::setup_connection_progress()),
+            concurrency_limiter,
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -153,6 +163,11 @@ impl Client {
             }
         });
         Ok(client)
+    }
+
+    /// Get the client's concurrency limiter
+    pub fn concurrency_limiter(&self) -> Arc<Semaphore> {
+        self.concurrency_limiter.clone()
     }
 
     /// Set up our initial progress bar for network connectivity
