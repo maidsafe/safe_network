@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.6.1...sn_protocol-v0.6.2) - 2023-08-31
+
+### Added
+- *(node)* node to store rewards in a local wallet
+
 ## [0.6.1](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.6.0...sn_protocol-v0.6.1) - 2023-08-31
 
 ### Added
