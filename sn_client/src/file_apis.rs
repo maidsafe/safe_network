@@ -32,7 +32,7 @@ use tracing::trace;
 use xor_name::XorName;
 
 // Maximum number of concurrent chunks to be uploaded at any one time, managed by a semaphore
-pub const DEFAULT_NETWORK_CONCURRENCY: usize = 10;
+pub const DEFAULT_NETWORK_CONCURRENCY: usize = 5;
 
 /// File APIs.
 #[derive(Clone)]
@@ -285,7 +285,7 @@ impl Files {
         let mut tasks = Vec::new();
         for chunk_info in chunks_info.clone().into_iter() {
             let chunk_semaphore = semaphore.clone();
-            
+
             let client = self.client.clone();
             let task = task::spawn(async move {
                 let _permit = chunk_semaphore.acquire_owned().await?;
