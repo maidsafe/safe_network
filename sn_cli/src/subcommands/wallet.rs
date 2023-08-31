@@ -13,7 +13,10 @@ use sn_transfers::wallet::{parse_public_address, LocalWallet};
 
 use bytes::Bytes;
 use clap::Parser;
-use color_eyre::{eyre::bail, eyre::WrapErr, Result, Section};
+use color_eyre::{
+    eyre::{bail, eyre, WrapErr},
+    Result, Section,
+};
 use std::{
     collections::BTreeMap,
     fs,
@@ -31,7 +34,13 @@ pub enum WalletCmds {
     /// Print the wallet address.
     Address,
     /// Print the wallet balance.
-    Balance,
+    Balance {
+        /// Instead of checking CLI local wallet balance, the PeerId of a node can be used
+        /// to check the balance of its rewards local wallet. Multiple ids can be provided, e.g.:
+        /// --peer-id <PeerId-1> --peer-id <PeerId-2> ...
+        #[clap(long)]
+        peer_id: Vec<String>,
+    },
     /// Deposit DBCs from the received directory to the local wallet.
     /// Or Read a hex encoded DBC from stdin.
     ///
@@ -84,7 +93,23 @@ pub(crate) async fn wallet_cmds(
 ) -> Result<()> {
     match cmds {
         WalletCmds::Address => address(root_dir).await?,
-        WalletCmds::Balance => balance(root_dir).await?,
+        WalletCmds::Balance { peer_id } => {
+            if peer_id.is_empty() {
+                let balance = balance(root_dir).await?;
+                println!("{balance}");
+            } else {
+                let default_node_dir_path = dirs_next::data_dir()
+                    .ok_or_else(|| eyre!("Failed to obtain data directory path"))?
+                    .join("safe")
+                    .join("node");
+
+                for id in peer_id {
+                    let path = default_node_dir_path.join(&id);
+                    let rewards = balance(&path).await?;
+                    println!("Node's rewards wallet balance (PeerId: {id}): {rewards}");
+                }
+            }
+        }
         WalletCmds::Deposit { stdin, dbc } => deposit(root_dir, stdin, dbc).await?,
         WalletCmds::GetFaucet { url } => get_faucet(root_dir, url).await?,
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
@@ -102,11 +127,10 @@ async fn address(root_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-async fn balance(root_dir: &Path) -> Result<()> {
+async fn balance(root_dir: &Path) -> Result<Token> {
     let wallet = LocalWallet::load_from(root_dir)?;
     let balance = wallet.balance();
-    println!("{balance}");
-    Ok(())
+    Ok(balance)
 }
 
 async fn get_faucet(root_dir: &Path, url: String) -> Result<()> {
