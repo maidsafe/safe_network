@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693479200117,
+  "lastUpdate": 1693482795280,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6079,6 +6079,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 4.670736809263424,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "db8544616996b0330c17d99f6937affdbb502e7a",
+          "message": "feat: fetch from network during network",
+          "timestamp": "2023-08-31T10:41:58Z",
+          "tree_id": "22ae65e59780ecc7a65ebcc8dec96c2a558545ec",
+          "url": "https://github.com/maidsafe/safe_network/commit/db8544616996b0330c17d99f6937affdbb502e7a"
+        },
+        "date": 1693482793935,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.15844593967365467,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6268184476256845,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 4.125821498014682,
             "unit": "MiB/s"
           }
         ]
