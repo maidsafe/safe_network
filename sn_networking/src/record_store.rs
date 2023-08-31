@@ -20,7 +20,7 @@ use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use sn_transfers::dbc_genesis::TOTAL_SUPPLY;
 use std::{
     borrow::Cow,
-    collections::{hash_set, HashSet},
+    collections::HashSet,
     fs,
     path::{Path, PathBuf},
     time::Duration,
@@ -281,7 +281,7 @@ impl DiskBackedRecordStore {
 }
 
 impl RecordStore for DiskBackedRecordStore {
-    type RecordsIter<'a> = RecordsIterator<'a>;
+    type RecordsIter<'a> = vec::IntoIter<Cow<'a, Record>>;
     type ProvidedIter<'a> = vec::IntoIter<Cow<'a, ProviderRecord>>;
 
     fn get(&self, k: &Key) -> Option<Cow<'_, Record>> {
@@ -356,12 +356,9 @@ impl RecordStore for DiskBackedRecordStore {
         });
     }
 
-    // A backstop replication shall only trigger within pre-defined interval
     fn records(&self) -> Self::RecordsIter<'_> {
-        RecordsIterator {
-            keys: self.records.iter(),
-            storage_dir: self.config.storage_dir.clone(),
-        }
+        // the records iter is used only during kad replication which is turned off
+        vec![].into_iter()
     }
 
     fn add_provider(&mut self, _record: ProviderRecord) -> Result<()> {
@@ -381,28 +378,6 @@ impl RecordStore for DiskBackedRecordStore {
 
     fn remove_provider(&mut self, _key: &Key, _provider: &PeerId) {
         // ProviderRecords are not used currently
-    }
-}
-
-// Since 'Record's need to be read from disk for each individual 'Key', we need this iterator
-// which does that operation at the very moment the consumer/user is iterating each item.
-pub struct RecordsIterator<'a> {
-    keys: hash_set::Iter<'a, Key>,
-    storage_dir: PathBuf,
-}
-
-impl<'a> Iterator for RecordsIterator<'a> {
-    type Item = Cow<'a, Record>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        for key in self.keys.by_ref() {
-            let record = DiskBackedRecordStore::read_from_disk(key, &self.storage_dir);
-            if record.is_some() {
-                return record;
-            }
-        }
-
-        None
     }
 }
 
