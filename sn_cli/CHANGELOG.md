@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.6](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.5...sn_cli-v0.81.6) - 2023-08-31
+
+### Added
+- *(cli)* wallet cmd flag enabing to query a node's local wallet balance
+
+### Fixed
+- *(cli)* don't try to create wallet paths when checking balance
+
 ## [0.81.5](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.4...sn_cli-v0.81.5) - 2023-08-31
 
 ### Other
