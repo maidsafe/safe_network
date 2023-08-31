@@ -36,8 +36,8 @@ pub enum WalletCmds {
     /// Print the wallet balance.
     Balance {
         /// Instead of checking CLI local wallet balance, the PeerId of a node can be used
-        /// to check the balance of its rewards local wallet. Multiple ids can be provided, e.g.:
-        /// --peer-id <PeerId-1> --peer-id <PeerId-2> ...
+        /// to check the balance of its rewards local wallet. Multiple ids can be provided
+        /// in order to read the balance of multiple nodes at once.
         #[clap(long)]
         peer_id: Vec<String>,
     },
@@ -128,7 +128,7 @@ async fn address(root_dir: &Path) -> Result<()> {
 }
 
 async fn balance(root_dir: &Path) -> Result<Token> {
-    let wallet = LocalWallet::load_from(root_dir)?;
+    let wallet = LocalWallet::try_load_from(root_dir)?;
     let balance = wallet.balance();
     Ok(balance)
 }
