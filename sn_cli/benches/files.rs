@@ -117,7 +117,13 @@ fn criterion_benchmark(c: &mut Criterion) {
     // there will then be around 1.1GB in total, and may take around 40s for each iteratioin.
     // Hence we have to reduce the number of iterations from the default 100 to 10,
     // To avoid the benchmark test taking over one hour to complete.
-    let total_size: u64 = sizes.iter().map(|size| SAMPLE_SIZE as u64 * size).sum();
+    //
+    // During `measurement_time` and `warm_up_time`, there will be one upload run for each.
+    // Which means two additional `uploaded_files` created and for downloading.
+    let total_size: u64 = sizes
+        .iter()
+        .map(|size| (SAMPLE_SIZE as u64 + 2) * size)
+        .sum();
     group.sample_size(SAMPLE_SIZE / 2);
 
     // Set the throughput to be reported in terms of bytes
