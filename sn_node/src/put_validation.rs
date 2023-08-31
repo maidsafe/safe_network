@@ -339,7 +339,7 @@ impl Node {
                     });
                 }
 
-                wallet.deposit(vec![dbc.clone()]).map_err(|err| {
+                wallet.deposit(&vec![dbc.clone()]).map_err(|err| {
                     ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string())
                 })?;
             }
