@@ -109,6 +109,18 @@ impl LocalWallet {
         })
     }
 
+    /// Tries to loads a serialized wallet from a path, bailing out if it doesn't exist.
+    pub fn try_load_from(root_dir: &Path) -> Result<Self> {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        let (key, wallet, unconfirmed_txs) = load_from_path(&wallet_dir, None)?;
+        Ok(Self {
+            key,
+            wallet,
+            wallet_dir: wallet_dir.to_path_buf(),
+            unconfirmed_txs,
+        })
+    }
+
     pub fn address(&self) -> PublicAddress {
         self.key.public_address()
     }
