@@ -39,7 +39,7 @@ impl WalletClient {
     }
 
     /// Stores the wallet to disk.
-    pub async fn store_local_wallet(&self) -> Result<()> {
+    pub fn store_local_wallet(&self) -> Result<()> {
         self.wallet.store()
     }
 
@@ -58,7 +58,7 @@ impl WalletClient {
     }
 
     /// Get the payment dbc for a given network address
-    pub async fn get_payment_dbcs(&self, address: &NetworkAddress) -> Vec<Dbc> {
+    pub fn get_payment_dbcs(&self, address: &NetworkAddress) -> Vec<Dbc> {
         self.wallet.get_payment_dbcs(address)
     }
 
