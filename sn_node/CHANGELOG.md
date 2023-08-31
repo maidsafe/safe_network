@@ -1019,6 +1019,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(node)* clarify payment errors
 - *(node)* reenable payment fail check
 
+## [0.89.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.89.0...sn_node-v0.89.1) - 2023-08-31
+
+### Added
+- *(cli)* expose 'concurrency' flag
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
