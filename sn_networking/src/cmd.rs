@@ -128,10 +128,7 @@ pub struct SwarmLocalState {
     pub listeners: Vec<Multiaddr>,
 }
 
-impl<TRecordStore> SwarmDriver<TRecordStore>
-where
-    TRecordStore: RecordStore + RecordStoreAPI + Send + 'static,
-{
+impl SwarmDriver {
     #[allow(clippy::result_large_err)]
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         let drives_forward_replication = matches!(

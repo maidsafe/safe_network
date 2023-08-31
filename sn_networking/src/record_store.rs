@@ -110,7 +110,7 @@ impl NodeRecordStore {
         hex_string
     }
 
-    pub fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {
+    fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {
         let filename = Self::key_to_hex(key);
         let file_path = storage_dir.join(&filename);
 
@@ -192,6 +192,8 @@ impl RecordStoreAPI for NodeRecordStore {
         self.records.contains(key)
     }
 
+    /// Returns the set of `NetworkAddress::RecordKey` held by the store
+    /// Use `record_addresses_ref` to get a borrowed type
     fn record_addresses(&self) -> HashSet<NetworkAddress> {
         self.records
             .iter()
@@ -199,11 +201,14 @@ impl RecordStoreAPI for NodeRecordStore {
             .collect()
     }
 
+    /// Returns the reference to the set of `NetworkAddress::RecordKey` held by the store
     #[allow(clippy::mutable_key_type)]
     fn record_addresses_ref(&self) -> &HashSet<Key> {
         &self.records
     }
 
+    /// Warning: PUTs a `Record` to the store without validation
+    /// Should be used in context where the `Record` is trusted
     fn put_verified(&mut self, r: Record) -> Result<()> {
         let content_hash = XorName::from_content(&r.value);
         let record_key = PrettyPrintRecordKey::from(r.key.clone());
@@ -383,10 +388,13 @@ impl RecordStore for NodeRecordStore {
 }
 
 /// A place holder RecordStore impl for the client that does nothing
-pub struct ClientRecordStore {}
+#[derive(Default, Debug)]
+pub struct ClientRecordStore {
+    empty_record_addresses: HashSet<Key>,
+}
 
 impl RecordStoreAPI for ClientRecordStore {
-    fn contains(&self, key: &Key) -> bool {
+    fn contains(&self, _key: &Key) -> bool {
         false
     }
 
@@ -396,10 +404,10 @@ impl RecordStoreAPI for ClientRecordStore {
 
     #[allow(clippy::mutable_key_type)]
     fn record_addresses_ref(&self) -> &HashSet<Key> {
-        &HashSet::new()
+        &self.empty_record_addresses
     }
 
-    fn put_verified(&mut self, r: Record) -> Result<()> {
+    fn put_verified(&mut self, _r: Record) -> Result<()> {
         Ok(())
     }
 
@@ -408,8 +416,7 @@ impl RecordStoreAPI for ClientRecordStore {
         Token::zero()
     }
 
-    /// Setup the distance range.
-    fn set_distance_range(&mut self, distance_range: Distance) {}
+    fn set_distance_range(&mut self, _distance_range: Distance) {}
 }
 
 impl RecordStore for ClientRecordStore {
@@ -424,7 +431,7 @@ impl RecordStore for ClientRecordStore {
         Ok(())
     }
 
-    fn remove(&mut self, k: &Key) {}
+    fn remove(&mut self, _k: &Key) {}
 
     fn records(&self) -> Self::RecordsIter<'_> {
         vec![].into_iter()
