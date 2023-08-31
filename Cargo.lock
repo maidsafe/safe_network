@@ -3997,7 +3997,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "async-trait",
  "blsttc",
