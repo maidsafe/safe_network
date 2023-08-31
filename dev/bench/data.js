@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693507942950,
+  "lastUpdate": 1693507944327,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -14292,6 +14292,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 1291,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "63d4a0117c348b691a19a1649f85dc186ab1ac9d",
+          "message": "fix(cli): don't try to create wallet paths when checking balance",
+          "timestamp": "2023-08-31T16:07:42Z",
+          "tree_id": "9bdfd4db955acd84d00bcddfcc5fa51a9da1b735",
+          "url": "https://github.com/maidsafe/safe_network/commit/63d4a0117c348b691a19a1649f85dc186ab1ac9d"
+        },
+        "date": 1693507943969,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 1370.4642,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 1297,
             "unit": "MB"
           }
         ]
