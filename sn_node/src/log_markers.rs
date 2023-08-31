@@ -46,12 +46,8 @@ pub enum Marker<'a> {
 
     /// Keys of Records we are fetching to replicate locally
     FetchingKeysForReplication {
-        /// fetching_keys_len: number of keys we are fetching
+        /// fetching_keys_len: number of keys we are fetching from network
         fetching_keys_len: usize,
-        /// direct_fetch_count: number of keys we are directly fetching from a provided peer
-        direct_fetch_count: usize,
-        /// network_fetch_count: number of keys we are fetching from the network
-        network_fetch_count: usize,
     },
 }
 
@@ -64,19 +60,9 @@ impl<'a> Marker<'a> {
     }
 
     /// Helper to log the FetchingKeysForReplication variant
-    pub fn fetching_keys_for_replication(keys: &Vec<(RecordKey, Option<PeerId>)>) -> Self {
-        let direct_fetch_count = keys
-            .iter()
-            .filter(|(_, maybe_direct)| maybe_direct.is_some())
-            .count();
-        let network_fetch_count = keys
-            .iter()
-            .filter(|(_, maybe_direct)| maybe_direct.is_none())
-            .count();
+    pub fn fetching_keys_for_replication(keys: &Vec<RecordKey>) -> Self {
         Marker::FetchingKeysForReplication {
             fetching_keys_len: keys.len(),
-            direct_fetch_count,
-            network_fetch_count,
         }
     }
 }

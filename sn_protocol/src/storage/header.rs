@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::error::Error;
+use crate::PrettyPrintRecordKey;
 use libp2p::kad::Record;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -62,24 +63,42 @@ impl RecordHeader {
     pub const SIZE: usize = 2;
 
     pub fn try_serialize(self) -> Result<Vec<u8>, Error> {
-        rmp_serde::to_vec(&self).map_err(|_| Error::RecordHeaderParsingFailed)
+        rmp_serde::to_vec(&self).map_err(|err| {
+            error!("Failed to serialized RecordHeader {self:?} with error: {err:?}");
+            Error::RecordHeaderParsingFailed
+        })
     }
 
     pub fn try_deserialize(bytes: &[u8]) -> Result<Self, Error> {
-        rmp_serde::from_slice(bytes).map_err(|_| Error::RecordHeaderParsingFailed)
+        rmp_serde::from_slice(bytes).map_err(|err| {
+            error!("Failed to deserialized RecordHeader with error: {err:?}");
+            Error::RecordHeaderParsingFailed
+        })
     }
 
     pub fn from_record(record: &Record) -> Result<Self, Error> {
+        if record.value.len() < RecordHeader::SIZE + 1 {
+            return Err(Error::RecordHeaderParsingFailed);
+        }
         Self::try_deserialize(&record.value[..RecordHeader::SIZE + 1])
-            .map_err(|_| Error::RecordHeaderParsingFailed)
     }
 }
 
 /// Utility to deserialize a `KAD::Record` into any type.
 /// Use `RecordHeader::from_record` if you want the `RecordHeader` instead.
 pub fn try_deserialize_record<T: serde::de::DeserializeOwned>(record: &Record) -> Result<T, Error> {
-    let bytes = &record.value[RecordHeader::SIZE..];
-    rmp_serde::from_slice(bytes).map_err(|_| Error::RecordParsingFailed)
+    let bytes = if record.value.len() > RecordHeader::SIZE {
+        &record.value[RecordHeader::SIZE..]
+    } else {
+        return Err(Error::RecordParsingFailed);
+    };
+    rmp_serde::from_slice(bytes).map_err(|err| {
+        error!(
+            "Failed to deserialized record {} with error: {err:?}",
+            PrettyPrintRecordKey::from(record.key.clone())
+        );
+        Error::RecordParsingFailed
+    })
 }
 
 /// Utility to serialize the provided data along with the RecordKind to be stored as Record::value
@@ -87,7 +106,10 @@ pub fn try_serialize_record<T: serde::Serialize>(
     data: &T,
     record_kind: RecordKind,
 ) -> Result<Vec<u8>, Error> {
-    let payload = rmp_serde::to_vec(data).map_err(|_| Error::RecordParsingFailed)?;
+    let payload = rmp_serde::to_vec(data).map_err(|err| {
+        error!("Failed to serialized Records with error: {err:?}");
+        Error::RecordParsingFailed
+    })?;
     let mut record_value = RecordHeader { kind: record_kind }.try_serialize()?;
     record_value.extend(payload);
 

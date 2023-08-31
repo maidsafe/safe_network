@@ -18,7 +18,10 @@ mod file_apis;
 mod register;
 mod wallet;
 
+use std::sync::Arc;
+
 pub(crate) use error::Result;
+use tokio::sync::Semaphore;
 
 pub use self::{
     error::Error,
@@ -41,5 +44,5 @@ pub struct Client {
     signer: bls::SecretKey,
     peers_added: usize,
     progress: Option<ProgressBar>,
-    network_store_cost: u64,
+    concurrency_limiter: Arc<Semaphore>,
 }

@@ -7,17 +7,19 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::wallet::{chunk_and_pay_for_storage, ChunkedFile};
-
 use bytes::Bytes;
 use clap::Parser;
-use color_eyre::Result;
+use color_eyre::{eyre::Error, Result};
+use libp2p::futures::future::join_all;
 use sn_client::{Client, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::wallet::PaymentProofsMap;
+use std::fs;
+use tokio::sync::Semaphore;
 
 use std::{
-    fs,
+    // fs,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 use walkdir::WalkDir;
 use xor_name::XorName;
@@ -86,8 +88,6 @@ async fn upload_files(
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
-    let file_api: Files = Files::new(client.clone());
-
     debug!(
         "Uploading files from {:?}, will verify?: {verify_store}",
         files_path
@@ -96,10 +96,13 @@ async fn upload_files(
     let file_names_path = root_dir.join("uploaded_files");
 
     // Payment shall always be verified.
-    let (chunks_to_upload, payment_proofs) =
-        chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
+    let chunks_to_upload = chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
 
-    let mut chunks_to_fetch = Vec::new();
+    let chunk_semaphore = client.concurrency_limiter();
+
+    let mut uploads = Vec::new();
+
+    // Iterate over each file to be uploaded
     for (
         file_addr,
         ChunkedFile {
@@ -107,26 +110,52 @@ async fn upload_files(
             size,
             chunks,
         },
-    ) in chunks_to_upload.into_iter()
+    ) in chunks_to_upload
     {
         println!(
-            "Storing file '{file_name}' of {size} bytes ({} chunk/s)..",
+            "Preparing to store file '{file_name}' of {size} bytes ({} chunk/s)..",
             chunks.len()
         );
 
-        if let Err(error) =
-            upload_chunks(&file_api, &file_name, chunks, &payment_proofs, verify_store).await
-        {
-            println!("Failed to store all chunks of file '{file_name}' to all nodes in the close group: {error}")
-        } else {
-            println!("Successfully stored '{file_name}' to {file_addr:64x}");
-        }
+        // Clone necessary variables for each file upload
+        let file_api: Files = Files::new(client.clone());
 
-        chunks_to_fetch.push((file_addr, file_name));
+        let wallet_dir = root_dir.to_path_buf();
+
+        let semaphore = chunk_semaphore.clone();
+        // Spawn a new task for each file upload
+        let upload = tokio::spawn(async move {
+            match upload_chunks(
+                &file_api,
+                &file_name,
+                &wallet_dir,
+                chunks,
+                verify_store,
+                semaphore,
+            )
+            .await
+            {
+                Err(error) => {
+                    println!("Failed to store all chunks of file '{file_name}' to all nodes in the close group: {error}");
+                    None
+                }
+                _ => {
+                    println!("Successfully stored '{file_name}' to {file_addr:64x}");
+                    Some((file_addr, file_name))
+                }
+            }
+        });
+
+        // Add the upload task to the list of uploads
+        uploads.push(upload);
     }
 
+    let results = join_all(uploads).await;
+
+    let chunks_to_fetch: Vec<_> = results.into_iter().flatten().flatten().collect();
+
     let content = bincode::serialize(&chunks_to_fetch)?;
-    tokio::fs::create_dir_all(file_names_path.as_path()).await?;
+    fs::create_dir_all(file_names_path.as_path())?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
     println!("Writing {} bytes to {file_names_path:?}", content.len());
@@ -139,35 +168,62 @@ async fn upload_files(
 async fn upload_chunks(
     file_api: &Files,
     file_name: &str,
+    wallet_dir: &Path,
     chunks_paths: Vec<(XorName, PathBuf)>,
-    payment_proofs: &PaymentProofsMap,
     verify_store: bool,
+    // here we use a semaphore to limit the number of concurrent chunk uploads (but not concurrent verifications!)
+    chunk_semaphore: Arc<Semaphore>,
 ) -> Result<()> {
-    let chunks_reader = chunks_paths
-        .into_iter()
-        .map(|(name, chunk_path)| (name, fs::read(chunk_path)))
-        .filter_map(|x| match x {
-            (name, Ok(file)) => Some(Chunk {
-                address: ChunkAddress::new(name),
-                value: Bytes::from(file),
-            }),
-            (_, Err(err)) => {
-                // FIXME: this error won't be seen/reported, thus assumed all chunks were read and stored.
-                println!("Could not upload generated chunk of file '{file_name}': {err}");
-                None
-            }
-        });
+    let start_time = std::time::Instant::now();
+    let mut handles = Vec::new();
+    for (i, (_name, path)) in chunks_paths.into_iter().enumerate() {
+        let file_name = file_name.to_string();
+        let file_api = file_api.clone();
+        let wallet_dir = wallet_dir.to_path_buf();
+        let semaphore = chunk_semaphore.clone();
 
-    file_api
-        .upload_chunks_in_batches(chunks_reader, payment_proofs, verify_store)
-        .await?;
+        let handle = tokio::spawn(async move {
+            let _permit = semaphore.acquire_owned().await?;
+
+            println!(
+                "Starting to upload chunk #{i} from {file_name:?}. (after {:.2}mins elapsed)",
+                start_time.elapsed().as_secs_f64() / 60.0
+            );
+
+            let upload_start_time = std::time::Instant::now();
+
+            let wallet_client = file_api.wallet(wallet_dir).await?;
+            let chunk = Chunk::new(Bytes::from(fs::read(path)?));
+
+            file_api
+                .upload_chunk_in_parallel(chunk, &wallet_client, verify_store)
+                .await?;
+
+            println!(
+                "Uploaded chunk #{i} from {file_name:?} in {:.2} seconds)",
+                upload_start_time.elapsed().as_secs_f64()
+            );
+            Ok::<(), Error>(())
+        });
+        handles.push(handle);
+    }
+    let results = join_all(handles).await;
+
+    for result in results {
+        result??;
+    }
+
+    println!(
+        "Uploaded {file_name:?} in {:.2} minutes",
+        start_time.elapsed().as_secs_f64() / 60.0
+    );
     Ok(())
 }
 
 async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
     let docs_of_uploaded_files_path = root_dir.join("uploaded_files");
     let download_path = root_dir.join("downloaded_files");
-    tokio::fs::create_dir_all(download_path.as_path()).await?;
+    std::fs::create_dir_all(download_path.as_path())?;
 
     for entry in WalkDir::new(docs_of_uploaded_files_path)
         .into_iter()

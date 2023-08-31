@@ -6,53 +6,60 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use sn_transfers::client_transfers::SpendRequest;
+
 use super::Client;
 
-use rand::rngs::OsRng;
 use sn_dbc::{Dbc, PublicAddress, Token};
-use sn_protocol::{messages::PaymentProof, storage::ChunkAddress, NetworkAddress};
+use sn_protocol::NetworkAddress;
 use sn_transfers::{
     client_transfers::TransferOutputs,
-    payment_proof::build_payment_proofs,
-    wallet::{Error, LocalWallet, PaymentProofsMap, Result},
+    wallet::{Error, LocalWallet, Result},
 };
 
 use futures::future::join_all;
-use std::{iter::Iterator, time::Duration};
-use tokio::time::sleep;
-use xor_name::XorName;
+use std::{
+    collections::BTreeMap,
+    iter::Iterator,
+    time::{Duration, Instant},
+};
+use tokio::{task::JoinSet, time::sleep};
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
 pub struct WalletClient {
     client: Client,
     wallet: LocalWallet,
-    /// These have not yet been successfully confirmed in
-    /// the network and need to be republished, to reach network validity.
-    /// We maintain the order they were added in, as to republish
-    /// them in the correct order, in case any later spend was
-    /// dependent on an earlier spend.
-    unconfirmed_txs: Vec<TransferOutputs>,
 }
 
 impl WalletClient {
     /// Create a new wallet client.
     pub fn new(client: Client, wallet: LocalWallet) -> Self {
-        Self {
-            client,
-            wallet,
-            unconfirmed_txs: vec![],
-        }
+        Self { client, wallet }
     }
 
-    /// Get any known store cost estimate
-    pub fn store_cost(&self) -> Token {
-        Token::from_nano(self.client.network_store_cost)
+    /// Stores the wallet to disk.
+    pub async fn store_local_wallet(&self) -> Result<()> {
+        self.wallet.store()
+    }
+
+    /// Get the wallet balance
+    pub fn balance(&self) -> Token {
+        self.wallet.balance()
     }
 
     /// Do we have any unconfirmed transactions?
     pub fn unconfirmed_txs_exist(&self) -> bool {
-        !self.unconfirmed_txs.is_empty()
+        self.wallet.unconfirmed_txs_exist()
+    }
+    /// Get unconfirmed txs
+    pub fn unconfirmed_txs(&self) -> &Vec<SpendRequest> {
+        self.wallet.unconfirmed_txs()
+    }
+
+    /// Get the payment dbc for a given network address
+    pub async fn get_payment_dbcs(&self, address: &NetworkAddress) -> Vec<Dbc> {
+        self.wallet.get_payment_dbcs(address)
     }
 
     /// Send tokens to another wallet.
@@ -63,22 +70,24 @@ impl WalletClient {
         to: PublicAddress,
         verify_store: bool,
     ) -> Result<Dbc> {
-        // retry previous failures
-        self.resend_pending_txs(verify_store).await;
+        let transfer = self.wallet.local_send(vec![(amount, to)], None)?;
 
-        // offline transfer
-        let transfer = self.wallet.local_send(vec![(amount, to)], None).await?;
-        let dbcs = transfer.created_dbcs.clone();
+        let created_dbcs = transfer.created_dbcs.clone();
 
         // send to network
-        trace!("Sending transfer to the network: {transfer:#?}");
-        if let Err(error) = self.client.send(transfer.clone(), verify_store).await {
+        if let Err(error) = self
+            .client
+            .send(self.wallet.unconfirmed_txs(), verify_store)
+            .await
+        {
             warn!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
-            self.unconfirmed_txs.push(transfer);
+        } else {
+            // clear unconfirmed txs
+            self.wallet.clear_unconfirmed_txs();
         }
 
         // return created DBCs even if network part failed???
-        match &dbcs[..] {
+        match &created_dbcs[..] {
             [info, ..] => Ok(info.clone()),
             [] => Err(Error::CouldNotSendTokens(
                 "No DBCs were returned from the wallet.".into(),
@@ -87,12 +96,14 @@ impl WalletClient {
     }
 
     /// Get storecost from the network
-    /// Stores this value as the new baseline at the client
-    pub async fn set_store_cost_from_random_address(&mut self) -> Result<Token> {
-        let random_target = ChunkAddress::new(XorName::random(&mut OsRng));
+    /// Returns a Vec of proofs
+    pub async fn get_store_cost_at_address(
+        &self,
 
+        address: &NetworkAddress,
+    ) -> Result<Vec<(PublicAddress, Token)>> {
         self.client
-            .get_store_cost_at_address(NetworkAddress::ChunkAddress(random_target), false)
+            .get_store_costs_at_address(address)
             .await
             .map_err(|error| Error::CouldNotSendTokens(error.to_string()))
     }
@@ -104,107 +115,103 @@ impl WalletClient {
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_storage(
         &mut self,
-        content_addrs: impl Iterator<Item = &XorName>,
+        content_addrs: impl Iterator<Item = NetworkAddress>,
         verify_store: bool,
-    ) -> Result<(PaymentProofsMap, Option<Token>)> {
-        // Let's filter the content addresses we hold payment proofs for, i.e. avoid
-        // paying for those chunks we've already paid for with this wallet.
-        let mut proofs = PaymentProofsMap::default();
+    ) -> Result<Token> {
+        let mut total_cost = Token::zero();
 
-        let addrs_to_pay: Vec<&XorName> = content_addrs.collect();
-        // TODO: reenable this when we have a way to get the store cost from the network
-        // per chunk, and can readily check what we've paid here.
-        // .filter(|name| {
-        //     if let Some(proof) = self.wallet.get_payment_proof(name) {
-        //         proofs.insert(**name, proof.clone());
-        //         false
-        //     } else {
-        //         true
-        //     }
-        // })
-        // .collect();
+        let mut payment_map = BTreeMap::default();
 
-        let number_of_records_to_pay = addrs_to_pay.len() as u64;
-
-        // If no addresses need to be paid for, we don't have to go further
-        if addrs_to_pay.is_empty() {
-            trace!("We already hold payment proofs for all the records.");
-            return Ok((proofs, None));
+        let mut tasks = JoinSet::new();
+        // we can collate all the payments together into one transfer
+        for content_addr in content_addrs {
+            let client = self.client.clone();
+            tasks.spawn(async move {
+                let costs = client
+                    .get_store_costs_at_address(&content_addr)
+                    .await
+                    .map_err(|error| Error::CouldNotSendTokens(error.to_string()));
+                (content_addr, costs)
+            });
+        }
+        info!("Storecosts retrieved");
+        while let Some(res) = tasks.join_next().await {
+            let (content_addr, amounts_to_pay) = match res {
+                Ok(c) => c,
+                Err(e) => return Err(Error::CouldNotGetStoreCost(e.to_string())),
+            };
+            payment_map.insert(content_addr, amounts_to_pay?);
         }
 
-        // Let's build the payment proofs for list of content addresses
-        let (root_hash, audit_trail_info) = build_payment_proofs(addrs_to_pay.into_iter())?;
-        let num_of_addrs = audit_trail_info.len() as u64;
+        let cost = self.pay_for_records(payment_map, verify_store).await?;
 
-        // Always check storage cost, and overpay to allow margin when validation.
-        self.set_store_cost_from_random_address().await?;
-        let storage_cost = Token::from_nano(
-            self.store_cost().as_nano() * (2.0f64.powf((num_of_addrs / 100 + 1) as f64)) as u64,
-        );
+        if let Some(cost) = total_cost.checked_add(cost) {
+            total_cost = cost;
+        }
 
-        info!("Storage cost per record: {}", storage_cost);
+        Ok(total_cost)
+    }
 
-        let amount_to_pay = number_of_records_to_pay * storage_cost.as_nano();
+    /// Send tokens to nodes closest to the data we want to make storage payment for.
+    ///
+    /// Returns DbcIds created for the payment and the total amount paid
+    ///
+    /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
+    pub async fn pay_for_records(
+        &mut self,
+        all_data_payments: BTreeMap<NetworkAddress, Vec<(PublicAddress, Token)>>,
+        verify_store: bool,
+    ) -> Result<Token> {
+        let now = Instant::now();
+        let mut total_cost = Token::zero();
+        for (_data, costs) in all_data_payments.iter() {
+            for (_target, cost) in costs {
+                if let Some(new_cost) = total_cost.checked_add(*cost) {
+                    total_cost = new_cost;
+                } else {
+                    return Err(Error::TotalPriceTooHigh);
+                }
+            }
+        }
 
-        trace!("Making payment for {num_of_addrs} addresses of {amount_to_pay:?} nano tokens.");
-
-        let transfer = self
-            .wallet
-            .local_send_storage_payment(Token::from_nano(amount_to_pay), root_hash, None)
-            .await?;
+        self.wallet
+            .local_send_storage_payment(all_data_payments, None)?;
 
         // send to network
-        trace!("Sending storage payment transfer to the network: {transfer:#?}");
-        if let Err(error) = self.client.send(transfer.clone(), verify_store).await {
+        trace!("Sending storage payment transfer to the network");
+
+        let spend_attempt_result = self
+            .client
+            .send(self.wallet.unconfirmed_txs(), verify_store)
+            .await;
+        if let Err(error) = spend_attempt_result {
             warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
-            self.unconfirmed_txs.push(transfer);
             return Err(error);
+        } else {
+            info!("Spend has completed: {:?}", spend_attempt_result);
+            self.wallet.clear_unconfirmed_txs();
         }
 
-        let spent_ids: Vec<_> = transfer.tx.inputs.iter().map(|i| i.dbc_id()).collect();
+        let elapsed = now.elapsed();
+        println!("After {elapsed:?}, All transfers made for total payment of {total_cost:?} nano tokens. ");
 
-        let new_payment_proofs: PaymentProofsMap = audit_trail_info
-            .into_iter()
-            .map(|(addr, (audit_trail, path))| {
-                (
-                    addr,
-                    PaymentProof {
-                        spent_ids: spent_ids.clone(),
-                        audit_trail,
-                        path,
-                    },
-                )
-            })
-            .collect();
-
-        // cache the new set of payment proofs
-        self.wallet.add_payment_proofs(new_payment_proofs.clone());
-
-        // return the set of payment proofs, including new ones, and the ones we had in cache
-        proofs.extend(new_payment_proofs);
-
-        Ok((proofs, Some(storage_cost)))
+        Ok(total_cost)
     }
 
     /// Resend failed txs
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn resend_pending_txs(&mut self, verify_store: bool) {
-        for (index, transfer) in self.unconfirmed_txs.clone().into_iter().enumerate() {
-            let tx_hash = transfer.tx.hash();
-            println!("Trying to republish pending tx: {tx_hash:?}..");
-            if self
-                .client
-                .send(transfer.clone(), verify_store)
-                .await
-                .is_ok()
-            {
-                println!("Tx {tx_hash:?} was successfully republished!");
-                let _ = self.unconfirmed_txs.remove(index);
-                // We might want to be _really_ sure and do the below
-                // as well, but it's not necessary.
-                // use crate::domain::wallet::VerifyingClient;
-                // client.verify(tx_hash).await.ok();
-            }
+        if self
+            .client
+            .send(self.wallet.unconfirmed_txs(), verify_store)
+            .await
+            .is_ok()
+        {
+            self.wallet.clear_unconfirmed_txs();
+            // We might want to be _really_ sure and do the below
+            // as well, but it's not necessary.
+            // use crate::domain::wallet::VerifyingClient;
+            // client.verify(tx_hash).await.ok();
         }
     }
 
@@ -212,20 +219,24 @@ impl WalletClient {
     pub fn into_wallet(self) -> LocalWallet {
         self.wallet
     }
+
+    /// Return ref to inner waller
+    pub fn mut_wallet(&mut self) -> &mut LocalWallet {
+        &mut self.wallet
+    }
 }
 
 impl Client {
-    /// Get any known store cost estimate
-    pub fn store_cost(&self) -> u64 {
-        self.network_store_cost
-    }
-
     /// Send a spend request to the network.
     /// This can optionally verify the spend has been correctly stored before returning
-    pub async fn send(&self, transfer: TransferOutputs, verify_store: bool) -> Result<()> {
+    pub async fn send(&self, spend_requests: &Vec<SpendRequest>, verify_store: bool) -> Result<()> {
         let mut tasks = Vec::new();
-        for spend_request in &transfer.all_spend_requests {
-            trace!("sending spend request to the network: {spend_request:#?}");
+
+        for spend_request in spend_requests {
+            trace!(
+                "sending spend request to the network: {:?}: {spend_request:#?}",
+                spend_request.signed_spend.dbc_id()
+            );
             tasks.push(self.network_store_spend(spend_request.clone(), verify_store));
         }
 
@@ -241,7 +252,10 @@ impl Client {
     pub async fn send_without_verify(&self, transfer: TransferOutputs) -> Result<()> {
         let mut tasks = Vec::new();
         for spend_request in &transfer.all_spend_requests {
-            trace!("sending spend request to the network: {spend_request:#?}");
+            trace!(
+                "sending spend request to the network: {:?}: {spend_request:#?}",
+                spend_request.signed_spend.dbc_id()
+            );
             tasks.push(self.network_store_spend(spend_request.clone(), false));
         }
 
@@ -298,6 +312,7 @@ pub async fn send(
         .await
         .expect("Tokens shall be successfully sent.");
 
+    let mut did_error = false;
     if verify_store {
         let mut attempts = 0;
         while wallet_client.unconfirmed_txs_exist() {
@@ -306,7 +321,9 @@ pub async fn send(
             wallet_client.resend_pending_txs(verify_store).await;
 
             if attempts > 10 {
-                return Err(Error::UnconfirmedTxAfterRetries);
+                // save the error state, but break out of the loop so we can save
+                did_error = true;
+                break;
             }
 
             attempts += 1;
@@ -316,12 +333,14 @@ pub async fn send(
     let mut wallet = wallet_client.into_wallet();
     wallet
         .store()
-        .await
         .expect("Wallet shall be successfully stored.");
     wallet
-        .store_created_dbc(new_dbc.clone())
-        .await
+        .store_dbc(new_dbc.clone())
         .expect("Created dbc shall be successfully stored.");
+
+    if did_error {
+        return Err(Error::UnconfirmedTxAfterRetries);
+    }
 
     Ok(new_dbc)
 }

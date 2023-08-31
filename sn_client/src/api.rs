@@ -14,11 +14,10 @@ use super::{
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
 use libp2p::{kad::Record, Multiaddr};
-use sn_dbc::{DbcId, SignedSpend, Token};
+use sn_dbc::{Dbc, DbcId, PublicAddress, SignedSpend, Token};
 use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::PaymentProof,
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, ChunkWithPayment,
         DbcAddress, RecordHeader, RecordKind, RegisterAddress,
@@ -27,10 +26,14 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::client_transfers::SpendRequest;
-use std::time::Duration;
-use tokio::task::spawn;
+use std::{sync::Arc, time::Duration};
+use tokio::{sync::Semaphore, task::spawn};
 use tracing::trace;
 use xor_name::XorName;
+
+// Maximum number of concurrency to be allowed at any time
+// eg, concurrent uploads/downloads of chunks, managed by a semaphore
+pub const DEFAULT_CLIENT_CONCURRENCY: usize = 5;
 
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(30);
@@ -41,6 +44,7 @@ impl Client {
         signer: SecretKey,
         peers: Option<Vec<Multiaddr>>,
         req_response_timeout: Option<Duration>,
+        custom_concurrency_limit: Option<usize>,
     ) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
         let local = match peers {
@@ -56,13 +60,17 @@ impl Client {
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 
+        // use passed concurrency limit or default
+        let concurrency_limit = custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY);
+        let concurrency_limiter = Arc::new(Semaphore::new(concurrency_limit));
+
         let client = Self {
             network: network.clone(),
             events_channel,
             signer,
             peers_added: 0,
             progress: Some(Self::setup_connection_progress()),
-            network_store_cost: 0,
+            concurrency_limiter,
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -145,6 +153,7 @@ impl Client {
                 }
             }
         }
+
         // The above loop breaks if `ConnectedToNetwork` is received, but we might need the
         // receiver to still be active for us to not get any error if any other event is sent
         let mut client_events_rx = client.events_channel();
@@ -153,8 +162,12 @@ impl Client {
                 let _ = client_events_rx.recv().await;
             }
         });
-
         Ok(client)
+    }
+
+    /// Get the client's concurrency limiter
+    pub fn concurrency_limiter(&self) -> Arc<Semaphore> {
+        self.concurrency_limiter.clone()
     }
 
     /// Set up our initial progress bar for network connectivity
@@ -273,12 +286,13 @@ impl Client {
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
-        payment: PaymentProof,
+        payment: Vec<Dbc>,
         verify_store: bool,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
-        let key = NetworkAddress::from_chunk_address(*chunk.address()).to_record_key();
+        let key = chunk.network_address().to_record_key();
         let chunk_with_payment = ChunkWithPayment { chunk, payment };
+
         let record = Record {
             key,
             value: try_serialize_record(&chunk_with_payment, RecordKind::Chunk)?,
@@ -316,7 +330,6 @@ impl Client {
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
         trace!("Sending spend {dbc_id:?} to the network via put_record, with addr of {dbc_addr:?}");
-
         let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
         let record = Record {
             key,
@@ -401,33 +414,15 @@ impl Client {
     }
 
     /// Get the store cost at a given address
-    /// Replaces current network_store_cost with the new one, unless average is set to true
-    pub async fn get_store_cost_at_address(
-        &mut self,
-        address: NetworkAddress,
-        only_update_cost_if_higher: bool,
-    ) -> Result<Token> {
-        trace!("Getting store cost at {address:?}, will update only if higher cost?: {only_update_cost_if_higher:?}");
+    pub async fn get_store_costs_at_address(
+        &self,
+        address: &NetworkAddress,
+    ) -> Result<Vec<(PublicAddress, Token)>> {
+        trace!("Getting store cost at {address:?}");
 
-        // if we're averaging over many samples across the network, any cost will do
-        let any_cost_will_do = only_update_cost_if_higher;
-
-        let cost = self
+        Ok(self
             .network
-            .get_store_cost_from_network(address.clone(), any_cost_will_do)
-            .await?
-            .as_nano();
-
-        if cost > self.network_store_cost {
-            self.network_store_cost = cost;
-        }
-
-        if !only_update_cost_if_higher {
-            self.network_store_cost = cost;
-        }
-
-        trace!("Set store cost: {}", self.network_store_cost);
-
-        Ok(Token::from_nano(cost))
+            .get_store_costs_from_network(address.clone())
+            .await?)
     }
 }

@@ -6,6 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[macro_use]
+extern crate tracing;
+
 /// Errors.
 pub mod error;
 /// Messages types
@@ -193,7 +196,7 @@ impl Display for NetworkAddress {
 /// So clients can use the hex string for xorname and record keys interchangeably.
 /// This makes errors actionable for clients.
 /// The only cost is converting kad::RecordKey into it before sending it in errors: `record_key.into()`
-#[derive(Clone)]
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub struct PrettyPrintRecordKey(RecordKey);
 
 // seamless conversion from `kad::RecordKey` to `PrettyPrintRecordKey`

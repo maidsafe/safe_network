@@ -17,12 +17,6 @@ mod msg;
 mod record_store;
 mod replication_fetcher;
 
-pub use self::{
-    cmd::SwarmLocalState,
-    error::Error,
-    event::{MsgResponder, NetworkEvent},
-};
-
 use self::{
     circular_vec::CircularVec,
     cmd::SwarmCmd,
@@ -33,6 +27,11 @@ use self::{
         REPLICATION_INTERVAL_UPPER_BOUND,
     },
     replication_fetcher::ReplicationFetcher,
+};
+pub use self::{
+    cmd::SwarmLocalState,
+    error::Error,
+    event::{MsgResponder, NetworkEvent},
 };
 use futures::{future::select_all, StreamExt};
 use itertools::Itertools;
@@ -51,9 +50,11 @@ use libp2p::{
 #[cfg(feature = "quic")]
 use libp2p_quic as quic;
 use rand::Rng;
+use sn_dbc::PublicAddress;
 use sn_dbc::Token;
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
+    storage::{RecordHeader, RecordKind},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -63,7 +64,10 @@ use std::{
     path::PathBuf,
     time::Duration,
 };
-use tokio::sync::{mpsc, oneshot};
+use tokio::{
+    sync::{mpsc, oneshot},
+    time::sleep,
+};
 use tracing::warn;
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
@@ -75,7 +79,7 @@ pub const CLOSE_GROUP_SIZE: usize = 8;
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
 // TODO: revisit once utxo is in
-pub const MAX_PACKET_SIZE: usize = 1024 * 1024 * 2; // the chunk size is 1mb, so should be higher than that to prevent failures
+pub const MAX_PACKET_SIZE: usize = 1024 * 1024 * 5; // the chunk size is 1mb, so should be higher than that to prevent failures, 5mb here to allow for DBC storage
 
 // Timeout for requests sent/received through the request_response behaviour.
 const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
@@ -97,10 +101,10 @@ const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 /// Duration to wait for verification
 const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
 /// Number of attempts to verify a record
-const VERIFICATION_ATTEMPTS: usize = 30;
+const VERIFICATION_ATTEMPTS: usize = 5;
 
 /// Number of attempts to re-put a record
-const PUT_RECORD_RETRIES: usize = 3;
+const PUT_RECORD_RETRIES: usize = 10;
 
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 /// Majority of a given group (i.e. > 1/2).
@@ -129,10 +133,11 @@ pub struct SwarmDriver {
     local: bool,
     /// A list of the most recent peers we have dialed ourselves.
     dialed_peers: CircularVec<PeerId>,
+    unroutable_peers: CircularVec<PeerId>,
     /// The peers that are closer to our PeerId. Includes self.
     close_group: Vec<PeerId>,
-    /// Perform initial kad bootstrap process on adding the first peer
-    bootstrap_done: bool,
+    /// Is the bootstrap process currently running
+    bootstrap_ongoing: bool,
     is_client: bool,
 }
 
@@ -150,6 +155,7 @@ impl SwarmDriver {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
+    #[allow(clippy::result_large_err)]
     pub fn new(
         keypair: Keypair,
         addr: SocketAddr,
@@ -217,6 +223,7 @@ impl SwarmDriver {
     }
 
     /// Same as `new` API but creates the network components in client mode
+    #[allow(clippy::result_large_err)]
     pub fn new_client(
         local: bool,
         request_timeout: Option<Duration>,
@@ -273,7 +280,7 @@ impl SwarmDriver {
         });
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::result_large_err)]
     /// Private helper to create the network components with the provided config and req/res behaviour
     fn with(
         root_dir_path: PathBuf,
@@ -425,8 +432,9 @@ impl SwarmDriver {
             // 63 will mean at least 63 most recent peers we have dialed, which should be allow for enough time for the
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
+            unroutable_peers: CircularVec::new(127),
             close_group: Default::default(),
-            bootstrap_done: false,
+            bootstrap_ongoing: false,
             is_client,
         };
 
@@ -472,6 +480,7 @@ impl SwarmDriver {
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
+#[allow(clippy::result_large_err)]
 pub fn sort_peers_by_address(
     peers: Vec<PeerId>,
     address: &NetworkAddress,
@@ -482,6 +491,7 @@ pub fn sort_peers_by_address(
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
 /// Return with the closest expected number of entries if has.
+#[allow(clippy::result_large_err)]
 pub fn sort_peers_by_key<T>(
     mut peers: Vec<PeerId>,
     key: &KBucketKey<T>,
@@ -516,6 +526,7 @@ pub struct Network {
 
 impl Network {
     /// Signs the given data with the node's keypair.
+    #[allow(clippy::result_large_err)]
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         self.keypair.sign(msg).map_err(Error::from)
     }
@@ -600,34 +611,6 @@ impl Network {
             .await)
     }
 
-    /// Send `Request` to the closest peers and ignore reply
-    /// If `self` is among the closest_peers, the `Request` is
-    /// forwarded to itself and handled. Then a corresponding `Response` is created and is
-    /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
-    /// layers.
-    pub async fn send_req_no_reply_to_closest(&self, request: &Request) -> Result<()> {
-        debug!(
-            "Sending {request:?} with dst {:?} to the closest peers.",
-            request.dst()
-        );
-        let closest_peers = self.node_get_closest_peers(&request.dst()).await?;
-        for peer in closest_peers {
-            self.send_req_ignore_reply(request.clone(), peer)?;
-        }
-        Ok(())
-    }
-
-    /// Send `Request` to the closest peers to self
-    pub async fn send_req_no_reply_to_self_closest(&self, request: &Request) -> Result<()> {
-        debug!("Sending {request:?} to self closest peers.");
-        // Using `client_get_closest_peers` to filter self out.
-        let closest_peers = self.client_get_closest_peers(&request.dst()).await?;
-        for peer in closest_peers {
-            self.send_req_ignore_reply(request.clone(), peer)?;
-        }
-        Ok(())
-    }
-
     /// Send `Request` to the closest peers. `Self` is not present among the recipients.
     pub async fn client_send_to_closest(
         &self,
@@ -644,11 +627,10 @@ impl Network {
             .await)
     }
 
-    pub async fn get_store_cost_from_network(
+    pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
-        any_cost_will_do: bool,
-    ) -> Result<Token> {
+    ) -> Result<Vec<(PublicAddress, Token)>> {
         let (sender, receiver) = oneshot::channel();
         debug!("Attempting to get store cost");
         // first we need to get CLOSE_GROUP of the dbc_id
@@ -671,14 +653,18 @@ impl Network {
         // loop over responses, generating an avergae fee and storing all responses along side
         let mut all_costs = vec![];
         for response in responses.into_iter().flatten() {
-            if let Response::Query(QueryResponse::GetStoreCost(Ok(cost))) = response {
-                all_costs.push(cost);
+            if let Response::Query(QueryResponse::GetStoreCost {
+                store_cost: Ok(cost),
+                payment_address,
+            }) = response
+            {
+                all_costs.push((payment_address, cost));
             } else {
-                println!("other response was {:?}", response);
+                error!("Non store cost response received,  was {:?}", response);
             }
         }
 
-        get_fee_from_store_cost_quotes(&mut all_costs, any_cost_will_do)
+        get_fee_from_store_cost_quotes(all_costs)
     }
 
     /// Get the Record from the network
@@ -697,7 +683,7 @@ impl Network {
 
         while verification_attempts < total_attempts {
             verification_attempts += 1;
-            debug!(
+            info!(
                 "Getting record of {:?} attempts {verification_attempts:?}/{total_attempts:?}",
                 PrettyPrintRecordKey::from(key.clone()),
             );
@@ -713,17 +699,28 @@ impl Network {
                 .map_err(|_e| Error::InternalMsgChannelDropped)?
             {
                 Ok(returned_record) => {
+                    let header = RecordHeader::from_record(&returned_record)?;
+                    let is_chunk = matches!(header.kind, RecordKind::Chunk);
+                    info!(
+                        "Record returned: {:?}",
+                        PrettyPrintRecordKey::from(key.clone())
+                    );
+
                     // Returning OK whenever fulfill one of the followings:
                     // 1, No targeting record
-                    // 2, Fetched record matches the targeting record
+                    // 2, Fetched record matches the targeting record (when not chunk, as they are content addressed)
                     //
                     // Returning mismatched error when: completed all attempts
                     if target_record.is_none()
                         || (target_record.is_some()
-                            && target_record == Some(returned_record.clone()))
+                            // we dont need to match the whole record if chunks, 
+                            // payment data could differ, but chunks themselves'
+                            // keys are from the chunk address
+                            && (target_record == Some(returned_record.clone()) || is_chunk))
                     {
                         return Ok(returned_record);
                     } else if verification_attempts >= total_attempts {
+                        info!("Errorrrrring");
                         return Err(Error::ReturnedRecordDoesNotMatch(
                             returned_record.key.into(),
                         ));
@@ -789,20 +786,26 @@ impl Network {
     /// Put `Record` to network
     /// optionally verify the record is stored after putting it to network
     pub async fn put_record(&self, record: Record, verify_store: bool) -> Result<()> {
-        if verify_store {
-            self.put_record_with_retries(record).await
-        } else {
-            self.put_record_once(record, false).await
-        }
+        // if verify_store {
+        self.put_record_with_retries(record, verify_store).await
+        // } else {
+        //     self.put_record_once(record, false).await
+        // }
     }
 
     /// Put `Record` to network
     /// Verify the record is stored after putting it to network
     /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
-    async fn put_record_with_retries(&self, record: Record) -> Result<()> {
+    async fn put_record_with_retries(&self, record: Record, verify_store: bool) -> Result<()> {
         let mut retries = 0;
+        // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
         while retries < PUT_RECORD_RETRIES {
-            let res = self.put_record_once(record.clone(), true).await;
+            trace!(
+                "Attempting to PUT record of {:?} to network",
+                PrettyPrintRecordKey::from(record.key.clone())
+            );
+
+            let res = self.put_record_once(record.clone(), verify_store).await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
             }
@@ -812,9 +815,10 @@ impl Network {
     }
 
     async fn put_record_once(&self, record: Record, verify_store: bool) -> Result<()> {
-        debug!(
+        let record_key = PrettyPrintRecordKey::from(record.key.clone());
+        info!(
             "Putting record of {} - length {:?} to network",
-            PrettyPrintRecordKey::from(record.key.clone()),
+            record_key,
             record.value.len()
         );
         let the_record = record.clone();
@@ -825,16 +829,17 @@ impl Network {
             sender,
         })?;
         let response = receiver.await?;
-
         if verify_store {
+            // small wait before we attempt to verify
+            sleep(Duration::from_millis(100)).await;
+            trace!("attempting to verify {record_key:?}");
             // Verify the record is stored, requiring re-attempts
-            let _ = self
-                .get_record_from_network(record.key.clone(), Some(record), true)
+            self.get_record_from_network(record.key.clone(), Some(record), true)
                 .await
                 .map_err(|e| {
                     trace!(
                         "Failing to verify the put record {:?} with error {e:?}",
-                        the_record.key
+                        PrettyPrintRecordKey::from(the_record.key.clone())
                     );
                     Error::FailedToVerifyRecordWasStored(the_record.key.into())
                 })?;
@@ -845,6 +850,7 @@ impl Network {
 
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
+    #[allow(clippy::result_large_err)]
     pub fn put_local_record(&self, record: Record) -> Result<()> {
         debug!(
             "Writing Record locally, for {:?} - length {:?}",
@@ -878,12 +884,9 @@ impl Network {
     }
 
     // Add a list of keys of a holder to Replication Fetcher.
-    pub fn add_keys_to_replication_fetcher(
-        &self,
-        peer: PeerId,
-        keys: Vec<NetworkAddress>,
-    ) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { peer, keys })
+    #[allow(clippy::result_large_err)]
+    pub fn add_keys_to_replication_fetcher(&self, keys: Vec<NetworkAddress>) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { keys })
     }
 
     /// Send `Request` to the given `PeerId` and await for the response. If `self` is the recipient,
@@ -902,6 +905,7 @@ impl Network {
 
     /// Send `Request` to the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
+    #[allow(clippy::result_large_err)]
     pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let swarm_cmd = SwarmCmd::SendRequest {
             req,
@@ -912,6 +916,7 @@ impl Network {
     }
 
     /// Send a `Response` through the channel opened by the requester.
+    #[allow(clippy::result_large_err)]
     pub fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
     }
@@ -925,6 +930,7 @@ impl Network {
     }
 
     // Helper to send SwarmCmd
+    #[allow(clippy::result_large_err)]
     fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
         let capacity = self.swarm_cmd_sender.capacity();
 
@@ -948,7 +954,11 @@ impl Network {
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// If `client` is false, then include `self` among the `closest_peers`
-    async fn get_closest_peers(&self, key: &NetworkAddress, client: bool) -> Result<Vec<PeerId>> {
+    pub async fn get_closest_peers(
+        &self,
+        key: &NetworkAddress,
+        client: bool,
+    ) -> Result<Vec<PeerId>> {
         trace!("Getting the closest peers to {key:?}");
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
@@ -1002,37 +1012,33 @@ impl Network {
 }
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
+#[allow(clippy::result_large_err)]
 fn get_fee_from_store_cost_quotes(
-    all_costs: &mut Vec<Token>,
-    any_cost_will_do: bool,
-) -> Result<Token> {
-    // we're zero indexed, so we want the middle index
-    let target_cost_index = CLOSE_GROUP_SIZE / 2;
+    mut all_costs: Vec<(PublicAddress, Token)>,
+) -> Result<Vec<(PublicAddress, Token)>> {
+    // TODO: we should make this configurable based upon data type
+    // or user requirements for resilience.
+    let desired_quote_count = CLOSE_GROUP_SIZE;
 
     // sort all costs by fee, lowest to highest
-    all_costs.sort();
+    all_costs.sort_by(|(_, cost_a), (_, cost_b)| {
+        cost_a
+            .partial_cmp(cost_b)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
-    let token_fee = if any_cost_will_do {
-        let first_try = all_costs
-            .get(target_cost_index)
-            .ok_or(Error::NotEnoughCostQuotes);
-        // Prefer the value from first_try, otherwise just use the last one
-        if let Err(_error) = first_try {
-            *all_costs.last().ok_or(Error::NotEnoughCostQuotes)?
-        } else {
-            *first_try?
-        }
-    } else {
-        *all_costs
-            .get(target_cost_index)
-            .ok_or(Error::NotEnoughCostQuotes)?
-    };
+    // get the first desired_quote_count of all_costs
+    all_costs.truncate(desired_quote_count);
+
+    if all_costs.len() < desired_quote_count {
+        return Err(Error::NotEnoughCostQuotes);
+    }
 
     info!(
-        "Final fee calculated as: {token_fee:?}, from: {:?}",
+        "Final fees calculated as: {all_costs:?}, from: {:?}",
         all_costs
     );
-    Ok(token_fee)
+    Ok(all_costs)
 }
 
 /// Verifies if `Multiaddr` contains IPv4 address that is not global.
@@ -1079,48 +1085,77 @@ mod tests {
     use super::*;
 
     #[test]
+    #[allow(clippy::result_large_err)]
     fn test_get_fee_from_store_cost_quotes() -> Result<()> {
         // for a vec of different costs of CLOUSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..CLOSE_GROUP_SIZE {
-            costs.push(Token::from_nano(i as u64));
+            let addr = PublicAddress::new(bls::SecretKey::random().public_key());
+            costs.push((addr, Token::from_nano(i as u64)));
         }
-        let price = get_fee_from_store_cost_quotes(&mut costs, false)?;
+        let prices = get_fee_from_store_cost_quotes(costs)?;
+        let total_price: u64 = prices
+            .iter()
+            .fold(0, |acc, (_, price)| acc + price.as_nano());
+
+        // sum all the numbers from 0 to CLOSE_GROUP_SIZE
+        let expected_price = CLOSE_GROUP_SIZE * (CLOSE_GROUP_SIZE - 1) / 2;
 
         assert_eq!(
-            price,
-            Token::from_nano(CLOSE_GROUP_SIZE as u64 / 2),
+            total_price, expected_price as u64,
             "price should be {}",
-            CLOSE_GROUP_SIZE / 2 + 1
+            expected_price
         );
 
         Ok(())
     }
     #[test]
-    fn test_get_any_fee_from_store_cost_quotes() -> eyre::Result<()> {
+    #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
+    fn test_get_any_fee_from_store_cost_quotes_errs_if_insufficient_quotes() -> eyre::Result<()> {
         // for a vec of different costs of CLOUSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
-            costs.push(Token::from_nano(i as u64));
+            let addr = PublicAddress::new(bls::SecretKey::random().public_key());
+            costs.push((addr, Token::from_nano(i as u64)));
         }
 
-        if get_fee_from_store_cost_quotes(&mut costs, false).is_ok() {
+        if get_fee_from_store_cost_quotes(costs).is_ok() {
             bail!("Should have errored as we have too few quotes")
         }
 
-        let price = match get_fee_from_store_cost_quotes(&mut costs, true) {
-            Err(_) => bail!("Should have errored as we have too few quotes"),
+        Ok(())
+    }
+    #[test]
+    #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
+    fn test_get_some_fee_from_store_cost_quotes_errs_if_suffcient() -> eyre::Result<()> {
+        // for a vec of different costs of CLOUSE_GROUP size
+        let quotes_count = CLOSE_GROUP_SIZE as u64 - 1;
+        let mut costs = vec![];
+        for i in 0..quotes_count {
+            // push random PublicAddress and Token
+            let addr = PublicAddress::new(bls::SecretKey::random().public_key());
+            costs.push((addr, Token::from_nano(i)));
+            println!("price added {}", i);
+        }
+
+        let prices = match get_fee_from_store_cost_quotes(costs) {
+            Err(_) => bail!("Should not have errored as we have enough quotes"),
             Ok(cost) => cost,
         };
 
-        // as we use zero indexing above, the actual price is _two_ less
+        let total_price: u64 = prices
+            .iter()
+            .fold(0, |acc, (_, price)| acc + price.as_nano());
+
+        // sum all the numbers from 0 to CLOSE_GROUP_SIZE / 2 + 1
+        let expected_price = (CLOSE_GROUP_SIZE / 2) * (CLOSE_GROUP_SIZE / 2 + 1) / 2;
+
         assert_eq!(
-            price,
-            Token::from_nano((CLOSE_GROUP_SIZE as u64 / 2) - 2),
+            total_price, expected_price as u64,
             "price should be {}",
-            (CLOSE_GROUP_SIZE as u64 / 2) - 2
+            total_price
         );
 
         Ok(())

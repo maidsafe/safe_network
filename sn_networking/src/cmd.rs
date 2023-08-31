@@ -36,6 +36,10 @@ pub enum SwarmCmd {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
     },
+    DialWithOpts {
+        opts: DialOpts,
+        sender: oneshot::Sender<Result<()>>,
+    },
     // Get closest peers from the network
     GetClosestPeers {
         key: NetworkAddress,
@@ -105,9 +109,8 @@ pub enum SwarmCmd {
     PutLocalRecord {
         record: Record,
     },
-    /// The keys added to the replication fetcher are later used to fetch the Record from the peer/network
+    /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
-        peer: PeerId,
         keys: Vec<NetworkAddress>,
     },
 }
@@ -122,9 +125,15 @@ pub struct SwarmLocalState {
 }
 
 impl SwarmDriver {
+    #[allow(clippy::result_large_err)]
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
+        let drives_forward_replication = matches!(
+            cmd,
+            SwarmCmd::PutLocalRecord { .. } | SwarmCmd::AddKeysToReplicationFetcher { .. }
+        );
+
         match cmd {
-            SwarmCmd::AddKeysToReplicationFetcher { peer, keys } => {
+            SwarmCmd::AddKeysToReplicationFetcher { keys } => {
                 // Only store record from Replication that close enough to us.
                 let all_peers = self.get_all_local_peers();
                 let keys_to_store = keys
@@ -139,9 +148,7 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .record_addresses_ref();
-                let keys_to_fetch =
-                    self.replication_fetcher
-                        .add_keys(peer, keys_to_store, all_keys);
+                let keys_to_fetch = self.replication_fetcher.add_keys(keys_to_store, all_keys);
                 if !keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
                 }
@@ -208,7 +215,7 @@ impl SwarmDriver {
                     .put_verified(record)
                 {
                     Ok(_) => {
-                        let new_keys_to_fetch = self.replication_fetcher.notify_about_new_put(key);
+                        let new_keys_to_fetch = self.replication_fetcher.notify_about_new_put(&key);
                         if !new_keys_to_fetch.is_empty() {
                             self.send_event(NetworkEvent::KeysForReplication(new_keys_to_fetch));
                         }
@@ -243,6 +250,12 @@ impl SwarmDriver {
             }
             SwarmCmd::Dial { addr, sender } => {
                 let _ = match self.dial(addr) {
+                    Ok(_) => sender.send(Ok(())),
+                    Err(e) => sender.send(Err(e.into())),
+                };
+            }
+            SwarmCmd::DialWithOpts { opts, sender } => {
+                let _ = match self.dial_with_opts(opts) {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(e.into())),
                 };
@@ -336,6 +349,14 @@ impl SwarmDriver {
                     .map_err(|_| Error::InternalMsgChannelDropped)?;
             }
         }
+
+        // in case we're a node and not driving forward and there are keys to replicate, let's fire events for that
+        if !self.is_client && !drives_forward_replication {
+            let keys_to_fetch = self.replication_fetcher.next_keys_to_fetch();
+            if !keys_to_fetch.is_empty() {
+                self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
+            }
+        }
         Ok(())
     }
 
@@ -353,6 +374,13 @@ impl SwarmDriver {
                 .build(),
             None => DialOpts::unknown_peer_id().address(addr).build(),
         };
+
+        self.swarm.dial(opts)
+    }
+
+    /// Dials with the `DialOpts` given.
+    pub(crate) fn dial_with_opts(&mut self, opts: DialOpts) -> Result<(), DialError> {
+        debug!(?opts, "Dialing manually");
 
         self.swarm.dial(opts)
     }

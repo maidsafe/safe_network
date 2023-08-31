@@ -6,28 +6,33 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::path::PathBuf;
+
+use crate::WalletClient;
+
 use super::{
     chunks::{to_chunk, DataMapLevel, Error, SmallFile},
     error::Result,
     Client,
 };
 
-use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::wallet::PaymentProofsMap;
+use sn_protocol::{
+    storage::{Chunk, ChunkAddress},
+    NetworkAddress, PrettyPrintRecordKey,
+};
+use sn_transfers::wallet::LocalWallet;
 
 use bincode::deserialize;
 use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
-use tokio::task::{self, JoinHandle};
+use tokio::task;
 use tracing::trace;
 use xor_name::XorName;
 
-// Maximum number of concurrent chunks to be uploaded/retrieved for a file
-const CHUNKS_BATCH_MAX_SIZE: usize = 4;
-
 /// File APIs.
+#[derive(Clone)]
 pub struct Files {
     client: Client,
 }
@@ -36,6 +41,12 @@ impl Files {
     /// Create file apis instance.
     pub fn new(client: Client) -> Self {
         Self { client }
+    }
+
+    /// Create a new WalletClient for a given root directory.
+    pub async fn wallet(&self, root_dir: PathBuf) -> Result<WalletClient> {
+        let wallet = LocalWallet::load_from(root_dir.as_path())?;
+        Ok(WalletClient::new(self.client.clone(), wallet))
     }
 
     #[instrument(skip(self), level = "debug")]
@@ -92,27 +103,15 @@ impl Files {
 
     /// Directly writes [`Bytes`] to the network in the
     /// form of immutable chunks, without any batching.
-    #[instrument(skip(self, bytes), level = "debug")]
-    pub async fn upload_with_proof(
+    #[instrument(skip(self, bytes, wallet_client), level = "debug")]
+    pub async fn upload_with_payments(
         &self,
         bytes: Bytes,
-        payment_proofs: &PaymentProofsMap,
+        wallet_client: &WalletClient,
+        // content_payments_map: ContentPaymentsMap,
         verify_store: bool,
-    ) -> Result<ChunkAddress> {
-        self.upload_bytes(bytes, payment_proofs, verify_store).await
-    }
-
-    /// Directly writes [`Bytes`] to the network in the
-    /// form of immutable chunks, without any batching.
-    /// It also attempts to verify that all the data was uploaded to the network before returning.
-    /// It does this via running `read_bytes` with each chunk with `query_timeout` set.
-    #[instrument(skip_all, level = "trace")]
-    pub async fn upload_and_verify(
-        &self,
-        bytes: Bytes,
-        payment_proofs: &PaymentProofsMap,
-    ) -> Result<ChunkAddress> {
-        self.upload_bytes(bytes, payment_proofs, true).await
+    ) -> Result<NetworkAddress> {
+        self.upload_bytes(bytes, wallet_client, verify_store).await
     }
 
     /// Calculates a LargeFile's/SmallFile's address from self encrypted chunks,
@@ -137,48 +136,37 @@ impl Files {
 
     /// Directly writes Chunks to the network in the
     /// form of immutable self encrypted chunks.
+    ///
     #[instrument(skip_all, level = "trace")]
-    pub async fn upload_chunks_in_batches(
+    pub async fn upload_chunk_in_parallel(
         &self,
-        chunks: impl Iterator<Item = Chunk>,
-        payment_proofs: &PaymentProofsMap,
+        chunk: Chunk,
+        wallet_client: &WalletClient,
         verify_store: bool,
     ) -> Result<()> {
-        trace!("Client upload in batches started");
-        let mut tasks = vec![];
-        let mut next_batch_size = 0;
-        for chunk in chunks {
-            next_batch_size += 1;
-            let client = self.client.clone();
-            let chunk_addr = *chunk.address();
-            let payment = payment_proofs
-                .get(chunk_addr.xorname())
-                .cloned()
-                .ok_or(super::Error::MissingPaymentProof(chunk_addr))?;
+        let client = self.client.clone();
+        let chunk_addr = chunk.network_address();
+        trace!("Client upload started for chunk: {chunk_addr:?}");
 
-            tasks.push(task::spawn(async move {
-                client.store_chunk(chunk, payment, verify_store).await?;
+        let payment = wallet_client.get_payment_dbcs(&chunk_addr).await;
 
-                Ok::<(), super::error::Error>(())
-            }));
-
-            if next_batch_size == CHUNKS_BATCH_MAX_SIZE {
-                let tasks_to_poll = tasks;
-                join_all_tasks(tasks_to_poll).await?;
-                // In case of not verifying, sleep for a little bit to let the network settle down.
-                if !verify_store {
-                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-                }
-                tasks = vec![];
-                next_batch_size = 0;
-            }
+        if payment.is_empty() {
+            warn!(
+                    "Failed to get payment proof for chunk: {chunk_addr:?} it was not found in the local wallet",
+                    chunk_addr = chunk_addr,
+                );
+            return Err(Error::NoPaymentForRecord(PrettyPrintRecordKey::from(
+                chunk_addr.to_record_key(),
+            )))?;
         }
 
-        if next_batch_size > 0 {
-            join_all_tasks(tasks).await?;
-        }
+        trace!(
+            "Payment for {chunk_addr:?}: has length: {:?}",
+            payment.len()
+        );
+        client.store_chunk(chunk, payment, verify_store).await?;
 
-        trace!("Client upload in batches completed");
+        trace!("Client upload completed for chunk: {chunk_addr:?}");
         Ok(())
     }
 
@@ -186,21 +174,28 @@ impl Files {
     // ---------- Private helpers -----------------
     // --------------------------------------------
 
-    #[instrument(skip(self, bytes), level = "trace")]
+    /// Used for testing
+    #[instrument(skip(self, bytes, wallet_client), level = "trace")]
     async fn upload_bytes(
         &self,
         bytes: Bytes,
-        payment_proofs: &PaymentProofsMap,
+        wallet_client: &WalletClient,
         verify: bool,
-    ) -> Result<ChunkAddress> {
+    ) -> Result<NetworkAddress> {
         if bytes.len() < MIN_ENCRYPTABLE_BYTES {
             let file = SmallFile::new(bytes)?;
-            self.upload_small(file, payment_proofs, verify).await
+            self.upload_small(file, wallet_client, verify).await
         } else {
             let (head_address, chunks) = encrypt_large(bytes)?;
-            self.upload_chunks_in_batches(chunks.into_iter(), payment_proofs, verify)
-                .await?;
-            Ok(ChunkAddress::new(head_address))
+
+            for chunk in chunks {
+                self.upload_chunk_in_parallel(chunk, wallet_client, verify)
+                    .await?;
+            }
+
+            Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
+                head_address,
+            )))
         }
     }
 
@@ -210,15 +205,16 @@ impl Files {
     async fn upload_small(
         &self,
         small: SmallFile,
-        payment_proofs: &PaymentProofsMap,
+        wallet_client: &WalletClient,
         verify_store: bool,
-    ) -> Result<ChunkAddress> {
+    ) -> Result<NetworkAddress> {
         let chunk = package_small(small)?;
-        let address = *chunk.address();
-        let payment = payment_proofs
-            .get(address.xorname())
-            .cloned()
-            .ok_or(super::Error::MissingPaymentProof(address))?;
+        let address = chunk.network_address();
+        let payment = wallet_client.get_payment_dbcs(&address).await;
+
+        if payment.is_empty() {
+            return Err(super::Error::MissingPaymentProof(format!("{address}")));
+        }
 
         self.client
             .store_chunk(chunk, payment, verify_store)
@@ -281,42 +277,47 @@ impl Files {
     async fn try_get_chunks(&self, chunks_info: Vec<ChunkInfo>) -> Result<Vec<EncryptedChunk>> {
         let expected_count = chunks_info.len();
         let mut retrieved_chunks = vec![];
-        for next_batch in chunks_info.chunks(CHUNKS_BATCH_MAX_SIZE) {
-            let tasks = next_batch.iter().cloned().map(|chunk_info| {
-                let client = self.client.clone();
-                task::spawn(async move {
-                    match client
-                        .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
-                        .await
-                    {
-                        Ok(chunk) => Ok(EncryptedChunk {
-                            index: chunk_info.index,
-                            content: chunk.value().clone(),
-                        }),
-                        Err(err) => {
-                            warn!(
-                                "Reading chunk {} from network, resulted in error {err:?}.",
-                                chunk_info.dst_hash
-                            );
-                            Err(err)
-                        }
+        let semaphore = self.client.concurrency_limiter();
+
+        let mut tasks = Vec::new();
+        for chunk_info in chunks_info.clone().into_iter() {
+            let chunk_semaphore = semaphore.clone();
+
+            let client = self.client.clone();
+            let task = task::spawn(async move {
+                let _permit = chunk_semaphore.acquire_owned().await?;
+                match client
+                    .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
+                    .await
+                {
+                    Ok(chunk) => Ok(EncryptedChunk {
+                        index: chunk_info.index,
+                        content: chunk.value().clone(),
+                    }),
+                    Err(err) => {
+                        warn!(
+                            "Reading chunk {} from network, resulted in error {err:?}.",
+                            chunk_info.dst_hash
+                        );
+                        Err(err)
                     }
-                })
+                }
             });
-
-            // This swallowing of errors is basically a compaction into a single
-            // error saying "didn't get all chunks".
-            retrieved_chunks.extend(join_all(tasks).await.into_iter().flatten().flatten());
-
-            info!(
-                "Client download progress {:?}/{expected_count:?}",
-                retrieved_chunks.len()
-            );
-            println!(
-                "Client download progress {:?}/{expected_count:?}",
-                retrieved_chunks.len()
-            );
+            tasks.push(task);
         }
+
+        // This swallowing of errors is basically a compaction into a single
+        // error saying "didn't get all chunks".
+        retrieved_chunks.extend(join_all(tasks).await.into_iter().flatten().flatten());
+
+        info!(
+            "Client download progress {:?}/{expected_count:?}",
+            retrieved_chunks.len()
+        );
+        println!(
+            "Client download progress {:?}/{expected_count:?}",
+            retrieved_chunks.len()
+        );
 
         if expected_count > retrieved_chunks.len() {
             let missing_chunks: Vec<XorName> = chunks_info
@@ -357,21 +358,4 @@ fn package_small(file: SmallFile) -> Result<Chunk> {
         return Err(Error::SmallFilePaddingNeeded(chunk.value().len()))?;
     }
     Ok(chunk)
-}
-
-// Helper to join a provided set of spawned tasks
-async fn join_all_tasks(tasks: Vec<JoinHandle<Result<()>>>) -> Result<()> {
-    let responses = join_all(tasks)
-        .await
-        .into_iter()
-        .flatten() // swallows errors
-        .collect_vec();
-
-    for res in responses {
-        // fail with any issue here
-        if res.as_ref().is_err() {
-            return res;
-        }
-    }
-    Ok(())
 }

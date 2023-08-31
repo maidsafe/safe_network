@@ -6,23 +6,22 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{error::Result, messages::ReplicatedData, NetworkAddress};
+use crate::error::Result;
+
 use serde::{Deserialize, Serialize};
-use sn_dbc::Token;
+use sn_dbc::{PublicAddress, Token};
 use std::fmt::Debug;
 
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 pub enum QueryResponse {
-    /// The store cost in nanos for storing the next record, and the node's singature over that cost.
-    GetStoreCost(Result<Token>),
-    // ===== ReplicatedData =====
-    //
-    /// Response to [`GetReplicatedData`]
-    ///
-    /// [`GetReplicatedData`]: crate::messages::Query::GetReplicatedData
-    GetReplicatedData(Result<(NetworkAddress, ReplicatedData)>),
+    GetStoreCost {
+        /// The store cost in nanos for storing the next record.
+        store_cost: Result<Token>,
+        /// The dbc PublicAddress to pay this node's store cost to.
+        payment_address: PublicAddress,
+    },
 }
 
 /// The response to a Cmd, containing the query result.

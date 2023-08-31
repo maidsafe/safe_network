@@ -243,7 +243,7 @@ impl Testnet {
         self.launcher.launch(&launch_bin, launch_args)?;
         info!(
             "Delaying for {} seconds before launching other nodes",
-            self.node_launch_interval / 1000
+            self.node_launch_interval
         );
         std::thread::sleep(std::time::Duration::from_millis(self.node_launch_interval));
 

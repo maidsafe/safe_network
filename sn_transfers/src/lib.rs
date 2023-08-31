@@ -14,7 +14,5 @@ extern crate tracing;
 pub mod client_transfers;
 /// Genesis DBC utilities.
 pub mod dbc_genesis;
-/// Storage payment proofs utilities
-pub mod payment_proof;
 /// A wallet for network tokens.
 pub mod wallet;

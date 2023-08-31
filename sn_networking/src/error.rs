@@ -9,6 +9,7 @@
 use super::{cmd::SwarmCmd, NetworkEvent};
 
 use libp2p::{
+    identity::DecodingError,
     kad::{self, Record},
     request_response::{OutboundFailure, RequestId},
     swarm::DialError,
@@ -50,6 +51,9 @@ pub enum Error {
     #[error("Record retrieved from the network does not match the one we attempted to store {0:}")]
     ReturnedRecordDoesNotMatch(PrettyPrintRecordKey),
 
+    #[error("Record returned when none was expected (likely a Dbc spend eg) {0:}")]
+    ExpectedNoRecordToExist(PrettyPrintRecordKey),
+
     #[error("Could not create storage dir: {path:?}, error: {source}")]
     FailedToCreateRecordStoreDir {
         path: PathBuf,
@@ -64,6 +68,9 @@ pub enum Error {
 
     #[error("Dial Error")]
     DialError(#[from] DialError),
+
+    #[error("Libp2p Identity Decode Error")]
+    Libp2pDecode(#[from] DecodingError),
 
     #[error("This peer is already being dialed: {0}")]
     AlreadyDialingPeer(libp2p::PeerId),
@@ -97,6 +104,9 @@ pub enum Error {
 
     #[error("Error putting record")]
     PutRecordError(#[from] kad::PutRecordError),
+
+    #[error("SnProtocol Error")]
+    ProtocolError(#[from] sn_protocol::error::Error),
 
     #[error("No SwarmCmd channel capacity")]
     NoSwarmCmdChannelCapacity,

@@ -25,6 +25,7 @@ impl<T> CircularVec<T> {
     }
 
     /// Pushes an item into the CircularVec. If the CircularVec is full, the oldest item is removed.
+    #[allow(clippy::result_large_err)]
     pub fn push(&mut self, item: T) -> Result<(), Error> {
         if self.inner.len() == self.inner.capacity() {
             self.inner

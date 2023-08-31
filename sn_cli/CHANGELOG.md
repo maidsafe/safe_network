@@ -6,6 +6,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.2](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.1...sn_cli-v0.81.2) - 2023-08-31
+
+### Other
+- update dependencies
+
+## [0.81.1](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.0...sn_cli-v0.81.1) - 2023-08-31
+
+### Added
+- *(cli)* expose 'concurrency' flag
+- *(cli)* increase put parallelisation
+
+### Other
+- *(client)* improve download concurrency.
+
+## [0.81.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.64...sn_cli-v0.81.0) - 2023-08-30
+
+### Added
+- refactor to allow greater upload parallelisation
+- one transfer per data set, mapped dbcs to content addrs
+- [**breaking**] pay each chunk holder direct
+- feat!(protocol): get price and pay for each chunk individually
+- feat!(protocol): remove chunk merkletree to simplify payment
+
+### Fixed
+- *(tokio)* remove tokio fs
+
+### Other
+- *(deps)* bump tokio to 1.32.0
+- *(client)* refactor client wallet to reduce dbc clones
+- *(client)* pass around content payments map mut ref
+- *(client)* reduce transferoutputs cloning
+
+## [0.80.64](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.63...sn_cli-v0.80.64) - 2023-08-30
+
+### Other
+- update dependencies
+
+## [0.80.63](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.62...sn_cli-v0.80.63) - 2023-08-30
+
+### Other
+- update dependencies
+
 ## [0.80.62](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.80.61...sn_cli-v0.80.62) - 2023-08-29
 
 ### Other

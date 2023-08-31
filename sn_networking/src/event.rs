@@ -30,7 +30,7 @@ use libp2p::{
     },
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
-    swarm::{behaviour::toggle::Toggle, NetworkBehaviour, SwarmEvent},
+    swarm::{behaviour::toggle::Toggle, dial_opts::DialOpts, NetworkBehaviour, SwarmEvent},
     Multiaddr, PeerId,
 };
 use sn_protocol::{
@@ -132,8 +132,8 @@ pub enum NetworkEvent {
     PeerAdded(PeerId),
     // Peer has been removed from the Routing Table
     PeerRemoved(PeerId),
-    /// The Records for the these keys are to be fetched from the provided Peer or from the network
-    KeysForReplication(Vec<(RecordKey, Option<PeerId>)>),
+    /// The Records for the these keys are to be fetched from the network
+    KeysForReplication(Vec<RecordKey>),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
     /// AutoNAT status changed
@@ -161,10 +161,7 @@ impl Debug for NetworkEvent {
             NetworkEvent::KeysForReplication(list) => {
                 let pretty_list: Vec<_> = list
                     .iter()
-                    .map(|(key, peer_id)| {
-                        let pretty_key = PrettyPrintRecordKey::from(key.clone());
-                        (pretty_key, *peer_id)
-                    })
+                    .map(|key| PrettyPrintRecordKey::from(key.clone()))
                     .collect();
                 write!(f, "NetworkEvent::KeysForReplication({pretty_list:?})")
             }
@@ -184,6 +181,7 @@ impl Debug for NetworkEvent {
 
 impl SwarmDriver {
     // Handle `SwarmEvents`
+    #[allow(clippy::result_large_err)]
     pub(super) fn handle_swarm_events<EventError: std::error::Error>(
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
@@ -203,7 +201,9 @@ impl SwarmDriver {
                         debug!(%peer_id, ?info, "identify: received info");
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
-                        if (self.local || self.dialed_peers.contains(&peer_id))
+                        if (self.local
+                            || self.dialed_peers.contains(&peer_id)
+                            || self.unroutable_peers.contains(&peer_id))
                             && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
                         {
                             let addrs = match self.local {
@@ -225,11 +225,37 @@ impl SwarmDriver {
 
                             debug!(%peer_id, ?addrs, "identify: adding addresses to routing table");
                             for multiaddr in addrs.clone() {
-                                let _routing_update = self
-                                    .swarm
-                                    .behaviour_mut()
-                                    .kademlia
-                                    .add_address(&peer_id, multiaddr);
+                                // If the peer was unroutable, we dial it.
+                                if !self.dialed_peers.contains(&peer_id)
+                                    && self.unroutable_peers.contains(&peer_id)
+                                {
+                                    debug!("identify: dialing unroutable peer by its announced listen address");
+                                    if let Err(err) = self.dial_with_opts(
+                                        DialOpts::peer_id(peer_id)
+                                            // By default the condition is 'Disconnected'. But we still want to establish an outbound connection,
+                                            // even if there already is an inbound connection
+                                            .condition(
+                                                libp2p::swarm::dial_opts::PeerCondition::NotDialing,
+                                            )
+                                            .build(),
+                                    ) {
+                                        match err {
+                                            // If we are already dialing the peer, that's fine, otherwise report error.
+                                            libp2p::swarm::DialError::DialPeerConditionFalse(
+                                                libp2p::swarm::dial_opts::PeerCondition::NotDialing,
+                                            ) => {}
+                                            _ => {
+                                                error!(%peer_id, "identify: dial attempt error: {err:?}");
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    let _routing_update = self
+                                        .swarm
+                                        .behaviour_mut()
+                                        .kademlia
+                                        .add_address(&peer_id, multiaddr);
+                                }
                             }
 
                             // If the peer supports AutoNAT, add it as server
@@ -366,6 +392,7 @@ impl SwarmDriver {
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
         match kad_event {
             ref event @ KademliaEvent::OutboundQueryProgressed {
@@ -508,6 +535,10 @@ impl SwarmDriver {
                 // here BootstrapOk::num_remaining refers to the remaining random peer IDs to query, one per
                 // bucket that still needs refreshing.
                 trace!("Kademlia Bootstrap with {id:?} progressed with {bootstrap_result:?} and step {step:?}");
+                // set to false to enable another bootstrap step to be started if required.
+                if step.last {
+                    self.bootstrap_ongoing = false;
+                }
             }
             KademliaEvent::RoutingUpdated {
                 peer,
@@ -522,10 +553,20 @@ impl SwarmDriver {
 
                     info!("Connected peers: {connected_peers}");
                     // kad bootstrap process needs at least one peer in the RT be carried out.
-                    if !self.bootstrap_done {
-                        let res = self.swarm.behaviour_mut().kademlia.bootstrap();
-                        debug!("Initiated kad bootstrap process {res:?}");
-                        self.bootstrap_done = true;
+                    // Carry out bootstrap until we have at least CLOSE_GROUP_SIZE peers
+                    if connected_peers <= CLOSE_GROUP_SIZE && !self.bootstrap_ongoing {
+                        debug!("Trying to initiate bootstrap as we have less than {CLOSE_GROUP_SIZE} peers");
+                        match self.swarm.behaviour_mut().kademlia.bootstrap() {
+                            Ok(query_id) => {
+                                debug!(
+                                    "Initiated kad bootstrap process with query id {query_id:?}"
+                                );
+                                self.bootstrap_ongoing = true;
+                            }
+                            Err(err) => {
+                                error!("Failed to initiate kad bootstrap with error: {err:?}")
+                            }
+                        };
                     }
                 }
 
@@ -552,6 +593,10 @@ impl SwarmDriver {
                 if !present_locally && num_closer_peers < CLOSE_GROUP_SIZE {
                     trace!("InboundRequest::GetRecord doesn't have local record, with {num_closer_peers:?} closer_peers");
                 }
+            }
+            KademliaEvent::UnroutablePeer { peer } => {
+                trace!(peer_id = %peer, "KademliaEvent: UnroutablePeer");
+                let _ = self.unroutable_peers.push(peer);
             }
             other => {
                 trace!("KademliaEvent ignored: {other:?}");

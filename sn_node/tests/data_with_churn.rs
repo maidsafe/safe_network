@@ -28,11 +28,12 @@ use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
     sync::Arc,
     time::{Duration, Instant},
 };
 use tokio::{sync::RwLock, time::sleep};
-use tracing::trace;
+use tracing::{debug, trace};
 use tracing_core::Level;
 use xor_name::XorName;
 
@@ -40,9 +41,9 @@ const NODE_COUNT: u32 = 25;
 
 const EXTRA_CHURN_COUNT: u32 = 5;
 const CHURN_CYCLES: u32 = 1;
-const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 2;
+const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 15;
 const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 5;
-const DBC_CREATION_RATIO_TO_CHURN: u32 = 2;
+const DBC_CREATION_RATIO_TO_CHURN: u32 = 1;
 
 const CHUNKS_SIZE: usize = 1024 * 1024;
 
@@ -112,6 +113,7 @@ async fn data_availability_during_churn() -> Result<()> {
         ("sn_transfers".to_string(), Level::TRACE),
         ("sn_networking".to_string(), Level::TRACE),
         ("sn_node".to_string(), Level::TRACE),
+        ("data_with_churn".to_string(), Level::TRACE),
     ];
     let log_appender_guard = init_logging(
         logging_targets,
@@ -127,6 +129,9 @@ async fn data_availability_during_churn() -> Result<()> {
     let paying_wallet_dir = TempDir::new()?;
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE).await?;
+
+    // Waiting for the paying_wallet funded.
+    sleep(std::time::Duration::from_secs(10)).await;
 
     println!(
         "Client and paying_wallet created with signing key: {:?}",
@@ -153,6 +158,9 @@ async fn data_availability_during_churn() -> Result<()> {
         .await?;
         println!("Transfer wallet created");
 
+        // Waiting for the transfers_wallet funded.
+        sleep(std::time::Duration::from_secs(10)).await;
+
         create_registers_task(client.clone(), content.clone(), churn_period);
 
         create_dbc_task(
@@ -164,14 +172,15 @@ async fn data_availability_during_churn() -> Result<()> {
         );
     }
 
-    // The paying wallet could be updated to pay for the transfer_wallet.
-    // Hence reload it here to avoid double spend, AND the clippy complains.
-    let paying_wallet = get_wallet(paying_wallet_dir.path()).await;
-
     println!("Uploading some chunks before carry out node churning");
 
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
-    store_chunks_task(client.clone(), paying_wallet, content.clone(), churn_period);
+    store_chunks_task(
+        client.clone(),
+        content.clone(),
+        churn_period,
+        paying_wallet_dir.path().to_path_buf(),
+    );
 
     // Spawn a task to churn nodes
     churn_nodes_task(churn_count.clone(), test_duration, churn_period);
@@ -203,6 +212,8 @@ async fn data_availability_during_churn() -> Result<()> {
         churn_period,
     );
 
+    println!("All tasks have been spawned. The test is now running...");
+
     let start_time = Instant::now();
     while start_time.elapsed() < test_duration {
         let failed = failures.read().await;
@@ -223,32 +234,38 @@ async fn data_availability_during_churn() -> Result<()> {
     println!("{:?} churn events happened.", *churn_count.read().await);
     println!();
 
-    let failed = failures.read().await;
-    if failed.len() > 0 {
-        bail!("{} failure/s in test: {:?}", failed.len(), failed.values());
-    }
-
     // The churning of storing_chunk/querying_chunk are all random,
     // which will have a high chance that newly stored chunk got queried BEFORE
     // the original holders churned out.
     // i.e. the test may pass even without any replication
     // Hence, we carry out a final round of query all data to confirm storage.
     println!("Final querying confirmation of content");
-    let mut content_queried_count = 0;
+    debug!("Final querying confirmation of content");
 
     // take one read lock to avoid holding the lock for the whole loop
     // prevent any late content uploads being added to the list
     let content = content.read().await;
     let uploaded_content_count = content.len();
+    let mut handles = Vec::new();
     for net_addr in content.iter() {
-        let result = final_retry_query_content(&client, net_addr, dbcs.clone(), churn_period).await;
-        assert!(
-            result.is_ok(),
-            "Failed to query content at {net_addr:?} with error {result:?}"
-        );
+        let client = client.clone();
+        let net_addr = net_addr.clone();
+        let dbcs = dbcs.clone();
+        let churn_period = churn_period;
 
-        content_queried_count += 1;
+        let failures = failures.clone();
+        let handle = tokio::spawn(async move {
+            final_retry_query_content(&client, &net_addr, dbcs, churn_period, failures).await
+        });
+        handles.push(handle);
     }
+    let results: Vec<_> = futures::future::join_all(handles).await;
+
+    let content_queried_count = results.iter().filter(|r| r.is_ok()).count();
+    assert_eq!(
+        content_queried_count, uploaded_content_count,
+        "Not all content was queried successfully"
+    );
 
     println!("{:?} pieces of content queried", content_queried_count);
 
@@ -257,9 +274,13 @@ async fn data_availability_during_churn() -> Result<()> {
         "Not all content was queried"
     );
 
-    drop(log_appender_guard);
+    let failed = failures.read().await;
+    if failed.len() > 0 {
+        bail!("{} failure/s in test: {:?}", failed.len(), failed.values());
+    }
 
     println!("Test passed after running for {:?}.", start_time.elapsed());
+    drop(log_appender_guard);
     Ok(())
 }
 
@@ -309,7 +330,7 @@ fn create_registers_task(client: Client, content: ContentList, churn_period: Dur
             println!("Creating Register at {addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match client.create_register(meta, false).await {
+            match client.create_register(meta, true).await {
                 Ok(_) => content
                     .write()
                     .await
@@ -323,17 +344,21 @@ fn create_registers_task(client: Client, content: ContentList, churn_period: Dur
 // Spawns a task which periodically stores Chunks at random locations.
 fn store_chunks_task(
     client: Client,
-    paying_wallet: LocalWallet,
     content: ContentList,
     churn_period: Duration,
+    paying_wallet_dir: PathBuf,
 ) {
     let _handle = tokio::spawn(async move {
         // Store Chunks at a higher frequency than the churning events
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
+
+        let paying_wallet = get_wallet(&paying_wallet_dir).await;
+
         let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
         let file_api = Files::new(client);
         let mut rng = OsRng;
+
         loop {
             let random_bytes: Vec<u8> = ::std::iter::repeat(())
                 .map(|()| rng.gen::<u8>())
@@ -352,8 +377,8 @@ fn store_chunks_task(
             );
             sleep(delay).await;
 
-            let (proofs, cost) = wallet_client
-                .pay_for_storage(chunks.iter().map(|c| c.name()), true)
+            let cost = wallet_client
+                .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
                 .await
                 .expect("Failed to pay for storage for new file at {addr:?}");
 
@@ -364,15 +389,26 @@ fn store_chunks_task(
             );
             sleep(delay).await;
 
-            match file_api
-                .upload_chunks_in_batches(chunks.into_iter(), &proofs, false)
-                .await
-            {
-                Ok(()) => content
-                    .write()
+            for chunk in chunks {
+                match file_api
+                    .upload_chunk_in_parallel(chunk, &wallet_client, true)
                     .await
-                    .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(addr))),
-                Err(err) => println!("Discarding new Chunk ({addr:?}) due to error: {err:?}"),
+                {
+                    Ok(()) => content
+                        .write()
+                        .await
+                        .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(addr))),
+                    Err(err) => {
+                        let net_addr = NetworkAddress::ChunkAddress(ChunkAddress::new(addr));
+                        let mut content_write = content.write().await;
+                        let index = content_write.iter().position(|x| *x == net_addr);
+                        if let Some(index) = index {
+                            content_write.remove(index);
+                        }
+
+                        println!("Discarding new Chunk ({addr:?}) due to error: {err:?}")
+                    }
+                }
             }
         }
     });
@@ -499,6 +535,10 @@ fn retry_query_content_task(
                     } else {
                         let _ = content_erred.write().await.insert(net_addr, content_error);
                     }
+                } else {
+                    // remove from fails and errs if we had a success and it was added meanwhile perchance
+                    let _ = failures.write().await.remove(&net_addr);
+                    let _ = content_erred.write().await.remove(&net_addr);
                 }
             }
         }
@@ -510,20 +550,26 @@ async fn final_retry_query_content(
     net_addr: &NetworkAddress,
     dbcs: DbcMap,
     churn_period: Duration,
+    failures: ContentErredList,
 ) -> Result<()> {
     let mut attempts = 1;
+    let net_addr = net_addr.clone();
     loop {
-        println!("Querying content at {net_addr}, attempt: #{attempts} ...");
-        if let Err(last_err) = query_content(client, net_addr, dbcs.clone()).await {
+        println!("Final querying content at {net_addr}, attempt: #{attempts} ...");
+        debug!("Final querying content at {net_addr}, attempt: #{attempts} ...");
+        if let Err(last_err) = query_content(client, &net_addr, dbcs.clone()).await {
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
+                println!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                 bail!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
             } else {
                 attempts += 1;
                 let delay = 2 * churn_period;
+                println!("Delaying last check for {delay:?} ...");
                 sleep(delay).await;
                 continue;
             }
         } else {
+            failures.write().await.remove(&net_addr);
             // content retrieved fine
             return Ok(());
         }
