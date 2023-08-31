@@ -277,15 +277,13 @@ impl LocalWallet {
     }
 
     fn update_local_wallet(&mut self, transfer: TransferOutputs) -> Result<()> {
-        let TransferOutputs {
-            change_dbc,
-            created_dbcs,
-            tx,
-            all_spend_requests,
-        } = transfer;
-
         // First of all, update client local state.
-        let spent_dbc_ids: BTreeSet<_> = tx.inputs.iter().map(|input| input.dbc_id()).collect();
+        let spent_dbc_ids: BTreeSet<_> = transfer
+            .tx
+            .inputs
+            .iter()
+            .map(|input| input.dbc_id())
+            .collect();
 
         // Use retain to remove spent DBCs in one pass, improving performance
         self.wallet
@@ -295,17 +293,19 @@ impl LocalWallet {
             self.wallet.spent_dbcs.insert(spent);
         }
 
-        self.deposit(change_dbc.into_iter().collect())?;
+        if let Some(dbc) = transfer.change_dbc {
+            self.deposit(vec![dbc])?;
+        }
 
         // Store created DBCs in a batch, improving IO performance
         let mut created_dbcs_batch = Vec::new();
-        for dbc in created_dbcs {
+        for dbc in transfer.created_dbcs {
             self.wallet.dbcs_created_for_others.insert(dbc.id());
             created_dbcs_batch.push(dbc);
         }
         self.store_dbcs(created_dbcs_batch)?;
 
-        for request in all_spend_requests {
+        for request in transfer.all_spend_requests {
             self.unconfirmed_txs.insert(request);
         }
         Ok(())
