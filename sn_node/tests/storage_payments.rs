@@ -17,10 +17,11 @@ use sn_client::{Client, Error as ClientError, Files, WalletClient};
 use sn_dbc::{PublicAddress, Token};
 use sn_networking::Error as NetworkError;
 use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_transfers::wallet::LocalWallet;
 
 use assert_fs::TempDir;
 use bytes::Bytes;
-use eyre::Result;
+use eyre::{eyre, Result};
 use rand::{
     distributions::{Distribution, Standard},
     Rng,
@@ -262,4 +263,57 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
     ));
 
     Ok(())
+}
+
+#[tokio::test]
+async fn storage_payment_chunk_nodes_rewarded() -> Result<()> {
+    let paying_wallet_balance = 10_000_000_000_333;
+    let paying_wallet_dir = TempDir::new()?;
+
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    let (files_api, content_bytes, _content_addr, chunks) = random_content(&client)?;
+
+    println!("Paying for {} random addresses...", chunks.len());
+
+    let cost = wallet_client
+        .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
+        .await?;
+
+    let prev_rewards_balance = current_rewards_balance()?;
+
+    files_api
+        .upload_with_payments(content_bytes, &wallet_client, true)
+        .await?;
+
+    let new_rewards_balance = current_rewards_balance()?;
+
+    let expected_rewards_balance = prev_rewards_balance
+        .checked_add(cost)
+        .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
+    assert_eq!(expected_rewards_balance, new_rewards_balance);
+
+    Ok(())
+}
+
+// Helper which reads all nodes local wallets returning the total balance
+fn current_rewards_balance() -> Result<Token> {
+    let mut total_rewards = Token::zero();
+    let node_dir_path = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("Failed to obtain data directory path"))?
+        .join("safe")
+        .join("node");
+
+    for entry in std::fs::read_dir(node_dir_path)? {
+        let path = entry?.path();
+        let wallet = LocalWallet::try_load_from(&path)?;
+        let balance = wallet.balance();
+        total_rewards = total_rewards
+            .checked_add(balance)
+            .ok_or_else(|| eyre!("Faied to sum up rewards balance"))?;
+    }
+
+    Ok(total_rewards)
 }
