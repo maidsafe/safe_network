@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693512594626,
+  "lastUpdate": 1693515649252,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -10521,6 +10521,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 75.58349,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "85e5cb436d9118dadc39ba8e6bea26ea2b6b6270",
+          "message": "feat(cli): perform wallet actions without connecting to the network",
+          "timestamp": "2023-08-31T18:52:26Z",
+          "tree_id": "61a8d0efee3c211b76c760bf2109710aed311111",
+          "url": "https://github.com/maidsafe/safe_network/commit/85e5cb436d9118dadc39ba8e6bea26ea2b6b6270"
+        },
+        "date": 1693515648220,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 78.38925,
             "unit": "MB"
           }
         ]
