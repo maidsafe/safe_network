@@ -1,0 +1,16 @@
+name: Merge Queue Checks
+
+on:
+  merge_group:
+    branches: [main]
+
+jobs:
+  # fail if PR is labeled as `DoNotMerge`
+  fail-by-label:
+    if: contains(github.event.pull_request.labels.*.name, 'DoNotMerge')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if PR is labeled "DoNotMerge"
+        run: |
+          echo "This PR is labeled as DoNotMerge!"
+          exit 1
