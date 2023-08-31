@@ -222,9 +222,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        include: 
-          - os: windows-latest
-            shell: msys2 {0}
     steps:
       - uses: actions/checkout@v3
 
