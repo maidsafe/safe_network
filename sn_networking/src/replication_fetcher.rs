@@ -91,7 +91,15 @@ impl ReplicationFetcher {
             }
         }
 
-        trace!("Sending out {} keys to fetch", data_to_fetch.len());
+        let pretty_keys: Vec<_> = data_to_fetch
+            .iter()
+            .map(|key| PrettyPrintRecordKey::from(key.clone()))
+            .collect();
+        trace!(
+            "Sending out replication fetching {} keys {:?}",
+            data_to_fetch.len(),
+            pretty_keys
+        );
         self.on_going_fetches += data_to_fetch.len();
         data_to_fetch
     }
