@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use crate::WalletClient;
 
@@ -27,15 +27,12 @@ use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
-use tokio::task;
+use tokio::{sync::Semaphore, task};
 use tracing::trace;
 use xor_name::XorName;
 
-// Maximum number of concurrent chunks to be retrieved for a file
-const CHUNKS_BATCH_MAX_SIZE: usize = 10;
-
 // Maximum number of concurrent chunks to be uploaded at any one time, managed by a semaphore
-pub const MAX_CONCURRENT_CHUNK_UPLOAD: usize = 10;
+pub const DEFAULT_NETWORK_CONCURRENCY: usize = 10;
 
 /// File APIs.
 #[derive(Clone)]
@@ -283,42 +280,47 @@ impl Files {
     async fn try_get_chunks(&self, chunks_info: Vec<ChunkInfo>) -> Result<Vec<EncryptedChunk>> {
         let expected_count = chunks_info.len();
         let mut retrieved_chunks = vec![];
-        for next_batch in chunks_info.chunks(CHUNKS_BATCH_MAX_SIZE) {
-            let tasks = next_batch.iter().cloned().map(|chunk_info| {
-                let client = self.client.clone();
-                task::spawn(async move {
-                    match client
-                        .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
-                        .await
-                    {
-                        Ok(chunk) => Ok(EncryptedChunk {
-                            index: chunk_info.index,
-                            content: chunk.value().clone(),
-                        }),
-                        Err(err) => {
-                            warn!(
-                                "Reading chunk {} from network, resulted in error {err:?}.",
-                                chunk_info.dst_hash
-                            );
-                            Err(err)
-                        }
+        let semaphore = Arc::new(Semaphore::new(DEFAULT_NETWORK_CONCURRENCY));
+
+        let mut tasks = Vec::new();
+        for chunk_info in chunks_info.clone().into_iter() {
+            let chunk_semaphore = semaphore.clone();
+            
+            let client = self.client.clone();
+            let task = task::spawn(async move {
+                let _permit = chunk_semaphore.acquire_owned().await?;
+                match client
+                    .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
+                    .await
+                {
+                    Ok(chunk) => Ok(EncryptedChunk {
+                        index: chunk_info.index,
+                        content: chunk.value().clone(),
+                    }),
+                    Err(err) => {
+                        warn!(
+                            "Reading chunk {} from network, resulted in error {err:?}.",
+                            chunk_info.dst_hash
+                        );
+                        Err(err)
                     }
-                })
+                }
             });
-
-            // This swallowing of errors is basically a compaction into a single
-            // error saying "didn't get all chunks".
-            retrieved_chunks.extend(join_all(tasks).await.into_iter().flatten().flatten());
-
-            info!(
-                "Client download progress {:?}/{expected_count:?}",
-                retrieved_chunks.len()
-            );
-            println!(
-                "Client download progress {:?}/{expected_count:?}",
-                retrieved_chunks.len()
-            );
+            tasks.push(task);
         }
+
+        // This swallowing of errors is basically a compaction into a single
+        // error saying "didn't get all chunks".
+        retrieved_chunks.extend(join_all(tasks).await.into_iter().flatten().flatten());
+
+        info!(
+            "Client download progress {:?}/{expected_count:?}",
+            retrieved_chunks.len()
+        );
+        println!(
+            "Client download progress {:?}/{expected_count:?}",
+            retrieved_chunks.len()
+        );
 
         if expected_count > retrieved_chunks.len() {
             let missing_chunks: Vec<XorName> = chunks_info
