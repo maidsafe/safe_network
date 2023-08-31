@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.8](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.7...sn_cli-v0.81.8) - 2023-08-31
+
+### Added
+- *(cli)* perform wallet actions without connecting to the network
+
+### Other
+- remove unused async
+
 ## [0.81.7](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.6...sn_cli-v0.81.7) - 2023-08-31
 
 ### Other

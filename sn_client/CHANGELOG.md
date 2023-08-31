@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.88.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.4...sn_client-v0.88.5) - 2023-08-31
+
+### Other
+- remove unused async
+
 ## [0.88.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.3...sn_client-v0.88.4) - 2023-08-31
 
 ### Other
