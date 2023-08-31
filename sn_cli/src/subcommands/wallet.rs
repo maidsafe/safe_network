@@ -6,17 +6,16 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_client::{Client, Files, WalletClient};
-use sn_dbc::Token;
-use sn_protocol::storage::ChunkAddress;
-use sn_transfers::wallet::{parse_public_address, LocalWallet};
-
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{
     eyre::{bail, eyre, WrapErr},
     Result, Section,
 };
+use sn_client::{Client, Files, WalletClient};
+use sn_dbc::Token;
+use sn_protocol::storage::ChunkAddress;
+use sn_transfers::wallet::{parse_public_address, LocalWallet};
 use std::{
     collections::BTreeMap,
     fs,
@@ -85,14 +84,9 @@ pub enum WalletCmds {
     },
 }
 
-pub(crate) async fn wallet_cmds(
-    cmds: WalletCmds,
-    client: &Client,
-    root_dir: &Path,
-    verify_store: bool,
-) -> Result<()> {
+pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
     match cmds {
-        WalletCmds::Address => address(root_dir)?,
+        WalletCmds::Address => address(root_dir),
         WalletCmds::Balance { peer_id } => {
             if peer_id.is_empty() {
                 let balance = balance(root_dir)?;
@@ -104,17 +98,34 @@ pub(crate) async fn wallet_cmds(
                     .join("node");
 
                 for id in peer_id {
-                    let path = default_node_dir_path.join(&id);
+                    let path = default_node_dir_path.join(id);
                     let rewards = balance(&path)?;
                     println!("Node's rewards wallet balance (PeerId: {id}): {rewards}");
                 }
             }
+            Ok(())
         }
-        WalletCmds::Deposit { stdin, dbc } => deposit(root_dir, stdin, dbc)?,
-        WalletCmds::GetFaucet { url } => get_faucet(root_dir, url).await?,
+        WalletCmds::Deposit { stdin, dbc } => deposit(root_dir, *stdin, dbc.clone()),
+        WalletCmds::GetFaucet { url } => get_faucet(root_dir, url.clone()).await,
+        cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
+    }
+}
+
+pub(crate) async fn wallet_cmds(
+    cmds: WalletCmds,
+    client: &Client,
+    root_dir: &Path,
+    verify_store: bool,
+) -> Result<()> {
+    match cmds {
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
         WalletCmds::Pay { path } => {
             chunk_and_pay_for_storage(client, root_dir, &path, verify_store).await?;
+        }
+        cmd => {
+            return Err(eyre!(
+                "{cmd:?} has to be processed before connecting to the network"
+            ))
         }
     }
     Ok(())
