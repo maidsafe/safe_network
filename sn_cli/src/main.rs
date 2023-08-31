@@ -12,16 +12,21 @@ extern crate tracing;
 mod cli;
 mod subcommands;
 
-use crate::cli::Opt;
-use crate::subcommands::{files::files_cmds, register::register_cmds, wallet::wallet_cmds, SubCmd};
+use crate::{
+    cli::Opt,
+    subcommands::{
+        files::files_cmds,
+        register::register_cmds,
+        wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
+        SubCmd,
+    },
+};
 use bls::SecretKey;
-use sn_client::Client;
-#[cfg(feature = "metrics")]
-use sn_logging::metrics::init_metrics;
-use sn_logging::{init_logging, LogFormat};
-
 use clap::Parser;
 use color_eyre::Result;
+use sn_client::Client;
+#[cfg(feature = "metrics")]
+use sn_logging::{init_logging, metrics::init_metrics, LogFormat};
 use sn_transfers::wallet::bls_secret_from_hex;
 use std::path::PathBuf;
 use tracing::Level;
@@ -50,9 +55,20 @@ async fn main() -> Result<()> {
 
     debug!("Built with git version: {}", sn_build_info::git_info());
     println!("Built with git version: {}", sn_build_info::git_info());
-    println!("Instantiating a SAFE client...");
 
     let client_data_dir_path = get_client_data_dir_path()?;
+    // Perform actions that do not require us connecting to the network and return early
+    if let SubCmd::Wallet(cmds) = &opt.cmd {
+        if let WalletCmds::Address
+        | WalletCmds::Balance { .. }
+        | WalletCmds::Deposit { .. }
+        | WalletCmds::GetFaucet { .. } = cmds
+        {
+            wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
+            return Ok(());
+        }
+    }
+    println!("Instantiating a SAFE client...");
     let secret_key = get_client_secret_key(&client_data_dir_path)?;
 
     if opt.peers.peers.is_empty() {

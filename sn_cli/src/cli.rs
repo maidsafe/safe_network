@@ -6,14 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::subcommands::SubCmd;
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
-use std::path::PathBuf;
-use std::time::Duration;
-
-use crate::subcommands::SubCmd;
 use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
+use std::{path::PathBuf, time::Duration};
 
 pub fn parse_log_output(val: &str) -> Result<LogOutputDest> {
     match val {
