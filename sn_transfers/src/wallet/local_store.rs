@@ -52,14 +52,15 @@ impl LocalWallet {
         store_wallet(&self.wallet_dir, &self.wallet)
     }
 
-    /// Stores the given dbc to the `created dbcs dir` in the wallet dir.
-    /// These can then be sent to the recipients out of band, over any channel preferred.
-    pub fn store_dbc(&mut self, dbc: Dbc) -> Result<()> {
-        store_created_dbcs(vec![dbc], &self.wallet_dir)
-    }
     /// Stores the given dbcs to the `created dbcs dir` in the wallet dir.
     /// These can then be sent to the recipients out of band, over any channel preferred.
-    pub fn store_dbcs(&mut self, dbc: Vec<Dbc>) -> Result<()> {
+    pub fn store_dbc(&mut self, dbc: &Dbc) -> Result<()> {
+        store_created_dbcs(vec![dbc], &self.wallet_dir)
+    }
+
+    /// Stores the given dbcs to the `created dbcs dir` in the wallet dir.
+    /// These can then be sent to the recipients out of band, over any channel preferred.
+    pub fn store_dbcs(&mut self, dbc: Vec<&Dbc>) -> Result<()> {
         store_created_dbcs(dbc, &self.wallet_dir)
     }
 
@@ -80,7 +81,7 @@ impl LocalWallet {
     /// Try to load any new dbcs from the `received dbcs dir` in the wallet dir.
     pub fn try_load_deposits(&mut self) -> Result<()> {
         let deposited = load_received_dbcs(&self.wallet_dir)?;
-        self.deposit(deposited)?;
+        self.deposit(&deposited)?;
         Ok(())
     }
 
@@ -294,16 +295,14 @@ impl LocalWallet {
         }
 
         if let Some(dbc) = transfer.change_dbc {
-            self.deposit(vec![dbc])?;
+            self.deposit(&vec![dbc])?;
         }
 
         // Store created DBCs in a batch, improving IO performance
-        let mut created_dbcs_batch = Vec::new();
         for dbc in transfer.created_dbcs {
             self.wallet.dbcs_created_for_others.insert(dbc.id());
-            created_dbcs_batch.push(dbc);
+            self.store_dbcs(vec![&dbc])?;
         }
-        self.store_dbcs(created_dbcs_batch)?;
 
         for request in transfer.all_spend_requests {
             self.unconfirmed_txs.insert(request);
@@ -311,7 +310,7 @@ impl LocalWallet {
         Ok(())
     }
 
-    pub fn deposit(&mut self, dbcs: Vec<Dbc>) -> Result<()> {
+    pub fn deposit(&mut self, dbcs: &Vec<Dbc>) -> Result<()> {
         if dbcs.is_empty() {
             return Ok(());
         }
@@ -334,8 +333,8 @@ impl LocalWallet {
             }
 
             let token = dbc.token()?;
-            self.store_dbc(dbc)?;
             self.wallet.available_dbcs.insert(id, token);
+            self.store_dbc(dbc)?;
         }
 
         Ok(())
@@ -441,7 +440,7 @@ mod tests {
 
         let deposit_only = LocalWallet {
             key,
-            unconfirmed_txs: vec![],
+            unconfirmed_txs: Default::default(),
 
             wallet: KeyLessWallet::new(),
             wallet_dir: dir.path().to_path_buf(),
@@ -467,13 +466,13 @@ mod tests {
 
         let mut deposit_only = LocalWallet {
             key: MainKey::random(),
-            unconfirmed_txs: vec![],
+            unconfirmed_txs: Default::default(),
 
             wallet: KeyLessWallet::new(),
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        deposit_only.deposit(vec![])?;
+        deposit_only.deposit(&vec![])?;
 
         assert_eq!(Token::zero(), deposit_only.balance());
 
@@ -492,12 +491,13 @@ mod tests {
 
         let mut deposit_only = LocalWallet {
             key,
-            unconfirmed_txs: vec![],
+            unconfirmed_txs: Default::default(),
+
             wallet: KeyLessWallet::new(),
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        deposit_only.deposit(vec![genesis])?;
+        deposit_only.deposit(&vec![genesis])?;
 
         assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
 
@@ -512,12 +512,13 @@ mod tests {
 
         let mut local_wallet = LocalWallet {
             key: MainKey::random(),
-            unconfirmed_txs: vec![],
+            unconfirmed_txs: Default::default(),
+
             wallet: KeyLessWallet::new(),
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        local_wallet.deposit(vec![genesis])?;
+        local_wallet.deposit(&vec![genesis])?;
 
         assert_eq!(Token::zero(), local_wallet.balance());
 
@@ -534,17 +535,17 @@ mod tests {
         let mut deposit_only = LocalWallet {
             key,
             wallet: KeyLessWallet::new(),
-            unconfirmed_txs: vec![],
+            unconfirmed_txs: Default::default(),
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        deposit_only.deposit(vec![genesis_0.clone()])?;
+        deposit_only.deposit(&vec![genesis_0.clone()])?;
         assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
 
-        deposit_only.deposit(vec![genesis_0])?;
+        deposit_only.deposit(&vec![genesis_0])?;
         assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
 
-        deposit_only.deposit(vec![genesis_1])?;
+        deposit_only.deposit(&vec![genesis_1])?;
         assert_eq!(GENESIS_DBC_AMOUNT, deposit_only.balance().as_nano());
 
         Ok(())
@@ -558,7 +559,7 @@ mod tests {
         let mut depositor = LocalWallet::load_from(&root_dir)?;
         let genesis =
             create_first_dbc_from_key(&depositor.key).expect("Genesis creation to succeed.");
-        depositor.deposit(vec![genesis])?;
+        depositor.deposit(&vec![genesis])?;
         depositor.store()?;
 
         let deserialized = LocalWallet::load_from(&root_dir)?;
@@ -604,7 +605,7 @@ mod tests {
         let mut sender = LocalWallet::load_from(&root_dir)?;
         let sender_dbc =
             create_first_dbc_from_key(&sender.key).expect("Genesis creation to succeed.");
-        sender.deposit(vec![sender_dbc])?;
+        sender.deposit(&vec![sender_dbc])?;
 
         assert_eq!(GENESIS_DBC_AMOUNT, sender.balance().as_nano());
 
@@ -613,8 +614,7 @@ mod tests {
         let recipient_key = MainKey::random();
         let recipient_public_address = recipient_key.public_address();
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let transfer = sender.local_send(to, None)?;
-        let created_dbcs = transfer.created_dbcs;
+        let created_dbcs = sender.local_send(to, None)?;
 
         assert_eq!(1, created_dbcs.len());
         assert_eq!(GENESIS_DBC_AMOUNT - send_amount, sender.balance().as_nano());
@@ -634,7 +634,7 @@ mod tests {
         let mut sender = LocalWallet::load_from(&root_dir)?;
         let sender_dbc =
             create_first_dbc_from_key(&sender.key).expect("Genesis creation to succeed.");
-        sender.deposit(vec![sender_dbc])?;
+        sender.deposit(&vec![sender_dbc])?;
 
         // We send to a new address.
         let send_amount = 100;
@@ -705,7 +705,7 @@ mod tests {
         let mut sender = LocalWallet::load_from(&sender_root_dir)?;
         let sender_dbc =
             create_first_dbc_from_key(&sender.key).expect("Genesis creation to succeed.");
-        sender.deposit(vec![sender_dbc])?;
+        sender.deposit(&vec![sender_dbc])?;
 
         let send_amount = 100;
 
@@ -716,11 +716,10 @@ mod tests {
         let recipient_public_address = recipient.key.public_address();
 
         let to = vec![(Token::from_nano(send_amount), recipient_public_address)];
-        let transfer = sender.local_send(to, None)?;
-        let created_dbcs = transfer.created_dbcs;
+        let created_dbcs = sender.local_send(to, None)?;
         let dbc = created_dbcs[0].clone();
         let dbc_id = dbc.id();
-        sender.store_dbc(dbc)?;
+        sender.store_dbc(&dbc)?;
 
         let dbc_id_name = *DbcAddress::from_dbc_id(&dbc_id).xorname();
         let dbc_id_file_name = format!("{}.dbc", hex::encode(dbc_id_name));

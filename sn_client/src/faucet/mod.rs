@@ -52,7 +52,7 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
     )
     .await?;
 
-    faucet_wallet.deposit(vec![dbc.clone()])?;
+    faucet_wallet.deposit(&vec![dbc.clone()])?;
     faucet_wallet
         .store()
         .expect("Faucet wallet shall be stored successfully.");

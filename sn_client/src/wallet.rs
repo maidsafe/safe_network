@@ -337,7 +337,7 @@ pub async fn send(
         .store()
         .expect("Wallet shall be successfully stored.");
     wallet
-        .store_dbc(new_dbc.clone())
+        .store_dbc(&new_dbc)
         .expect("Created dbc shall be successfully stored.");
 
     if did_error {
