@@ -31,6 +31,7 @@ where
         "aggregating spends for {:?}",
         DbcAddress::from_dbc_id(&valid_dbc_id)
     );
+
     let spends = spends.into_iter().collect::<HashSet<_>>();
     // on the unique set of SignedSpends, perform the below filter + sort
     spends
@@ -39,6 +40,14 @@ where
         .filter(|signed_spend| {
             // make sure the dbc_ids are the same
             let is_valid_dbc_id = signed_spend.dbc_id() == &valid_dbc_id;
+
+            // don't verify if we already failed this check
+            if !is_valid_dbc_id {
+                trace!("Aggregating spend, is not valid dbc id, this dbc {:?}, expected {:?}", signed_spend.dbc_id(), &valid_dbc_id);
+
+                return false
+            }
+
             // make sure the spent_tx hash matches
             let spent_tx_hash_matches = signed_spend
             .verify(signed_spend.spent_tx_hash())
