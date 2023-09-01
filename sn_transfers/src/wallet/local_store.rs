@@ -298,11 +298,11 @@ impl LocalWallet {
             self.deposit(&vec![dbc])?;
         }
 
-        // Store created DBCs in a batch, improving IO performance
-        for dbc in transfer.created_dbcs {
+        for dbc in &transfer.created_dbcs {
             self.wallet.dbcs_created_for_others.insert(dbc.id());
-            self.store_dbcs(vec![&dbc])?;
         }
+        // Store created DBCs in a batch, improving IO performance
+        self.store_dbcs(transfer.created_dbcs.iter().collect())?;
 
         for request in transfer.all_spend_requests {
             self.unconfirmed_txs.insert(request);
