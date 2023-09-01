@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693515651488,
+  "lastUpdate": 1693553054665,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6430,6 +6430,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 4.115416100414475,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "aa760bdf0c17f8c04a361696bcf34473267e5a09",
+          "message": "test(ci): adding test to verify total rewards balances after chunks upload",
+          "timestamp": "2023-09-01T06:02:39Z",
+          "tree_id": "e229672c877ec74f1f9b30a62d09fc677d8398fe",
+          "url": "https://github.com/maidsafe/safe_network/commit/aa760bdf0c17f8c04a361696bcf34473267e5a09"
+        },
+        "date": 1693553053083,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.1316798385869076,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5042492556941834,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 3.924891805058425,
             "unit": "MiB/s"
           }
         ]
