@@ -1077,6 +1077,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ignore heaptracks
 - *(transfers)* store dbcs by ref to avoid more clones
 
+## [0.89.12](https://github.com/maidsafe/safe_network/compare/sn_node-v0.89.11...sn_node-v0.89.12) - 2023-09-01
+
+### Other
+- *(node)* add valid put log markers
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
