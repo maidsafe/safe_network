@@ -1,4 +1,4 @@
-name: build release artifacts
+mename: build release artifacts
 
 on:
   workflow_dispatch:
