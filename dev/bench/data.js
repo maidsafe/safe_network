@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693553054665,
+  "lastUpdate": 1693555843725,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6469,6 +6469,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 3.924891805058425,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "3733701c280d7d3b36abc58b33c92bb149a0bf76",
+          "message": "refactor: optimise getting furthest record\n\nInstead of cloning and sorting an entire vec of record keys, compare\nwith an iterator and clone only the resulting key.",
+          "timestamp": "2023-09-01T06:14:23Z",
+          "tree_id": "9f6b57d07a67b378a59e049b9905df5e908554ba",
+          "url": "https://github.com/maidsafe/safe_network/commit/3733701c280d7d3b36abc58b33c92bb149a0bf76"
+        },
+        "date": 1693555842591,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.13982160256052956,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5590631234998272,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 4.10226292054388,
             "unit": "MiB/s"
           }
         ]
