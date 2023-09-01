@@ -7,7 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use libp2p::{kad::RecordKey, PeerId};
-use sn_protocol::messages::{Cmd, CmdResponse};
+use sn_protocol::{
+    messages::{Cmd, CmdResponse},
+    PrettyPrintRecordKey,
+};
 use std::time::Duration;
 // this gets us to_string easily enough
 use strum::Display;
@@ -49,6 +52,12 @@ pub enum Marker<'a> {
         /// fetching_keys_len: number of keys we are fetching from network
         fetching_keys_len: usize,
     },
+
+    /// Valid non-existing record PUT from the network received and stored
+    ValidRecordPutFromNetwork(&'a PrettyPrintRecordKey),
+
+    /// Record rejected
+    RecordRejected(&'a PrettyPrintRecordKey),
 }
 
 impl<'a> Marker<'a> {

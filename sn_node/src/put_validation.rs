@@ -8,7 +8,7 @@
 
 use crate::{
     spends::{aggregate_spends, check_parent_spends},
-    Node,
+    Marker, Node,
 };
 use libp2p::kad::Record;
 use sn_dbc::{DbcId, DbcTransaction, SignedSpend, Token};
@@ -102,6 +102,8 @@ impl Node {
 
         let key =
             NetworkAddress::from_chunk_address(*chunk_with_payment.chunk.address()).to_record_key();
+
+        let pretty_key = PrettyPrintRecordKey::from(key.clone());
         let present_locally = self
             .network
             .is_key_present_locally(&key)
@@ -135,9 +137,14 @@ impl Node {
         // finally store the Record directly into the local storage
         debug!("Storing chunk {chunk_name:?} as Record locally");
         self.network.put_local_record(record).map_err(|err| {
+            Marker::RecordRejected(&pretty_key).log();
+
             warn!("Error while locally storing Chunk as a Record{err}");
             ProtocolError::ChunkNotStored(chunk_name)
         })?;
+
+        Marker::ValidRecordPutFromNetwork(&pretty_key).log();
+
         self.events_channel
             .broadcast(crate::NodeEvent::ChunkStored(chunk_addr));
 
@@ -163,6 +170,8 @@ impl Node {
                 ProtocolError::RegisterNotStored(Box::new(*reg_addr))
             })?;
 
+        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+
         // check register and merge if needed
         let updated_register = match self.register_validation(&register, present_locally).await? {
             Some(reg) => reg,
@@ -180,9 +189,12 @@ impl Node {
         };
         debug!("Storing register {reg_addr:?} as Record locally");
         self.network.put_local_record(record).map_err(|err| {
+            Marker::RecordRejected(&pretty_key).log();
             warn!("Error while locally storing register as a Record {err}");
             ProtocolError::RegisterNotStored(Box::new(*reg_addr))
         })?;
+
+        Marker::ValidRecordPutFromNetwork(&pretty_key).log();
 
         Ok(CmdOk::StoredSuccessfully)
     }
@@ -218,10 +230,11 @@ impl Node {
         let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
 
         let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
+        let pretty_key = PrettyPrintRecordKey::from(key.clone());
         debug!(
             "validating and storing spends {:?} - {:?}",
             dbc_addr.xorname(),
-            PrettyPrintRecordKey::from(key.clone())
+            pretty_key
         );
 
         let present_locally = self
@@ -273,6 +286,8 @@ impl Node {
             expires: None,
         };
         self.network.put_local_record(record).map_err(|_| {
+            Marker::RecordRejected(&pretty_key).log();
+
             let err = ProtocolError::SpendNotStored(format!("Cannot PUT Spend with {dbc_addr:?}"));
             error!("Cannot put spend {err:?}");
             err
@@ -289,6 +304,8 @@ impl Node {
                 ))?;
             }
         }
+
+        Marker::ValidRecordPutFromNetwork(&pretty_key).log();
 
         Ok(CmdOk::StoredSuccessfully)
     }
