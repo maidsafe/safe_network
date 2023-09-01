@@ -306,14 +306,21 @@ impl SwarmDriver {
 
                 info!("Local node is listening on {address:?}");
             }
-            SwarmEvent::IncomingConnection { .. } => {}
+            SwarmEvent::IncomingConnection {
+                connection_id,
+                local_addr,
+                send_back_addr,
+            } => {
+                debug!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
+            }
             SwarmEvent::ConnectionEstablished {
                 peer_id,
                 endpoint,
                 num_established,
+                connection_id,
                 ..
             } => {
-                debug!(%peer_id, num_established, "ConnectionEstablished: {}", endpoint_str(&endpoint));
+                debug!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
 
                 if endpoint.is_dialer() {
                     self.dialed_peers
@@ -347,7 +354,14 @@ impl SwarmDriver {
                     let _ = self.check_for_change_in_our_close_group();
                 }
             }
-            SwarmEvent::IncomingConnectionError { .. } => {}
+            SwarmEvent::IncomingConnectionError {
+                connection_id,
+                local_addr,
+                send_back_addr,
+                error,
+            } => {
+                error!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
+            }
             SwarmEvent::Dialing {
                 peer_id,
                 connection_id,
