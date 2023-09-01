@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693559028394,
+  "lastUpdate": 1693559029869,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -14700,6 +14700,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 1262,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "3733701c280d7d3b36abc58b33c92bb149a0bf76",
+          "message": "refactor: optimise getting furthest record\n\nInstead of cloning and sorting an entire vec of record keys, compare\nwith an iterator and clone only the resulting key.",
+          "timestamp": "2023-09-01T06:14:23Z",
+          "tree_id": "9f6b57d07a67b378a59e049b9905df5e908554ba",
+          "url": "https://github.com/maidsafe/safe_network/commit/3733701c280d7d3b36abc58b33c92bb149a0bf76"
+        },
+        "date": 1693559029471,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 1414.9755,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 1284,
             "unit": "MB"
           }
         ]
