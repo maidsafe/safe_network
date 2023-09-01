@@ -213,9 +213,10 @@ jobs:
 
       - name: Check client memory usage
         shell: bash
+        # limits here are lower that benchmark tests as there is less going on.
         run: |
-          client_peak_mem_limit_mb="2000" # mb
-          client_avg_mem_limit_mb="1500" # mb
+          client_peak_mem_limit_mb="350" # mb
+          client_avg_mem_limit_mb="250" # mb
           
           peak_mem_usage=$(
             rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs/safe.* -o --no-line-number --no-filename | 
