@@ -184,8 +184,8 @@ async fn upload_chunks(
             let _permit = semaphore.acquire_owned().await?;
 
             println!(
-                "Starting to upload chunk #{i} from {file_name:?}. (after {:.2}mins elapsed)",
-                start_time.elapsed().as_secs_f64() / 60.0
+                "Starting to upload chunk #{i} from {file_name:?}. (after {} elapsed)",
+                format_elapsed_time(start_time.elapsed())
             );
 
             let upload_start_time = std::time::Instant::now();
@@ -198,8 +198,8 @@ async fn upload_chunks(
                 .await?;
 
             println!(
-                "Uploaded chunk #{i} from {file_name:?} in {:.2} seconds)",
-                upload_start_time.elapsed().as_secs_f64()
+                "Uploaded chunk #{i} from {file_name:?} in {})",
+                format_elapsed_time(upload_start_time.elapsed())
             );
             Ok::<(), Error>(())
         });
@@ -212,8 +212,8 @@ async fn upload_chunks(
     }
 
     println!(
-        "Uploaded {file_name:?} in {:.2} minutes",
-        start_time.elapsed().as_secs_f64() / 60.0
+        "Uploaded {file_name:?} in {}",
+        format_elapsed_time(start_time.elapsed())
     );
     Ok(())
 }
@@ -244,6 +244,17 @@ async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Function to format elapsed time into a string
+fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
+    let elapsed_minutes = elapsed_time.as_secs() / 60;
+    let elapsed_seconds = elapsed_time.as_secs() % 60;
+    if elapsed_minutes > 0 {
+        format!("{} minutes {} seconds", elapsed_minutes, elapsed_seconds)
+    } else {
+        format!("{} seconds", elapsed_seconds)
+    }
 }
 
 async fn download_file(
