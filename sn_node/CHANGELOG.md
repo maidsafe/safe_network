@@ -1069,6 +1069,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.89.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.89.10...sn_node-v0.89.11) - 2023-09-01
+
+### Other
+- *(node)* add small wait to reward test
+- *(node)* dont validate spends if ids dont match
+- ignore heaptracks
+- *(transfers)* store dbcs by ref to avoid more clones
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

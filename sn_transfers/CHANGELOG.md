@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.4](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.3...sn_transfers-v0.11.4) - 2023-09-01
+
+### Other
+- *(transfers)* batch dbc storage
+- *(transfers)* store dbcs by ref to avoid more clones
+- *(transfers)* dont pass by value, this is a clone!
+- *(client)* make unconfonfirmed txs btreeset, remove unnecessary cloning
+- *(transfers)* improve update_local_wallet
+
 ## [0.11.3](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.2...sn_transfers-v0.11.3) - 2023-08-31
 
 ### Other

@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.88.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.6...sn_client-v0.88.7) - 2023-09-01
+
+### Other
+- *(transfers)* store dbcs by ref to avoid more clones
+- *(client)* make unconfonfirmed txs btreeset, remove unnecessary cloning
+- *(client)* remove one signed_spend clone
+
 ## [0.88.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.5...sn_client-v0.88.6) - 2023-09-01
 
 ### Other

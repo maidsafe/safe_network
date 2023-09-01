@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.11](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.10...sn_cli-v0.81.11) - 2023-09-01
+
+### Other
+- *(cli)* better formatting for elapsed time statements
+- *(transfers)* store dbcs by ref to avoid more clones
+
 ## [0.81.10](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.9...sn_cli-v0.81.10) - 2023-09-01
 
 ### Other
