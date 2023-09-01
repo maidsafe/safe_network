@@ -227,15 +227,6 @@ impl RecordStoreAPI for NodeRecordStore {
 
     /// Calculate the cost to store data for our current store state
     fn store_cost(&self) -> Token {
-        // Calculate the factor to increase the cost for every PUTS_PER_PRICE_STEP records
-        let factor =
-            10.0f64.powf(MAX_RECORDS_COUNT as f64 / PUTS_PER_PRICE_STEP as f64 - 2.0_f64) as u64;
-
-        // Calculate the starting cost
-        let mut cost = TOTAL_SUPPLY / factor;
-
-        trace!("Starting cost is {:?}", cost);
-
         trace!("Record count is {:?}", self.records.len());
         let relevant_records_len = if let Some(distance_range) = self.distance_range {
             self.records
@@ -254,17 +245,9 @@ impl RecordStoreAPI for NodeRecordStore {
 
         trace!("Relevant records len is {:?}", relevant_records_len);
 
-        // Find where we are on the scale
-        let current_step = relevant_records_len / PUTS_PER_PRICE_STEP + 1;
+        let cost = calculate_cost_at_step(relevant_records_len);
 
-        trace!("Current step is {:?}", current_step);
-
-        // Double the cost for each step up to the current step
-        for _i in 0..current_step {
-            cost = cost.saturating_add(cost);
-        }
-
-        trace!("Cost is now {:?}", cost);
+        trace!("Cost is now {cost:?}");
         Token::from_nano(cost)
     }
 
@@ -438,6 +421,32 @@ impl RecordStore for ClientRecordStore {
     }
 
     fn remove_provider(&mut self, _key: &Key, _provider: &PeerId) {}
+}
+
+/// Cost calculator that increases cost nearing the maximum (2048).
+/// Table:
+///    1 =          0.000000010
+///    2 =          0.000000010
+///    4 =          0.000000011
+///    8 =          0.000000012
+///   16 =          0.000000014
+///   32 =          0.000000019
+///   64 =          0.000000036
+///  128 =          0.000000126
+///  256 =          0.000001591
+///  512 =          0.000253098
+/// 1024 =          6.405837009
+/// 2048 = 4103474778.282772064
+fn calculate_cost_at_step(step: usize) -> u64 {
+    assert!(step <= 2048, "step must be <= 2048");
+
+    // Using an exponential growth function: y = ab^x. Here, a is the starting cost and b is the growth factor.
+    // We want a function that starts with a low cost and only ramps up once we get closer to the maximum.
+    let a = 0.000_000_010_f64;
+    let b = 1.02_f64;
+    let y = a * b.powf(step as f64);
+
+    (y * 1_000_000_000_f64) as u64
 }
 
 #[allow(trivial_casts)]
