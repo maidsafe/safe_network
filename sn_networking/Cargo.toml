@@ -36,5 +36,6 @@ xor_name = "5.0.0"
 
 [dev-dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
+libp2p-swarm-test = "0.2.0"
 quickcheck = "1.0.3"
 eyre = "0.6.8"

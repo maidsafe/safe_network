@@ -9,6 +9,7 @@
 #[macro_use]
 extern crate tracing;
 
+mod behaviour;
 mod circular_vec;
 mod cmd;
 mod error;
@@ -17,6 +18,8 @@ mod msg;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
+
+use crate::behaviour::connection_limiter;
 
 use self::{
     circular_vec::CircularVec,
@@ -418,7 +421,12 @@ impl SwarmDriver {
         };
         let autonat = Toggle::from(autonat);
 
+        let limits =
+            connection_limiter::ConnectionLimits::default().with_max_established_per_peer(Some(5));
+        let connection_limiter = connection_limiter::Behaviour::new(limits);
+
         let behaviour = NodeBehaviour {
+            connection_limiter,
             request_response,
             kademlia,
             identify,
