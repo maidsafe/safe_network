@@ -161,8 +161,8 @@ jobs:
       - name: Check client memory usage
         shell: bash
         run: |
-          client_peak_mem_limit_mb="2000" # mb
-          client_avg_mem_limit_mb="1500" # mb
+          client_peak_mem_limit_mb="1000" # mb
+          client_avg_mem_limit_mb="850" # mb
           
           peak_mem_usage=$(
             rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs/safe.* -o --no-line-number --no-filename | 
