@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.6](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.5...sn_networking-v0.5.6) - 2023-09-01
+
+### Other
+- optimise getting furthest record
+
 ## [0.5.5](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.4...sn_networking-v0.5.5) - 2023-08-31
 
 ### Other
