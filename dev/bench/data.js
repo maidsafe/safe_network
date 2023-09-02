@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693595979897,
+  "lastUpdate": 1693639819725,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6586,6 +6586,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 4.013273959821211,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fcfd254ba4c123d1a694c54d543a031c7045c270",
+          "message": "fix(ci): disable `CARGO_TARGET_DIR` to speedup build time",
+          "timestamp": "2023-09-02T06:16:57Z",
+          "tree_id": "0ea67ad5b4b3d8425cebd376d905cb29ed8252ff",
+          "url": "https://github.com/maidsafe/safe_network/commit/fcfd254ba4c123d1a694c54d543a031c7045c270"
+        },
+        "date": 1693639818770,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10286141901946036,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5285186218373359,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 5.100400303054031,
             "unit": "MiB/s"
           }
         ]
