@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)]
 
-use crate::CLOSE_GROUP_SIZE;
+use crate::behaviour::CLOSE_GROUP_SIZE;
 use libp2p::kad::RecordKey;
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{

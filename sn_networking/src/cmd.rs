@@ -7,10 +7,11 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    behaviour::{SwarmDriver, CLOSE_GROUP_SIZE},
     error::{Error, Result},
     multiaddr_pop_p2p,
     record_store_api::RecordStoreAPI,
-    sort_peers_by_address, MsgResponder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
+    sort_peers_by_address, MsgResponder, NetworkEvent,
 };
 use libp2p::{
     kad::{store::RecordStore, Quorum, Record, RecordKey},

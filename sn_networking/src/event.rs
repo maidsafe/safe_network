@@ -7,11 +7,11 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    close_group_majority,
+    behaviour::{close_group_majority, SwarmDriver, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR},
     error::{Error, Result},
     multiaddr_is_global, multiaddr_strip_p2p,
-    record_store_api::{RecordStoreAPI, UnifiedRecordStore},
-    sort_peers_by_address, SwarmDriver, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR,
+    record_store_api::RecordStoreAPI,
+    sort_peers_by_address,
 };
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
@@ -21,12 +21,12 @@ use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{
-        GetRecordError, GetRecordOk, InboundRequest, Kademlia, KademliaEvent, PeerRecord, QueryId,
+        GetRecordError, GetRecordOk, InboundRequest, KademliaEvent, PeerRecord, QueryId,
         QueryResult, Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, ResponseChannel as PeerResponseChannel},
-    swarm::{behaviour::toggle::Toggle, dial_opts::DialOpts, NetworkBehaviour, SwarmEvent},
+    swarm::{dial_opts::DialOpts, SwarmEvent},
     Multiaddr, PeerId,
 };
 use sn_protocol::{
@@ -44,18 +44,6 @@ use xor_name::XorName;
 
 /// Using XorName to differentiate different record content under the same key.
 pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
-
-/// NodeBehaviour struct
-#[derive(NetworkBehaviour)]
-#[behaviour(to_swarm = "NodeEvent")]
-pub(super) struct NodeBehaviour {
-    pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
-    pub(super) kademlia: Kademlia<UnifiedRecordStore>,
-    #[cfg(feature = "local-discovery")]
-    pub(super) mdns: mdns::tokio::Behaviour,
-    pub(super) identify: libp2p::identify::Behaviour,
-    pub(super) autonat: Toggle<autonat::Behaviour>,
-}
 
 /// NodeEvent enum
 #[derive(CustomDebug)]
