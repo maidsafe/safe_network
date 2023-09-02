@@ -26,7 +26,7 @@ pub use self::{
 use super::NetworkAddress;
 use crate::{
     error::{Error, Result},
-    storage::{ChunkWithPayment, DbcAddress},
+    storage::{Chunk, DbcAddress},
 };
 use serde::{Deserialize, Serialize};
 use sn_dbc::SignedSpend;
@@ -55,7 +55,7 @@ pub enum Response {
 #[derive(custom_debug::Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum ReplicatedData {
     /// A chunk of data.
-    Chunk(ChunkWithPayment),
+    Chunk(Chunk),
     /// A set of SignedSpends
     DbcSpend(Vec<SignedSpend>),
     /// A signed register
@@ -76,7 +76,7 @@ impl ReplicatedData {
     /// Return the name.
     pub fn name(&self) -> Result<XorName> {
         let name = match self {
-            Self::Chunk(chunk) => *chunk.chunk.name(),
+            Self::Chunk(chunk) => *chunk.name(),
             Self::DbcSpend(spends) => {
                 if let Some(spend) = spends.first() {
                     *DbcAddress::from_dbc_id(spend.dbc_id()).xorname()
@@ -92,7 +92,7 @@ impl ReplicatedData {
     /// Return the dst.
     pub fn dst(&self) -> Result<NetworkAddress> {
         let dst = match self {
-            Self::Chunk(chunk) => NetworkAddress::from_chunk_address(*chunk.chunk.address()),
+            Self::Chunk(chunk) => NetworkAddress::from_chunk_address(*chunk.address()),
             Self::DbcSpend(spends) => {
                 if let Some(spend) = spends.first() {
                     NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(spend.dbc_id()))

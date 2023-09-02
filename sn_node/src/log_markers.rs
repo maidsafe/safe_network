@@ -53,8 +53,12 @@ pub enum Marker<'a> {
         fetching_keys_len: usize,
     },
 
-    /// Valid non-existing record PUT from the network received and stored
-    ValidRecordPutFromNetwork(&'a PrettyPrintRecordKey),
+    /// Valid non-existing Chunk record PUT from the network received and stored
+    ValidChunkRecordPutFromNetwork(&'a PrettyPrintRecordKey),
+    /// Valid non-existing Register record PUT from the network received and stored
+    ValidRegisterRecordPutFromNetwork(&'a PrettyPrintRecordKey),
+    /// Valid non-existing Spend record PUT from the network received and stored
+    ValidSpendRecordPutFromNetwork(&'a PrettyPrintRecordKey),
 
     /// Record rejected
     RecordRejected(&'a PrettyPrintRecordKey),

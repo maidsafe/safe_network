@@ -10,7 +10,6 @@ use super::ChunkAddress;
 use crate::NetworkAddress;
 use bytes::Bytes;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use sn_dbc::Dbc;
 
 use xor_name::XorName;
 
@@ -77,12 +76,4 @@ impl<'de> Deserialize<'de> for Chunk {
         let value = Deserialize::deserialize(deserializer)?;
         Ok(Self::new(value))
     }
-}
-
-/// The Chunk along with the Payment is written as Record to kademlia
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ChunkWithPayment {
-    pub chunk: Chunk,
-    /// TODO: encrypt this or supply only encrypted derivation index
-    pub payment: Vec<Dbc>,
 }
