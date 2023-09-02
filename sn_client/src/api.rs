@@ -19,8 +19,8 @@ use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_
 use sn_protocol::{
     error::Error as ProtocolError,
     storage::{
-        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, ChunkWithPayment,
-        DbcAddress, RecordHeader, RecordKind, RegisterAddress,
+        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, DbcAddress,
+        RecordHeader, RecordKind, RegisterAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -291,11 +291,10 @@ impl Client {
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
-        let chunk_with_payment = ChunkWithPayment { chunk, payment };
 
         let record = Record {
             key,
-            value: try_serialize_record(&chunk_with_payment, RecordKind::Chunk)?,
+            value: try_serialize_record(&(payment, chunk), RecordKind::ChunkWithPayment)?,
             publisher: None,
             expires: None,
         };
@@ -313,8 +312,8 @@ impl Client {
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
-            let chunk_with_payment: ChunkWithPayment = try_deserialize_record(&record)?;
-            Ok(chunk_with_payment.chunk)
+            let chunk: Chunk = try_deserialize_record(&record)?;
+            Ok(chunk)
         } else {
             Err(ProtocolError::RecordKindMismatch(RecordKind::Chunk).into())
         }

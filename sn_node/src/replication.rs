@@ -134,7 +134,7 @@ impl Node {
                     "Got Replication Record {:?} from network, validating and storing it",
                     PrettyPrintRecordKey::from(key)
                 );
-                let _ = node.validate_and_store_record(record, false).await?;
+                let _ = node.validate_and_store_record(record).await?;
                 Ok(())
             });
         }

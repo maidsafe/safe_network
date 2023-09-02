@@ -20,8 +20,10 @@ pub struct RecordHeader {
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum RecordKind {
     Chunk,
+    ChunkWithPayment,
     DbcSpend,
     Register,
+    RegisterWithPayment,
 }
 
 impl Serialize for RecordKind {
@@ -30,9 +32,11 @@ impl Serialize for RecordKind {
         S: serde::Serializer,
     {
         match *self {
-            Self::Chunk => serializer.serialize_u32(0),
-            Self::DbcSpend => serializer.serialize_u32(1),
-            Self::Register => serializer.serialize_u32(2),
+            Self::ChunkWithPayment => serializer.serialize_u32(0),
+            Self::Chunk => serializer.serialize_u32(1),
+            Self::DbcSpend => serializer.serialize_u32(2),
+            Self::Register => serializer.serialize_u32(3),
+            Self::RegisterWithPayment => serializer.serialize_u32(4),
         }
     }
 }
@@ -44,9 +48,11 @@ impl<'de> Deserialize<'de> for RecordKind {
     {
         let num = u32::deserialize(deserializer)?;
         match num {
-            0 => Ok(Self::Chunk),
-            1 => Ok(Self::DbcSpend),
-            2 => Ok(Self::Register),
+            0 => Ok(Self::ChunkWithPayment),
+            1 => Ok(Self::Chunk),
+            2 => Ok(Self::DbcSpend),
+            3 => Ok(Self::Register),
+            4 => Ok(Self::RegisterWithPayment),
             _ => Err(serde::de::Error::custom(
                 "Unexpected integer for RecordKind variant",
             )),
@@ -110,6 +116,7 @@ pub fn try_serialize_record<T: serde::Serialize>(
         error!("Failed to serialized Records with error: {err:?}");
         Error::RecordParsingFailed
     })?;
+
     let mut record_value = RecordHeader { kind: record_kind }.try_serialize()?;
     record_value.extend(payload);
 
@@ -123,6 +130,11 @@ mod tests {
 
     #[test]
     fn verify_record_header_encoded_size() -> Result<()> {
+        let record_with_payment = RecordHeader {
+            kind: RecordKind::ChunkWithPayment,
+        }
+        .try_serialize()?;
+        assert_eq!(record_with_payment.len(), RecordHeader::SIZE);
         let chunk = RecordHeader {
             kind: RecordKind::Chunk,
         }
