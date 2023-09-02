@@ -24,6 +24,7 @@ use libp2p::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display, Formatter};
+use xor_name::XorName;
 
 /// This is the address in the network by which proximity/distance
 /// to other items (whether nodes or data chunks) are calculated.
@@ -94,6 +95,16 @@ impl NetworkAddress {
         }
 
         None
+    }
+
+    /// Try to return the represented `XorName`.
+    pub fn as_xorname(&self) -> Option<XorName> {
+        match self {
+            NetworkAddress::DbcAddress(dbc_address) => Some(*dbc_address.xorname()),
+            NetworkAddress::ChunkAddress(chunk_address) => Some(*chunk_address.xorname()),
+            NetworkAddress::RegisterAddress(register_address) => Some(register_address.xorname()),
+            _ => None,
+        }
     }
 
     /// Try to return the represented `RecordKey`.

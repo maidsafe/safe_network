@@ -25,8 +25,8 @@ pub enum Error {
     // ---------- chunk errors
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
-    #[error("Chunk was not stored, xorname: {0:?}")]
-    ChunkNotStored(XorName),
+    #[error("Record was not stored: {0:?}")]
+    RecordNotStored(XorName),
 
     // ---------- register errors
     #[error("Register was not stored: {0}")]

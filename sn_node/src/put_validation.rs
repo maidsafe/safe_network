@@ -10,14 +10,13 @@ use crate::{
     spends::{aggregate_spends, check_parent_spends},
     Marker, Node,
 };
-use libp2p::kad::Record;
-use sn_dbc::{DbcId, DbcTransaction, SignedSpend, Token};
+use libp2p::kad::{Record, RecordKey};
+use sn_dbc::{Dbc, DbcId, DbcTransaction, SignedSpend, Token};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::CmdOk,
     storage::{
-        try_deserialize_record, try_serialize_record, ChunkWithPayment, DbcAddress, RecordHeader,
-        RecordKind,
+        try_deserialize_record, try_serialize_record, Chunk, DbcAddress, RecordHeader, RecordKind,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -28,50 +27,132 @@ use sn_transfers::{
 };
 use std::collections::{BTreeSet, HashSet};
 use tokio::task::JoinSet;
+use xor_name::XorName;
 
 impl Node {
     /// Validate and store a record to the RecordStore
     pub(crate) async fn validate_and_store_record(
         &self,
         record: Record,
-        validate_payment: bool,
     ) -> Result<CmdOk, ProtocolError> {
         let record_header = RecordHeader::from_record(&record)?;
 
         match record_header.kind {
-            RecordKind::Chunk => {
-                let chunk_with_payment = try_deserialize_record::<ChunkWithPayment>(&record)?;
+            RecordKind::ChunkWithPayment => {
+                let record_key = record.key.clone();
+                let (payment, chunk) = try_deserialize_record::<(Vec<Dbc>, Chunk)>(&record)?;
+                let xorname = chunk.address().xorname();
+                let already_exists = self
+                    .validate_key_and_existence(&chunk.network_address(), xorname, &record_key)
+                    .await?;
 
-                // check if the deserialized value's ChunkAddress matches the record's key
-                let key = chunk_with_payment.chunk.network_address().to_record_key();
-                if record.key != key {
-                    warn!(
-                        "record key: {:?}, key: {:?}",
-                        PrettyPrintRecordKey::from(record.key),
-                        PrettyPrintRecordKey::from(key)
-                    );
-                    warn!(
-                        "Record's key does not match with the value's ChunkAddress, ignoring PUT."
-                    );
-                    return Err(ProtocolError::RecordKeyMismatch);
+                if already_exists {
+                    return Ok(CmdOk::DataAlreadyPresent);
                 }
 
-                self.validate_and_store_chunk(chunk_with_payment, validate_payment)
-                    .await
+                // Validate the payment and that we received what we asked.
+                self.payment_for_us_exists_and_is_still_valid(
+                    &chunk.network_address(),
+                    xorname,
+                    &payment,
+                )
+                .await?;
+
+                self.store_chunk(chunk)
+            }
+            RecordKind::Chunk => {
+                error!("Chunk should not be validated at this point");
+                Err(ProtocolError::InvalidPutWithoutPayment(
+                    PrettyPrintRecordKey::from(record.key),
+                ))
             }
             RecordKind::DbcSpend => {
-                let signed_spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
+                let record_key = record.key.clone();
+                let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
 
-                // check if all the DbcAddresses matches with Record::key
-                if !signed_spends.iter().all(|spend| {
+                for spend in &spends {
                     let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-                    record.key == NetworkAddress::from_dbc_address(dbc_addr).to_record_key()
-                }) {
-                    warn!("Record's key does not match with the value's DbcAddress, ignoring PUT.");
-                    return Err(ProtocolError::RecordKeyMismatch);
+                    let xorname = dbc_addr.xorname();
+                    let address = NetworkAddress::DbcAddress(dbc_addr);
+
+                    let already_exists = self
+                        .validate_key_and_existence(&address, xorname, &record_key)
+                        .await?;
+
+                    if already_exists {
+                        return Ok(CmdOk::DataAlreadyPresent);
+                    }
                 }
 
-                self.validate_and_store_spends(signed_spends, true).await
+                self.validate_and_store_spends(spends, true).await
+            }
+            RecordKind::Register => {
+                let register = try_deserialize_record::<SignedRegister>(&record)?;
+
+                // check if the deserialized value's RegisterAddress matches the record's key
+                let key =
+                    NetworkAddress::from_register_address(*register.address()).to_record_key();
+                if record.key != key {
+                    warn!(
+                        "Record's key does not match with the value's RegisterAddress, ignoring PUT."
+                    );
+                    return Err(ProtocolError::RecordKeyMismatch);
+                }
+                self.validate_and_store_register(register).await
+            }
+            RecordKind::RegisterWithPayment => {
+                warn!("RegisterWith`Payment recieved but we cannot handle it yet!");
+                Ok(CmdOk::StoredSuccessfully)
+                // DO nothing yet
+            }
+        }
+    }
+
+    /// Store a prevalidated, and already paid record to the RecordStore
+    pub(crate) async fn store_prepaid_record(
+        &self,
+        record: Record,
+    ) -> Result<CmdOk, ProtocolError> {
+        let record_header = RecordHeader::from_record(&record)?;
+
+        match record_header.kind {
+            RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => Err(
+                ProtocolError::UnexpectedRecordWithPayment(PrettyPrintRecordKey::from(record.key)),
+            ),
+            RecordKind::Chunk => {
+                let chunk = try_deserialize_record::<Chunk>(&record)?;
+
+                let record_key = record.key.clone();
+                let xorname = chunk.address().xorname();
+                let already_exists = self
+                    .validate_key_and_existence(&chunk.network_address(), xorname, &record_key)
+                    .await?;
+
+                if already_exists {
+                    return Ok(CmdOk::DataAlreadyPresent);
+                }
+
+                self.store_chunk(chunk)
+            }
+            RecordKind::DbcSpend => {
+                let record_key = record.key.clone();
+                let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
+
+                for spend in &spends {
+                    let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
+                    let xorname = dbc_addr.xorname();
+                    let address = NetworkAddress::DbcAddress(dbc_addr);
+
+                    let already_exists = self
+                        .validate_key_and_existence(&address, xorname, &record_key)
+                        .await?;
+
+                    if already_exists {
+                        return Ok(CmdOk::DataAlreadyPresent);
+                    }
+                }
+
+                self.validate_and_store_spends(spends, true).await
             }
             RecordKind::Register => {
                 let register = try_deserialize_record::<SignedRegister>(&record)?;
@@ -90,27 +171,34 @@ impl Node {
         }
     }
 
-    /// Validate and store a `ChunkWithPayment` to the RecordStore
-    pub(crate) async fn validate_and_store_chunk(
+    /// Check key is valid compared to the network name, and if we already have this data or not.
+    /// returns true if data already exists locally
+    async fn validate_key_and_existence(
         &self,
-        chunk_with_payment: ChunkWithPayment,
-        validate_payment_amount: bool,
-    ) -> Result<CmdOk, ProtocolError> {
-        let chunk_addr = *chunk_with_payment.chunk.address();
-        let chunk_name = *chunk_with_payment.chunk.name();
-        debug!("validating and storing chunk {chunk_name:?}");
+        address: &NetworkAddress,
+        xorname: &XorName,
+        expected_record_key: &RecordKey,
+    ) -> Result<bool, ProtocolError> {
+        let data_key = address.to_record_key();
 
-        let key =
-            NetworkAddress::from_chunk_address(*chunk_with_payment.chunk.address()).to_record_key();
+        if expected_record_key != &data_key {
+            let pretty_key = PrettyPrintRecordKey::from(data_key);
+            warn!(
+                "record key: {:?}, key: {:?}",
+                PrettyPrintRecordKey::from(expected_record_key.clone()),
+                pretty_key
+            );
+            warn!("Record's key does not match with the value's address, ignoring PUT.");
+            return Err(ProtocolError::RecordKeyMismatch);
+        }
 
-        let pretty_key = PrettyPrintRecordKey::from(key.clone());
         let present_locally = self
             .network
-            .is_key_present_locally(&key)
+            .is_key_present_locally(&data_key)
             .await
             .map_err(|err| {
                 warn!("Error while checking if Chunk's key is present locally {err}");
-                ProtocolError::ChunkNotStored(chunk_name)
+                ProtocolError::RecordNotStored(*xorname)
             })?;
 
         // If data is already present return early without validation
@@ -118,18 +206,27 @@ impl Node {
             // We outright short circuit if the Record::key is present locally;
             // Hence we don't have to verify if the local_header::kind == Chunk
             debug!(
-                "Chunk with addr {:?} already exists, not overwriting",
-                chunk_with_payment.chunk.address()
+                "Record with addr {:?} already exists, not overwriting",
+                address
             );
-            return Ok(CmdOk::DataAlreadyPresent);
+            return Ok(true);
         }
 
-        self.chunk_payment_validation(&chunk_with_payment, validate_payment_amount)
-            .await?;
+        Ok(false)
+    }
+
+    /// Store a `ChunkWithPayment` to the RecordStore
+    pub(crate) fn store_chunk(&self, chunk: Chunk) -> Result<CmdOk, ProtocolError> {
+        let chunk_name = *chunk.name();
+        let chunk_addr = *chunk.address();
+        debug!("storing chunk {chunk_name:?}");
+
+        let key = NetworkAddress::from_chunk_address(*chunk.address()).to_record_key();
+        let pretty_key = PrettyPrintRecordKey::from(key.clone());
 
         let record = Record {
             key,
-            value: try_serialize_record(&chunk_with_payment, RecordKind::Chunk)?,
+            value: try_serialize_record(&chunk, RecordKind::Chunk)?,
             publisher: None,
             expires: None,
         };
@@ -140,10 +237,10 @@ impl Node {
             Marker::RecordRejected(&pretty_key).log();
 
             warn!("Error while locally storing Chunk as a Record{err}");
-            ProtocolError::ChunkNotStored(chunk_name)
+            ProtocolError::RecordNotStored(chunk_name)
         })?;
 
-        Marker::ValidRecordPutFromNetwork(&pretty_key).log();
+        Marker::ValidChunkRecordPutFromNetwork(&pretty_key).log();
 
         self.events_channel
             .broadcast(crate::NodeEvent::ChunkStored(chunk_addr));
@@ -194,7 +291,7 @@ impl Node {
             ProtocolError::RegisterNotStored(Box::new(*reg_addr))
         })?;
 
-        Marker::ValidRecordPutFromNetwork(&pretty_key).log();
+        Marker::ValidRegisterRecordPutFromNetwork(&pretty_key).log();
 
         Ok(CmdOk::StoredSuccessfully)
     }
@@ -305,22 +402,21 @@ impl Node {
             }
         }
 
-        Marker::ValidRecordPutFromNetwork(&pretty_key).log();
+        Marker::ValidSpendRecordPutFromNetwork(&pretty_key).log();
 
         Ok(CmdOk::StoredSuccessfully)
     }
 
-    /// Perform validations on the provided `ChunkWithPayment`.
-    async fn chunk_payment_validation(
+    /// Perform validations on the provided `Record`.
+    async fn payment_for_us_exists_and_is_still_valid(
         &self,
-        chunk_with_payment: &ChunkWithPayment,
-        validate_payment_amount: bool,
+        address: &NetworkAddress,
+        xorname: &XorName,
+        created_dbcs: &[Dbc],
     ) -> Result<(), ProtocolError> {
-        debug!("Validating chunk payment");
-        // Dbcs produce in TransferOutputs.created_dbcs
-        let created_dbcs = &chunk_with_payment.payment;
+        debug!("Validating record payment for {address:?}");
 
-        let addr_name = *chunk_with_payment.chunk.name();
+        let pretty_key = PrettyPrintRecordKey::from(address.to_record_key());
 
         // We need to fetch the inputs of the DBC tx in order to obtain the root-hash and
         // other info for verifications of valid payment.
@@ -341,11 +437,10 @@ impl Node {
             let dbc_is_for_us = dbc_target == self.reward_address;
 
             if dbc_is_for_us {
-                trace!("Payment proof for chunk {:?} is for us", addr_name);
+                trace!("Payment proof for record {pretty_key:?} is for us");
                 trace!(
-                    "Getting spends {:?} for chunk {:?} to prove payment",
-                    spent_dbc_ids,
-                    addr_name
+                    "Getting spends {:?} for record {pretty_key:?} to prove payment",
+                    spent_dbc_ids
                 );
                 for dbc_id in spent_dbc_ids {
                     let self_clone = self.clone();
@@ -368,10 +463,10 @@ impl Node {
         // error out if there's a mismatch over the tx
         while let Some(result) = tasks.join_next().await {
             // TODO: since we are not sending these errors as a response, return sn_node::Error instead.
-            let spent_tx = result.map_err(|_| ProtocolError::ChunkNotStored(addr_name))??;
+            let spent_tx = result.map_err(|_| ProtocolError::RecordNotStored(*xorname))??;
             match payment_tx {
                 Some(tx) if spent_tx != tx => {
-                    return Err(ProtocolError::PaymentProofTxMismatch(addr_name));
+                    return Err(ProtocolError::PaymentProofTxMismatch(*xorname));
                 }
                 Some(_) => {}
                 None => payment_tx = Some(spent_tx),
@@ -380,30 +475,25 @@ impl Node {
 
         // There is a payment for us, lets validate it's enough
         if let Some(tx) = payment_tx {
-            info!("Checking if payment is sufficient for {:?}", addr_name);
+            info!("Checking if payment is sufficient for {pretty_key:?}");
             let acceptable_fee = self
                 .network
                 .get_local_storecost()
                 .await
-                .map_err(|_| ProtocolError::ChunkNotStored(addr_name))?;
+                .map_err(|_| ProtocolError::RecordNotStored(*xorname))?;
             // Check if any of the dbcs sent are sufficient for this chunk.
             match verify_fee_is_sufficient(acceptable_fee, &tx) {
                 Ok(_) => {}
                 Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected }) => {
-                    if validate_payment_amount {
-                        return Err(ProtocolError::PaymentProofInsufficientAmount {
-                            paid,
-                            expected,
-                        });
-                    }
+                    return Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected });
                 }
                 Err(error) => {
                     return Err(error);
                 }
             }
-        } else if validate_payment_amount {
+        } else {
             // There is no DBC for us, so we dont store it.
-            return Err(ProtocolError::NoPaymentToThisNode(addr_name));
+            return Err(ProtocolError::NoPaymentToThisNode(*xorname));
         }
 
         wallet
