@@ -1,57 +1,66 @@
-Safe Network Node (sn_node)
 
-Overview
+# Safe Network Node (sn_node)
 
-The sn_node directory provides the safenode binary, which is the node implementation for the Safe Network. This directory contains the core logic for node operations, including API definitions, error handling, event management, and data validation.
+## Overview
 
-Table of Contents
+The `sn_node` directory provides the `safenode` binary, which is the node implementation for the Safe Network. This directory contains the core logic for node operations, including API definitions, error handling, event management, and data validation.
 
-Overview
-Installation
-Usage
-Directory Structure
-Testing
-Contributing
-Conventional Commits
-License
-Installation
+## Table of Contents
 
-Follow the main project's installation guide to set up the safenode binary.
+- [Overview](#overview)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Directory Structure](#directory-structure)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [Conventional Commits](#conventional-commits)
+- [License](#license)
 
-Usage
+## Installation
 
-To run the safenode binary, follow the instructions in the main project's usage guide.
+Follow the main project's installation guide to set up the `safenode` binary.
 
-Directory Structure
+## Usage
 
-src/: Source code files
-api.rs: API definitions
-error.rs: Error types and handling
-event.rs: Event-related logic
-get_validation.rs: Validation for GET requests
-put_validation.rs: Validation for PUT requests
-replication.rs: Data replication logic
-spends.rs: Logic related to spending tokens or resources
-tests/: Test files
-common/mod.rs: Common utilities for tests
-data_with_churn.rs: Tests related to data with churn
-sequential_transfers.rs: Tests for sequential data transfers
-storage_payments.rs: Tests related to storage payments
-verify_data_location.rs: Tests for verifying data locations
-Testing
+To run the `safenode` binary, follow the instructions in the main project's usage guide.
 
-To run tests, navigate to the sn_node directory and execute:
+## Directory Structure
 
-`cargo test`
+- `src/`: Source code files
+  - `api.rs`: API definitions
+  - `error.rs`: Error types and handling
+  - `event.rs`: Event-related logic
+  - `get_validation.rs`: Validation for GET requests
+  - `put_validation.rs`: Validation for PUT requests
+  - `replication.rs`: Data replication logic
+  - `spends.rs`: Logic related to spending tokens or resources
+- `tests/`: Test files
+  - `common/mod.rs`: Common utilities for tests
+  - `data_with_churn.rs`: Tests related to data with churn
+  - `sequential_transfers.rs`: Tests for sequential data transfers
+  - `storage_payments.rs`: Tests related to storage payments
+  - `verify_data_location.rs`: Tests for verifying data locations
 
-Contributing
+## Testing
 
-Please feel free to clone and provide pull requests.
+To run tests, navigate to the `sn_node` directory and execute:
 
-Conventional Commits
+```bash
+cargo test
+```
 
-We follow the Conventional Commits specification for all commits. Make sure your commit messages adhere to this standard.
+## Contributing
 
-License
+Please feel free to clone and modify this project. Pull requests are welcome.
 
-This project is licensed under the MIT License.
+## Conventional Commits
+
+We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for all commits. Make sure your commit messages adhere to this standard.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+Feel free to modify or expand upon this README as needed. Would you like to add or change anything else?
