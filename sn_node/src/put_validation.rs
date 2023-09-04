@@ -27,10 +27,9 @@ use sn_transfers::{
 };
 use std::collections::{BTreeSet, HashSet};
 use tokio::task::JoinSet;
-use xor_name::XorName;
 
 impl Node {
-    /// Validate and store a record to the RecordStore
+    /// Validate a record and it's payment, and store the record to the RecordStore
     pub(crate) async fn validate_and_store_record(
         &self,
         record: Record,
@@ -41,9 +40,8 @@ impl Node {
             RecordKind::ChunkWithPayment => {
                 let record_key = record.key.clone();
                 let (payment, chunk) = try_deserialize_record::<(Vec<Dbc>, Chunk)>(&record)?;
-                let xorname = chunk.address().xorname();
                 let already_exists = self
-                    .validate_key_and_existence(&chunk.network_address(), xorname, &record_key)
+                    .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
 
                 if already_exists {
@@ -51,12 +49,8 @@ impl Node {
                 }
 
                 // Validate the payment and that we received what we asked.
-                self.payment_for_us_exists_and_is_still_valid(
-                    &chunk.network_address(),
-                    xorname,
-                    &payment,
-                )
-                .await?;
+                self.payment_for_us_exists_and_is_still_valid(&chunk.network_address(), &payment)
+                    .await?;
 
                 self.store_chunk(chunk)
             }
@@ -72,11 +66,10 @@ impl Node {
 
                 for spend in &spends {
                     let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-                    let xorname = dbc_addr.xorname();
                     let address = NetworkAddress::DbcAddress(dbc_addr);
 
                     let already_exists = self
-                        .validate_key_and_existence(&address, xorname, &record_key)
+                        .validate_key_and_existence(&address, &record_key)
                         .await?;
 
                     if already_exists {
@@ -123,9 +116,8 @@ impl Node {
                 let chunk = try_deserialize_record::<Chunk>(&record)?;
 
                 let record_key = record.key.clone();
-                let xorname = chunk.address().xorname();
                 let already_exists = self
-                    .validate_key_and_existence(&chunk.network_address(), xorname, &record_key)
+                    .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
 
                 if already_exists {
@@ -140,11 +132,10 @@ impl Node {
 
                 for spend in &spends {
                     let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-                    let xorname = dbc_addr.xorname();
                     let address = NetworkAddress::DbcAddress(dbc_addr);
 
                     let already_exists = self
-                        .validate_key_and_existence(&address, xorname, &record_key)
+                        .validate_key_and_existence(&address, &record_key)
                         .await?;
 
                     if already_exists {
@@ -176,13 +167,12 @@ impl Node {
     async fn validate_key_and_existence(
         &self,
         address: &NetworkAddress,
-        xorname: &XorName,
         expected_record_key: &RecordKey,
     ) -> Result<bool, ProtocolError> {
         let data_key = address.to_record_key();
+        let pretty_key = PrettyPrintRecordKey::from(data_key.clone());
 
         if expected_record_key != &data_key {
-            let pretty_key = PrettyPrintRecordKey::from(data_key);
             warn!(
                 "record key: {:?}, key: {:?}",
                 PrettyPrintRecordKey::from(expected_record_key.clone()),
@@ -198,7 +188,7 @@ impl Node {
             .await
             .map_err(|err| {
                 warn!("Error while checking if Chunk's key is present locally {err}");
-                ProtocolError::RecordNotStored(*xorname)
+                ProtocolError::RecordNotStored(pretty_key)
             })?;
 
         // If data is already present return early without validation
@@ -237,7 +227,7 @@ impl Node {
             Marker::RecordRejected(&pretty_key).log();
 
             warn!("Error while locally storing Chunk as a Record{err}");
-            ProtocolError::RecordNotStored(chunk_name)
+            ProtocolError::RecordNotStored(pretty_key.clone())
         })?;
 
         Marker::ValidChunkRecordPutFromNetwork(&pretty_key).log();
@@ -411,7 +401,6 @@ impl Node {
     async fn payment_for_us_exists_and_is_still_valid(
         &self,
         address: &NetworkAddress,
-        xorname: &XorName,
         created_dbcs: &[Dbc],
     ) -> Result<(), ProtocolError> {
         debug!("Validating record payment for {address:?}");
@@ -463,10 +452,11 @@ impl Node {
         // error out if there's a mismatch over the tx
         while let Some(result) = tasks.join_next().await {
             // TODO: since we are not sending these errors as a response, return sn_node::Error instead.
-            let spent_tx = result.map_err(|_| ProtocolError::RecordNotStored(*xorname))??;
+            let spent_tx =
+                result.map_err(|_| ProtocolError::RecordNotStored(pretty_key.clone()))??;
             match payment_tx {
                 Some(tx) if spent_tx != tx => {
-                    return Err(ProtocolError::PaymentProofTxMismatch(*xorname));
+                    return Err(ProtocolError::PaymentProofTxMismatch(pretty_key));
                 }
                 Some(_) => {}
                 None => payment_tx = Some(spent_tx),
@@ -480,7 +470,7 @@ impl Node {
                 .network
                 .get_local_storecost()
                 .await
-                .map_err(|_| ProtocolError::RecordNotStored(*xorname))?;
+                .map_err(|_| ProtocolError::RecordNotStored(pretty_key))?;
             // Check if any of the dbcs sent are sufficient for this chunk.
             match verify_fee_is_sufficient(acceptable_fee, &tx) {
                 Ok(_) => {}
@@ -493,7 +483,7 @@ impl Node {
             }
         } else {
             // There is no DBC for us, so we dont store it.
-            return Err(ProtocolError::NoPaymentToThisNode(*xorname));
+            return Err(ProtocolError::NoPaymentToOurNode(pretty_key));
         }
 
         wallet

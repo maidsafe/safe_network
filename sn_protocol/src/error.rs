@@ -8,7 +8,7 @@
 
 use crate::{
     storage::{ChunkAddress, DbcAddress, RecordKind, RegisterAddress},
-    NetworkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use serde::{Deserialize, Serialize};
 use sn_dbc::{SignedSpend, Token};
@@ -22,11 +22,19 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Error, Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 #[non_exhaustive]
 pub enum Error {
+    // ---------- record layer + payment errors
+    #[error("Record was not stored as no payment supplied: {0:?}")]
+    InvalidPutWithoutPayment(PrettyPrintRecordKey),
+
+    /// At this point in replication flows, payment is ununimportant and should not be supplied
+    #[error("Record should not be a `WithPayment` type: {0:?}")]
+    UnexpectedRecordWithPayment(PrettyPrintRecordKey),
+
     // ---------- chunk errors
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
     #[error("Record was not stored: {0:?}")]
-    RecordNotStored(XorName),
+    RecordNotStored(PrettyPrintRecordKey),
 
     // ---------- register errors
     #[error("Register was not stored: {0}")]
@@ -65,10 +73,12 @@ pub enum Error {
     PaymentProofInsufficientAmount { paid: Token, expected: Token },
     /// At least one input of payment proof provided has a mismatching spend Tx
     #[error("At least one input of payment proof provided for {0:?} has a mismatching spend Tx")]
-    PaymentProofTxMismatch(XorName),
+    PaymentProofTxMismatch(PrettyPrintRecordKey),
     /// Payment proof received has no inputs
-    #[error("Payment proof received for {0:?} has no dbc for this node in its transaction")]
-    NoPaymentToThisNode(XorName),
+    #[error(
+        "Payment proof received with record:{0:?}. No payment for our node in its transaction"
+    )]
+    NoPaymentToOurNode(PrettyPrintRecordKey),
     /// Payment proof provided deemed invalid
     #[error("Payment proof provided deemed invalid for item's name {addr_name:?}: {reason}")]
     InvalidPaymentProof {
