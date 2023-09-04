@@ -389,6 +389,13 @@ impl Node {
         let mut wallet = LocalWallet::load_from(&self.network.root_dir_path)
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
 
+        info!("Checking if payment is sufficient for {pretty_key:?}");
+        let acceptable_fee = self
+            .network
+            .get_local_storecost()
+            .await
+            .map_err(|_| ProtocolError::RecordNotStored(pretty_key.clone()))?;
+
         for dbc in created_dbcs.iter() {
             let spent_dbc_ids = dbc
                 .signed_spends
@@ -402,10 +409,33 @@ impl Node {
 
             if dbc_is_for_us {
                 trace!("Payment proof for record {pretty_key:?} is for us");
+
+                // lets record how much we've apparently been paid
+                let we_seem_to_have_been_paid = dbc
+                    .token()
+                    .map_err(|_| ProtocolError::RecordNotStored(pretty_key.clone()))?;
+
+                // lets deposit the money first
+                wallet.deposit(&vec![dbc.clone()]).map_err(|err| {
+                    ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string())
+                })?;
+
+                // we can bail early here and not bother checking payment validity.
+                // we've depositied it, so if it's valid, that's fine.
+                // if it's underpayment, we're bailing anyway, so we don't care.
+                if we_seem_to_have_been_paid < acceptable_fee {
+                    return Err(ProtocolError::PaymentProofInsufficientAmount {
+                        paid: we_seem_to_have_been_paid,
+                        expected: acceptable_fee,
+                    });
+                }
+
+                // assuming we have been paid enough, lets get and validate the actualy txs
                 trace!(
-                    "Getting spends {:?} for record {pretty_key:?} to prove payment",
+                    "Getting spends {:?} for payment of record {pretty_key:?} for validation",
                     spent_dbc_ids
                 );
+
                 for dbc_id in spent_dbc_ids {
                     let self_clone = self.clone();
                     let _ = tasks.spawn(async move {
@@ -414,13 +444,14 @@ impl Node {
                         Ok::<DbcTransaction, ProtocolError>(signed_spend.spent_tx())
                     });
                 }
-
-                wallet.deposit(&vec![dbc.clone()]).map_err(|err| {
-                    ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string())
-                })?;
             }
         }
 
+        wallet
+            .store()
+            .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
+
+        // Then we verify the tx
         let mut payment_tx = None;
 
         // Check the spent transactions for our payment proof for double spend
@@ -438,14 +469,8 @@ impl Node {
             }
         }
 
-        // There is a payment for us, lets validate it's enough
+        // There is a payment for us, lets validate it is actually enough
         if let Some(tx) = payment_tx {
-            info!("Checking if payment is sufficient for {pretty_key:?}");
-            let acceptable_fee = self
-                .network
-                .get_local_storecost()
-                .await
-                .map_err(|_| ProtocolError::RecordNotStored(pretty_key))?;
             // Check if any of the dbcs sent are sufficient for this chunk.
             match verify_fee_is_sufficient(acceptable_fee, &tx) {
                 Ok(_) => {}
@@ -460,10 +485,6 @@ impl Node {
             // There is no DBC for us, so we dont store it.
             return Err(ProtocolError::NoPaymentToOurNode(pretty_key));
         }
-
-        wallet
-            .store()
-            .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
 
         Ok(())
     }
