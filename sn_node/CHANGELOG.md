@@ -1093,6 +1093,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update README.MD
 - Update readme
 
+## [0.89.15](https://github.com/maidsafe/safe_network/compare/sn_node-v0.89.14...sn_node-v0.89.15) - 2023-09-04
+
+### Added
+- *(node)* print wallet usage hint
+- feat!(protocol): make payments for all record types
+
+### Other
+- *(release)* sn_registers-v0.2.4
+- utilize encrypt_from_file
+- *(node)* validate payment amount is enough before trying to validate dbc spend
+- *(node)* remove unused arg during spend validation
+- *(node)* refactor and extract out spend validation.
+- se/derialize for PrettyPrintRecordKey
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

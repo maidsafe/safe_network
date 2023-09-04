@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.88.9](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.8...sn_client-v0.88.9) - 2023-09-04
+
+### Added
+- feat!(protocol): make payments for all record types
+
+### Fixed
+- fix permissions for public register creation
+
+### Other
+- *(release)* sn_registers-v0.2.4
+- utilize encrypt_from_file
+
 ## [0.88.8](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.7...sn_client-v0.88.8) - 2023-09-04
 
 ### Other
