@@ -59,7 +59,7 @@ impl ClientRegister {
         meta: XorName,
         verify_store: bool,
     ) -> Result<Self> {
-        let mut reg = Self::create_register(client, meta, Permissions::new_owner_only())?;
+        let mut reg = Self::create_register(client, meta, Permissions::new_anyone_can_write())?;
         reg.sync(verify_store).await?;
         Ok(reg)
     }
