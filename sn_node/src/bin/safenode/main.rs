@@ -235,6 +235,18 @@ async fn start_node(
     info!("Starting node ...");
     let running_node = Node::run(keypair, node_socket_addr, peers, local, root_dir)?;
 
+    println!(
+        "
+Node started
+
+PeerId is {}
+You can check your reward balance by running:
+`safe wallet balance --peer-id={}`
+    ",
+        running_node.peer_id(),
+        running_node.peer_id()
+    );
+
     // write the PID to the root dir
     let pid = std::process::id();
     let pid_file = running_node.root_dir_path().join("safenode.pid");
