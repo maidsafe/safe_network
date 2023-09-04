@@ -130,11 +130,18 @@ mod tests {
 
     #[test]
     fn verify_record_header_encoded_size() -> Result<()> {
-        let record_with_payment = RecordHeader {
+        let chunk_with_payment = RecordHeader {
             kind: RecordKind::ChunkWithPayment,
         }
         .try_serialize()?;
-        assert_eq!(record_with_payment.len(), RecordHeader::SIZE);
+        assert_eq!(chunk_with_payment.len(), RecordHeader::SIZE);
+
+        let reg_with_payment = RecordHeader {
+            kind: RecordKind::RegisterWithPayment,
+        }
+        .try_serialize()?;
+        assert_eq!(reg_with_payment.len(), RecordHeader::SIZE);
+
         let chunk = RecordHeader {
             kind: RecordKind::Chunk,
         }
