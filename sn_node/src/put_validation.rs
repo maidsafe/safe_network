@@ -60,27 +60,9 @@ impl Node {
                     PrettyPrintRecordKey::from(record.key),
                 ))
             }
-            RecordKind::DbcSpend => {
-                let record_key = record.key.clone();
-                let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
-
-                for spend in &spends {
-                    let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-                    let address = NetworkAddress::DbcAddress(dbc_addr);
-
-                    let already_exists = self
-                        .validate_key_and_existence(&address, &record_key)
-                        .await?;
-
-                    if already_exists {
-                        return Ok(CmdOk::DataAlreadyPresent);
-                    }
-                }
-
-                self.validate_and_store_spends(spends, true).await
-            }
+            RecordKind::DbcSpend => self.validate_spend_record(record, false).await,
             RecordKind::Register => {
-                let register = try_deserialize_record::<SignedRegister>(&record)?;
+                let register: SignedRegister = try_deserialize_record::<SignedRegister>(&record)?;
 
                 // check if the deserialized value's RegisterAddress matches the record's key
                 let key =
@@ -99,6 +81,30 @@ impl Node {
                 // DO nothing yet
             }
         }
+    }
+
+    /// Perform all validations required on a SpendRequest entry.
+    /// This applies for PUT and replication
+    async fn validate_spend_record(
+        &self,
+        record: Record,
+        is_replicated_data: bool,
+    ) -> Result<CmdOk, ProtocolError> {
+        let record_key = record.key.clone();
+        let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
+
+        for spend in &spends {
+            let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
+            let address = NetworkAddress::DbcAddress(dbc_addr);
+
+            // if it already exists, we still have to check if its a double spend or no, so we can ignore the result here
+            let _exists = self
+                .validate_key_and_existence(&address, &record_key)
+                .await?;
+        }
+
+        self.validate_and_store_spends(spends, is_replicated_data)
+            .await
     }
 
     /// Store a prevalidated, and already paid record to the RecordStore
@@ -126,25 +132,7 @@ impl Node {
 
                 self.store_chunk(chunk)
             }
-            RecordKind::DbcSpend => {
-                let record_key = record.key.clone();
-                let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
-
-                for spend in &spends {
-                    let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-                    let address = NetworkAddress::DbcAddress(dbc_addr);
-
-                    let already_exists = self
-                        .validate_key_and_existence(&address, &record_key)
-                        .await?;
-
-                    if already_exists {
-                        return Ok(CmdOk::DataAlreadyPresent);
-                    }
-                }
-
-                self.validate_and_store_spends(spends, true).await
-            }
+            RecordKind::DbcSpend => self.validate_spend_record(record, true).await,
             RecordKind::Register => {
                 let register = try_deserialize_record::<SignedRegister>(&record)?;
 
@@ -191,10 +179,8 @@ impl Node {
                 ProtocolError::RecordNotStored(pretty_key)
             })?;
 
-        // If data is already present return early without validation
         if present_locally {
-            // We outright short circuit if the Record::key is present locally;
-            // Hence we don't have to verify if the local_header::kind == Chunk
+            // We may short circuit if the Record::key is present locally;
             debug!(
                 "Record with addr {:?} already exists, not overwriting",
                 address
@@ -290,7 +276,7 @@ impl Node {
     pub(crate) async fn validate_and_store_spends(
         &self,
         signed_spends: Vec<SignedSpend>,
-        is_new_put: bool,
+        is_replicated_data: bool,
     ) -> Result<CmdOk, ProtocolError> {
         // make sure that the dbc_ids match
         let dbc_id = if let Some((first, elements)) = signed_spends.split_first() {
@@ -343,11 +329,8 @@ impl Node {
         {
             Some(spends) => spends,
             None => {
-                // data is already present
-                if is_new_put {
-                    debug!("Data is already present");
-                    return Ok(CmdOk::DataAlreadyPresent);
-                } else {
+                if is_replicated_data {
+                    // we trust the replicated data
                     debug!(
                         "Trust replicated spend for {:?}",
                         PrettyPrintRecordKey::from(key.clone())
@@ -355,6 +338,9 @@ impl Node {
                     // TODO: may need to tweak the `signed_spend_validation` function,
                     //       instead of trusting replicated spend directly
                     signed_spends
+                } else {
+                    debug!("Data is already present");
+                    return Ok(CmdOk::DataAlreadyPresent);
                 }
             }
         };
