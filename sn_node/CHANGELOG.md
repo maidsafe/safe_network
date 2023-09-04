@@ -1112,6 +1112,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.89.17](https://github.com/maidsafe/safe_network/compare/sn_node-v0.89.16...sn_node-v0.89.17) - 2023-09-04
+
+### Other
+- *(ci)* isolate nodes rewards test run to prevent from unrelated rewards
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
