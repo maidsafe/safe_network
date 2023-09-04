@@ -432,6 +432,9 @@ impl RecordStore for ClientRecordStore {
 ///  256 =         0.000001238
 ///  512 =         0.000153173
 /// 1024 =         2.346196716
+/// 1280 =       290.372529764
+/// 1536 =     35937.398370712
+/// 1792 =   4447723.077333529
 /// 2048 = 550463903.051128626 (about 13% of TOTAL_SUPPLY at moment of writing)
 fn calculate_cost_at_step(step: usize) -> u64 {
     assert!(
@@ -441,8 +444,8 @@ fn calculate_cost_at_step(step: usize) -> u64 {
 
     // Using an exponential growth function: y = ab^x. Here, a is the starting cost and b is the growth factor.
     // We want a function that starts with a low cost and only ramps up once we get closer to the maximum.
-    let a = 0.000_000_010_f64;
-    let b = 1.019_f64;
+    let a = 0.000_000_010_f64; // This is the starting cost, starting at 10 nanos.
+    let b = 1.019_f64; // This is a hand-picked number; a low growth factor keeping the cost low for long.
     let y = a * b.powf(step as f64);
 
     (y * 1_000_000_000_f64) as u64
