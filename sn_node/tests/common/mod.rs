@@ -14,12 +14,19 @@ pub mod safenode_proto {
 }
 
 use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
-use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client};
+use self_encryption::MIN_ENCRYPTABLE_BYTES;
+use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client, Files};
 use sn_peers_acquisition::parse_peer_addr;
+use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::wallet::LocalWallet;
 
+use bytes::Bytes;
 use eyre::{eyre, Result};
 use lazy_static::lazy_static;
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
 use sn_dbc::Token;
 use sn_logging::{LogFormat, LogOutputDest};
 use std::{net::SocketAddr, path::Path, sync::Once};
@@ -105,6 +112,27 @@ pub async fn get_client_and_wallet(root_dir: &Path, amount: u64) -> Result<(Clie
     let local_wallet = get_funded_wallet(&client, faucet, root_dir, amount).await?;
 
     Ok((client, local_wallet))
+}
+
+pub fn random_content(client: &Client) -> Result<(Files, Bytes, ChunkAddress, Vec<Chunk>)> {
+    let mut rng = rand::thread_rng();
+
+    let random_len = rng.gen_range(MIN_ENCRYPTABLE_BYTES..1024 * MIN_ENCRYPTABLE_BYTES);
+    let random_length_content: Vec<u8> =
+        <Standard as Distribution<u8>>::sample_iter(Standard, &mut rng)
+            .take(random_len)
+            .collect();
+
+    let files_api = Files::new(client.clone());
+    let content_bytes = Bytes::from(random_length_content);
+    let (file_addr, chunks) = files_api.chunk_bytes(content_bytes.clone())?;
+
+    Ok((
+        files_api,
+        content_bytes,
+        ChunkAddress::new(file_addr),
+        chunks,
+    ))
 }
 
 pub async fn node_restart(addr: SocketAddr) -> Result<()> {
