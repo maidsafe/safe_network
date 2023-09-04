@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693839174057,
+  "lastUpdate": 1693839176515,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -15555,6 +15555,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 848,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "0fc7af8c4a3bf0a5e158d0cc58e0e4fc42b9c7ea",
+          "message": "feat(node): print wallet usage hint",
+          "timestamp": "2023-09-04T11:54:56Z",
+          "tree_id": "35a35c3efbbb49727edfb1ced6a2d31f04fcd4c1",
+          "url": "https://github.com/maidsafe/safe_network/commit/0fc7af8c4a3bf0a5e158d0cc58e0e4fc42b9c7ea"
+        },
+        "date": 1693839176141,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 932.08984,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 808,
             "unit": "MB"
           }
         ]
