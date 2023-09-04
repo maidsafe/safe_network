@@ -30,6 +30,7 @@ use libp2p::{
     swarm::{dial_opts::DialOpts, SwarmEvent},
     Multiaddr, PeerId,
 };
+use libp2p_metrics::Recorder;
 use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
@@ -173,6 +174,9 @@ impl SwarmDriver {
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
     ) -> Result<()> {
+        // This does not record all the events. `SwarmEvent::Behaviour(_)` are skipped. Hence `.record()` has to be
+        // called individually on each behaviour.
+        self.network_metrics.record(&event);
         match event {
             SwarmEvent::Behaviour(NodeEvent::MsgReceived(event)) => {
                 if let Err(e) = self.handle_msg(event) {
@@ -183,6 +187,7 @@ impl SwarmDriver {
                 self.handle_kad_event(kad_event)?;
             }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
+                self.network_metrics.record(&(*iden));
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
                         debug!(%peer_id, ?info, "identify: received info");
@@ -284,6 +289,28 @@ impl SwarmDriver {
                     debug!("mdns peer {peer:?} expired");
                 }
             },
+            SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
+                autonat::Event::InboundProbe(e) => debug!("AutoNAT inbound probe: {e:?}"),
+                autonat::Event::OutboundProbe(e) => debug!("AutoNAT outbound probe: {e:?}"),
+                autonat::Event::StatusChanged { old, new } => {
+                    info!("AutoNAT status changed: {old:?} -> {new:?}");
+                    self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
+
+                    match new {
+                        NatStatus::Public(_addr) => {
+                            // In theory, we could actively push our address to our peers now. But, which peers? All of them?
+                            // Or, should we just wait and let Identify do it on its own? But, what if we are not connected
+                            // to any peers anymore? (E.g., our connections timed out etc)
+                            // let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
+                            // self.swarm.behaviour_mut().identify.push(all_peers);
+                        }
+                        NatStatus::Private => {
+                            // We could just straight out error here. In the future we might try to activate a relay mechanism.
+                        }
+                        NatStatus::Unknown => {}
+                    };
+                }
+            },
             SwarmEvent::NewListenAddr { address, .. } => {
                 let local_peer_id = *self.swarm.local_peer_id();
                 let address = address.with(Protocol::P2p(local_peer_id));
@@ -366,28 +393,6 @@ impl SwarmDriver {
                 peer_id,
                 connection_id,
             } => trace!("Dialing {peer_id:?} on {connection_id:?}"),
-            SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
-                autonat::Event::InboundProbe(e) => debug!("AutoNAT inbound probe: {e:?}"),
-                autonat::Event::OutboundProbe(e) => debug!("AutoNAT outbound probe: {e:?}"),
-                autonat::Event::StatusChanged { old, new } => {
-                    info!("AutoNAT status changed: {old:?} -> {new:?}");
-                    self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
-
-                    match new {
-                        NatStatus::Public(_addr) => {
-                            // In theory, we could actively push our address to our peers now. But, which peers? All of them?
-                            // Or, should we just wait and let Identify do it on its own? But, what if we are not connected
-                            // to any peers anymore? (E.g., our connections timed out etc)
-                            // let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
-                            // self.swarm.behaviour_mut().identify.push(all_peers);
-                        }
-                        NatStatus::Private => {
-                            // We could just straight out error here. In the future we might try to activate a relay mechanism.
-                        }
-                        NatStatus::Unknown => {}
-                    };
-                }
-            },
             other => debug!("SwarmEvent has been ignored: {other:?}"),
         }
         Ok(())
@@ -477,6 +482,7 @@ impl SwarmDriver {
 
     #[allow(clippy::result_large_err)]
     fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
+        self.network_metrics.record(&kad_event);
         match kad_event {
             ref event @ KademliaEvent::OutboundQueryProgressed {
                 id,
