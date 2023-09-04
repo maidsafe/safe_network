@@ -271,6 +271,12 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 25
 
+      - name: execute the nodes rewards tests
+        run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 25
+
       - name: Stop the local network and upload logs
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
