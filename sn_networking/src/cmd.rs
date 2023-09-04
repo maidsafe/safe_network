@@ -7,18 +7,14 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    behaviour::{SwarmDriver, CLOSE_GROUP_SIZE},
+    driver::SwarmDriver,
     error::{Error, Result},
-    multiaddr_pop_p2p,
     record_store_api::RecordStoreAPI,
-    sort_peers_by_address, MsgResponder, NetworkEvent,
+    sort_peers_by_address, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
 };
 use libp2p::{
     kad::{store::RecordStore, Quorum, Record, RecordKey},
-    swarm::{
-        dial_opts::{DialOpts, PeerCondition},
-        DialError,
-    },
+    swarm::dial_opts::DialOpts,
     Multiaddr, PeerId,
 };
 use sn_dbc::Token;
@@ -363,31 +359,6 @@ impl SwarmDriver {
             }
         }
         Ok(())
-    }
-
-    /// Dials the given multiaddress. If address contains a peer ID, simultaneous
-    /// dials to that peer are prevented.
-    pub(crate) fn dial(&mut self, mut addr: Multiaddr) -> Result<(), DialError> {
-        debug!(%addr, "Dialing manually");
-
-        let peer_id = multiaddr_pop_p2p(&mut addr);
-        let opts = match peer_id {
-            Some(peer_id) => DialOpts::peer_id(peer_id)
-                // If we have a peer ID, we can prevent simultaneous dials.
-                .condition(PeerCondition::NotDialing)
-                .addresses(vec![addr])
-                .build(),
-            None => DialOpts::unknown_peer_id().address(addr).build(),
-        };
-
-        self.swarm.dial(opts)
-    }
-
-    /// Dials with the `DialOpts` given.
-    pub(crate) fn dial_with_opts(&mut self, opts: DialOpts) -> Result<(), DialError> {
-        debug!(?opts, "Dialing manually");
-
-        self.swarm.dial(opts)
     }
 
     // A close target doesn't falls into the close peers range:

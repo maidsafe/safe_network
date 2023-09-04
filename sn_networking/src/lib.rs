@@ -9,28 +9,23 @@
 #[macro_use]
 extern crate tracing;
 
-mod behaviour;
 mod circular_vec;
 mod cmd;
+mod driver;
 mod error;
 mod event;
-mod msg;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
 
 pub use self::{
-    behaviour::{SwarmDriver, CLOSE_GROUP_SIZE},
     cmd::SwarmLocalState,
+    driver::SwarmDriver,
     error::Error,
     event::{MsgResponder, NetworkEvent},
 };
 
-use self::{
-    behaviour::{PUT_RECORD_RETRIES, REVERIFICATION_WAIT_TIME_S, VERIFICATION_ATTEMPTS},
-    cmd::SwarmCmd,
-    error::Result,
-};
+use self::{cmd::SwarmCmd, error::Result};
 use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{
@@ -49,6 +44,25 @@ use sn_protocol::{
 use std::{collections::HashSet, path::PathBuf, time::Duration};
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
+
+/// The maximum number of peers to return in a `GetClosestPeers` response.
+/// This is the group size used in safe network protocol to be responsible for
+/// an item in the network.
+/// The peer should be present among the CLOSE_GROUP_SIZE if we're fetching the close_group(peer)
+pub const CLOSE_GROUP_SIZE: usize = 8;
+
+/// Majority of a given group (i.e. > 1/2).
+#[inline]
+pub const fn close_group_majority() -> usize {
+    CLOSE_GROUP_SIZE / 2 + 1
+}
+
+/// Duration to wait for verification
+const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
+/// Number of attempts to verify a record
+const VERIFICATION_ATTEMPTS: usize = 5;
+/// Number of attempts to re-put a record
+const PUT_RECORD_RETRIES: usize = 10;
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.

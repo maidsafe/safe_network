@@ -7,11 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    behaviour::{close_group_majority, SwarmDriver, CLOSE_GROUP_SIZE, IDENTIFY_AGENT_STR},
+    close_group_majority,
+    driver::SwarmDriver,
     error::{Error, Result},
     multiaddr_is_global, multiaddr_strip_p2p,
     record_store_api::RecordStoreAPI,
-    sort_peers_by_address,
+    sort_peers_by_address, CLOSE_GROUP_SIZE,
 };
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
@@ -25,7 +26,7 @@ use libp2p::{
         QueryResult, Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
-    request_response::{self, ResponseChannel as PeerResponseChannel},
+    request_response::{self, Message, ResponseChannel as PeerResponseChannel},
     swarm::{dial_opts::DialOpts, SwarmEvent},
     Multiaddr, PeerId,
 };
@@ -41,6 +42,9 @@ use std::{
 use tokio::sync::oneshot;
 use tracing::{info, warn};
 use xor_name::XorName;
+
+/// Our agent string has as a prefix that we can match against.
+const IDENTIFY_AGENT_STR: &str = "safe/node/";
 
 /// Using XorName to differentiate different record content under the same key.
 pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
@@ -375,6 +379,88 @@ impl SwarmDriver {
         Ok(())
     }
 
+    /// Forwards `Request` to the upper layers using `Sender<NetworkEvent>`. Sends `Response` to the peers
+    #[allow(clippy::result_large_err)]
+    pub fn handle_msg(
+        &mut self,
+        event: request_response::Event<Request, Response>,
+    ) -> Result<(), Error> {
+        match event {
+            request_response::Event::Message { message, peer } => match message {
+                Message::Request {
+                    request,
+                    channel,
+                    request_id,
+                    ..
+                } => {
+                    trace!("Received request {request_id:?} from peer {peer:?}, req: {request:?}");
+                    self.send_event(NetworkEvent::RequestReceived {
+                        req: request,
+                        channel: MsgResponder::FromPeer(channel),
+                    })
+                }
+                Message::Response {
+                    request_id,
+                    response,
+                } => {
+                    trace!("Got response {request_id:?} from peer {peer:?}, res: {response}.");
+                    if let Some(sender) = self.pending_requests.remove(&request_id) {
+                        // The sender will be provided if the caller (Requester) is awaiting for a response
+                        // at the call site.
+                        // Else the Request was just sent to the peer and the Response was
+                        // meant to be handled in another way and is not awaited.
+                        match sender {
+                            Some(sender) => sender
+                                .send(Ok(response))
+                                .map_err(|_| Error::InternalMsgChannelDropped)?,
+                            None => {
+                                // responses that are not awaited at the call site must be handled
+                                // separately
+                                self.send_event(NetworkEvent::ResponseReceived { res: response });
+                            }
+                        }
+                    } else {
+                        warn!("Tried to remove a RequestId from pending_requests which was not inserted in the first place.
+                            Use Cmd::SendRequest with sender:None if you want the Response to be fed into the common handle_response function");
+                    }
+                }
+            },
+            request_response::Event::OutboundFailure {
+                request_id,
+                error,
+                peer,
+            } => {
+                if let Some(sender) = self.pending_requests.remove(&request_id) {
+                    match sender {
+                        Some(sender) => {
+                            sender
+                                .send(Err(error.into()))
+                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        }
+                        None => {
+                            warn!("RequestResponse: OutboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
+                            return Err(Error::ReceivedResponseDropped(request_id));
+                        }
+                    }
+                } else {
+                    warn!("RequestResponse: OutboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
+                    return Err(Error::ReceivedResponseDropped(request_id));
+                }
+            }
+            request_response::Event::InboundFailure {
+                peer,
+                request_id,
+                error,
+            } => {
+                warn!("RequestResponse: InboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
+            }
+            request_response::Event::ResponseSent { peer, request_id } => {
+                trace!("ResponseSent for request_id: {request_id:?} and peer: {peer:?}");
+            }
+        }
+        Ok(())
+    }
+
     #[allow(clippy::result_large_err)]
     fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
         match kad_event {
@@ -587,18 +673,6 @@ impl SwarmDriver {
         }
 
         Ok(())
-    }
-
-    // get all the peers from our local RoutingTable. Contains self
-    pub(super) fn get_all_local_peers(&mut self) -> Vec<PeerId> {
-        let mut all_peers: Vec<PeerId> = vec![];
-        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
-            for entry in kbucket.iter() {
-                all_peers.push(entry.node.key.clone().into_preimage());
-            }
-        }
-        all_peers.push(self.self_peer_id);
-        all_peers
     }
 
     // Check for changes in our close group
