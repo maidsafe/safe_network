@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693843609383,
+  "lastUpdate": 1693847328183,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11405,6 +11405,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 75.452415,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "6c9e9a0c0d2c9c7e34d8b9d8142081d1901e1157",
+          "message": "fix(ci): CI should fail on DoNotMerge label",
+          "timestamp": "2023-09-04T14:59:47Z",
+          "tree_id": "8b1735ba921fcf2b2da2f055b94219eb1020445a",
+          "url": "https://github.com/maidsafe/safe_network/commit/6c9e9a0c0d2c9c7e34d8b9d8142081d1901e1157"
+        },
+        "date": 1693847327260,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 79.413246,
             "unit": "MB"
           }
         ]
