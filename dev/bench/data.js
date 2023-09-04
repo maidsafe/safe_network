@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693813247487,
+  "lastUpdate": 1693824944815,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -6664,6 +6664,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 3.966056423013121,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "54ddc7079dfae8c09f6eb76a51109af277450f95",
+          "message": "chore(node): refactor and extract out spend validation.\n\nWe also avoid exiting early if spends exist as we may have a double spend on our hands",
+          "timestamp": "2023-09-04T09:36:11Z",
+          "tree_id": "0a92966cfe2e6c5fe7fe3a87597967ee5ce6d369",
+          "url": "https://github.com/maidsafe/safe_network/commit/54ddc7079dfae8c09f6eb76a51109af277450f95"
+        },
+        "date": 1693824943103,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.12625761688566456,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5876232940973233,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.97073809273419,
             "unit": "MiB/s"
           }
         ]
