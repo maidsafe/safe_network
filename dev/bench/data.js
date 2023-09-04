@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693835714053,
+  "lastUpdate": 1693835716052,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -15453,6 +15453,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 807,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5dbc914b07a359570b0def3173398a9f243ea0ec",
+          "message": "chore(node): validate payment amount is enough before trying to validate dbc spend",
+          "timestamp": "2023-09-04T11:38:19Z",
+          "tree_id": "d38a1818217afebad7419d19d12680ad0cfa63f1",
+          "url": "https://github.com/maidsafe/safe_network/commit/5dbc914b07a359570b0def3173398a9f243ea0ec"
+        },
+        "date": 1693835715340,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 924.672,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 848,
             "unit": "MB"
           }
         ]
