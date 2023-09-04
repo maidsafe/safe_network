@@ -12,6 +12,7 @@ use crate::{
     error::{Error, Result},
     event::NetworkEvent,
     event::{GetRecordResultMap, NodeEvent},
+    metrics_service::metrics_server,
     multiaddr_pop_p2p,
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
@@ -36,8 +37,10 @@ use libp2p::{
     },
     Multiaddr, PeerId, Transport,
 };
+use libp2p_metrics::Metrics;
 #[cfg(feature = "quic")]
 use libp2p_quic as quic;
+use prometheus_client::registry::Registry;
 use sn_protocol::messages::{Request, Response};
 use std::{
     collections::{HashMap, HashSet},
@@ -94,6 +97,7 @@ pub struct SwarmDriver {
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
+    pub(crate) network_metrics: Metrics,
 
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
@@ -356,6 +360,10 @@ impl SwarmDriver {
         };
         let autonat = Toggle::from(autonat);
 
+        let mut metric_registry = Registry::default();
+        let metrics = Metrics::new(&mut metric_registry);
+        metrics_server(metric_registry);
+
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
@@ -375,6 +383,7 @@ impl SwarmDriver {
             bootstrap_ongoing: false,
             close_group: Default::default(),
             replication_fetcher: Default::default(),
+            network_metrics: metrics,
             cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
