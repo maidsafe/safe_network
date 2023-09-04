@@ -60,7 +60,7 @@ impl Node {
                     PrettyPrintRecordKey::from(record.key),
                 ))
             }
-            RecordKind::DbcSpend => self.validate_spend_record(record, false).await,
+            RecordKind::DbcSpend => self.validate_spend_record(record).await,
             RecordKind::Register => {
                 let register: SignedRegister = try_deserialize_record::<SignedRegister>(&record)?;
 
@@ -85,11 +85,7 @@ impl Node {
 
     /// Perform all validations required on a SpendRequest entry.
     /// This applies for PUT and replication
-    async fn validate_spend_record(
-        &self,
-        record: Record,
-        is_replicated_data: bool,
-    ) -> Result<CmdOk, ProtocolError> {
+    async fn validate_spend_record(&self, record: Record) -> Result<CmdOk, ProtocolError> {
         let record_key = record.key.clone();
         let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
 
@@ -103,8 +99,7 @@ impl Node {
                 .await?;
         }
 
-        self.validate_and_store_spends(spends, is_replicated_data)
-            .await
+        self.validate_and_store_spends(spends).await
     }
 
     /// Store a prevalidated, and already paid record to the RecordStore
@@ -132,7 +127,7 @@ impl Node {
 
                 self.store_chunk(chunk)
             }
-            RecordKind::DbcSpend => self.validate_spend_record(record, true).await,
+            RecordKind::DbcSpend => self.validate_spend_record(record).await,
             RecordKind::Register => {
                 let register = try_deserialize_record::<SignedRegister>(&record)?;
 
@@ -276,7 +271,6 @@ impl Node {
     pub(crate) async fn validate_and_store_spends(
         &self,
         signed_spends: Vec<SignedSpend>,
-        is_replicated_data: bool,
     ) -> Result<CmdOk, ProtocolError> {
         // make sure that the dbc_ids match
         let dbc_id = if let Some((first, elements)) = signed_spends.split_first() {
@@ -329,19 +323,14 @@ impl Node {
         {
             Some(spends) => spends,
             None => {
-                if is_replicated_data {
-                    // we trust the replicated data
-                    debug!(
-                        "Trust replicated spend for {:?}",
-                        PrettyPrintRecordKey::from(key.clone())
-                    );
-                    // TODO: may need to tweak the `signed_spend_validation` function,
-                    //       instead of trusting replicated spend directly
-                    signed_spends
-                } else {
-                    debug!("Data is already present");
-                    return Ok(CmdOk::DataAlreadyPresent);
-                }
+                // we trust the replicated data
+                debug!(
+                    "Trust replicated spend for {:?}",
+                    PrettyPrintRecordKey::from(key.clone())
+                );
+                // TODO: may need to tweak the `signed_spend_validation` function,
+                //       instead of trusting replicated spend directly
+                signed_spends
             }
         };
 
