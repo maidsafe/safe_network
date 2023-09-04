@@ -14,7 +14,6 @@ use libp2p::{
         KBucketDistance as Distance, KBucketKey,
     },
 };
-use rand::Rng;
 use sn_dbc::Token;
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use sn_transfers::dbc_genesis::TOTAL_SUPPLY;
@@ -23,16 +22,10 @@ use std::{
     collections::HashSet,
     fs,
     path::{Path, PathBuf},
-    time::Duration,
     vec,
 };
 use tokio::sync::mpsc;
 use xor_name::XorName;
-
-// Each node will have a replication interval between these bounds
-// This should serve to stagger the intense replication activity across the network
-pub const REPLICATION_INTERVAL_UPPER_BOUND: Duration = Duration::from_secs(540);
-pub const REPLICATION_INTERVAL_LOWER_BOUND: Duration = Duration::from_secs(180);
 
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
@@ -64,22 +57,14 @@ pub struct NodeRecordStoreConfig {
     pub max_records: usize,
     /// The maximum size of record values, in bytes.
     pub max_value_bytes: usize,
-    /// This node's replication interval
-    /// Which should be between REPLICATION_INTERVAL_LOWER_BOUND and REPLICATION_INTERVAL_UPPER_BOUND
-    pub replication_interval: Duration,
 }
 
 impl Default for NodeRecordStoreConfig {
     fn default() -> Self {
-        // get a random integer between REPLICATION_INTERVAL_LOWER_BOUND and REPLICATION_INTERVAL_UPPER_BOUND
-        let replication_interval = rand::thread_rng()
-            .gen_range(REPLICATION_INTERVAL_LOWER_BOUND..REPLICATION_INTERVAL_UPPER_BOUND);
-
         Self {
             storage_dir: std::env::temp_dir(),
             max_records: MAX_RECORDS_COUNT,
             max_value_bytes: 65 * 1024,
-            replication_interval,
         }
     }
 }
@@ -458,6 +443,8 @@ impl RecordStore for ClientRecordStore {
 #[allow(trivial_casts)]
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
     use libp2p::{
         core::multihash::Multihash,

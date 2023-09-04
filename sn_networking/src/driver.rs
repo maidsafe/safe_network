@@ -13,10 +13,7 @@ use crate::{
     event::NetworkEvent,
     event::{GetRecordResultMap, NodeEvent},
     multiaddr_pop_p2p,
-    record_store::{
-        ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig,
-        REPLICATION_INTERVAL_LOWER_BOUND, REPLICATION_INTERVAL_UPPER_BOUND,
-    },
+    record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
     Network, CLOSE_GROUP_SIZE,
@@ -41,7 +38,6 @@ use libp2p::{
 };
 #[cfg(feature = "quic")]
 use libp2p_quic as quic;
-use rand::Rng;
 use sn_protocol::messages::{Request, Response};
 use std::{
     collections::{HashMap, HashSet},
@@ -132,10 +128,6 @@ impl SwarmDriver {
         local: bool,
         root_dir: PathBuf,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
-        // get a random integer between REPLICATION_INTERVAL_LOWER_BOUND and REPLICATION_INTERVAL_UPPER_BOUND
-        let replication_interval = rand::thread_rng()
-            .gen_range(REPLICATION_INTERVAL_LOWER_BOUND..REPLICATION_INTERVAL_UPPER_BOUND);
-
         let mut kad_cfg = KademliaConfig::default();
         let _ = kad_cfg
             .set_kbucket_inserts(libp2p::kad::KademliaBucketInserts::Manual)
@@ -175,7 +167,6 @@ impl SwarmDriver {
             NodeRecordStoreConfig {
                 max_value_bytes: MAX_PACKET_SIZE, // TODO, does this need to be _less_ than MAX_PACKET_SIZE
                 storage_dir: storage_dir_path,
-                replication_interval,
                 ..Default::default()
             }
         };
@@ -187,7 +178,6 @@ impl SwarmDriver {
             Some(store_cfg),
             local,
             false,
-            replication_interval,
             None,
             ProtocolSupport::Full,
             SN_NODE_VERSION_STR.to_string(),
@@ -237,8 +227,6 @@ impl SwarmDriver {
             None,
             local,
             true,
-            // Nonsense interval for the client which never replicates
-            Duration::from_secs(1000),
             request_timeout,
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
@@ -254,14 +242,12 @@ impl SwarmDriver {
         record_store_cfg: Option<NodeRecordStoreConfig>,
         local: bool,
         is_client: bool,
-        replication_interval: Duration,
         request_response_timeout: Option<Duration>,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         let peer_id = PeerId::from(keypair.public());
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
-        info!("PeerId: {peer_id} has replication interval of {replication_interval:?}");
 
         // RequestResponse Behaviour
         let request_response = {
