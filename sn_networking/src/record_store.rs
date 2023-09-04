@@ -16,7 +16,6 @@ use libp2p::{
 };
 use sn_dbc::Token;
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
-use sn_transfers::dbc_genesis::TOTAL_SUPPLY;
 use std::{
     borrow::Cow,
     collections::HashSet,
@@ -29,9 +28,6 @@ use xor_name::XorName;
 
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
-
-/// ~Number of puts per price step
-const PUTS_PER_PRICE_STEP: usize = 100;
 
 /// A `RecordStore` that stores records on disk.
 pub struct NodeRecordStore {
