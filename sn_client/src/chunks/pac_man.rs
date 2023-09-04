@@ -103,8 +103,7 @@ fn pack_data_map(data_map: DataMapLevel) -> Result<Bytes> {
 }
 
 fn encrypt_file(file: &Path) -> Result<(DataMap, Vec<EncryptedChunk>)> {
-    let bytes = Bytes::from(std::fs::read(file)?);
-    let encrypted_chunk = self_encryption::encrypt(bytes)?;
+    let encrypted_chunk = self_encryption::encrypt_from_file(file)?;
     Ok(encrypted_chunk)
 }
 
