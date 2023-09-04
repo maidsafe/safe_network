@@ -12,13 +12,14 @@ use crate::{
     error::{Error, Result},
     event::NetworkEvent,
     event::{GetRecordResultMap, NodeEvent},
+    multiaddr_pop_p2p,
     record_store::{
         ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig,
         REPLICATION_INTERVAL_LOWER_BOUND, REPLICATION_INTERVAL_UPPER_BOUND,
     },
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
-    Network,
+    Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
 #[cfg(feature = "quic")]
@@ -31,7 +32,11 @@ use libp2p::{
     kad::{Kademlia, KademliaConfig, QueryId, Record},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
-    swarm::{behaviour::toggle::Toggle, NetworkBehaviour, StreamProtocol, Swarm, SwarmBuilder},
+    swarm::{
+        behaviour::toggle::Toggle,
+        dial_opts::{DialOpts, PeerCondition},
+        DialError, NetworkBehaviour, StreamProtocol, Swarm, SwarmBuilder,
+    },
     Multiaddr, PeerId, Transport,
 };
 #[cfg(feature = "quic")]
@@ -48,48 +53,26 @@ use std::{
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
-/// The maximum number of peers to return in a `GetClosestPeers` response.
-/// This is the group size used in safe network protocol to be responsible for
-/// an item in the network.
-/// The peer should be present among the CLOSE_GROUP_SIZE if we're fetching the close_group(peer)
-pub const CLOSE_GROUP_SIZE: usize = 8;
-
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
 // TODO: revisit once utxo is in
-pub const MAX_PACKET_SIZE: usize = 1024 * 1024 * 5; // the chunk size is 1mb, so should be higher than that to prevent failures, 5mb here to allow for DBC storage
+const MAX_PACKET_SIZE: usize = 1024 * 1024 * 5; // the chunk size is 1mb, so should be higher than that to prevent failures, 5mb here to allow for DBC storage
 
 // Timeout for requests sent/received through the request_response behaviour.
-pub const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
+const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
 // Sets the keep-alive timeout of idle connections.
-pub const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(30);
-
-/// Our agent string has as a prefix that we can match against.
-pub const IDENTIFY_AGENT_STR: &str = "safe/node/";
+const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The suffix is the version of the node.
-pub const SN_NODE_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
+const SN_NODE_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
 /// / first version for the req/response protocol
-pub const REQ_RESPONSE_VERSION_STR: &str = concat!("/safe/node/", env!("CARGO_PKG_VERSION"));
+const REQ_RESPONSE_VERSION_STR: &str = concat!("/safe/node/", env!("CARGO_PKG_VERSION"));
 
 /// The suffix is the version of the client.
-pub const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PKG_VERSION"));
-pub const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
+const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PKG_VERSION"));
+const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
-/// Duration to wait for verification
-pub const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
-/// Number of attempts to verify a record
-pub const VERIFICATION_ATTEMPTS: usize = 5;
-
-/// Number of attempts to re-put a record
-pub const PUT_RECORD_RETRIES: usize = 10;
-
-pub const NETWORKING_CHANNEL_SIZE: usize = 10_000;
-/// Majority of a given group (i.e. > 1/2).
-#[inline]
-pub const fn close_group_majority() -> usize {
-    CLOSE_GROUP_SIZE / 2 + 1
-}
+const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
 /// NodeBehaviour struct
 #[derive(NetworkBehaviour)]
@@ -106,27 +89,26 @@ pub(super) struct NodeBehaviour {
 type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
 type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRecordResultMap)>;
 
-/// `SwarmDriver` is responsible for managing the swarm of peers, handling
 pub struct SwarmDriver {
-    pub(crate) self_peer_id: PeerId,
     pub(crate) swarm: Swarm<NodeBehaviour>,
-    pub(crate) cmd_receiver: mpsc::Receiver<SwarmCmd>,
-    // Do not access this directly to send. Use `send_event` instead.
-    // This wraps the call and pushes it off thread so as to be non-blocking
-    pub(crate) event_sender: mpsc::Sender<NetworkEvent>,
+    pub(crate) self_peer_id: PeerId,
+    pub(crate) local: bool,
+    pub(crate) is_client: bool,
+    pub(crate) bootstrap_ongoing: bool,
+    /// The peers that are closer to our PeerId. Includes self.
+    pub(crate) close_group: Vec<PeerId>,
+    pub(crate) replication_fetcher: ReplicationFetcher,
+
+    cmd_receiver: mpsc::Receiver<SwarmCmd>,
+    event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
+
+    /// Trackers for underlying behaviour related events
     pub(crate) pending_get_closest_peers: PendingGetClosest,
     pub(crate) pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
     pub(crate) pending_get_record: PendingGetRecord,
-    pub(crate) replication_fetcher: ReplicationFetcher,
-    pub(crate) local: bool,
     /// A list of the most recent peers we have dialed ourselves.
     pub(crate) dialed_peers: CircularVec<PeerId>,
     pub(crate) unroutable_peers: CircularVec<PeerId>,
-    /// The peers that are closer to our PeerId. Includes self.
-    pub(crate) close_group: Vec<PeerId>,
-    /// Is the bootstrap process currently running
-    pub(crate) bootstrap_ongoing: bool,
-    pub(crate) is_client: bool,
 }
 
 impl SwarmDriver {
@@ -263,30 +245,6 @@ impl SwarmDriver {
         )
     }
 
-    /// Sends an event after pushing it off thread so as to be non-blocking
-    /// this is a wrapper around the `mpsc::Sender::send` call
-    pub(crate) fn send_event(&self, event: NetworkEvent) {
-        let event_sender = self.event_sender.clone();
-        let capacity = event_sender.capacity();
-
-        if capacity == 0 {
-            warn!(
-                "NetworkEvent channel is full. Dropping NetworkEvent: {:?}",
-                event
-            );
-
-            // Lets error out just now.
-            return;
-        }
-
-        // push the event off thread so as to be non-blocking
-        let _handle = tokio::spawn(async move {
-            if let Err(error) = event_sender.send(event).await {
-                error!("SwarmDriver failed to send event: {}", error);
-            }
-        });
-    }
-
     #[allow(clippy::too_many_arguments, clippy::result_large_err)]
     /// Private helper to create the network components with the provided config and req/res behaviour
     fn with(
@@ -419,24 +377,24 @@ impl SwarmDriver {
 
         let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
         let swarm_driver = Self {
-            self_peer_id: peer_id,
             swarm,
+            self_peer_id: peer_id,
+            local,
+            is_client,
+            bootstrap_ongoing: false,
+            close_group: Default::default(),
+            replication_fetcher: Default::default(),
             cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
             pending_get_record: Default::default(),
-            replication_fetcher: Default::default(),
-            local,
             // We use 63 here, as in practice the capacity will be rounded to the nearest 2^n-1.
             // Source: https://users.rust-lang.org/t/the-best-ring-buffer-library/58489/8
             // 63 will mean at least 63 most recent peers we have dialed, which should be allow for enough time for the
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             unroutable_peers: CircularVec::new(127),
-            close_group: Default::default(),
-            bootstrap_ongoing: false,
-            is_client,
         };
 
         Ok((
@@ -476,5 +434,70 @@ impl SwarmDriver {
                 },
             }
         }
+    }
+
+    // --------------------------------------------
+    // ---------- Crate helpers -------------------
+    // --------------------------------------------
+
+    /// Sends an event after pushing it off thread so as to be non-blocking
+    /// this is a wrapper around the `mpsc::Sender::send` call
+    pub(crate) fn send_event(&self, event: NetworkEvent) {
+        let event_sender = self.event_sender.clone();
+        let capacity = event_sender.capacity();
+
+        if capacity == 0 {
+            warn!(
+                "NetworkEvent channel is full. Dropping NetworkEvent: {:?}",
+                event
+            );
+
+            // Lets error out just now.
+            return;
+        }
+
+        // push the event off thread so as to be non-blocking
+        let _handle = tokio::spawn(async move {
+            if let Err(error) = event_sender.send(event).await {
+                error!("SwarmDriver failed to send event: {}", error);
+            }
+        });
+    }
+
+    // get all the peers from our local RoutingTable. Contains self
+    pub(crate) fn get_all_local_peers(&mut self) -> Vec<PeerId> {
+        let mut all_peers: Vec<PeerId> = vec![];
+        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+            for entry in kbucket.iter() {
+                all_peers.push(entry.node.key.clone().into_preimage());
+            }
+        }
+        all_peers.push(self.self_peer_id);
+        all_peers
+    }
+
+    /// Dials the given multiaddress. If address contains a peer ID, simultaneous
+    /// dials to that peer are prevented.
+    pub(crate) fn dial(&mut self, mut addr: Multiaddr) -> Result<(), DialError> {
+        debug!(%addr, "Dialing manually");
+
+        let peer_id = multiaddr_pop_p2p(&mut addr);
+        let opts = match peer_id {
+            Some(peer_id) => DialOpts::peer_id(peer_id)
+                // If we have a peer ID, we can prevent simultaneous dials.
+                .condition(PeerCondition::NotDialing)
+                .addresses(vec![addr])
+                .build(),
+            None => DialOpts::unknown_peer_id().address(addr).build(),
+        };
+
+        self.swarm.dial(opts)
+    }
+
+    /// Dials with the `DialOpts` given.
+    pub(crate) fn dial_with_opts(&mut self, opts: DialOpts) -> Result<(), DialError> {
+        debug!(?opts, "Dialing manually");
+
+        self.swarm.dial(opts)
     }
 }
