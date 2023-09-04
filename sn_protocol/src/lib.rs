@@ -22,7 +22,7 @@ use libp2p::{
     kad::{KBucketDistance as Distance, KBucketKey as Key, RecordKey},
     PeerId,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Debug, Display, Formatter};
 use xor_name::XorName;
 
@@ -210,6 +210,30 @@ impl Display for NetworkAddress {
 #[derive(Clone, Hash, Eq, PartialEq)]
 pub struct PrettyPrintRecordKey(RecordKey);
 
+// Implementing Serialize for PrettyPrintRecordKey
+impl Serialize for PrettyPrintRecordKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Use the `to_vec` function of the inner RecordKey to get the bytes
+        // and then serialize those bytes
+        self.0.to_vec().serialize(serializer)
+    }
+}
+
+// Implementing Deserialize for PrettyPrintRecordKey
+impl<'de> Deserialize<'de> for PrettyPrintRecordKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Deserialize to bytes first
+        let bytes = Vec::<u8>::deserialize(deserializer)?;
+        // Then use the bytes to create a RecordKey and wrap it in PrettyPrintRecordKey
+        Ok(PrettyPrintRecordKey(RecordKey::new(&bytes)))
+    }
+}
 // seamless conversion from `kad::RecordKey` to `PrettyPrintRecordKey`
 impl From<RecordKey> for PrettyPrintRecordKey {
     fn from(key: RecordKey) -> Self {
