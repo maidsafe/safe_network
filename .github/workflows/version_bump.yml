@@ -1,6 +1,6 @@
 name: Version Bump
 
-# this should prevent concurrent version bumps
+# prevent concurrent version bumps
 concurrency:
   group: "version-bumping"
 
