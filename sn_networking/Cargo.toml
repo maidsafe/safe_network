@@ -14,15 +14,19 @@ version = "0.6.1"
 default=[]
 local-discovery=["libp2p/mdns"]
 quic=["libp2p-quic"]
+metrics=["libp2p-metrics", "prometheus-client", "hyper"]
 
 [dependencies]
 async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
 futures = "~0.3.13"
+hyper = { version = "0.14", features = ["server", "tcp", "http1"], optional = true}
 itertools = "~0.10.1"
 custom_debug = "~0.5.0"
 libp2p = { version="0.52", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux"] }
+libp2p-metrics = { version = "0.13.1", features = ["identify", "kad", ], optional = true }
 libp2p-quic = { version = "0.8.0-alpha", features = ["tokio"], optional = true }
+prometheus-client = { version = "0.21.2", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
@@ -32,10 +36,6 @@ thiserror = "1.0.23"
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
-
-libp2p-metrics = { version = "0.13.1", features = ["identify", "kad", ] }
-prometheus-client = "0.21.2"
-hyper = { version = "0.14", features = ["server", "tcp", "http1"] }
 
 [dev-dependencies]
 bls = { package = "blsttc", version = "8.0.1" }

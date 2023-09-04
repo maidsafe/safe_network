@@ -6,13 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[cfg(feature = "metrics")]
+use crate::metrics_service::metrics_server;
 use crate::{
     circular_vec::CircularVec,
     cmd::SwarmCmd,
     error::{Error, Result},
     event::NetworkEvent,
     event::{GetRecordResultMap, NodeEvent},
-    metrics_service::metrics_server,
     multiaddr_pop_p2p,
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
@@ -37,9 +38,11 @@ use libp2p::{
     },
     Multiaddr, PeerId, Transport,
 };
+#[cfg(feature = "metrics")]
 use libp2p_metrics::Metrics;
 #[cfg(feature = "quic")]
 use libp2p_quic as quic;
+#[cfg(feature = "metrics")]
 use prometheus_client::registry::Registry;
 use sn_protocol::messages::{Request, Response};
 use std::{
@@ -97,6 +100,7 @@ pub struct SwarmDriver {
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
+    #[cfg(feature = "metrics")]
     pub(crate) network_metrics: Metrics,
 
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
@@ -360,9 +364,13 @@ impl SwarmDriver {
         };
         let autonat = Toggle::from(autonat);
 
-        let mut metric_registry = Registry::default();
-        let metrics = Metrics::new(&mut metric_registry);
-        metrics_server(metric_registry);
+        #[cfg(feature = "metrics")]
+        let metrics = {
+            let mut metric_registry = Registry::default();
+            let metrics = Metrics::new(&mut metric_registry);
+            metrics_server(metric_registry);
+            metrics
+        };
 
         let behaviour = NodeBehaviour {
             request_response,
@@ -383,6 +391,7 @@ impl SwarmDriver {
             bootstrap_ongoing: false,
             close_group: Default::default(),
             replication_fetcher: Default::default(),
+            #[cfg(feature = "metrics")]
             network_metrics: metrics,
             cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,
