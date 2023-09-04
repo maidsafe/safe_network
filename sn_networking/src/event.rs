@@ -30,6 +30,7 @@ use libp2p::{
     swarm::{dial_opts::DialOpts, SwarmEvent},
     Multiaddr, PeerId,
 };
+#[cfg(feature = "metrics")]
 use libp2p_metrics::Recorder;
 use sn_protocol::{
     messages::{Request, Response},
@@ -176,6 +177,7 @@ impl SwarmDriver {
     ) -> Result<()> {
         // This does not record all the events. `SwarmEvent::Behaviour(_)` are skipped. Hence `.record()` has to be
         // called individually on each behaviour.
+        #[cfg(feature = "metrics")]
         self.network_metrics.record(&event);
         match event {
             SwarmEvent::Behaviour(NodeEvent::MsgReceived(event)) => {
@@ -187,6 +189,7 @@ impl SwarmDriver {
                 self.handle_kad_event(kad_event)?;
             }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
+                #[cfg(feature = "metrics")]
                 self.network_metrics.record(&(*iden));
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
@@ -482,6 +485,7 @@ impl SwarmDriver {
 
     #[allow(clippy::result_large_err)]
     fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
+        #[cfg(feature = "metrics")]
         self.network_metrics.record(&kad_event);
         match kad_event {
             ref event @ KademliaEvent::OutboundQueryProgressed {
