@@ -33,6 +33,10 @@ tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "r
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
 
+libp2p-metrics = { version = "0.13.1", features = ["identify", "kad", ] }
+prometheus-client = "0.21.2"
+hyper = { version = "0.14", features = ["server", "tcp", "http1"] }
+
 [dev-dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
 quickcheck = "1.0.3"

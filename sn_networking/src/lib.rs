@@ -14,6 +14,7 @@ mod cmd;
 mod driver;
 mod error;
 mod event;
+mod metrics_service;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
