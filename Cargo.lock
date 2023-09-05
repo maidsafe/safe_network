@@ -3751,9 +3751,9 @@ dependencies = [
 
 [[package]]
 name = "self_encryption"
-version = "0.28.1"
+version = "0.28.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48b4a2e4e28ad3f5406727cdab4bb03a25d6fa9563bae0fd522184d5256e02e8"
+checksum = "cd4d59f4d51fb213b64dddd45147ac03bf4b16e3d56458b279c34a12b9270023"
 dependencies = [
  "aes 0.8.3",
  "bincode",
@@ -3761,6 +3761,7 @@ dependencies = [
  "bytes",
  "cbc",
  "err-derive",
+ "hex",
  "itertools",
  "num_cpus",
  "rand 0.8.5",
@@ -3940,6 +3941,7 @@ dependencies = [
  "blsttc",
  "bytes",
  "futures",
+ "hex",
  "indicatif",
  "itertools",
  "libp2p",
