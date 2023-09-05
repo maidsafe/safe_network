@@ -30,6 +30,7 @@ use sn_transfers::wallet::LocalWallet;
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
     time::{Duration, Instant},
 };
 use tonic::Request;
@@ -100,7 +101,13 @@ async fn verify_data_location() -> Result<()> {
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE).await?;
 
-    store_chunks(client, paying_wallet, chunk_count).await?;
+    store_chunks(
+        client,
+        paying_wallet,
+        chunk_count,
+        paying_wallet_dir.to_path_buf(),
+    )
+    .await?;
 
     // set of all the node indexes that stores a record key
     let record_holders = get_records_and_holders().await?;
@@ -311,11 +318,12 @@ async fn store_chunks(
     client: Client,
     paying_wallet: LocalWallet,
     chunk_count: usize,
+    wallet_dir: PathBuf,
 ) -> Result<()> {
     let start = Instant::now();
     let mut rng = OsRng;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
-    let file_api = Files::new(client);
+    let file_api = Files::new(client, wallet_dir);
 
     let mut uploaded_chunks_count = 0;
     loop {

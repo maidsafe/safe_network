@@ -29,7 +29,11 @@ use rand::{
 };
 use sn_dbc::Token;
 use sn_logging::{LogFormat, LogOutputDest};
-use std::{net::SocketAddr, path::Path, sync::Once};
+use std::{
+    net::SocketAddr,
+    path::{Path, PathBuf},
+    sync::Once,
+};
 use tokio::sync::Mutex;
 use tonic::Request;
 use tracing_core::Level;
@@ -114,7 +118,10 @@ pub async fn get_client_and_wallet(root_dir: &Path, amount: u64) -> Result<(Clie
     Ok((client, local_wallet))
 }
 
-pub fn random_content(client: &Client) -> Result<(Files, Bytes, ChunkAddress, Vec<Chunk>)> {
+pub fn random_content(
+    client: &Client,
+    wallet_dir: PathBuf,
+) -> Result<(Files, Bytes, ChunkAddress, Vec<Chunk>)> {
     let mut rng = rand::thread_rng();
 
     let random_len = rng.gen_range(MIN_ENCRYPTABLE_BYTES..1024 * MIN_ENCRYPTABLE_BYTES);
@@ -123,7 +130,7 @@ pub fn random_content(client: &Client) -> Result<(Files, Bytes, ChunkAddress, Ve
             .take(random_len)
             .collect();
 
-    let files_api = Files::new(client.clone());
+    let files_api = Files::new(client.clone(), wallet_dir);
     let content_bytes = Bytes::from(random_length_content);
     let (file_addr, chunks) = files_api.chunk_bytes(content_bytes.clone())?;
 
