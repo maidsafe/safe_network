@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use crate::WalletClient;
 
@@ -27,7 +27,7 @@ use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
-use tokio::task;
+use tokio::{sync::Semaphore, task};
 use tracing::trace;
 use xor_name::XorName;
 
@@ -41,6 +41,11 @@ impl Files {
     /// Create file apis instance.
     pub fn new(client: Client) -> Self {
         Self { client }
+    }
+
+    /// Get the client semaphore
+    pub fn concurrency_limiter(&self) -> Arc<Semaphore> {
+        self.client.concurrency_limiter()
     }
 
     /// Create a new WalletClient for a given root directory.
