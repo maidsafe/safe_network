@@ -322,11 +322,11 @@ impl Network {
     /// Put `Record` to network
     /// optionally verify the record is stored after putting it to network
     pub async fn put_record(&self, record: Record, verify_store: bool) -> Result<()> {
-        // if verify_store {
-        self.put_record_with_retries(record, verify_store).await
-        // } else {
-        //     self.put_record_once(record, false).await
-        // }
+        if verify_store {
+            self.put_record_with_retries(record, verify_store).await
+        } else {
+            self.put_record_once(record, false).await
+        }
     }
 
     /// Put `Record` to network
