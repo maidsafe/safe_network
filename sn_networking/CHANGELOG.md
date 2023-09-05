@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.9...sn_networking-v0.5.10) - 2023-09-05
+
+### Other
+- *(network)* add logs on incoming connection
+- *(store)* remove unused replication interval variable
+- *(network)* move around SwarmDriver code
+- *(network)* separate network constructor from the rest
+
 ## [0.5.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.8...sn_networking-v0.5.9) - 2023-09-04
 
 ### Other
