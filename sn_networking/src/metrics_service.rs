@@ -6,15 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::{Error, Result};
 use futures::Future;
-use hyper::{service::Service, Request, Response, Server, StatusCode};
-use hyper::{Body, Method};
-use prometheus_client::encoding::text::encode;
-use prometheus_client::registry::Registry;
-use std::pin::Pin;
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::task::{Context, Poll};
+use hyper::{service::Service, Body, Method, Request, Response, Server, StatusCode};
+use prometheus_client::{encoding::text::encode, registry::Registry};
+use std::{
+    pin::Pin,
+    sync::{Arc, Mutex},
+    task::{Context, Poll},
+};
 
 const METRICS_CONTENT_TYPE: &str = "application/openmetrics-text;charset=utf-8;version=1.0.0";
 
@@ -42,27 +42,40 @@ impl MetricService {
     fn get_reg(&mut self) -> SharedRegistry {
         Arc::clone(&self.reg)
     }
-    fn respond_with_metrics(&mut self) -> Response<String> {
+    fn respond_with_metrics(&mut self) -> Result<Response<String>> {
         let mut response: Response<String> = Response::default();
 
         response.headers_mut().insert(
             hyper::header::CONTENT_TYPE,
-            METRICS_CONTENT_TYPE.try_into().unwrap(),
+            METRICS_CONTENT_TYPE
+                .try_into()
+                .map_err(|_| Error::NetworkMetricError)?,
         );
 
         let reg = self.get_reg();
-        encode(&mut response.body_mut(), &reg.lock().unwrap()).unwrap();
+        let reg = reg.lock().map_err(|_| Error::NetworkMetricError)?;
+        encode(&mut response.body_mut(), &reg).map_err(|err| {
+            error!("Failed to encode the metrics Registry {err:?}");
+            Error::NetworkMetricError
+        })?;
 
         *response.status_mut() = StatusCode::OK;
 
-        response
+        Ok(response)
     }
 
     fn respond_with_404_not_found(&mut self) -> Response<String> {
-        Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body("Not found try localhost:[port]/metrics".to_string())
-            .unwrap()
+        let mut resp = Response::default();
+        *resp.status_mut() = StatusCode::NOT_FOUND;
+        *resp.body_mut() = "Not found try localhost:[port]/metrics".to_string();
+        resp
+    }
+
+    fn respond_with_500_server_error(&mut self) -> Response<String> {
+        let mut resp = Response::default();
+        *resp.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+        *resp.body_mut() = "Something went wrong with the Metrics server".to_string();
+        resp
     }
 }
 
@@ -80,7 +93,10 @@ impl Service<Request<Body>> for MetricService {
         let req_method = req.method();
         let resp = if (req_method == Method::GET) && (req_path == "/metrics") {
             // Encode and serve metrics from registry.
-            self.respond_with_metrics()
+            match self.respond_with_metrics() {
+                Ok(resp) => resp,
+                Err(_) => self.respond_with_500_server_error(),
+            }
         } else {
             self.respond_with_404_not_found()
         };
