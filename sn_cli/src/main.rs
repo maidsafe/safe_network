@@ -35,6 +35,7 @@ const CLIENT_KEY: &str = "clientkey";
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    color_eyre::install()?;
     let opt = Opt::parse();
     let _log_appender_guard = if let Some(log_output_dest) = opt.log_output_dest {
         let logging_targets = vec![

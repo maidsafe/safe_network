@@ -4032,6 +4032,7 @@ dependencies = [
  "bytes",
  "chrono",
  "clap 4.3.21",
+ "color-eyre",
  "crdts",
  "custom_debug",
  "dirs-next",
