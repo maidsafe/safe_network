@@ -274,6 +274,9 @@ impl LocalWallet {
             .payment_transactions
             .extend(all_transfers_per_address);
 
+        // get the content payment map stored
+        store_wallet(&self.wallet_dir, &self.wallet)?;
+
         Ok(())
     }
 

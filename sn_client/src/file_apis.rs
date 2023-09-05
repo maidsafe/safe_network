@@ -44,6 +44,11 @@ impl Files {
         Self { client, wallet_dir }
     }
 
+    /// Return the client instance
+    pub fn client(&self) -> &Client {
+        &self.client
+    }
+
     /// Get the client semaphore
     pub fn concurrency_limiter(&self) -> Arc<Semaphore> {
         self.client.concurrency_limiter()

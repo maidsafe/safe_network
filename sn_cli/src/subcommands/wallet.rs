@@ -263,7 +263,6 @@ async fn send(
 
 pub(super) struct ChunkedFile {
     pub file_name: String,
-    pub size: usize,
     pub chunks: Vec<(XorName, PathBuf)>,
 }
 
@@ -284,10 +283,6 @@ pub(super) async fn chunk_and_pay_for_storage(
         )?;
 
     // Get the list of Chunks addresses from the files found at 'files_path'
-    println!(
-        "Preparing (chunking) files at '{}'...",
-        files_path.display()
-    );
     let chunks_dir = std::env::temp_dir();
     let mut num_of_chunks = 0;
     let mut chunked_files = BTreeMap::new();
@@ -323,7 +318,6 @@ pub(super) async fn chunk_and_pay_for_storage(
                 file_addr,
                 ChunkedFile {
                     file_name,
-                    size: bytes.len(),
                     chunks: chunks_paths,
                 },
             );

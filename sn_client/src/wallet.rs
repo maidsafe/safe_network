@@ -160,6 +160,9 @@ impl WalletClient {
         all_data_payments: BTreeMap<NetworkAddress, Vec<(PublicAddress, Token)>>,
         verify_store: bool,
     ) -> Result<Token> {
+        // TODO:
+        // Check for any existing payment DBCs, and use them if they exist, only topping up if needs be
+
         let now = Instant::now();
         let mut total_cost = Token::zero();
         for (_data, costs) in all_data_payments.iter() {

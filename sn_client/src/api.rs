@@ -33,7 +33,7 @@ use xor_name::XorName;
 
 // Maximum number of concurrency to be allowed at any time
 // eg, concurrent uploads/downloads of chunks, managed by a semaphore
-pub const DEFAULT_CLIENT_CONCURRENCY: usize = 5;
+pub const DEFAULT_CLIENT_CONCURRENCY: usize = 10;
 
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(30);
@@ -303,7 +303,7 @@ impl Client {
     }
 
     /// Retrieve a `Chunk` from the kad network.
-    pub(super) async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
+    pub async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
