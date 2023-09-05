@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.19](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.18...sn_cli-v0.81.19) - 2023-09-05
+
+### Added
+- *(cli)* properly init color_eyre, advise on hex parse fail
+
 ## [0.81.18](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.17...sn_cli-v0.81.18) - 2023-09-05
 
 ### Other
