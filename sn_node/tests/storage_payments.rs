@@ -72,7 +72,8 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
-    let (files_api, content_bytes, _random_content_addrs, chunks) = random_content(&client)?;
+    let (files_api, content_bytes, _random_content_addrs, chunks) =
+        random_content(&client, paying_wallet_dir.to_path_buf())?;
 
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
     let subset_len = chunks.len() / 3;
@@ -171,7 +172,8 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, content_addr, chunks) = random_content(&client)?;
+    let (files_api, content_bytes, content_addr, chunks) =
+        random_content(&client, paying_wallet_dir.to_path_buf())?;
 
     println!("Paying for {} random addresses...", chunks.len());
 
@@ -197,7 +199,8 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, content_addr, chunks) = random_content(&client)?;
+    let (files_api, content_bytes, content_addr, chunks) =
+        random_content(&client, paying_wallet_dir.to_path_buf())?;
 
     println!("Paying for {} random addresses...", chunks.len());
 

@@ -28,7 +28,7 @@ use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -200,6 +200,7 @@ async fn data_availability_during_churn() -> Result<()> {
         content_erred.clone(),
         dbcs.clone(),
         churn_period,
+        paying_wallet_dir.path().to_path_buf(),
     );
 
     // Spawn a task to retry querying the content that failed, up to 'MAX_NUM_OF_QUERY_ATTEMPTS' times,
@@ -210,6 +211,7 @@ async fn data_availability_during_churn() -> Result<()> {
         failures.clone(),
         dbcs.clone(),
         churn_period,
+        paying_wallet_dir.path().to_path_buf(),
     );
 
     println!("All tasks have been spawned. The test is now running...");
@@ -254,8 +256,17 @@ async fn data_availability_during_churn() -> Result<()> {
         let churn_period = churn_period;
 
         let failures = failures.clone();
+        let wallet_dir = paying_wallet_dir.to_path_buf().clone();
         let handle = tokio::spawn(async move {
-            final_retry_query_content(&client, &net_addr, dbcs, churn_period, failures).await
+            final_retry_query_content(
+                &client,
+                &net_addr,
+                dbcs,
+                churn_period,
+                failures,
+                &wallet_dir,
+            )
+            .await
         });
         handles.push(handle);
     }
@@ -356,7 +367,7 @@ fn store_chunks_task(
 
         let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-        let file_api = Files::new(client);
+        let file_api = Files::new(client, paying_wallet_dir);
         let mut rng = OsRng;
 
         loop {
@@ -390,10 +401,7 @@ fn store_chunks_task(
             sleep(delay).await;
 
             for chunk in chunks {
-                match file_api
-                    .upload_chunk_in_parallel(chunk, &wallet_client, true)
-                    .await
-                {
+                match file_api.upload_chunk_in_parallel(chunk, true).await {
                     Ok(()) => content
                         .write()
                         .await
@@ -422,6 +430,7 @@ fn query_content_task(
     content_erred: ContentErredList,
     dbcs: DbcMap,
     churn_period: Duration,
+    root_dir: PathBuf,
 ) {
     let _handle = tokio::spawn(async move {
         let delay = churn_period / CONTENT_QUERY_RATIO_TO_CHURN;
@@ -439,7 +448,7 @@ fn query_content_task(
             trace!("Querying content (bucket index: {index}) at {net_addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match query_content(&client, &net_addr, dbcs.clone()).await {
+            match query_content(&client, &root_dir, &net_addr, dbcs.clone()).await {
                 Ok(_) => {
                     let _ = content_erred.write().await.remove(&net_addr);
                 }
@@ -510,6 +519,7 @@ fn retry_query_content_task(
     failures: ContentErredList,
     dbcs: DbcMap,
     churn_period: Duration,
+    wallet_dir: PathBuf,
 ) {
     let _handle = tokio::spawn(async move {
         let delay = 2 * churn_period;
@@ -523,7 +533,9 @@ fn retry_query_content_task(
                 let attempts = content_error.attempts + 1;
 
                 println!("Querying erred content at {net_addr}, attempt: #{attempts} ...");
-                if let Err(last_err) = query_content(&client, &net_addr, dbcs.clone()).await {
+                if let Err(last_err) =
+                    query_content(&client, &wallet_dir, &net_addr, dbcs.clone()).await
+                {
                     println!("Erred content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                     // We only keep it to retry 'MAX_NUM_OF_QUERY_ATTEMPTS' times,
                     // otherwise report it effectivelly as failure.
@@ -551,13 +563,14 @@ async fn final_retry_query_content(
     dbcs: DbcMap,
     churn_period: Duration,
     failures: ContentErredList,
+    wallet_dir: &Path,
 ) -> Result<()> {
     let mut attempts = 1;
     let net_addr = net_addr.clone();
     loop {
         println!("Final querying content at {net_addr}, attempt: #{attempts} ...");
         debug!("Final querying content at {net_addr}, attempt: #{attempts} ...");
-        if let Err(last_err) = query_content(client, &net_addr, dbcs.clone()).await {
+        if let Err(last_err) = query_content(client, wallet_dir, &net_addr, dbcs.clone()).await {
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
                 println!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                 bail!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
@@ -578,6 +591,7 @@ async fn final_retry_query_content(
 
 async fn query_content(
     client: &Client,
+    wallet_dir: &Path,
     net_addr: &NetworkAddress,
     dbcs: DbcMap,
 ) -> Result<(), Error> {
@@ -601,7 +615,7 @@ async fn query_content(
             Ok(())
         }
         NetworkAddress::ChunkAddress(addr) => {
-            let file_api = Files::new(client.clone());
+            let file_api = Files::new(client.clone(), wallet_dir.to_path_buf());
             let _ = file_api.read_bytes(*addr).await?;
             Ok(())
         }

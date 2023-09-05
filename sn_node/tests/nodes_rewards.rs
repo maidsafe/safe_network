@@ -27,7 +27,8 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, _content_addr, chunks) = random_content(&client)?;
+    let (files_api, content_bytes, _content_addr, chunks) =
+        random_content(&client, paying_wallet_dir.to_path_buf())?;
 
     println!("Paying for {} random addresses...", chunks.len());
 
