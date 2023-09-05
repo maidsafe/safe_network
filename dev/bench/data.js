@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693921336803,
+  "lastUpdate": 1693921904729,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11648,6 +11648,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 80.03993,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "de78a7cf6dd7e95cab84619078551ae3ae9279dd",
+          "message": "feat(cli): properly init color_eyre, advise on hex parse fail",
+          "timestamp": "2023-09-05T11:36:04Z",
+          "tree_id": "602bdb1784777f6e39d2c0468d691edf5db147ea",
+          "url": "https://github.com/maidsafe/safe_network/commit/de78a7cf6dd7e95cab84619078551ae3ae9279dd"
+        },
+        "date": 1693921904225,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 81.22368,
             "unit": "MB"
           }
         ]
