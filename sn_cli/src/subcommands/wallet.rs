@@ -274,15 +274,14 @@ pub(super) async fn chunk_and_pay_for_storage(
     verify_store: bool,
 ) -> Result<BTreeMap<XorName, ChunkedFile>> {
     trace!("Starting to chunk_and_pay_for_storage");
-    let wallet = LocalWallet::load_from(root_dir)
-        .wrap_err("Unable to read wallet file in {path:?}")
+
+    let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
+    let mut wallet_client = file_api
+        .wallet()
+        .wrap_err("Unable to read wallet file in {root_dir:?}")
         .suggestion(
             "If you have an old wallet file, it may no longer be compatible. Try removing it",
         )?;
-
-    debug!("Wallet readdddd!!!!!");
-    let mut wallet_client = WalletClient::new(client.clone(), wallet);
-    let file_api: Files = Files::new(client.clone());
 
     // Get the list of Chunks addresses from the files found at 'files_path'
     println!(

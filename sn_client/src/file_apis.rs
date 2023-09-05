@@ -35,12 +35,13 @@ use xor_name::XorName;
 #[derive(Clone)]
 pub struct Files {
     client: Client,
+    wallet_dir: PathBuf,
 }
 
 impl Files {
     /// Create file apis instance.
-    pub fn new(client: Client) -> Self {
-        Self { client }
+    pub fn new(client: Client, wallet_dir: PathBuf) -> Self {
+        Self { client, wallet_dir }
     }
 
     /// Get the client semaphore
@@ -49,8 +50,10 @@ impl Files {
     }
 
     /// Create a new WalletClient for a given root directory.
-    pub fn wallet(&self, root_dir: PathBuf) -> Result<WalletClient> {
-        let wallet = LocalWallet::load_from(root_dir.as_path())?;
+    pub fn wallet(&self) -> Result<WalletClient> {
+        let path = self.wallet_dir.as_path();
+        let wallet = LocalWallet::load_from(path)?;
+
         Ok(WalletClient::new(self.client.clone(), wallet))
     }
 
@@ -143,16 +146,12 @@ impl Files {
     /// form of immutable self encrypted chunks.
     ///
     #[instrument(skip_all, level = "trace")]
-    pub async fn upload_chunk_in_parallel(
-        &self,
-        chunk: Chunk,
-        wallet_client: &WalletClient,
-        verify_store: bool,
-    ) -> Result<()> {
+    pub async fn upload_chunk_in_parallel(&self, chunk: Chunk, verify_store: bool) -> Result<()> {
         let client = self.client.clone();
         let chunk_addr = chunk.network_address();
         trace!("Client upload started for chunk: {chunk_addr:?}");
 
+        let wallet_client = self.wallet()?;
         let payment = wallet_client.get_payment_dbcs(&chunk_addr);
 
         if payment.is_empty() {
@@ -194,8 +193,7 @@ impl Files {
             let (head_address, chunks) = encrypt_large(bytes)?;
 
             for chunk in chunks {
-                self.upload_chunk_in_parallel(chunk, wallet_client, verify)
-                    .await?;
+                self.upload_chunk_in_parallel(chunk, verify).await?;
             }
 
             Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
