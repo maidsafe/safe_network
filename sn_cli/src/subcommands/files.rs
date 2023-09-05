@@ -49,7 +49,7 @@ pub(crate) async fn files_cmds(
             file_name,
             file_addr,
         } => {
-            let file_api: Files = Files::new(client);
+            let file_api: Files = Files::new(client, root_dir.to_path_buf());
 
             match (file_name, file_addr) {
                 (Some(name), Some(address)) => {
@@ -112,13 +112,11 @@ async fn upload_files(
         );
 
         // Clone necessary variables for each file upload
-        let file_api: Files = Files::new(client.clone());
-
-        let wallet_dir = root_dir.to_path_buf();
+        let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
 
         // Spawn a new task for each file upload
         let upload = tokio::spawn(async move {
-            match upload_chunks(&file_api, &file_name, &wallet_dir, chunks, verify_store).await {
+            match upload_chunks(&file_api, &file_name, chunks, verify_store).await {
                 Err(error) => {
                     println!("Failed to store all chunks of file '{file_name}' to all nodes in the close group: {error}");
                     None
@@ -152,7 +150,6 @@ async fn upload_files(
 async fn upload_chunks(
     file_api: &Files,
     file_name: &str,
-    wallet_dir: &Path,
     chunks_paths: Vec<(XorName, PathBuf)>,
     verify_store: bool,
 ) -> Result<()> {
@@ -161,8 +158,13 @@ async fn upload_chunks(
     for (i, (_name, path)) in chunks_paths.into_iter().enumerate() {
         let file_name = file_name.to_string();
         let file_api = file_api.clone();
-        let wallet_dir = wallet_dir.to_path_buf();
         let semaphore = file_api.concurrency_limiter();
+
+        // At this level, we need to
+        // upload
+        // verify
+        // repay
+        // retry
 
         let handle = tokio::spawn(async move {
             let _permit = semaphore.acquire_owned().await?;
@@ -173,12 +175,10 @@ async fn upload_chunks(
             );
 
             let upload_start_time = std::time::Instant::now();
-
-            let wallet_client = file_api.wallet(wallet_dir)?;
             let chunk = Chunk::new(Bytes::from(fs::read(path)?));
 
             file_api
-                .upload_chunk_in_parallel(chunk, &wallet_client, verify_store)
+                .upload_chunk_in_parallel(chunk, verify_store)
                 .await?;
 
             println!(
