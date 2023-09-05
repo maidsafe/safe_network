@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693931675319,
+  "lastUpdate": 1693931717103,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -7132,6 +7132,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.285722875048472,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "f243dfd53dc74da1ca4c4b06c6f8738f7d221cdc",
+          "message": "fix(node): accept fees _near_ our current store cost.\n\nIncreases tolerance to reduce fee rejection",
+          "timestamp": "2023-09-05T15:04:02Z",
+          "tree_id": "4bfccccc91507d3697f8c6347e050e23d223e141",
+          "url": "https://github.com/maidsafe/safe_network/commit/f243dfd53dc74da1ca4c4b06c6f8738f7d221cdc"
+        },
+        "date": 1693931715610,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.14687640598366786,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.739508765201095,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.298653377327844,
             "unit": "MiB/s"
           }
         ]
