@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1693918189761,
+  "lastUpdate": 1693921336803,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -7054,6 +7054,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.269711975406031,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "b0fc3772509a0a3f302e01e4b5645a2a1fb67814",
+          "message": "ci: move to use VERSION_BUMP_COMMIT_PAT instead of RELEASE_PAT\n\nThey are effectively both the same, BUMP_COMMIT is org wide so\nRELEASE_PAT can be deprecated.",
+          "timestamp": "2023-09-05T12:15:01Z",
+          "tree_id": "6db1c137dd8e3e1ebd4798a81f9d86bb0510ccf5",
+          "url": "https://github.com/maidsafe/safe_network/commit/b0fc3772509a0a3f302e01e4b5645a2a1fb67814"
+        },
+        "date": 1693921334938,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.13364921305325686,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.706207173206329,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.42734091530283,
             "unit": "MiB/s"
           }
         ]
