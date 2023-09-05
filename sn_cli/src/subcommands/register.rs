@@ -8,7 +8,7 @@
 
 use bls::PublicKey;
 use clap::Subcommand;
-use color_eyre::Result;
+use color_eyre::{eyre::WrapErr, Result, Section};
 use sn_client::{Client, ClientRegister, Error as ClientError};
 use sn_protocol::storage::RegisterAddress;
 use xor_name::XorName;
@@ -155,11 +155,18 @@ fn parse_addr(
     pk: PublicKey,
 ) -> Result<(RegisterAddress, String)> {
     if use_name {
+        debug!("Parsing address as name");
         let user_metadata = XorName::from_content(address_str.as_bytes());
         let addr = RegisterAddress::new(user_metadata, pk);
         Ok((addr, format!("'{address_str}' at {addr}")))
     } else {
-        let addr = RegisterAddress::from_hex(address_str)?;
+        debug!("Parsing address as hex");
+        let addr = RegisterAddress::from_hex(address_str)
+            .wrap_err("Could not parse hex string")
+            .suggestion(
+                "If getting a register by name, use the `-n` flag eg:\n
+        safe register get -n <register-name>",
+            )?;
         Ok((addr, format!("at {address_str}")))
     }
 }

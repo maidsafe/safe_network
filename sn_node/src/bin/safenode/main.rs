@@ -138,6 +138,7 @@ enum NodeCtrl {
 }
 
 fn main() -> Result<()> {
+    color_eyre::install()?;
     let mut opt = Opt::parse();
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
