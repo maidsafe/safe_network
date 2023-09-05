@@ -16,9 +16,7 @@ use sn_protocol::storage::{Chunk, ChunkAddress};
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::Arc,
 };
-use tokio::sync::Semaphore;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -96,8 +94,6 @@ async fn upload_files(
     // Payment shall always be verified.
     let chunks_to_upload = chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
 
-    let chunk_semaphore = client.concurrency_limiter();
-
     let mut uploads = Vec::new();
 
     // Iterate over each file to be uploaded
@@ -120,19 +116,9 @@ async fn upload_files(
 
         let wallet_dir = root_dir.to_path_buf();
 
-        let semaphore = chunk_semaphore.clone();
         // Spawn a new task for each file upload
         let upload = tokio::spawn(async move {
-            match upload_chunks(
-                &file_api,
-                &file_name,
-                &wallet_dir,
-                chunks,
-                verify_store,
-                semaphore,
-            )
-            .await
-            {
+            match upload_chunks(&file_api, &file_name, &wallet_dir, chunks, verify_store).await {
                 Err(error) => {
                     println!("Failed to store all chunks of file '{file_name}' to all nodes in the close group: {error}");
                     None
@@ -169,8 +155,6 @@ async fn upload_chunks(
     wallet_dir: &Path,
     chunks_paths: Vec<(XorName, PathBuf)>,
     verify_store: bool,
-    // here we use a semaphore to limit the number of concurrent chunk uploads (but not concurrent verifications!)
-    chunk_semaphore: Arc<Semaphore>,
 ) -> Result<()> {
     let start_time = std::time::Instant::now();
     let mut handles = Vec::new();
@@ -178,7 +162,7 @@ async fn upload_chunks(
         let file_name = file_name.to_string();
         let file_api = file_api.clone();
         let wallet_dir = wallet_dir.to_path_buf();
-        let semaphore = chunk_semaphore.clone();
+        let semaphore = file_api.concurrency_limiter();
 
         let handle = tokio::spawn(async move {
             let _permit = semaphore.acquire_owned().await?;
