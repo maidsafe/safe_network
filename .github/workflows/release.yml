@@ -69,12 +69,13 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: eu-west-2
-      GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+      GH_TOKEN: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: "0"
-          token: ${{ secrets.RELEASE_PAT }}
+          token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
       - uses: actions/download-artifact@master
         with:
           name: safe_network-x86_64-pc-windows-msvc
@@ -123,7 +124,7 @@ jobs:
         shell: bash
         run: |
           cargo login ${{ secrets.CRATES_IO_TOKEN }}
-          release-plz release --git-token ${{ secrets.RELEASE_PAT }}
+          release-plz release --git-token ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
           just package-release-assets "safe"
           just package-release-assets "safenode"
           just package-release-assets "testnet"
