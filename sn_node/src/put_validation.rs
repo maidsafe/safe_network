@@ -390,7 +390,7 @@ impl Node {
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
 
         info!("Checking if payment is sufficient for {pretty_key:?}");
-        let acceptable_fee = self
+        let current_store_cost = self
             .network
             .get_local_storecost()
             .await
@@ -420,13 +420,14 @@ impl Node {
                     ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string())
                 })?;
 
+                let tolerable_fee = tolerable_fee(current_store_cost);
                 // we can bail early here and not bother checking payment validity.
                 // we've depositied it, so if it's valid, that's fine.
                 // if it's underpayment, we're bailing anyway, so we don't care.
-                if we_seem_to_have_been_paid < acceptable_fee {
+                if we_seem_to_have_been_paid < tolerable_fee {
                     return Err(ProtocolError::PaymentProofInsufficientAmount {
                         paid: we_seem_to_have_been_paid,
-                        expected: acceptable_fee,
+                        expected: tolerable_fee,
                     });
                 }
 
@@ -476,7 +477,7 @@ impl Node {
         // There is a payment for us, lets validate it is actually enough
         if let Some(tx) = payment_tx {
             // Check if any of the dbcs sent are sufficient for this chunk.
-            match verify_fee_is_sufficient(acceptable_fee, &tx) {
+            match verify_fee_is_sufficient(current_store_cost, &tx) {
                 Ok(_) => {}
                 Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected }) => {
                     return Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected });
@@ -713,11 +714,17 @@ impl Node {
     }
 }
 
+// Find a tolerable fee. This should help prevent us rejecting close, but currently
+// insufficient payments
+fn tolerable_fee(current_store_cost: Token) -> Token {
+    Token::from_nano(current_store_cost.as_nano() / 2)
+}
+
 // Check if the fee output id and amount are correct, as well as verify the payment proof audit
 // trail info corresponds to the fee output, i.e. the fee output's root-hash is derived from
 // the proof's audit trail info.
 fn verify_fee_is_sufficient(
-    acceptable_fee: Token,
+    current_store_cost: Token,
     tx: &DbcTransaction,
 ) -> Result<(), ProtocolError> {
     // TODO: properly verify which one of these was for this node, and check _that_
@@ -735,9 +742,9 @@ fn verify_fee_is_sufficient(
 
     // We expect at least the current step or one down. This should smooth over any
     // issues that might arise with payment going up and down.
-    let expected = Token::from_nano(acceptable_fee.as_nano() / 2);
+    let expected = tolerable_fee(current_store_cost);
 
-    if highest_fee < acceptable_fee {
+    if highest_fee < current_store_cost {
         return Err(ProtocolError::PaymentProofInsufficientAmount {
             paid: highest_fee,
             expected,
