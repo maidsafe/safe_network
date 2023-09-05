@@ -1127,6 +1127,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(cli)* properly init color_eyre, advise on hex parse fail
 
+## [0.89.20](https://github.com/maidsafe/safe_network/compare/sn_node-v0.89.19...sn_node-v0.89.20) - 2023-09-05
+
+### Other
+- *(node)* add a log to flag when we didnt find a payment for us
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
