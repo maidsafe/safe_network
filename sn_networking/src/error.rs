@@ -120,6 +120,10 @@ pub enum Error {
 
     #[error("Failed to pop from front of CircularVec")]
     CircularVecPopFrontError,
+
+    #[cfg(feature = "metrics")]
+    #[error("Network Metric error")]
+    NetworkMetricError,
 }
 
 #[cfg(test)]
