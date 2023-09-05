@@ -447,6 +447,10 @@ impl Node {
             }
         }
 
+        if tasks.is_empty() {
+            warn!("No payment for us for record {pretty_key:?}");
+        }
+
         wallet
             .store()
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
