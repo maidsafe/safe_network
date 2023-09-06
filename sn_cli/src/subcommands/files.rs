@@ -104,7 +104,7 @@ async fn upload_files(
 
         // dont verify this first batch
         let upload = async move {
-            let res = upload_chunks(file_api, chunks.clone(), false).await;
+            let res = upload_chunks_in_parallel(file_api, chunks.clone(), verify_store).await;
 
             (file_addr, file_name, res)
         };
@@ -114,6 +114,8 @@ async fn upload_files(
     }
 
     let upload_results = join_all(uploads).await;
+
+    println!("First chunk upload done, verifying and repaying if required...");
     let mut uploaded_data = vec![];
     for (file_addr, filename, result) in upload_results {
         uploaded_data.push((file_addr, filename, result?));
@@ -158,26 +160,28 @@ async fn upload_files(
 /// Store all chunks from chunk_paths (assuming payments have already been made and are in our local wallet).
 /// If verify_store is true, we will attempt to fetch all chunks from the network and check they are stored.
 ///
-async fn upload_chunks(
+async fn upload_chunks_in_parallel(
     file_api: Files,
     chunks_paths: Vec<(XorName, PathBuf)>,
-    _verify_store: bool,
+    verify_store: bool,
 ) -> Result<Vec<(XorName, PathBuf)>> {
     let mut upload_handles = Vec::new();
     let mut uploaded_chunks = Vec::new();
     for (name, path) in chunks_paths.into_iter() {
         uploaded_chunks.push((name, path.clone()));
         let file_api = file_api.clone();
-        let semaphore = file_api.concurrency_limiter();
 
         // first we upload all chunks in parallel
         let handle = tokio::spawn(async move {
-            let _permit = semaphore.acquire_owned().await?;
-
+            let permit = Some(file_api.client().get_network_concurrency_permit().await?);
+            // as holding chunks in mem is a serious bottleneck, we only hold one chunk in mem at a time
+            // and claim a second permit for the duration here to prevent too many happening at once.
             let upload_start_time = std::time::Instant::now();
             let chunk = Chunk::new(Bytes::from(fs::read(path)?));
 
-            file_api.upload_chunk_in_parallel(chunk, false).await?;
+            file_api
+                .get_local_payment_and_upload_chunk(chunk, verify_store, permit)
+                .await?;
 
             println!(
                 "Uploaded chunk #{name} in {})",
@@ -213,12 +217,9 @@ async fn verify_and_repay_if_needed(
     // Iterate over each uploaded chunk
     for (name, path) in chunks_paths.into_iter() {
         let file_api = file_api.clone();
-        let semaphore = file_api.concurrency_limiter();
 
         // Spawn a new task to fetch each chunk concurrently
         let handle = tokio::spawn(async move {
-            let _permit = semaphore.acquire_owned().await?;
-
             let chunk_address: ChunkAddress = ChunkAddress::new(name);
             // Attempt to fetch the chunk
             let res = file_api.client().get_chunk(chunk_address).await;
@@ -262,7 +263,7 @@ async fn verify_and_repay_if_needed(
 
         println!("=======re uploading failed chunks =============");
 
-        upload_chunks(
+        upload_chunks_in_parallel(
             file_api,
             failed_chunks
                 .iter()

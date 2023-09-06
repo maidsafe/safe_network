@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{path::PathBuf, sync::Arc};
+use std::path::PathBuf;
 
 use crate::WalletClient;
 
@@ -27,7 +27,7 @@ use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
-use tokio::{sync::Semaphore, task};
+use tokio::{sync::OwnedSemaphorePermit, task};
 use tracing::trace;
 use xor_name::XorName;
 
@@ -47,11 +47,6 @@ impl Files {
     /// Return the client instance
     pub fn client(&self) -> &Client {
         &self.client
-    }
-
-    /// Get the client semaphore
-    pub fn concurrency_limiter(&self) -> Arc<Semaphore> {
-        self.client.concurrency_limiter()
     }
 
     /// Create a new WalletClient for a given root directory.
@@ -151,8 +146,12 @@ impl Files {
     /// form of immutable self encrypted chunks.
     ///
     #[instrument(skip_all, level = "trace")]
-    pub async fn upload_chunk_in_parallel(&self, chunk: Chunk, verify_store: bool) -> Result<()> {
-        let client = self.client.clone();
+    pub async fn get_local_payment_and_upload_chunk(
+        &self,
+        chunk: Chunk,
+        verify_store: bool,
+        optional_permit: Option<OwnedSemaphorePermit>,
+    ) -> Result<()> {
         let chunk_addr = chunk.network_address();
         trace!("Client upload started for chunk: {chunk_addr:?}");
 
@@ -173,7 +172,9 @@ impl Files {
             "Payment for {chunk_addr:?}: has length: {:?}",
             payment.len()
         );
-        client.store_chunk(chunk, payment, verify_store).await?;
+        self.client
+            .store_chunk(chunk, payment, verify_store, optional_permit)
+            .await?;
 
         trace!("Client upload completed for chunk: {chunk_addr:?}");
         Ok(())
@@ -198,7 +199,8 @@ impl Files {
             let (head_address, chunks) = encrypt_large(bytes)?;
 
             for chunk in chunks {
-                self.upload_chunk_in_parallel(chunk, verify).await?;
+                self.get_local_payment_and_upload_chunk(chunk, verify, None)
+                    .await?;
             }
 
             Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
@@ -225,7 +227,7 @@ impl Files {
         }
 
         self.client
-            .store_chunk(chunk, payment, verify_store)
+            .store_chunk(chunk, payment, verify_store, None)
             .await?;
 
         Ok(address)
@@ -285,15 +287,11 @@ impl Files {
     async fn try_get_chunks(&self, chunks_info: Vec<ChunkInfo>) -> Result<Vec<EncryptedChunk>> {
         let expected_count = chunks_info.len();
         let mut retrieved_chunks = vec![];
-        let semaphore = self.client.concurrency_limiter();
 
         let mut tasks = Vec::new();
         for chunk_info in chunks_info.clone().into_iter() {
-            let chunk_semaphore = semaphore.clone();
-
             let client = self.client.clone();
             let task = task::spawn(async move {
-                let _permit = chunk_semaphore.acquire_owned().await?;
                 match client
                     .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
                     .await
