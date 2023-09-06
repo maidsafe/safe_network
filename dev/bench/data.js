@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694035104621,
+  "lastUpdate": 1694038936488,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11881,6 +11881,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 77.98784,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "4c9d9fd6df094258e4dfe758bd39263632f6c880",
+          "message": "chore: rotate logs after exceeding 20mb\n\nThe previous rotation strategy was using the number of lines, which was set to 5000.\n\nUsers recently noticed this limitation was producing lots of logs, so we've changed the strategy to\nbe based on the size of the log in bytes.",
+          "timestamp": "2023-09-06T20:11:59Z",
+          "tree_id": "6e9d9597422480e5cd0f4cdc8b9c1ad77db0d561",
+          "url": "https://github.com/maidsafe/safe_network/commit/4c9d9fd6df094258e4dfe758bd39263632f6c880"
+        },
+        "date": 1694038936097,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 75.06329,
             "unit": "MB"
           }
         ]
