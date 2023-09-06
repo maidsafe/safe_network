@@ -21,8 +21,8 @@ use std::{
 };
 use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
 
-/// max_lines:
-/// - maximum number of lines per file
+/// max_bytes:
+/// - the maximum size a log can grow to until it is rotated.
 ///
 /// uncompressed_files:
 /// - number of files to keep uncompressed.
@@ -33,7 +33,7 @@ use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
 /// - older files are deleted.
 pub(super) fn file_rotater(
     dir: &PathBuf,
-    max_lines: usize,
+    max_bytes: usize,
     uncompressed_files: usize,
     max_files: usize,
 ) -> (NonBlocking, WorkerGuard) {
@@ -50,7 +50,7 @@ pub(super) fn file_rotater(
         dir,
         format!("{binary_name}.log"),
         AppendTimestamp::default(FileLimit::MaxFiles(max_files)),
-        ContentLimit::Lines(max_lines),
+        ContentLimit::BytesSurpassed(max_bytes),
         Compression::OnRotate(uncompressed_files),
     );
 
