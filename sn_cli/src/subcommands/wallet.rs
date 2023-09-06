@@ -346,7 +346,7 @@ pub(super) async fn chunk_and_pay_for_storage(
         .await?;
 
     println!(
-        "Successfully made payment of {cost} for {} records. (At a cost per record of {cost:?}.)",
+        "Successfully made payment of {cost} for {} files.)",
         chunked_files.len(),
     );
 

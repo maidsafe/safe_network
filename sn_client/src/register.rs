@@ -292,7 +292,11 @@ impl ClientRegister {
         };
 
         // Register edits might exist so we cannot be sure that jsut because we get a record back that this should fail
-        Ok(self.client.network.put_record(record, verify_store).await?)
+        Ok(self
+            .client
+            .network
+            .put_record(record, verify_store, None)
+            .await?)
     }
 
     // Retrieve a `Register` from the Network.

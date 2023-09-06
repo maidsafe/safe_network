@@ -26,6 +26,10 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
+    /// Could not acquire a Semaphore permit.
+    #[error("Could not acquire a Semaphore permit.")]
+    CouldNotAcquireSemaphorePermit(#[from] tokio::sync::AcquireError),
+
     #[error(
         "Not enough store cost quotes returned from the network to ensure a valid fee is paid"
     )]

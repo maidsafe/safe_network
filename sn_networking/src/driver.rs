@@ -205,6 +205,7 @@ impl SwarmDriver {
     pub fn new_client(
         local: bool,
         request_timeout: Option<Duration>,
+        concurrency_limit: usize,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
@@ -220,7 +221,7 @@ impl SwarmDriver {
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
             );
 
-        Self::with(
+        let (mut network, net_event_recv, driver) = Self::with(
             std::env::temp_dir(),
             Keypair::generate_ed25519(),
             kad_cfg,
@@ -230,7 +231,11 @@ impl SwarmDriver {
             request_timeout,
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
-        )
+        )?;
+
+        network.set_concurrency_limit(concurrency_limit);
+
+        Ok((network, net_event_recv, driver))
     }
 
     #[allow(clippy::too_many_arguments, clippy::result_large_err)]
@@ -389,6 +394,7 @@ impl SwarmDriver {
                 peer_id,
                 root_dir_path,
                 keypair,
+                concurrency_limiter: None,
             },
             network_event_receiver,
             swarm_driver,
