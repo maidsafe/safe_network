@@ -401,7 +401,10 @@ fn store_chunks_task(
             sleep(delay).await;
 
             for chunk in chunks {
-                match file_api.upload_chunk_in_parallel(chunk, true).await {
+                match file_api
+                    .get_local_payment_and_upload_chunk(chunk, true, None)
+                    .await
+                {
                     Ok(()) => content
                         .write()
                         .await

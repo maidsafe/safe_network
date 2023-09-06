@@ -21,9 +21,14 @@ use thiserror::Error;
 pub enum Error {
     #[error("Genesis error {0}")]
     GenesisError(#[from] sn_transfers::dbc_genesis::Error),
+
     /// Could not acquire a Semaphore permit.
     #[error("Could not acquire a Semaphore permit.")]
     CouldNotAcquireSemaphorePermit(#[from] tokio::sync::AcquireError),
+
+    /// Could not acquire a netowrk semaphore
+    #[error("Network layer does not have the expected concurrency limiter.")]
+    NoNetworkConcurrencyLimiterFound,
 
     #[error("Transfer Error {0}.")]
     Transfers(#[from] sn_transfers::wallet::Error),

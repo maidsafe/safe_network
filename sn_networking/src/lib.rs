@@ -41,8 +41,8 @@ use sn_protocol::{
     storage::{RecordHeader, RecordKind},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use std::{collections::HashSet, path::PathBuf, time::Duration};
-use tokio::sync::{mpsc, oneshot};
+use std::{collections::HashSet, path::PathBuf, sync::Arc};
+use tokio::sync::{mpsc, oneshot, OwnedSemaphorePermit, Semaphore};
 use tracing::warn;
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
@@ -60,9 +60,9 @@ pub const fn close_group_majority() -> usize {
 /// Duration to wait for verification
 const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
 /// Number of attempts to verify a record
-const VERIFICATION_ATTEMPTS: usize = 5;
+const VERIFICATION_ATTEMPTS: usize = 3;
 /// Number of attempts to re-put a record
-const PUT_RECORD_RETRIES: usize = 10;
+const PUT_RECORD_RETRIES: usize = 3;
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
@@ -108,6 +108,9 @@ pub struct Network {
     pub peer_id: PeerId,
     pub root_dir_path: PathBuf,
     keypair: Keypair,
+    /// Optinal Concurrent limiter to limit the number of concurrent requests
+    /// Intended for client side use
+    concurrency_limiter: Option<Arc<Semaphore>>,
 }
 
 impl Network {
@@ -115,6 +118,16 @@ impl Network {
     #[allow(clippy::result_large_err)]
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         self.keypair.sign(msg).map_err(Error::from)
+    }
+
+    /// Get the network's concurrency limiter
+    pub fn concurrency_limiter(&self) -> Option<Arc<Semaphore>> {
+        self.concurrency_limiter.clone()
+    }
+
+    /// Set a new concurrency semaphore to limit client network operations
+    pub fn set_concurrency_limit(&mut self, limit: usize) {
+        self.concurrency_limiter = Some(Arc::new(Semaphore::new(limit)));
     }
 
     /// Dial the given peer at the given address.
@@ -168,6 +181,13 @@ impl Network {
         record_address: NetworkAddress,
     ) -> Result<Vec<(PublicAddress, Token)>> {
         let (sender, receiver) = oneshot::channel();
+        // get permit if semaphore supplied
+        let mut _permit = None;
+        if let Some(semaphore) = self.concurrency_limiter.clone() {
+            let our_permit = semaphore.acquire_owned().await?;
+            _permit = Some(our_permit);
+        }
+
         debug!("Attempting to get store cost");
         // first we need to get CLOSE_GROUP of the dbc_id
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
@@ -213,11 +233,17 @@ impl Network {
         target_record: Option<Record>,
         re_attempt: bool,
     ) -> Result<Record> {
+        let mut _permit = None;
+
         let total_attempts = if re_attempt { VERIFICATION_ATTEMPTS } else { 1 };
 
         let mut verification_attempts = 0;
 
         while verification_attempts < total_attempts {
+            if let Some(semaphore) = self.concurrency_limiter.clone() {
+                let our_permit = semaphore.acquire_owned().await?;
+                _permit = Some(our_permit);
+            }
             verification_attempts += 1;
             info!(
                 "Getting record of {:?} attempts {verification_attempts:?}/{total_attempts:?}",
@@ -256,7 +282,7 @@ impl Network {
                     {
                         return Ok(returned_record);
                     } else if verification_attempts >= total_attempts {
-                        info!("Errorrrrring");
+                        info!("Error: Returned record does not match target");
                         return Err(Error::ReturnedRecordDoesNotMatch(
                             returned_record.key.into(),
                         ));
@@ -288,6 +314,9 @@ impl Network {
                     );
                 }
             }
+
+            // drop any permit while we wait
+            _permit = None;
 
             // wait for a bit before re-trying
             tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
@@ -321,19 +350,32 @@ impl Network {
 
     /// Put `Record` to network
     /// optionally verify the record is stored after putting it to network
-    pub async fn put_record(&self, record: Record, verify_store: bool) -> Result<()> {
+    pub async fn put_record(
+        &self,
+        record: Record,
+        verify_store: bool,
+        optional_permit: Option<OwnedSemaphorePermit>,
+    ) -> Result<()> {
         if verify_store {
-            self.put_record_with_retries(record, verify_store).await
+            self.put_record_with_retries(record, verify_store, optional_permit)
+                .await
         } else {
-            self.put_record_once(record, false).await
+            self.put_record_once(record, false, optional_permit).await
         }
     }
 
     /// Put `Record` to network
     /// Verify the record is stored after putting it to network
     /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
-    async fn put_record_with_retries(&self, record: Record, verify_store: bool) -> Result<()> {
+    async fn put_record_with_retries(
+        &self,
+        record: Record,
+        verify_store: bool,
+        mut optional_permit: Option<OwnedSemaphorePermit>,
+    ) -> Result<()> {
         let mut retries = 0;
+
+        // let mut has_permit = optional_permit.is_some();
         // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
         while retries < PUT_RECORD_RETRIES {
             trace!(
@@ -341,23 +383,37 @@ impl Network {
                 PrettyPrintRecordKey::from(record.key.clone())
             );
 
-            let res = self.put_record_once(record.clone(), verify_store).await;
+            let res = self
+                .put_record_once(record.clone(), verify_store, optional_permit)
+                .await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
             }
+
+            // the permit will have been consumed above.
+            optional_permit = None;
+
             retries += 1;
         }
         Err(Error::FailedToVerifyRecordWasStored(record.key.into()))
     }
 
-    async fn put_record_once(&self, record: Record, verify_store: bool) -> Result<()> {
-        let record_key = PrettyPrintRecordKey::from(record.key.clone());
+    async fn put_record_once(
+        &self,
+        record: Record,
+        verify_store: bool,
+        starting_permit: Option<OwnedSemaphorePermit>,
+    ) -> Result<()> {
+        let mut _permit = starting_permit;
+
+        let record_key = record.key.clone();
+        let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
         info!(
             "Putting record of {} - length {:?} to network",
-            record_key,
+            pretty_key,
             record.value.len()
         );
-        let the_record = record.clone();
+
         // Waiting for a response to avoid flushing to network too quick that causing choke
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::PutRecord {
@@ -365,19 +421,23 @@ impl Network {
             sender,
         })?;
         let response = receiver.await?;
+
+        drop(_permit);
+
         if verify_store {
             // small wait before we attempt to verify
-            tokio::time::sleep(Duration::from_millis(100)).await;
-            trace!("attempting to verify {record_key:?}");
+            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+            trace!("attempting to verify {pretty_key:?}");
+
             // Verify the record is stored, requiring re-attempts
-            self.get_record_from_network(record.key.clone(), Some(record), true)
+            self.get_record_from_network(record_key, Some(record), true)
                 .await
                 .map_err(|e| {
                     trace!(
                         "Failing to verify the put record {:?} with error {e:?}",
-                        PrettyPrintRecordKey::from(the_record.key.clone())
+                        pretty_key
                     );
-                    Error::FailedToVerifyRecordWasStored(the_record.key.into())
+                    Error::FailedToVerifyRecordWasStored(pretty_key)
                 })?;
         }
 

@@ -26,14 +26,14 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::client_transfers::SpendRequest;
-use std::{sync::Arc, time::Duration};
-use tokio::{sync::Semaphore, task::spawn};
+use std::time::Duration;
+use tokio::{sync::OwnedSemaphorePermit, task::spawn};
 use tracing::trace;
 use xor_name::XorName;
 
 // Maximum number of concurrency to be allowed at any time
 // eg, concurrent uploads/downloads of chunks, managed by a semaphore
-pub const DEFAULT_CLIENT_CONCURRENCY: usize = 10;
+pub const DEFAULT_CLIENT_CONCURRENCY: usize = 5;
 
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(30);
@@ -55,14 +55,13 @@ impl Client {
         info!("Startup a client with peers {peers:?} and local {local:?} flag");
         info!("Starting Kad swarm in client mode...");
 
-        let (network, mut network_event_receiver, swarm_driver) =
-            SwarmDriver::new_client(local, req_response_timeout)?;
-        info!("Client constructed network and swarm_driver");
-        let events_channel = ClientEventsChannel::default();
-
         // use passed concurrency limit or default
         let concurrency_limit = custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY);
-        let concurrency_limiter = Arc::new(Semaphore::new(concurrency_limit));
+
+        let (network, mut network_event_receiver, swarm_driver) =
+            SwarmDriver::new_client(local, req_response_timeout, concurrency_limit)?;
+        info!("Client constructed network and swarm_driver");
+        let events_channel = ClientEventsChannel::default();
 
         let client = Self {
             network: network.clone(),
@@ -70,7 +69,6 @@ impl Client {
             signer,
             peers_added: 0,
             progress: Some(Self::setup_connection_progress()),
-            concurrency_limiter,
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -165,9 +163,16 @@ impl Client {
         Ok(client)
     }
 
-    /// Get the client's concurrency limiter
-    pub fn concurrency_limiter(&self) -> Arc<Semaphore> {
-        self.concurrency_limiter.clone()
+    /// Get the client's network concurrency permit
+    ///
+    /// This allows us to grab a permit early if we're dealing with large data (chunks)
+    /// and want to hold off on loading more until other operations are complete.
+    pub async fn get_network_concurrency_permit(&self) -> Result<OwnedSemaphorePermit> {
+        if let Some(limiter) = self.network.concurrency_limiter() {
+            Ok(limiter.acquire_owned().await?)
+        } else {
+            Err(Error::NoNetworkConcurrencyLimiterFound)
+        }
     }
 
     /// Set up our initial progress bar for network connectivity
@@ -288,6 +293,7 @@ impl Client {
         chunk: Chunk,
         payment: Vec<Dbc>,
         verify_store: bool,
+        optional_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
@@ -299,7 +305,10 @@ impl Client {
             expires: None,
         };
 
-        Ok(self.network.put_record(record, verify_store).await?)
+        Ok(self
+            .network
+            .put_record(record, verify_store, optional_permit)
+            .await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.
@@ -336,7 +345,8 @@ impl Client {
             publisher: None,
             expires: None,
         };
-        Ok(self.network.put_record(record, verify_store).await?)
+
+        Ok(self.network.put_record(record, verify_store, None).await?)
     }
 
     /// Get a dbc spend from network
@@ -425,7 +435,6 @@ impl Client {
         address: &NetworkAddress,
     ) -> Result<Vec<(PublicAddress, Token)>> {
         trace!("Getting store cost at {address:?}");
-
         Ok(self
             .network
             .get_store_costs_from_network(address.clone())
