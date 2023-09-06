@@ -173,8 +173,10 @@ jobs:
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --no-run
+        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test nodes_rewards --no-run
         timeout-minutes: 30
+        env:
+          CARGO_TARGET_DIR: "./transfer-target"
 
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
@@ -186,20 +188,23 @@ jobs:
           platform: ${{ matrix.os }}
 
       - name: execute the dbc spend test
-        run: cargo test --release --features="local-discovery" --test sequential_transfers -- --nocapture
+        run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture
         env:
+          CARGO_TARGET_DIR: "./transfer-target"
           SN_LOG: "all"
         timeout-minutes: 10
 
       - name: execute the storage payment tests
-        run: cargo test --release --features="local-discovery" --test storage_payments -- --nocapture
+        run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1          
         env:
+          CARGO_TARGET_DIR: "./transfer-target"
           SN_LOG: "all"
         timeout-minutes: 10
 
       - name: execute the nodes rewards tests
         run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture
         env:
+          CARGO_TARGET_DIR: "./transfer-target"
           SN_LOG: "all"
         timeout-minutes: 25
       
