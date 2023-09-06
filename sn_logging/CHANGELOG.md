@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.5...sn_logging-v0.2.6) - 2023-09-06
+
+### Other
+- rotate logs after exceeding 20mb
+
 ## [0.2.5](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.4...sn_logging-v0.2.5) - 2023-08-30
 
 ### Other
