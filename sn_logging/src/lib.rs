@@ -30,6 +30,10 @@ use tracing_subscriber::{
     Layer, Registry,
 };
 
+const MAX_LOG_SIZE: usize = 20 * 1024 * 1024;
+const MAX_UNCOMPRESSED_LOG_FILES: usize = 100;
+const MAX_LOG_FILES: usize = 1000;
+
 #[derive(Debug, Clone)]
 pub enum LogOutputDest {
     Stdout,
@@ -123,12 +127,12 @@ impl TracingLayers {
                 std::fs::create_dir_all(path)?;
                 println!("Logging to directory: {path:?}");
 
-                let logs_max_lines = 5000;
-                let logs_uncompressed = 100;
-                let logs_max_files = 1000;
-
-                let (file_rotation, worker_guard) =
-                    appender::file_rotater(path, logs_max_lines, logs_uncompressed, logs_max_files);
+                let (file_rotation, worker_guard) = appender::file_rotater(
+                    path,
+                    MAX_LOG_SIZE,
+                    MAX_UNCOMPRESSED_LOG_FILES,
+                    MAX_LOG_FILES,
+                );
                 self.guard = Some(worker_guard);
 
                 match format {
