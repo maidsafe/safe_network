@@ -15,7 +15,7 @@ use common::{get_client_and_wallet, init_logging, random_content};
 use sn_client::{Error as ClientError, WalletClient};
 use sn_dbc::{PublicAddress, Token};
 use sn_networking::Error as NetworkError;
-use sn_protocol::storage::ChunkAddress;
+use sn_protocol::{storage::ChunkAddress, NetworkAddress};
 
 use assert_fs::TempDir;
 use eyre::Result;
@@ -69,11 +69,16 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
     let wallet_original_balance = 100_000_000_000;
 
     let paying_wallet_dir: TempDir = TempDir::new()?;
+    let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
-    let (files_api, content_bytes, _random_content_addrs, chunks) =
-        random_content(&client, paying_wallet_dir.to_path_buf())?;
+
+    let (files_api, content_bytes, _random_content_addrs, chunks) = random_content(
+        &client,
+        paying_wallet_dir.to_path_buf(),
+        chunks_dir.path().to_path_buf(),
+    )?;
 
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
     let subset_len = chunks.len() / 3;
@@ -83,7 +88,7 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
                 .clone()
                 .into_iter()
                 .take(subset_len)
-                .map(|c| c.network_address()),
+                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(name))),
             true,
         )
         .await?;
@@ -167,18 +172,27 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
     let paying_wallet_balance = 50_000_000_000_002;
     let paying_wallet_dir = TempDir::new()?;
+    let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, content_addr, chunks) =
-        random_content(&client, paying_wallet_dir.to_path_buf())?;
+    let (files_api, content_bytes, content_addr, chunks) = random_content(
+        &client,
+        paying_wallet_dir.to_path_buf(),
+        chunks_dir.path().to_path_buf(),
+    )?;
 
     println!("Paying for {} random addresses...", chunks.len());
 
     let _cost = wallet_client
-        .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
+        .pay_for_storage(
+            chunks
+                .iter()
+                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
+            true,
+        )
         .await?;
 
     files_api
@@ -194,24 +208,33 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 async fn storage_payment_chunk_upload_fails() -> Result<()> {
     let paying_wallet_balance = 50_000_000_000_003;
     let paying_wallet_dir = TempDir::new()?;
+    let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, content_addr, chunks) =
-        random_content(&client, paying_wallet_dir.to_path_buf())?;
+    let (files_api, content_bytes, content_addr, chunks) = random_content(
+        &client,
+        paying_wallet_dir.to_path_buf(),
+        chunks_dir.path().to_path_buf(),
+    )?;
 
     println!("Paying for {} random addresses...", chunks.len());
 
     let _cost = wallet_client
-        .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
+        .pay_for_storage(
+            chunks
+                .iter()
+                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
+            true,
+        )
         .await?;
 
     let mut no_data_payments = BTreeMap::default();
-    for chunk in chunks {
+    for (chunk_name, _) in chunks.iter() {
         no_data_payments.insert(
-            chunk.network_address(),
+            NetworkAddress::ChunkAddress(ChunkAddress::new(*chunk_name)),
             vec![(
                 PublicAddress::new(bls::SecretKey::random().public_key()),
                 Token::from_nano(0),

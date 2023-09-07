@@ -12,6 +12,7 @@ use common::{get_client_and_wallet, random_content};
 
 use sn_client::WalletClient;
 use sn_dbc::Token;
+use sn_protocol::{storage::ChunkAddress, NetworkAddress};
 use sn_transfers::wallet::LocalWallet;
 
 use assert_fs::TempDir;
@@ -22,18 +23,27 @@ use tokio::time::{sleep, Duration};
 async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let paying_wallet_balance = 10_000_000_000_333;
     let paying_wallet_dir = TempDir::new()?;
+    let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, _content_addr, chunks) =
-        random_content(&client, paying_wallet_dir.to_path_buf())?;
+    let (files_api, content_bytes, _content_addr, chunks) = random_content(
+        &client,
+        paying_wallet_dir.to_path_buf(),
+        chunks_dir.path().to_path_buf(),
+    )?;
 
     println!("Paying for {} random addresses...", chunks.len());
 
     let cost = wallet_client
-        .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
+        .pay_for_storage(
+            chunks
+                .iter()
+                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
+            true,
+        )
         .await?;
 
     let prev_rewards_balance = current_rewards_balance()?;

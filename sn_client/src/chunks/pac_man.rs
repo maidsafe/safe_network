@@ -6,15 +6,19 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Error, Result};
+use super::Result;
 
 use bincode::serialize;
 use bytes::Bytes;
 use rayon::prelude::*;
-use self_encryption::{DataMap, EncryptedChunk, MAX_CHUNK_SIZE};
+use self_encryption::{DataMap, StreamSelfEncryptor, MAX_CHUNK_SIZE};
 use serde::{Deserialize, Serialize};
 use sn_protocol::storage::Chunk;
-use std::{fs::File, io::Write, path::Path};
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 use xor_name::XorName;
 
 #[derive(Serialize, Deserialize)]
@@ -43,37 +47,47 @@ pub(crate) fn encrypt_from_path(path: &Path, output_dir: &Path) -> Result<(XorNa
     Ok((address, encrypted_chunks))
 }
 
-pub(crate) fn encrypt_large(data: Bytes) -> Result<(XorName, Vec<Chunk>)> {
-    let (data_map, encrypted_chunks) = encrypt_data(data)?;
-    pack(data_map, encrypted_chunks)
-}
+#[allow(unused_assignments)]
+pub(crate) fn encrypt_large(
+    file_path: &Path,
+    output_dir: &Path,
+) -> Result<(XorName, Vec<(XorName, PathBuf)>)> {
+    let mut encryptor = StreamSelfEncryptor::encrypt_from_file(
+        Box::new(file_path.to_path_buf()),
+        Some(Box::new(output_dir.to_path_buf())),
+    )?;
 
-/// Returns the top-most chunk address through which the entire
-/// data tree can be accessed, and all the other encrypted chunks.
-/// If encryption is provided, the additional `DataMapLevel` chunks are encrypted with it.
-/// This is necessary if the data is meant to be private, since a `DataMap` is used to find and decrypt the original file.
-pub(crate) fn pack(
-    data_map: DataMap,
-    encrypted_chunks: Vec<EncryptedChunk>,
-) -> Result<(XorName, Vec<Chunk>)> {
-    let (address, additional_chunks) = pack_data_map(data_map)?;
-
-    let expected_total = encrypted_chunks.len() + additional_chunks.len();
-    let all_chunks: Vec<_> = encrypted_chunks
-        .par_iter()
-        .map(|c| to_chunk(c.content.clone())) // no need to encrypt what is self-encrypted
-        .chain(additional_chunks)
+    let mut data_map = None;
+    loop {
+        match encryptor.next_encryption()? {
+            (None, Some(m)) => {
+                // Returning a data_map means file encryption is completed.
+                data_map = Some(m);
+                break;
+            }
+            _ => continue,
+        }
+    }
+    let data_map = data_map.unwrap();
+    let mut encrypted_chunks: Vec<_> = data_map
+        .infos()
+        .iter()
+        .map(|chunk_info| {
+            let chunk_file_path = output_dir.join(hex::encode(chunk_info.dst_hash));
+            (chunk_info.dst_hash, chunk_file_path.to_path_buf())
+        })
         .collect();
 
-    if expected_total > all_chunks.len() {
-        // as we flatten above, we need to check outcome here
-        return Err(Error::NotAllDataWasChunked {
-            expected: expected_total,
-            chunked: all_chunks.len(),
-        });
+    // Pack the datamap into chunks that under the same output folder as well.
+    let (address, additional_chunks) = pack_data_map(data_map)?;
+    for chunk in additional_chunks.iter() {
+        let file_path = output_dir.join(&hex::encode(chunk.name()));
+        encrypted_chunks.push((*chunk.name(), file_path.to_path_buf()));
+        let mut output_file = File::create(file_path)?;
+        output_file.write_all(&chunk.value)?;
     }
 
-    Ok((address, all_chunks))
+    Ok((address, encrypted_chunks))
 }
 
 pub(crate) fn to_chunk(chunk_content: Bytes) -> Chunk {
@@ -127,9 +141,4 @@ fn wrap_data_map(data_map: DataMapLevel) -> Result<Bytes> {
 fn encrypt_file(file: &Path, output_dir: &Path) -> Result<(DataMap, Vec<XorName>)> {
     let encrypted_chunks = self_encryption::encrypt_from_file(file, output_dir)?;
     Ok(encrypted_chunks)
-}
-
-fn encrypt_data(bytes: Bytes) -> Result<(DataMap, Vec<EncryptedChunk>)> {
-    let encrypted_chunk = self_encryption::encrypt(bytes)?;
-    Ok(encrypted_chunk)
 }

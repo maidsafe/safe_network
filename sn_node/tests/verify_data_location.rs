@@ -10,7 +10,6 @@
 mod common;
 
 use assert_fs::TempDir;
-use bytes::Bytes;
 use common::{
     get_client_and_wallet, node_restart,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
@@ -29,6 +28,8 @@ use sn_protocol::{storage::ChunkAddress, NetworkAddress, PrettyPrintRecordKey};
 use sn_transfers::wallet::LocalWallet;
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
+    fs::File,
+    io::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
     time::{Duration, Instant},
@@ -331,41 +332,48 @@ async fn store_chunks(
             break;
         }
 
+        let chunks_dir = TempDir::new()?;
+
         let random_bytes: Vec<u8> = ::std::iter::repeat(())
             .map(|()| rng.gen::<u8>())
             .take(CHUNK_SIZE)
             .collect();
-        let bytes = Bytes::copy_from_slice(&random_bytes);
 
-        let (addr, chunks) = file_api
-            .chunk_bytes(bytes.clone())
-            .expect("Failed to chunk bytes");
+        let file_path = chunks_dir.join("random_content");
+        let mut output_file = File::create(file_path.clone())?;
+        output_file.write_all(&random_bytes)?;
+
+        let (file_addr, _file_size, chunks) = file_api.chunk_file(&file_path, chunks_dir.path())?;
 
         println!(
-            "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?}",
+            "Paying storage for ({}) new Chunk/s of file ({} bytes) at {file_addr:?}",
             chunks.len(),
-            bytes.len()
+            random_bytes.len()
         );
 
         let _cost = wallet_client
-            .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
+            .pay_for_storage(
+                chunks
+                    .iter()
+                    .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
+                true,
+            )
             .await
-            .expect("Failed to pay for storage for new file at {addr:?}");
+            .expect("Failed to pay for storage for new file at {file_addr:?}");
 
         println!(
-            "Storing ({}) Chunk/s of file ({} bytes) at {addr:?}",
+            "Storing ({}) Chunk/s of file ({} bytes) at {file_addr:?}",
             chunks.len(),
-            bytes.len()
+            random_bytes.len()
         );
 
-        let addr = ChunkAddress::new(file_api.calculate_address(bytes.clone())?);
-        let key = PrettyPrintRecordKey::from(RecordKey::new(addr.xorname()));
+        let key = PrettyPrintRecordKey::from(RecordKey::new(&file_addr));
         file_api
-            .upload_with_payments(bytes, &wallet_client, true)
+            .upload_with_payments(random_bytes.into(), &wallet_client, true)
             .await?;
         uploaded_chunks_count += 1;
 
-        println!("Stored Chunk with {addr:?} / {key:?}");
+        println!("Stored Chunk with {file_addr:?} / {key:?}");
     }
 
     println!(
