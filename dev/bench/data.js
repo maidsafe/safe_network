@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694077665079,
+  "lastUpdate": 1694077668992,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -16604,6 +16604,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 783,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6eba8c0ac7b3d79b68137e6e70aa009b7dbcbce5",
+          "message": "fix(ci): enable cargo dir env variable for nightly run",
+          "timestamp": "2023-09-07T07:03:20Z",
+          "tree_id": "e47663aed92d0e7509a9226f331cd750e3e90845",
+          "url": "https://github.com/maidsafe/safe_network/commit/6eba8c0ac7b3d79b68137e6e70aa009b7dbcbce5"
+        },
+        "date": 1694077668278,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 880.5376,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 807,
             "unit": "MB"
           }
         ]
