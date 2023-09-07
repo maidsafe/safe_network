@@ -3751,9 +3751,9 @@ dependencies = [
 
 [[package]]
 name = "self_encryption"
-version = "0.28.2"
+version = "0.28.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd4d59f4d51fb213b64dddd45147ac03bf4b16e3d56458b279c34a12b9270023"
+checksum = "c7bac286bd8d3a00fd0855a986b7675bbbdd66b048404f4d691a13f2770e456d"
 dependencies = [
  "aes 0.8.3",
  "bincode",
@@ -3768,6 +3768,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rayon",
  "serde",
+ "tempfile",
  "tiny-keccak",
  "tokio",
  "xor_name",
@@ -3954,6 +3955,7 @@ dependencies = [
  "sn_protocol",
  "sn_registers",
  "sn_transfers",
+ "tempfile",
  "thiserror",
  "tiny-keccak",
  "tokio",
@@ -4061,6 +4063,7 @@ dependencies = [
  "sn_registers",
  "sn_transfers",
  "strum",
+ "tempfile",
  "thiserror",
  "tiny_http",
  "tokio",

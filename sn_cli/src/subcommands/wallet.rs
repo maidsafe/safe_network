@@ -6,7 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{
     eyre::{bail, eyre, WrapErr},
@@ -18,7 +17,6 @@ use sn_protocol::storage::ChunkAddress;
 use sn_transfers::wallet::{parse_public_address, LocalWallet};
 use std::{
     collections::BTreeMap,
-    fs,
     io::Read,
     path::{Path, PathBuf},
 };
@@ -298,29 +296,11 @@ pub(super) async fn chunk_and_pay_for_storage(
                 continue;
             };
 
-            let file = fs::read(entry.path())?;
-            let bytes = Bytes::from(file);
-            // we need all chunks addresses not just the data-map addr
-            let (file_addr, chunks) = file_api.chunk_bytes(bytes.clone())?;
-            let mut chunks_paths = vec![];
-            for c in chunks.iter() {
-                num_of_chunks += 1;
-                let xorname = *c.name();
-                // let's store the chunk on temp file for the user
-                // to be able to upload it to the network after making the payment,
-                // without needing to chunk the files again.
-                let path = chunks_dir.join(hex::encode(xorname));
-                fs::write(&path, c.value())?;
-                chunks_paths.push((xorname, path));
-            }
+            let (file_addr, _size, chunks) =
+                file_api.chunk_file(entry.path(), chunks_dir.as_path())?;
+            num_of_chunks += chunks.len();
 
-            chunked_files.insert(
-                file_addr,
-                ChunkedFile {
-                    file_name,
-                    chunks: chunks_paths,
-                },
-            );
+            chunked_files.insert(file_addr, ChunkedFile { file_name, chunks });
         }
     }
 

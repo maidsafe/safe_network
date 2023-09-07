@@ -17,7 +17,7 @@ use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartR
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client, Files};
 use sn_peers_acquisition::parse_peer_addr;
-use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_protocol::storage::ChunkAddress;
 use sn_transfers::wallet::LocalWallet;
 
 use bytes::Bytes;
@@ -30,6 +30,8 @@ use rand::{
 use sn_dbc::Token;
 use sn_logging::{LogFormat, LogOutputDest};
 use std::{
+    fs::File,
+    io::Write,
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::Once,
@@ -37,8 +39,11 @@ use std::{
 use tokio::sync::Mutex;
 use tonic::Request;
 use tracing_core::Level;
+use xor_name::XorName;
 
 static TEST_INIT_LOGGER: Once = Once::new();
+
+type ResultRandomContent = Result<(Files, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
 
 pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
 
@@ -121,7 +126,8 @@ pub async fn get_client_and_wallet(root_dir: &Path, amount: u64) -> Result<(Clie
 pub fn random_content(
     client: &Client,
     wallet_dir: PathBuf,
-) -> Result<(Files, Bytes, ChunkAddress, Vec<Chunk>)> {
+    chunk_dir: PathBuf,
+) -> ResultRandomContent {
     let mut rng = rand::thread_rng();
 
     let random_len = rng.gen_range(MIN_ENCRYPTABLE_BYTES..1024 * MIN_ENCRYPTABLE_BYTES);
@@ -130,13 +136,16 @@ pub fn random_content(
             .take(random_len)
             .collect();
 
+    let file_path = chunk_dir.join("random_content");
+    let mut output_file = File::create(file_path.clone())?;
+    output_file.write_all(&random_length_content)?;
+
     let files_api = Files::new(client.clone(), wallet_dir);
-    let content_bytes = Bytes::from(random_length_content);
-    let (file_addr, chunks) = files_api.chunk_bytes(content_bytes.clone())?;
+    let (file_addr, _file_size, chunks) = files_api.chunk_file(&file_path, &chunk_dir)?;
 
     Ok((
         files_api,
-        content_bytes,
+        random_length_content.into(),
         ChunkAddress::new(file_addr),
         chunks,
     ))

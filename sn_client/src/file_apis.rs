@@ -27,6 +27,12 @@ use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
+use std::{
+    fs::{self, create_dir_all, File},
+    io::{Read, Write},
+    path::Path,
+};
+use tempfile::tempdir;
 use tokio::{sync::OwnedSemaphorePermit, task};
 use tracing::trace;
 use xor_name::XorName;
@@ -37,6 +43,8 @@ pub struct Files {
     client: Client,
     wallet_dir: PathBuf,
 }
+
+type ChunkFileResult = Result<(XorName, u64, Vec<(XorName, PathBuf)>)>;
 
 impl Files {
     /// Create file apis instance.
@@ -122,24 +130,29 @@ impl Files {
         self.upload_bytes(bytes, wallet_client, verify_store).await
     }
 
-    /// Calculates a LargeFile's/SmallFile's address from self encrypted chunks,
-    /// without storing them onto the network.
-    #[instrument(skip_all, level = "debug")]
-    pub fn calculate_address(&self, bytes: Bytes) -> Result<XorName> {
-        self.chunk_bytes(bytes).map(|(name, _)| name)
-    }
-
-    /// Tries to chunk the bytes, returning the data-map address and chunks,
-    /// without storing anything to network.
+    /// Tries to chunk the file, returning `(head_address, file_size, chunk_names)`
+    /// and writes encrypted chunks to disk.
     #[instrument(skip_all, level = "trace")]
-    pub fn chunk_bytes(&self, bytes: Bytes) -> Result<(XorName, Vec<Chunk>)> {
-        if bytes.len() < MIN_ENCRYPTABLE_BYTES {
-            let file = SmallFile::new(bytes)?;
-            let chunk = package_small(file)?;
-            Ok((*chunk.name(), vec![chunk]))
+    pub fn chunk_file(&self, file_path: &Path, chunk_dir: &Path) -> ChunkFileResult {
+        let mut file = File::open(file_path)?;
+        let metadata = file.metadata()?;
+        let file_size = metadata.len();
+
+        let (head_address, chunks_paths) = if file_size < MIN_ENCRYPTABLE_BYTES as u64 {
+            let mut bytes = Vec::new();
+            let _ = file.read_to_end(&mut bytes)?;
+            let chunk = package_small(SmallFile::new(bytes.into())?)?;
+
+            // Write the result to disk
+            let small_chunk_file_path = chunk_dir.join(hex::encode(*chunk.name()));
+            let mut output_file = File::create(small_chunk_file_path.clone())?;
+            output_file.write_all(&chunk.value)?;
+
+            (*chunk.name(), vec![(*chunk.name(), small_chunk_file_path)])
         } else {
-            encrypt_large(bytes)
-        }
+            encrypt_large(file_path, chunk_dir)?
+        };
+        Ok((head_address, file_size, chunks_paths))
     }
 
     /// Directly writes Chunks to the network in the
@@ -161,7 +174,6 @@ impl Files {
         if payment.is_empty() {
             warn!(
                     "Failed to get payment proof for chunk: {chunk_addr:?} it was not found in the local wallet",
-                    chunk_addr = chunk_addr,
                 );
             return Err(Error::NoPaymentForRecord(PrettyPrintRecordKey::from(
                 chunk_addr.to_record_key(),
@@ -185,52 +197,32 @@ impl Files {
     // --------------------------------------------
 
     /// Used for testing
-    #[instrument(skip(self, bytes, wallet_client), level = "trace")]
+    #[instrument(skip(self, bytes, _wallet_client), level = "trace")]
     async fn upload_bytes(
         &self,
         bytes: Bytes,
-        wallet_client: &WalletClient,
+        _wallet_client: &WalletClient,
         verify: bool,
     ) -> Result<NetworkAddress> {
-        if bytes.len() < MIN_ENCRYPTABLE_BYTES {
-            let file = SmallFile::new(bytes)?;
-            self.upload_small(file, wallet_client, verify).await
-        } else {
-            let (head_address, chunks) = encrypt_large(bytes)?;
+        let temp_dir = tempdir()?;
+        let file_path = temp_dir.path().join("tempfile");
+        let mut file = File::create(&file_path)?;
+        file.write_all(&bytes)?;
 
-            for chunk in chunks {
-                self.get_local_payment_and_upload_chunk(chunk, verify, None)
-                    .await?;
-            }
+        let chunk_path = temp_dir.path().join("chunk_path");
+        create_dir_all(chunk_path.clone())?;
 
-            Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
-                head_address,
-            )))
-        }
-    }
+        let (head_address, _file_size, chunks_paths) = self.chunk_file(&file_path, &chunk_path)?;
 
-    /// Directly writes a [`SmallFile`] to the network in the
-    /// form of a single chunk, without any batching.
-    #[instrument(skip_all, level = "trace")]
-    async fn upload_small(
-        &self,
-        small: SmallFile,
-        wallet_client: &WalletClient,
-        verify_store: bool,
-    ) -> Result<NetworkAddress> {
-        let chunk = package_small(small)?;
-        let address = chunk.network_address();
-        let payment = wallet_client.get_payment_dbcs(&address);
-
-        if payment.is_empty() {
-            return Err(super::Error::MissingPaymentProof(format!("{address}")));
+        for (_chunk_name, chunk_path) in chunks_paths {
+            let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
+            self.get_local_payment_and_upload_chunk(chunk, verify, None)
+                .await?;
         }
 
-        self.client
-            .store_chunk(chunk, payment, verify_store, None)
-            .await?;
-
-        Ok(address)
+        Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
+            head_address,
+        )))
     }
 
     // Gets and decrypts chunks from the network using nothing else but the data map,
@@ -349,11 +341,14 @@ impl Files {
     }
 }
 
-/// Encrypts a [`LargeFile`] and returns the resulting address and all chunks.
+/// Encrypts a [`LargeFile`] and returns the resulting address and all chunk names.
+/// Correspondent encrypted chunks are writen in the specified output folder.
 /// Does not store anything to the network.
-#[instrument(skip(bytes), level = "trace")]
-fn encrypt_large(bytes: Bytes) -> Result<(XorName, Vec<Chunk>)> {
-    Ok(super::chunks::encrypt_large(bytes)?)
+fn encrypt_large(
+    file_path: &Path,
+    output_dir: &Path,
+) -> Result<(XorName, Vec<(XorName, PathBuf)>)> {
+    Ok(super::chunks::encrypt_large(file_path, output_dir)?)
 }
 
 /// Packages a [`SmallFile`] and returns the resulting address and the chunk.

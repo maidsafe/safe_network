@@ -77,4 +77,12 @@ pub enum Error {
     /// A general error when a transfer fails.
     #[error("Could not verify record was stored on the network {0}")]
     CouldNotVerifyRecord(PrettyPrintRecordKey),
+
+    /// File system access error.
+    #[error("System IO Error {0}.")]
+    SystemIO(#[from] std::io::Error),
+
+    /// SelfEncryption error.
+    #[error("SelfEncryption Error {0}.")]
+    SelfEncryptionIO(#[from] self_encryption::Error),
 }
