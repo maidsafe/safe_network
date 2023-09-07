@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694089332914,
+  "lastUpdate": 1694089336313,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -16706,6 +16706,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 807,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "e0816753a278174c0371ad70eb24fd258d601241",
+          "message": "chore: remove unused transfer dep in networking",
+          "timestamp": "2023-09-07T08:19:12Z",
+          "tree_id": "a1b7a7e0345f1c4d6dd441473d3dbac3967556f5",
+          "url": "https://github.com/maidsafe/safe_network/commit/e0816753a278174c0371ad70eb24fd258d601241"
+        },
+        "date": 1694089335814,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 878.1824,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 791,
             "unit": "MB"
           }
         ]
