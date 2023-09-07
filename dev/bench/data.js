@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694089336313,
+  "lastUpdate": 1694107955773,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -7288,6 +7288,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.4416128710547005,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "d92c7612014073571a0515db4b94bec3f6548788",
+          "message": "ci: increase mem threasholds for memcheck",
+          "timestamp": "2023-09-07T16:18:44Z",
+          "tree_id": "babbeb176d828912e2f0aa7028723231caece2d8",
+          "url": "https://github.com/maidsafe/safe_network/commit/d92c7612014073571a0515db4b94bec3f6548788"
+        },
+        "date": 1694107954422,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.13766707049772545,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.8279822481729233,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.185179452498088,
             "unit": "MiB/s"
           }
         ]
