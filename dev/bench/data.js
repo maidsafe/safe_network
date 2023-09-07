@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694107955773,
+  "lastUpdate": 1694116374453,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -12085,6 +12085,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 85.11897,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "d92c7612014073571a0515db4b94bec3f6548788",
+          "message": "ci: increase mem threasholds for memcheck",
+          "timestamp": "2023-09-07T16:18:44Z",
+          "tree_id": "babbeb176d828912e2f0aa7028723231caece2d8",
+          "url": "https://github.com/maidsafe/safe_network/commit/d92c7612014073571a0515db4b94bec3f6548788"
+        },
+        "date": 1694116373717,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 82.66957,
             "unit": "MB"
           }
         ]
