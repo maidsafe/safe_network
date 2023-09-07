@@ -117,13 +117,6 @@ impl Network {
         self.keypair.sign(msg).map_err(Error::from)
     }
 
-    ///  Listen for incoming connections on the given address.
-    pub async fn start_listening(&self, addr: Multiaddr) -> Result<()> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::StartListening { addr, sender })?;
-        receiver.await?
-    }
-
     /// Dial the given peer at the given address.
     pub async fn dial(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
@@ -168,49 +161,6 @@ impl Network {
         receiver
             .await
             .map_err(|_e| Error::InternalMsgChannelDropped)
-    }
-
-    /// Returns the current set of members in our close group. This list is sorted in ascending order based on the
-    ///  distance to self. The first element is self.
-    pub async fn get_our_close_group(&self) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetOurCloseGroup { sender })?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
-    }
-
-    /// Send `Request` to the closest peers. If `self` is among the closest_peers, the `Request` is
-    /// forwarded to itself and handled. Then a corresponding `Response` is created and is
-    /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
-    /// layers.
-    pub async fn node_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
-        debug!(
-            "Sending {request:?} with dst {:?} to the closest peers.",
-            request.dst()
-        );
-        let closest_peers = self.node_get_closest_peers(&request.dst()).await?;
-
-        Ok(self
-            .send_and_get_responses(closest_peers, request, true)
-            .await)
-    }
-
-    /// Send `Request` to the closest peers. `Self` is not present among the recipients.
-    pub async fn client_send_to_closest(
-        &self,
-        request: &Request,
-        expect_all_responses: bool,
-    ) -> Result<Vec<Result<Response>>> {
-        debug!(
-            "Sending {request:?} with dst {:?} to the closest peers.",
-            request.dst()
-        );
-        let closest_peers = self.client_get_closest_peers(&request.dst()).await?;
-        Ok(self
-            .send_and_get_responses(closest_peers, request, expect_all_responses)
-            .await)
     }
 
     pub async fn get_store_costs_from_network(
