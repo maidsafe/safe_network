@@ -20,9 +20,9 @@ pub enum Error {
     /// Dbc add would overflow
     #[error("Total price exceed possible token amount")]
     TotalPriceTooHigh,
-    /// Failed to create transfer.
-    #[error("Transfer error {0}")]
-    CreateTransfer(#[from] crate::client_transfers::Error),
+    /// Failed to create offline transfer.
+    #[error("Offline transfer creation error {0}")]
+    CreateOfflineTransfer(#[from] crate::client_transfers::Error),
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendTokens(String),
@@ -44,6 +44,16 @@ pub enum Error {
     /// Failed to serialize a main key to hex.
     #[error("Could not serialize main key to hex: {0}")]
     FailedToHexEncodeKey(String),
+
+    #[error("UTXO serialisation failed")]
+    UtxoSerialisationFailed,
+    #[error("UTXO decryption failed")]
+    UtxoDecryptionFailed,
+    #[error("UTXO encryption failed")]
+    UtxoEncryptionFailed,
+    #[error("We are not a recipient of this Transfer")]
+    NotRecipient,
+
     /// Dbc error.
     #[error("Dbc error: {0}")]
     Dbc(#[from] sn_dbc::Error),

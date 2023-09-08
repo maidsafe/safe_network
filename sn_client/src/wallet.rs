@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_transfers::client_transfers::SpendRequest;
+use sn_transfers::{client_transfers::SpendRequest, wallet::Transfer};
 
 use super::Client;
 
@@ -57,9 +57,10 @@ impl WalletClient {
         self.wallet.unconfirmed_txs()
     }
 
-    /// Get the payment dbc for a given network address
-    pub fn get_payment_dbcs(&self, address: &NetworkAddress) -> Vec<Dbc> {
-        self.wallet.get_payment_dbcs(address)
+    /// Get the payment transfers for a given network address
+    pub fn get_payment_transfers(&self, address: &NetworkAddress) -> Result<Vec<Transfer>> {
+        let dbcs = self.wallet.get_payment_dbcs(address);
+        self.wallet.create_transfers(dbcs)
     }
 
     /// Send tokens to another wallet.

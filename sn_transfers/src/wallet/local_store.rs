@@ -11,16 +11,18 @@ use super::{
         create_received_dbcs_dir, get_unconfirmed_txs, get_wallet, load_dbc, load_received_dbcs,
         store_created_dbcs, store_unconfirmed_txs, store_wallet,
     },
-    KeyLessWallet, Result,
+    Error, KeyLessWallet, Result, Transfer, Utxo,
 };
+
 use crate::client_transfers::{
-    create_transfer, ContentPaymentsIdMap, SpendRequest, TransferOutputs,
+    create_offline_transfer, ContentPaymentsIdMap, SpendRequest, TransferOutputs,
 };
 use itertools::Itertools;
 use sn_dbc::{
-    random_derivation_index, Dbc, DbcId, DerivedKey, Hash, MainKey, PublicAddress, Token,
+    random_derivation_index, Dbc, DbcId, DerivationIndex, DerivedKey, Hash, MainKey, PublicAddress,
+    Token,
 };
-use sn_protocol::NetworkAddress;
+use sn_protocol::{storage::DbcAddress, NetworkAddress};
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -214,7 +216,7 @@ impl LocalWallet {
         let reason_hash = reason_hash.unwrap_or_default();
 
         let transfer =
-            create_transfer(available_dbcs, to_unique_keys, self.address(), reason_hash)?;
+            create_offline_transfer(available_dbcs, to_unique_keys, self.address(), reason_hash)?;
 
         let created_dbcs = transfer.created_dbcs.clone();
 
@@ -247,7 +249,7 @@ impl LocalWallet {
         let available_dbcs = self.available_dbcs();
         trace!("Available DBCs: {:#?}", available_dbcs);
         let transfer_outputs =
-            create_transfer(available_dbcs, all_payees_only, self.address(), reason_hash)?;
+            create_offline_transfer(available_dbcs, all_payees_only, self.address(), reason_hash)?;
 
         let mut all_transfers_per_address = BTreeMap::default();
 
@@ -341,6 +343,56 @@ impl LocalWallet {
         }
 
         Ok(())
+    }
+
+    /// Creates Transfers from the given dbcs
+    /// Grouping DBCs by recipient into different transfers
+    /// This Transfer can be sent safely to the recipients as all data in it is encrypted
+    /// The recipients can then decrypt the data and use it to verify and reconstruct the DBCs
+    pub fn create_transfers(&self, dbcs: Vec<Dbc>) -> Result<Vec<Transfer>> {
+        let mut utxos_map: BTreeMap<PublicAddress, Vec<Utxo>> = BTreeMap::new();
+        for dbc in dbcs {
+            let recipient = dbc.secrets.public_address;
+            let derivation_index = dbc.derivation_index();
+            let parent_spend_addr = match dbc.signed_spends.iter().next() {
+                Some(s) => DbcAddress::from_dbc_id(s.dbc_id()),
+                None => {
+                    warn!(
+                        "Skipping DBC {dbc:?} while creating Transfer as it has no parent spends."
+                    );
+                    continue;
+                }
+            };
+
+            let u = Utxo::new(derivation_index, parent_spend_addr);
+            utxos_map.entry(recipient).or_insert_with(Vec::new).push(u);
+        }
+
+        let mut transfers = Vec::new();
+        for (recipient, utxos) in utxos_map {
+            let t =
+                Transfer::create(utxos, recipient.0).map_err(|_| Error::UtxoEncryptionFailed)?;
+            transfers.push(t)
+        }
+        Ok(transfers)
+    }
+
+    pub fn decipher_transfer(&self, transfer: Transfer) -> Result<Vec<Utxo>> {
+        transfer.utxos(self.key.secret_key())
+    }
+
+    pub fn decipher_transfer_for_us(&self, payment: Vec<Transfer>) -> Result<Vec<Utxo>> {
+        for tr in payment {
+            match self.decipher_transfer(tr) {
+                Ok(utxos) => return Ok(utxos),
+                Err(_) => continue, // cannot decipher, not ours
+            }
+        }
+        Err(Error::NotRecipient)
+    }
+
+    pub fn derive_key(&self, derivation_index: &DerivationIndex) -> DerivedKey {
+        self.key.derive_key(derivation_index)
     }
 }
 
