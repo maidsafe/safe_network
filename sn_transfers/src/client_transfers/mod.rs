@@ -33,7 +33,7 @@ mod transfer;
 use std::collections::BTreeMap;
 
 pub(crate) use self::error::{Error, Result};
-pub use self::transfer::create_transfer;
+pub use self::transfer::create_offline_transfer;
 
 use sn_dbc::{
     Dbc, DbcId, DbcTransaction, DerivationIndex, DerivedKey, PublicAddress, SignedSpend, Token,
