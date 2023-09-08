@@ -16,6 +16,7 @@ use sn_protocol::storage::{Chunk, ChunkAddress};
 use std::{
     fs,
     path::{Path, PathBuf},
+    time::Duration,
 };
 use walkdir::WalkDir;
 use xor_name::XorName;
@@ -106,7 +107,7 @@ async fn upload_files(
         let upload = async move {
             let res = upload_chunks_in_parallel(file_api, chunks.clone(), verify_store).await;
 
-            (file_addr, file_name, res)
+            (file_addr, file_name, res, chunks)
         };
 
         // Add the upload task to the list of uploads
@@ -115,29 +116,31 @@ async fn upload_files(
 
     let upload_results = join_all(uploads).await;
 
-    println!("First chunk upload done, verifying and repaying if required...");
-    let mut uploaded_data = vec![];
-    for (file_addr, filename, result) in upload_results {
-        uploaded_data.push((file_addr, filename, result?));
-    }
+    println!("First chunk upload pass complete, verifying and repaying if required...");
 
     // If we are not verifying, we can skip this
     let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
-    let mut data_to_verify = Vec::new();
-    let mut data_stored = Vec::new();
+    let mut data_to_verify_or_repay = Vec::new();
 
-    for (addr, filename, chunks) in uploaded_data {
-        data_to_verify.extend(chunks);
-        data_stored.push((addr, filename));
+    for (_file_addr, _filename, upload_result, chunks) in upload_results.iter() {
+        if upload_result.is_err() {
+            data_to_verify_or_repay.extend(chunks.clone());
+        }
     }
 
     if verify_store {
-        while !data_to_verify.is_empty() {
-            trace!(
-                "verifying and repaying data of len: {:?}",
-                data_to_verify.len()
+        while !data_to_verify_or_repay.is_empty() {
+            println!(
+                "Verifying and potential topping up payment of {:?} chunks",
+                data_to_verify_or_repay.len()
             );
-            data_to_verify = verify_and_repay_if_needed(file_api.clone(), data_to_verify).await?;
+            trace!(
+                "Verifying and potential topping up payment of {:?} chunks",
+                data_to_verify_or_repay.len()
+            );
+            data_to_verify_or_repay =
+                verify_and_repay_if_needed(file_api.clone(), data_to_verify_or_repay).await?;
+            tokio::time::sleep(Duration::from_secs(3)).await;
         }
     }
 
@@ -146,8 +149,12 @@ async fn upload_files(
         format_elapsed_time(start_time.elapsed())
     );
 
+    let all_data_put: Vec<_> = upload_results
+        .into_iter()
+        .map(|(addr, filename, _, _)| (addr, filename))
+        .collect();
     // Write the chunks locally to be able to verify them later
-    let content = bincode::serialize(&data_stored)?;
+    let content = bincode::serialize(&all_data_put)?;
     fs::create_dir_all(file_names_path.as_path())?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
@@ -164,11 +171,9 @@ async fn upload_chunks_in_parallel(
     file_api: Files,
     chunks_paths: Vec<(XorName, PathBuf)>,
     verify_store: bool,
-) -> Result<Vec<(XorName, PathBuf)>> {
+) -> Result<()> {
     let mut upload_handles = Vec::new();
-    let mut uploaded_chunks = Vec::new();
     for (name, path) in chunks_paths.into_iter() {
-        uploaded_chunks.push((name, path.clone()));
         let file_api = file_api.clone();
 
         // first we upload all chunks in parallel
@@ -199,12 +204,12 @@ async fn upload_chunks_in_parallel(
         result??;
     }
 
-    Ok(uploaded_chunks)
+    Ok(())
 }
 
 /// Verify if chunks exist on the network.
 /// Repay if they don't.
-/// Return a list of files which had to be repaid, but not yet reverified.
+/// Return a list of files which had to be repaid, but are not yet reverified.
 async fn verify_and_repay_if_needed(
     file_api: Files,
     chunks_paths: Vec<(XorName, PathBuf)>,
@@ -236,7 +241,7 @@ async fn verify_and_repay_if_needed(
     // Check for any errors during fetch
     for result in verify_results {
         if let ((chunk_addr, path), true) = result?? {
-            println!("Failed to fetch a chunk {chunk_addr:?}");
+            println!("Failed to fetch a chunk {chunk_addr:?}. Repaying...");
             // This needs to be NetAddr to allow for repayment
             failed_chunks.push((chunk_addr, path));
         }
@@ -263,7 +268,8 @@ async fn verify_and_repay_if_needed(
 
         println!("=======re uploading failed chunks =============");
 
-        upload_chunks_in_parallel(
+        // outcome here is not important aas we'll verify this later
+        let _res = upload_chunks_in_parallel(
             file_api,
             failed_chunks
                 .iter()
@@ -272,7 +278,12 @@ async fn verify_and_repay_if_needed(
                 .collect(),
             false,
         )
-        .await
+        .await;
+
+        Ok(failed_chunks
+            .into_iter()
+            .map(|(addr, path)| (*addr.xorname(), path))
+            .collect())
     } else {
         // No more failed chunks, we are done
         Ok(vec![])
