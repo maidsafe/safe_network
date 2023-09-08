@@ -13,7 +13,7 @@ use common::{get_client_and_wallet, get_wallet, init_logging};
 use sn_client::send;
 
 use sn_dbc::{random_derivation_index, rng, Hash, Token};
-use sn_transfers::client_transfers::create_transfer;
+use sn_transfers::client_transfers::create_offline_transfer;
 
 use assert_fs::TempDir;
 use eyre::Result;
@@ -89,8 +89,10 @@ async fn dbc_transfer_double_spend_fail() -> Result<()> {
     let to3_unique_key = (amount, to3, random_derivation_index(&mut rng));
     let reason_hash = Hash::default();
 
-    let transfer_to_2 = create_transfer(some_dbcs, vec![to2_unique_key], to1, reason_hash).unwrap();
-    let transfer_to_3 = create_transfer(same_dbcs, vec![to3_unique_key], to1, reason_hash).unwrap();
+    let transfer_to_2 =
+        create_offline_transfer(some_dbcs, vec![to2_unique_key], to1, reason_hash).unwrap();
+    let transfer_to_3 =
+        create_offline_transfer(same_dbcs, vec![to3_unique_key], to1, reason_hash).unwrap();
 
     // send both transfers to the network
     // upload won't error out, only error out during verification.

@@ -12,7 +12,6 @@ mod node_id;
 mod query;
 mod register;
 mod response;
-mod utxo;
 
 pub use self::{
     cmd::{Cmd, Hash, MerkleTreeNodesType, PaymentTransactions},
@@ -20,7 +19,6 @@ pub use self::{
     query::Query,
     register::RegisterCmd,
     response::{CmdOk, CmdResponse, QueryResponse},
-    utxo::{Transfer, Utxo},
 };
 
 use super::NetworkAddress;

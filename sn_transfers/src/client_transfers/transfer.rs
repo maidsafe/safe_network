@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 /// The peers will validate each signed spend they receive, before accepting it.
 /// Once enough peers have accepted all the spends of the transaction, and serve
 /// them upon request, the transaction will be completed.
-pub fn create_transfer(
+pub fn create_offline_transfer(
     available_dbcs: Vec<(Dbc, DerivedKey)>,
     recipients: Vec<(Token, PublicAddress, DerivationIndex)>,
     change_to: PublicAddress,

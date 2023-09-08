@@ -3966,8 +3966,6 @@ dependencies = [
 [[package]]
 name = "sn_dbc"
 version = "19.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d46704477d95233cf8daefb6e1601eebdf755a9fd6cd35e6d4d4dc3f6e0dc946"
 dependencies = [
  "bincode",
  "blsttc",
@@ -4165,6 +4163,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "rand 0.8.5",
+ "rmp-serde",
  "serde",
  "sn_dbc",
  "sn_protocol",

@@ -14,7 +14,7 @@ use super::{
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
 use libp2p::{kad::Record, Multiaddr};
-use sn_dbc::{Dbc, DbcId, PublicAddress, SignedSpend, Token};
+use sn_dbc::{DbcId, PublicAddress, SignedSpend, Token};
 use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -25,7 +25,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::client_transfers::SpendRequest;
+use sn_transfers::{client_transfers::SpendRequest, wallet::Transfer};
 use std::time::Duration;
 use tokio::{sync::OwnedSemaphorePermit, task::spawn};
 use tracing::trace;
@@ -291,7 +291,7 @@ impl Client {
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
-        payment: Vec<Dbc>,
+        payment: Vec<Transfer>,
         verify_store: bool,
         optional_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {

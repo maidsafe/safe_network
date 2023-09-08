@@ -33,8 +33,8 @@ pub enum Error {
     // ---------- chunk errors
     #[error("Chunk not found: {0:?}")]
     ChunkNotFound(ChunkAddress),
-    #[error("Record was not stored: {0:?}")]
-    RecordNotStored(PrettyPrintRecordKey),
+    #[error("Record was not stored: {0:?}: {1:?}")]
+    RecordNotStored(PrettyPrintRecordKey, String),
 
     // ---------- register errors
     #[error("Register was not stored: {0}")]
@@ -90,10 +90,6 @@ pub enum Error {
     /// Payments received could not be stored on node's local wallet
     #[error("Payments received could not be stored on node's local wallet: {0}")]
     FailedToStorePaymentIntoNodeWallet(String),
-    #[error("UTXO serialisation failed")]
-    UtxoSerialisationFailed,
-    #[error("UTXO decryption failed")]
-    UtxoDecryptionFailed,
 
     // ---------- replication errors
     /// Replication not found.

@@ -9,11 +9,9 @@
 use bls::{Ciphertext, PublicKey, SecretKey};
 use serde::{Deserialize, Serialize};
 use sn_dbc::DerivationIndex;
+use sn_protocol::storage::DbcAddress;
 
-use crate::{
-    error::{Error, Result},
-    storage::DbcAddress,
-};
+use super::error::{Error, Result};
 
 /// Transfer sent to a recipient
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
@@ -59,10 +57,10 @@ pub struct Utxo {
     /// derivation index of the UTXO
     /// with this derivation index the owner can derive
     /// the secret key from their main key needed to spend this UTXO
-    derivation_index: DerivationIndex,
+    pub derivation_index: DerivationIndex,
     /// spentbook entry of one of one of the inputs (parent spends)
     /// using data found at this address the owner can check that the output is valid money
-    parent_spend: DbcAddress,
+    pub parent_spend: DbcAddress,
 }
 
 impl Utxo {

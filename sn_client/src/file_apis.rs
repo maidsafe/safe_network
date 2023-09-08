@@ -169,12 +169,10 @@ impl Files {
         trace!("Client upload started for chunk: {chunk_addr:?}");
 
         let wallet_client = self.wallet()?;
-        let payment = wallet_client.get_payment_dbcs(&chunk_addr);
+        let payment = wallet_client.get_payment_transfers(&chunk_addr)?;
 
         if payment.is_empty() {
-            warn!(
-                    "Failed to get payment proof for chunk: {chunk_addr:?} it was not found in the local wallet",
-                );
+            warn!("Failed to get payment proof for chunk: {chunk_addr:?} it was not found in the local wallet");
             return Err(Error::NoPaymentForRecord(PrettyPrintRecordKey::from(
                 chunk_addr.to_record_key(),
             )))?;
