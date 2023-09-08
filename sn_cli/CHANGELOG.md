@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.27](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.26...sn_cli-v0.81.27) - 2023-09-08
+
+### Added
+- *(client)* repay for chunks if they cannot be validated
+
+### Fixed
+- *(client)* dont bail on failed upload before verify/repay
+
+### Other
+- *(client)* refactor to have permits at network layer
+- *(refactor)* remove wallet_client args from upload flow
+- *(refactor)* remove upload_chunks semaphore arg
+
 ## [0.81.26](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.25...sn_cli-v0.81.26) - 2023-09-07
 
 ### Other

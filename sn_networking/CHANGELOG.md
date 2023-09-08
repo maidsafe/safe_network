@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.14](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.13...sn_networking-v0.5.14) - 2023-09-08
+
+### Fixed
+- reenable verify_store flag during put
+
+### Other
+- *(client)* refactor to have permits at network layer
+
 ## [0.5.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.12...sn_networking-v0.5.13) - 2023-09-07
 
 ### Other
