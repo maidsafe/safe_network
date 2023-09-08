@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.8](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.7...sn_transfers-v0.11.8) - 2023-09-08
+
+### Added
+- *(client)* repay for chunks if they cannot be validated
+
 ## [0.11.7](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.6...sn_transfers-v0.11.7) - 2023-09-05
 
 ### Other
