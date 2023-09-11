@@ -121,6 +121,9 @@ pub enum Error {
     #[error("Failed to pop from front of CircularVec")]
     CircularVecPopFrontError,
 
+    #[error("Node Listen Address was not provided during construction")]
+    ListenAddressNotProvided,
+
     #[cfg(feature = "network-metrics")]
     #[error("Network Metric error")]
     NetworkMetricError,

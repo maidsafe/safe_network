@@ -10,7 +10,9 @@ use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, Node
 use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr, PeerId};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_dbc::MainKey;
-use sn_networking::{MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState, CLOSE_GROUP_SIZE};
+use sn_networking::{
+    MsgResponder, NetworkConfig, NetworkEvent, SwarmDriver, SwarmLocalState, CLOSE_GROUP_SIZE,
+};
 use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
@@ -99,8 +101,16 @@ impl Node {
         let wallet = LocalWallet::load_from_main_key(&root_dir, reward_key)?;
         wallet.store()?;
 
-        let (network, mut network_event_receiver, swarm_driver) =
-            SwarmDriver::new(keypair, addr, local, root_dir)?;
+        let network_cfg = NetworkConfig {
+            keypair,
+            local,
+            root_dir,
+            listen_addr: Some(addr),
+            request_timeout: None,
+            concurrency_limit: None,
+        };
+
+        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(network_cfg)?;
         let node_events_channel = NodeEventsChannel::default();
 
         let node = Self {

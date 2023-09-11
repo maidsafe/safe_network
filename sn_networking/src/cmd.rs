@@ -125,7 +125,6 @@ pub struct SwarmLocalState {
 }
 
 impl SwarmDriver {
-    #[allow(clippy::result_large_err)]
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         let drives_forward_replication = matches!(
             cmd,

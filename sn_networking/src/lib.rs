@@ -22,7 +22,7 @@ mod replication_fetcher;
 
 pub use self::{
     cmd::SwarmLocalState,
-    driver::SwarmDriver,
+    driver::{NetworkConfig, SwarmDriver},
     error::Error,
     event::{MsgResponder, NetworkEvent},
     record_store::NodeRecordStore,
@@ -118,7 +118,6 @@ pub struct Network {
 
 impl Network {
     /// Signs the given data with the node's keypair.
-    #[allow(clippy::result_large_err)]
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         self.keypair.sign(msg).map_err(Error::from)
     }
@@ -445,7 +444,6 @@ impl Network {
 
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
-    #[allow(clippy::result_large_err)]
     pub fn put_local_record(&self, record: Record) -> Result<()> {
         debug!(
             "Writing Record locally, for {:?} - length {:?}",
@@ -479,7 +477,6 @@ impl Network {
     }
 
     // Add a list of keys of a holder to Replication Fetcher.
-    #[allow(clippy::result_large_err)]
     pub fn add_keys_to_replication_fetcher(&self, keys: Vec<NetworkAddress>) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { keys })
     }
@@ -500,7 +497,6 @@ impl Network {
 
     /// Send `Request` to the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
-    #[allow(clippy::result_large_err)]
     pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let swarm_cmd = SwarmCmd::SendRequest {
             req,
@@ -511,7 +507,6 @@ impl Network {
     }
 
     /// Send a `Response` through the channel opened by the requester.
-    #[allow(clippy::result_large_err)]
     pub fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
     }
@@ -525,7 +520,6 @@ impl Network {
     }
 
     // Helper to send SwarmCmd
-    #[allow(clippy::result_large_err)]
     fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
         let capacity = self.swarm_cmd_sender.capacity();
 
@@ -681,7 +675,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn test_get_fee_from_store_cost_quotes() -> Result<()> {
         // for a vec of different costs of CLOUSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
