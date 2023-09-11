@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.88.16](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.15...sn_client-v0.88.16) - 2023-09-11
+
+### Other
+- utilize stream encryptor
+
 ## [0.88.15](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.14...sn_client-v0.88.15) - 2023-09-08
 
 ### Added
