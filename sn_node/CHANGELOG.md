@@ -1175,6 +1175,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.89.29](https://github.com/maidsafe/safe_network/compare/sn_node-v0.89.28...sn_node-v0.89.29) - 2023-09-11
+
+### Other
+- utilize stream encryptor
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
