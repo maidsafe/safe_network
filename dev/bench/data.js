@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694465314387,
+  "lastUpdate": 1694465318280,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -17182,6 +17182,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 2365,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d1a34655641e486e8dd05ab904cdeb217f92d61e",
+          "message": "feat!: Clients add a tolerance to store cost",
+          "timestamp": "2023-09-11T18:41:24Z",
+          "tree_id": "e2772267a4be1eddde33a43865ae53105c85ddc5",
+          "url": "https://github.com/maidsafe/safe_network/commit/d1a34655641e486e8dd05ab904cdeb217f92d61e"
+        },
+        "date": 1694465317440,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 2756.5383,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 2635,
             "unit": "MB"
           }
         ]
