@@ -241,7 +241,7 @@ impl RecordStoreAPI for NodeRecordStore {
 
         trace!("Relevant records len is {:?}", relevant_records_len);
 
-        let cost = calculate_cost_at_step(relevant_records_len);
+        let cost = calculate_cost_for_relevant_records(relevant_records_len);
 
         trace!("Cost is now {cost:?}");
         Token::from_nano(cost)
@@ -436,7 +436,7 @@ impl RecordStore for ClientRecordStore {
 /// 1536 =     35937.398370712
 /// 1792 =   4447723.077333529
 /// 2048 = 550463903.051128626 (about 13% of TOTAL_SUPPLY at moment of writing)
-fn calculate_cost_at_step(step: usize) -> u64 {
+fn calculate_cost_for_relevant_records(step: usize) -> u64 {
     assert!(
         step <= MAX_RECORDS_COUNT,
         "step must be <= MAX_RECORDS_COUNT"
