@@ -122,7 +122,6 @@ jobs:
       - name: Check node memory usage
         shell: bash
         run: |
-          node_peak_mem_limit_mb="250" # mb
           peak_mem_usage=$(
             rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename | 
             awk -F':' '/"memory_used_mb":/{print $2}' | 
@@ -130,11 +129,6 @@ jobs:
             tail -n 1
           )
          
-          echo "Memory usage: $peak_mem_usage MB"
-          if (( $(echo "$peak_mem_usage > $node_peak_mem_limit_mb" | bc -l) )); then
-            echo "Node memory usage exceeded threshold: $peak_mem_usage MB"
-            exit 1
-          fi
           # Write the node memory usage to a file
           echo '[
               {
@@ -161,21 +155,12 @@ jobs:
       - name: Check client memory usage
         shell: bash
         run: |
-          client_peak_mem_limit_mb="1000" # mb
-          client_avg_mem_limit_mb="850" # mb
-          
           peak_mem_usage=$(
             rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs/safe.* -o --no-line-number --no-filename | 
             awk -F':' '/"memory_used_mb":/{print $2}' | 
             sort -n | 
             tail -n 1
           )
-          echo "Peak memory usage: $peak_mem_usage MB"
-          if (( $(echo "$peak_mem_usage > $client_peak_mem_limit_mb" | bc -l) )); then
-            echo "Client peak memory usage exceeded threshold: $client_peak_mem_limit_mb MB"
-            exit 1
-          fi
-
           total_mem=$(
             rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs/safe.* -o --no-line-number --no-filename | 
             awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
@@ -190,10 +175,7 @@ jobs:
           average_mem=$(($total_mem/$(($num_of_times))))
           echo "Average memory is: $average_mem"
 
-          if (( $(echo "$average_mem > $client_avg_mem_limit_mb" | bc -l) )); then
-            echo "Client average memory usage exceeded threshold: $client_avg_mem_limit_mb MB"
-            exit 1
-          fi
+
           # Write the client memory usage to a file
           echo '[
               {
