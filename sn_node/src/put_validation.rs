@@ -81,9 +81,13 @@ impl Node {
                     return Err(ProtocolError::RecordKeyMismatch);
                 }
 
-                // Validate the payment and that we received what we asked.
-                self.payment_for_us_exists_and_is_still_valid(&net_addr, &payment)
-                    .await?;
+                let already_exists = self.validate_key_and_existence(&net_addr, &key).await?;
+
+                if !already_exists {
+                    // Validate the payment and that we received what we asked.
+                    self.payment_for_us_exists_and_is_still_valid(&net_addr, &payment)
+                        .await?;
+                }
 
                 self.validate_and_store_register(register).await
             }
