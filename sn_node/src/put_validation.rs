@@ -62,23 +62,30 @@ impl Node {
             }
             RecordKind::DbcSpend => self.validate_spend_record(record).await,
             RecordKind::Register => {
-                let register: SignedRegister = try_deserialize_record::<SignedRegister>(&record)?;
+                error!("Register should not be validated at this point");
+                Err(ProtocolError::InvalidPutWithoutPayment(
+                    PrettyPrintRecordKey::from(record.key),
+                ))
+            }
+            RecordKind::RegisterWithPayment => {
+                let (payment, register) =
+                    try_deserialize_record::<(Vec<Dbc>, SignedRegister)>(&record)?;
 
                 // check if the deserialized value's RegisterAddress matches the record's key
-                let key =
-                    NetworkAddress::from_register_address(*register.address()).to_record_key();
+                let net_addr = NetworkAddress::from_register_address(*register.address());
+                let key = net_addr.to_record_key();
                 if record.key != key {
                     warn!(
                         "Record's key does not match with the value's RegisterAddress, ignoring PUT."
                     );
                     return Err(ProtocolError::RecordKeyMismatch);
                 }
+
+                // Validate the payment and that we received what we asked.
+                self.payment_for_us_exists_and_is_still_valid(&net_addr, &payment)
+                    .await?;
+
                 self.validate_and_store_register(register).await
-            }
-            RecordKind::RegisterWithPayment => {
-                warn!("RegisterWith`Payment recieved but we cannot handle it yet!");
-                Ok(CmdOk::StoredSuccessfully)
-                // DO nothing yet
             }
         }
     }
@@ -108,7 +115,6 @@ impl Node {
         record: Record,
     ) -> Result<CmdOk, ProtocolError> {
         let record_header = RecordHeader::from_record(&record)?;
-
         match record_header.kind {
             RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => Err(
                 ProtocolError::UnexpectedRecordWithPayment(PrettyPrintRecordKey::from(record.key)),

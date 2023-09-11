@@ -106,7 +106,9 @@ async fn main() -> Result<()> {
             )
             .await?
         }
-        SubCmd::Register(cmds) => register_cmds(cmds, &client, should_verify_store).await?,
+        SubCmd::Register(cmds) => {
+            register_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+        }
     };
 
     Ok(())

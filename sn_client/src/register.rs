@@ -6,10 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Client, Error, Result};
+use crate::{Client, Error, Result, WalletClient};
 
 use bls::PublicKey;
 use libp2p::kad::Record;
+use sn_dbc::Dbc;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::RegisterCmd,
@@ -57,17 +58,23 @@ impl ClientRegister {
     pub async fn create_public_online(
         client: Client,
         meta: XorName,
+        wallet_client: &mut WalletClient,
         verify_store: bool,
     ) -> Result<Self> {
         let mut reg = Self::create_register(client, meta, Permissions::new_anyone_can_write())?;
-        reg.sync(verify_store).await?;
+        reg.sync(wallet_client, verify_store).await?;
         Ok(reg)
     }
 
     /// Create a new Register and send it to the Network.
-    pub async fn create_online(client: Client, meta: XorName, verify_store: bool) -> Result<Self> {
+    pub async fn create_online(
+        client: Client,
+        meta: XorName,
+        wallet_client: &mut WalletClient,
+        verify_store: bool,
+    ) -> Result<Self> {
         let mut reg = Self::create_register(client, meta, Permissions::new_owner_only())?;
-        reg.sync(verify_store).await?;
+        reg.sync(wallet_client, verify_store).await?;
         Ok(reg)
     }
 
@@ -164,25 +171,47 @@ impl ClientRegister {
 
     /// Sync this Register with the replicas on the network.
     /// This will optionally verify the stored Register on the network is the same as the local one.
-    pub async fn sync(&mut self, verify_store: bool) -> Result<()> {
-        debug!("Syncing Register at {:?}!", self.address());
-        let remote_replica =
-            match Self::get_register_from_network(&self.client, *self.address()).await {
-                Ok(r) => r,
-                Err(err) => {
-                    debug!("Failed to fetch register: {err:?}");
-                    debug!(
-                        "Creating Register as it doesn't exist at {:?}!",
-                        self.address(),
+    pub async fn sync(
+        &mut self,
+        wallet_client: &mut WalletClient,
+        verify_store: bool,
+    ) -> Result<()> {
+        let addr = *self.address();
+        debug!("Syncing Register at {addr:?}!");
+        let remote_replica = match Self::get_register_from_network(&self.client, addr).await {
+            Ok(r) => r,
+            Err(err) => {
+                debug!("Failed to fetch register: {err:?}");
+                debug!("Creating Register as it doesn't exist at {addr:?}!");
+                let cmd = RegisterCmd::Create {
+                    register: self.register.clone(),
+                    signature: self.client.sign(self.register.bytes()?),
+                };
+
+                // Let's make the storage payment
+                let net_addr = sn_protocol::NetworkAddress::RegisterAddress(addr);
+                let cost = wallet_client
+                    .pay_for_storage(std::iter::once(net_addr.clone()), verify_store)
+                    .await?;
+
+                println!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
+
+                if let Err(err) = wallet_client.store_local_wallet() {
+                    println!("Failed to store wallet with cached payment proofs: {err:?}");
+                } else {
+                    println!(
+                        "Successfully stored wallet with cached payment proofs, and new balance {}.",
+                        wallet_client.balance()
                     );
-                    let cmd = RegisterCmd::Create {
-                        register: self.register.clone(),
-                        signature: self.client.sign(self.register.bytes()?),
-                    };
-                    self.publish_register(cmd, verify_store).await?;
-                    self.register.clone()
                 }
-            };
+
+                // Get payment proofs needed to publish the Register
+                let payment = wallet_client.get_payment_dbcs(&net_addr);
+
+                self.publish_register(cmd, payment, verify_store).await?;
+                self.register.clone()
+            }
+        };
         self.register.merge(remote_replica);
         self.push(verify_store).await
     }
@@ -197,7 +226,13 @@ impl ClientRegister {
 
             // TODO: send them all concurrently
             while let Some(cmd) = self.ops.pop_back() {
-                let result = self.publish_register(cmd.clone(), verify_store).await;
+                // We don't need to send the payment proofs here since
+                // these are all Register mutation cmds which don't require payment.
+                let payment = vec![];
+
+                let result = self
+                    .publish_register(cmd.clone(), payment, verify_store)
+                    .await;
 
                 if let Err(err) = result {
                     warn!("Did not push Register cmd on all nodes in the close group!: {err}");
@@ -253,7 +288,12 @@ impl ClientRegister {
 
     /// Publish a `Register` command on the network.
     /// If `verify_store` is true, it will verify the Register was stored on the network.
-    async fn publish_register(&self, cmd: RegisterCmd, verify_store: bool) -> Result<()> {
+    async fn publish_register(
+        &self,
+        cmd: RegisterCmd,
+        payment: Vec<Dbc>,
+        verify_store: bool,
+    ) -> Result<()> {
         let cmd_dst = cmd.dst();
         debug!("Querying existing Register for cmd: {cmd_dst:?}");
         let network_reg = self
@@ -283,19 +323,29 @@ impl ClientRegister {
         };
 
         let key = NetworkAddress::from_register_address(*register.address()).to_record_key();
-
         let record = Record {
-            key,
-            value: try_serialize_record(&register, RecordKind::Register)?,
+            key: key.clone(),
+            value: try_serialize_record(&(payment, &register), RecordKind::RegisterWithPayment)?,
             publisher: None,
             expires: None,
         };
 
-        // Register edits might exist so we cannot be sure that jsut because we get a record back that this should fail
+        let record_to_verify = if verify_store {
+            Some(Record {
+                key,
+                value: try_serialize_record(&register, RecordKind::Register)?,
+                publisher: None,
+                expires: None,
+            })
+        } else {
+            None
+        };
+
+        // Register edits might exist so we cannot be sure that just because we get a record back that this should fail
         Ok(self
             .client
             .network
-            .put_record(record, verify_store, None)
+            .put_record(record, record_to_verify, None)
             .await?)
     }
 

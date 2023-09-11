@@ -14,7 +14,7 @@ mod register;
 mod response;
 
 pub use self::{
-    cmd::{Cmd, Hash, MerkleTreeNodesType, PaymentTransactions},
+    cmd::{Cmd, Hash, MerkleTreeNodesType},
     node_id::NodeId,
     query::Query,
     register::RegisterCmd,

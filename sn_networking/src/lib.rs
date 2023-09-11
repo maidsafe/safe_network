@@ -356,15 +356,11 @@ impl Network {
     pub async fn put_record(
         &self,
         record: Record,
-        verify_store: bool,
+        verify_store: Option<Record>,
         optional_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
-        if verify_store {
-            self.put_record_with_retries(record, verify_store, optional_permit)
-                .await
-        } else {
-            self.put_record_once(record, false, optional_permit).await
-        }
+        self.put_record_with_retries(record, verify_store, optional_permit)
+            .await
     }
 
     /// Put `Record` to network
@@ -373,7 +369,7 @@ impl Network {
     async fn put_record_with_retries(
         &self,
         record: Record,
-        verify_store: bool,
+        verify_store: Option<Record>,
         mut optional_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
         let mut retries = 0;
@@ -387,7 +383,7 @@ impl Network {
             );
 
             let res = self
-                .put_record_once(record.clone(), verify_store, optional_permit)
+                .put_record_once(record.clone(), verify_store.clone(), optional_permit)
                 .await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
@@ -404,7 +400,7 @@ impl Network {
     async fn put_record_once(
         &self,
         record: Record,
-        verify_store: bool,
+        verify_store: Option<Record>,
         starting_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
         let mut _permit = starting_permit;
@@ -427,13 +423,13 @@ impl Network {
 
         drop(_permit);
 
-        if verify_store {
+        if verify_store.is_some() {
             // small wait before we attempt to verify
             tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
             trace!("attempting to verify {pretty_key:?}");
 
             // Verify the record is stored, requiring re-attempts
-            self.get_record_from_network(record_key, Some(record), true)
+            self.get_record_from_network(record_key, verify_store, true)
                 .await
                 .map_err(|e| {
                     trace!(

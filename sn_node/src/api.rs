@@ -266,9 +266,9 @@ impl Node {
             NetworkEvent::UnverifiedRecord(record) => {
                 let key = PrettyPrintRecordKey::from(record.key.clone());
                 match self.validate_and_store_record(record).await {
-                    Ok(cmdok) => trace!("UnverifiedRecord {key:?} stored with {cmdok:?}."),
+                    Ok(cmdok) => trace!("UnverifiedRecord {key} stored with {cmdok:?}."),
                     Err(err) => {
-                        trace!("UnverifiedRecord {key:?} failed to be stored with error {err:?}.")
+                        trace!("UnverifiedRecord {key} failed to be stored with error {err:?}.")
                     }
                 }
             }
