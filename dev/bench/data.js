@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694451864139,
+  "lastUpdate": 1694461872948,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -7444,6 +7444,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.46090887429562,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d1a34655641e486e8dd05ab904cdeb217f92d61e",
+          "message": "feat!: Clients add a tolerance to store cost",
+          "timestamp": "2023-09-11T18:41:24Z",
+          "tree_id": "e2772267a4be1eddde33a43865ae53105c85ddc5",
+          "url": "https://github.com/maidsafe/safe_network/commit/d1a34655641e486e8dd05ab904cdeb217f92d61e"
+        },
+        "date": 1694461871067,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10660602165023389,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6604739076371621,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.3712208182528824,
             "unit": "MiB/s"
           }
         ]
