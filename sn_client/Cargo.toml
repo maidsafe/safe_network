@@ -13,6 +13,7 @@ version = "0.89.1"
 [features]
 default=[]
 local-discovery=["sn_networking/local-discovery"]
+network-metrics = ["sn_networking/network-metrics"]
 
 [dependencies]
 async-trait = "0.1"
