@@ -164,7 +164,12 @@ async fn data_availability_during_churn() -> Result<()> {
         // Waiting for the transfers_wallet funded.
         sleep(std::time::Duration::from_secs(10)).await;
 
-        create_registers_task(client.clone(), content.clone(), churn_period);
+        create_registers_task(
+            client.clone(),
+            content.clone(),
+            churn_period,
+            paying_wallet_dir.path().to_path_buf(),
+        );
 
         create_dbc_task(
             client.clone(),
@@ -331,10 +336,19 @@ fn create_dbc_task(
 }
 
 // Spawns a task which periodically creates Registers at random locations.
-fn create_registers_task(client: Client, content: ContentList, churn_period: Duration) {
+fn create_registers_task(
+    client: Client,
+    content: ContentList,
+    churn_period: Duration,
+    paying_wallet_dir: PathBuf,
+) {
     let _handle = tokio::spawn(async move {
         // Create Registers at a higher frequency than the churning events
         let delay = churn_period / REGISTER_CREATION_RATIO_TO_CHURN;
+
+        let paying_wallet = get_wallet(&paying_wallet_dir).await;
+
+        let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
         loop {
             let meta = XorName(rand::random());
@@ -344,7 +358,7 @@ fn create_registers_task(client: Client, content: ContentList, churn_period: Dur
             println!("Creating Register at {addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match client.create_register(meta, true).await {
+            match client.create_register(meta, &mut wallet_client, true).await {
                 Ok(_) => content
                     .write()
                     .await

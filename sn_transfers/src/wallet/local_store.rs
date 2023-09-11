@@ -324,12 +324,12 @@ impl LocalWallet {
             let id = dbc.id();
 
             if let Some(_dbc) = load_dbc(&id, &self.wallet_dir) {
-                println!("dbc exists");
+                debug!("dbc exists");
                 return Ok(());
             }
 
             if self.wallet.spent_dbcs.contains(&id) {
-                println!("dbc is spent");
+                debug!("dbc is spent");
                 return Ok(());
             }
 
