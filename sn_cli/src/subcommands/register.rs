@@ -9,8 +9,10 @@
 use bls::PublicKey;
 use clap::Subcommand;
 use color_eyre::{eyre::WrapErr, Result, Section};
-use sn_client::{Client, ClientRegister, Error as ClientError};
+use sn_client::{Client, ClientRegister, Error as ClientError, WalletClient};
 use sn_protocol::storage::RegisterAddress;
+use sn_transfers::wallet::LocalWallet;
+use std::path::Path;
 use xor_name::XorName;
 
 #[derive(Subcommand, Debug)]
@@ -50,10 +52,13 @@ pub enum RegisterCmds {
 pub(crate) async fn register_cmds(
     cmds: RegisterCmds,
     client: &Client,
+    root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        RegisterCmds::Create { name } => create_register(name, client, verify_store).await?,
+        RegisterCmds::Create { name } => {
+            create_register(name, client, root_dir, verify_store).await?
+        }
         RegisterCmds::Edit {
             address,
             use_name,
@@ -67,9 +72,25 @@ pub(crate) async fn register_cmds(
     Ok(())
 }
 
-async fn create_register(name: String, client: &Client, verify_store: bool) -> Result<()> {
+async fn create_register(
+    name: String,
+    client: &Client,
+    root_dir: &Path,
+    verify_store: bool,
+) -> Result<()> {
+    trace!("Starting to pay for Register storage");
+    let wallet = LocalWallet::load_from(root_dir)
+        .wrap_err("Unable to read wallet file in {path:?}")
+        .suggestion(
+            "If you have an old wallet file, it may no longer be compatible. Try removing it",
+        )?;
+
+    let mut wallet_client = WalletClient::new(client.clone(), wallet);
+
     let meta = XorName::from_content(name.as_bytes());
-    let register = ClientRegister::create_online(client.clone(), meta, verify_store).await?;
+    let register =
+        ClientRegister::create_online(client.clone(), meta, &mut wallet_client, verify_store)
+            .await?;
     println!(
         "Successfully created register '{name}' at {}!",
         register.address()

@@ -274,12 +274,10 @@ impl RecordStore for NodeRecordStore {
         // When a client calls GET, the request is forwarded to the nodes until one node returns
         // with the record. Thus a node can be bombarded with GET reqs for random keys. These can be safely
         // ignored if we don't have the record locally.
-        trace!(
-            "GET request for Record key: {:?}",
-            PrettyPrintRecordKey::from(k.clone())
-        );
+        let key = PrettyPrintRecordKey::from(k.clone());
+        trace!("GET request for Record key: {key}");
         if !self.records.contains(k) {
-            trace!("Record not found locally");
+            trace!("Record not found locally: {key}");
             return None;
         }
 

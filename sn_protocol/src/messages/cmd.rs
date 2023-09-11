@@ -58,10 +58,3 @@ impl std::fmt::Display for Cmd {
 
 // Data type of each of the nodes in the binary Merkle-tree built for payment proofs
 pub type MerkleTreeNodesType = [u8; 32];
-
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
-pub struct PaymentTransactions {
-    // Ids of the DBCs spent, for nodes to check the storage payment is valid and inputs have
-    // been effectivelly spent on the network.
-    pub spent_ids: Vec<DbcId>,
-}

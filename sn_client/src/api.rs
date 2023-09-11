@@ -8,7 +8,7 @@
 
 use super::{
     error::{Error, Result},
-    Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, ClientRegister,
+    Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, ClientRegister, WalletClient,
 };
 
 use bls::{PublicKey, SecretKey, Signature};
@@ -281,10 +281,11 @@ impl Client {
     pub async fn create_register(
         &self,
         meta: XorName,
+        wallet_client: &mut WalletClient,
         verify_store: bool,
     ) -> Result<ClientRegister> {
         info!("Instantiating a new Register replica with meta {meta:?}");
-        ClientRegister::create_online(self.clone(), meta, verify_store).await
+        ClientRegister::create_online(self.clone(), meta, wallet_client, verify_store).await
     }
 
     /// Store `Chunk` as a record.
@@ -305,9 +306,15 @@ impl Client {
             expires: None,
         };
 
+        let record_to_verify = if verify_store {
+            Some(record.clone())
+        } else {
+            None
+        };
+
         Ok(self
             .network
-            .put_record(record, verify_store, optional_permit)
+            .put_record(record, record_to_verify, optional_permit)
             .await?)
     }
 
@@ -346,7 +353,16 @@ impl Client {
             expires: None,
         };
 
-        Ok(self.network.put_record(record, verify_store, None).await?)
+        let record_to_verify = if verify_store {
+            Some(record.clone())
+        } else {
+            None
+        };
+
+        Ok(self
+            .network
+            .put_record(record, record_to_verify, None)
+            .await?)
     }
 
     /// Get a dbc spend from network
