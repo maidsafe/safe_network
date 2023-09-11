@@ -10,12 +10,13 @@ use super::{
     error::{Error, Result},
     Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, ClientRegister, WalletClient,
 };
-
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
-use libp2p::{kad::Record, Multiaddr};
+use libp2p::{identity::Keypair, kad::Record, Multiaddr};
 use sn_dbc::{DbcId, PublicAddress, SignedSpend, Token};
-use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
+use sn_networking::{
+    multiaddr_is_global, NetworkConfig, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
+};
 use sn_protocol::{
     error::Error as ProtocolError,
     storage::{
@@ -55,11 +56,16 @@ impl Client {
         info!("Startup a client with peers {peers:?} and local {local:?} flag");
         info!("Starting Kad swarm in client mode...");
 
-        // use passed concurrency limit or default
-        let concurrency_limit = custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY);
-
+        let network_cfg = NetworkConfig {
+            keypair: Keypair::generate_ed25519(),
+            local,
+            root_dir: std::env::temp_dir(),
+            listen_addr: None,
+            request_timeout: req_response_timeout,
+            concurrency_limit: Some(custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY)),
+        };
         let (network, mut network_event_receiver, swarm_driver) =
-            SwarmDriver::new_client(local, req_response_timeout, concurrency_limit)?;
+            SwarmDriver::new_client(network_cfg)?;
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 
