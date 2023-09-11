@@ -420,14 +420,13 @@ impl Node {
                     ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string())
                 })?;
 
-                let tolerable_fee = tolerable_fee(current_store_cost);
                 // we can bail early here and not bother checking payment validity.
                 // we've depositied it, so if it's valid, that's fine.
                 // if it's underpayment, we're bailing anyway, so we don't care.
-                if we_seem_to_have_been_paid < tolerable_fee {
+                if we_seem_to_have_been_paid < current_store_cost {
                     return Err(ProtocolError::PaymentProofInsufficientAmount {
                         paid: we_seem_to_have_been_paid,
-                        expected: tolerable_fee,
+                        expected: current_store_cost,
                     });
                 }
 
@@ -714,12 +713,6 @@ impl Node {
     }
 }
 
-// Find a tolerable fee. This should help prevent us rejecting close, but currently
-// insufficient payments
-fn tolerable_fee(current_store_cost: Token) -> Token {
-    Token::from_nano(current_store_cost.as_nano() / 2)
-}
-
 // Check if the fee output id and amount are correct, as well as verify the payment proof audit
 // trail info corresponds to the fee output, i.e. the fee output's root-hash is derived from
 // the proof's audit trail info.
@@ -740,14 +733,10 @@ fn verify_fee_is_sufficient(
         }
     }
 
-    // We expect at least the current step or one down. This should smooth over any
-    // issues that might arise with payment going up and down.
-    let expected = tolerable_fee(current_store_cost);
-
     if highest_fee < current_store_cost {
         return Err(ProtocolError::PaymentProofInsufficientAmount {
             paid: highest_fee,
-            expected,
+            expected: current_store_cost,
         });
     }
 
