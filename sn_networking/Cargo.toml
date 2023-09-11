@@ -14,7 +14,7 @@ version = "0.6.1"
 default=[]
 local-discovery=["libp2p/mdns"]
 quic=["libp2p-quic"]
-metrics=["libp2p-metrics", "prometheus-client", "hyper"]
+network-metrics=["libp2p-metrics", "prometheus-client", "hyper"]
 
 [dependencies]
 async-trait = "0.1"

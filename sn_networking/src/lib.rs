@@ -14,7 +14,7 @@ mod cmd;
 mod driver;
 mod error;
 mod event;
-#[cfg(feature = "metrics")]
+#[cfg(feature = "network-metrics")]
 mod metrics_service;
 mod record_store;
 mod record_store_api;
