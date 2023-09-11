@@ -434,10 +434,24 @@ impl Client {
         &self,
         address: &NetworkAddress,
     ) -> Result<Vec<(PublicAddress, Token)>> {
-        trace!("Getting store cost at {address:?}");
-        Ok(self
+        let tolerance = 1.5;
+        trace!("Getting store cost at {address:?}, with tolerance of {tolerance} times the cost");
+
+        // Get the store costs from the network and map each token to `tolerance` * the token itself
+        let costs = self
             .network
             .get_store_costs_from_network(address.clone())
-            .await?)
+            .await?;
+        let adjusted_costs: Vec<(PublicAddress, Token)> = costs
+            .into_iter()
+            .map(|(address, token)| {
+                (
+                    address,
+                    Token::from_nano((token.as_nano() as f64 * tolerance) as u64),
+                )
+            })
+            .collect();
+
+        Ok(adjusted_costs)
     }
 }
