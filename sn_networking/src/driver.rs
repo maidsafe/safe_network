@@ -88,6 +88,16 @@ pub(super) struct NodeBehaviour {
     pub(super) autonat: Toggle<autonat::Behaviour>,
 }
 
+#[derive(Clone, Debug)]
+pub struct NetworkConfig {
+    pub keypair: Keypair,
+    pub local: bool,
+    pub root_dir: PathBuf,
+    pub listen_addr: Option<SocketAddr>,
+    pub request_timeout: Option<Duration>,
+    pub concurrency_limit: Option<usize>,
+}
+
 type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
 type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRecordResultMap)>;
 
@@ -129,12 +139,8 @@ impl SwarmDriver {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
-    #[allow(clippy::result_large_err)]
     pub fn new(
-        keypair: Keypair,
-        addr: SocketAddr,
-        local: bool,
-        root_dir: PathBuf,
+        network_cfg: NetworkConfig,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         let mut kad_cfg = KademliaConfig::default();
         let _ = kad_cfg
@@ -165,7 +171,7 @@ impl SwarmDriver {
 
         let store_cfg = {
             // Configures the disk_store to store records under the provided path and increase the max record size
-            let storage_dir_path = root_dir.join("record_store");
+            let storage_dir_path = network_cfg.root_dir.join("record_store");
             if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
                 return Err(Error::FailedToCreateRecordStoreDir {
                     path: storage_dir_path,
@@ -180,24 +186,24 @@ impl SwarmDriver {
         };
 
         let (network, events_receiver, mut swarm_driver) = Self::with(
-            root_dir,
-            keypair,
+            network_cfg.clone(),
             kad_cfg,
             Some(store_cfg),
-            local,
             false,
-            None,
             ProtocolSupport::Full,
             SN_NODE_VERSION_STR.to_string(),
         )?;
 
         // Listen on the provided address
+        let listen_addr = network_cfg
+            .listen_addr
+            .ok_or(Error::ListenAddressNotProvided)?;
         #[cfg(not(feature = "quic"))]
-        let addr = Multiaddr::from(addr.ip()).with(Protocol::Tcp(addr.port()));
+        let addr = Multiaddr::from(listen_addr.ip()).with(Protocol::Tcp(listen_addr.port()));
 
         #[cfg(feature = "quic")]
-        let addr = Multiaddr::from(addr.ip())
-            .with(Protocol::Udp(addr.port()))
+        let addr = Multiaddr::from(listen_addr.ip())
+            .with(Protocol::Udp(listen_addr.port()))
             .with(Protocol::QuicV1);
 
         let _listener_id = swarm_driver
@@ -209,11 +215,8 @@ impl SwarmDriver {
     }
 
     /// Same as `new` API but creates the network components in client mode
-    #[allow(clippy::result_large_err)]
     pub fn new_client(
-        local: bool,
-        request_timeout: Option<Duration>,
-        concurrency_limit: usize,
+        network_cfg: NetworkConfig,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
@@ -230,43 +233,42 @@ impl SwarmDriver {
             );
 
         let (mut network, net_event_recv, driver) = Self::with(
-            std::env::temp_dir(),
-            Keypair::generate_ed25519(),
+            network_cfg.clone(),
             kad_cfg,
             None,
-            local,
             true,
-            request_timeout,
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
         )?;
 
-        network.set_concurrency_limit(concurrency_limit);
+        if let Some(limit) = network_cfg.concurrency_limit {
+            network.set_concurrency_limit(limit);
+        }
 
         Ok((network, net_event_recv, driver))
     }
 
-    #[allow(clippy::too_many_arguments, clippy::result_large_err)]
     /// Private helper to create the network components with the provided config and req/res behaviour
     fn with(
-        root_dir_path: PathBuf,
-        keypair: Keypair,
+        network_cfg: NetworkConfig,
         kad_cfg: KademliaConfig,
         record_store_cfg: Option<NodeRecordStoreConfig>,
-        local: bool,
         is_client: bool,
-        request_response_timeout: Option<Duration>,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
-        let peer_id = PeerId::from(keypair.public());
+        let peer_id = PeerId::from(network_cfg.keypair.public());
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
 
         // RequestResponse Behaviour
         let request_response = {
             let mut cfg = RequestResponseConfig::default();
             let _ = cfg
-                .set_request_timeout(request_response_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S))
+                .set_request_timeout(
+                    network_cfg
+                        .request_timeout
+                        .unwrap_or(REQUEST_TIMEOUT_DEFAULT_S),
+                )
                 .set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
             request_response::cbor::Behaviour::new(
@@ -316,9 +318,11 @@ impl SwarmDriver {
 
         // Identify Behaviour
         let identify = {
-            let cfg =
-                libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                    .with_agent_version(identify_version);
+            let cfg = libp2p::identify::Config::new(
+                IDENTIFY_PROTOCOL_STR.to_string(),
+                network_cfg.keypair.public(),
+            )
+            .with_agent_version(identify_version);
             libp2p::identify::Behaviour::new(cfg)
         };
 
@@ -327,25 +331,26 @@ impl SwarmDriver {
         let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(
-                libp2p::noise::Config::new(&keypair)
+                libp2p::noise::Config::new(&network_cfg.keypair)
                     .expect("Signing libp2p-noise static DH keypair failed."),
             )
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
 
         #[cfg(feature = "quic")]
-        let mut transport = libp2p_quic::tokio::Transport::new(quic::Config::new(&keypair))
-            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
-            .boxed();
+        let mut transport =
+            libp2p_quic::tokio::Transport::new(quic::Config::new(&network_cfg.keypair))
+                .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+                .boxed();
 
-        if !local {
+        if !network_cfg.local {
             debug!("Preventing non-global dials");
             // Wrap TCP or UDP in a transport that prevents dialing local addresses.
             transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
         }
 
         // Disable AutoNAT if we are either running locally or a client.
-        let autonat = if !local && !is_client {
+        let autonat = if !network_cfg.local && !is_client {
             let cfg = libp2p::autonat::Config {
                 // Defaults to 15. But we want to be a little quicker on checking for our NAT status.
                 boot_delay: Duration::from_secs(3),
@@ -386,7 +391,7 @@ impl SwarmDriver {
         let swarm_driver = Self {
             swarm,
             self_peer_id: peer_id,
-            local,
+            local: network_cfg.local,
             is_client,
             bootstrap_ongoing: false,
             close_group: Default::default(),
@@ -410,8 +415,8 @@ impl SwarmDriver {
             Network {
                 swarm_cmd_sender,
                 peer_id,
-                root_dir_path,
-                keypair,
+                root_dir_path: network_cfg.root_dir,
+                keypair: network_cfg.keypair,
                 concurrency_limiter: None,
             },
             network_event_receiver,

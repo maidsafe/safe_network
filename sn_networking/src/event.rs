@@ -168,7 +168,6 @@ impl Debug for NetworkEvent {
 
 impl SwarmDriver {
     // Handle `SwarmEvents`
-    #[allow(clippy::result_large_err)]
     pub(super) fn handle_swarm_events<EventError: std::error::Error>(
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
@@ -400,7 +399,6 @@ impl SwarmDriver {
     }
 
     /// Forwards `Request` to the upper layers using `Sender<NetworkEvent>`. Sends `Response` to the peers
-    #[allow(clippy::result_large_err)]
     pub fn handle_msg(
         &mut self,
         event: request_response::Event<Request, Response>,
@@ -481,7 +479,6 @@ impl SwarmDriver {
         Ok(())
     }
 
-    #[allow(clippy::result_large_err)]
     fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
         #[cfg(feature = "network-metrics")]
         self.network_metrics.record(&kad_event);
