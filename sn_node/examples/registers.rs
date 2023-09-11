@@ -6,15 +6,19 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_client::{Client, Error};
+use sn_client::{Client, Error, WalletClient};
+use sn_registers::RegisterAddress;
+use sn_transfers::wallet::LocalWallet;
+use xor_name::XorName;
 
 use bls::SecretKey;
 use clap::Parser;
-use eyre::Result;
-use sn_registers::RegisterAddress;
+use color_eyre::{
+    eyre::{eyre, Result, WrapErr},
+    Help,
+};
 use std::{io, time::Duration};
 use tokio::time::sleep;
-use xor_name::XorName;
 
 #[derive(Parser, Debug)]
 #[clap(name = "registers cli")]
@@ -43,6 +47,20 @@ async fn main() -> Result<()> {
     let client = Client::new(signer, None, None, None).await?;
     println!("SAFE client signer public key: {:?}", client.signer_pk());
 
+    let root_dir = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+        .join("safe")
+        .join("client");
+
+    // Loading a local wallet. It needs to have a non-zero balance for
+    // this example to be able to pay for the Register's storage.
+    let wallet = LocalWallet::load_from(&root_dir)
+        .wrap_err("Unable to read wallet file in {root_dir:?}")
+        .suggestion(
+            "If you have an old wallet file, it may no longer be compatible. Try removing it",
+        )?;
+    let mut wallet_client = WalletClient::new(client.clone(), wallet);
+
     // we'll retrieve (or create if not found) a Register, and write on it
     // in offline mode, syncing with the network periodically.
     let meta = XorName::from_content(reg_nickname.as_bytes());
@@ -58,7 +76,9 @@ async fn main() -> Result<()> {
         }
         Err(_) => {
             println!("Register '{reg_nickname}' not found, creating it at {address}");
-            client.create_register(meta, true).await?
+            client
+                .create_register(meta, &mut wallet_client, true)
+                .await?
         }
     };
     println!("Register owned by: {:?}", reg_replica.owner());
@@ -100,7 +120,7 @@ async fn main() -> Result<()> {
         // Sync with network after a delay
         println!("Syncing with SAFE in {delay:?}...");
         sleep(delay).await;
-        reg_replica.sync(true).await?;
+        reg_replica.sync(&mut wallet_client, true).await?;
         println!("synced!");
     }
 }
