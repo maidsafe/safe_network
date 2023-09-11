@@ -220,7 +220,7 @@ impl Network {
             }
         }
 
-        get_fee_from_store_cost_quotes(all_costs)
+        get_fees_from_store_cost_quotes(all_costs)
     }
 
     /// Get the Record from the network
@@ -609,7 +609,7 @@ impl Network {
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
 #[allow(clippy::result_large_err)]
-fn get_fee_from_store_cost_quotes(
+fn get_fees_from_store_cost_quotes(
     mut all_costs: Vec<(PublicAddress, Token)>,
 ) -> Result<Vec<(PublicAddress, Token)>> {
     // TODO: we should make this configurable based upon data type
@@ -634,6 +634,7 @@ fn get_fee_from_store_cost_quotes(
         "Final fees calculated as: {all_costs:?}, from: {:?}",
         all_costs
     );
+
     Ok(all_costs)
 }
 
@@ -690,7 +691,7 @@ mod tests {
             let addr = PublicAddress::new(bls::SecretKey::random().public_key());
             costs.push((addr, Token::from_nano(i as u64)));
         }
-        let prices = get_fee_from_store_cost_quotes(costs)?;
+        let prices = get_fees_from_store_cost_quotes(costs)?;
         let total_price: u64 = prices
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
@@ -717,7 +718,7 @@ mod tests {
             costs.push((addr, Token::from_nano(i as u64)));
         }
 
-        if get_fee_from_store_cost_quotes(costs).is_ok() {
+        if get_fees_from_store_cost_quotes(costs).is_ok() {
             bail!("Should have errored as we have too few quotes")
         }
 
@@ -736,7 +737,7 @@ mod tests {
             println!("price added {}", i);
         }
 
-        let prices = match get_fee_from_store_cost_quotes(costs) {
+        let prices = match get_fees_from_store_cost_quotes(costs) {
             Err(_) => bail!("Should not have errored as we have enough quotes"),
             Ok(cost) => cost,
         };
