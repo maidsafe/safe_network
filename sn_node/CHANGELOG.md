@@ -1185,6 +1185,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [**breaking**] Nodes no longer tolerate underpaying
 
+## [0.90.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.0...sn_node-v0.90.1) - 2023-09-12
+
+### Added
+- add tx and parent spends verification
+- chunk payments using UTXOs instead of DBCs
+
+### Other
+- *(node)* remove unused proptest dep
+- use updated sn_dbc
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
