@@ -9,7 +9,6 @@
 use crate::{
     driver::SwarmDriver,
     error::{Error, Result},
-    record_store_api::RecordStoreAPI,
     sort_peers_by_address, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
 };
 use libp2p::{
