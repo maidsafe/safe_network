@@ -6,8 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::metrics::NodeMetrics;
+
 use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, NodeEvent};
 use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr, PeerId};
+#[cfg(feature = "network-metrics")]
+use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_dbc::MainKey;
 use sn_networking::{
@@ -101,6 +105,13 @@ impl Node {
         let wallet = LocalWallet::load_from_main_key(&root_dir, reward_key)?;
         wallet.store()?;
 
+        #[cfg(feature = "network-metrics")]
+        let (metrics_registry, node_metrics) = {
+            let mut metrics_registry = Registry::default();
+            let node_metrics = NodeMetrics::new(&mut metrics_registry);
+            (metrics_registry, node_metrics)
+        };
+
         let network_cfg = NetworkConfig {
             keypair,
             local,
@@ -108,6 +119,8 @@ impl Node {
             listen_addr: Some(addr),
             request_timeout: None,
             concurrency_limit: None,
+            #[cfg(feature = "network-metrics")]
+            metrics_registry,
         };
 
         let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(network_cfg)?;
@@ -118,6 +131,7 @@ impl Node {
             events_channel: node_events_channel.clone(),
             initial_peers,
             reward_address,
+            node_metrics,
         };
 
         let network_clone = network.clone();
@@ -180,6 +194,14 @@ impl Node {
         })
     }
 
+    /// Calls Marker::log() to insert the marker into the log files
+    /// And calls NodeMetrics::record() to record the metric
+    pub(crate) fn record_metrics(&self, marker: Marker) {
+        marker.log();
+        #[cfg(feature = "network-metrics")]
+        self.node_metrics.record(marker);
+    }
+
     // **** Private helpers *****
 
     async fn handle_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
@@ -230,14 +252,15 @@ impl Node {
                 if peers_connected.load(Ordering::SeqCst) == CLOSE_GROUP_SIZE {
                     self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
                 }
-                Marker::PeerAddedToRoutingTable(peer_id).log();
+
+                self.record_metrics(Marker::PeerAddedToRoutingTable(peer_id));
 
                 if let Err(err) = self.try_trigger_replication(peer_id, false).await {
                     error!("During CloseGroupUpdate, error while triggering replication {err:?}");
                 }
             }
             NetworkEvent::PeerRemoved(peer_id) => {
-                Marker::PeerRemovedFromRoutingTable(peer_id).log();
+                self.record_metrics(Marker::PeerRemovedFromRoutingTable(peer_id));
                 // During a node restart, the new node got added before the old one got removed.
                 // If the old one is `pushed out of close_group by the new one`, then the records
                 // that being close to the old one won't got replicated during the CloseGroupUpdate
@@ -248,7 +271,7 @@ impl Node {
                 }
             }
             NetworkEvent::KeysForReplication(keys) => {
-                Marker::fetching_keys_for_replication(&keys).log();
+                self.record_metrics(Marker::fetching_keys_for_replication(&keys));
 
                 if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
                     error!("Error while trying to fetch replicated data {err:?}");
@@ -278,6 +301,7 @@ impl Node {
                 match self.validate_and_store_record(record).await {
                     Ok(cmdok) => trace!("UnverifiedRecord {key} stored with {cmdok:?}."),
                     Err(err) => {
+                        self.record_metrics(Marker::RecordRejected(&key));
                         trace!("UnverifiedRecord {key} failed to be stored with error {err:?}.")
                     }
                 }

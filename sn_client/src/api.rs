@@ -13,6 +13,8 @@ use super::{
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
 use libp2p::{identity::Keypair, kad::Record, Multiaddr};
+#[cfg(feature = "network-metrics")]
+use prometheus_client::registry::Registry;
 use sn_dbc::{DbcId, PublicAddress, SignedSpend, Token};
 use sn_networking::{
     multiaddr_is_global, NetworkConfig, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
@@ -25,6 +27,7 @@ use sn_protocol::{
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
+
 use sn_registers::SignedRegister;
 use sn_transfers::{client_transfers::SpendRequest, wallet::Transfer};
 use std::time::Duration;
@@ -63,6 +66,8 @@ impl Client {
             listen_addr: None,
             request_timeout: req_response_timeout,
             concurrency_limit: Some(custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY)),
+            #[cfg(feature = "network-metrics")]
+            metrics_registry: Registry::default(),
         };
         let (network, mut network_event_receiver, swarm_driver) =
             SwarmDriver::new_client(network_cfg)?;
