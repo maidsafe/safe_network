@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.2...sn_networking-v0.6.3) - 2023-09-12
+
+### Other
+- *(networking)* add store cost / relevant record tests
+- *(networking)* refactor record_store to have relevant records calculation separately
+
 ## [0.6.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.1...sn_networking-v0.6.2) - 2023-09-12
 
 ### Added
