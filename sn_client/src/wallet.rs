@@ -109,7 +109,7 @@ impl WalletClient {
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     ///
-    /// Returns (Proofs and an Option around Storage Cost), storage cost is _per record_, and only returned if required for this operation
+    /// Returns storage cost, storage cost is _per record_, and it's zero if not required for this operation.
     ///
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_storage(
@@ -153,7 +153,7 @@ impl WalletClient {
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     ///
-    /// Returns DbcIds created for the payment and the total amount paid
+    /// Returns the total amount paid.
     ///
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_records(
