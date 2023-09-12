@@ -18,8 +18,7 @@ hex = "~0.4.3"
 libp2p = { version="0.52", features = ["identify", "kad"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-# sn_dbc = { version = "20.0.0", features = ["serdes"] }
-sn_dbc = { path = "../../sn_dbc", features = ["serdes"] }
+sn_dbc = { version = "20.0.0", features = ["serdes"] }
 sn_registers = { path = "../sn_registers", version = "0.2.6" }
 thiserror = "1.0.23"
 tracing = { version = "~0.1.26" }
