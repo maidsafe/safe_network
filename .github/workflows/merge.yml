@@ -271,6 +271,10 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 25
 
+      - name: Small wait to allow reward receipt
+        run: sleep 30
+        timeout-minutes: 1
+
       - name: execute the nodes rewards tests
         run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture
         env:
