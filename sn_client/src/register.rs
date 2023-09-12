@@ -10,7 +10,6 @@ use crate::{Client, Error, Result, WalletClient};
 
 use bls::PublicKey;
 use libp2p::kad::Record;
-use sn_dbc::Dbc;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::RegisterCmd,
@@ -20,6 +19,7 @@ use sn_protocol::{
 use sn_registers::{
     Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister, User,
 };
+use sn_transfers::wallet::Transfer;
 
 use std::collections::{BTreeSet, LinkedList};
 use xor_name::XorName;
@@ -206,7 +206,7 @@ impl ClientRegister {
                 }
 
                 // Get payment proofs needed to publish the Register
-                let payment = wallet_client.get_payment_dbcs(&net_addr);
+                let payment = wallet_client.get_payment_transfers(&net_addr)?;
 
                 self.publish_register(cmd, payment, verify_store).await?;
                 self.register.clone()
@@ -291,7 +291,7 @@ impl ClientRegister {
     async fn publish_register(
         &self,
         cmd: RegisterCmd,
-        payment: Vec<Dbc>,
+        payment: Vec<Transfer>,
         verify_store: bool,
     ) -> Result<()> {
         let cmd_dst = cmd.dst();

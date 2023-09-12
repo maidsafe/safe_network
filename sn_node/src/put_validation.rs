@@ -69,7 +69,7 @@ impl Node {
             }
             RecordKind::RegisterWithPayment => {
                 let (payment, register) =
-                    try_deserialize_record::<(Vec<Dbc>, SignedRegister)>(&record)?;
+                    try_deserialize_record::<(Vec<Transfer>, SignedRegister)>(&record)?;
 
                 // check if the deserialized value's RegisterAddress matches the record's key
                 let net_addr = NetworkAddress::from_register_address(*register.address());
@@ -85,7 +85,7 @@ impl Node {
 
                 if !already_exists {
                     // Validate the payment and that we received what we asked.
-                    self.payment_for_us_exists_and_is_still_valid(&net_addr, &payment)
+                    self.payment_for_us_exists_and_is_still_valid(&net_addr, payment)
                         .await?;
                 }
 
