@@ -1195,6 +1195,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(node)* remove unused proptest dep
 - use updated sn_dbc
 
+## [0.90.2](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.1...sn_node-v0.90.2) - 2023-09-12
+
+### Added
+- *(network)* feature gate libp2p metrics
+
+### Other
+- *(metrics)* rename network metrics and remove from default features list
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
