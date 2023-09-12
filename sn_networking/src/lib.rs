@@ -25,6 +25,7 @@ pub use self::{
     driver::SwarmDriver,
     error::Error,
     event::{MsgResponder, NetworkEvent},
+    record_store::NodeRecordStore,
 };
 
 use self::{cmd::SwarmCmd, error::Result};
