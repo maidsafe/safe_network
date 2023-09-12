@@ -15,30 +15,6 @@ use sn_dbc::Token;
 use sn_protocol::NetworkAddress;
 use std::{borrow::Cow, collections::HashSet};
 
-/// Methods used from inside the `SwarmDriver` after calling `store_mut()` should are placed here
-pub trait RecordStoreAPI {
-    /// Returns `true` if the `Key` is present locally
-    fn contains(&self, key: &RecordKey) -> bool;
-
-    /// Returns the set of `NetworkAddress::RecordKey` held by the store
-    /// Use `record_addresses_ref` to get a borrowed type
-    fn record_addresses(&self) -> HashSet<NetworkAddress>;
-
-    /// Returns the reference to the set of `NetworkAddress::RecordKey` held by the store
-    #[allow(clippy::mutable_key_type)]
-    fn record_addresses_ref(&self) -> &HashSet<RecordKey>;
-
-    /// Warning: PUTs a `Record` to the store without validation
-    /// Should be used in context where the `Record` is trusted
-    fn put_verified(&mut self, r: Record) -> Result<()>;
-
-    /// Calculate the cost to store data for our current store state
-    fn store_cost(&self) -> Token;
-
-    /// Setup the distance range.
-    fn set_distance_range(&mut self, distance_range: Distance);
-}
-
 pub enum UnifiedRecordStore {
     Client(ClientRecordStore),
     Node(NodeRecordStore),
@@ -105,43 +81,47 @@ impl RecordStore for UnifiedRecordStore {
     }
 }
 
-impl RecordStoreAPI for UnifiedRecordStore {
-    fn contains(&self, key: &RecordKey) -> bool {
+impl UnifiedRecordStore {
+    pub(crate) fn contains(&self, key: &RecordKey) -> bool {
         match self {
             Self::Client(store) => store.contains(key),
             Self::Node(store) => store.contains(key),
         }
     }
 
-    fn record_addresses(&self) -> HashSet<NetworkAddress> {
+    pub(crate) fn record_addresses(&self) -> HashSet<NetworkAddress> {
         match self {
             Self::Client(store) => store.record_addresses(),
             Self::Node(store) => store.record_addresses(),
         }
     }
 
-    fn record_addresses_ref(&self) -> &HashSet<RecordKey> {
+    #[allow(clippy::mutable_key_type)]
+    pub(crate) fn record_addresses_ref(&self) -> &HashSet<RecordKey> {
         match self {
             Self::Client(store) => store.record_addresses_ref(),
             Self::Node(store) => store.record_addresses_ref(),
         }
     }
 
-    fn put_verified(&mut self, r: Record) -> Result<()> {
+    pub(crate) fn put_verified(&mut self, r: Record) -> Result<()> {
         match self {
             Self::Client(store) => store.put_verified(r),
             Self::Node(store) => store.put_verified(r),
         }
     }
 
-    fn store_cost(&self) -> Token {
+    pub(crate) fn store_cost(&self) -> Token {
         match self {
-            Self::Client(store) => store.store_cost(),
+            Self::Client(_) => {
+                warn!("Calling store cost calculation at Client. This should not happen");
+                Token::zero()
+            }
             Self::Node(store) => store.store_cost(),
         }
     }
 
-    fn set_distance_range(&mut self, distance_range: Distance) {
+    pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
         match self {
             Self::Client(store) => store.set_distance_range(distance_range),
             Self::Node(store) => store.set_distance_range(distance_range),
