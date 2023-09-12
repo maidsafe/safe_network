@@ -16,6 +16,7 @@ use super::{
     Client,
 };
 
+use self_encryption::{decrypt_full_set, StreamSelfDecryptor};
 use sn_protocol::{
     storage::{Chunk, ChunkAddress},
     NetworkAddress, PrettyPrintRecordKey,
@@ -66,16 +67,25 @@ impl Files {
     }
 
     #[instrument(skip(self), level = "debug")]
-    /// Reads [`Bytes`] from the network, whose contents are contained within one or more chunks.
-    pub async fn read_bytes(&self, address: ChunkAddress) -> Result<Bytes> {
+    /// Reads a file from the network, whose contents are contained within one or more chunks.
+    pub async fn read_bytes(
+        &self,
+        address: ChunkAddress,
+        downloaded_file_path: Option<PathBuf>,
+    ) -> Result<Option<Bytes>> {
         let chunk = self.client.get_chunk(address).await?;
 
         // first try to deserialize a LargeFile, if it works, we go and seek it
         if let Ok(data_map) = self.unpack_chunk(chunk.clone()).await {
-            self.read_all(data_map).await
+            self.read_all(data_map, downloaded_file_path).await
         } else {
             // if an error occurs, we assume it's a SmallFile
-            Ok(chunk.value().clone())
+            if let Some(path) = downloaded_file_path {
+                fs::write(path, chunk.value().clone())?;
+                Ok(None)
+            } else {
+                Ok(Some(chunk.value().clone()))
+            }
         }
     }
 
@@ -223,13 +233,61 @@ impl Files {
         )))
     }
 
-    // Gets and decrypts chunks from the network using nothing else but the data map,
-    // then returns the raw data.
-    async fn read_all(&self, data_map: DataMap) -> Result<Bytes> {
-        let encrypted_chunks = self.try_get_chunks(data_map.infos()).await?;
-        let bytes = self_encryption::decrypt_full_set(&data_map, &encrypted_chunks)
-            .map_err(Error::SelfEncryption)?;
-        Ok(bytes)
+    // Gets and decrypts chunks from the network using nothing else but the data map.
+    // If a downloaded path is given, the decrypted file will be written to the given path,
+    // by the decryptor directly.
+    // Otherwise, will assume the fetched content is a small one and return as bytes.
+    async fn read_all(
+        &self,
+        data_map: DataMap,
+        decrypted_file_path: Option<PathBuf>,
+    ) -> Result<Option<Bytes>> {
+        let mut decryptor = if let Some(path) = decrypted_file_path {
+            StreamSelfDecryptor::decrypt_to_file(Box::new(path), &data_map)?
+        } else {
+            let encrypted_chunks = self.try_get_chunks(data_map.infos()).await?;
+            let bytes =
+                decrypt_full_set(&data_map, &encrypted_chunks).map_err(Error::SelfEncryption)?;
+            return Ok(Some(bytes));
+        };
+
+        let expected_count = data_map.infos().len();
+        let mut missing_chunks = Vec::new();
+
+        for (index, chunk_info) in data_map.infos().iter().enumerate() {
+            match self
+                .client
+                .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
+                .await
+            {
+                Ok(chunk) => {
+                    let encrypted_chunk = EncryptedChunk {
+                        index: chunk_info.index,
+                        content: chunk.value().clone(),
+                    };
+                    let _ = decryptor.next_encrypted(encrypted_chunk)?;
+                }
+                Err(err) => {
+                    warn!(
+                        "Reading chunk {} from network, resulted in error {err:?}.",
+                        chunk_info.dst_hash
+                    );
+                    missing_chunks.push(chunk_info.dst_hash);
+                }
+            }
+            info!("Client download progress {index:?}/{expected_count:?}");
+            println!("Client download progress {index:?}/{expected_count:?}");
+        }
+
+        if !missing_chunks.is_empty() {
+            Err(Error::NotEnoughChunksRetrieved {
+                expected: expected_count,
+                retrieved: expected_count - missing_chunks.len(),
+                missing_chunks,
+            })?
+        } else {
+            Ok(None)
+        }
     }
 
     /// Extracts a file DataMapLevel from a chunk.
@@ -243,7 +301,7 @@ impl Files {
                     return Ok(data_map);
                 }
                 DataMapLevel::Additional(data_map) => {
-                    let serialized_chunk = self.read_all(data_map).await?;
+                    let serialized_chunk = self.read_all(data_map, None).await?.unwrap();
                     chunk = deserialize(&serialized_chunk).map_err(Error::Serialisation)?;
                 }
             }
