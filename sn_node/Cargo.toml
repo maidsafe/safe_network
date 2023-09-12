@@ -18,11 +18,12 @@ name = "faucet"
 path = "src/bin/faucet/main.rs"
 
 [features]
-default=["metrics"]
+# todo remove network-metrics
+default=["metrics", "network-metrics"]
 local-discovery=["sn_networking/local-discovery"]
 otlp = ["sn_logging/otlp"]
 metrics = ["sn_logging/process-metrics"]
-network-metrics = ["sn_networking/network-metrics"]
+network-metrics = ["sn_networking/network-metrics", "prometheus-client"]
 quic=["sn_networking/quic"]
 
 [dependencies]
@@ -42,6 +43,7 @@ hex = "~0.4.3"
 itertools = "~0.10.1"
 lazy_static = "~1.4.0"
 libp2p = { version="0.52", features = ["tokio", "dns", "kad", "macros", "autonat"] }
+prometheus-client = { version = "0.21.2", optional = true }
 prost = { version = "0.9" }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"

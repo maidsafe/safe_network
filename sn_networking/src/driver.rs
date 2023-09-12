@@ -39,7 +39,7 @@ use libp2p::{
     Multiaddr, PeerId, Transport,
 };
 #[cfg(feature = "network-metrics")]
-use libp2p_metrics::Metrics;
+use libp2p_metrics::Metrics as NetworkMetrics;
 #[cfg(feature = "quic")]
 use libp2p_quic as quic;
 #[cfg(feature = "network-metrics")]
@@ -88,7 +88,7 @@ pub(super) struct NodeBehaviour {
     pub(super) autonat: Toggle<autonat::Behaviour>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct NetworkConfig {
     pub keypair: Keypair,
     pub local: bool,
@@ -96,6 +96,8 @@ pub struct NetworkConfig {
     pub listen_addr: Option<SocketAddr>,
     pub request_timeout: Option<Duration>,
     pub concurrency_limit: Option<usize>,
+    #[cfg(feature = "network-metrics")]
+    pub metrics_registry: Registry,
 }
 
 type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
@@ -111,7 +113,7 @@ pub struct SwarmDriver {
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "network-metrics")]
-    pub(crate) network_metrics: Metrics,
+    pub(crate) network_metrics: NetworkMetrics,
 
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
@@ -185,8 +187,10 @@ impl SwarmDriver {
             }
         };
 
+        let listen_addr = network_cfg.listen_addr;
+
         let (network, events_receiver, mut swarm_driver) = Self::with(
-            network_cfg.clone(),
+            network_cfg,
             kad_cfg,
             Some(store_cfg),
             false,
@@ -195,20 +199,18 @@ impl SwarmDriver {
         )?;
 
         // Listen on the provided address
-        let listen_addr = network_cfg
-            .listen_addr
-            .ok_or(Error::ListenAddressNotProvided)?;
+        let listen_addr = listen_addr.ok_or(Error::ListenAddressNotProvided)?;
         #[cfg(not(feature = "quic"))]
-        let addr = Multiaddr::from(listen_addr.ip()).with(Protocol::Tcp(listen_addr.port()));
+        let listen_addr = Multiaddr::from(listen_addr.ip()).with(Protocol::Tcp(listen_addr.port()));
 
         #[cfg(feature = "quic")]
-        let addr = Multiaddr::from(listen_addr.ip())
+        let listen_addr = Multiaddr::from(listen_addr.ip())
             .with(Protocol::Udp(listen_addr.port()))
             .with(Protocol::QuicV1);
 
         let _listener_id = swarm_driver
             .swarm
-            .listen_on(addr)
+            .listen_on(listen_addr)
             .expect("Failed to listen on the provided address");
 
         Ok((network, events_receiver, swarm_driver))
@@ -232,8 +234,9 @@ impl SwarmDriver {
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
             );
 
+        let concurrency_limit = network_cfg.concurrency_limit;
         let (mut network, net_event_recv, driver) = Self::with(
-            network_cfg.clone(),
+            network_cfg,
             kad_cfg,
             None,
             true,
@@ -241,7 +244,7 @@ impl SwarmDriver {
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
         )?;
 
-        if let Some(limit) = network_cfg.concurrency_limit {
+        if let Some(limit) = concurrency_limit {
             network.set_concurrency_limit(limit);
         }
 
@@ -250,7 +253,7 @@ impl SwarmDriver {
 
     /// Private helper to create the network components with the provided config and req/res behaviour
     fn with(
-        network_cfg: NetworkConfig,
+        mut network_cfg: NetworkConfig,
         kad_cfg: KademliaConfig,
         record_store_cfg: Option<NodeRecordStoreConfig>,
         is_client: bool,
@@ -370,10 +373,9 @@ impl SwarmDriver {
         let autonat = Toggle::from(autonat);
 
         #[cfg(feature = "network-metrics")]
-        let metrics = {
-            let mut metric_registry = Registry::default();
-            let metrics = Metrics::new(&mut metric_registry);
-            metrics_server(metric_registry);
+        let network_metrics = {
+            let metrics = NetworkMetrics::new(&mut network_cfg.metrics_registry);
+            metrics_server(network_cfg.metrics_registry);
             metrics
         };
 
@@ -397,7 +399,7 @@ impl SwarmDriver {
             close_group: Default::default(),
             replication_fetcher: Default::default(),
             #[cfg(feature = "network-metrics")]
-            network_metrics: metrics,
+            network_metrics,
             cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),

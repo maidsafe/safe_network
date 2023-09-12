@@ -11,9 +11,10 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.89.5"
 
 [features]
-default=[]
+# todo remove network-metrics
+default=["network-metrics"]
 local-discovery=["sn_networking/local-discovery"]
-network-metrics = ["sn_networking/network-metrics"]
+network-metrics = ["sn_networking/network-metrics", "prometheus-client"]
 
 [dependencies]
 async-trait = "0.1"
@@ -25,6 +26,7 @@ hex = "~0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
 itertools = "~0.10.1"
 libp2p = { version="0.52", features = ["identify"] }
+prometheus-client = { version = "0.21.2", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "~1.5.1"
 self_encryption = "~0.28.4"

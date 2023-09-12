@@ -47,6 +47,8 @@ mod error;
 mod event;
 mod get_validation;
 mod log_markers;
+#[cfg(feature = "network-metrics")]
+mod metrics;
 mod put_validation;
 mod replication;
 mod spends;
@@ -58,6 +60,7 @@ pub use self::{
 };
 
 use libp2p::Multiaddr;
+use metrics::NodeMetrics;
 use sn_dbc::PublicAddress;
 use sn_networking::Network;
 
@@ -71,4 +74,5 @@ pub struct Node {
     /// Peers that are dialed at startup of node.
     initial_peers: Vec<Multiaddr>,
     reward_address: PublicAddress,
+    node_metrics: NodeMetrics,
 }

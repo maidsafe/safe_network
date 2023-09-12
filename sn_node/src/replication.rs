@@ -46,7 +46,8 @@ impl Node {
             return Ok(());
         }
 
-        Marker::ReplicationTriggered.log();
+        self.node_metrics.record(Marker::ReplicationTriggered);
+
         let our_peer_id = self.network.peer_id;
         let our_address = NetworkAddress::from_peer(our_peer_id);
 

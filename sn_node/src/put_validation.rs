@@ -216,14 +216,12 @@ impl Node {
         // finally store the Record directly into the local storage
         debug!("Storing chunk {chunk_name:?} as Record locally");
         self.network.put_local_record(record).map_err(|err| {
-            Marker::RecordRejected(&pretty_key).log();
-
             let msg = format!("Error while locally storing Chunk as a Record: {err}");
             warn!("{msg}");
             ProtocolError::RecordNotStored(pretty_key.clone(), msg)
         })?;
 
-        Marker::ValidChunkRecordPutFromNetwork(&pretty_key).log();
+        self.record_metrics(Marker::ValidChunkRecordPutFromNetwork(&pretty_key));
 
         self.events_channel
             .broadcast(crate::NodeEvent::ChunkStored(chunk_addr));
@@ -269,12 +267,11 @@ impl Node {
         };
         debug!("Storing register {reg_addr:?} as Record locally");
         self.network.put_local_record(record).map_err(|err| {
-            Marker::RecordRejected(&pretty_key).log();
             warn!("Error while locally storing register as a Record {err}");
             ProtocolError::RegisterNotStored(Box::new(*reg_addr))
         })?;
 
-        Marker::ValidRegisterRecordPutFromNetwork(&pretty_key).log();
+        self.record_metrics(Marker::ValidRegisterRecordPutFromNetwork(&pretty_key));
 
         Ok(CmdOk::StoredSuccessfully)
     }
@@ -360,8 +357,6 @@ impl Node {
             expires: None,
         };
         self.network.put_local_record(record).map_err(|_| {
-            Marker::RecordRejected(&pretty_key).log();
-
             let err = ProtocolError::SpendNotStored(format!("Cannot PUT Spend with {dbc_addr:?}"));
             error!("Cannot put spend {err:?}");
             err
@@ -379,7 +374,7 @@ impl Node {
             }
         }
 
-        Marker::ValidSpendRecordPutFromNetwork(&pretty_key).log();
+        self.record_metrics(Marker::ValidSpendRecordPutFromNetwork(&pretty_key));
 
         Ok(CmdOk::StoredSuccessfully)
     }

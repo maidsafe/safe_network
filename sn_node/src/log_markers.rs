@@ -16,7 +16,7 @@ use std::time::Duration;
 use strum::Display;
 
 /// Public Markers for generating log output,
-/// These generate apprioriate log level output and consistent strings.
+/// These generate appropriate log level output and consistent strings.
 /// Changing these log markers is a breaking change.
 #[derive(Debug, Clone, Display)]
 pub enum Marker<'a> {
@@ -40,9 +40,6 @@ pub enum Marker<'a> {
 
     /// Peer was removed from the routing table
     PeerRemovedFromRoutingTable(PeerId),
-
-    /// Lost Record Detected
-    LostRecordDetected(&'a Vec<PeerId>),
 
     /// Replication trigger was fired
     ReplicationTriggered,
