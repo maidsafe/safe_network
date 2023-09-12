@@ -377,13 +377,17 @@ impl LocalWallet {
         Ok(transfers)
     }
 
-    pub fn decipher_transfer(&self, transfer: Transfer) -> Result<Vec<Utxo>> {
+    pub fn unwrap_transfer(&self, transfer: Transfer) -> Result<Vec<Utxo>> {
         transfer.utxos(self.key.secret_key())
     }
 
-    pub fn decipher_transfer_for_us(&self, payment: Vec<Transfer>) -> Result<Vec<Utxo>> {
+    /// Takes in a list of transfers and tries to decipher them one by one until
+    /// we find one that is for us.
+    /// Return the UTXOs if we find one.
+    /// Return an error if we find none.
+    pub fn unwrap_transfer_for_us(&self, payment: Vec<Transfer>) -> Result<Vec<Utxo>> {
         for tr in payment {
-            match self.decipher_transfer(tr) {
+            match self.unwrap_transfer(tr) {
                 Ok(utxos) => return Ok(utxos),
                 Err(_) => continue, // cannot decipher, not ours
             }
