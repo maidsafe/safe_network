@@ -16,9 +16,7 @@ use libp2p::{identity::Keypair, kad::Record, Multiaddr};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_dbc::{DbcId, PublicAddress, SignedSpend, Token};
-use sn_networking::{
-    multiaddr_is_global, NetworkConfig, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
-};
+use sn_networking::{multiaddr_is_global, NetworkBuilder, NetworkEvent, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
     storage::{
@@ -59,18 +57,19 @@ impl Client {
         info!("Startup a client with peers {peers:?} and local {local:?} flag");
         info!("Starting Kad swarm in client mode...");
 
-        let network_cfg = NetworkConfig {
-            keypair: Keypair::generate_ed25519(),
-            local,
-            root_dir: std::env::temp_dir(),
-            listen_addr: None,
-            request_timeout: req_response_timeout,
-            concurrency_limit: Some(custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY)),
-            #[cfg(feature = "open-metrics")]
-            metrics_registry: Registry::default(),
-        };
-        let (network, mut network_event_receiver, swarm_driver) =
-            SwarmDriver::new_client(network_cfg)?;
+        let mut network_builder =
+            NetworkBuilder::new(Keypair::generate_ed25519(), local, std::env::temp_dir());
+
+        if let Some(request_timeout) = req_response_timeout {
+            network_builder.request_timeout(request_timeout);
+        }
+        network_builder
+            .concurrency_limit(custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY));
+
+        #[cfg(feature = "open-metrics")]
+        network_builder.metrics_registry(Registry::default());
+
+        let (network, mut network_event_receiver, swarm_driver) = network_builder.build_client()?;
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 
