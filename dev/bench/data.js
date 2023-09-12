@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694518390447,
+  "lastUpdate": 1694527051425,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -7561,6 +7561,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.377505203064614,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "481bd097ce674ad9697a146f407f205c50ab0160",
+          "message": "ci: reduce client mem limits",
+          "timestamp": "2023-09-12T12:54:10Z",
+          "tree_id": "da9b27e21415cd9fc19bd5f7d675c91c9f7daf1a",
+          "url": "https://github.com/maidsafe/safe_network/commit/481bd097ce674ad9697a146f407f205c50ab0160"
+        },
+        "date": 1694527050187,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.08853510983491499,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.7982119367973397,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.621090435650744,
             "unit": "MiB/s"
           }
         ]
