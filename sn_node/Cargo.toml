@@ -74,7 +74,6 @@ color-eyre = "0.6.2"
 
 [dev-dependencies]
 assert_fs = "1.0.0"
-proptest = { version = "1.0.0" }
 tempfile = "3.6.0"
 
 [build-dependencies]
