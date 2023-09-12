@@ -28,7 +28,7 @@ use libp2p::{
     swarm::{dial_opts::DialOpts, SwarmEvent},
     Multiaddr, PeerId,
 };
-#[cfg(feature = "network-metrics")]
+#[cfg(feature = "open-metrics")]
 use libp2p_metrics::Recorder;
 use sn_protocol::{
     messages::{Request, Response},
@@ -174,7 +174,7 @@ impl SwarmDriver {
     ) -> Result<()> {
         // This does not record all the events. `SwarmEvent::Behaviour(_)` are skipped. Hence `.record()` has to be
         // called individually on each behaviour.
-        #[cfg(feature = "network-metrics")]
+        #[cfg(feature = "open-metrics")]
         self.network_metrics.record(&event);
         match event {
             SwarmEvent::Behaviour(NodeEvent::MsgReceived(event)) => {
@@ -186,7 +186,7 @@ impl SwarmDriver {
                 self.handle_kad_event(kad_event)?;
             }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
-                #[cfg(feature = "network-metrics")]
+                #[cfg(feature = "open-metrics")]
                 self.network_metrics.record(&(*iden));
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
@@ -480,7 +480,7 @@ impl SwarmDriver {
     }
 
     fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
-        #[cfg(feature = "network-metrics")]
+        #[cfg(feature = "open-metricss")]
         self.network_metrics.record(&kad_event);
         match kad_event {
             ref event @ KademliaEvent::OutboundQueryProgressed {
@@ -530,7 +530,7 @@ impl SwarmDriver {
             //          `ProgressStep::count` to be increased with step of 1
             //             capped and stopped at CLOSE_GROUP_SIZE, may have duplicated counts
             //          `PeerRecord::peer` could be None to indicate from self
-            //             in which case it always use a duplicated `PregressStep::count`
+            //             in which case it always use a duplicated `ProgressStep::count`
             //     the sequence will be completed with `FinishedWithNoAdditionalRecord`
             //     where: `cache_candidates`: being the peers supposed to hold the record but not
             //            `ProgressStep::count`: to be `number of received copies plus one`

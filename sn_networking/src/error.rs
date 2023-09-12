@@ -124,7 +124,7 @@ pub enum Error {
     #[error("Node Listen Address was not provided during construction")]
     ListenAddressNotProvided,
 
-    #[cfg(feature = "network-metrics")]
+    #[cfg(feature = "open-metrics")]
     #[error("Network Metric error")]
     NetworkMetricError,
 }
