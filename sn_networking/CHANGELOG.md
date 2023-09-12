@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.1...sn_networking-v0.6.2) - 2023-09-12
+
+### Added
+- *(network)* feature gate libp2p metrics
+- *(network)* implement libp2p metrics
+
+### Other
+- *(docs)* add docs about network metrics
+- *(metrics)* rename network metrics and remove from default features list
+- *(network)* remove unwraps inside metrics server
+
 ## [0.6.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.0...sn_networking-v0.6.1) - 2023-09-12
 
 ### Added
