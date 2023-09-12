@@ -10,9 +10,7 @@ use crate::{
     close_group_majority,
     driver::SwarmDriver,
     error::{Error, Result},
-    multiaddr_is_global, multiaddr_strip_p2p,
-    record_store_api::RecordStoreAPI,
-    sort_peers_by_address, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
 };
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
