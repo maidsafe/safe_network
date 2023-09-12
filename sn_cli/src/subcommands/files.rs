@@ -340,15 +340,18 @@ async fn download_file(
         xorname
     );
     debug!("Downloading file {file_name:?}");
-    match file_api.read_bytes(ChunkAddress::new(*xorname)).await {
-        Ok(bytes) => {
+    let downloaded_file_path = download_path.join(file_name);
+    // The downloaded file will be writen to the folder directly.
+    match file_api
+        .read_bytes(
+            ChunkAddress::new(*xorname),
+            Some(downloaded_file_path.clone()),
+        )
+        .await
+    {
+        Ok(_) => {
             debug!("Successfully got file {file_name}!");
-            println!("Successfully got file {file_name}!");
-            let file_name_path = download_path.join(file_name);
-            println!("Writing {} bytes to {file_name_path:?}", bytes.len());
-            if let Err(err) = fs::write(file_name_path, bytes) {
-                println!("Failed to create file {file_name:?} with error {err:?}");
-            }
+            println!("Successfully got file {file_name}, stored at {downloaded_file_path:?}!");
         }
         Err(error) => {
             error!("Did not get file {file_name:?} from the network! {error}");
