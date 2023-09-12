@@ -17,7 +17,7 @@ statemap = []
 otlp = []
 local-discovery = []
 quic = []
-network-metrics = []
+open-metrics = []
 
 [[bin]]
 path="src/main.rs"

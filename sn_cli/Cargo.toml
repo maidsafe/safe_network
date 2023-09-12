@@ -22,7 +22,7 @@ harness = false
 default = ["metrics"]
 metrics = ["sn_logging/process-metrics"]
 local-discovery=["sn_client/local-discovery"]
-network-metrics = ["sn_client/network-metrics"]
+open-metrics = ["sn_client/open-metrics"]
 
 [dependencies]
 bincode = "1.3.1"

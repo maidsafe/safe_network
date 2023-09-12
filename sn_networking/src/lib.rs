@@ -14,7 +14,7 @@ mod cmd;
 mod driver;
 mod error;
 mod event;
-#[cfg(feature = "network-metrics")]
+#[cfg(feature = "open-metrics")]
 mod metrics_service;
 mod record_store;
 mod record_store_api;
@@ -111,7 +111,7 @@ pub struct Network {
     pub peer_id: PeerId,
     pub root_dir_path: PathBuf,
     keypair: Keypair,
-    /// Optinal Concurrent limiter to limit the number of concurrent requests
+    /// Optional Concurrent limiter to limit the number of concurrent requests
     /// Intended for client side use
     concurrency_limiter: Option<Arc<Semaphore>>,
 }
@@ -208,7 +208,7 @@ impl Network {
             .send_and_get_responses(close_nodes, &request, true)
             .await;
 
-        // loop over responses, generating an avergae fee and storing all responses along side
+        // loop over responses, generating an average fee and storing all responses along side
         let mut all_costs = vec![];
         for response in responses.into_iter().flatten() {
             if let Response::Query(QueryResponse::GetStoreCost {
@@ -277,7 +277,7 @@ impl Network {
                     // Returning mismatched error when: completed all attempts
                     if target_record.is_none()
                         || (target_record.is_some()
-                            // we dont need to match the whole record if chunks, 
+                            // we don't need to match the whole record if chunks, 
                             // payment data could differ, but chunks themselves'
                             // keys are from the chunk address
                             && (target_record == Some(returned_record.clone()) || is_chunk))
@@ -676,7 +676,7 @@ mod tests {
 
     #[test]
     fn test_get_fee_from_store_cost_quotes() -> Result<()> {
-        // for a vec of different costs of CLOUSE_GROUP size
+        // for a vec of different costs of CLOSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..CLOSE_GROUP_SIZE {
@@ -702,7 +702,7 @@ mod tests {
     #[test]
     #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
     fn test_get_any_fee_from_store_cost_quotes_errs_if_insufficient_quotes() -> eyre::Result<()> {
-        // for a vec of different costs of CLOUSE_GROUP size
+        // for a vec of different costs of CLOSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
@@ -718,8 +718,8 @@ mod tests {
     }
     #[test]
     #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
-    fn test_get_some_fee_from_store_cost_quotes_errs_if_suffcient() -> eyre::Result<()> {
-        // for a vec of different costs of CLOUSE_GROUP size
+    fn test_get_some_fee_from_store_cost_quotes_errs_if_sufficient() -> eyre::Result<()> {
+        // for a vec of different costs of CLOSE_GROUP size
         let quotes_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
         for i in 0..quotes_count {

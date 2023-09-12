@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-#[cfg(feature = "network-metrics")]
+#[cfg(feature = "open-metrics")]
 use crate::metrics_service::metrics_server;
 use crate::{
     circular_vec::CircularVec,
@@ -38,11 +38,11 @@ use libp2p::{
     },
     Multiaddr, PeerId, Transport,
 };
-#[cfg(feature = "network-metrics")]
+#[cfg(feature = "open-metrics")]
 use libp2p_metrics::Metrics as NetworkMetrics;
 #[cfg(feature = "quic")]
 use libp2p_quic as quic;
-#[cfg(feature = "network-metrics")]
+#[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_protocol::messages::{Request, Response};
 use std::{
@@ -96,7 +96,7 @@ pub struct NetworkConfig {
     pub listen_addr: Option<SocketAddr>,
     pub request_timeout: Option<Duration>,
     pub concurrency_limit: Option<usize>,
-    #[cfg(feature = "network-metrics")]
+    #[cfg(feature = "open-metrics")]
     pub metrics_registry: Registry,
 }
 
@@ -112,7 +112,7 @@ pub struct SwarmDriver {
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
-    #[cfg(feature = "network-metrics")]
+    #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: NetworkMetrics,
 
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
@@ -253,7 +253,7 @@ impl SwarmDriver {
 
     /// Private helper to create the network components with the provided config and req/res behaviour
     fn with(
-        mut network_cfg: NetworkConfig,
+        network_cfg: NetworkConfig,
         kad_cfg: KademliaConfig,
         record_store_cfg: Option<NodeRecordStoreConfig>,
         is_client: bool,
@@ -372,10 +372,11 @@ impl SwarmDriver {
         };
         let autonat = Toggle::from(autonat);
 
-        #[cfg(feature = "network-metrics")]
+        #[cfg(feature = "open-metrics")]
         let network_metrics = {
-            let metrics = NetworkMetrics::new(&mut network_cfg.metrics_registry);
-            metrics_server(network_cfg.metrics_registry);
+            let mut metrics_registry = network_cfg.metrics_registry;
+            let metrics = NetworkMetrics::new(&mut metrics_registry);
+            metrics_server(metrics_registry);
             metrics
         };
 
@@ -398,7 +399,7 @@ impl SwarmDriver {
             bootstrap_ongoing: false,
             close_group: Default::default(),
             replication_fetcher: Default::default(),
-            #[cfg(feature = "network-metrics")]
+            #[cfg(feature = "open-metrics")]
             network_metrics,
             cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,

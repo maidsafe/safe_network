@@ -133,6 +133,12 @@ $ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 update 70
 Node successfully received the request to try to update in 7s
 ```
 
+# OpenMetrics
+
+Use the `open-metrics` feature flag on the node / client to start an [OpenMetrics](https://github.com/OpenObservability/OpenMetrics/) exporter. The metrics are served via a webserver started at a random port. Check the log file / stdout to find the webserver URL, `Metrics server on http://127.0.0.1:xxxx/metrics`
+
+The metrics can then be collected using a collector (for e.g. Prometheus) and the data can then be imported into any visualization tool (for e.g., Grafana) to be further analyzed.
+
 ### Archive
 
 The elder-membership agreed, section tree backed implementation of the safe network can be found [here](https://github.com/maidsafe/safe_network_archive)

@@ -13,7 +13,7 @@ use super::{
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
 use libp2p::{identity::Keypair, kad::Record, Multiaddr};
-#[cfg(feature = "network-metrics")]
+#[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_dbc::{DbcId, PublicAddress, SignedSpend, Token};
 use sn_networking::{
@@ -66,7 +66,7 @@ impl Client {
             listen_addr: None,
             request_timeout: req_response_timeout,
             concurrency_limit: Some(custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY)),
-            #[cfg(feature = "network-metrics")]
+            #[cfg(feature = "open-metrics")]
             metrics_registry: Registry::default(),
         };
         let (network, mut network_event_receiver, swarm_driver) =

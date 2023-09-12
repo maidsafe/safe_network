@@ -25,6 +25,7 @@ pub(crate) fn metrics_server(registry: Registry) {
     tokio::spawn(async move {
         let server = Server::bind(&addr).serve(MakeMetricService::new(registry));
         info!("Metrics server on http://{}/metrics", server.local_addr());
+        println!("Metrics server on http://{}/metrics", server.local_addr());
         // run the server forever
         if let Err(e) = server.await {
             error!("server error: {}", e);

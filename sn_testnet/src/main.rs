@@ -274,8 +274,8 @@ fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
     if cfg!(feature = "quic") {
         args.extend(["--features", "quic"]);
     }
-    if cfg!(feature = "network-metrics") {
-        args.extend(["--features", "network-metrics"]);
+    if cfg!(feature = "open-metrics") {
+        args.extend(["--features", "open-metrics"]);
     }
 
     let bins_string = binaries_to_build.join(", ");

@@ -18,12 +18,11 @@ name = "faucet"
 path = "src/bin/faucet/main.rs"
 
 [features]
-# todo remove network-metrics
-default=["metrics", "network-metrics"]
+default=["metrics"]
 local-discovery=["sn_networking/local-discovery"]
 otlp = ["sn_logging/otlp"]
 metrics = ["sn_logging/process-metrics"]
-network-metrics = ["sn_networking/network-metrics", "prometheus-client"]
+open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 quic=["sn_networking/quic"]
 
 [dependencies]

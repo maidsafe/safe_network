@@ -11,10 +11,9 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.89.5"
 
 [features]
-# todo remove network-metrics
-default=["network-metrics"]
+default=[]
 local-discovery=["sn_networking/local-discovery"]
-network-metrics = ["sn_networking/network-metrics", "prometheus-client"]
+open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 
 [dependencies]
 async-trait = "0.1"

@@ -6,11 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::metrics::NodeMetrics;
-
 use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, NodeEvent};
+#[cfg(feature = "open-metrics")]
+use crate::metrics::NodeMetrics;
 use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr, PeerId};
-#[cfg(feature = "network-metrics")]
+#[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_dbc::MainKey;
@@ -105,7 +105,7 @@ impl Node {
         let wallet = LocalWallet::load_from_main_key(&root_dir, reward_key)?;
         wallet.store()?;
 
-        #[cfg(feature = "network-metrics")]
+        #[cfg(feature = "open-metrics")]
         let (metrics_registry, node_metrics) = {
             let mut metrics_registry = Registry::default();
             let node_metrics = NodeMetrics::new(&mut metrics_registry);
@@ -119,7 +119,7 @@ impl Node {
             listen_addr: Some(addr),
             request_timeout: None,
             concurrency_limit: None,
-            #[cfg(feature = "network-metrics")]
+            #[cfg(feature = "open-metrics")]
             metrics_registry,
         };
 
@@ -131,6 +131,7 @@ impl Node {
             events_channel: node_events_channel.clone(),
             initial_peers,
             reward_address,
+            #[cfg(feature = "open-metrics")]
             node_metrics,
         };
 
@@ -194,11 +195,11 @@ impl Node {
         })
     }
 
-    /// Calls Marker::log() to insert the marker into the log files
-    /// And calls NodeMetrics::record() to record the metric
+    /// Calls Marker::log() to insert the marker into the log files.
+    /// Also calls NodeMetrics::record() to record the metric if the `open-metrics` feature flag is enabled.
     pub(crate) fn record_metrics(&self, marker: Marker) {
         marker.log();
-        #[cfg(feature = "network-metrics")]
+        #[cfg(feature = "open-metrics")]
         self.node_metrics.record(marker);
     }
 
