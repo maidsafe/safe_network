@@ -18,7 +18,7 @@ use std::{
 
 const METRICS_CONTENT_TYPE: &str = "application/openmetrics-text;charset=utf-8;version=1.0.0";
 
-pub(crate) fn metrics_server(registry: Registry) {
+pub(crate) fn run_metrics_server(registry: Registry) {
     // Serve on localhost.
     let addr = ([127, 0, 0, 1], 0).into();
 

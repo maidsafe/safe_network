@@ -22,7 +22,7 @@ mod replication_fetcher;
 
 pub use self::{
     cmd::SwarmLocalState,
-    driver::{NetworkConfig, SwarmDriver},
+    driver::{NetworkBuilder, SwarmDriver},
     error::Error,
     event::{MsgResponder, NetworkEvent},
     record_store::NodeRecordStore,

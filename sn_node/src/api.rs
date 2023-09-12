@@ -15,7 +15,7 @@ use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_dbc::MainKey;
 use sn_networking::{
-    MsgResponder, NetworkConfig, NetworkEvent, SwarmDriver, SwarmLocalState, CLOSE_GROUP_SIZE,
+    MsgResponder, NetworkBuilder, NetworkEvent, SwarmLocalState, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
@@ -112,18 +112,12 @@ impl Node {
             (metrics_registry, node_metrics)
         };
 
-        let network_cfg = NetworkConfig {
-            keypair,
-            local,
-            root_dir,
-            listen_addr: Some(addr),
-            request_timeout: None,
-            concurrency_limit: None,
-            #[cfg(feature = "open-metrics")]
-            metrics_registry,
-        };
+        let mut network_builder = NetworkBuilder::new(keypair, local, root_dir);
+        network_builder.listen_addr(addr);
+        #[cfg(feature = "open-metrics")]
+        network_builder.metrics_registry(metrics_registry);
 
-        let (network, mut network_event_receiver, swarm_driver) = SwarmDriver::new(network_cfg)?;
+        let (network, mut network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
 
         let node = Self {
