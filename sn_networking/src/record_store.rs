@@ -224,7 +224,7 @@ impl NodeRecordStore {
     /// Calculate the cost to store data for our current store state
     pub(crate) fn store_cost(&self) -> Token {
         let relevant_records_len = if let Some(distance_range) = self.distance_range {
-            self.get_records_within_distance_range(distance_range)
+            self.get_records_within_distance_range(&self.records, distance_range)
         } else {
             warn!("No distance range set on record store. Returning MAX_RECORDS_COUNT for relevant records in store cost calculation.");
             MAX_RECORDS_COUNT
@@ -237,20 +237,24 @@ impl NodeRecordStore {
     }
 
     /// Calculate how many records are stored within a distance range
-    pub(crate) fn get_records_within_distance_range(&self, distance_range: Distance) -> usize {
+    #[allow(clippy::mutable_key_type)]
+    pub fn get_records_within_distance_range(
+        &self,
+        records: &HashSet<Key>,
+        distance_range: Distance,
+    ) -> usize {
         trace!(
             "Total record count is {:?}. Distance is: {distance_range:?}",
             self.records.len()
         );
-        let relevant_records_len = {
-            self.records
-                .iter()
-                .filter(|key| {
-                    let kbucket_key = KBucketKey::from(key.to_vec());
-                    distance_range >= self.local_key.distance(&kbucket_key)
-                })
-                .count()
-        };
+
+        let relevant_records_len = records
+            .iter()
+            .filter(|key| {
+                let kbucket_key = KBucketKey::new(key.to_vec());
+                distance_range >= self.local_key.distance(&kbucket_key)
+            })
+            .count();
 
         trace!("Relevant records len is {:?}", relevant_records_len);
         relevant_records_len
@@ -461,6 +465,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+    use eyre::ContextCompat;
     use libp2p::{
         core::multihash::Multihash,
         kad::{KBucketKey, RecordKey},
@@ -689,6 +694,63 @@ mod tests {
                 self_address.distance(&a).cmp(&self_address.distance(&b))
             });
         }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn get_records_within_distance_range() -> eyre::Result<()> {
+        let max_records = 50;
+
+        // setup the store
+        let store_config = NodeRecordStoreConfig {
+            max_records,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let mut store = NodeRecordStore::with_config(self_id, store_config.clone(), None);
+
+        let mut stored_records: Vec<RecordKey> = vec![];
+        let self_address = NetworkAddress::from_peer(self_id);
+
+        // add records...
+        // minus one here as if we hit max, the store will fail
+        for _ in 0..max_records - 1 {
+            let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
+            let record = Record {
+                key: record_key.clone(),
+                value: (0..50).map(|_| rand::random::<u8>()).collect(),
+                publisher: None,
+                expires: None,
+            };
+            // The new entry is closer, it shall replace the existing one
+            assert!(store.put_verified(record).is_ok());
+
+            stored_records.push(record_key);
+            stored_records.sort_by(|a, b| {
+                let a = NetworkAddress::from_record_key(a.clone());
+                let b = NetworkAddress::from_record_key(b.clone());
+                self_address.distance(&a).cmp(&self_address.distance(&b))
+            });
+        }
+
+        // get a record halfway through the list
+        let halfway_record_address = NetworkAddress::from_record_key(
+            stored_records
+                .get((stored_records.len() / 2) - 1)
+                .wrap_err("Could not parse record store key")?
+                .clone(),
+        );
+        // get the distance to this record from our local key
+        let distance = self_address.distance(&halfway_record_address);
+
+        store.set_distance_range(distance);
+
+        // check that the number of records returned is correct
+        assert_eq!(
+            store.get_records_within_distance_range(&store.records, distance),
+            stored_records.len() / 2
+        );
 
         Ok(())
     }
