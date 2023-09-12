@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694533096003,
+  "lastUpdate": 1694533097613,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -17590,6 +17590,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 902,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "84f42dbaf95503d5e1b0b4ace70b22c2a89351d7",
+          "message": "feat: utilize stream decryptor",
+          "timestamp": "2023-09-12T14:01:10Z",
+          "tree_id": "215ba2b7d0b60b54667074eaabdbd09b70d67ed2",
+          "url": "https://github.com/maidsafe/safe_network/commit/84f42dbaf95503d5e1b0b4ace70b22c2a89351d7"
+        },
+        "date": 1694533097247,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 1214.8203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 971,
             "unit": "MB"
           }
         ]
