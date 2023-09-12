@@ -7,13 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    storage::{ChunkAddress, DbcAddress, RecordKind, RegisterAddress},
-    NetworkAddress, PrettyPrintRecordKey,
+    storage::{DbcAddress, RecordKind, RegisterAddress},
+    PrettyPrintRecordKey,
 };
 use serde::{Deserialize, Serialize};
 use sn_dbc::{SignedSpend, Token};
 use thiserror::Error;
-use xor_name::XorName;
 
 /// A specialised `Result` type for protocol crate.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -26,15 +25,9 @@ pub enum Error {
     #[error("Record was not stored as no payment supplied: {0:?}")]
     InvalidPutWithoutPayment(PrettyPrintRecordKey),
 
-    /// At this point in replication flows, payment is ununimportant and should not be supplied
+    /// At this point in replication flows, payment is unimportant and should not be supplied
     #[error("Record should not be a `WithPayment` type: {0:?}")]
     UnexpectedRecordWithPayment(PrettyPrintRecordKey),
-
-    // ---------- chunk errors
-    #[error("Chunk not found: {0:?}")]
-    ChunkNotFound(ChunkAddress),
-    #[error("Record was not stored: {0:?}: {1:?}")]
-    RecordNotStored(PrettyPrintRecordKey, String),
 
     // ---------- register errors
     #[error("Register was not stored: {0}")]
@@ -66,42 +59,21 @@ pub enum Error {
     /// Failed to get the storecost from kademlia store
     #[error("There was an error getting the storecost from kademlia store")]
     GetStoreCostFailed,
-    #[error("There was an error signing the storecost from kademlia store")]
-    SignStoreCostFailed,
     /// The amount paid by payment proof is not the required for the received content
     #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
     PaymentProofInsufficientAmount { paid: Token, expected: Token },
-    /// At least one input of payment proof provided has a mismatching spend Tx
-    #[error("At least one input of payment proof provided for {0:?} has a mismatching spend Tx")]
-    PaymentProofTxMismatch(PrettyPrintRecordKey),
     /// Payment proof received has no inputs
     #[error(
         "Payment proof received with record:{0:?}. No payment for our node in its transaction"
     )]
     NoPaymentToOurNode(PrettyPrintRecordKey),
-    /// Payment proof provided deemed invalid
-    #[error("Payment proof provided deemed invalid for item's name {addr_name:?}: {reason}")]
-    InvalidPaymentProof {
-        /// XorName the payment proof deemed invalid for
-        addr_name: XorName,
-        /// Reason why the payment proof was deemed invalid
-        reason: String,
-    },
     /// Payments received could not be stored on node's local wallet
     #[error("Payments received could not be stored on node's local wallet: {0}")]
     FailedToStorePaymentIntoNodeWallet(String),
 
-    // ---------- replication errors
-    /// Replication not found.
-    #[error("Peer {holder:?} cannot find ReplicatedData {address:?}")]
-    ReplicatedDataNotFound {
-        /// Holder that being contacted
-        holder: Box<NetworkAddress>,
-        /// Address of the missing data
-        address: Box<NetworkAddress>,
-    },
-
     // ---------- record errors
+    #[error("Record was not stored: {0:?}: {1:?}")]
+    RecordNotStored(PrettyPrintRecordKey, String),
     // Could not Serialize/Deserialize RecordHeader from Record
     #[error("Could not Serialize/Deserialize RecordHeader to/from Record")]
     RecordHeaderParsingFailed,
