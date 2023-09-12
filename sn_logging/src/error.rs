@@ -15,9 +15,11 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
+
     #[cfg(feature = "otlp")]
     #[error("OpenTelemetry Tracing error: {0}")]
     OpenTelemetryTracing(#[from] opentelemetry::trace::TraceError),
+
     #[error("Could not configure logging: {0}")]
     LoggingConfigurationError(String),
 }

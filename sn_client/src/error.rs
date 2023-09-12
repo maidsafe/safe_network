@@ -9,8 +9,6 @@
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 use super::ClientEvent;
-
-use sn_protocol::PrettyPrintRecordKey;
 use sn_registers::{Entry, EntryHash};
 use std::collections::BTreeSet;
 use thiserror::Error;
@@ -26,7 +24,7 @@ pub enum Error {
     #[error("Could not acquire a Semaphore permit.")]
     CouldNotAcquireSemaphorePermit(#[from] tokio::sync::AcquireError),
 
-    /// Could not acquire a netowrk semaphore
+    /// Could not acquire a network semaphore
     #[error("Network layer does not have the expected concurrency limiter.")]
     NoNetworkConcurrencyLimiterFound,
 
@@ -48,9 +46,6 @@ pub enum Error {
     #[error("Events sender error {0}.")]
     EventsSender(#[from] tokio::sync::broadcast::error::SendError<ClientEvent>),
 
-    #[error("ResponseTimeout.")]
-    ResponseTimeout(#[from] tokio::time::error::Elapsed),
-
     /// A general error when verifying a transfer validity in the network.
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
@@ -58,25 +53,11 @@ pub enum Error {
     #[error("Chunks error {0}.")]
     Chunks(#[from] super::chunks::Error),
 
-    #[error("Serialisation error: {0}")]
-    BincodeError(#[from] bincode::Error),
-
     #[error(
         "Content branches detected in the Register which need to be merged/resolved by user. \
         Entries hashes of branches are: {0:?}"
     )]
     ContentBranchDetected(BTreeSet<(EntryHash, Entry)>),
-
-    #[error("Missing a payment proof for address {0:?}")]
-    MissingPaymentProof(String),
-
-    /// A general error when a transfer fails.
-    #[error("Failed to send tokens due to {0}")]
-    CouldNotSendTokens(String),
-
-    /// A general error when a transfer fails.
-    #[error("Could not verify record was stored on the network {0}")]
-    CouldNotVerifyRecord(PrettyPrintRecordKey),
 
     /// File system access error.
     #[error("System IO Error {0}.")]
