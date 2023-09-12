@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.31](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.30...sn_cli-v0.81.31) - 2023-09-12
+
+### Added
+- add tx and parent spends verification
+- chunk payments using UTXOs instead of DBCs
+
+### Other
+- use updated sn_dbc
+
 ## [0.81.30](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.29...sn_cli-v0.81.30) - 2023-09-11
 
 ### Other
