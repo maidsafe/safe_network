@@ -389,7 +389,7 @@ impl Node {
 
         // get utxos destined for us
         let utxos = wallet
-            .decipher_transfer_for_us(payment)
+            .unwrap_transfer_for_us(payment)
             .map_err(|_| ProtocolError::NoPaymentToOurNode(pretty_key.clone()))?;
         trace!("Found a payment for us for record {pretty_key:?}");
 
@@ -468,8 +468,21 @@ impl Node {
             our_output_dbcs.push(dbc);
         }
 
-        // check Txs and DBCs are valid
-        // NB TODO
+        // check Txs and parent spends are valid
+        trace!("Validating parent spends for payment of record {pretty_key:?}");
+        for tx in parent_txs {
+            let input_spends = parent_spends
+                .iter()
+                .filter(|s| s.spent_tx_hash() == tx.hash())
+                .cloned()
+                .collect();
+            tx.verify_against_inputs_spent(&input_spends).map_err(|e| {
+                ProtocolError::RecordNotStored(
+                    pretty_key.clone(),
+                    format!("Payment parent Tx invalid: {e:?}"),
+                )
+            })?;
+        }
 
         // check payment is sufficient
         let current_store_cost =

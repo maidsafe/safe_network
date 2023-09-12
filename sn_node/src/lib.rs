@@ -49,7 +49,6 @@ mod event;
 mod get_validation;
 mod log_markers;
 mod put_validation;
-mod receive_transfer;
 mod replication;
 mod spends;
 
