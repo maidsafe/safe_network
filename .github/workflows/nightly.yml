@@ -206,7 +206,7 @@ jobs:
         timeout-minutes: 1
 
       - name: execute the nodes rewards tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture
+        run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture --test-threads=1
         env:
           CARGO_TARGET_DIR: "./transfer-target"
           SN_LOG: "all"
