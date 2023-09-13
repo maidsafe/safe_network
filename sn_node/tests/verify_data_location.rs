@@ -369,7 +369,7 @@ async fn store_chunks(
 
         let key = PrettyPrintRecordKey::from(RecordKey::new(&file_addr));
         file_api
-            .upload_with_payments(random_bytes.into(), &wallet_client, true)
+            .upload_with_payments(random_bytes.into(), true)
             .await?;
         uploaded_chunks_count += 1;
 

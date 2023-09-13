@@ -52,9 +52,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
 
     let prev_rewards_balance = current_rewards_balance()?;
 
-    files_api
-        .upload_with_payments(content_bytes, &wallet_client, true)
-        .await?;
+    files_api.upload_with_payments(content_bytes, true).await?;
 
     // sleep for 1 second to allow nodes to process and store the payment
     sleep(Duration::from_secs(1)).await;

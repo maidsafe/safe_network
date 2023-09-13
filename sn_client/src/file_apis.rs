@@ -129,15 +129,14 @@ impl Files {
 
     /// Directly writes [`Bytes`] to the network in the
     /// form of immutable chunks, without any batching.
-    #[instrument(skip(self, bytes, wallet_client), level = "debug")]
+    #[instrument(skip(self, bytes), level = "debug")]
     pub async fn upload_with_payments(
         &self,
         bytes: Bytes,
-        wallet_client: &WalletClient,
         // content_payments_map: ContentPaymentsMap,
         verify_store: bool,
     ) -> Result<NetworkAddress> {
-        self.upload_bytes(bytes, wallet_client, verify_store).await
+        self.upload_bytes(bytes, verify_store).await
     }
 
     /// Tries to chunk the file, returning `(head_address, file_size, chunk_names)`
@@ -205,13 +204,8 @@ impl Files {
     // --------------------------------------------
 
     /// Used for testing
-    #[instrument(skip(self, bytes, _wallet_client), level = "trace")]
-    async fn upload_bytes(
-        &self,
-        bytes: Bytes,
-        _wallet_client: &WalletClient,
-        verify: bool,
-    ) -> Result<NetworkAddress> {
+    #[instrument(skip(self, bytes), level = "trace")]
+    async fn upload_bytes(&self, bytes: Bytes, verify: bool) -> Result<NetworkAddress> {
         let temp_dir = tempdir()?;
         let file_path = temp_dir.path().join("tempfile");
         let mut file = File::create(&file_path)?;
