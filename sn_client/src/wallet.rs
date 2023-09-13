@@ -213,7 +213,9 @@ impl WalletClient {
         }
 
         let elapsed = now.elapsed();
-        println!("After {elapsed:?}, All transfers made for total payment of {total_cost:?} nano tokens for {num_of_payments:?} chunks. ");
+        println!(
+            "All transfers made for total payment of {total_cost:?} nano tokens in {elapsed:?} "
+        );
 
         Ok(total_cost)
     }
