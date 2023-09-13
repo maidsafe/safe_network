@@ -308,7 +308,7 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn storage_payment_register_creation_fails() -> Result<()> {
+async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
     let paying_wallet_balance = 55_000_000_005;
     let paying_wallet_dir = TempDir::new()?;
 
@@ -319,16 +319,44 @@ async fn storage_payment_register_creation_fails() -> Result<()> {
     let mut rng = rand::thread_rng();
     let xor_name = XorName::random(&mut rng);
     let address = RegisterAddress::new(xor_name, client.signer_pk());
+    let net_address =
+        NetworkAddress::RegisterAddress(RegisterAddress::new(xor_name, client.signer_pk()));
 
-    // this should fail to store as storage payment was not sent
-    let _register = client
+    let mut no_data_payments = BTreeMap::default();
+    no_data_payments.insert(
+        net_address.clone(),
+        vec![(
+            PublicAddress::new(bls::SecretKey::random().public_key()),
+            Token::from_nano(0),
+        )],
+    );
+
+    wallet_client
+        .mut_wallet()
+        .local_send_storage_payment(no_data_payments, None)?;
+
+    // invalid spends
+    client.send(wallet_client.unconfirmed_txs(), true).await?;
+
+    // this should fail to store as the amount paid is not enough
+    let mut register = client
         .create_register(xor_name, &mut wallet_client, false)
         .await?;
 
+    sleep(Duration::from_secs(5)).await;
     assert!(matches!(
         client.get_register(address).await,
         Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
     ));
+
+    let random_entry = rng.gen::<[u8; 32]>().to_vec();
+    register.write(&random_entry)?;
+
+    sleep(Duration::from_secs(5)).await;
+    assert!(matches!(
+    register.sync(&mut wallet_client, false).await,
+            Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
+        ));
 
     Ok(())
 }
