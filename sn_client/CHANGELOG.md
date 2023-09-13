@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.4...sn_client-v0.89.5) - 2023-09-13
+
+### Added
+- *(register)* paying nodes for Register storage
+
+### Other
+- *(register)* adding Register payment storage tests to run in CI
+- *(payments)* adaptig code to recent changes in Transfers
+
 ## [0.89.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.3...sn_client-v0.89.4) - 2023-09-12
 
 ### Added

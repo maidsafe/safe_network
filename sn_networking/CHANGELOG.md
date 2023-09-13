@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.3...sn_networking-v0.6.4) - 2023-09-13
+
+### Added
+- *(register)* paying nodes for Register storage
+
 ## [0.6.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.2...sn_networking-v0.6.3) - 2023-09-12
 
 ### Other

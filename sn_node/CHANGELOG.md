@@ -1213,6 +1213,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - utilize stream decryptor
 
+## [0.90.5](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.4...sn_node-v0.90.5) - 2023-09-13
+
+### Added
+- *(register)* skip payment validation if Register already exists, i.e. no cost for mutations
+- *(register)* paying nodes for Register storage
+
+### Other
+- *(register)* adding Register payment storage tests to run in CI
+- *(payments)* adaptig code to recent changes in Transfers
+- *(example)* adapting example code to provide wallet client for creating a Register
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
