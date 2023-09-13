@@ -276,7 +276,7 @@ jobs:
         timeout-minutes: 1
 
       - name: execute the nodes rewards tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture
+        run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
         timeout-minutes: 25
