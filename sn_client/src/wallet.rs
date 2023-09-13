@@ -163,6 +163,7 @@ impl WalletClient {
     ) -> Result<Token> {
         // TODO:
         // Check for any existing payment DBCs, and use them if they exist, only topping up if needs be
+        let num_of_payments = all_data_payments.len();
 
         let now = Instant::now();
         let mut total_cost = Token::zero();
@@ -195,7 +196,7 @@ impl WalletClient {
         }
 
         let elapsed = now.elapsed();
-        println!("After {elapsed:?}, All transfers made for total payment of {total_cost:?} nano tokens. ");
+        println!("After {elapsed:?}, All transfers made for total payment of {total_cost:?} nano tokens for {num_of_payments:?} chunks. ");
 
         Ok(total_cost)
     }
