@@ -24,6 +24,9 @@ use url::Url;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
+// Defines the size of batch for the parallel uploading of chunks and correspondent payments.
+pub(crate) const BATCH_SIZE: usize = 20;
+
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser, Debug)]
@@ -313,20 +316,35 @@ pub(super) async fn chunk_and_pay_for_storage(
         chunked_files.len()
     );
 
-    let cost = wallet_client
-        .pay_for_storage(
-            chunked_files
-                .values()
-                .flat_map(|chunked_file| &chunked_file.chunks)
-                .map(|(name, _)| {
-                    sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
-                }),
-            verify_store,
-        )
-        .await?;
+    let mut chunks: Vec<_> = chunked_files
+        .values()
+        .flat_map(|chunked_file| &chunked_file.chunks)
+        .map(|(name, _)| *name)
+        .collect();
+    let mut total_cost = Token::zero();
+    loop {
+        if chunks.is_empty() {
+            break;
+        } else {
+            let size = std::cmp::min(BATCH_SIZE, chunks.len());
+            let batches: Vec<_> = chunks.drain(..size).collect();
+            if let Some(cost) = total_cost.checked_add(
+                wallet_client
+                    .pay_for_storage(
+                        batches.iter().map(|name| {
+                            sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
+                        }),
+                        verify_store,
+                    )
+                    .await?,
+            ) {
+                total_cost = cost;
+            }
+        }
+    }
 
     println!(
-        "Successfully made payment of {cost} for {} files.)",
+        "Successfully made payment of {total_cost} for {} files.)",
         chunked_files.len(),
     );
 
