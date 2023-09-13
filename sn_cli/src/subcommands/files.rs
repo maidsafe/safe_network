@@ -29,8 +29,10 @@ use xor_name::XorName;
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
     Upload {
-        /// The location of the files to upload.
-        #[clap(name = "path", value_name = "DIRECTORY")]
+        /// The location of the file(s) to upload.
+        ///
+        /// Can be a file or a directory.
+        #[clap(name = "path", value_name = "PATH")]
         path: PathBuf,
         /// The batch_size to split chunks into parallely handling batches
         /// during payment and upload processing.
@@ -38,10 +40,16 @@ pub enum FilesCmds {
         batch_size: usize,
     },
     Download {
-        /// Name of the file to download.
+        /// The name to apply to the downloaded file.
+        ///
+        /// If neither the name or the address are supplied, all the files uploaded by the current
+        /// user will be downloaded again.
         #[clap(name = "file_name")]
         file_name: Option<String>,
-        /// Address of the file to download, in hex string.
+        /// The hex address of the file.
+        ///
+        /// If neither the name or the address are supplied, all the files uploaded by the current
+        /// user will be downloaded again.
         #[clap(name = "file_addr")]
         file_addr: Option<String>,
     },
@@ -130,8 +138,8 @@ pub(super) async fn chunk_path(
     Ok(chunked_files)
 }
 
-/// Given a directory, upload all files contained
-/// Optionally verifies data was stored successfully
+/// Given a file or directory, upload either the file or all the files in the directory. Optionally
+/// verify if the data was stored successfully.
 async fn upload_files(
     files_path: PathBuf,
     client: Client,
@@ -141,11 +149,9 @@ async fn upload_files(
 ) -> Result<()> {
     let start_time = std::time::Instant::now();
     debug!(
-        "Uploading files from {:?}, will verify?: {verify_store}",
+        "Uploading file(s) from {:?}, will verify?: {verify_store}",
         files_path
     );
-    // The input files_path has to be a dir
-    let file_names_path = root_dir.join("uploaded_files");
 
     // Payment shall always be verified.
     let chunks_to_upload = chunk_path(&client, root_dir, &files_path).await?;
@@ -228,6 +234,8 @@ async fn upload_files(
     );
 
     // Record the uploaded files locally to be able to fetch them later
+    let content = bincode::serialize(&uploaded_files)?;
+    let file_names_path = root_dir.join("uploaded_files");
     fs::create_dir_all(file_names_path.as_path())?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
