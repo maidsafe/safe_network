@@ -100,7 +100,7 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
     // now let's request to upload all addresses, even that we've already paid for a subset of them
     let verify_store = false;
     let res = files_api
-        .upload_with_payments(content_bytes, &wallet_client, verify_store)
+        .upload_with_payments(content_bytes, verify_store)
         .await;
     assert!(
         res.is_err(),
@@ -199,9 +199,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         )
         .await?;
 
-    files_api
-        .upload_with_payments(content_bytes, &wallet_client, true)
-        .await?;
+    files_api.upload_with_payments(content_bytes, true).await?;
 
     files_api.read_bytes(content_addr, None).await?;
 
@@ -257,7 +255,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
 
     // this should fail to store as the amount paid is not enough
     files_api
-        .upload_with_payments(content_bytes.clone(), &wallet_client, false)
+        .upload_with_payments(content_bytes.clone(), false)
         .await?;
 
     assert!(matches!(
