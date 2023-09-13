@@ -188,25 +188,29 @@ impl ClientRegister {
                     signature: self.client.sign(self.register.bytes()?),
                 };
 
-                // Let's make the storage payment
+                // Let's check if the user has already paid for this address first
                 let net_addr = sn_protocol::NetworkAddress::RegisterAddress(addr);
-                let cost = wallet_client
-                    .pay_for_storage(std::iter::once(net_addr.clone()), verify_store)
-                    .await?;
+                let mut payment = wallet_client.get_payment_transfers(&net_addr)?;
+                if payment.is_empty() {
+                    // Let's make the storage payment
+                    let cost = wallet_client
+                        .pay_for_storage(std::iter::once(net_addr.clone()), verify_store)
+                        .await?;
 
-                println!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
+                    println!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
 
-                if let Err(err) = wallet_client.store_local_wallet() {
-                    println!("Failed to store wallet with cached payment proofs: {err:?}");
-                } else {
-                    println!(
+                    if let Err(err) = wallet_client.store_local_wallet() {
+                        println!("Failed to store wallet with cached payment proofs: {err:?}");
+                    } else {
+                        println!(
                         "Successfully stored wallet with cached payment proofs, and new balance {}.",
                         wallet_client.balance()
                     );
-                }
+                    }
 
-                // Get payment proofs needed to publish the Register
-                let payment = wallet_client.get_payment_transfers(&net_addr)?;
+                    // Get payment proofs needed to publish the Register
+                    payment = wallet_client.get_payment_transfers(&net_addr)?;
+                }
 
                 self.publish_register(cmd, payment, verify_store).await?;
                 self.register.clone()
