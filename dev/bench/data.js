@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694724059674,
+  "lastUpdate": 1694724061276,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -17998,6 +17998,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 267,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "f65811c27599b60bc32afe27e8aff12508b0af48",
+          "message": "chore(ci): reduce the number of Registers to create in rewards test",
+          "timestamp": "2023-09-14T19:20:27Z",
+          "tree_id": "9b98fbfd5ec9285ccc14068d1d4caca27afb021d",
+          "url": "https://github.com/maidsafe/safe_network/commit/f65811c27599b60bc32afe27e8aff12508b0af48"
+        },
+        "date": 1694724060722,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 456.2821,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 277,
             "unit": "MB"
           }
         ]
