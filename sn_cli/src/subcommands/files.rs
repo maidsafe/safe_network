@@ -9,10 +9,7 @@
 use super::wallet::{ChunkedFile, BATCH_SIZE};
 use bytes::Bytes;
 use clap::Parser;
-use color_eyre::{
-    eyre::{bail, Error},
-    Result,
-};
+use color_eyre::{eyre::Error, Result};
 use libp2p::futures::future::join_all;
 use sn_client::{Client, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
@@ -28,6 +25,7 @@ use xor_name::XorName;
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
+    Ls {},
     Upload {
         /// The location of the file(s) to upload.
         ///
@@ -53,6 +51,18 @@ pub enum FilesCmds {
         #[clap(name = "file_addr")]
         file_addr: Option<String>,
     },
+}
+
+pub(crate) async fn offline_files_cmds(cmds: &FilesCmds, root_dir: &Path) -> Result<()> {
+    match cmds {
+        FilesCmds::Ls {} => {
+            list_files(root_dir).await?;
+        }
+        cmd => {
+            return Err(eyre!("{cmd:?} requires a network connection"));
+        }
+    }
+    Ok(())
 }
 
 pub(crate) async fn files_cmds(
@@ -92,7 +102,33 @@ pub(crate) async fn files_cmds(
                 }
             }
         }
+        cmd => {
+            return Err(eyre!("{cmd:?} is an offline command"));
+        }
     };
+    Ok(())
+}
+
+async fn list_files(root_dir: &Path) -> Result<()> {
+    let file_names_path = root_dir.join("uploaded_files");
+    let mut all_files: Vec<Vec<(XorName, String)>> = Vec::new();
+    let entries = fs::read_dir(file_names_path)?;
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            continue;
+        }
+        let content = fs::read(&path)?;
+        let deserialized_data: Vec<(XorName, String)> = bincode::deserialize(&content)?;
+        all_files.push(deserialized_data);
+    }
+
+    for file in all_files.iter() {
+        for (addr, file_name) in file.iter() {
+            println!("{addr:64x}: {file_name}");
+        }
+    }
     Ok(())
 }
 
@@ -236,6 +272,15 @@ async fn upload_files(
     // Record the uploaded files locally to be able to fetch them later
     let content = bincode::serialize(&uploaded_files)?;
     let file_names_path = root_dir.join("uploaded_files");
+    let all_data_put: Vec<_> = upload_results
+        .into_iter()
+        .map(|(addr, filename, _, _)| (addr, filename))
+        .collect();
+    for (addr, file_name) in all_data_put.iter() {
+        println!("Uploaded {file_name} to {addr:64x}");
+    }
+    // Write the chunks locally to be able to verify them later
+    let content = bincode::serialize(&all_data_put)?;
     fs::create_dir_all(file_names_path.as_path())?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
