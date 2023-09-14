@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.8](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.7...sn_client-v0.89.8) - 2023-09-14
+
+### Added
+- *(register)* client to pay for Register only if local wallet has not paymnt for it yet
+
 ## [0.89.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.6...sn_client-v0.89.7) - 2023-09-14
 
 ### Added
