@@ -27,6 +27,10 @@ pub enum FilesCmds {
         /// The location of the files to upload.
         #[clap(name = "path", value_name = "DIRECTORY")]
         path: PathBuf,
+        /// The batch_size to split chunks into parallely handling batches
+        /// during payment and upload processing.
+        #[clap(long, default_value_t = BATCH_SIZE)]
+        batch_size: usize,
     },
     Download {
         /// Name of the file to download.
@@ -45,7 +49,9 @@ pub(crate) async fn files_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        FilesCmds::Upload { path } => upload_files(path, client, root_dir, verify_store).await?,
+        FilesCmds::Upload { path, batch_size } => {
+            upload_files(path, client, root_dir, verify_store, batch_size).await?
+        }
         FilesCmds::Download {
             file_name,
             file_addr,
@@ -84,6 +90,7 @@ async fn upload_files(
     client: Client,
     root_dir: &Path,
     verify_store: bool,
+    batch_size: usize,
 ) -> Result<()> {
     let start_time = std::time::Instant::now();
     debug!(
@@ -94,12 +101,14 @@ async fn upload_files(
     let file_names_path = root_dir.join("uploaded_files");
 
     // Payment shall always be verified.
-    let chunks_to_upload = chunk_and_pay_for_storage(&client, root_dir, &files_path, true).await?;
-
-    let mut upload_results = Vec::new();
+    let chunks_to_upload =
+        chunk_and_pay_for_storage(&client, root_dir, &files_path, true, batch_size).await?;
+    let mut data_to_verify_or_repay = Vec::new();
+    let mut uploaded_files = Vec::new();
 
     // Iterate over each file to be uploaded
     for (file_addr, ChunkedFile { file_name, chunks }) in chunks_to_upload {
+        uploaded_files.push((file_addr, file_name));
         // Clone necessary variables for each file upload
         let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
 
@@ -111,34 +120,27 @@ async fn upload_files(
                 if chunks_for_upload.is_empty() {
                     break;
                 } else {
-                    let size = std::cmp::min(BATCH_SIZE, chunks_for_upload.len());
+                    let size = std::cmp::min(batch_size, chunks_for_upload.len());
                     progress += size;
                     let batches: Vec<_> = chunks_for_upload.drain(..size).collect();
-                    let res =
-                        upload_chunks_in_parallel(file_api.clone(), batches.clone(), verify_store)
-                            .await;
-
-                    upload_results.push((file_addr, file_name.clone(), res, batches));
+                    // Verification will be carried out later on, if being asked to.
+                    // Hence no need to carry out verification within the first attempt.
+                    let _res =
+                        upload_chunks_in_parallel(file_api.clone(), batches.clone(), false).await;
 
                     let elapsed = now.elapsed();
                     println!("After {elapsed:?}, uploaded {size:?} chunks, current progress is {progress}/{}. ", chunks.len());
                 }
             }
         }
+        data_to_verify_or_repay.extend(chunks);
     }
 
-    println!("First chunk upload pass complete, verifying and repaying if required...");
+    println!("First round of upload completed, verifying and repaying if required...");
 
     // If we are not verifying, we can skip this
     if verify_store {
         let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
-        let mut data_to_verify_or_repay = Vec::new();
-
-        for (_file_addr, _filename, upload_result, chunks) in upload_results.iter() {
-            if upload_result.is_err() {
-                data_to_verify_or_repay.extend(chunks.clone());
-            }
-        }
 
         while !data_to_verify_or_repay.is_empty() {
             println!(
@@ -150,7 +152,8 @@ async fn upload_files(
                 data_to_verify_or_repay.len()
             );
             data_to_verify_or_repay =
-                verify_and_repay_if_needed(file_api.clone(), data_to_verify_or_repay).await?;
+                verify_and_repay_if_needed(file_api.clone(), data_to_verify_or_repay, batch_size)
+                    .await?;
             tokio::time::sleep(Duration::from_secs(3)).await;
         }
     }
@@ -160,12 +163,8 @@ async fn upload_files(
         format_elapsed_time(start_time.elapsed())
     );
 
-    let all_data_put: Vec<_> = upload_results
-        .into_iter()
-        .map(|(addr, filename, _, _)| (addr, filename))
-        .collect();
-    // Write the chunks locally to be able to verify them later
-    let content = bincode::serialize(&all_data_put)?;
+    // Record the uploaded files locally to be able to fetch them later
+    let content = bincode::serialize(&uploaded_files)?;
     fs::create_dir_all(file_names_path.as_path())?;
     let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
@@ -224,6 +223,7 @@ async fn upload_chunks_in_parallel(
 async fn verify_and_repay_if_needed(
     file_api: Files,
     mut chunks_paths: Vec<(XorName, PathBuf)>,
+    batch_size: usize,
 ) -> Result<Vec<(XorName, PathBuf)>> {
     let mut total_failed_chunks: Vec<(XorName, PathBuf)> = vec![];
     let total_chunks = chunks_paths.len();
@@ -235,7 +235,7 @@ async fn verify_and_repay_if_needed(
         if chunks_paths.is_empty() {
             break;
         } else {
-            let size = std::cmp::min(BATCH_SIZE, chunks_paths.len());
+            let size = std::cmp::min(batch_size, chunks_paths.len());
             let batches: Vec<_> = chunks_paths.drain(..size).collect();
 
             // now we try and get btached chunks, keep track of any that fail
