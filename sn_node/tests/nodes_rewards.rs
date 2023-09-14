@@ -79,34 +79,29 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let num_of_regs = 20;
-    println!("Paying for {num_of_regs} random Register address...");
+    println!("Paying for random Register address...");
     let mut rng = rand::thread_rng();
-    let mut register_addrs = vec![];
     let owner_pk = client.signer_pk();
-    for _ in 0..num_of_regs {
-        register_addrs.push(XorName::random(&mut rng));
-    }
+    let register_addr = XorName::random(&mut rng);
 
     let cost = wallet_client
         .pay_for_storage(
-            register_addrs
-                .iter()
-                .map(|name| NetworkAddress::RegisterAddress(RegisterAddress::new(*name, owner_pk))),
+            std::iter::once(NetworkAddress::RegisterAddress(RegisterAddress::new(
+                register_addr,
+                owner_pk,
+            ))),
             true,
         )
         .await?;
 
     let prev_rewards_balance = current_rewards_balance()?;
 
-    for xor_name in register_addrs.into_iter() {
-        let _register = client
-            .create_register(xor_name, &mut wallet_client, false)
-            .await?;
-    }
+    let _register = client
+        .create_register(register_addr, &mut wallet_client, false)
+        .await?;
 
-    // sleep for 15 second to allow nodes to process and store the payment
-    sleep(Duration::from_secs(15)).await;
+    // sleep for 10 second to allow nodes to process and store the payment
+    sleep(Duration::from_secs(10)).await;
 
     let new_rewards_balance = current_rewards_balance()?;
 

@@ -335,9 +335,6 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
         .mut_wallet()
         .local_send_storage_payment(no_data_payments, None)?;
 
-    // invalid spends
-    client.send(wallet_client.unconfirmed_txs(), true).await?;
-
     // this should fail to store as the amount paid is not enough
     let mut register = client
         .create_register(xor_name, &mut wallet_client, false)
