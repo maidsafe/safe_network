@@ -105,8 +105,8 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
             .await?;
     }
 
-    // sleep for 1 second to allow nodes to process and store the payment
-    sleep(Duration::from_secs(5)).await;
+    // sleep for 15 second to allow nodes to process and store the payment
+    sleep(Duration::from_secs(15)).await;
 
     let new_rewards_balance = current_rewards_balance()?;
 
