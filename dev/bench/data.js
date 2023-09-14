@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694708203738,
+  "lastUpdate": 1694723708510,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -7756,6 +7756,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 1.6875121909186837,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "f65811c27599b60bc32afe27e8aff12508b0af48",
+          "message": "chore(ci): reduce the number of Registers to create in rewards test",
+          "timestamp": "2023-09-14T19:20:27Z",
+          "tree_id": "9b98fbfd5ec9285ccc14068d1d4caca27afb021d",
+          "url": "https://github.com/maidsafe/safe_network/commit/f65811c27599b60bc32afe27e8aff12508b0af48"
+        },
+        "date": 1694723707248,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10709212999821083,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5430494646118362,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 1.6891422057843337,
             "unit": "MiB/s"
           }
         ]
