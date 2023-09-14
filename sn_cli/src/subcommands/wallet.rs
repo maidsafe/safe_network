@@ -82,6 +82,10 @@ pub enum WalletCmds {
         /// Location of the files to be stored.
         #[clap(name = "path", value_name = "DIRECTORY")]
         path: PathBuf,
+        /// The batch_size to split chunks into parallely handling batches
+        /// during payment and upload processing.
+        #[clap(long, default_value_t = BATCH_SIZE)]
+        batch_size: usize,
     },
 }
 
@@ -120,8 +124,8 @@ pub(crate) async fn wallet_cmds(
 ) -> Result<()> {
     match cmds {
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
-        WalletCmds::Pay { path } => {
-            chunk_and_pay_for_storage(client, root_dir, &path, verify_store).await?;
+        WalletCmds::Pay { path, batch_size } => {
+            chunk_and_pay_for_storage(client, root_dir, &path, verify_store, batch_size).await?;
         }
         cmd => {
             return Err(eyre!(
@@ -272,6 +276,7 @@ pub(super) async fn chunk_and_pay_for_storage(
     root_dir: &Path,
     files_path: &Path,
     verify_store: bool,
+    batch_size: usize,
 ) -> Result<BTreeMap<XorName, ChunkedFile>> {
     trace!("Starting to chunk_and_pay_for_storage");
 
@@ -326,7 +331,7 @@ pub(super) async fn chunk_and_pay_for_storage(
         if chunks.is_empty() {
             break;
         } else {
-            let size = std::cmp::min(BATCH_SIZE, chunks.len());
+            let size = std::cmp::min(batch_size, chunks.len());
             let batches: Vec<_> = chunks.drain(..size).collect();
             if let Some(cost) = total_cost.checked_add(
                 wallet_client
