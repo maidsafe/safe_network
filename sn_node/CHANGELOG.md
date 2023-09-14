@@ -1235,6 +1235,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(network)* use builder pattern to construct the Network
 - *(metrics)* rename feature flag and small fixes
 
+## [0.90.7](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.6...sn_node-v0.90.7) - 2023-09-14
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
