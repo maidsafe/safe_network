@@ -1224,6 +1224,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(payments)* adaptig code to recent changes in Transfers
 - *(example)* adapting example code to provide wallet client for creating a Register
 
+## [0.90.6](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.5...sn_node-v0.90.6) - 2023-09-14
+
+### Added
+- *(network)* enable custom node metrics
+- *(network)* use NetworkConfig for network construction
+
+### Other
+- remove unused error variants
+- *(network)* use builder pattern to construct the Network
+- *(metrics)* rename feature flag and small fixes
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
