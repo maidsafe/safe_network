@@ -6,6 +6,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.36](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.35...sn_cli-v0.81.36) - 2023-09-14
+
+### Other
+- *(metrics)* rename feature flag and small fixes
+
+## [0.81.35](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.34...sn_cli-v0.81.35) - 2023-09-13
+
+### Added
+- *(register)* paying nodes for Register storage
+
+## [0.81.34](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.33...sn_cli-v0.81.34) - 2023-09-12
+
+### Added
+- utilize stream decryptor
+
+## [0.81.33](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.32...sn_cli-v0.81.33) - 2023-09-12
+
+### Other
+- update dependencies
+
+## [0.81.32](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.31...sn_cli-v0.81.32) - 2023-09-12
+
+### Other
+- *(metrics)* rename network metrics and remove from default features list
+
+## [0.81.31](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.30...sn_cli-v0.81.31) - 2023-09-12
+
+### Added
+- add tx and parent spends verification
+- chunk payments using UTXOs instead of DBCs
+
+### Other
+- use updated sn_dbc
+
+## [0.81.30](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.29...sn_cli-v0.81.30) - 2023-09-11
+
+### Other
+- update dependencies
+
+## [0.81.29](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.28...sn_cli-v0.81.29) - 2023-09-11
+
+### Other
+- utilize stream encryptor
+
+## [0.81.28](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.27...sn_cli-v0.81.28) - 2023-09-11
+
+### Other
+- update dependencies
+
+## [0.81.27](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.26...sn_cli-v0.81.27) - 2023-09-08
+
+### Added
+- *(client)* repay for chunks if they cannot be validated
+
+### Fixed
+- *(client)* dont bail on failed upload before verify/repay
+
+### Other
+- *(client)* refactor to have permits at network layer
+- *(refactor)* remove wallet_client args from upload flow
+- *(refactor)* remove upload_chunks semaphore arg
+
+## [0.81.26](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.25...sn_cli-v0.81.26) - 2023-09-07
+
+### Other
+- update dependencies
+
+## [0.81.25](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.24...sn_cli-v0.81.25) - 2023-09-07
+
+### Other
+- update dependencies
+
+## [0.81.24](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.23...sn_cli-v0.81.24) - 2023-09-07
+
+### Other
+- update dependencies
+
 ## [0.81.23](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.22...sn_cli-v0.81.23) - 2023-09-06
 
 ### Other

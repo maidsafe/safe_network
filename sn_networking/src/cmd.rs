@@ -9,7 +9,6 @@
 use crate::{
     driver::SwarmDriver,
     error::{Error, Result},
-    record_store_api::RecordStoreAPI,
     sort_peers_by_address, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
 };
 use libp2p::{
@@ -126,7 +125,6 @@ pub struct SwarmLocalState {
 }
 
 impl SwarmDriver {
-    #[allow(clippy::result_large_err)]
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         let drives_forward_replication = matches!(
             cmd,

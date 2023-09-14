@@ -6,6 +6,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.5...sn_client-v0.89.6) - 2023-09-14
+
+### Added
+- *(network)* enable custom node metrics
+- *(network)* use NetworkConfig for network construction
+
+### Other
+- remove unused error variants
+- *(network)* use builder pattern to construct the Network
+- *(metrics)* rename feature flag and small fixes
+
+## [0.89.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.4...sn_client-v0.89.5) - 2023-09-13
+
+### Added
+- *(register)* paying nodes for Register storage
+
+### Other
+- *(register)* adding Register payment storage tests to run in CI
+- *(payments)* adaptig code to recent changes in Transfers
+
+## [0.89.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.3...sn_client-v0.89.4) - 2023-09-12
+
+### Added
+- utilize stream decryptor
+
+## [0.89.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.2...sn_client-v0.89.3) - 2023-09-12
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.89.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.1...sn_client-v0.89.2) - 2023-09-12
+
+### Other
+- *(metrics)* rename network metrics and remove from default features list
+
+## [0.89.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.0...sn_client-v0.89.1) - 2023-09-12
+
+### Added
+- add tx and parent spends verification
+- chunk payments using UTXOs instead of DBCs
+
+### Other
+- use updated sn_dbc
+
+## [0.89.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.16...sn_client-v0.89.0) - 2023-09-11
+
+### Added
+- [**breaking**] Clients add a tolerance to store cost
+
+## [0.88.16](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.15...sn_client-v0.88.16) - 2023-09-11
+
+### Other
+- utilize stream encryptor
+
+## [0.88.15](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.14...sn_client-v0.88.15) - 2023-09-08
+
+### Added
+- *(client)* repay for chunks if they cannot be validated
+
+### Other
+- *(client)* refactor to have permits at network layer
+- *(refactor)* remove wallet_client args from upload flow
+- *(refactor)* remove upload_chunks semaphore arg
+
+## [0.88.14](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.13...sn_client-v0.88.14) - 2023-09-07
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.88.13](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.12...sn_client-v0.88.13) - 2023-09-07
+
+### Other
+- updated the following local packages: sn_networking
+
 ## [0.88.12](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.11...sn_client-v0.88.12) - 2023-09-05
 
 ### Other

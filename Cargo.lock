@@ -3751,9 +3751,9 @@ dependencies = [
 
 [[package]]
 name = "self_encryption"
-version = "0.28.2"
+version = "0.28.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd4d59f4d51fb213b64dddd45147ac03bf4b16e3d56458b279c34a12b9270023"
+checksum = "c7bac286bd8d3a00fd0855a986b7675bbbdd66b048404f4d691a13f2770e456d"
 dependencies = [
  "aes 0.8.3",
  "bincode",
@@ -3768,6 +3768,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rayon",
  "serde",
+ "tempfile",
  "tiny-keccak",
  "tokio",
  "xor_name",
@@ -3903,7 +3904,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.81.23"
+version = "0.81.36"
 dependencies = [
  "bincode",
  "blsttc",
@@ -3934,7 +3935,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.88.12"
+version = "0.89.6"
 dependencies = [
  "async-trait",
  "bincode",
@@ -3945,6 +3946,7 @@ dependencies = [
  "indicatif",
  "itertools",
  "libp2p",
+ "prometheus-client",
  "rand 0.8.5",
  "rayon",
  "self_encryption",
@@ -3954,6 +3956,7 @@ dependencies = [
  "sn_protocol",
  "sn_registers",
  "sn_transfers",
+ "tempfile",
  "thiserror",
  "tiny-keccak",
  "tokio",
@@ -3963,9 +3966,9 @@ dependencies = [
 
 [[package]]
 name = "sn_dbc"
-version = "19.1.1"
+version = "20.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d46704477d95233cf8daefb6e1601eebdf755a9fd6cd35e6d4d4dc3f6e0dc946"
+checksum = "2b8faf6b32cd0442a7aa030db665c0e6dc6f20428c5629751a3e5353685a5250"
 dependencies = [
  "bincode",
  "blsttc",
@@ -3978,7 +3981,7 @@ dependencies = [
 
 [[package]]
 name = "sn_logging"
-version = "0.2.6"
+version = "0.2.7"
 dependencies = [
  "file-rotate",
  "opentelemetry",
@@ -3999,7 +4002,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.5.11"
+version = "0.6.5"
 dependencies = [
  "async-trait",
  "blsttc",
@@ -4007,16 +4010,18 @@ dependencies = [
  "custom_debug",
  "eyre",
  "futures",
+ "hyper",
  "itertools",
  "libp2p",
+ "libp2p-metrics",
  "libp2p-quic",
+ "prometheus-client",
  "quickcheck",
  "rand 0.8.5",
  "rmp-serde",
  "serde",
  "sn_dbc",
  "sn_protocol",
- "sn_transfers",
  "thiserror",
  "tokio",
  "tracing",
@@ -4025,7 +4030,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.89.23"
+version = "0.90.6"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4045,7 +4050,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "libp2p",
- "proptest",
+ "prometheus-client",
  "prost",
  "rand 0.8.5",
  "rayon",
@@ -4062,6 +4067,7 @@ dependencies = [
  "sn_registers",
  "sn_transfers",
  "strum",
+ "tempfile",
  "thiserror",
  "tiny_http",
  "tokio",
@@ -4090,7 +4096,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.6.5"
+version = "0.6.9"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4109,7 +4115,7 @@ dependencies = [
 
 [[package]]
 name = "sn_registers"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "bincode",
  "blsttc",
@@ -4127,7 +4133,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.2.114"
+version = "0.2.127"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",
@@ -4150,7 +4156,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.11.7"
+version = "0.11.12"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4163,6 +4169,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "rand 0.8.5",
+ "rmp-serde",
  "serde",
  "sn_dbc",
  "sn_protocol",

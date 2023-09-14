@@ -8,11 +8,12 @@ license = "GPL-3.0"
 name = "sn_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.88.12"
+version = "0.89.6"
 
 [features]
 default=[]
 local-discovery=["sn_networking/local-discovery"]
+open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 
 [dependencies]
 async-trait = "0.1"
@@ -24,15 +25,17 @@ hex = "~0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
 itertools = "~0.10.1"
 libp2p = { version="0.52", features = ["identify"] }
+prometheus-client = { version = "0.21.2", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "~1.5.1"
-self_encryption = "~0.28.2"
+self_encryption = "~0.28.4"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_dbc = { version = "19.1.1", features = ["serdes"] }
-sn_networking = { path = "../sn_networking", version = "0.5.11" }
-sn_protocol = { path = "../sn_protocol", version = "0.6.5" }
-sn_registers = { path = "../sn_registers", version = "0.2.5" }
-sn_transfers = { path = "../sn_transfers", version = "0.11.7" }
+sn_dbc = { version = "20.0.0", features = ["serdes"] }
+sn_networking = { path = "../sn_networking", version = "0.6.5" }
+sn_protocol = { path = "../sn_protocol", version = "0.6.9" }
+sn_registers = { path = "../sn_registers", version = "0.2.6" }
+sn_transfers = { path = "../sn_transfers", version = "0.11.12" }
+tempfile = "3.6.0"
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }

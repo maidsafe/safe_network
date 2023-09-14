@@ -14,15 +14,18 @@ mod cmd;
 mod driver;
 mod error;
 mod event;
+#[cfg(feature = "open-metrics")]
+mod metrics_service;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
 
 pub use self::{
     cmd::SwarmLocalState,
-    driver::SwarmDriver,
+    driver::{NetworkBuilder, SwarmDriver},
     error::Error,
     event::{MsgResponder, NetworkEvent},
+    record_store::NodeRecordStore,
 };
 
 use self::{cmd::SwarmCmd, error::Result};
@@ -41,8 +44,8 @@ use sn_protocol::{
     storage::{RecordHeader, RecordKind},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use std::{collections::HashSet, path::PathBuf, time::Duration};
-use tokio::sync::{mpsc, oneshot};
+use std::{collections::HashSet, path::PathBuf, sync::Arc};
+use tokio::sync::{mpsc, oneshot, OwnedSemaphorePermit, Semaphore};
 use tracing::warn;
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
@@ -60,9 +63,9 @@ pub const fn close_group_majority() -> usize {
 /// Duration to wait for verification
 const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
 /// Number of attempts to verify a record
-const VERIFICATION_ATTEMPTS: usize = 5;
+const VERIFICATION_ATTEMPTS: usize = 3;
 /// Number of attempts to re-put a record
-const PUT_RECORD_RETRIES: usize = 10;
+const PUT_RECORD_RETRIES: usize = 3;
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
@@ -108,20 +111,25 @@ pub struct Network {
     pub peer_id: PeerId,
     pub root_dir_path: PathBuf,
     keypair: Keypair,
+    /// Optional Concurrent limiter to limit the number of concurrent requests
+    /// Intended for client side use
+    concurrency_limiter: Option<Arc<Semaphore>>,
 }
 
 impl Network {
     /// Signs the given data with the node's keypair.
-    #[allow(clippy::result_large_err)]
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         self.keypair.sign(msg).map_err(Error::from)
     }
 
-    ///  Listen for incoming connections on the given address.
-    pub async fn start_listening(&self, addr: Multiaddr) -> Result<()> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::StartListening { addr, sender })?;
-        receiver.await?
+    /// Get the network's concurrency limiter
+    pub fn concurrency_limiter(&self) -> Option<Arc<Semaphore>> {
+        self.concurrency_limiter.clone()
+    }
+
+    /// Set a new concurrency semaphore to limit client network operations
+    pub fn set_concurrency_limit(&mut self, limit: usize) {
+        self.concurrency_limiter = Some(Arc::new(Semaphore::new(limit)));
     }
 
     /// Dial the given peer at the given address.
@@ -170,54 +178,18 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
-    /// Returns the current set of members in our close group. This list is sorted in ascending order based on the
-    ///  distance to self. The first element is self.
-    pub async fn get_our_close_group(&self) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetOurCloseGroup { sender })?;
-
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
-    }
-
-    /// Send `Request` to the closest peers. If `self` is among the closest_peers, the `Request` is
-    /// forwarded to itself and handled. Then a corresponding `Response` is created and is
-    /// forwarded to itself. Hence the flow remains the same and there is no branching at the upper
-    /// layers.
-    pub async fn node_send_to_closest(&self, request: &Request) -> Result<Vec<Result<Response>>> {
-        debug!(
-            "Sending {request:?} with dst {:?} to the closest peers.",
-            request.dst()
-        );
-        let closest_peers = self.node_get_closest_peers(&request.dst()).await?;
-
-        Ok(self
-            .send_and_get_responses(closest_peers, request, true)
-            .await)
-    }
-
-    /// Send `Request` to the closest peers. `Self` is not present among the recipients.
-    pub async fn client_send_to_closest(
-        &self,
-        request: &Request,
-        expect_all_responses: bool,
-    ) -> Result<Vec<Result<Response>>> {
-        debug!(
-            "Sending {request:?} with dst {:?} to the closest peers.",
-            request.dst()
-        );
-        let closest_peers = self.client_get_closest_peers(&request.dst()).await?;
-        Ok(self
-            .send_and_get_responses(closest_peers, request, expect_all_responses)
-            .await)
-    }
-
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
     ) -> Result<Vec<(PublicAddress, Token)>> {
         let (sender, receiver) = oneshot::channel();
+        // get permit if semaphore supplied
+        let mut _permit = None;
+        if let Some(semaphore) = self.concurrency_limiter.clone() {
+            let our_permit = semaphore.acquire_owned().await?;
+            _permit = Some(our_permit);
+        }
+
         debug!("Attempting to get store cost");
         // first we need to get CLOSE_GROUP of the dbc_id
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
@@ -236,7 +208,7 @@ impl Network {
             .send_and_get_responses(close_nodes, &request, true)
             .await;
 
-        // loop over responses, generating an avergae fee and storing all responses along side
+        // loop over responses, generating an average fee and storing all responses along side
         let mut all_costs = vec![];
         for response in responses.into_iter().flatten() {
             if let Response::Query(QueryResponse::GetStoreCost {
@@ -250,7 +222,7 @@ impl Network {
             }
         }
 
-        get_fee_from_store_cost_quotes(all_costs)
+        get_fees_from_store_cost_quotes(all_costs)
     }
 
     /// Get the Record from the network
@@ -263,11 +235,17 @@ impl Network {
         target_record: Option<Record>,
         re_attempt: bool,
     ) -> Result<Record> {
+        let mut _permit = None;
+
         let total_attempts = if re_attempt { VERIFICATION_ATTEMPTS } else { 1 };
 
         let mut verification_attempts = 0;
 
         while verification_attempts < total_attempts {
+            if let Some(semaphore) = self.concurrency_limiter.clone() {
+                let our_permit = semaphore.acquire_owned().await?;
+                _permit = Some(our_permit);
+            }
             verification_attempts += 1;
             info!(
                 "Getting record of {:?} attempts {verification_attempts:?}/{total_attempts:?}",
@@ -299,14 +277,14 @@ impl Network {
                     // Returning mismatched error when: completed all attempts
                     if target_record.is_none()
                         || (target_record.is_some()
-                            // we dont need to match the whole record if chunks, 
+                            // we don't need to match the whole record if chunks, 
                             // payment data could differ, but chunks themselves'
                             // keys are from the chunk address
                             && (target_record == Some(returned_record.clone()) || is_chunk))
                     {
                         return Ok(returned_record);
                     } else if verification_attempts >= total_attempts {
-                        info!("Errorrrrring");
+                        info!("Error: Returned record does not match target");
                         return Err(Error::ReturnedRecordDoesNotMatch(
                             returned_record.key.into(),
                         ));
@@ -338,6 +316,9 @@ impl Network {
                     );
                 }
             }
+
+            // drop any permit while we wait
+            _permit = None;
 
             // wait for a bit before re-trying
             tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
@@ -371,19 +352,28 @@ impl Network {
 
     /// Put `Record` to network
     /// optionally verify the record is stored after putting it to network
-    pub async fn put_record(&self, record: Record, verify_store: bool) -> Result<()> {
-        // if verify_store {
-        self.put_record_with_retries(record, verify_store).await
-        // } else {
-        //     self.put_record_once(record, false).await
-        // }
+    pub async fn put_record(
+        &self,
+        record: Record,
+        verify_store: Option<Record>,
+        optional_permit: Option<OwnedSemaphorePermit>,
+    ) -> Result<()> {
+        self.put_record_with_retries(record, verify_store, optional_permit)
+            .await
     }
 
     /// Put `Record` to network
     /// Verify the record is stored after putting it to network
     /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
-    async fn put_record_with_retries(&self, record: Record, verify_store: bool) -> Result<()> {
+    async fn put_record_with_retries(
+        &self,
+        record: Record,
+        verify_store: Option<Record>,
+        mut optional_permit: Option<OwnedSemaphorePermit>,
+    ) -> Result<()> {
         let mut retries = 0;
+
+        // let mut has_permit = optional_permit.is_some();
         // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
         while retries < PUT_RECORD_RETRIES {
             trace!(
@@ -391,23 +381,37 @@ impl Network {
                 PrettyPrintRecordKey::from(record.key.clone())
             );
 
-            let res = self.put_record_once(record.clone(), verify_store).await;
+            let res = self
+                .put_record_once(record.clone(), verify_store.clone(), optional_permit)
+                .await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
             }
+
+            // the permit will have been consumed above.
+            optional_permit = None;
+
             retries += 1;
         }
         Err(Error::FailedToVerifyRecordWasStored(record.key.into()))
     }
 
-    async fn put_record_once(&self, record: Record, verify_store: bool) -> Result<()> {
-        let record_key = PrettyPrintRecordKey::from(record.key.clone());
+    async fn put_record_once(
+        &self,
+        record: Record,
+        verify_store: Option<Record>,
+        starting_permit: Option<OwnedSemaphorePermit>,
+    ) -> Result<()> {
+        let mut _permit = starting_permit;
+
+        let record_key = record.key.clone();
+        let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
         info!(
             "Putting record of {} - length {:?} to network",
-            record_key,
+            pretty_key,
             record.value.len()
         );
-        let the_record = record.clone();
+
         // Waiting for a response to avoid flushing to network too quick that causing choke
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::PutRecord {
@@ -415,19 +419,23 @@ impl Network {
             sender,
         })?;
         let response = receiver.await?;
-        if verify_store {
+
+        drop(_permit);
+
+        if verify_store.is_some() {
             // small wait before we attempt to verify
-            tokio::time::sleep(Duration::from_millis(100)).await;
-            trace!("attempting to verify {record_key:?}");
+            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+            trace!("attempting to verify {pretty_key:?}");
+
             // Verify the record is stored, requiring re-attempts
-            self.get_record_from_network(record.key.clone(), Some(record), true)
+            self.get_record_from_network(record_key, verify_store, true)
                 .await
                 .map_err(|e| {
                     trace!(
                         "Failing to verify the put record {:?} with error {e:?}",
-                        PrettyPrintRecordKey::from(the_record.key.clone())
+                        pretty_key
                     );
-                    Error::FailedToVerifyRecordWasStored(the_record.key.into())
+                    Error::FailedToVerifyRecordWasStored(pretty_key)
                 })?;
         }
 
@@ -436,7 +444,6 @@ impl Network {
 
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
-    #[allow(clippy::result_large_err)]
     pub fn put_local_record(&self, record: Record) -> Result<()> {
         debug!(
             "Writing Record locally, for {:?} - length {:?}",
@@ -470,7 +477,6 @@ impl Network {
     }
 
     // Add a list of keys of a holder to Replication Fetcher.
-    #[allow(clippy::result_large_err)]
     pub fn add_keys_to_replication_fetcher(&self, keys: Vec<NetworkAddress>) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { keys })
     }
@@ -491,7 +497,6 @@ impl Network {
 
     /// Send `Request` to the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
-    #[allow(clippy::result_large_err)]
     pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let swarm_cmd = SwarmCmd::SendRequest {
             req,
@@ -502,7 +507,6 @@ impl Network {
     }
 
     /// Send a `Response` through the channel opened by the requester.
-    #[allow(clippy::result_large_err)]
     pub fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
     }
@@ -516,7 +520,6 @@ impl Network {
     }
 
     // Helper to send SwarmCmd
-    #[allow(clippy::result_large_err)]
     fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
         let capacity = self.swarm_cmd_sender.capacity();
 
@@ -599,7 +602,7 @@ impl Network {
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
 #[allow(clippy::result_large_err)]
-fn get_fee_from_store_cost_quotes(
+fn get_fees_from_store_cost_quotes(
     mut all_costs: Vec<(PublicAddress, Token)>,
 ) -> Result<Vec<(PublicAddress, Token)>> {
     // TODO: we should make this configurable based upon data type
@@ -624,6 +627,7 @@ fn get_fee_from_store_cost_quotes(
         "Final fees calculated as: {all_costs:?}, from: {:?}",
         all_costs
     );
+
     Ok(all_costs)
 }
 
@@ -671,16 +675,15 @@ mod tests {
     use super::*;
 
     #[test]
-    #[allow(clippy::result_large_err)]
     fn test_get_fee_from_store_cost_quotes() -> Result<()> {
-        // for a vec of different costs of CLOUSE_GROUP size
+        // for a vec of different costs of CLOSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..CLOSE_GROUP_SIZE {
             let addr = PublicAddress::new(bls::SecretKey::random().public_key());
             costs.push((addr, Token::from_nano(i as u64)));
         }
-        let prices = get_fee_from_store_cost_quotes(costs)?;
+        let prices = get_fees_from_store_cost_quotes(costs)?;
         let total_price: u64 = prices
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
@@ -699,7 +702,7 @@ mod tests {
     #[test]
     #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
     fn test_get_any_fee_from_store_cost_quotes_errs_if_insufficient_quotes() -> eyre::Result<()> {
-        // for a vec of different costs of CLOUSE_GROUP size
+        // for a vec of different costs of CLOSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
@@ -707,7 +710,7 @@ mod tests {
             costs.push((addr, Token::from_nano(i as u64)));
         }
 
-        if get_fee_from_store_cost_quotes(costs).is_ok() {
+        if get_fees_from_store_cost_quotes(costs).is_ok() {
             bail!("Should have errored as we have too few quotes")
         }
 
@@ -715,8 +718,8 @@ mod tests {
     }
     #[test]
     #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
-    fn test_get_some_fee_from_store_cost_quotes_errs_if_suffcient() -> eyre::Result<()> {
-        // for a vec of different costs of CLOUSE_GROUP size
+    fn test_get_some_fee_from_store_cost_quotes_errs_if_sufficient() -> eyre::Result<()> {
+        // for a vec of different costs of CLOSE_GROUP size
         let quotes_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
         for i in 0..quotes_count {
@@ -726,7 +729,7 @@ mod tests {
             println!("price added {}", i);
         }
 
-        let prices = match get_fee_from_store_cost_quotes(costs) {
+        let prices = match get_fees_from_store_cost_quotes(costs) {
             Err(_) => bail!("Should not have errored as we have enough quotes"),
             Ok(cost) => cost,
         };

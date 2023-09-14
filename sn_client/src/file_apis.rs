@@ -16,6 +16,7 @@ use super::{
     Client,
 };
 
+use self_encryption::{decrypt_full_set, StreamSelfDecryptor};
 use sn_protocol::{
     storage::{Chunk, ChunkAddress},
     NetworkAddress, PrettyPrintRecordKey,
@@ -27,7 +28,13 @@ use bytes::Bytes;
 use futures::future::join_all;
 use itertools::Itertools;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
-use tokio::task;
+use std::{
+    fs::{self, create_dir_all, File},
+    io::{Read, Write},
+    path::Path,
+};
+use tempfile::tempdir;
+use tokio::{sync::OwnedSemaphorePermit, task};
 use tracing::trace;
 use xor_name::XorName;
 
@@ -35,31 +42,50 @@ use xor_name::XorName;
 #[derive(Clone)]
 pub struct Files {
     client: Client,
+    wallet_dir: PathBuf,
 }
+
+type ChunkFileResult = Result<(XorName, u64, Vec<(XorName, PathBuf)>)>;
 
 impl Files {
     /// Create file apis instance.
-    pub fn new(client: Client) -> Self {
-        Self { client }
+    pub fn new(client: Client, wallet_dir: PathBuf) -> Self {
+        Self { client, wallet_dir }
+    }
+
+    /// Return the client instance
+    pub fn client(&self) -> &Client {
+        &self.client
     }
 
     /// Create a new WalletClient for a given root directory.
-    pub fn wallet(&self, root_dir: PathBuf) -> Result<WalletClient> {
-        let wallet = LocalWallet::load_from(root_dir.as_path())?;
+    pub fn wallet(&self) -> Result<WalletClient> {
+        let path = self.wallet_dir.as_path();
+        let wallet = LocalWallet::load_from(path)?;
+
         Ok(WalletClient::new(self.client.clone(), wallet))
     }
 
     #[instrument(skip(self), level = "debug")]
-    /// Reads [`Bytes`] from the network, whose contents are contained within one or more chunks.
-    pub async fn read_bytes(&self, address: ChunkAddress) -> Result<Bytes> {
+    /// Reads a file from the network, whose contents are contained within one or more chunks.
+    pub async fn read_bytes(
+        &self,
+        address: ChunkAddress,
+        downloaded_file_path: Option<PathBuf>,
+    ) -> Result<Option<Bytes>> {
         let chunk = self.client.get_chunk(address).await?;
 
         // first try to deserialize a LargeFile, if it works, we go and seek it
         if let Ok(data_map) = self.unpack_chunk(chunk.clone()).await {
-            self.read_all(data_map).await
+            self.read_all(data_map, downloaded_file_path).await
         } else {
             // if an error occurs, we assume it's a SmallFile
-            Ok(chunk.value().clone())
+            if let Some(path) = downloaded_file_path {
+                fs::write(path, chunk.value().clone())?;
+                Ok(None)
+            } else {
+                Ok(Some(chunk.value().clone()))
+            }
         }
     }
 
@@ -114,47 +140,49 @@ impl Files {
         self.upload_bytes(bytes, wallet_client, verify_store).await
     }
 
-    /// Calculates a LargeFile's/SmallFile's address from self encrypted chunks,
-    /// without storing them onto the network.
-    #[instrument(skip_all, level = "debug")]
-    pub fn calculate_address(&self, bytes: Bytes) -> Result<XorName> {
-        self.chunk_bytes(bytes).map(|(name, _)| name)
-    }
-
-    /// Tries to chunk the bytes, returning the data-map address and chunks,
-    /// without storing anything to network.
+    /// Tries to chunk the file, returning `(head_address, file_size, chunk_names)`
+    /// and writes encrypted chunks to disk.
     #[instrument(skip_all, level = "trace")]
-    pub fn chunk_bytes(&self, bytes: Bytes) -> Result<(XorName, Vec<Chunk>)> {
-        if bytes.len() < MIN_ENCRYPTABLE_BYTES {
-            let file = SmallFile::new(bytes)?;
-            let chunk = package_small(file)?;
-            Ok((*chunk.name(), vec![chunk]))
+    pub fn chunk_file(&self, file_path: &Path, chunk_dir: &Path) -> ChunkFileResult {
+        let mut file = File::open(file_path)?;
+        let metadata = file.metadata()?;
+        let file_size = metadata.len();
+
+        let (head_address, chunks_paths) = if file_size < MIN_ENCRYPTABLE_BYTES as u64 {
+            let mut bytes = Vec::new();
+            let _ = file.read_to_end(&mut bytes)?;
+            let chunk = package_small(SmallFile::new(bytes.into())?)?;
+
+            // Write the result to disk
+            let small_chunk_file_path = chunk_dir.join(hex::encode(*chunk.name()));
+            let mut output_file = File::create(small_chunk_file_path.clone())?;
+            output_file.write_all(&chunk.value)?;
+
+            (*chunk.name(), vec![(*chunk.name(), small_chunk_file_path)])
         } else {
-            encrypt_large(bytes)
-        }
+            encrypt_large(file_path, chunk_dir)?
+        };
+        Ok((head_address, file_size, chunks_paths))
     }
 
     /// Directly writes Chunks to the network in the
     /// form of immutable self encrypted chunks.
     ///
     #[instrument(skip_all, level = "trace")]
-    pub async fn upload_chunk_in_parallel(
+    pub async fn get_local_payment_and_upload_chunk(
         &self,
         chunk: Chunk,
-        wallet_client: &WalletClient,
         verify_store: bool,
+        optional_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
-        let client = self.client.clone();
         let chunk_addr = chunk.network_address();
         trace!("Client upload started for chunk: {chunk_addr:?}");
 
-        let payment = wallet_client.get_payment_dbcs(&chunk_addr);
+        let wallet_client = self.wallet()?;
+        let payment = wallet_client.get_payment_transfers(&chunk_addr)?;
 
         if payment.is_empty() {
-            warn!(
-                    "Failed to get payment proof for chunk: {chunk_addr:?} it was not found in the local wallet",
-                    chunk_addr = chunk_addr,
-                );
+            warn!("Failed to get payment proof for chunk: {chunk_addr:?} it was not found in the local wallet");
             return Err(Error::NoPaymentForRecord(PrettyPrintRecordKey::from(
                 chunk_addr.to_record_key(),
             )))?;
@@ -164,7 +192,9 @@ impl Files {
             "Payment for {chunk_addr:?}: has length: {:?}",
             payment.len()
         );
-        client.store_chunk(chunk, payment, verify_store).await?;
+        self.client
+            .store_chunk(chunk, payment, verify_store, optional_permit)
+            .await?;
 
         trace!("Client upload completed for chunk: {chunk_addr:?}");
         Ok(())
@@ -175,61 +205,89 @@ impl Files {
     // --------------------------------------------
 
     /// Used for testing
-    #[instrument(skip(self, bytes, wallet_client), level = "trace")]
+    #[instrument(skip(self, bytes, _wallet_client), level = "trace")]
     async fn upload_bytes(
         &self,
         bytes: Bytes,
-        wallet_client: &WalletClient,
+        _wallet_client: &WalletClient,
         verify: bool,
     ) -> Result<NetworkAddress> {
-        if bytes.len() < MIN_ENCRYPTABLE_BYTES {
-            let file = SmallFile::new(bytes)?;
-            self.upload_small(file, wallet_client, verify).await
-        } else {
-            let (head_address, chunks) = encrypt_large(bytes)?;
+        let temp_dir = tempdir()?;
+        let file_path = temp_dir.path().join("tempfile");
+        let mut file = File::create(&file_path)?;
+        file.write_all(&bytes)?;
 
-            for chunk in chunks {
-                self.upload_chunk_in_parallel(chunk, wallet_client, verify)
-                    .await?;
-            }
+        let chunk_path = temp_dir.path().join("chunk_path");
+        create_dir_all(chunk_path.clone())?;
 
-            Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
-                head_address,
-            )))
+        let (head_address, _file_size, chunks_paths) = self.chunk_file(&file_path, &chunk_path)?;
+
+        for (_chunk_name, chunk_path) in chunks_paths {
+            let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
+            self.get_local_payment_and_upload_chunk(chunk, verify, None)
+                .await?;
         }
+
+        Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
+            head_address,
+        )))
     }
 
-    /// Directly writes a [`SmallFile`] to the network in the
-    /// form of a single chunk, without any batching.
-    #[instrument(skip_all, level = "trace")]
-    async fn upload_small(
+    // Gets and decrypts chunks from the network using nothing else but the data map.
+    // If a downloaded path is given, the decrypted file will be written to the given path,
+    // by the decryptor directly.
+    // Otherwise, will assume the fetched content is a small one and return as bytes.
+    async fn read_all(
         &self,
-        small: SmallFile,
-        wallet_client: &WalletClient,
-        verify_store: bool,
-    ) -> Result<NetworkAddress> {
-        let chunk = package_small(small)?;
-        let address = chunk.network_address();
-        let payment = wallet_client.get_payment_dbcs(&address);
+        data_map: DataMap,
+        decrypted_file_path: Option<PathBuf>,
+    ) -> Result<Option<Bytes>> {
+        let mut decryptor = if let Some(path) = decrypted_file_path {
+            StreamSelfDecryptor::decrypt_to_file(Box::new(path), &data_map)?
+        } else {
+            let encrypted_chunks = self.try_get_chunks(data_map.infos()).await?;
+            let bytes =
+                decrypt_full_set(&data_map, &encrypted_chunks).map_err(Error::SelfEncryption)?;
+            return Ok(Some(bytes));
+        };
 
-        if payment.is_empty() {
-            return Err(super::Error::MissingPaymentProof(format!("{address}")));
+        let expected_count = data_map.infos().len();
+        let mut missing_chunks = Vec::new();
+
+        for (index, chunk_info) in data_map.infos().iter().enumerate() {
+            match self
+                .client
+                .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
+                .await
+            {
+                Ok(chunk) => {
+                    let encrypted_chunk = EncryptedChunk {
+                        index: chunk_info.index,
+                        content: chunk.value().clone(),
+                    };
+                    let _ = decryptor.next_encrypted(encrypted_chunk)?;
+                }
+                Err(err) => {
+                    warn!(
+                        "Reading chunk {} from network, resulted in error {err:?}.",
+                        chunk_info.dst_hash
+                    );
+                    missing_chunks.push(chunk_info.dst_hash);
+                }
+            }
+            info!("Client download progress {index:?}/{expected_count:?}");
+            println!("Client download progress {index:?}/{expected_count:?}");
         }
 
-        self.client
-            .store_chunk(chunk, payment, verify_store)
-            .await?;
-
-        Ok(address)
-    }
-
-    // Gets and decrypts chunks from the network using nothing else but the data map,
-    // then returns the raw data.
-    async fn read_all(&self, data_map: DataMap) -> Result<Bytes> {
-        let encrypted_chunks = self.try_get_chunks(data_map.infos()).await?;
-        let bytes = self_encryption::decrypt_full_set(&data_map, &encrypted_chunks)
-            .map_err(Error::SelfEncryption)?;
-        Ok(bytes)
+        if !missing_chunks.is_empty() {
+            Err(Error::NotEnoughChunksRetrieved {
+                expected: expected_count,
+                retrieved: expected_count - missing_chunks.len(),
+                missing_chunks,
+            })?
+        } else {
+            Ok(None)
+        }
     }
 
     /// Extracts a file DataMapLevel from a chunk.
@@ -243,7 +301,7 @@ impl Files {
                     return Ok(data_map);
                 }
                 DataMapLevel::Additional(data_map) => {
-                    let serialized_chunk = self.read_all(data_map).await?;
+                    let serialized_chunk = self.read_all(data_map, None).await?.unwrap();
                     chunk = deserialize(&serialized_chunk).map_err(Error::Serialisation)?;
                 }
             }
@@ -277,15 +335,11 @@ impl Files {
     async fn try_get_chunks(&self, chunks_info: Vec<ChunkInfo>) -> Result<Vec<EncryptedChunk>> {
         let expected_count = chunks_info.len();
         let mut retrieved_chunks = vec![];
-        let semaphore = self.client.concurrency_limiter();
 
         let mut tasks = Vec::new();
         for chunk_info in chunks_info.clone().into_iter() {
-            let chunk_semaphore = semaphore.clone();
-
             let client = self.client.clone();
             let task = task::spawn(async move {
-                let _permit = chunk_semaphore.acquire_owned().await?;
                 match client
                     .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
                     .await
@@ -343,11 +397,14 @@ impl Files {
     }
 }
 
-/// Encrypts a [`LargeFile`] and returns the resulting address and all chunks.
+/// Encrypts a [`LargeFile`] and returns the resulting address and all chunk names.
+/// Correspondent encrypted chunks are writen in the specified output folder.
 /// Does not store anything to the network.
-#[instrument(skip(bytes), level = "trace")]
-fn encrypt_large(bytes: Bytes) -> Result<(XorName, Vec<Chunk>)> {
-    Ok(super::chunks::encrypt_large(bytes)?)
+fn encrypt_large(
+    file_path: &Path,
+    output_dir: &Path,
+) -> Result<(XorName, Vec<(XorName, PathBuf)>)> {
+    Ok(super::chunks::encrypt_large(file_path, output_dir)?)
 }
 
 /// Packages a [`SmallFile`] and returns the resulting address and the chunk.

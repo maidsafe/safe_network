@@ -6,10 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{cmd::SwarmCmd, NetworkEvent};
-
 use libp2p::{
-    identity::DecodingError,
     kad::{self, Record},
     request_response::{OutboundFailure, RequestId},
     swarm::DialError,
@@ -18,7 +15,7 @@ use libp2p::{
 use sn_protocol::{messages::Response, PrettyPrintRecordKey};
 use std::{io, path::PathBuf};
 use thiserror::Error;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::oneshot;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -26,12 +23,14 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
+    /// Could not acquire a Semaphore permit.
+    #[error("Could not acquire a Semaphore permit.")]
+    CouldNotAcquireSemaphorePermit(#[from] tokio::sync::AcquireError),
+
     #[error(
         "Not enough store cost quotes returned from the network to ensure a valid fee is paid"
     )]
     NotEnoughCostQuotes,
-    #[error("No store cost returned from the network")]
-    NoStoreCostReturned,
 
     #[error("Close group size must be a non-zero usize")]
     InvalidCloseGroupSize,
@@ -51,9 +50,6 @@ pub enum Error {
     #[error("Record retrieved from the network does not match the one we attempted to store {0:}")]
     ReturnedRecordDoesNotMatch(PrettyPrintRecordKey),
 
-    #[error("Record returned when none was expected (likely a Dbc spend eg) {0:}")]
-    ExpectedNoRecordToExist(PrettyPrintRecordKey),
-
     #[error("Could not create storage dir: {path:?}, error: {source}")]
     FailedToCreateRecordStoreDir {
         path: PathBuf,
@@ -69,26 +65,14 @@ pub enum Error {
     #[error("Dial Error")]
     DialError(#[from] DialError),
 
-    #[error("Libp2p Identity Decode Error")]
-    Libp2pDecode(#[from] DecodingError),
-
-    #[error("This peer is already being dialed: {0}")]
-    AlreadyDialingPeer(libp2p::PeerId),
-
     #[error("Outbound Error")]
     OutboundError(#[from] OutboundFailure),
 
     #[error("Kademlia Store error: {0}")]
     KademliaStoreError(#[from] kad::store::Error),
 
-    #[error("The mpsc::receiver for `NetworkEvent` has been dropped")]
-    NetworkEventReceiverDropped(#[from] mpsc::error::SendError<NetworkEvent>),
-
     #[error("A Kademlia event has been dropped: {0:?}")]
     ReceivedKademliaEventDropped(kad::KademliaEvent),
-
-    #[error("The mpsc::receiver for `SwarmCmd` has been dropped")]
-    SwarmCmdReceiverDropped(#[from] mpsc::error::SendError<SwarmCmd>),
 
     #[error("The oneshot::sender has been dropped")]
     SenderDropped(#[from] oneshot::error::RecvError),
@@ -102,9 +86,6 @@ pub enum Error {
     #[error("Get Record completed with non enough copies")]
     RecordNotEnoughCopies(Record),
 
-    #[error("Error putting record")]
-    PutRecordError(#[from] kad::PutRecordError),
-
     #[error("SnProtocol Error")]
     ProtocolError(#[from] sn_protocol::error::Error),
 
@@ -116,6 +97,13 @@ pub enum Error {
 
     #[error("Failed to pop from front of CircularVec")]
     CircularVecPopFrontError,
+
+    #[error("Node Listen Address was not provided during construction")]
+    ListenAddressNotProvided,
+
+    #[cfg(feature = "open-metrics")]
+    #[error("Network Metric error")]
+    NetworkMetricError,
 }
 
 #[cfg(test)]

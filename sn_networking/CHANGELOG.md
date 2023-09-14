@@ -6,6 +6,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.5](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.4...sn_networking-v0.6.5) - 2023-09-14
+
+### Added
+- *(network)* enable custom node metrics
+- *(network)* use NetworkConfig for network construction
+
+### Other
+- remove unused error variants
+- *(network)* use builder pattern to construct the Network
+- *(metrics)* rename feature flag and small fixes
+
+## [0.6.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.3...sn_networking-v0.6.4) - 2023-09-13
+
+### Added
+- *(register)* paying nodes for Register storage
+
+## [0.6.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.2...sn_networking-v0.6.3) - 2023-09-12
+
+### Other
+- *(networking)* add store cost / relevant record tests
+- *(networking)* refactor record_store to have relevant records calculation separately
+
+## [0.6.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.1...sn_networking-v0.6.2) - 2023-09-12
+
+### Added
+- *(network)* feature gate libp2p metrics
+- *(network)* implement libp2p metrics
+
+### Other
+- *(docs)* add docs about network metrics
+- *(metrics)* rename network metrics and remove from default features list
+- *(network)* remove unwraps inside metrics server
+
+## [0.6.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.0...sn_networking-v0.6.1) - 2023-09-12
+
+### Added
+- add tx and parent spends verification
+- chunk payments using UTXOs instead of DBCs
+
+### Other
+- use updated sn_dbc
+
+## [0.6.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.14...sn_networking-v0.6.0) - 2023-09-11
+
+### Added
+- [**breaking**] Clients add a tolerance to store cost
+- [**breaking**] Nodes no longer tolerate underpaying
+
+### Other
+- *(release)* sn_cli-v0.81.29/sn_client-v0.88.16/sn_registers-v0.2.6/sn_node-v0.89.29/sn_testnet-v0.2.120/sn_protocol-v0.6.6
+
+## [0.5.14](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.13...sn_networking-v0.5.14) - 2023-09-08
+
+### Fixed
+- reenable verify_store flag during put
+
+### Other
+- *(client)* refactor to have permits at network layer
+
+## [0.5.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.12...sn_networking-v0.5.13) - 2023-09-07
+
+### Other
+- remove some unused code
+
+## [0.5.12](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.11...sn_networking-v0.5.12) - 2023-09-07
+
+### Added
+- *(networking)* change storage cost formula
+
+### Other
+- remove unused transfer dep in networking
+- *(networking)* added docs to store cost formula
+- *(networking)* remove unused consts
+- *(networking)* adjust formula
+
 ## [0.5.11](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.10...sn_networking-v0.5.11) - 2023-09-05
 
 ### Other
