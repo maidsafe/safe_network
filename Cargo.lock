@@ -3904,7 +3904,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.81.41"
+version = "0.81.42"
 dependencies = [
  "bincode",
  "blsttc",
@@ -3935,7 +3935,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.89.10"
+version = "0.89.11"
 dependencies = [
  "async-trait",
  "bincode",
@@ -4030,7 +4030,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.90.11"
+version = "0.90.12"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4133,7 +4133,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.2.132"
+version = "0.2.133"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",
