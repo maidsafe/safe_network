@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694769248911,
+  "lastUpdate": 1694769661162,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -13037,6 +13037,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 60.2112,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "107746bbfc1a88359836f0e00161976ffea547ac",
+          "message": "feat(logging): Add in SN_LOG=v for reduced networking logging",
+          "timestamp": "2023-09-15T07:53:35Z",
+          "tree_id": "506c9820ae6ab4d05a5fd42351da4a52093dbaee",
+          "url": "https://github.com/maidsafe/safe_network/commit/107746bbfc1a88359836f0e00161976ffea547ac"
+        },
+        "date": 1694769660130,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 61.321217,
             "unit": "MB"
           }
         ]
