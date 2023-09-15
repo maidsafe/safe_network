@@ -320,5 +320,7 @@ pub(super) async fn chunk_path(
         bail!("The provided path does not contain any file. Please check your path!\nExiting...");
     }
 
+    println!("Total number of chunks to be stored: {}", num_of_chunks);
+
     Ok(chunked_files)
 }

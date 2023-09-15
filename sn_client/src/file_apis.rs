@@ -17,7 +17,6 @@ use super::{
 };
 
 use self_encryption::{decrypt_full_set, StreamSelfDecryptor};
-use sn_dbc::Token;
 use sn_protocol::{
     storage::{Chunk, ChunkAddress},
     NetworkAddress, PrettyPrintRecordKey,
