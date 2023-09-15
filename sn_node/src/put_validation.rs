@@ -201,7 +201,6 @@ impl Node {
     pub(crate) fn store_chunk(&self, chunk: Chunk) -> Result<CmdOk, ProtocolError> {
         let chunk_name = *chunk.name();
         let chunk_addr = *chunk.address();
-        debug!("storing chunk {chunk_name:?}");
 
         let key = NetworkAddress::from_chunk_address(*chunk.address()).to_record_key();
         let pretty_key = PrettyPrintRecordKey::from(key.clone());
@@ -548,7 +547,7 @@ impl Node {
             debug!("Register with addr {reg_addr:?} is valid and doesn't exist locally");
             return Ok(Some(register.to_owned()));
         }
-        debug!("Register with addr {reg_addr:?} exists locally, comparing with local version");
+        trace!("Register with addr {reg_addr:?} exists locally, comparing with local version");
 
         let key = NetworkAddress::from_register_address(*reg_addr).to_record_key();
 
@@ -570,10 +569,10 @@ impl Node {
         let mut merged_register = local_register.clone();
         merged_register.verified_merge(register.to_owned())?;
         if merged_register == local_register {
-            debug!("Register with addr {reg_addr:?} is the same as the local version");
+            trace!("Register with addr {reg_addr:?} is the same as the local version");
             Ok(None)
         } else {
-            debug!("Register with addr {reg_addr:?} is different from the local version");
+            trace!("Register with addr {reg_addr:?} is different from the local version");
             Ok(Some(merged_register))
         }
     }
@@ -738,7 +737,7 @@ impl Node {
                 aggregate_spends(spends, dbc_id)
             }
             _ => {
-                debug!("Received >1 spends with parent. Aggregating the spends to check for double spend. Not performing parent check or querying the network for double spend");
+                warn!("Received >1 spends with parent. Aggregating the spends to check for double spend. Not performing parent check or querying the network for double spend");
                 // if we got 2 or more, then it is a double spend for sure.
                 // We don't have to check parent/ ask network for extra spend.
                 // Validate and store just 2 of them.
