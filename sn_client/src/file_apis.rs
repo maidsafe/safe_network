@@ -17,6 +17,7 @@ use super::{
 };
 
 use self_encryption::{decrypt_full_set, StreamSelfDecryptor};
+use sn_dbc::Token;
 use sn_protocol::{
     storage::{Chunk, ChunkAddress},
     NetworkAddress, PrettyPrintRecordKey,
@@ -196,6 +197,36 @@ impl Files {
             .await?;
 
         trace!("Client upload completed for chunk: {chunk_addr:?}");
+        Ok(())
+    }
+
+    /// Pay for a given set of chunks
+    pub async fn pay_for_chunks(&self, chunks: Vec<XorName>, verify_store: bool) -> Result<()> {
+        let mut wallet_client = self.wallet()?;
+        info!("Paying for and uploading {:?} chunks", chunks.len());
+
+        let cost = wallet_client
+            .pay_for_storage(
+                chunks.iter().map(|name| {
+                    sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
+                }),
+                verify_store,
+            )
+            .await?;
+        println!(
+            "Successfully made payment of {cost} for {} chunks.)",
+            chunks.len(),
+        );
+
+        if let Err(err) = wallet_client.store_local_wallet() {
+            println!("Failed to store wallet: {err:?}");
+        } else {
+            println!(
+                "Successfully stored wallet with cached payment proofs, and new balance {}.",
+                wallet_client.balance()
+            );
+        }
+
         Ok(())
     }
 
