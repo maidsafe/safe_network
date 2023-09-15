@@ -258,6 +258,13 @@ jobs:
           else
             echo "SAFE_PEERS has been set to $SAFE_PEERS"
           fi
+        
+      # This should be first to avoid slow reward acceptance etc
+      - name: execute the nodes rewards tests
+        run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture --test-threads=1
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 25
 
       - name: execute the dbc spend tests
         run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture
@@ -271,15 +278,6 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 25
 
-      - name: Small wait to allow reward receipt
-        run: sleep 30
-        timeout-minutes: 1
-
-      - name: execute the nodes rewards tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture --test-threads=1
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 25
 
       - name: Stop the local network and upload logs
         if: always()
