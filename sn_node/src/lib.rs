@@ -45,13 +45,13 @@ extern crate tracing;
 mod api;
 mod error;
 mod event;
-mod get_validation;
 mod log_markers;
 #[cfg(feature = "open-metrics")]
 mod metrics;
 mod put_validation;
 mod replication;
 mod spends;
+mod storecost;
 
 pub use self::{
     api::RunningNode,
