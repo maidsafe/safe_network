@@ -71,6 +71,14 @@ pub enum Error {
     #[error("Payments received could not be stored on node's local wallet: {0}")]
     FailedToStorePaymentIntoNodeWallet(String),
 
+    // ---------- transfer errors
+    #[error("Failed to decypher transfer, we probably are not the recipient")]
+    FailedToDecypherTransfer,
+    #[error("Failed to get transfer parent spend")]
+    FailedToGetTransferParentSpend,
+    #[error("Transfer is invalid: {0}")]
+    InvalidTransfer(String),
+
     // ---------- record errors
     #[error("Record was not stored: {0:?}: {1:?}")]
     RecordNotStored(PrettyPrintRecordKey, String),
