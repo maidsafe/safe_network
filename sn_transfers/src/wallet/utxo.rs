@@ -88,7 +88,7 @@ impl Transfer {
         Ok(transfer)
     }
 
-    /// Serialize this `Transfer` instance to a hex string.
+    /// Serialize this `Transfer` instance to a readable hex string that a human can copy paste
     pub fn to_hex(&self) -> Result<String> {
         let mut serialized =
             bincode::serialize(&self).map_err(|_| Error::TransferSerializationFailed)?;
