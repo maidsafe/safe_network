@@ -97,7 +97,7 @@ impl NodeRecordStore {
 
         match fs::read(file_path) {
             Ok(value) => {
-                trace!("Retrieved record from disk! filename: {filename}");
+                debug!("Retrieved record from disk! filename: {filename}");
                 let record = Record {
                     key: key.clone(),
                     value,
@@ -208,7 +208,7 @@ impl NodeRecordStore {
         tokio::spawn(async move {
             match fs::write(file_path, r.value) {
                 Ok(_) => {
-                    trace!("Wrote record {record_key:?} to disk! filename: {filename}");
+                    info!("Wrote record {record_key:?} to disk! filename: {filename}");
                 }
                 Err(err) => {
                     error!(
@@ -232,7 +232,7 @@ impl NodeRecordStore {
 
         let cost = calculate_cost_for_relevant_records(relevant_records_len);
 
-        trace!("Cost is now {cost:?}");
+        debug!("Cost is now {cost:?}");
         Token::from_nano(cost)
     }
 
@@ -243,7 +243,7 @@ impl NodeRecordStore {
         records: &HashSet<Key>,
         distance_range: Distance,
     ) -> usize {
-        trace!(
+        debug!(
             "Total record count is {:?}. Distance is: {distance_range:?}",
             self.records.len()
         );
@@ -256,7 +256,7 @@ impl NodeRecordStore {
             })
             .count();
 
-        trace!("Relevant records len is {:?}", relevant_records_len);
+        debug!("Relevant records len is {:?}", relevant_records_len);
         relevant_records_len
     }
 
@@ -275,11 +275,12 @@ impl RecordStore for NodeRecordStore {
         // with the record. Thus a node can be bombarded with GET reqs for random keys. These can be safely
         // ignored if we don't have the record locally.
         let key = PrettyPrintRecordKey::from(k.clone());
-        trace!("GET request for Record key: {key}");
         if !self.records.contains(k) {
             trace!("Record not found locally: {key}");
             return None;
         }
+
+        debug!("GET request for Record key: {key}");
 
         Self::read_from_disk(k, &self.config.storage_dir)
     }
@@ -331,7 +332,7 @@ impl RecordStore for NodeRecordStore {
         let _handle = tokio::spawn(async move {
             match fs::remove_file(file_path) {
                 Ok(_) => {
-                    trace!("Removed record from disk! filename: {filename}");
+                    info!("Removed record from disk! filename: {filename}");
                 }
                 Err(err) => {
                     error!("Error while removing file. filename: {filename}, error: {err:?}");

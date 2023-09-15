@@ -211,7 +211,7 @@ impl LocalWallet {
             .collect();
 
         let available_dbcs = self.available_dbcs();
-        trace!("Available DBCs for local send: {:#?}", available_dbcs);
+        debug!("Available DBCs for local send: {:#?}", available_dbcs);
 
         let reason_hash = reason_hash.unwrap_or_default();
 
@@ -247,7 +247,7 @@ impl LocalWallet {
         let reason_hash = reason_hash.unwrap_or_default();
 
         let available_dbcs = self.available_dbcs();
-        trace!("Available DBCs: {:#?}", available_dbcs);
+        debug!("Available DBCs: {:#?}", available_dbcs);
         let transfer_outputs =
             create_offline_transfer(available_dbcs, all_payees_only, self.address(), reason_hash)?;
 
