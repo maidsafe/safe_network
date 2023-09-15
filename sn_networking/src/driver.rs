@@ -518,7 +518,7 @@ impl SwarmDriver {
     /// Dials the given multiaddress. If address contains a peer ID, simultaneous
     /// dials to that peer are prevented.
     pub(crate) fn dial(&mut self, mut addr: Multiaddr) -> Result<(), DialError> {
-        debug!(%addr, "Dialing manually");
+        trace!(%addr, "Dialing manually");
 
         let peer_id = multiaddr_pop_p2p(&mut addr);
         let opts = match peer_id {
@@ -535,7 +535,7 @@ impl SwarmDriver {
 
     /// Dials with the `DialOpts` given.
     pub(crate) fn dial_with_opts(&mut self, opts: DialOpts) -> Result<(), DialError> {
-        debug!(?opts, "Dialing manually");
+        trace!(?opts, "Dialing manually");
 
         self.swarm.dial(opts)
     }

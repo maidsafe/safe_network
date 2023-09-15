@@ -190,7 +190,7 @@ impl SwarmDriver {
                 self.network_metrics.record(&(*iden));
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
-                        debug!(%peer_id, ?info, "identify: received info");
+                        trace!(%peer_id, ?info, "identify: received info");
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if (self.local
@@ -286,12 +286,12 @@ impl SwarmDriver {
                     }
                 }
                 mdns::Event::Expired(peer) => {
-                    debug!("mdns peer {peer:?} expired");
+                    trace!("mdns peer {peer:?} expired");
                 }
             },
             SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
-                autonat::Event::InboundProbe(e) => debug!("AutoNAT inbound probe: {e:?}"),
-                autonat::Event::OutboundProbe(e) => debug!("AutoNAT outbound probe: {e:?}"),
+                autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
+                autonat::Event::OutboundProbe(e) => trace!("AutoNAT outbound probe: {e:?}"),
                 autonat::Event::StatusChanged { old, new } => {
                     info!("AutoNAT status changed: {old:?} -> {new:?}");
                     self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
@@ -338,7 +338,7 @@ impl SwarmDriver {
                 local_addr,
                 send_back_addr,
             } => {
-                debug!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
+                trace!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
             }
             SwarmEvent::ConnectionEstablished {
                 peer_id,
@@ -347,7 +347,7 @@ impl SwarmDriver {
                 connection_id,
                 ..
             } => {
-                debug!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
+                trace!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
 
                 if endpoint.is_dialer() {
                     self.dialed_peers
@@ -362,7 +362,7 @@ impl SwarmDriver {
                 num_established,
                 connection_id,
             } => {
-                debug!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
+                trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
             }
             SwarmEvent::OutgoingConnectionError {
                 peer_id: Some(failed_peer_id),
@@ -393,7 +393,7 @@ impl SwarmDriver {
                 peer_id,
                 connection_id,
             } => trace!("Dialing {peer_id:?} on {connection_id:?}"),
-            other => debug!("SwarmEvent has been ignored: {other:?}"),
+            other => trace!("SwarmEvent has been ignored: {other:?}"),
         }
         Ok(())
     }
@@ -495,7 +495,9 @@ impl SwarmDriver {
 
                 let (sender, mut current_closest) =
                     self.pending_get_closest_peers.remove(&id).ok_or_else(|| {
-                        trace!("Can't locate query task {id:?}, shall be completed already.");
+                        trace!(
+                            "Can't locate query task {id:?}, it has likely been completed already."
+                        );
                         Error::ReceivedKademliaEventDropped(event.clone())
                     })?;
 
@@ -559,7 +561,7 @@ impl SwarmDriver {
                 trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?}");
                 if let Some((sender, result_map)) = self.pending_get_record.remove(&id) {
                     if let Some((record, _)) = result_map.values().next() {
-                        info!(
+                        debug!(
                             "Getting record {:?} early completed with {:?} copies received",
                             PrettyPrintRecordKey::from(record.key.clone()),
                             usize::from(step.count) - 1

@@ -70,15 +70,17 @@ impl ReplicationFetcher {
         self.prune_expired_keys();
 
         if self.on_going_fetches >= MAX_PARALLEL_FETCH {
-            trace!("Replication Fetcher doesn't have free capacity.");
+            warn!("Replication Fetcher doesn't have free capacity.");
             return vec![];
         }
         let mut fetches_left = MAX_PARALLEL_FETCH - self.on_going_fetches;
 
-        debug!(
-            "Number of records still missing: {:?}",
-            self.to_be_fetched.len()
-        );
+        if !self.to_be_fetched.is_empty() {
+            debug!(
+                "Number of records still to be retrieved: {:?}",
+                self.to_be_fetched.len()
+            );
+        }
 
         let mut data_to_fetch = vec![];
         for (key, is_fetching) in self.to_be_fetched.iter_mut() {
@@ -95,11 +97,15 @@ impl ReplicationFetcher {
             .iter()
             .map(|key| PrettyPrintRecordKey::from(key.clone()))
             .collect();
-        trace!(
-            "Sending out replication fetching {} keys {:?}",
-            data_to_fetch.len(),
-            pretty_keys
-        );
+
+        if !data_to_fetch.is_empty() {
+            debug!(
+                "Sending out replication request. Fetching {} keys {:?}",
+                data_to_fetch.len(),
+                pretty_keys
+            );
+        }
+
         self.on_going_fetches += data_to_fetch.len();
         data_to_fetch
     }
@@ -111,7 +117,7 @@ impl ReplicationFetcher {
             let is_expired = if let Some(requested_time) = is_fetching {
                 if Instant::now() > *requested_time + FETCH_TIMEOUT {
                     self.on_going_fetches = self.on_going_fetches.saturating_sub(1);
-                    trace!(
+                    debug!(
                         "Prune record {:?} from the replication_fetcher due to timeout.",
                         PrettyPrintRecordKey::from(key.clone())
                     );

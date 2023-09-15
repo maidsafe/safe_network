@@ -52,7 +52,11 @@ impl Node {
         let our_address = NetworkAddress::from_peer(our_peer_id);
 
         let all_records = self.network.get_all_local_record_addresses().await?;
-        trace!("Replication triggred, all records: {:?}", all_records.len());
+
+        trace!(
+            "Replication triggered, we have #{:?} records",
+            all_records.len()
+        );
 
         let mut replicate_to: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
 

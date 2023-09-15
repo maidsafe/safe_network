@@ -147,7 +147,6 @@ impl Node {
 
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
-                        trace!("Handling NetworkEvent: {net_event:?}");
                         match net_event {
                             Some(event) => {
                                 let stateless_node_copy = node.clone();
@@ -228,11 +227,10 @@ impl Node {
                 | NetworkEvent::NatStatusChanged(_) => break,
             }
         }
-        trace!("Handling network event {event:?}");
+        trace!("Handling NetworkEvent {event:?}");
 
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
-                trace!("RequestReceived: {req:?}");
                 self.handle_request(req, channel).await;
             }
             NetworkEvent::ResponseReceived { res } => {
