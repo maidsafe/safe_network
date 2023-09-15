@@ -9,7 +9,10 @@
 use super::wallet::{ChunkedFile, BATCH_SIZE};
 use bytes::Bytes;
 use clap::Parser;
-use color_eyre::{eyre::Error, Result};
+use color_eyre::{
+    eyre::{bail, eyre, Error},
+    Help, Result,
+};
 use libp2p::futures::future::join_all;
 use sn_client::{Client, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
@@ -40,16 +43,18 @@ pub enum FilesCmds {
     Download {
         /// The name to apply to the downloaded file.
         ///
-        /// If neither the name or the address are supplied, all the files uploaded by the current
-        /// user will be downloaded again.
-        #[clap(name = "file_name")]
-        file_name: Option<String>,
-        /// The hex address of the file.
+        /// If the name argument is used, the address argument must also be supplied.
         ///
-        /// If neither the name or the address are supplied, all the files uploaded by the current
-        /// user will be downloaded again.
-        #[clap(name = "file_addr")]
-        file_addr: Option<String>,
+        /// If neither are, all the files uploaded by the current user will be downloaded again.
+        #[clap(name = "name")]
+        file_name: Option<String>,
+        /// The hex address of a file.
+        ///
+        /// If the address argument is used, the name argument must also be supplied.
+        ///
+        /// If neither are, all the files uploaded by the current user will be downloaded again.
+        #[clap(name = "address")]
+        file_address: Option<String>,
     },
 }
 
@@ -77,11 +82,22 @@ pub(crate) async fn files_cmds(
         }
         FilesCmds::Download {
             file_name,
-            file_addr,
+            file_address,
         } => {
+            if (file_name.is_some() && file_address.is_none())
+                || (file_address.is_some() && file_name.is_none())
+            {
+                return Err(
+                    eyre!("Both the name and address must be supplied if either are used")
+                        .suggestion(
+                        "Please run the command again in the form 'files upload <name> <address>'",
+                    ),
+                );
+            }
+
             let file_api: Files = Files::new(client, root_dir.to_path_buf());
 
-            match (file_name, file_addr) {
+            match (file_name, file_address) {
                 (Some(name), Some(address)) => {
                     let bytes = hex::decode(address).expect("Input address is not a hex string");
                     download_file(
@@ -97,7 +113,7 @@ pub(crate) async fn files_cmds(
                     .await
                 }
                 _ => {
-                    println!("Trying to download files recorded in uploaded_files folder");
+                    println!("Attempting to download all files uploaded by the current user...");
                     download_files(&file_api, root_dir).await?
                 }
             }
@@ -261,6 +277,7 @@ async fn upload_files(
             data_to_verify_or_repay =
                 verify_and_repay_if_needed(file_api.clone(), data_to_verify_or_repay, batch_size)
                     .await?;
+            tokio::time::sleep(Duration::from_secs(3)).await;
         }
     }
 
