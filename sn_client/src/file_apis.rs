@@ -22,6 +22,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::wallet::LocalWallet;
+
 use std::{
     fs::{self, create_dir_all, File},
     io::{Read, Write},
@@ -204,16 +205,13 @@ impl Files {
                 verify_store,
             )
             .await?;
-        println!(
-            "Successfully made payment of {cost} for {} chunks.",
-            chunks.len(),
-        );
+        println!("Made payment of {cost} for {} chunks", chunks.len(),);
 
         if let Err(err) = wallet_client.store_local_wallet() {
             println!("Failed to store wallet: {err:?}");
         } else {
             println!(
-                "Successfully stored wallet with cached payment proofs, and new balance {}.",
+                "Stored wallet with cached payment proofs. New balance: {}",
                 wallet_client.balance()
             );
         }
@@ -377,7 +375,7 @@ impl Files {
                     }),
                     Err(err) => {
                         warn!(
-                            "Reading chunk {} from network, resulted in error {err:?}.",
+                            "Error reading chunk {} from network: {err:?}.",
                             chunk_info.dst_hash
                         );
                         Err(err)
