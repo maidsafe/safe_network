@@ -61,6 +61,8 @@ impl Network {
         }
     }
 
+    /// This function is used to receive a Transfer and turn it back into spendable DBCs.
+    /// Needs Network connection.
     /// Verify Transfer and rebuild spendable currency from it
     /// Returns an `Error::FailedToDecypherTransfer` if the transfer cannot be decyphered
     /// (This means the transfer is not for us as it was not encrypted to our key)
