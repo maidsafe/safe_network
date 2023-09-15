@@ -53,6 +53,10 @@ pub enum Error {
     UtxoEncryptionFailed,
     #[error("We are not a recipient of this Transfer")]
     NotRecipient,
+    #[error("Transfer serialisation failed")]
+    TransferSerializationFailed,
+    #[error("Transfer deserialisation failed")]
+    TransferDeserializationFailed,
 
     /// Dbc error.
     #[error("Dbc error: {0}")]
