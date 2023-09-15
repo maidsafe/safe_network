@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1694755811207,
+  "lastUpdate": 1694755813479,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -18100,6 +18100,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 277,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a1e9ecd31b52aeeb8800ae0123ad537d78da6f45",
+          "message": "chore(client): remove unused wallet_client",
+          "timestamp": "2023-09-15T03:58:29Z",
+          "tree_id": "8c2acf9b2fd63637b03e8bb1dda9656a12ef79a8",
+          "url": "https://github.com/maidsafe/safe_network/commit/a1e9ecd31b52aeeb8800ae0123ad537d78da6f45"
+        },
+        "date": 1694755812623,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 497.0496,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 268,
             "unit": "MB"
           }
         ]
