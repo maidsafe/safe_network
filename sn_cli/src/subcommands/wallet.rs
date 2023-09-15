@@ -7,21 +7,18 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use clap::Parser;
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
+use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, Files, WalletClient};
 use sn_dbc::Token;
 use sn_transfers::wallet::{parse_public_address, LocalWallet};
 use std::{
-    collections::BTreeMap,
     io::Read,
     path::{Path, PathBuf},
 };
 use url::Url;
-use walkdir::WalkDir;
 use xor_name::XorName;
+
+use super::files::chunk_path;
 
 // Defines the size of batch for the parallel uploading of chunks and correspondent payments.
 pub(crate) const BATCH_SIZE: usize = 20;
@@ -281,46 +278,4 @@ async fn send(
 pub(super) struct ChunkedFile {
     pub file_name: String,
     pub chunks: Vec<(XorName, PathBuf)>,
-}
-
-pub(super) async fn chunk_path(
-    client: &Client,
-    root_dir: &Path,
-    files_path: &Path,
-) -> Result<BTreeMap<XorName, ChunkedFile>> {
-    trace!("Starting to chunk_and_pay_for_storage");
-
-    let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
-
-    // Get the list of Chunks addresses from the files found at 'files_path'
-    let chunks_dir = std::env::temp_dir();
-    let mut num_of_chunks = 0;
-    let mut chunked_files = BTreeMap::new();
-    for entry in WalkDir::new(files_path).into_iter().flatten() {
-        if entry.file_type().is_file() {
-            let file_name = if let Some(file_name) = entry.file_name().to_str() {
-                file_name.to_string()
-            } else {
-                println!(
-                    "Skipping file {:?} as it is not valid UTF-8.",
-                    entry.file_name()
-                );
-                continue;
-            };
-
-            let (file_addr, _size, chunks) =
-                file_api.chunk_file(entry.path(), chunks_dir.as_path())?;
-            num_of_chunks += chunks.len();
-
-            chunked_files.insert(file_addr, ChunkedFile { file_name, chunks });
-        }
-    }
-
-    if chunked_files.is_empty() {
-        bail!("The provided path does not contain any file. Please check your path!\nExiting...");
-    }
-
-    println!("Total number of chunks to be stored: {}", num_of_chunks);
-
-    Ok(chunked_files)
 }
