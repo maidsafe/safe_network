@@ -65,7 +65,10 @@ impl fmt::Display for LogOutputDest {
     }
 }
 
+// Everything is logged by default
 const ALL_SN_LOGS: &str = "all";
+// Trace at nodes, clients, debug at networking layer
+const VERBOSE_SN_LOGS: &str = "v";
 
 #[derive(Default, Debug)]
 /// Tracing log formatter setup for easier span viewing
@@ -265,18 +268,24 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
     let mut targets = Vec::new();
     let crates = logging_env_value.split(',');
     for c in crates {
+        let networking_log_level = if c == ALL_SN_LOGS {
+            ("sn_networking".to_string(), Level::TRACE)
+        } else {
+            ("sn_networking".to_string(), Level::DEBUG)
+        };
+
         // TODO: are there other default short-circuits wanted?
         // Could we have a default set if NOT on a release commit?
-        if c == ALL_SN_LOGS {
+        if c == ALL_SN_LOGS || c == VERBOSE_SN_LOGS {
             // short-circuit to get all logs
             return Ok(vec![
+                networking_log_level,
                 ("safenode".to_string(), Level::TRACE),
                 ("safe".to_string(), Level::TRACE),
                 ("sn_build_info".to_string(), Level::TRACE),
                 ("sn_cli".to_string(), Level::TRACE),
                 ("sn_client".to_string(), Level::TRACE),
                 ("sn_logging".to_string(), Level::TRACE),
-                ("sn_networking".to_string(), Level::TRACE),
                 ("sn_node".to_string(), Level::TRACE),
                 ("sn_peers_acquisition".to_string(), Level::TRACE),
                 ("sn_protocol".to_string(), Level::TRACE),
