@@ -190,7 +190,7 @@ impl Network {
             _permit = Some(our_permit);
         }
 
-        debug!("Attempting to get store cost");
+        trace!("Attempting to get store cost");
         // first we need to get CLOSE_GROUP of the dbc_id
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
             key: record_address.clone(),
@@ -376,7 +376,7 @@ impl Network {
         // let mut has_permit = optional_permit.is_some();
         // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
         while retries < PUT_RECORD_RETRIES {
-            trace!(
+            info!(
                 "Attempting to PUT record of {:?} to network",
                 PrettyPrintRecordKey::from(record.key.clone())
             );
@@ -431,7 +431,7 @@ impl Network {
             self.get_record_from_network(record_key, verify_store, true)
                 .await
                 .map_err(|e| {
-                    trace!(
+                    error!(
                         "Failing to verify the put record {:?} with error {e:?}",
                         pretty_key
                     );
@@ -445,7 +445,7 @@ impl Network {
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
     pub fn put_local_record(&self, record: Record) -> Result<()> {
-        debug!(
+        trace!(
             "Writing Record locally, for {:?} - length {:?}",
             PrettyPrintRecordKey::from(record.key.clone()),
             record.value.len()
@@ -574,7 +574,7 @@ impl Network {
         req: &Request,
         get_all_responses: bool,
     ) -> Vec<Result<Response>> {
-        trace!("send_and_get_responses for {req:?}");
+        debug!("send_and_get_responses for {req:?}");
         let mut list_of_futures = peers
             .iter()
             .map(|peer| Box::pin(self.send_request(req.clone(), *peer)))
@@ -587,7 +587,7 @@ impl Network {
                 Ok(res) => format!("{res}"),
                 Err(err) => format!("{err:?}"),
             };
-            trace!("Got response for the req: {req:?}, res: {res_string}");
+            debug!("Got response for the req: {req:?}, res: {res_string}");
             if !get_all_responses && res.is_ok() {
                 return vec![res];
             }
@@ -595,7 +595,7 @@ impl Network {
             list_of_futures = remaining_futures;
         }
 
-        trace!("got all responses for {req:?}");
+        debug!("Received all responses for {req:?}");
         responses
     }
 }
