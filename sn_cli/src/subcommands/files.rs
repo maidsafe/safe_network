@@ -281,15 +281,11 @@ async fn upload_chunk(
 ) -> Result<()> {
     let (name, path) = chunk;
 
-    let file_api = file_api.clone();
-
-    // as holding chunks in mem is a serious bottleneck, we only hold one chunk in mem at a time
-    let permit = Some(file_api.client().get_network_concurrency_permit().await?);
     let upload_start_time = std::time::Instant::now();
     let chunk = Chunk::new(Bytes::from(fs::read(path)?));
 
     file_api
-        .get_local_payment_and_upload_chunk(chunk, verify_store, permit)
+        .get_local_payment_and_upload_chunk(chunk, verify_store, None)
         .await?;
 
     println!(
@@ -308,12 +304,12 @@ async fn verify_and_repay_if_needed(
     mut chunks_paths: Vec<(XorName, PathBuf)>,
     batch_size: usize,
 ) -> Result<Vec<(XorName, PathBuf)>> {
-    let mut total_failed_chunks: Vec<(XorName, PathBuf)> = vec![];
     let total_chunks = chunks_paths.len();
 
     println!("======= verify {total_chunks} chunk, and re paying and uploading failed chunks =============");
 
     let now = Instant::now();
+    let mut failed_chunks = Vec::new();
     loop {
         if chunks_paths.is_empty() {
             break;
@@ -321,7 +317,7 @@ async fn verify_and_repay_if_needed(
             let size = std::cmp::min(batch_size, chunks_paths.len());
             let batches: Vec<_> = chunks_paths.drain(..size).collect();
 
-            // now we try and get btached chunks, keep track of any that fail
+            // now we try and get batched chunks, keep track of any that fail
             // Iterate over each uploaded chunk
             let mut verify_handles = Vec::new();
             for (name, path) in batches.into_iter() {
@@ -341,7 +337,6 @@ async fn verify_and_repay_if_needed(
             // Await all fetch tasks and collect the results
             let verify_results = join_all(verify_handles).await;
 
-            let mut failed_chunks = Vec::new();
             // Check for any errors during fetch
             for result in verify_results {
                 if let ((chunk_addr, path), true) = result?? {
@@ -350,52 +345,55 @@ async fn verify_and_repay_if_needed(
                     failed_chunks.push((chunk_addr, path));
                 }
             }
+        }
+    }
 
-            // If there were any failed chunks, we need to repay them
-            if !failed_chunks.is_empty() {
-                println!(
-                    "Failed to fetch {} chunks, attempting to repay them",
-                    failed_chunks.len()
-                );
+    let total_failed_chunks = failed_chunks
+        .iter()
+        .map(|(addr, path)| (*addr.xorname(), path.clone()))
+        .collect::<Vec<_>>();
 
-                let mut wallet = file_api.wallet()?;
+    println!("======= Verification: {} chunks were not stored in the network, repaying them in batches  =============", failed_chunks.len());
 
-                // Now we pay again or top up, depending on the new current store cost is
-                wallet
-                    .pay_for_storage(
-                        failed_chunks
-                            .iter()
-                            .map(|(addr, _path)| sn_protocol::NetworkAddress::ChunkAddress(*addr)),
-                        true,
-                    )
-                    .await?;
+    // If there were any failed chunks, we need to repay them
+    while !failed_chunks.is_empty() {
+        let size = std::cmp::min(batch_size, failed_chunks.len());
+        let batches: Vec<_> = failed_chunks.drain(..size).collect();
+        println!(
+            "Failed to fetch {} chunks, attempting to repay them",
+            batches.len()
+        );
 
-                // outcome here is not important as we'll verify this later
-                let upload_file_api = file_api.clone();
-                let ongoing_uploads = upload_chunks_in_parallel(
-                    upload_file_api,
-                    failed_chunks
-                        .iter()
-                        .cloned()
-                        .map(|(addr, path)| (*addr.xorname(), path))
-                        .collect(),
-                    false,
-                );
+        let mut wallet = file_api.wallet()?;
 
-                // Now we've batched all payments, we can await all uploads to happen in parallel
-                let upload_results = join_all(ongoing_uploads).await;
+        // Now we pay again or top up, depending on the new current store cost is
+        wallet
+            .pay_for_storage(
+                batches
+                    .iter()
+                    .map(|(addr, _path)| sn_protocol::NetworkAddress::ChunkAddress(*addr)),
+                true,
+            )
+            .await?;
 
-                // lets check there were no odd errors during upload
-                for result in upload_results {
-                    result??;
-                }
-                total_failed_chunks.extend(
-                    failed_chunks
-                        .into_iter()
-                        .map(|(addr, path)| (*addr.xorname(), path))
-                        .collect::<Vec<_>>(),
-                );
-            }
+        // outcome here is not important as we'll verify this later
+        let upload_file_api = file_api.clone();
+        let ongoing_uploads = upload_chunks_in_parallel(
+            upload_file_api,
+            batches
+                .iter()
+                .cloned()
+                .map(|(addr, path)| (*addr.xorname(), path))
+                .collect(),
+            false,
+        );
+
+        // Now we've batched all payments, we can await all uploads to happen in parallel
+        let upload_results = join_all(ongoing_uploads).await;
+
+        // lets check there were no odd errors during upload
+        for result in upload_results {
+            result??;
         }
     }
 
