@@ -18,6 +18,7 @@ use std::{
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
+use tokio::task::JoinHandle;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -123,6 +124,9 @@ async fn upload_files(
     let mut progress = 0;
     // Clone necessary variables for each file upload
     let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
+
+    let mut ongoing_uploads = Vec::new();
+
     while !chunks_for_upload.is_empty() {
         let now = Instant::now();
         let size = std::cmp::min(batch_size, chunks_for_upload.len());
@@ -134,11 +138,13 @@ async fn upload_files(
             .pay_for_chunks(chunk_batch.iter().map(|(name, _)| *name).collect(), true)
             .await?;
 
-        let this_batch_size = chunk_batch.len();
-
         // Verification will be carried out later on, if being asked to.
         // Hence no need to carry out verification within the first attempt.
-        let _res = upload_chunks_in_parallel(file_api.clone(), chunk_batch, false).await;
+        ongoing_uploads.extend(upload_chunks_in_parallel(
+            file_api.clone(),
+            chunk_batch,
+            false,
+        ));
 
         let elapsed = now.elapsed();
         println!(
@@ -150,7 +156,14 @@ async fn upload_files(
             total_chunks_uploading
         );
     }
-    // data_to_verify_or_repay.extend(chunks);
+
+    // Now we've batched all payments, we can await all uploads to happen in parallel
+    let upload_results = join_all(ongoing_uploads).await;
+
+    // lets check there were no odd errors during upload
+    for result in upload_results {
+        result??;
+    }
 
     println!("First round of upload completed, verifying and repaying if required...");
 
@@ -193,42 +206,50 @@ async fn upload_files(
 /// Store all chunks from chunk_paths (assuming payments have already been made and are in our local wallet).
 /// If verify_store is true, we will attempt to fetch all chunks from the network and check they are stored.
 ///
-async fn upload_chunks_in_parallel(
+/// This spawns a task for each chunk to be uploaded, returns those handles.
+///
+fn upload_chunks_in_parallel(
     file_api: Files,
     chunks_paths: Vec<(XorName, PathBuf)>,
     verify_store: bool,
-) -> Result<()> {
+) -> Vec<JoinHandle<Result<()>>> {
     let mut upload_handles = Vec::new();
     for (name, path) in chunks_paths.into_iter() {
         let file_api = file_api.clone();
 
-        // first we upload all chunks in parallel
-        let handle = tokio::spawn(async move {
-            let permit = Some(file_api.client().get_network_concurrency_permit().await?);
-            // as holding chunks in mem is a serious bottleneck, we only hold one chunk in mem at a time
-            // and claim a second permit for the duration here to prevent too many happening at once.
-            let upload_start_time = std::time::Instant::now();
-            let chunk = Chunk::new(Bytes::from(fs::read(path)?));
-
-            file_api
-                .get_local_payment_and_upload_chunk(chunk, verify_store, permit)
-                .await?;
-
-            println!(
-                "Uploaded chunk #{name} in {})",
-                format_elapsed_time(upload_start_time.elapsed())
-            );
-            Ok::<(), Error>(())
-        });
+        // Spawn a task for each chunk to be uploaded
+        let handle = tokio::spawn(upload_chunk(file_api, (name, path), verify_store));
         upload_handles.push(handle);
     }
 
-    let upload_results = join_all(upload_handles).await;
+    // Return the handles immediately without awaiting their completion
+    upload_handles
+}
 
-    // lets check there were no wild errors during upload
-    for result in upload_results {
-        result??;
-    }
+/// Store chunks from chunk_paths (assuming payments have already been made and are in our local wallet).
+/// If verify_store is true, we will attempt to fetch the chunks from the network to verify it is stored.
+async fn upload_chunk(
+    file_api: Files,
+    chunk: (XorName, PathBuf),
+    verify_store: bool,
+) -> Result<()> {
+    let (name, path) = chunk;
+
+    let file_api = file_api.clone();
+
+    // as holding chunks in mem is a serious bottleneck, we only hold one chunk in mem at a time
+    let permit = Some(file_api.client().get_network_concurrency_permit().await?);
+    let upload_start_time = std::time::Instant::now();
+    let chunk = Chunk::new(Bytes::from(fs::read(path)?));
+
+    file_api
+        .get_local_payment_and_upload_chunk(chunk, verify_store, permit)
+        .await?;
+
+    println!(
+        "Uploaded chunk #{name} in {})",
+        format_elapsed_time(upload_start_time.elapsed())
+    );
 
     Ok(())
 }
@@ -305,7 +326,7 @@ async fn verify_and_repay_if_needed(
 
                 // outcome here is not important as we'll verify this later
                 let upload_file_api = file_api.clone();
-                let _res = upload_chunks_in_parallel(
+                let ongoing_uploads = upload_chunks_in_parallel(
                     upload_file_api,
                     failed_chunks
                         .iter()
@@ -313,9 +334,15 @@ async fn verify_and_repay_if_needed(
                         .map(|(addr, path)| (*addr.xorname(), path))
                         .collect(),
                     false,
-                )
-                .await;
+                );
 
+                // Now we've batched all payments, we can await all uploads to happen in parallel
+                let upload_results = join_all(ongoing_uploads).await;
+
+                // lets check there were no odd errors during upload
+                for result in upload_results {
+                    result??;
+                }
                 total_failed_chunks.extend(
                     failed_chunks
                         .into_iter()
@@ -327,7 +354,14 @@ async fn verify_and_repay_if_needed(
     }
 
     let elapsed = now.elapsed();
-    println!("After {elapsed:?}, verified {total_chunks:?} chunks, find {} failed chunks and repaid & uploaded them.", total_failed_chunks.len());
+    println!("After {elapsed:?}, verified {total_chunks:?} chunks");
+
+    if !total_failed_chunks.is_empty() {
+        println!(
+            "{} failed chunks were found, repaid & re-uploaded.",
+            total_failed_chunks.len()
+        );
+    }
 
     Ok(total_failed_chunks)
 }
