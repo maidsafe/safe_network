@@ -55,6 +55,3 @@ impl std::fmt::Display for Cmd {
         }
     }
 }
-
-// Data type of each of the nodes in the binary Merkle-tree built for payment proofs
-pub type MerkleTreeNodesType = [u8; 32];

@@ -19,6 +19,7 @@ mod metrics_service;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
+mod transfers;
 
 pub use self::{
     cmd::SwarmLocalState,

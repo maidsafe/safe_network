@@ -11,7 +11,7 @@ use crate::{
     Marker, Node,
 };
 use libp2p::kad::{Record, RecordKey};
-use sn_dbc::{Dbc, DbcId, DbcSecrets, DbcTransaction, DerivationIndex, SignedSpend, Token};
+use sn_dbc::{Dbc, DbcId, SignedSpend, Token};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::CmdOk,
@@ -26,7 +26,6 @@ use sn_transfers::{
     wallet::{LocalWallet, Transfer},
 };
 use std::collections::{BTreeSet, HashSet};
-use tokio::task::JoinSet;
 
 impl Node {
     /// Validate a record and it's payment, and store the record to the RecordStore
@@ -378,6 +377,31 @@ impl Node {
         Ok(CmdOk::StoredSuccessfully)
     }
 
+    /// Gets DBCs out of a Payment, this includes network verifications of the Transfer
+    async fn dbcs_from_payment(
+        &self,
+        payment: Vec<Transfer>,
+        wallet: &LocalWallet,
+        pretty_key: PrettyPrintRecordKey,
+    ) -> Result<Vec<Dbc>, ProtocolError> {
+        for transfer in payment {
+            match self
+                .network
+                .verify_and_unpack_transfer(transfer, wallet)
+                .await
+            {
+                // transfer not for us
+                Err(ProtocolError::FailedToDecypherTransfer) => continue,
+                // transfer invalid
+                Err(e) => return Err(e),
+                // transfer ok
+                Ok(dbcs) => return Ok(dbcs),
+            };
+        }
+
+        Err(ProtocolError::NoPaymentToOurNode(pretty_key))
+    }
+
     /// Perform validations on the provided `Record`.
     async fn payment_for_us_exists_and_is_still_valid(
         &self,
@@ -391,102 +415,11 @@ impl Node {
         let mut wallet = LocalWallet::load_from(&self.network.root_dir_path)
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
 
-        // get utxos destined for us
-        let utxos = wallet
-            .unwrap_transfer_for_us(payment)
-            .map_err(|_| ProtocolError::NoPaymentToOurNode(pretty_key.clone()))?;
-        trace!("Found a payment for us for record {pretty_key:?}");
-
-        // get the parent transactions
-        trace!("Getting parent Tx for payment of record {pretty_key:?} for validation");
-        let parent_addrs: BTreeSet<DbcAddress> = utxos.iter().map(|u| u.parent_spend).collect();
-        let mut tasks = JoinSet::new();
-        for addr in parent_addrs.clone() {
-            let self_clone = self.clone();
-            let _ = tasks.spawn(async move { self_clone.get_spend_from_network(addr, true).await });
-        }
-        let mut parent_spends = BTreeSet::new();
-        while let Some(result) = tasks.join_next().await {
-            let signed_spend = result.map_err(|e| {
-                ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
-            })??;
-            let _ = parent_spends.insert(signed_spend.clone());
-        }
-        let parent_txs: BTreeSet<DbcTransaction> =
-            parent_spends.iter().map(|s| s.spent_tx()).collect();
-
-        // get all the other parent_spends from those Txs
-        trace!("Getting parent spends for payment of record {pretty_key:?} for validation");
-        let already_collected_parents = &parent_addrs;
-        let other_parent_dbc_addr: BTreeSet<DbcAddress> = parent_txs
-            .clone()
-            .into_iter()
-            .flat_map(|tx| tx.inputs)
-            .map(|i| DbcAddress::from_dbc_id(&i.dbc_id()))
-            .filter(|addr| !already_collected_parents.contains(addr))
-            .collect();
-        let mut tasks = JoinSet::new();
-        for addr in other_parent_dbc_addr {
-            let self_clone = self.clone();
-            let _ = tasks.spawn(async move { self_clone.get_spend_from_network(addr, true).await });
-        }
-        while let Some(result) = tasks.join_next().await {
-            let signed_spend = result.map_err(|e| {
-                ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
-            })??;
-            let _ = parent_spends.insert(signed_spend.clone());
-        }
-
-        // get our outputs from Tx
-        let public_address = wallet.address();
-        let our_output_dbc_ids: Vec<(DbcId, DerivationIndex)> = utxos
-            .iter()
-            .map(|u| (wallet.derive_key(&u.derivation_index), u.derivation_index))
-            .map(|(k, d)| (k.dbc_id(), d))
-            .collect();
-        let mut our_output_dbcs = Vec::new();
-        for (id, derivation_index) in our_output_dbc_ids.into_iter() {
-            let secrets = DbcSecrets {
-                public_address,
-                derivation_index,
-            };
-            let src_tx = parent_txs
-                .iter()
-                .find(|tx| tx.outputs.iter().any(|o| o.dbc_id() == &id))
-                .ok_or(ProtocolError::RecordNotStored(
-                    pretty_key.clone(),
-                    "None of the UTXOs are refered to in upstream Txs".to_string(),
-                ))?
-                .clone();
-            let signed_spends: BTreeSet<SignedSpend> = parent_spends
-                .iter()
-                .filter(|s| s.spent_tx_hash() == src_tx.hash())
-                .cloned()
-                .collect();
-            let dbc = Dbc {
-                id,
-                src_tx,
-                secrets,
-                signed_spends,
-            };
-            our_output_dbcs.push(dbc);
-        }
-
-        // check Txs and parent spends are valid
-        trace!("Validating parent spends for payment of record {pretty_key:?}");
-        for tx in parent_txs {
-            let input_spends = parent_spends
-                .iter()
-                .filter(|s| s.spent_tx_hash() == tx.hash())
-                .cloned()
-                .collect();
-            tx.verify_against_inputs_spent(&input_spends).map_err(|e| {
-                ProtocolError::RecordNotStored(
-                    pretty_key.clone(),
-                    format!("Payment parent Tx invalid: {e:?}"),
-                )
-            })?;
-        }
+        // unpack transfer
+        trace!("Unpacking incoming Transfers for record {pretty_key:?}");
+        let dbcs = self
+            .dbcs_from_payment(payment, &wallet, pretty_key.clone())
+            .await?;
 
         // check payment is sufficient
         let current_store_cost =
@@ -494,7 +427,7 @@ impl Node {
                 ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
             })?;
         let mut received_fee = Token::zero();
-        for dbc in our_output_dbcs.iter() {
+        for dbc in dbcs.iter() {
             let amount = dbc.token().map_err(|_| {
                 ProtocolError::RecordNotStored(
                     pretty_key.clone(),
@@ -520,7 +453,7 @@ impl Node {
 
         // deposit the DBCs in our wallet
         wallet
-            .deposit(&our_output_dbcs)
+            .deposit(&dbcs)
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
         wallet
             .store()
@@ -701,9 +634,7 @@ impl Node {
                             "Checking parent input at {:?} - {parent_dbc_address:?}",
                             parent_input.dbc_id(),
                         );
-                        let parent = self
-                            .get_spend_from_network(parent_dbc_address, false)
-                            .await?;
+                        let parent = self.network.get_spend(parent_dbc_address, false).await?;
                         trace!(
                             "Got parent input at {:?} - {parent_dbc_address:?}",
                             parent_input.dbc_id(),
@@ -721,7 +652,7 @@ impl Node {
                 // check the network if any spend has happened for the same dbc_id
                 // Does not return an error, instead the Vec<SignedSpend> is returned.
                 debug!("Check if any spend exist for the same dbc_id {dbc_addr:?}");
-                let mut spends = match self.get_spend_from_network(dbc_addr, false).await {
+                let mut spends = match self.network.get_spend(dbc_addr, false).await {
                     Ok(spend) => {
                         debug!("Got spend from network for the same dbc_id");
                         vec![spend]
