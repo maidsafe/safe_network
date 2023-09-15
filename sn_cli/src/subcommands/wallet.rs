@@ -8,12 +8,11 @@
 
 use clap::Parser;
 use color_eyre::{
-    eyre::{bail, eyre, WrapErr},
-    Result, Section,
+    eyre::{bail, eyre},
+    Result,
 };
 use sn_client::{Client, Files, WalletClient};
 use sn_dbc::Token;
-use sn_protocol::storage::ChunkAddress;
 use sn_transfers::wallet::{parse_public_address, LocalWallet};
 use std::{
     collections::BTreeMap,
@@ -124,8 +123,21 @@ pub(crate) async fn wallet_cmds(
 ) -> Result<()> {
     match cmds {
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
-        WalletCmds::Pay { path, batch_size } => {
-            chunk_and_pay_for_storage(client, root_dir, &path, verify_store, batch_size).await?;
+        WalletCmds::Pay {
+            path,
+            batch_size: _,
+        } => {
+            let chunked_files = chunk_path(client, root_dir, &path).await?;
+
+            let all_chunks: Vec<_> = chunked_files
+                .values()
+                .flat_map(|chunked_file| &chunked_file.chunks)
+                .map(|(n, _)| *n)
+                .collect();
+
+            let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
+            // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
+            file_api.pay_for_chunks(all_chunks, verify_store).await?;
         }
         cmd => {
             return Err(eyre!(
@@ -271,22 +283,14 @@ pub(super) struct ChunkedFile {
     pub chunks: Vec<(XorName, PathBuf)>,
 }
 
-pub(super) async fn chunk_and_pay_for_storage(
+pub(super) async fn chunk_path(
     client: &Client,
     root_dir: &Path,
     files_path: &Path,
-    verify_store: bool,
-    batch_size: usize,
 ) -> Result<BTreeMap<XorName, ChunkedFile>> {
     trace!("Starting to chunk_and_pay_for_storage");
 
     let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
-    let mut wallet_client = file_api
-        .wallet()
-        .wrap_err("Unable to read wallet file in {root_dir:?}")
-        .suggestion(
-            "If you have an old wallet file, it may no longer be compatible. Try removing it",
-        )?;
 
     // Get the list of Chunks addresses from the files found at 'files_path'
     let chunks_dir = std::env::temp_dir();
@@ -316,52 +320,5 @@ pub(super) async fn chunk_and_pay_for_storage(
         bail!("The provided path does not contain any file. Please check your path!\nExiting...");
     }
 
-    println!(
-        "Making payment for {num_of_chunks} Chunks that belong to {} file/s.",
-        chunked_files.len()
-    );
-
-    let mut chunks: Vec<_> = chunked_files
-        .values()
-        .flat_map(|chunked_file| &chunked_file.chunks)
-        .map(|(name, _)| *name)
-        .collect();
-    let mut total_cost = Token::zero();
-    loop {
-        if chunks.is_empty() {
-            break;
-        } else {
-            let size = std::cmp::min(batch_size, chunks.len());
-            let batches: Vec<_> = chunks.drain(..size).collect();
-            if let Some(cost) = total_cost.checked_add(
-                wallet_client
-                    .pay_for_storage(
-                        batches.iter().map(|name| {
-                            sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
-                        }),
-                        verify_store,
-                    )
-                    .await?,
-            ) {
-                total_cost = cost;
-            }
-        }
-    }
-
-    println!(
-        "Successfully made payment of {total_cost} for {} files.)",
-        chunked_files.len(),
-    );
-
-    if let Err(err) = wallet_client.store_local_wallet() {
-        println!("Failed to store wallet: {err:?}");
-    } else {
-        println!(
-            "Successfully stored wallet with cached payment proofs, and new balance {}.",
-            wallet_client.balance()
-        );
-    }
-
-    println!("Successfully paid for storage and generated the proofs. They can now be sent to the storage nodes when uploading paid chunks.");
     Ok(chunked_files)
 }

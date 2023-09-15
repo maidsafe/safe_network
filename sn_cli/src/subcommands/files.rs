@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::wallet::{chunk_and_pay_for_storage, ChunkedFile, BATCH_SIZE};
+use super::wallet::{chunk_path, ChunkedFile, BATCH_SIZE};
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{eyre::Error, Result};
@@ -101,40 +101,56 @@ async fn upload_files(
     let file_names_path = root_dir.join("uploaded_files");
 
     // Payment shall always be verified.
-    let chunks_to_upload =
-        chunk_and_pay_for_storage(&client, root_dir, &files_path, true, batch_size).await?;
-    let mut data_to_verify_or_repay = Vec::new();
+    let chunks_to_upload = chunk_path(&client, root_dir, &files_path).await?;
     let mut uploaded_files = Vec::new();
 
-    // Iterate over each file to be uploaded
+    // gather all chunks to upload
+    let mut chunks_for_upload = vec![];
+
+    // Iterate over each file to be uploaded so we can track it
     for (file_addr, ChunkedFile { file_name, chunks }) in chunks_to_upload {
         uploaded_files.push((file_addr, file_name));
-        // Clone necessary variables for each file upload
-        let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
 
-        let mut chunks_for_upload = chunks.clone();
-        let mut progress = 0;
-        {
-            loop {
-                let now = Instant::now();
-                if chunks_for_upload.is_empty() {
-                    break;
-                } else {
-                    let size = std::cmp::min(batch_size, chunks_for_upload.len());
-                    progress += size;
-                    let batches: Vec<_> = chunks_for_upload.drain(..size).collect();
-                    // Verification will be carried out later on, if being asked to.
-                    // Hence no need to carry out verification within the first attempt.
-                    let _res =
-                        upload_chunks_in_parallel(file_api.clone(), batches.clone(), false).await;
-
-                    let elapsed = now.elapsed();
-                    println!("After {elapsed:?}, uploaded {size:?} chunks, current progress is {progress}/{}. ", chunks.len());
-                }
-            }
-        }
-        data_to_verify_or_repay.extend(chunks);
+        // lets put all chunks together for more efficient batching
+        chunks_for_upload.extend(chunks);
     }
+
+    let total_chunks_uploading = chunks_for_upload.len();
+
+    // take a clone of all uploads so we can verify them later
+    let mut data_to_verify_or_repay = chunks_for_upload.clone();
+
+    let mut progress = 0;
+    // Clone necessary variables for each file upload
+    let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
+    while !chunks_for_upload.is_empty() {
+        let now = Instant::now();
+        let size = std::cmp::min(batch_size, chunks_for_upload.len());
+        progress += size;
+        let chunk_batch: Vec<_> = chunks_for_upload.drain(..size).collect();
+
+        // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
+        file_api
+            .pay_for_chunks(chunk_batch.iter().map(|(name, _)| *name).collect(), true)
+            .await?;
+
+        let this_batch_size = chunk_batch.len();
+
+        // Verification will be carried out later on, if being asked to.
+        // Hence no need to carry out verification within the first attempt.
+        let _res = upload_chunks_in_parallel(file_api.clone(), chunk_batch, false).await;
+
+        let elapsed = now.elapsed();
+        println!(
+            "After {elapsed:?}, uploaded {size:?} chunks, current progress is {progress}/{}. ",
+            total_chunks_uploading
+        );
+        info!(
+            "After {elapsed:?}, uploaded {size:?} chunks, current progress is {progress}/{}. ",
+            total_chunks_uploading
+        );
+    }
+    // data_to_verify_or_repay.extend(chunks);
 
     println!("First round of upload completed, verifying and repaying if required...");
 
