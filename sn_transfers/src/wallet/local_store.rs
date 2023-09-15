@@ -11,7 +11,7 @@ use super::{
         create_received_dbcs_dir, get_unconfirmed_txs, get_wallet, load_dbc, load_received_dbcs,
         store_created_dbcs, store_unconfirmed_txs, store_wallet,
     },
-    Error, KeyLessWallet, Result, Transfer, Utxo,
+    KeyLessWallet, Result, Transfer, Utxo,
 };
 
 use crate::client_transfers::{
@@ -22,7 +22,7 @@ use sn_dbc::{
     random_derivation_index, Dbc, DbcId, DerivationIndex, DerivedKey, Hash, MainKey, PublicAddress,
     Token,
 };
-use sn_protocol::{storage::DbcAddress, NetworkAddress};
+use sn_protocol::NetworkAddress;
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -343,38 +343,6 @@ impl LocalWallet {
         }
 
         Ok(())
-    }
-
-    /// Creates Transfers from the given dbcs
-    /// Grouping DBCs by recipient into different transfers
-    /// This Transfer can be sent safely to the recipients as all data in it is encrypted
-    /// The recipients can then decrypt the data and use it to verify and reconstruct the DBCs
-    pub fn create_transfers(&self, dbcs: Vec<Dbc>) -> Result<Vec<Transfer>> {
-        let mut utxos_map: BTreeMap<PublicAddress, Vec<Utxo>> = BTreeMap::new();
-        for dbc in dbcs {
-            let recipient = dbc.secrets.public_address;
-            let derivation_index = dbc.derivation_index();
-            let parent_spend_addr = match dbc.signed_spends.iter().next() {
-                Some(s) => DbcAddress::from_dbc_id(s.dbc_id()),
-                None => {
-                    warn!(
-                        "Skipping DBC {dbc:?} while creating Transfer as it has no parent spends."
-                    );
-                    continue;
-                }
-            };
-
-            let u = Utxo::new(derivation_index, parent_spend_addr);
-            utxos_map.entry(recipient).or_insert_with(Vec::new).push(u);
-        }
-
-        let mut transfers = Vec::new();
-        for (recipient, utxos) in utxos_map {
-            let t =
-                Transfer::create(utxos, recipient.0).map_err(|_| Error::UtxoEncryptionFailed)?;
-            transfers.push(t)
-        }
-        Ok(transfers)
     }
 
     pub fn unwrap_transfer(&self, transfer: Transfer) -> Result<Vec<Utxo>> {
