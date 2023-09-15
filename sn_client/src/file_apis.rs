@@ -103,10 +103,7 @@ impl Files {
         address: ChunkAddress,
         position: usize,
         length: usize,
-    ) -> Result<Bytes>
-    where
-        Self: Sized,
-    {
+    ) -> Result<Bytes> {
         trace!("Reading {length} bytes at: {address:?}, starting from position: {position}");
         let chunk = self.client.get_chunk(address).await?;
 
