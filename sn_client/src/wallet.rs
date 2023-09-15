@@ -60,7 +60,7 @@ impl WalletClient {
     /// Get the payment transfers for a given network address
     pub fn get_payment_transfers(&self, address: &NetworkAddress) -> Result<Vec<Transfer>> {
         let dbcs = self.wallet.get_payment_dbcs(address);
-        self.wallet.create_transfers(dbcs)
+        Transfer::transfers_from_dbcs(dbcs)
     }
 
     /// Send tokens to another wallet.
