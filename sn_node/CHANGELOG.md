@@ -1253,6 +1253,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(client)* remove unused wallet_client
 
+## [0.90.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.9...sn_node-v0.90.10) - 2023-09-15
+
+### Other
+- refine log levels
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
