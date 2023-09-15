@@ -6,14 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::wallet::{chunk_path, ChunkedFile, BATCH_SIZE};
+use super::wallet::{ChunkedFile, BATCH_SIZE};
 use bytes::Bytes;
 use clap::Parser;
-use color_eyre::{eyre::Error, Result};
+use color_eyre::{
+    eyre::{bail, Error},
+    Result,
+};
 use libp2p::futures::future::join_all;
 use sn_client::{Client, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use std::{
+    collections::BTreeMap,
     fs,
     path::{Path, PathBuf},
     time::{Duration, Instant},
@@ -82,6 +86,48 @@ pub(crate) async fn files_cmds(
         }
     };
     Ok(())
+}
+
+pub(super) async fn chunk_path(
+    client: &Client,
+    root_dir: &Path,
+    files_path: &Path,
+) -> Result<BTreeMap<XorName, ChunkedFile>> {
+    trace!("Starting to chunk {files_path:?}");
+
+    let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
+
+    // Get the list of Chunks addresses from the files found at 'files_path'
+    let chunks_dir = std::env::temp_dir();
+    let mut num_of_chunks = 0;
+    let mut chunked_files = BTreeMap::new();
+    for entry in WalkDir::new(files_path).into_iter().flatten() {
+        if entry.file_type().is_file() {
+            let file_name = if let Some(file_name) = entry.file_name().to_str() {
+                file_name.to_string()
+            } else {
+                println!(
+                    "Skipping file {:?} as it is not valid UTF-8.",
+                    entry.file_name()
+                );
+                continue;
+            };
+
+            let (file_addr, _size, chunks) =
+                file_api.chunk_file(entry.path(), chunks_dir.as_path())?;
+            num_of_chunks += chunks.len();
+
+            chunked_files.insert(file_addr, ChunkedFile { file_name, chunks });
+        }
+    }
+
+    if chunked_files.is_empty() {
+        bail!("The provided path does not contain any file. Please check your path!\nExiting...");
+    }
+
+    println!("Total number of chunks to be stored: {}", num_of_chunks);
+
+    Ok(chunked_files)
 }
 
 /// Given a directory, upload all files contained
