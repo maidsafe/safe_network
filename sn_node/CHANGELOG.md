@@ -1248,6 +1248,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(rewards)* e2e test to verify nodes rewards when storing Registers
 - *(storage)* verify mutation of unpaid Register also fails
 
+## [0.90.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.8...sn_node-v0.90.9) - 2023-09-15
+
+### Other
+- *(client)* remove unused wallet_client
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
