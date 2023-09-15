@@ -24,6 +24,7 @@ pub struct Transfer {
 }
 
 impl Transfer {
+    /// This function is used to create Transfer from DBCs, can be done offline, and sent to the recipient.
     /// Creates Transfers from the given dbcs
     /// Grouping DBCs by recipient into different transfers
     /// This Transfer can be sent safely to the recipients as all data in it is encrypted
