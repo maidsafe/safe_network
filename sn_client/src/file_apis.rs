@@ -213,7 +213,7 @@ impl Files {
             )
             .await?;
         println!(
-            "Successfully made payment of {cost} for {} chunks.)",
+            "Successfully made payment of {cost} for {} chunks.",
             chunks.len(),
         );
 
