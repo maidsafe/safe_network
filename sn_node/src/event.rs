@@ -59,6 +59,13 @@ pub enum NodeEvent {
     ChannelClosed,
     /// AutoNAT discovered we are behind a NAT, thus private.
     BehindNat,
+    /// Gossipsub message received
+    Gossipsub {
+        /// Topic the message was published on
+        topic: String,
+        /// The raw bytes of the received message
+        msg: Vec<u8>,
+    },
 }
 
 impl NodeEvent {

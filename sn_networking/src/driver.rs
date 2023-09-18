@@ -102,6 +102,7 @@ pub(super) struct NodeBehaviour {
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
     pub(super) autonat: Toggle<autonat::Behaviour>,
+    pub(super) gossipsub: libp2p::gossipsub::Behaviour,
 }
 
 #[derive(Debug)]
@@ -359,6 +360,24 @@ impl NetworkBuilder {
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
 
+        // Gossipsub behaviour
+        // set default parameters for gossipsub
+        let gossipsub_config = libp2p::gossipsub::Config::default();
+
+        // Set the message authenticity - Here we expect the publisher
+        // to sign the message with their key.
+        let message_authenticity =
+            libp2p::gossipsub::MessageAuthenticity::Signed(self.keypair.clone());
+
+        // build a gossipsub network behaviour
+        let mut gossipsub: libp2p::gossipsub::Behaviour =
+            libp2p::gossipsub::Behaviour::new(message_authenticity, gossipsub_config).unwrap();
+
+        // Create a Gossipsub topic
+        let topic = libp2p::gossipsub::IdentTopic::new("example-topic");
+        // subscribe to the topic
+        gossipsub.subscribe(&topic).unwrap();
+
         if !self.local {
             debug!("Preventing non-global dials");
             // Wrap TCP or UDP in a transport that prevents dialing local addresses.
@@ -400,6 +419,7 @@ impl NetworkBuilder {
             #[cfg(feature = "local-discovery")]
             mdns,
             autonat,
+            gossipsub,
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
