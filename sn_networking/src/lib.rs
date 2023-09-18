@@ -322,7 +322,9 @@ impl Network {
             _permit = None;
 
             // wait for a bit before re-trying
-            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+            if re_attempt {
+                tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+            }
         }
 
         Err(Error::RecordNotFound)

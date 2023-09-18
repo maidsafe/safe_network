@@ -211,6 +211,7 @@ async fn upload_files(
 
         let mut data_to_verify_or_repay = chunks_to_upload;
         while !data_to_verify_or_repay.is_empty() {
+            tokio::time::sleep(Duration::from_secs(3)).await;
             trace!(
                 "Verifying and potential topping up payment of {:?} chunks",
                 data_to_verify_or_repay.len()
@@ -218,7 +219,6 @@ async fn upload_files(
             data_to_verify_or_repay =
                 verify_and_repay_if_needed(file_api.clone(), data_to_verify_or_repay, batch_size)
                     .await?;
-            tokio::time::sleep(Duration::from_secs(3)).await;
         }
     }
 
