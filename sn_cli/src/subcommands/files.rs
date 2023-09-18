@@ -170,7 +170,6 @@ async fn upload_files(
     // Clone necessary variables for each file upload
     let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
 
-    let mut ongoing_uploads = Vec::new();
     for chunks_batch in chunks_to_upload.chunks(batch_size) {
         let now = Instant::now();
         progress += chunks_batch.len();
@@ -182,11 +181,16 @@ async fn upload_files(
 
         // Verification will be carried out later on, if being asked to.
         // Hence no need to carry out verification within the first attempt.
-        ongoing_uploads.extend(upload_chunks_in_parallel(
+        // Just to check there were no odd errors during upload.
+        for result in join_all(upload_chunks_in_parallel(
             file_api.clone(),
             chunks_batch.to_vec(),
             false,
-        ));
+        ))
+        .await
+        {
+            result??;
+        }
 
         let elapsed = now.elapsed();
         println!(
@@ -197,14 +201,6 @@ async fn upload_files(
             "After {elapsed:?}, uploaded {:?} chunks, current progress is {progress}/{total_chunks_uploading}. ",
             chunks_batch.len(),
         );
-    }
-
-    // Now we've batched all payments, we can await all uploads to happen in parallel
-    let upload_results = join_all(ongoing_uploads).await;
-
-    // lets check there were no odd errors during upload
-    for result in upload_results {
-        result??;
     }
 
     println!("First round of upload completed, verifying and repaying if required...");
@@ -338,6 +334,10 @@ async fn verify_and_repay_if_needed(
         }
     }
 
+    let elapsed = now.elapsed();
+    println!("After {elapsed:?}, verified {total_chunks:?} chunks");
+    let now = Instant::now();
+
     let total_failed_chunks = failed_chunks
         .iter()
         .map(|(addr, path)| (*addr.xorname(), path.clone()))
@@ -350,7 +350,8 @@ async fn verify_and_repay_if_needed(
         return Ok(total_failed_chunks);
     }
 
-    println!("======= Verification: {} chunks were not stored in the network, repaying them in batches =============", failed_chunks.len());
+    let num_of_failed_chunks = failed_chunks.len();
+    println!("======= Verification: {num_of_failed_chunks} chunks were not stored in the network, repaying them in batches =============");
 
     // If there were any failed chunks, we need to repay them
     for failed_chunks_batch in failed_chunks.chunks(batch_size) {
@@ -393,14 +394,7 @@ async fn verify_and_repay_if_needed(
     }
 
     let elapsed = now.elapsed();
-    println!("After {elapsed:?}, verified {total_chunks:?} chunks");
-
-    if !total_failed_chunks.is_empty() {
-        println!(
-            "{} failed chunks were found, repaid & re-uploaded.",
-            total_failed_chunks.len()
-        );
-    }
+    println!("After {elapsed:?}, repaid and re-uploaded {num_of_failed_chunks:?} chunks");
 
     Ok(total_failed_chunks)
 }
