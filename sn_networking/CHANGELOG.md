@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.6...sn_networking-v0.6.7) - 2023-09-18
+
+### Added
+- generic transfer receipt
+
+### Other
+- add more docs
+
 ## [0.6.6](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.5...sn_networking-v0.6.6) - 2023-09-15
 
 ### Other

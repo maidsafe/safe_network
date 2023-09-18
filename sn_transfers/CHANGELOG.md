@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.14](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.13...sn_transfers-v0.11.14) - 2023-09-18
+
+### Added
+- serialisation for transfers for out of band sending
+- generic transfer receipt
+
+### Other
+- add more docs
+- add some docs
+
 ## [0.11.13](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.12...sn_transfers-v0.11.13) - 2023-09-15
 
 ### Other
