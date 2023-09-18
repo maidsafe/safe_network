@@ -335,6 +335,9 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                         break;
                     }
                 }
+                Ok(NodeEvent::Gossipsub {topic, msg}) => {
+                    println!(">>>> GOSSIP MSG: {topic} ====> {msg:?}",);
+                }
                 Ok(event) => {
                     /* we ignore other events */
                     info!("Currently ignored node event {event:?}");
