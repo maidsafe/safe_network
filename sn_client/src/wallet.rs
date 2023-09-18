@@ -133,19 +133,36 @@ impl WalletClient {
                 (content_addr, costs)
             });
         }
-        info!("Storecosts retrieved");
+
         while let Some(res) = tasks.join_next().await {
-            let (content_addr, amounts_to_pay) = match res {
-                Ok(c) => c,
-                Err(e) => return Err(Error::CouldNotGetStoreCost(e.to_string())),
-            };
-            payment_map.insert(content_addr, amounts_to_pay?);
+            // In case of cann't fetch cost from network for a content,
+            // just skip it as it will then get verification failure,
+            // and repay/re-upload will be triggered correspondently.
+            match res {
+                Ok((content_addr, amounts_to_pay)) => match amounts_to_pay {
+                    Ok(cost) => {
+                        let _ = payment_map.insert(content_addr, cost);
+                    }
+                    Err(err) => {
+                        warn!("Cannot get store cost for {content_addr:?} with error {err:?}");
+                        println!("Cannot get store cost for {content_addr:?} with error {err:?}");
+                    }
+                },
+                Err(e) => {
+                    warn!("Cannot get a store cost for a content with error {e:?}");
+                    println!("Cannot get a store cost for a content with error {e:?}");
+                }
+            }
         }
 
-        let cost = self.pay_for_records(payment_map, verify_store).await?;
+        info!("Storecosts retrieved");
 
-        if let Some(cost) = total_cost.checked_add(cost) {
-            total_cost = cost;
+        if !payment_map.is_empty() {
+            let cost = self.pay_for_records(payment_map, verify_store).await?;
+
+            if let Some(cost) = total_cost.checked_add(cost) {
+                total_cost = cost;
+            }
         }
 
         Ok(total_cost)
