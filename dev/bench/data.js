@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695048874899,
+  "lastUpdate": 1695048878292,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -18814,6 +18814,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 185,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "b84fe6b64c992a3f277df609af0c246bfa1a6069",
+          "message": "fix: avoid verification too close to put; remove un-necessary wait for put",
+          "timestamp": "2023-09-18T13:43:51Z",
+          "tree_id": "596f8096ef20f8f0f129a65e1948742636fbd0f1",
+          "url": "https://github.com/maidsafe/safe_network/commit/b84fe6b64c992a3f277df609af0c246bfa1a6069"
+        },
+        "date": 1695048877238,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 222.25716,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 170,
             "unit": "MB"
           }
         ]
