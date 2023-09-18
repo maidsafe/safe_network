@@ -212,6 +212,7 @@ impl Network {
         // loop over responses, generating an average fee and storing all responses along side
         let mut all_costs = vec![];
         for response in responses.into_iter().flatten() {
+            debug!("StoreCostReq received response: {:?}", response);
             if let Response::Query(QueryResponse::GetStoreCost {
                 store_cost: Ok(cost),
                 payment_address,
@@ -223,7 +224,7 @@ impl Network {
             }
         }
 
-        get_fees_from_store_cost_quotes(all_costs)
+        get_fees_from_store_cost_responses(all_costs)
     }
 
     /// Get the Record from the network
@@ -609,7 +610,7 @@ impl Network {
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
 #[allow(clippy::result_large_err)]
-fn get_fees_from_store_cost_quotes(
+fn get_fees_from_store_cost_responses(
     mut all_costs: Vec<(PublicAddress, Token)>,
 ) -> Result<Vec<(PublicAddress, Token)>> {
     // TODO: we should make this configurable based upon data type
@@ -627,7 +628,7 @@ fn get_fees_from_store_cost_quotes(
     all_costs.truncate(desired_quote_count);
 
     if all_costs.len() < desired_quote_count {
-        return Err(Error::NotEnoughCostQuotes);
+        return Err(Error::NotEnoughCostPricesReturned);
     }
 
     info!(
@@ -682,7 +683,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_fee_from_store_cost_quotes() -> Result<()> {
+    fn test_get_fee_from_store_cost_responses() -> Result<()> {
         // for a vec of different costs of CLOSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
@@ -690,7 +691,7 @@ mod tests {
             let addr = PublicAddress::new(bls::SecretKey::random().public_key());
             costs.push((addr, Token::from_nano(i as u64)));
         }
-        let prices = get_fees_from_store_cost_quotes(costs)?;
+        let prices = get_fees_from_store_cost_responses(costs)?;
         let total_price: u64 = prices
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
@@ -708,7 +709,8 @@ mod tests {
     }
     #[test]
     #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
-    fn test_get_any_fee_from_store_cost_quotes_errs_if_insufficient_quotes() -> eyre::Result<()> {
+    fn test_get_any_fee_from_store_cost_responses_errs_if_insufficient_responses(
+    ) -> eyre::Result<()> {
         // for a vec of different costs of CLOSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
@@ -717,27 +719,27 @@ mod tests {
             costs.push((addr, Token::from_nano(i as u64)));
         }
 
-        if get_fees_from_store_cost_quotes(costs).is_ok() {
-            bail!("Should have errored as we have too few quotes")
+        if get_fees_from_store_cost_responses(costs).is_ok() {
+            bail!("Should have errored as we have too few responses")
         }
 
         Ok(())
     }
     #[test]
     #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
-    fn test_get_some_fee_from_store_cost_quotes_errs_if_sufficient() -> eyre::Result<()> {
+    fn test_get_some_fee_from_store_cost_responses_errs_if_sufficient() -> eyre::Result<()> {
         // for a vec of different costs of CLOSE_GROUP size
-        let quotes_count = CLOSE_GROUP_SIZE as u64 - 1;
+        let responses_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
-        for i in 0..quotes_count {
+        for i in 0..responses_count {
             // push random PublicAddress and Token
             let addr = PublicAddress::new(bls::SecretKey::random().public_key());
             costs.push((addr, Token::from_nano(i)));
             println!("price added {}", i);
         }
 
-        let prices = match get_fees_from_store_cost_quotes(costs) {
-            Err(_) => bail!("Should not have errored as we have enough quotes"),
+        let prices = match get_fees_from_store_cost_responses(costs) {
+            Err(_) => bail!("Should not have errored as we have enough responses"),
             Ok(cost) => cost,
         };
 

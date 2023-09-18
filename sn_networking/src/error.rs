@@ -27,9 +27,9 @@ pub enum Error {
     CouldNotAcquireSemaphorePermit(#[from] tokio::sync::AcquireError),
 
     #[error(
-        "Not enough store cost quotes returned from the network to ensure a valid fee is paid"
+        "Not enough store cost prices returned from the network to ensure a valid fee is paid"
     )]
-    NotEnoughCostQuotes,
+    NotEnoughCostPricesReturned,
 
     #[error("Close group size must be a non-zero usize")]
     InvalidCloseGroupSize,
