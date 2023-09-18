@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695046144929,
+  "lastUpdate": 1695048565577,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8068,6 +8068,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.770706586793096,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "b84fe6b64c992a3f277df609af0c246bfa1a6069",
+          "message": "fix: avoid verification too close to put; remove un-necessary wait for put",
+          "timestamp": "2023-09-18T13:43:51Z",
+          "tree_id": "596f8096ef20f8f0f129a65e1948742636fbd0f1",
+          "url": "https://github.com/maidsafe/safe_network/commit/b84fe6b64c992a3f277df609af0c246bfa1a6069"
+        },
+        "date": 1695048563400,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.0965454073033661,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5260290085994813,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 7.033872610943697,
             "unit": "MiB/s"
           }
         ]
