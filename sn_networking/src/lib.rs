@@ -426,8 +426,12 @@ impl Network {
         drop(_permit);
 
         if verify_store.is_some() {
-            // small wait before we attempt to verify
-            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+            // Small wait before we attempt to verify.
+            // There will be `re-attempts` to be carried out within the later step anyway.
+            tokio::time::sleep(std::time::Duration::from_millis(
+                REVERIFICATION_WAIT_TIME_S.as_millis() as u64 / 6,
+            ))
+            .await;
             trace!("attempting to verify {pretty_key:?}");
 
             // Verify the record is stored, requiring re-attempts
