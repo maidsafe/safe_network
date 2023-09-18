@@ -227,6 +227,12 @@ impl Network {
         get_fees_from_store_cost_responses(all_costs)
     }
 
+    pub fn publish_on_topic(&self, msg: Vec<u8>) -> Result<()> {
+        let topic_id = libp2p::gossipsub::IdentTopic::new("example-topic");
+        self.send_swarm_cmd(SwarmCmd::GossipMsg { topic_id, msg })?;
+        Ok(())
+    }
+
     /// Get the Record from the network
     /// Carry out re-attempts if required
     /// In case a target_record is provided, only return when fetched target.

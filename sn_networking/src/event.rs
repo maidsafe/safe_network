@@ -58,6 +58,7 @@ pub(super) enum NodeEvent {
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
     Autonat(autonat::Event),
+    Gossipsub(libp2p::gossipsub::Event),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -88,6 +89,12 @@ impl From<libp2p::identify::Event> for NodeEvent {
 impl From<autonat::Event> for NodeEvent {
     fn from(event: autonat::Event) -> Self {
         NodeEvent::Autonat(event)
+    }
+}
+
+impl From<libp2p::gossipsub::Event> for NodeEvent {
+    fn from(event: libp2p::gossipsub::Event) -> Self {
+        NodeEvent::Gossipsub(event)
     }
 }
 
@@ -127,6 +134,13 @@ pub enum NetworkEvent {
     NatStatusChanged(NatStatus),
     /// Report unverified record
     UnverifiedRecord(Record),
+    /// Gossipsub message received
+    Gossipsub {
+        /// Topic the message was published on
+        topic: String,
+        /// The raw bytes of the received message
+        msg: Vec<u8>,
+    },
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -161,6 +175,9 @@ impl Debug for NetworkEvent {
             NetworkEvent::UnverifiedRecord(record) => {
                 let pretty_key = PrettyPrintRecordKey::from(record.key.clone());
                 write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
+            }
+            NetworkEvent::Gossipsub { topic, .. } => {
+                write!(f, "NetworkEvent::Gossipsub({topic})")
             }
         }
     }
@@ -313,6 +330,14 @@ impl SwarmDriver {
                         NatStatus::Unknown => {}
                     };
                 }
+            },
+            SwarmEvent::Behaviour(NodeEvent::Gossipsub(event)) => match event {
+                libp2p::gossipsub::Event::Message { message, .. } => {
+                    let topic = message.topic.into_string();
+                    let msg = message.data;
+                    self.send_event(NetworkEvent::Gossipsub { topic, msg });
+                }
+                other => trace!("Gossipsub Event has been ignored: {other:?}"),
             },
             SwarmEvent::NewListenAddr { address, .. } => {
                 let local_peer_id = *self.swarm.local_peer_id();

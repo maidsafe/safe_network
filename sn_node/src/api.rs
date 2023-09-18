@@ -81,12 +81,12 @@ impl RunningNode {
 impl Node {
     /// Asynchronously runs a new node instance, setting up the swarm driver,
     /// creating a data storage, and handling network events. Returns the
-    /// created node and a `NodeEventsChannel` for listening to node-related
-    /// events.
+    /// created `RunningNode` which contians a `NodeEventsChannel` for listening
+    /// to node-related events.
     ///
     /// # Returns
     ///
-    /// A tuple containing a `Node` instance and a `NodeEventsChannel`.
+    /// A `RunningNode` instance.
     ///
     /// # Errors
     ///
@@ -224,7 +224,8 @@ impl Node {
                 NetworkEvent::PeerAdded(_)
                 | NetworkEvent::PeerRemoved(_)
                 | NetworkEvent::NewListenAddr(_)
-                | NetworkEvent::NatStatusChanged(_) => break,
+                | NetworkEvent::NatStatusChanged(_)
+                | NetworkEvent::Gossipsub { .. } => break,
             }
         }
         trace!("Handling NetworkEvent {event:?}");
@@ -298,6 +299,10 @@ impl Node {
                         trace!("UnverifiedRecord {key} failed to be stored with error {err:?}.")
                     }
                 }
+            }
+            NetworkEvent::Gossipsub { topic, msg } => {
+                self.events_channel
+                    .broadcast(NodeEvent::Gossipsub { topic, msg });
             }
         }
     }
