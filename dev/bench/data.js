@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695026676152,
+  "lastUpdate": 1695026678481,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -18508,6 +18508,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 153,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "fb4ff0378587747165dab9a69f8fa1c961f786eb",
+          "message": "chore(client): simplify API",
+          "timestamp": "2023-09-18T07:08:06Z",
+          "tree_id": "4abc93b4f1de903ede5512f54b4f728c15363230",
+          "url": "https://github.com/maidsafe/safe_network/commit/fb4ff0378587747165dab9a69f8fa1c961f786eb"
+        },
+        "date": 1695026677593,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 229.87572,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 179,
             "unit": "MB"
           }
         ]
