@@ -189,7 +189,7 @@ async fn upload_files(
         ))
         .await
         {
-            result??;
+            let _ = result?;
         }
 
         let elapsed = now.elapsed();
