@@ -6,32 +6,27 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::path::PathBuf;
-
-use crate::WalletClient;
-
 use super::{
     chunks::{to_chunk, DataMapLevel, Error, SmallFile},
     error::Result,
-    Client,
+    Client, WalletClient,
 };
-
+use bincode::deserialize;
+use bytes::Bytes;
+use futures::{future::join_all, stream::FuturesOrdered, StreamExt};
+use itertools::Itertools;
+use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
 use self_encryption::{decrypt_full_set, StreamSelfDecryptor};
 use sn_protocol::{
     storage::{Chunk, ChunkAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::wallet::LocalWallet;
-
-use bincode::deserialize;
-use bytes::Bytes;
-use futures::future::join_all;
-use itertools::Itertools;
-use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
 use std::{
     fs::{self, create_dir_all, File},
     io::{Read, Write},
-    path::Path,
+    path::{Path, PathBuf},
+    time::Instant,
 };
 use tempfile::tempdir;
 use tokio::{sync::OwnedSemaphorePermit, task};
@@ -274,31 +269,42 @@ impl Files {
 
         let expected_count = data_map.infos().len();
         let mut missing_chunks = Vec::new();
+        let mut ordered_read_futures = FuturesOrdered::new();
+        let now = Instant::now();
 
-        for (index, chunk_info) in data_map.infos().iter().enumerate() {
-            match self
-                .client
-                .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
-                .await
-            {
+        for chunk_info in data_map.infos().iter() {
+            let dst_hash = chunk_info.dst_hash;
+            ordered_read_futures.push_back(async move {
+                (
+                    dst_hash,
+                    self.client.get_chunk(ChunkAddress::new(dst_hash)).await,
+                )
+            })
+        }
+
+        // The futures are executed concurrently, but the result is returned in the order in which they were inserted.
+        let mut index = 0;
+        while let Some((dst_hash, result)) = ordered_read_futures.next().await {
+            match result {
                 Ok(chunk) => {
                     let encrypted_chunk = EncryptedChunk {
-                        index: chunk_info.index,
+                        index,
                         content: chunk.value().clone(),
                     };
                     let _ = decryptor.next_encrypted(encrypted_chunk)?;
                 }
                 Err(err) => {
-                    warn!(
-                        "Reading chunk {} from network, resulted in error {err:?}.",
-                        chunk_info.dst_hash
-                    );
-                    missing_chunks.push(chunk_info.dst_hash);
+                    warn!("Reading chunk {dst_hash:?} from network, resulted in error {err:?}.");
+                    missing_chunks.push(dst_hash);
                 }
             }
+            index += 1;
             info!("Client download progress {index:?}/{expected_count:?}");
             println!("Client download progress {index:?}/{expected_count:?}");
         }
+
+        let elapsed = now.elapsed();
+        println!("Client downloaded file in {elapsed:?}");
 
         if !missing_chunks.is_empty() {
             Err(Error::NotEnoughChunksRetrieved {
