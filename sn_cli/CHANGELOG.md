@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.43](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.42...sn_cli-v0.81.43) - 2023-09-18
+
+### Fixed
+- *(cli)* repay and upload after verifying all the chunks
+
+### Other
+- *(cli)* use iter::chunks() API to batch and pay for our chunks
+
 ## [0.81.42](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.41...sn_cli-v0.81.42) - 2023-09-15
 
 ### Added
