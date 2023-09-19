@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - run: sudo apt-get install protobuf-compiler
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -53,6 +54,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - run: sudo apt-get install protobuf-compiler
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -60,7 +63,8 @@ jobs:
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
-      
+      - run: sudo apt-get install protobuf-compiler
+
       - name: Check formatting
         run: cargo fmt --all -- --check
       
@@ -88,6 +92,19 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v3
+
+      - name: Install Protobuf Compiler (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Install Protobuf Compiler (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install protobuf
+
+      - name: Install Protobuf Compiler (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install protoc
+
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -134,6 +151,20 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v3
+
+      - name: Install Protobuf Compiler (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Install Protobuf Compiler (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install protobuf
+
+      - name: Install Protobuf Compiler (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install protoc
+
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -225,6 +256,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Install Protobuf Compiler (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Install Protobuf Compiler (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install protobuf
+
+      - name: Install Protobuf Compiler (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install protoc
+
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -302,6 +346,18 @@ jobs:
             node_data_path: /Users/runner/Library/Application Support/safe/node
     steps:
       - uses: actions/checkout@v3
+
+      - name: Install Protobuf Compiler (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Install Protobuf Compiler (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install protobuf
+
+      - name: Install Protobuf Compiler (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install protoc
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -423,6 +479,19 @@ jobs:
         - uses: dtolnay/rust-toolchain@stable
           with:
             toolchain: stable
+
+        - name: Install Protobuf Compiler (Ubuntu)
+          if: matrix.os == 'ubuntu-latest'
+          run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+  
+        - name: Install Protobuf Compiler (macOS)
+          if: matrix.os == 'macos-latest'
+          run: brew install protobuf
+  
+        - name: Install Protobuf Compiler (Windows)
+          if: matrix.os == 'windows-latest'
+          run: choco install protoc
+    
 
         - uses: Swatinem/rust-cache@v2
 

@@ -43,6 +43,9 @@ jobs:
       # It's quite slow to install just by building it, but here we need a cross-platform solution.
       - shell: bash
         run: cargo install just
+
+      - run: sudo apt-get install protobuf-compiler
+
       - shell: bash
         run: just build-release-artifacts "${{ matrix.target }}"
       - uses: actions/upload-artifact@main
