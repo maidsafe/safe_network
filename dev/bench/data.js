@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695113347330,
+  "lastUpdate": 1695121336309,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8224,6 +8224,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.935900949774849,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "310879f528079a6603a8604a6dd6f739e35785c1",
+          "message": "chore: error handling when failed fetch store cost",
+          "timestamp": "2023-09-19T10:01:59Z",
+          "tree_id": "4fdbc95567f0c2209203676d2cd23f22b23ec928",
+          "url": "https://github.com/maidsafe/safe_network/commit/310879f528079a6603a8604a6dd6f739e35785c1"
+        },
+        "date": 1695121334765,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10245953146936995,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5423519723570729,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.773980919779913,
             "unit": "MiB/s"
           }
         ]
