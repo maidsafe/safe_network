@@ -8,14 +8,15 @@
 
 use super::{
     error::{Error, Result},
-    Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, ClientRegister,
+    Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, ClientRegister, WalletClient,
 };
-
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
-use libp2p::{kad::Record, Multiaddr};
-use sn_dbc::{Dbc, DbcId, PublicAddress, SignedSpend, Token};
-use sn_networking::{multiaddr_is_global, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
+use libp2p::{identity::Keypair, kad::Record, Multiaddr};
+#[cfg(feature = "open-metrics")]
+use prometheus_client::registry::Registry;
+use sn_dbc::{DbcId, PublicAddress, SignedSpend, Token};
+use sn_networking::{multiaddr_is_global, NetworkBuilder, NetworkEvent, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
     storage::{
@@ -24,8 +25,9 @@ use sn_protocol::{
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
+
 use sn_registers::SignedRegister;
-use sn_transfers::client_transfers::SpendRequest;
+use sn_transfers::{client_transfers::SpendRequest, wallet::Transfer};
 use std::time::Duration;
 use tokio::{sync::OwnedSemaphorePermit, task::spawn};
 use tracing::trace;
@@ -55,11 +57,19 @@ impl Client {
         info!("Startup a client with peers {peers:?} and local {local:?} flag");
         info!("Starting Kad swarm in client mode...");
 
-        // use passed concurrency limit or default
-        let concurrency_limit = custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY);
+        let mut network_builder =
+            NetworkBuilder::new(Keypair::generate_ed25519(), local, std::env::temp_dir());
 
-        let (network, mut network_event_receiver, swarm_driver) =
-            SwarmDriver::new_client(local, req_response_timeout, concurrency_limit)?;
+        if let Some(request_timeout) = req_response_timeout {
+            network_builder.request_timeout(request_timeout);
+        }
+        network_builder
+            .concurrency_limit(custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY));
+
+        #[cfg(feature = "open-metrics")]
+        network_builder.metrics_registry(Registry::default());
+
+        let (network, mut network_event_receiver, swarm_driver) = network_builder.build_client()?;
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 
@@ -281,17 +291,18 @@ impl Client {
     pub async fn create_register(
         &self,
         meta: XorName,
+        wallet_client: &mut WalletClient,
         verify_store: bool,
     ) -> Result<ClientRegister> {
         info!("Instantiating a new Register replica with meta {meta:?}");
-        ClientRegister::create_online(self.clone(), meta, verify_store).await
+        ClientRegister::create_online(self.clone(), meta, wallet_client, verify_store).await
     }
 
     /// Store `Chunk` as a record.
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
-        payment: Vec<Dbc>,
+        payment: Vec<Transfer>,
         verify_store: bool,
         optional_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
@@ -305,9 +316,15 @@ impl Client {
             expires: None,
         };
 
+        let record_to_verify = if verify_store {
+            Some(record.clone())
+        } else {
+            None
+        };
+
         Ok(self
             .network
-            .put_record(record, verify_store, optional_permit)
+            .put_record(record, record_to_verify, optional_permit)
             .await?)
     }
 
@@ -346,7 +363,16 @@ impl Client {
             expires: None,
         };
 
-        Ok(self.network.put_record(record, verify_store, None).await?)
+        let record_to_verify = if verify_store {
+            Some(record.clone())
+        } else {
+            None
+        };
+
+        Ok(self
+            .network
+            .put_record(record, record_to_verify, None)
+            .await?)
     }
 
     /// Get a dbc spend from network
@@ -434,10 +460,24 @@ impl Client {
         &self,
         address: &NetworkAddress,
     ) -> Result<Vec<(PublicAddress, Token)>> {
-        trace!("Getting store cost at {address:?}");
-        Ok(self
+        let tolerance = 1.5;
+        trace!("Getting store cost at {address:?}, with tolerance of {tolerance} times the cost");
+
+        // Get the store costs from the network and map each token to `tolerance` * the token itself
+        let costs = self
             .network
             .get_store_costs_from_network(address.clone())
-            .await?)
+            .await?;
+        let adjusted_costs: Vec<(PublicAddress, Token)> = costs
+            .into_iter()
+            .map(|(address, token)| {
+                (
+                    address,
+                    Token::from_nano((token.as_nano() as f64 * tolerance) as u64),
+                )
+            })
+            .collect();
+
+        Ok(adjusted_costs)
     }
 }

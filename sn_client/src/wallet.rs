@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_transfers::client_transfers::SpendRequest;
+use sn_transfers::{client_transfers::SpendRequest, wallet::Transfer};
 
 use super::Client;
 
@@ -57,9 +57,10 @@ impl WalletClient {
         self.wallet.unconfirmed_txs()
     }
 
-    /// Get the payment dbc for a given network address
-    pub fn get_payment_dbcs(&self, address: &NetworkAddress) -> Vec<Dbc> {
-        self.wallet.get_payment_dbcs(address)
+    /// Get the payment transfers for a given network address
+    pub fn get_payment_transfers(&self, address: &NetworkAddress) -> Result<Vec<Transfer>> {
+        let dbcs = self.wallet.get_payment_dbcs(address);
+        Transfer::transfers_from_dbcs(dbcs)
     }
 
     /// Send tokens to another wallet.
@@ -108,7 +109,7 @@ impl WalletClient {
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     ///
-    /// Returns (Proofs and an Option around Storage Cost), storage cost is _per record_, and only returned if required for this operation
+    /// Returns storage cost, storage cost is _per record_, and it's zero if not required for this operation.
     ///
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_storage(
@@ -152,7 +153,7 @@ impl WalletClient {
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     ///
-    /// Returns DbcIds created for the payment and the total amount paid
+    /// Returns the total amount paid.
     ///
     /// This can optionally verify the store has been successful (this will attempt to GET the dbc from the network)
     pub async fn pay_for_records(
@@ -162,6 +163,7 @@ impl WalletClient {
     ) -> Result<Token> {
         // TODO:
         // Check for any existing payment DBCs, and use them if they exist, only topping up if needs be
+        let num_of_payments = all_data_payments.len();
 
         let now = Instant::now();
         let mut total_cost = Token::zero();
@@ -194,7 +196,7 @@ impl WalletClient {
         }
 
         let elapsed = now.elapsed();
-        println!("After {elapsed:?}, All transfers made for total payment of {total_cost:?} nano tokens. ");
+        println!("After {elapsed:?}, All transfers made for total payment of {total_cost:?} nano tokens for {num_of_payments:?} chunks. ");
 
         Ok(total_cost)
     }

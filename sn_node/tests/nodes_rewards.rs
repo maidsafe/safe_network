@@ -12,7 +12,12 @@ use common::{get_client_and_wallet, random_content};
 
 use sn_client::WalletClient;
 use sn_dbc::Token;
+use sn_protocol::{
+    storage::{ChunkAddress, RegisterAddress},
+    NetworkAddress,
+};
 use sn_transfers::wallet::LocalWallet;
+use xor_name::XorName;
 
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
@@ -22,28 +27,79 @@ use tokio::time::{sleep, Duration};
 async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let paying_wallet_balance = 10_000_000_000_333;
     let paying_wallet_dir = TempDir::new()?;
+    let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, _content_addr, chunks) =
-        random_content(&client, paying_wallet_dir.to_path_buf())?;
+    let (files_api, content_bytes, _content_addr, chunks) = random_content(
+        &client,
+        paying_wallet_dir.to_path_buf(),
+        chunks_dir.path().to_path_buf(),
+    )?;
 
     println!("Paying for {} random addresses...", chunks.len());
 
     let cost = wallet_client
-        .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
+        .pay_for_storage(
+            chunks
+                .into_iter()
+                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(name))),
+            true,
+        )
         .await?;
 
     let prev_rewards_balance = current_rewards_balance()?;
 
-    files_api
-        .upload_with_payments(content_bytes, &wallet_client, true)
-        .await?;
+    files_api.upload_with_payments(content_bytes, true).await?;
 
     // sleep for 1 second to allow nodes to process and store the payment
     sleep(Duration::from_secs(1)).await;
+
+    let new_rewards_balance = current_rewards_balance()?;
+
+    let expected_rewards_balance = prev_rewards_balance
+        .checked_add(cost)
+        .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
+
+    assert_eq!(expected_rewards_balance, new_rewards_balance);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn nodes_rewards_for_storing_registers() -> Result<()> {
+    let paying_wallet_balance = 10_000_000_000_444;
+    let paying_wallet_dir = TempDir::new()?;
+
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    println!("Paying for random Register address...");
+    let mut rng = rand::thread_rng();
+    let owner_pk = client.signer_pk();
+    let register_addr = XorName::random(&mut rng);
+
+    let cost = wallet_client
+        .pay_for_storage(
+            std::iter::once(NetworkAddress::RegisterAddress(RegisterAddress::new(
+                register_addr,
+                owner_pk,
+            ))),
+            true,
+        )
+        .await?;
+
+    let prev_rewards_balance = current_rewards_balance()?;
+
+    let _register = client
+        .create_register(register_addr, &mut wallet_client, false)
+        .await?;
+
+    // sleep for 10 second to allow nodes to process and store the payment
+    sleep(Duration::from_secs(10)).await;
 
     let new_rewards_balance = current_rewards_balance()?;
 

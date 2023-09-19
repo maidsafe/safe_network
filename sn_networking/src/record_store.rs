@@ -5,7 +5,7 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-use crate::{event::NetworkEvent, record_store_api::RecordStoreAPI};
+use crate::event::NetworkEvent;
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -97,7 +97,7 @@ impl NodeRecordStore {
 
         match fs::read(file_path) {
             Ok(value) => {
-                trace!("Retrieved record from disk! filename: {filename}");
+                debug!("Retrieved record from disk! filename: {filename}");
                 let record = Record {
                     key: key.clone(),
                     value,
@@ -170,15 +170,15 @@ impl NodeRecordStore {
     }
 }
 
-impl RecordStoreAPI for NodeRecordStore {
+impl NodeRecordStore {
     /// Returns `true` if the `Key` is present locally
-    fn contains(&self, key: &Key) -> bool {
+    pub(crate) fn contains(&self, key: &Key) -> bool {
         self.records.contains(key)
     }
 
     /// Returns the set of `NetworkAddress::RecordKey` held by the store
     /// Use `record_addresses_ref` to get a borrowed type
-    fn record_addresses(&self) -> HashSet<NetworkAddress> {
+    pub(crate) fn record_addresses(&self) -> HashSet<NetworkAddress> {
         self.records
             .iter()
             .map(|record_key| NetworkAddress::from_record_key(record_key.clone()))
@@ -187,13 +187,13 @@ impl RecordStoreAPI for NodeRecordStore {
 
     /// Returns the reference to the set of `NetworkAddress::RecordKey` held by the store
     #[allow(clippy::mutable_key_type)]
-    fn record_addresses_ref(&self) -> &HashSet<Key> {
+    pub(crate) fn record_addresses_ref(&self) -> &HashSet<Key> {
         &self.records
     }
 
     /// Warning: PUTs a `Record` to the store without validation
     /// Should be used in context where the `Record` is trusted
-    fn put_verified(&mut self, r: Record) -> Result<()> {
+    pub(crate) fn put_verified(&mut self, r: Record) -> Result<()> {
         let content_hash = XorName::from_content(&r.value);
         let record_key = PrettyPrintRecordKey::from(r.key.clone());
         trace!("PUT a verified Record: {record_key:?} (content_hash {content_hash:?})");
@@ -208,7 +208,7 @@ impl RecordStoreAPI for NodeRecordStore {
         tokio::spawn(async move {
             match fs::write(file_path, r.value) {
                 Ok(_) => {
-                    trace!("Wrote record {record_key:?} to disk! filename: {filename}");
+                    info!("Wrote record {record_key:?} to disk! filename: {filename}");
                 }
                 Err(err) => {
                     error!(
@@ -222,33 +222,46 @@ impl RecordStoreAPI for NodeRecordStore {
     }
 
     /// Calculate the cost to store data for our current store state
-    fn store_cost(&self) -> Token {
-        trace!("Record count is {:?}", self.records.len());
+    pub(crate) fn store_cost(&self) -> Token {
         let relevant_records_len = if let Some(distance_range) = self.distance_range {
-            self.records
-                .iter()
-                .filter(|key| {
-                    let kbucket_key = KBucketKey::from(key.to_vec());
-                    distance_range >= self.local_key.distance(&kbucket_key)
-                })
-                .count()
+            self.get_records_within_distance_range(&self.records, distance_range)
         } else {
-            // Otherwise we've no distance range set, so we actually don't know enough
-            // so we'll say we have MAX_RECORDS_COUNT and set a high price until we know
-            // more about our CLOSE_GROUP
+            warn!("No distance range set on record store. Returning MAX_RECORDS_COUNT for relevant records in store cost calculation.");
             MAX_RECORDS_COUNT
         };
 
-        trace!("Relevant records len is {:?}", relevant_records_len);
+        let cost = calculate_cost_for_relevant_records(relevant_records_len);
 
-        let cost = calculate_cost_at_step(relevant_records_len);
-
-        trace!("Cost is now {cost:?}");
+        debug!("Cost is now {cost:?}");
         Token::from_nano(cost)
     }
 
+    /// Calculate how many records are stored within a distance range
+    #[allow(clippy::mutable_key_type)]
+    pub fn get_records_within_distance_range(
+        &self,
+        records: &HashSet<Key>,
+        distance_range: Distance,
+    ) -> usize {
+        debug!(
+            "Total record count is {:?}. Distance is: {distance_range:?}",
+            self.records.len()
+        );
+
+        let relevant_records_len = records
+            .iter()
+            .filter(|key| {
+                let kbucket_key = KBucketKey::new(key.to_vec());
+                distance_range >= self.local_key.distance(&kbucket_key)
+            })
+            .count();
+
+        debug!("Relevant records len is {:?}", relevant_records_len);
+        relevant_records_len
+    }
+
     /// Setup the distance range.
-    fn set_distance_range(&mut self, distance_range: Distance) {
+    pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
         self.distance_range = Some(distance_range);
     }
 }
@@ -261,14 +274,13 @@ impl RecordStore for NodeRecordStore {
         // When a client calls GET, the request is forwarded to the nodes until one node returns
         // with the record. Thus a node can be bombarded with GET reqs for random keys. These can be safely
         // ignored if we don't have the record locally.
-        trace!(
-            "GET request for Record key: {:?}",
-            PrettyPrintRecordKey::from(k.clone())
-        );
+        let key = PrettyPrintRecordKey::from(k.clone());
         if !self.records.contains(k) {
-            trace!("Record not found locally");
+            trace!("Record not found locally: {key}");
             return None;
         }
+
+        debug!("GET request for Record key: {key}");
 
         Self::read_from_disk(k, &self.config.storage_dir)
     }
@@ -320,7 +332,7 @@ impl RecordStore for NodeRecordStore {
         let _handle = tokio::spawn(async move {
             match fs::remove_file(file_path) {
                 Ok(_) => {
-                    trace!("Removed record from disk! filename: {filename}");
+                    info!("Removed record from disk! filename: {filename}");
                 }
                 Err(err) => {
                     error!("Error while removing file. filename: {filename}, error: {err:?}");
@@ -360,30 +372,25 @@ pub struct ClientRecordStore {
     empty_record_addresses: HashSet<Key>,
 }
 
-impl RecordStoreAPI for ClientRecordStore {
-    fn contains(&self, _key: &Key) -> bool {
+impl ClientRecordStore {
+    pub(crate) fn contains(&self, _key: &Key) -> bool {
         false
     }
 
-    fn record_addresses(&self) -> HashSet<NetworkAddress> {
+    pub(crate) fn record_addresses(&self) -> HashSet<NetworkAddress> {
         HashSet::new()
     }
 
     #[allow(clippy::mutable_key_type)]
-    fn record_addresses_ref(&self) -> &HashSet<Key> {
+    pub(crate) fn record_addresses_ref(&self) -> &HashSet<Key> {
         &self.empty_record_addresses
     }
 
-    fn put_verified(&mut self, _r: Record) -> Result<()> {
+    pub(crate) fn put_verified(&mut self, _r: Record) -> Result<()> {
         Ok(())
     }
 
-    #[allow(dead_code)]
-    fn store_cost(&self) -> Token {
-        Token::zero()
-    }
-
-    fn set_distance_range(&mut self, _distance_range: Distance) {}
+    pub(crate) fn set_distance_range(&mut self, _distance_range: Distance) {}
 }
 
 impl RecordStore for ClientRecordStore {
@@ -436,7 +443,7 @@ impl RecordStore for ClientRecordStore {
 /// 1536 =     35937.398370712
 /// 1792 =   4447723.077333529
 /// 2048 = 550463903.051128626 (about 13% of TOTAL_SUPPLY at moment of writing)
-fn calculate_cost_at_step(step: usize) -> u64 {
+fn calculate_cost_for_relevant_records(step: usize) -> u64 {
     assert!(
         step <= MAX_RECORDS_COUNT,
         "step must be <= MAX_RECORDS_COUNT"
@@ -457,6 +464,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+    use eyre::ContextCompat;
     use libp2p::{
         core::multihash::Multihash,
         kad::{KBucketKey, RecordKey},
@@ -685,6 +693,63 @@ mod tests {
                 self_address.distance(&a).cmp(&self_address.distance(&b))
             });
         }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn get_records_within_distance_range() -> eyre::Result<()> {
+        let max_records = 50;
+
+        // setup the store
+        let store_config = NodeRecordStoreConfig {
+            max_records,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let mut store = NodeRecordStore::with_config(self_id, store_config.clone(), None);
+
+        let mut stored_records: Vec<RecordKey> = vec![];
+        let self_address = NetworkAddress::from_peer(self_id);
+
+        // add records...
+        // minus one here as if we hit max, the store will fail
+        for _ in 0..max_records - 1 {
+            let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
+            let record = Record {
+                key: record_key.clone(),
+                value: (0..50).map(|_| rand::random::<u8>()).collect(),
+                publisher: None,
+                expires: None,
+            };
+            // The new entry is closer, it shall replace the existing one
+            assert!(store.put_verified(record).is_ok());
+
+            stored_records.push(record_key);
+            stored_records.sort_by(|a, b| {
+                let a = NetworkAddress::from_record_key(a.clone());
+                let b = NetworkAddress::from_record_key(b.clone());
+                self_address.distance(&a).cmp(&self_address.distance(&b))
+            });
+        }
+
+        // get a record halfway through the list
+        let halfway_record_address = NetworkAddress::from_record_key(
+            stored_records
+                .get((stored_records.len() / 2) - 1)
+                .wrap_err("Could not parse record store key")?
+                .clone(),
+        );
+        // get the distance to this record from our local key
+        let distance = self_address.distance(&halfway_record_address);
+
+        store.set_distance_range(distance);
+
+        // check that the number of records returned is correct
+        assert_eq!(
+            store.get_records_within_distance_range(&store.records, distance),
+            stored_records.len() / 2
+        );
 
         Ok(())
     }

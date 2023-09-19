@@ -38,7 +38,6 @@
     clippy::unwrap_used,
     clippy::unused_async
 )]
-#![allow(clippy::result_large_err)]
 
 #[macro_use]
 extern crate tracing;
@@ -46,11 +45,13 @@ extern crate tracing;
 mod api;
 mod error;
 mod event;
-mod get_validation;
 mod log_markers;
+#[cfg(feature = "open-metrics")]
+mod metrics;
 mod put_validation;
 mod replication;
 mod spends;
+mod storecost;
 
 pub use self::{
     api::RunningNode,
@@ -72,4 +73,6 @@ pub struct Node {
     /// Peers that are dialed at startup of node.
     initial_peers: Vec<Multiaddr>,
     reward_address: PublicAddress,
+    #[cfg(feature = "open-metrics")]
+    node_metrics: metrics::NodeMetrics,
 }

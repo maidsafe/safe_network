@@ -1170,6 +1170,139 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(client)* refactor to have permits at network layer
 
+## [0.89.28](https://github.com/maidsafe/safe_network/compare/sn_node-v0.89.27...sn_node-v0.89.28) - 2023-09-11
+
+### Other
+- update dependencies
+
+## [0.89.29](https://github.com/maidsafe/safe_network/compare/sn_node-v0.89.28...sn_node-v0.89.29) - 2023-09-11
+
+### Other
+- utilize stream encryptor
+
+## [0.90.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.89.29...sn_node-v0.90.0) - 2023-09-11
+
+### Added
+- [**breaking**] Nodes no longer tolerate underpaying
+
+## [0.90.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.0...sn_node-v0.90.1) - 2023-09-12
+
+### Added
+- add tx and parent spends verification
+- chunk payments using UTXOs instead of DBCs
+
+### Other
+- *(node)* remove unused proptest dep
+- use updated sn_dbc
+
+## [0.90.2](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.1...sn_node-v0.90.2) - 2023-09-12
+
+### Added
+- *(network)* feature gate libp2p metrics
+
+### Other
+- *(metrics)* rename network metrics and remove from default features list
+
+## [0.90.3](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.2...sn_node-v0.90.3) - 2023-09-12
+
+### Other
+- update dependencies
+
+## [0.90.4](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.3...sn_node-v0.90.4) - 2023-09-12
+
+### Added
+- utilize stream decryptor
+
+## [0.90.5](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.4...sn_node-v0.90.5) - 2023-09-13
+
+### Added
+- *(register)* skip payment validation if Register already exists, i.e. no cost for mutations
+- *(register)* paying nodes for Register storage
+
+### Other
+- *(register)* adding Register payment storage tests to run in CI
+- *(payments)* adaptig code to recent changes in Transfers
+- *(example)* adapting example code to provide wallet client for creating a Register
+
+## [0.90.6](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.5...sn_node-v0.90.6) - 2023-09-14
+
+### Added
+- *(network)* enable custom node metrics
+- *(network)* use NetworkConfig for network construction
+
+### Other
+- remove unused error variants
+- *(network)* use builder pattern to construct the Network
+- *(metrics)* rename feature flag and small fixes
+
+## [0.90.7](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.6...sn_node-v0.90.7) - 2023-09-14
+
+### Other
+- update dependencies
+
+## [0.90.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.7...sn_node-v0.90.8) - 2023-09-14
+
+### Other
+- *(ci)* reduce the number of Registers to create in rewards test
+- slightly longer wait before comparing rewards
+- *(rewards)* e2e test to verify nodes rewards when storing Registers
+- *(storage)* verify mutation of unpaid Register also fails
+
+## [0.90.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.8...sn_node-v0.90.9) - 2023-09-15
+
+### Other
+- *(client)* remove unused wallet_client
+
+## [0.90.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.9...sn_node-v0.90.10) - 2023-09-15
+
+### Other
+- refine log levels
+
+## [0.90.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.10...sn_node-v0.90.11) - 2023-09-15
+
+### Other
+- update dependencies
+
+## [0.90.12](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.11...sn_node-v0.90.12) - 2023-09-15
+
+### Other
+- update dependencies
+
+## [0.90.13](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.12...sn_node-v0.90.13) - 2023-09-18
+
+### Added
+- generic transfer receipt
+
+## [0.90.14](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.13...sn_node-v0.90.14) - 2023-09-18
+
+### Other
+- update dependencies
+
+## [0.90.15](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.14...sn_node-v0.90.15) - 2023-09-18
+
+### Other
+- update dependencies
+
+## [0.90.16](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.15...sn_node-v0.90.16) - 2023-09-18
+
+### Other
+- update dependencies
+
+## [0.90.17](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.16...sn_node-v0.90.17) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.90.18](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.17...sn_node-v0.90.18) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.90.19](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.18...sn_node-v0.90.19) - 2023-09-19
+
+### Added
+- log payment amount
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

@@ -6,6 +6,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.9...sn_networking-v0.6.10) - 2023-09-19
+
+### Other
+- *(networking)* remove the quote from names as it's misleading
+
+## [0.6.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.8...sn_networking-v0.6.9) - 2023-09-19
+
+### Fixed
+- shorter wait on verification put
+
+## [0.6.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.7...sn_networking-v0.6.8) - 2023-09-18
+
+### Fixed
+- avoid verification too close to put; remove un-necessary wait for put
+
+## [0.6.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.6...sn_networking-v0.6.7) - 2023-09-18
+
+### Added
+- generic transfer receipt
+
+### Other
+- add more docs
+
+## [0.6.6](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.5...sn_networking-v0.6.6) - 2023-09-15
+
+### Other
+- refine log levels
+
+## [0.6.5](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.4...sn_networking-v0.6.5) - 2023-09-14
+
+### Added
+- *(network)* enable custom node metrics
+- *(network)* use NetworkConfig for network construction
+
+### Other
+- remove unused error variants
+- *(network)* use builder pattern to construct the Network
+- *(metrics)* rename feature flag and small fixes
+
+## [0.6.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.3...sn_networking-v0.6.4) - 2023-09-13
+
+### Added
+- *(register)* paying nodes for Register storage
+
+## [0.6.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.2...sn_networking-v0.6.3) - 2023-09-12
+
+### Other
+- *(networking)* add store cost / relevant record tests
+- *(networking)* refactor record_store to have relevant records calculation separately
+
+## [0.6.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.1...sn_networking-v0.6.2) - 2023-09-12
+
+### Added
+- *(network)* feature gate libp2p metrics
+- *(network)* implement libp2p metrics
+
+### Other
+- *(docs)* add docs about network metrics
+- *(metrics)* rename network metrics and remove from default features list
+- *(network)* remove unwraps inside metrics server
+
+## [0.6.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.0...sn_networking-v0.6.1) - 2023-09-12
+
+### Added
+- add tx and parent spends verification
+- chunk payments using UTXOs instead of DBCs
+
+### Other
+- use updated sn_dbc
+
+## [0.6.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.14...sn_networking-v0.6.0) - 2023-09-11
+
+### Added
+- [**breaking**] Clients add a tolerance to store cost
+- [**breaking**] Nodes no longer tolerate underpaying
+
+### Other
+- *(release)* sn_cli-v0.81.29/sn_client-v0.88.16/sn_registers-v0.2.6/sn_node-v0.89.29/sn_testnet-v0.2.120/sn_protocol-v0.6.6
+
 ## [0.5.14](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.5.13...sn_networking-v0.5.14) - 2023-09-08
 
 ### Fixed

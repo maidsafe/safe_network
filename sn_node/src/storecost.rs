@@ -6,20 +6,20 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use thiserror::Error;
+use crate::Node;
 
-pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
-/// Internal error.
-#[derive(Debug, Error)]
-#[allow(missing_docs)]
-pub enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
+use sn_dbc::Token;
+use sn_protocol::error::{Error, Result};
 
-    #[cfg(feature = "otlp")]
-    #[error("OpenTelemetry Tracing error: {0}")]
-    OpenTelemetryTracing(#[from] opentelemetry::trace::TraceError),
+impl Node {
+    /// Gets the local storecost.
+    pub async fn current_storecost(&self) -> Result<Token> {
+        let cost = self
+            .network
+            .get_local_storecost()
+            .await
+            .map_err(|_| Error::GetStoreCostFailed)?;
 
-    #[error("Could not configure logging: {0}")]
-    LoggingConfigurationError(String),
+        Ok(cost)
+    }
 }

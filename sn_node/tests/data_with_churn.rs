@@ -20,18 +20,21 @@ use sn_client::{Client, Error, Files, WalletClient};
 use sn_dbc::{Dbc, MainKey, Token};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_protocol::{
-    storage::{ChunkAddress, DbcAddress, RegisterAddress},
+    storage::{Chunk, ChunkAddress, DbcAddress, RegisterAddress},
     NetworkAddress,
 };
 use sn_transfers::wallet::LocalWallet;
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
+    fs::{self, create_dir_all, File},
+    io::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
     sync::Arc,
     time::{Duration, Instant},
 };
+use tempfile::tempdir;
 use tokio::{sync::RwLock, time::sleep};
 use tracing::{debug, trace};
 use tracing_core::Level;
@@ -161,7 +164,12 @@ async fn data_availability_during_churn() -> Result<()> {
         // Waiting for the transfers_wallet funded.
         sleep(std::time::Duration::from_secs(10)).await;
 
-        create_registers_task(client.clone(), content.clone(), churn_period);
+        create_registers_task(
+            client.clone(),
+            content.clone(),
+            churn_period,
+            paying_wallet_dir.path().to_path_buf(),
+        );
 
         create_dbc_task(
             client.clone(),
@@ -328,10 +336,19 @@ fn create_dbc_task(
 }
 
 // Spawns a task which periodically creates Registers at random locations.
-fn create_registers_task(client: Client, content: ContentList, churn_period: Duration) {
+fn create_registers_task(
+    client: Client,
+    content: ContentList,
+    churn_period: Duration,
+    paying_wallet_dir: PathBuf,
+) {
     let _handle = tokio::spawn(async move {
         // Create Registers at a higher frequency than the churning events
         let delay = churn_period / REGISTER_CREATION_RATIO_TO_CHURN;
+
+        let paying_wallet = get_wallet(&paying_wallet_dir).await;
+
+        let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
         loop {
             let meta = XorName(rand::random());
@@ -341,7 +358,7 @@ fn create_registers_task(client: Client, content: ContentList, churn_period: Dur
             println!("Creating Register at {addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match client.create_register(meta, true).await {
+            match client.create_register(meta, &mut wallet_client, true).await {
                 Ok(_) => content
                     .write()
                     .await
@@ -360,6 +377,11 @@ fn store_chunks_task(
     paying_wallet_dir: PathBuf,
 ) {
     let _handle = tokio::spawn(async move {
+        let temp_dir = tempdir().expect("Can not create a temp directory for store_chunks_task!");
+        let output_dir = temp_dir.path().join("chunk_path");
+        create_dir_all(output_dir.clone())
+            .expect("failed to create output dir for encrypted chunks");
+
         // Store Chunks at a higher frequency than the churning events
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
 
@@ -375,32 +397,53 @@ fn store_chunks_task(
                 .map(|()| rng.gen::<u8>())
                 .take(CHUNKS_SIZE)
                 .collect();
-            let bytes = Bytes::copy_from_slice(&random_bytes);
+            let chunk_size = random_bytes.len();
 
-            let (addr, chunks) = file_api
-                .chunk_bytes(bytes.clone())
+            let chunk_name = XorName::from_content(&random_bytes);
+
+            let file_path = temp_dir.path().join(&hex::encode(chunk_name));
+            let mut chunk_file =
+                File::create(&file_path).expect("failed to create temp chunk file");
+            chunk_file
+                .write_all(&random_bytes)
+                .expect("failed to write to temp chunk file");
+
+            let (addr, _file_size, chunks) = file_api
+                .chunk_file(&file_path, &output_dir)
                 .expect("Failed to chunk bytes");
 
             println!(
                 "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
                 chunks.len(),
-                bytes.len()
+                chunk_size
             );
             sleep(delay).await;
 
             let cost = wallet_client
-                .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
+                .pay_for_storage(
+                    chunks.iter().map(|(name, _)| {
+                        NetworkAddress::from_chunk_address(ChunkAddress::new(*name))
+                    }),
+                    true,
+                )
                 .await
                 .expect("Failed to pay for storage for new file at {addr:?}");
 
             println!(
                 "Storing ({}) Chunk/s at cost: {cost:?} of file ({} bytes) at {addr:?} in {delay:?}",
                 chunks.len(),
-                bytes.len()
+                chunk_size
             );
             sleep(delay).await;
 
-            for chunk in chunks {
+            for (chunk_name, chunk_path) in chunks {
+                let chunk = match fs::read(chunk_path) {
+                    Ok(bytes) => Chunk::new(Bytes::from(bytes)),
+                    Err(err) => {
+                        println!("Discarding new Chunk ({chunk_name:?}) due to error: {err:?} during read back");
+                        continue;
+                    }
+                };
                 match file_api
                     .get_local_payment_and_upload_chunk(chunk, true, None)
                     .await
@@ -619,7 +662,7 @@ async fn query_content(
         }
         NetworkAddress::ChunkAddress(addr) => {
             let file_api = Files::new(client.clone(), wallet_dir.to_path_buf());
-            let _ = file_api.read_bytes(*addr).await?;
+            let _ = file_api.read_bytes(*addr, None).await?;
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet

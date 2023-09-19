@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[cfg(feature = "open-metrics")]
+use crate::metrics_service::run_metrics_server;
 use crate::{
     circular_vec::CircularVec,
     cmd::SwarmCmd,
@@ -36,8 +38,12 @@ use libp2p::{
     },
     Multiaddr, PeerId, Transport,
 };
+#[cfg(feature = "open-metrics")]
+use libp2p_metrics::Metrics as NetworkMetrics;
 #[cfg(feature = "quic")]
 use libp2p_quic as quic;
+#[cfg(feature = "open-metrics")]
+use prometheus_client::registry::Registry;
 use sn_protocol::messages::{Request, Response};
 use std::{
     collections::{HashMap, HashSet},
@@ -48,6 +54,9 @@ use std::{
 };
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
+
+type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
+type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRecordResultMap)>;
 
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
@@ -82,32 +91,49 @@ pub(super) struct NodeBehaviour {
     pub(super) autonat: Toggle<autonat::Behaviour>,
 }
 
-type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
-type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRecordResultMap)>;
-
-pub struct SwarmDriver {
-    pub(crate) swarm: Swarm<NodeBehaviour>,
-    pub(crate) self_peer_id: PeerId,
-    pub(crate) local: bool,
-    pub(crate) is_client: bool,
-    pub(crate) bootstrap_ongoing: bool,
-    /// The peers that are closer to our PeerId. Includes self.
-    pub(crate) close_group: Vec<PeerId>,
-    pub(crate) replication_fetcher: ReplicationFetcher,
-
-    cmd_receiver: mpsc::Receiver<SwarmCmd>,
-    event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
-
-    /// Trackers for underlying behaviour related events
-    pub(crate) pending_get_closest_peers: PendingGetClosest,
-    pub(crate) pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
-    pub(crate) pending_get_record: PendingGetRecord,
-    /// A list of the most recent peers we have dialed ourselves.
-    pub(crate) dialed_peers: CircularVec<PeerId>,
-    pub(crate) unroutable_peers: CircularVec<PeerId>,
+#[derive(Debug)]
+pub struct NetworkBuilder {
+    keypair: Keypair,
+    local: bool,
+    root_dir: PathBuf,
+    listen_addr: Option<SocketAddr>,
+    request_timeout: Option<Duration>,
+    concurrency_limit: Option<usize>,
+    #[cfg(feature = "open-metrics")]
+    metrics_registry: Option<Registry>,
 }
 
-impl SwarmDriver {
+impl NetworkBuilder {
+    pub fn new(keypair: Keypair, local: bool, root_dir: PathBuf) -> Self {
+        Self {
+            keypair,
+            local,
+            root_dir,
+            listen_addr: None,
+            request_timeout: None,
+            concurrency_limit: None,
+            #[cfg(feature = "open-metrics")]
+            metrics_registry: None,
+        }
+    }
+
+    pub fn listen_addr(&mut self, listen_addr: SocketAddr) {
+        self.listen_addr = Some(listen_addr);
+    }
+
+    pub fn request_timeout(&mut self, request_timeout: Duration) {
+        self.request_timeout = Some(request_timeout);
+    }
+
+    pub fn concurrency_limit(&mut self, concurrency_limit: usize) {
+        self.concurrency_limit = Some(concurrency_limit);
+    }
+
+    #[cfg(feature = "open-metrics")]
+    pub fn metrics_registry(&mut self, metrics_registry: Registry) {
+        self.metrics_registry = Some(metrics_registry);
+    }
+
     /// Creates a new `SwarmDriver` instance, along with a `Network` handle
     /// for sending commands and an `mpsc::Receiver<NetworkEvent>` for receiving
     /// network events. It initializes the swarm, sets up the transport, and
@@ -121,13 +147,7 @@ impl SwarmDriver {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
-    #[allow(clippy::result_large_err)]
-    pub fn new(
-        keypair: Keypair,
-        addr: SocketAddr,
-        local: bool,
-        root_dir: PathBuf,
-    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
+    pub fn build_node(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut kad_cfg = KademliaConfig::default();
         let _ = kad_cfg
             .set_kbucket_inserts(libp2p::kad::KademliaBucketInserts::Manual)
@@ -157,7 +177,7 @@ impl SwarmDriver {
 
         let store_cfg = {
             // Configures the disk_store to store records under the provided path and increase the max record size
-            let storage_dir_path = root_dir.join("record_store");
+            let storage_dir_path = self.root_dir.join("record_store");
             if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
                 return Err(Error::FailedToCreateRecordStoreDir {
                     path: storage_dir_path,
@@ -171,42 +191,36 @@ impl SwarmDriver {
             }
         };
 
-        let (network, events_receiver, mut swarm_driver) = Self::with(
-            root_dir,
-            keypair,
+        let listen_addr = self.listen_addr;
+
+        let (network, events_receiver, mut swarm_driver) = self.build(
             kad_cfg,
             Some(store_cfg),
-            local,
             false,
-            None,
             ProtocolSupport::Full,
             SN_NODE_VERSION_STR.to_string(),
         )?;
 
         // Listen on the provided address
+        let listen_addr = listen_addr.ok_or(Error::ListenAddressNotProvided)?;
         #[cfg(not(feature = "quic"))]
-        let addr = Multiaddr::from(addr.ip()).with(Protocol::Tcp(addr.port()));
+        let listen_addr = Multiaddr::from(listen_addr.ip()).with(Protocol::Tcp(listen_addr.port()));
 
         #[cfg(feature = "quic")]
-        let addr = Multiaddr::from(addr.ip())
-            .with(Protocol::Udp(addr.port()))
+        let listen_addr = Multiaddr::from(listen_addr.ip())
+            .with(Protocol::Udp(listen_addr.port()))
             .with(Protocol::QuicV1);
 
         let _listener_id = swarm_driver
             .swarm
-            .listen_on(addr)
+            .listen_on(listen_addr)
             .expect("Failed to listen on the provided address");
 
         Ok((network, events_receiver, swarm_driver))
     }
 
-    /// Same as `new` API but creates the network components in client mode
-    #[allow(clippy::result_large_err)]
-    pub fn new_client(
-        local: bool,
-        request_timeout: Option<Duration>,
-        concurrency_limit: usize,
-    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
+    /// Same as `build_node` API but creates the network components in client mode
+    pub fn build_client(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let mut kad_cfg = KademliaConfig::default(); // default query timeout is 60 secs
@@ -221,44 +235,39 @@ impl SwarmDriver {
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
             );
 
-        let (mut network, net_event_recv, driver) = Self::with(
-            std::env::temp_dir(),
-            Keypair::generate_ed25519(),
+        let concurrency_limit = self.concurrency_limit;
+        let (mut network, net_event_recv, driver) = self.build(
             kad_cfg,
             None,
-            local,
             true,
-            request_timeout,
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
         )?;
 
-        network.set_concurrency_limit(concurrency_limit);
+        if let Some(limit) = concurrency_limit {
+            network.set_concurrency_limit(limit);
+        }
 
         Ok((network, net_event_recv, driver))
     }
 
-    #[allow(clippy::too_many_arguments, clippy::result_large_err)]
     /// Private helper to create the network components with the provided config and req/res behaviour
-    fn with(
-        root_dir_path: PathBuf,
-        keypair: Keypair,
+    fn build(
+        self,
         kad_cfg: KademliaConfig,
         record_store_cfg: Option<NodeRecordStoreConfig>,
-        local: bool,
         is_client: bool,
-        request_response_timeout: Option<Duration>,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
-    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, Self)> {
-        let peer_id = PeerId::from(keypair.public());
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+        let peer_id = PeerId::from(self.keypair.public());
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
 
         // RequestResponse Behaviour
         let request_response = {
             let mut cfg = RequestResponseConfig::default();
             let _ = cfg
-                .set_request_timeout(request_response_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S))
+                .set_request_timeout(self.request_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S))
                 .set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
             request_response::cbor::Behaviour::new(
@@ -308,9 +317,11 @@ impl SwarmDriver {
 
         // Identify Behaviour
         let identify = {
-            let cfg =
-                libp2p::identify::Config::new(IDENTIFY_PROTOCOL_STR.to_string(), keypair.public())
-                    .with_agent_version(identify_version);
+            let cfg = libp2p::identify::Config::new(
+                IDENTIFY_PROTOCOL_STR.to_string(),
+                self.keypair.public(),
+            )
+            .with_agent_version(identify_version);
             libp2p::identify::Behaviour::new(cfg)
         };
 
@@ -319,25 +330,25 @@ impl SwarmDriver {
         let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(
-                libp2p::noise::Config::new(&keypair)
+                libp2p::noise::Config::new(&self.keypair)
                     .expect("Signing libp2p-noise static DH keypair failed."),
             )
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
 
         #[cfg(feature = "quic")]
-        let mut transport = libp2p_quic::tokio::Transport::new(quic::Config::new(&keypair))
+        let mut transport = libp2p_quic::tokio::Transport::new(quic::Config::new(&self.keypair))
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
 
-        if !local {
+        if !self.local {
             debug!("Preventing non-global dials");
             // Wrap TCP or UDP in a transport that prevents dialing local addresses.
             transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
         }
 
         // Disable AutoNAT if we are either running locally or a client.
-        let autonat = if !local && !is_client {
+        let autonat = if !self.local && !is_client {
             let cfg = libp2p::autonat::Config {
                 // Defaults to 15. But we want to be a little quicker on checking for our NAT status.
                 boot_delay: Duration::from_secs(3),
@@ -356,6 +367,14 @@ impl SwarmDriver {
         };
         let autonat = Toggle::from(autonat);
 
+        #[cfg(feature = "open-metrics")]
+        let network_metrics = {
+            let mut metrics_registry = self.metrics_registry.unwrap_or_default();
+            let metrics = NetworkMetrics::new(&mut metrics_registry);
+            run_metrics_server(metrics_registry);
+            metrics
+        };
+
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
@@ -367,14 +386,16 @@ impl SwarmDriver {
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 
         let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
-        let swarm_driver = Self {
+        let swarm_driver = SwarmDriver {
             swarm,
             self_peer_id: peer_id,
-            local,
+            local: self.local,
             is_client,
             bootstrap_ongoing: false,
             close_group: Default::default(),
             replication_fetcher: Default::default(),
+            #[cfg(feature = "open-metrics")]
+            network_metrics,
             cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
@@ -392,15 +413,41 @@ impl SwarmDriver {
             Network {
                 swarm_cmd_sender,
                 peer_id,
-                root_dir_path,
-                keypair,
+                root_dir_path: self.root_dir,
+                keypair: self.keypair,
                 concurrency_limiter: None,
             },
             network_event_receiver,
             swarm_driver,
         ))
     }
+}
 
+pub struct SwarmDriver {
+    pub(crate) swarm: Swarm<NodeBehaviour>,
+    pub(crate) self_peer_id: PeerId,
+    pub(crate) local: bool,
+    pub(crate) is_client: bool,
+    pub(crate) bootstrap_ongoing: bool,
+    /// The peers that are closer to our PeerId. Includes self.
+    pub(crate) close_group: Vec<PeerId>,
+    pub(crate) replication_fetcher: ReplicationFetcher,
+    #[cfg(feature = "open-metrics")]
+    pub(crate) network_metrics: NetworkMetrics,
+
+    cmd_receiver: mpsc::Receiver<SwarmCmd>,
+    event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
+
+    /// Trackers for underlying behaviour related events
+    pub(crate) pending_get_closest_peers: PendingGetClosest,
+    pub(crate) pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
+    pub(crate) pending_get_record: PendingGetRecord,
+    /// A list of the most recent peers we have dialed ourselves.
+    pub(crate) dialed_peers: CircularVec<PeerId>,
+    pub(crate) unroutable_peers: CircularVec<PeerId>,
+}
+
+impl SwarmDriver {
     /// Asynchronously drives the swarm event loop, handling events from both
     /// the swarm and command receiver. This function will run indefinitely,
     /// until the command channel is closed.
@@ -471,7 +518,7 @@ impl SwarmDriver {
     /// Dials the given multiaddress. If address contains a peer ID, simultaneous
     /// dials to that peer are prevented.
     pub(crate) fn dial(&mut self, mut addr: Multiaddr) -> Result<(), DialError> {
-        debug!(%addr, "Dialing manually");
+        trace!(%addr, "Dialing manually");
 
         let peer_id = multiaddr_pop_p2p(&mut addr);
         let opts = match peer_id {
@@ -488,7 +535,7 @@ impl SwarmDriver {
 
     /// Dials with the `DialOpts` given.
     pub(crate) fn dial_with_opts(&mut self, opts: DialOpts) -> Result<(), DialError> {
-        debug!(?opts, "Dialing manually");
+        trace!(?opts, "Dialing manually");
 
         self.swarm.dial(opts)
     }

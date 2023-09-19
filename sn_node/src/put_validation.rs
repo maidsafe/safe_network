@@ -11,7 +11,7 @@ use crate::{
     Marker, Node,
 };
 use libp2p::kad::{Record, RecordKey};
-use sn_dbc::{Dbc, DbcId, DbcTransaction, SignedSpend, Token};
+use sn_dbc::{Dbc, DbcId, SignedSpend, Token};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::CmdOk,
@@ -23,10 +23,9 @@ use sn_protocol::{
 use sn_registers::SignedRegister;
 use sn_transfers::{
     dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC},
-    wallet::LocalWallet,
+    wallet::{LocalWallet, Transfer},
 };
 use std::collections::{BTreeSet, HashSet};
-use tokio::task::JoinSet;
 
 impl Node {
     /// Validate a record and it's payment, and store the record to the RecordStore
@@ -39,7 +38,7 @@ impl Node {
         match record_header.kind {
             RecordKind::ChunkWithPayment => {
                 let record_key = record.key.clone();
-                let (payment, chunk) = try_deserialize_record::<(Vec<Dbc>, Chunk)>(&record)?;
+                let (payment, chunk) = try_deserialize_record::<(Vec<Transfer>, Chunk)>(&record)?;
                 let already_exists = self
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
@@ -49,7 +48,7 @@ impl Node {
                 }
 
                 // Validate the payment and that we received what we asked.
-                self.payment_for_us_exists_and_is_still_valid(&chunk.network_address(), &payment)
+                self.payment_for_us_exists_and_is_still_valid(&chunk.network_address(), payment)
                     .await?;
 
                 self.store_chunk(chunk)
@@ -62,23 +61,34 @@ impl Node {
             }
             RecordKind::DbcSpend => self.validate_spend_record(record).await,
             RecordKind::Register => {
-                let register: SignedRegister = try_deserialize_record::<SignedRegister>(&record)?;
+                error!("Register should not be validated at this point");
+                Err(ProtocolError::InvalidPutWithoutPayment(
+                    PrettyPrintRecordKey::from(record.key),
+                ))
+            }
+            RecordKind::RegisterWithPayment => {
+                let (payment, register) =
+                    try_deserialize_record::<(Vec<Transfer>, SignedRegister)>(&record)?;
 
                 // check if the deserialized value's RegisterAddress matches the record's key
-                let key =
-                    NetworkAddress::from_register_address(*register.address()).to_record_key();
+                let net_addr = NetworkAddress::from_register_address(*register.address());
+                let key = net_addr.to_record_key();
                 if record.key != key {
                     warn!(
                         "Record's key does not match with the value's RegisterAddress, ignoring PUT."
                     );
                     return Err(ProtocolError::RecordKeyMismatch);
                 }
+
+                let already_exists = self.validate_key_and_existence(&net_addr, &key).await?;
+
+                if !already_exists {
+                    // Validate the payment and that we received what we asked.
+                    self.payment_for_us_exists_and_is_still_valid(&net_addr, payment)
+                        .await?;
+                }
+
                 self.validate_and_store_register(register).await
-            }
-            RecordKind::RegisterWithPayment => {
-                warn!("RegisterWith`Payment recieved but we cannot handle it yet!");
-                Ok(CmdOk::StoredSuccessfully)
-                // DO nothing yet
             }
         }
     }
@@ -108,7 +118,6 @@ impl Node {
         record: Record,
     ) -> Result<CmdOk, ProtocolError> {
         let record_header = RecordHeader::from_record(&record)?;
-
         match record_header.kind {
             RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => Err(
                 ProtocolError::UnexpectedRecordWithPayment(PrettyPrintRecordKey::from(record.key)),
@@ -170,8 +179,9 @@ impl Node {
             .is_key_present_locally(&data_key)
             .await
             .map_err(|err| {
-                warn!("Error while checking if Chunk's key is present locally {err}");
-                ProtocolError::RecordNotStored(pretty_key)
+                let msg = format!("Error while checking if Chunk's key is present locally {err}");
+                warn!("{msg}");
+                ProtocolError::RecordNotStored(pretty_key, msg)
             })?;
 
         if present_locally {
@@ -190,7 +200,6 @@ impl Node {
     pub(crate) fn store_chunk(&self, chunk: Chunk) -> Result<CmdOk, ProtocolError> {
         let chunk_name = *chunk.name();
         let chunk_addr = *chunk.address();
-        debug!("storing chunk {chunk_name:?}");
 
         let key = NetworkAddress::from_chunk_address(*chunk.address()).to_record_key();
         let pretty_key = PrettyPrintRecordKey::from(key.clone());
@@ -205,13 +214,12 @@ impl Node {
         // finally store the Record directly into the local storage
         debug!("Storing chunk {chunk_name:?} as Record locally");
         self.network.put_local_record(record).map_err(|err| {
-            Marker::RecordRejected(&pretty_key).log();
-
-            warn!("Error while locally storing Chunk as a Record{err}");
-            ProtocolError::RecordNotStored(pretty_key.clone())
+            let msg = format!("Error while locally storing Chunk as a Record: {err}");
+            warn!("{msg}");
+            ProtocolError::RecordNotStored(pretty_key.clone(), msg)
         })?;
 
-        Marker::ValidChunkRecordPutFromNetwork(&pretty_key).log();
+        self.record_metrics(Marker::ValidChunkRecordPutFromNetwork(&pretty_key));
 
         self.events_channel
             .broadcast(crate::NodeEvent::ChunkStored(chunk_addr));
@@ -257,12 +265,11 @@ impl Node {
         };
         debug!("Storing register {reg_addr:?} as Record locally");
         self.network.put_local_record(record).map_err(|err| {
-            Marker::RecordRejected(&pretty_key).log();
             warn!("Error while locally storing register as a Record {err}");
             ProtocolError::RegisterNotStored(Box::new(*reg_addr))
         })?;
 
-        Marker::ValidRegisterRecordPutFromNetwork(&pretty_key).log();
+        self.record_metrics(Marker::ValidRegisterRecordPutFromNetwork(&pretty_key));
 
         Ok(CmdOk::StoredSuccessfully)
     }
@@ -348,8 +355,6 @@ impl Node {
             expires: None,
         };
         self.network.put_local_record(record).map_err(|_| {
-            Marker::RecordRejected(&pretty_key).log();
-
             let err = ProtocolError::SpendNotStored(format!("Cannot PUT Spend with {dbc_addr:?}"));
             error!("Cannot put spend {err:?}");
             err
@@ -367,129 +372,93 @@ impl Node {
             }
         }
 
-        Marker::ValidSpendRecordPutFromNetwork(&pretty_key).log();
+        self.record_metrics(Marker::ValidSpendRecordPutFromNetwork(&pretty_key));
 
         Ok(CmdOk::StoredSuccessfully)
+    }
+
+    /// Gets DBCs out of a Payment, this includes network verifications of the Transfer
+    async fn dbcs_from_payment(
+        &self,
+        payment: Vec<Transfer>,
+        wallet: &LocalWallet,
+        pretty_key: PrettyPrintRecordKey,
+    ) -> Result<Vec<Dbc>, ProtocolError> {
+        for transfer in payment {
+            match self
+                .network
+                .verify_and_unpack_transfer(transfer, wallet)
+                .await
+            {
+                // transfer not for us
+                Err(ProtocolError::FailedToDecypherTransfer) => continue,
+                // transfer invalid
+                Err(e) => return Err(e),
+                // transfer ok
+                Ok(dbcs) => return Ok(dbcs),
+            };
+        }
+
+        Err(ProtocolError::NoPaymentToOurNode(pretty_key))
     }
 
     /// Perform validations on the provided `Record`.
     async fn payment_for_us_exists_and_is_still_valid(
         &self,
         address: &NetworkAddress,
-        created_dbcs: &[Dbc],
+        payment: Vec<Transfer>,
     ) -> Result<(), ProtocolError> {
-        debug!("Validating record payment for {address:?}");
-
         let pretty_key = PrettyPrintRecordKey::from(address.to_record_key());
+        trace!("Validating record payment for {pretty_key:?}");
 
-        // We need to fetch the inputs of the DBC tx in order to obtain the root-hash and
-        // other info for verifications of valid payment.
-        let mut tasks = JoinSet::new();
-
+        // load wallet
         let mut wallet = LocalWallet::load_from(&self.network.root_dir_path)
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
 
-        info!("Checking if payment is sufficient for {pretty_key:?}");
-        let current_store_cost = self
-            .network
-            .get_local_storecost()
-            .await
-            .map_err(|_| ProtocolError::RecordNotStored(pretty_key.clone()))?;
+        // unpack transfer
+        trace!("Unpacking incoming Transfers for record {pretty_key:?}");
+        let dbcs = self
+            .dbcs_from_payment(payment, &wallet, pretty_key.clone())
+            .await?;
 
-        for dbc in created_dbcs.iter() {
-            let spent_dbc_ids = dbc
-                .signed_spends
-                .iter()
-                .map(|s| *s.dbc_id())
-                .collect::<Vec<_>>();
-
-            // let dbc_target = dbc.ciphers.derivation_index_cipher;
-            let dbc_target = dbc.ciphers.public_address;
-            let dbc_is_for_us = dbc_target == self.reward_address;
-
-            if dbc_is_for_us {
-                trace!("Payment proof for record {pretty_key:?} is for us");
-
-                // lets record how much we've apparently been paid
-                let we_seem_to_have_been_paid = dbc
-                    .token()
-                    .map_err(|_| ProtocolError::RecordNotStored(pretty_key.clone()))?;
-
-                // lets deposit the money first
-                wallet.deposit(&vec![dbc.clone()]).map_err(|err| {
-                    ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string())
-                })?;
-
-                let tolerable_fee = tolerable_fee(current_store_cost);
-                // we can bail early here and not bother checking payment validity.
-                // we've depositied it, so if it's valid, that's fine.
-                // if it's underpayment, we're bailing anyway, so we don't care.
-                if we_seem_to_have_been_paid < tolerable_fee {
-                    return Err(ProtocolError::PaymentProofInsufficientAmount {
-                        paid: we_seem_to_have_been_paid,
-                        expected: tolerable_fee,
-                    });
-                }
-
-                // assuming we have been paid enough, lets get and validate the actualy txs
-                trace!(
-                    "Getting spends {:?} for payment of record {pretty_key:?} for validation",
-                    spent_dbc_ids
-                );
-
-                for dbc_id in spent_dbc_ids {
-                    let self_clone = self.clone();
-                    let _ = tasks.spawn(async move {
-                        let addr = DbcAddress::from_dbc_id(&dbc_id);
-                        let signed_spend = self_clone.get_spend_from_network(addr, true).await?;
-                        Ok::<DbcTransaction, ProtocolError>(signed_spend.spent_tx())
-                    });
-                }
-            }
+        // check payment is sufficient
+        let current_store_cost =
+            self.network.get_local_storecost().await.map_err(|e| {
+                ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
+            })?;
+        let mut received_fee = Token::zero();
+        for dbc in dbcs.iter() {
+            let amount = dbc.token().map_err(|_| {
+                ProtocolError::RecordNotStored(
+                    pretty_key.clone(),
+                    "Failed to get DBC value".to_string(),
+                )
+            })?;
+            received_fee =
+                received_fee
+                    .checked_add(amount)
+                    .ok_or(ProtocolError::RecordNotStored(
+                        pretty_key.clone(),
+                        "DBC value overflow".to_string(),
+                    ))?;
         }
-
-        if tasks.is_empty() {
-            warn!("No payment for us for record {pretty_key:?}");
+        if received_fee < current_store_cost {
+            trace!("Payment insufficient for record {pretty_key:?}");
+            return Err(ProtocolError::PaymentProofInsufficientAmount {
+                paid: received_fee,
+                expected: current_store_cost,
+            });
         }
+        trace!("Payment sufficient for record {pretty_key:?}");
 
+        // deposit the DBCs in our wallet
+        wallet
+            .deposit(&dbcs)
+            .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
         wallet
             .store()
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
-
-        // Then we verify the tx
-        let mut payment_tx = None;
-
-        // Check the spent transactions for our payment proof for double spend
-        // error out if there's a mismatch over the tx
-        while let Some(result) = tasks.join_next().await {
-            // TODO: since we are not sending these errors as a response, return sn_node::Error instead.
-            let spent_tx =
-                result.map_err(|_| ProtocolError::RecordNotStored(pretty_key.clone()))??;
-            match payment_tx {
-                Some(tx) if spent_tx != tx => {
-                    return Err(ProtocolError::PaymentProofTxMismatch(pretty_key));
-                }
-                Some(_) => {}
-                None => payment_tx = Some(spent_tx),
-            }
-        }
-
-        // There is a payment for us, lets validate it is actually enough
-        if let Some(tx) = payment_tx {
-            // Check if any of the dbcs sent are sufficient for this chunk.
-            match verify_fee_is_sufficient(current_store_cost, &tx) {
-                Ok(_) => {}
-                Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected }) => {
-                    return Err(ProtocolError::PaymentProofInsufficientAmount { paid, expected });
-                }
-                Err(error) => {
-                    return Err(error);
-                }
-            }
-        } else {
-            // There is no DBC for us, so we dont store it.
-            return Err(ProtocolError::NoPaymentToOurNode(pretty_key));
-        }
+        info!("Payment of {received_fee:?} nanos accepted for record {pretty_key:?}");
 
         Ok(())
     }
@@ -511,7 +480,7 @@ impl Node {
             debug!("Register with addr {reg_addr:?} is valid and doesn't exist locally");
             return Ok(Some(register.to_owned()));
         }
-        debug!("Register with addr {reg_addr:?} exists locally, comparing with local version");
+        trace!("Register with addr {reg_addr:?} exists locally, comparing with local version");
 
         let key = NetworkAddress::from_register_address(*reg_addr).to_record_key();
 
@@ -533,10 +502,10 @@ impl Node {
         let mut merged_register = local_register.clone();
         merged_register.verified_merge(register.to_owned())?;
         if merged_register == local_register {
-            debug!("Register with addr {reg_addr:?} is the same as the local version");
+            trace!("Register with addr {reg_addr:?} is the same as the local version");
             Ok(None)
         } else {
-            debug!("Register with addr {reg_addr:?} is different from the local version");
+            trace!("Register with addr {reg_addr:?} is different from the local version");
             Ok(Some(merged_register))
         }
     }
@@ -665,9 +634,7 @@ impl Node {
                             "Checking parent input at {:?} - {parent_dbc_address:?}",
                             parent_input.dbc_id(),
                         );
-                        let parent = self
-                            .get_spend_from_network(parent_dbc_address, false)
-                            .await?;
+                        let parent = self.network.get_spend(parent_dbc_address, false).await?;
                         trace!(
                             "Got parent input at {:?} - {parent_dbc_address:?}",
                             parent_input.dbc_id(),
@@ -685,7 +652,7 @@ impl Node {
                 // check the network if any spend has happened for the same dbc_id
                 // Does not return an error, instead the Vec<SignedSpend> is returned.
                 debug!("Check if any spend exist for the same dbc_id {dbc_addr:?}");
-                let mut spends = match self.get_spend_from_network(dbc_addr, false).await {
+                let mut spends = match self.network.get_spend(dbc_addr, false).await {
                     Ok(spend) => {
                         debug!("Got spend from network for the same dbc_id");
                         vec![spend]
@@ -701,7 +668,7 @@ impl Node {
                 aggregate_spends(spends, dbc_id)
             }
             _ => {
-                debug!("Received >1 spends with parent. Aggregating the spends to check for double spend. Not performing parent check or querying the network for double spend");
+                warn!("Received >1 spends with parent. Aggregating the spends to check for double spend. Not performing parent check or querying the network for double spend");
                 // if we got 2 or more, then it is a double spend for sure.
                 // We don't have to check parent/ ask network for extra spend.
                 // Validate and store just 2 of them.
@@ -711,96 +678,5 @@ impl Node {
         };
 
         Ok(Some(signed_spends))
-    }
-}
-
-// Find a tolerable fee. This should help prevent us rejecting close, but currently
-// insufficient payments
-fn tolerable_fee(current_store_cost: Token) -> Token {
-    Token::from_nano(current_store_cost.as_nano() / 2)
-}
-
-// Check if the fee output id and amount are correct, as well as verify the payment proof audit
-// trail info corresponds to the fee output, i.e. the fee output's root-hash is derived from
-// the proof's audit trail info.
-fn verify_fee_is_sufficient(
-    current_store_cost: Token,
-    tx: &DbcTransaction,
-) -> Result<(), ProtocolError> {
-    // TODO: properly verify which one of these was for this node, and check _that_
-    // against our store acceptable fee
-
-    let mut highest_fee = Token::zero();
-    // Check the expected amount of tokens was paid by the Tx, i.e. the amount of
-    // the fee output the expected `acceptable_fee` nano per record.
-    for output in tx.outputs.iter() {
-        // TODO: Is an output
-        if output.token > highest_fee {
-            highest_fee = output.token;
-        }
-    }
-
-    // We expect at least the current step or one down. This should smooth over any
-    // issues that might arise with payment going up and down.
-    let expected = tolerable_fee(current_store_cost);
-
-    if highest_fee < current_store_cost {
-        return Err(ProtocolError::PaymentProofInsufficientAmount {
-            paid: highest_fee,
-            expected,
-        });
-    }
-
-    Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use proptest::prelude::*;
-    use sn_dbc::{FeeOutput, Output, Token};
-    use xor_name::XorName;
-
-    proptest! {
-        #[test]
-        fn test_verify_record_payment(num_of_addrs in 1..1000, store_costs in 1..100_u64 ) {
-            let mut rng = rand::thread_rng();
-            let mut tx_payments = vec![];
-
-            let mut lowest_fee = Token::zero();
-            for cost in 0..store_costs {
-                if cost < lowest_fee.as_nano() {
-                    lowest_fee = Token::from_nano(cost);
-                }
-
-                let network_store_cost = Token::from_nano(cost);
-
-                tx_payments.push(Output{
-                    dbc_id: sn_dbc::DbcId::new(bls::SecretKey::random().public_key()),
-                    token: network_store_cost,
-                });
-            }
-
-            let random_names = (0..num_of_addrs).map(|_| XorName::random(&mut rng)).collect::<Vec<_>>();
-
-            for _name in random_names.into_iter() {
-                let tx = DbcTransaction {
-                    inputs: vec![],
-                    outputs: tx_payments.clone(),
-                    // TODO: Clean this up when we remove FeeOutput
-                    fee: FeeOutput {
-                        id: sn_dbc::Hash::hash(b"id"),
-                        token: Token::zero(),
-                        root_hash: sn_dbc::Hash::hash(b"root"),
-                    },
-                };
-
-                // verification should fail if the amount paid is not enough for the content
-                // TODO: sort out what is acceptable based on the network store cost
-                // more properly
-                let _res = verify_fee_is_sufficient( lowest_fee, &tx);
-
-            }
-        }
     }
 }

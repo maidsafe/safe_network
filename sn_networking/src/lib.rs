@@ -14,15 +14,19 @@ mod cmd;
 mod driver;
 mod error;
 mod event;
+#[cfg(feature = "open-metrics")]
+mod metrics_service;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
+mod transfers;
 
 pub use self::{
     cmd::SwarmLocalState,
-    driver::SwarmDriver,
+    driver::{NetworkBuilder, SwarmDriver},
     error::Error,
     event::{MsgResponder, NetworkEvent},
+    record_store::NodeRecordStore,
 };
 
 use self::{cmd::SwarmCmd, error::Result};
@@ -111,14 +115,13 @@ pub struct Network {
     pub peer_id: PeerId,
     pub root_dir_path: PathBuf,
     keypair: Keypair,
-    /// Optinal Concurrent limiter to limit the number of concurrent requests
+    /// Optional Concurrent limiter to limit the number of concurrent requests
     /// Intended for client side use
     concurrency_limiter: Option<Arc<Semaphore>>,
 }
 
 impl Network {
     /// Signs the given data with the node's keypair.
-    #[allow(clippy::result_large_err)]
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         self.keypair.sign(msg).map_err(Error::from)
     }
@@ -191,7 +194,7 @@ impl Network {
             _permit = Some(our_permit);
         }
 
-        debug!("Attempting to get store cost");
+        trace!("Attempting to get store cost");
         // first we need to get CLOSE_GROUP of the dbc_id
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
             key: record_address.clone(),
@@ -209,9 +212,10 @@ impl Network {
             .send_and_get_responses(close_nodes, &request, true)
             .await;
 
-        // loop over responses, generating an avergae fee and storing all responses along side
+        // loop over responses, generating an average fee and storing all responses along side
         let mut all_costs = vec![];
         for response in responses.into_iter().flatten() {
+            debug!("StoreCostReq received response: {:?}", response);
             if let Response::Query(QueryResponse::GetStoreCost {
                 store_cost: Ok(cost),
                 payment_address,
@@ -223,7 +227,7 @@ impl Network {
             }
         }
 
-        get_fee_from_store_cost_quotes(all_costs)
+        get_fees_from_store_cost_responses(all_costs)
     }
 
     /// Get the Record from the network
@@ -278,7 +282,7 @@ impl Network {
                     // Returning mismatched error when: completed all attempts
                     if target_record.is_none()
                         || (target_record.is_some()
-                            // we dont need to match the whole record if chunks, 
+                            // we don't need to match the whole record if chunks, 
                             // payment data could differ, but chunks themselves'
                             // keys are from the chunk address
                             && (target_record == Some(returned_record.clone()) || is_chunk))
@@ -322,7 +326,9 @@ impl Network {
             _permit = None;
 
             // wait for a bit before re-trying
-            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+            if re_attempt {
+                tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+            }
         }
 
         Err(Error::RecordNotFound)
@@ -356,15 +362,11 @@ impl Network {
     pub async fn put_record(
         &self,
         record: Record,
-        verify_store: bool,
+        verify_store: Option<Record>,
         optional_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
-        if verify_store {
-            self.put_record_with_retries(record, verify_store, optional_permit)
-                .await
-        } else {
-            self.put_record_once(record, false, optional_permit).await
-        }
+        self.put_record_with_retries(record, verify_store, optional_permit)
+            .await
     }
 
     /// Put `Record` to network
@@ -373,7 +375,7 @@ impl Network {
     async fn put_record_with_retries(
         &self,
         record: Record,
-        verify_store: bool,
+        verify_store: Option<Record>,
         mut optional_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
         let mut retries = 0;
@@ -381,13 +383,13 @@ impl Network {
         // let mut has_permit = optional_permit.is_some();
         // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
         while retries < PUT_RECORD_RETRIES {
-            trace!(
+            info!(
                 "Attempting to PUT record of {:?} to network",
                 PrettyPrintRecordKey::from(record.key.clone())
             );
 
             let res = self
-                .put_record_once(record.clone(), verify_store, optional_permit)
+                .put_record_once(record.clone(), verify_store.clone(), optional_permit)
                 .await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
@@ -404,7 +406,7 @@ impl Network {
     async fn put_record_once(
         &self,
         record: Record,
-        verify_store: bool,
+        verify_store: Option<Record>,
         starting_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
         let mut _permit = starting_permit;
@@ -427,16 +429,20 @@ impl Network {
 
         drop(_permit);
 
-        if verify_store {
-            // small wait before we attempt to verify
-            tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+        if verify_store.is_some() {
+            // Small wait before we attempt to verify.
+            // There will be `re-attempts` to be carried out within the later step anyway.
+            tokio::time::sleep(std::time::Duration::from_millis(
+                REVERIFICATION_WAIT_TIME_S.as_millis() as u64 / 6,
+            ))
+            .await;
             trace!("attempting to verify {pretty_key:?}");
 
             // Verify the record is stored, requiring re-attempts
-            self.get_record_from_network(record_key, Some(record), true)
+            self.get_record_from_network(record_key, verify_store, true)
                 .await
                 .map_err(|e| {
-                    trace!(
+                    error!(
                         "Failing to verify the put record {:?} with error {e:?}",
                         pretty_key
                     );
@@ -449,9 +455,8 @@ impl Network {
 
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
-    #[allow(clippy::result_large_err)]
     pub fn put_local_record(&self, record: Record) -> Result<()> {
-        debug!(
+        trace!(
             "Writing Record locally, for {:?} - length {:?}",
             PrettyPrintRecordKey::from(record.key.clone()),
             record.value.len()
@@ -483,7 +488,6 @@ impl Network {
     }
 
     // Add a list of keys of a holder to Replication Fetcher.
-    #[allow(clippy::result_large_err)]
     pub fn add_keys_to_replication_fetcher(&self, keys: Vec<NetworkAddress>) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { keys })
     }
@@ -504,7 +508,6 @@ impl Network {
 
     /// Send `Request` to the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
-    #[allow(clippy::result_large_err)]
     pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
         let swarm_cmd = SwarmCmd::SendRequest {
             req,
@@ -515,7 +518,6 @@ impl Network {
     }
 
     /// Send a `Response` through the channel opened by the requester.
-    #[allow(clippy::result_large_err)]
     pub fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
     }
@@ -529,7 +531,6 @@ impl Network {
     }
 
     // Helper to send SwarmCmd
-    #[allow(clippy::result_large_err)]
     fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
         let capacity = self.swarm_cmd_sender.capacity();
 
@@ -584,7 +585,7 @@ impl Network {
         req: &Request,
         get_all_responses: bool,
     ) -> Vec<Result<Response>> {
-        trace!("send_and_get_responses for {req:?}");
+        debug!("send_and_get_responses for {req:?}");
         let mut list_of_futures = peers
             .iter()
             .map(|peer| Box::pin(self.send_request(req.clone(), *peer)))
@@ -597,7 +598,7 @@ impl Network {
                 Ok(res) => format!("{res}"),
                 Err(err) => format!("{err:?}"),
             };
-            trace!("Got response for the req: {req:?}, res: {res_string}");
+            debug!("Got response for the req: {req:?}, res: {res_string}");
             if !get_all_responses && res.is_ok() {
                 return vec![res];
             }
@@ -605,14 +606,14 @@ impl Network {
             list_of_futures = remaining_futures;
         }
 
-        trace!("got all responses for {req:?}");
+        debug!("Received all responses for {req:?}");
         responses
     }
 }
 
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
 #[allow(clippy::result_large_err)]
-fn get_fee_from_store_cost_quotes(
+fn get_fees_from_store_cost_responses(
     mut all_costs: Vec<(PublicAddress, Token)>,
 ) -> Result<Vec<(PublicAddress, Token)>> {
     // TODO: we should make this configurable based upon data type
@@ -630,13 +631,14 @@ fn get_fee_from_store_cost_quotes(
     all_costs.truncate(desired_quote_count);
 
     if all_costs.len() < desired_quote_count {
-        return Err(Error::NotEnoughCostQuotes);
+        return Err(Error::NotEnoughCostPricesReturned);
     }
 
     info!(
         "Final fees calculated as: {all_costs:?}, from: {:?}",
         all_costs
     );
+
     Ok(all_costs)
 }
 
@@ -684,16 +686,15 @@ mod tests {
     use super::*;
 
     #[test]
-    #[allow(clippy::result_large_err)]
-    fn test_get_fee_from_store_cost_quotes() -> Result<()> {
-        // for a vec of different costs of CLOUSE_GROUP size
+    fn test_get_fee_from_store_cost_responses() -> Result<()> {
+        // for a vec of different costs of CLOSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..CLOSE_GROUP_SIZE {
             let addr = PublicAddress::new(bls::SecretKey::random().public_key());
             costs.push((addr, Token::from_nano(i as u64)));
         }
-        let prices = get_fee_from_store_cost_quotes(costs)?;
+        let prices = get_fees_from_store_cost_responses(costs)?;
         let total_price: u64 = prices
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
@@ -711,8 +712,9 @@ mod tests {
     }
     #[test]
     #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
-    fn test_get_any_fee_from_store_cost_quotes_errs_if_insufficient_quotes() -> eyre::Result<()> {
-        // for a vec of different costs of CLOUSE_GROUP size
+    fn test_get_any_fee_from_store_cost_responses_errs_if_insufficient_responses(
+    ) -> eyre::Result<()> {
+        // for a vec of different costs of CLOSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
@@ -720,27 +722,27 @@ mod tests {
             costs.push((addr, Token::from_nano(i as u64)));
         }
 
-        if get_fee_from_store_cost_quotes(costs).is_ok() {
-            bail!("Should have errored as we have too few quotes")
+        if get_fees_from_store_cost_responses(costs).is_ok() {
+            bail!("Should have errored as we have too few responses")
         }
 
         Ok(())
     }
     #[test]
     #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
-    fn test_get_some_fee_from_store_cost_quotes_errs_if_suffcient() -> eyre::Result<()> {
-        // for a vec of different costs of CLOUSE_GROUP size
-        let quotes_count = CLOSE_GROUP_SIZE as u64 - 1;
+    fn test_get_some_fee_from_store_cost_responses_errs_if_sufficient() -> eyre::Result<()> {
+        // for a vec of different costs of CLOSE_GROUP size
+        let responses_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
-        for i in 0..quotes_count {
+        for i in 0..responses_count {
             // push random PublicAddress and Token
             let addr = PublicAddress::new(bls::SecretKey::random().public_key());
             costs.push((addr, Token::from_nano(i)));
             println!("price added {}", i);
         }
 
-        let prices = match get_fee_from_store_cost_quotes(costs) {
-            Err(_) => bail!("Should not have errored as we have enough quotes"),
+        let prices = match get_fees_from_store_cost_responses(costs) {
+            Err(_) => bail!("Should not have errored as we have enough responses"),
             Ok(cost) => cost,
         };
 

@@ -6,6 +6,117 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.16](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.15...sn_client-v0.89.16) - 2023-09-19
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.89.15](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.14...sn_client-v0.89.15) - 2023-09-19
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.89.14](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.13...sn_client-v0.89.14) - 2023-09-18
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.89.13](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.12...sn_client-v0.89.13) - 2023-09-18
+
+### Added
+- *(client)* download file concurrently
+
+## [0.89.12](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.11...sn_client-v0.89.12) - 2023-09-18
+
+### Added
+- serialisation for transfers for out of band sending
+
+### Other
+- *(client)* simplify API
+- *(cli)* use iter::chunks() API to batch and pay for our chunks
+
+## [0.89.11](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.10...sn_client-v0.89.11) - 2023-09-15
+
+### Added
+- *(client)* pay for chunks in batches
+
+### Other
+- *(client)* refactor chunk upload code to allow greater concurrency
+
+## [0.89.10](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.9...sn_client-v0.89.10) - 2023-09-15
+
+### Other
+- updated the following local packages: sn_networking, sn_transfers
+
+## [0.89.9](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.8...sn_client-v0.89.9) - 2023-09-15
+
+### Other
+- *(client)* remove unused wallet_client
+
+## [0.89.8](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.7...sn_client-v0.89.8) - 2023-09-14
+
+### Added
+- *(register)* client to pay for Register only if local wallet has not paymnt for it yet
+
+## [0.89.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.6...sn_client-v0.89.7) - 2023-09-14
+
+### Added
+- split upload procedure into batches
+
+## [0.89.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.5...sn_client-v0.89.6) - 2023-09-14
+
+### Added
+- *(network)* enable custom node metrics
+- *(network)* use NetworkConfig for network construction
+
+### Other
+- remove unused error variants
+- *(network)* use builder pattern to construct the Network
+- *(metrics)* rename feature flag and small fixes
+
+## [0.89.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.4...sn_client-v0.89.5) - 2023-09-13
+
+### Added
+- *(register)* paying nodes for Register storage
+
+### Other
+- *(register)* adding Register payment storage tests to run in CI
+- *(payments)* adaptig code to recent changes in Transfers
+
+## [0.89.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.3...sn_client-v0.89.4) - 2023-09-12
+
+### Added
+- utilize stream decryptor
+
+## [0.89.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.2...sn_client-v0.89.3) - 2023-09-12
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.89.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.1...sn_client-v0.89.2) - 2023-09-12
+
+### Other
+- *(metrics)* rename network metrics and remove from default features list
+
+## [0.89.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.0...sn_client-v0.89.1) - 2023-09-12
+
+### Added
+- add tx and parent spends verification
+- chunk payments using UTXOs instead of DBCs
+
+### Other
+- use updated sn_dbc
+
+## [0.89.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.16...sn_client-v0.89.0) - 2023-09-11
+
+### Added
+- [**breaking**] Clients add a tolerance to store cost
+
+## [0.88.16](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.15...sn_client-v0.88.16) - 2023-09-11
+
+### Other
+- utilize stream encryptor
+
 ## [0.88.15](https://github.com/maidsafe/safe_network/compare/sn_client-v0.88.14...sn_client-v0.88.15) - 2023-09-08
 
 ### Added

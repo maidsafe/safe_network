@@ -7,10 +7,16 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, NodeEvent};
+#[cfg(feature = "open-metrics")]
+use crate::metrics::NodeMetrics;
 use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr, PeerId};
+#[cfg(feature = "open-metrics")]
+use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_dbc::MainKey;
-use sn_networking::{MsgResponder, NetworkEvent, SwarmDriver, SwarmLocalState, CLOSE_GROUP_SIZE};
+use sn_networking::{
+    MsgResponder, NetworkBuilder, NetworkEvent, SwarmLocalState, CLOSE_GROUP_SIZE,
+};
 use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
@@ -99,8 +105,19 @@ impl Node {
         let wallet = LocalWallet::load_from_main_key(&root_dir, reward_key)?;
         wallet.store()?;
 
-        let (network, mut network_event_receiver, swarm_driver) =
-            SwarmDriver::new(keypair, addr, local, root_dir)?;
+        #[cfg(feature = "open-metrics")]
+        let (metrics_registry, node_metrics) = {
+            let mut metrics_registry = Registry::default();
+            let node_metrics = NodeMetrics::new(&mut metrics_registry);
+            (metrics_registry, node_metrics)
+        };
+
+        let mut network_builder = NetworkBuilder::new(keypair, local, root_dir);
+        network_builder.listen_addr(addr);
+        #[cfg(feature = "open-metrics")]
+        network_builder.metrics_registry(metrics_registry);
+
+        let (network, mut network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
 
         let node = Self {
@@ -108,6 +125,8 @@ impl Node {
             events_channel: node_events_channel.clone(),
             initial_peers,
             reward_address,
+            #[cfg(feature = "open-metrics")]
+            node_metrics,
         };
 
         let network_clone = network.clone();
@@ -128,7 +147,6 @@ impl Node {
 
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
-                        trace!("Handling NetworkEvent: {net_event:?}");
                         match net_event {
                             Some(event) => {
                                 let stateless_node_copy = node.clone();
@@ -170,6 +188,14 @@ impl Node {
         })
     }
 
+    /// Calls Marker::log() to insert the marker into the log files.
+    /// Also calls NodeMetrics::record() to record the metric if the `open-metrics` feature flag is enabled.
+    pub(crate) fn record_metrics(&self, marker: Marker) {
+        marker.log();
+        #[cfg(feature = "open-metrics")]
+        self.node_metrics.record(marker);
+    }
+
     // **** Private helpers *****
 
     async fn handle_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
@@ -201,11 +227,10 @@ impl Node {
                 | NetworkEvent::NatStatusChanged(_) => break,
             }
         }
-        trace!("Handling network event {event:?}");
+        trace!("Handling NetworkEvent {event:?}");
 
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
-                trace!("RequestReceived: {req:?}");
                 self.handle_request(req, channel).await;
             }
             NetworkEvent::ResponseReceived { res } => {
@@ -220,14 +245,15 @@ impl Node {
                 if peers_connected.load(Ordering::SeqCst) == CLOSE_GROUP_SIZE {
                     self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
                 }
-                Marker::PeerAddedToRoutingTable(peer_id).log();
+
+                self.record_metrics(Marker::PeerAddedToRoutingTable(peer_id));
 
                 if let Err(err) = self.try_trigger_replication(peer_id, false).await {
                     error!("During CloseGroupUpdate, error while triggering replication {err:?}");
                 }
             }
             NetworkEvent::PeerRemoved(peer_id) => {
-                Marker::PeerRemovedFromRoutingTable(peer_id).log();
+                self.record_metrics(Marker::PeerRemovedFromRoutingTable(peer_id));
                 // During a node restart, the new node got added before the old one got removed.
                 // If the old one is `pushed out of close_group by the new one`, then the records
                 // that being close to the old one won't got replicated during the CloseGroupUpdate
@@ -238,7 +264,7 @@ impl Node {
                 }
             }
             NetworkEvent::KeysForReplication(keys) => {
-                Marker::fetching_keys_for_replication(&keys).log();
+                self.record_metrics(Marker::fetching_keys_for_replication(&keys));
 
                 if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
                     error!("Error while trying to fetch replicated data {err:?}");
@@ -266,9 +292,10 @@ impl Node {
             NetworkEvent::UnverifiedRecord(record) => {
                 let key = PrettyPrintRecordKey::from(record.key.clone());
                 match self.validate_and_store_record(record).await {
-                    Ok(cmdok) => trace!("UnverifiedRecord {key:?} stored with {cmdok:?}."),
+                    Ok(cmdok) => trace!("UnverifiedRecord {key} stored with {cmdok:?}."),
                     Err(err) => {
-                        trace!("UnverifiedRecord {key:?} failed to be stored with error {err:?}.")
+                        self.record_metrics(Marker::RecordRejected(&key));
+                        trace!("UnverifiedRecord {key} failed to be stored with error {err:?}.")
                     }
                 }
             }

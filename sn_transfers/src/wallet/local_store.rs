@@ -11,14 +11,16 @@ use super::{
         create_received_dbcs_dir, get_unconfirmed_txs, get_wallet, load_dbc, load_received_dbcs,
         store_created_dbcs, store_unconfirmed_txs, store_wallet,
     },
-    KeyLessWallet, Result,
+    KeyLessWallet, Result, Transfer, Utxo,
 };
+
 use crate::client_transfers::{
-    create_transfer, ContentPaymentsIdMap, SpendRequest, TransferOutputs,
+    create_offline_transfer, ContentPaymentsIdMap, SpendRequest, TransferOutputs,
 };
 use itertools::Itertools;
 use sn_dbc::{
-    random_derivation_index, Dbc, DbcId, DerivedKey, Hash, MainKey, PublicAddress, Token,
+    random_derivation_index, Dbc, DbcId, DerivationIndex, DerivedKey, Hash, MainKey, PublicAddress,
+    Token,
 };
 use sn_protocol::NetworkAddress;
 
@@ -209,12 +211,12 @@ impl LocalWallet {
             .collect();
 
         let available_dbcs = self.available_dbcs();
-        trace!("Available DBCs for local send: {:#?}", available_dbcs);
+        debug!("Available DBCs for local send: {:#?}", available_dbcs);
 
         let reason_hash = reason_hash.unwrap_or_default();
 
         let transfer =
-            create_transfer(available_dbcs, to_unique_keys, self.address(), reason_hash)?;
+            create_offline_transfer(available_dbcs, to_unique_keys, self.address(), reason_hash)?;
 
         let created_dbcs = transfer.created_dbcs.clone();
 
@@ -245,9 +247,9 @@ impl LocalWallet {
         let reason_hash = reason_hash.unwrap_or_default();
 
         let available_dbcs = self.available_dbcs();
-        trace!("Available DBCs: {:#?}", available_dbcs);
+        debug!("Available DBCs: {:#?}", available_dbcs);
         let transfer_outputs =
-            create_transfer(available_dbcs, all_payees_only, self.address(), reason_hash)?;
+            create_offline_transfer(available_dbcs, all_payees_only, self.address(), reason_hash)?;
 
         let mut all_transfers_per_address = BTreeMap::default();
 
@@ -322,12 +324,12 @@ impl LocalWallet {
             let id = dbc.id();
 
             if let Some(_dbc) = load_dbc(&id, &self.wallet_dir) {
-                println!("dbc exists");
+                debug!("dbc exists");
                 return Ok(());
             }
 
             if self.wallet.spent_dbcs.contains(&id) {
-                println!("dbc is spent");
+                debug!("dbc is spent");
                 return Ok(());
             }
 
@@ -341,6 +343,14 @@ impl LocalWallet {
         }
 
         Ok(())
+    }
+
+    pub fn unwrap_transfer(&self, transfer: Transfer) -> Result<Vec<Utxo>> {
+        transfer.utxos(self.key.secret_key())
+    }
+
+    pub fn derive_key(&self, derivation_index: &DerivationIndex) -> DerivedKey {
+        self.key.derive_key(derivation_index)
     }
 }
 

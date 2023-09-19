@@ -10,9 +10,7 @@ use crate::{
     close_group_majority,
     driver::SwarmDriver,
     error::{Error, Result},
-    multiaddr_is_global, multiaddr_strip_p2p,
-    record_store_api::RecordStoreAPI,
-    sort_peers_by_address, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
 };
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
@@ -30,6 +28,8 @@ use libp2p::{
     swarm::{dial_opts::DialOpts, SwarmEvent},
     Multiaddr, PeerId,
 };
+#[cfg(feature = "open-metrics")]
+use libp2p_metrics::Recorder;
 use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
@@ -168,11 +168,14 @@ impl Debug for NetworkEvent {
 
 impl SwarmDriver {
     // Handle `SwarmEvents`
-    #[allow(clippy::result_large_err)]
     pub(super) fn handle_swarm_events<EventError: std::error::Error>(
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
     ) -> Result<()> {
+        // This does not record all the events. `SwarmEvent::Behaviour(_)` are skipped. Hence `.record()` has to be
+        // called individually on each behaviour.
+        #[cfg(feature = "open-metrics")]
+        self.network_metrics.record(&event);
         match event {
             SwarmEvent::Behaviour(NodeEvent::MsgReceived(event)) => {
                 if let Err(e) = self.handle_msg(event) {
@@ -183,9 +186,11 @@ impl SwarmDriver {
                 self.handle_kad_event(kad_event)?;
             }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
+                #[cfg(feature = "open-metrics")]
+                self.network_metrics.record(&(*iden));
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
-                        debug!(%peer_id, ?info, "identify: received info");
+                        trace!(%peer_id, ?info, "identify: received info");
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if (self.local
@@ -281,7 +286,29 @@ impl SwarmDriver {
                     }
                 }
                 mdns::Event::Expired(peer) => {
-                    debug!("mdns peer {peer:?} expired");
+                    trace!("mdns peer {peer:?} expired");
+                }
+            },
+            SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
+                autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
+                autonat::Event::OutboundProbe(e) => trace!("AutoNAT outbound probe: {e:?}"),
+                autonat::Event::StatusChanged { old, new } => {
+                    info!("AutoNAT status changed: {old:?} -> {new:?}");
+                    self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
+
+                    match new {
+                        NatStatus::Public(_addr) => {
+                            // In theory, we could actively push our address to our peers now. But, which peers? All of them?
+                            // Or, should we just wait and let Identify do it on its own? But, what if we are not connected
+                            // to any peers anymore? (E.g., our connections timed out etc)
+                            // let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
+                            // self.swarm.behaviour_mut().identify.push(all_peers);
+                        }
+                        NatStatus::Private => {
+                            // We could just straight out error here. In the future we might try to activate a relay mechanism.
+                        }
+                        NatStatus::Unknown => {}
+                    };
                 }
             },
             SwarmEvent::NewListenAddr { address, .. } => {
@@ -311,7 +338,7 @@ impl SwarmDriver {
                 local_addr,
                 send_back_addr,
             } => {
-                debug!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
+                trace!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
             }
             SwarmEvent::ConnectionEstablished {
                 peer_id,
@@ -320,7 +347,7 @@ impl SwarmDriver {
                 connection_id,
                 ..
             } => {
-                debug!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
+                trace!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
 
                 if endpoint.is_dialer() {
                     self.dialed_peers
@@ -335,7 +362,7 @@ impl SwarmDriver {
                 num_established,
                 connection_id,
             } => {
-                debug!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
+                trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
             }
             SwarmEvent::OutgoingConnectionError {
                 peer_id: Some(failed_peer_id),
@@ -366,35 +393,12 @@ impl SwarmDriver {
                 peer_id,
                 connection_id,
             } => trace!("Dialing {peer_id:?} on {connection_id:?}"),
-            SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
-                autonat::Event::InboundProbe(e) => debug!("AutoNAT inbound probe: {e:?}"),
-                autonat::Event::OutboundProbe(e) => debug!("AutoNAT outbound probe: {e:?}"),
-                autonat::Event::StatusChanged { old, new } => {
-                    info!("AutoNAT status changed: {old:?} -> {new:?}");
-                    self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
-
-                    match new {
-                        NatStatus::Public(_addr) => {
-                            // In theory, we could actively push our address to our peers now. But, which peers? All of them?
-                            // Or, should we just wait and let Identify do it on its own? But, what if we are not connected
-                            // to any peers anymore? (E.g., our connections timed out etc)
-                            // let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
-                            // self.swarm.behaviour_mut().identify.push(all_peers);
-                        }
-                        NatStatus::Private => {
-                            // We could just straight out error here. In the future we might try to activate a relay mechanism.
-                        }
-                        NatStatus::Unknown => {}
-                    };
-                }
-            },
-            other => debug!("SwarmEvent has been ignored: {other:?}"),
+            other => trace!("SwarmEvent has been ignored: {other:?}"),
         }
         Ok(())
     }
 
     /// Forwards `Request` to the upper layers using `Sender<NetworkEvent>`. Sends `Response` to the peers
-    #[allow(clippy::result_large_err)]
     pub fn handle_msg(
         &mut self,
         event: request_response::Event<Request, Response>,
@@ -475,8 +479,9 @@ impl SwarmDriver {
         Ok(())
     }
 
-    #[allow(clippy::result_large_err)]
     fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
+        #[cfg(feature = "open-metricss")]
+        self.network_metrics.record(&kad_event);
         match kad_event {
             ref event @ KademliaEvent::OutboundQueryProgressed {
                 id,
@@ -490,7 +495,9 @@ impl SwarmDriver {
 
                 let (sender, mut current_closest) =
                     self.pending_get_closest_peers.remove(&id).ok_or_else(|| {
-                        trace!("Can't locate query task {id:?}, shall be completed already.");
+                        trace!(
+                            "Can't locate query task {id:?}, it has likely been completed already."
+                        );
                         Error::ReceivedKademliaEventDropped(event.clone())
                     })?;
 
@@ -525,7 +532,7 @@ impl SwarmDriver {
             //          `ProgressStep::count` to be increased with step of 1
             //             capped and stopped at CLOSE_GROUP_SIZE, may have duplicated counts
             //          `PeerRecord::peer` could be None to indicate from self
-            //             in which case it always use a duplicated `PregressStep::count`
+            //             in which case it always use a duplicated `ProgressStep::count`
             //     the sequence will be completed with `FinishedWithNoAdditionalRecord`
             //     where: `cache_candidates`: being the peers supposed to hold the record but not
             //            `ProgressStep::count`: to be `number of received copies plus one`
@@ -554,7 +561,7 @@ impl SwarmDriver {
                 trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?}");
                 if let Some((sender, result_map)) = self.pending_get_record.remove(&id) {
                     if let Some((record, _)) = result_map.values().next() {
-                        info!(
+                        debug!(
                             "Getting record {:?} early completed with {:?} copies received",
                             PrettyPrintRecordKey::from(record.key.clone()),
                             usize::from(step.count) - 1

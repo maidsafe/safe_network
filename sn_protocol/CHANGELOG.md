@@ -6,6 +6,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.10](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.6.9...sn_protocol-v0.6.10) - 2023-09-18
+
+### Added
+- generic transfer receipt
+
+## [0.6.9](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.6.8...sn_protocol-v0.6.9) - 2023-09-14
+
+### Other
+- remove unused error variants
+
+## [0.6.8](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.6.7...sn_protocol-v0.6.8) - 2023-09-13
+
+### Added
+- *(register)* paying nodes for Register storage
+
+## [0.6.7](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.6.6...sn_protocol-v0.6.7) - 2023-09-12
+
+### Added
+- add tx and parent spends verification
+- chunk payments using UTXOs instead of DBCs
+
+### Other
+- use updated sn_dbc
+
+## [0.6.6](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.6.5...sn_protocol-v0.6.6) - 2023-09-11
+
+### Other
+- updated the following local packages: sn_registers
+
 ## [0.6.5](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.6.4...sn_protocol-v0.6.5) - 2023-09-05
 
 ### Other

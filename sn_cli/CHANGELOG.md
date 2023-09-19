@@ -6,6 +6,128 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.49](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.48...sn_cli-v0.81.49) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.81.48](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.47...sn_cli-v0.81.48) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.81.47](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.46...sn_cli-v0.81.47) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.81.46](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.45...sn_cli-v0.81.46) - 2023-09-18
+
+### Fixed
+- avoid verification too close to put; remove un-necessary wait for put
+
+## [0.81.45](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.44...sn_cli-v0.81.45) - 2023-09-18
+
+### Other
+- some cleanups within the upload procedure
+
+## [0.81.44](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.43...sn_cli-v0.81.44) - 2023-09-18
+
+### Other
+- update dependencies
+
+## [0.81.43](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.42...sn_cli-v0.81.43) - 2023-09-18
+
+### Fixed
+- *(cli)* repay and upload after verifying all the chunks
+
+### Other
+- *(cli)* use iter::chunks() API to batch and pay for our chunks
+
+## [0.81.42](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.41...sn_cli-v0.81.42) - 2023-09-15
+
+### Added
+- *(client)* pay for chunks in batches
+
+### Other
+- *(cli)* move 'chunk_path' to files.rs
+- *(client)* refactor chunk upload code to allow greater concurrency
+
+## [0.81.41](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.40...sn_cli-v0.81.41) - 2023-09-15
+
+### Other
+- update dependencies
+
+## [0.81.40](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.39...sn_cli-v0.81.40) - 2023-09-15
+
+### Other
+- update dependencies
+
+## [0.81.39](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.38...sn_cli-v0.81.39) - 2023-09-15
+
+### Other
+- update dependencies
+
+## [0.81.38](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.37...sn_cli-v0.81.38) - 2023-09-14
+
+### Other
+- update dependencies
+
+## [0.81.37](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.36...sn_cli-v0.81.37) - 2023-09-14
+
+### Added
+- expose batch_size to cli
+- split upload procedure into batches
+
+## [0.81.36](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.35...sn_cli-v0.81.36) - 2023-09-14
+
+### Other
+- *(metrics)* rename feature flag and small fixes
+
+## [0.81.35](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.34...sn_cli-v0.81.35) - 2023-09-13
+
+### Added
+- *(register)* paying nodes for Register storage
+
+## [0.81.34](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.33...sn_cli-v0.81.34) - 2023-09-12
+
+### Added
+- utilize stream decryptor
+
+## [0.81.33](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.32...sn_cli-v0.81.33) - 2023-09-12
+
+### Other
+- update dependencies
+
+## [0.81.32](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.31...sn_cli-v0.81.32) - 2023-09-12
+
+### Other
+- *(metrics)* rename network metrics and remove from default features list
+
+## [0.81.31](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.30...sn_cli-v0.81.31) - 2023-09-12
+
+### Added
+- add tx and parent spends verification
+- chunk payments using UTXOs instead of DBCs
+
+### Other
+- use updated sn_dbc
+
+## [0.81.30](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.29...sn_cli-v0.81.30) - 2023-09-11
+
+### Other
+- update dependencies
+
+## [0.81.29](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.28...sn_cli-v0.81.29) - 2023-09-11
+
+### Other
+- utilize stream encryptor
+
+## [0.81.28](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.27...sn_cli-v0.81.28) - 2023-09-11
+
+### Other
+- update dependencies
+
 ## [0.81.27](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.26...sn_cli-v0.81.27) - 2023-09-08
 
 ### Added

@@ -15,7 +15,11 @@ use common::{get_client_and_wallet, init_logging, random_content};
 use sn_client::{Error as ClientError, WalletClient};
 use sn_dbc::{PublicAddress, Token};
 use sn_networking::Error as NetworkError;
-use sn_protocol::storage::ChunkAddress;
+use sn_protocol::{
+    error::Error as ProtocolError,
+    storage::{ChunkAddress, RegisterAddress},
+    NetworkAddress,
+};
 
 use assert_fs::TempDir;
 use eyre::Result;
@@ -69,11 +73,16 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
     let wallet_original_balance = 100_000_000_000;
 
     let paying_wallet_dir: TempDir = TempDir::new()?;
+    let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
-    let (files_api, content_bytes, _random_content_addrs, chunks) =
-        random_content(&client, paying_wallet_dir.to_path_buf())?;
+
+    let (files_api, content_bytes, _random_content_addrs, chunks) = random_content(
+        &client,
+        paying_wallet_dir.to_path_buf(),
+        chunks_dir.path().to_path_buf(),
+    )?;
 
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
     let subset_len = chunks.len() / 3;
@@ -83,7 +92,7 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
                 .clone()
                 .into_iter()
                 .take(subset_len)
-                .map(|c| c.network_address()),
+                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(name))),
             true,
         )
         .await?;
@@ -91,7 +100,7 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
     // now let's request to upload all addresses, even that we've already paid for a subset of them
     let verify_store = false;
     let res = files_api
-        .upload_with_payments(content_bytes, &wallet_client, verify_store)
+        .upload_with_payments(content_bytes, verify_store)
         .await;
     assert!(
         res.is_err(),
@@ -167,25 +176,32 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
     let paying_wallet_balance = 50_000_000_000_002;
     let paying_wallet_dir = TempDir::new()?;
+    let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, content_addr, chunks) =
-        random_content(&client, paying_wallet_dir.to_path_buf())?;
+    let (files_api, content_bytes, content_addr, chunks) = random_content(
+        &client,
+        paying_wallet_dir.to_path_buf(),
+        chunks_dir.path().to_path_buf(),
+    )?;
 
     println!("Paying for {} random addresses...", chunks.len());
 
     let _cost = wallet_client
-        .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
+        .pay_for_storage(
+            chunks
+                .iter()
+                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
+            true,
+        )
         .await?;
 
-    files_api
-        .upload_with_payments(content_bytes, &wallet_client, true)
-        .await?;
+    files_api.upload_with_payments(content_bytes, true).await?;
 
-    files_api.read_bytes(content_addr).await?;
+    files_api.read_bytes(content_addr, None).await?;
 
     Ok(())
 }
@@ -194,24 +210,33 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 async fn storage_payment_chunk_upload_fails() -> Result<()> {
     let paying_wallet_balance = 50_000_000_000_003;
     let paying_wallet_dir = TempDir::new()?;
+    let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, content_addr, chunks) =
-        random_content(&client, paying_wallet_dir.to_path_buf())?;
+    let (files_api, content_bytes, content_addr, chunks) = random_content(
+        &client,
+        paying_wallet_dir.to_path_buf(),
+        chunks_dir.path().to_path_buf(),
+    )?;
 
     println!("Paying for {} random addresses...", chunks.len());
 
     let _cost = wallet_client
-        .pay_for_storage(chunks.iter().map(|c| c.network_address()), true)
+        .pay_for_storage(
+            chunks
+                .iter()
+                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
+            true,
+        )
         .await?;
 
     let mut no_data_payments = BTreeMap::default();
-    for chunk in chunks {
+    for (chunk_name, _) in chunks.iter() {
         no_data_payments.insert(
-            chunk.network_address(),
+            NetworkAddress::ChunkAddress(ChunkAddress::new(*chunk_name)),
             vec![(
                 PublicAddress::new(bls::SecretKey::random().public_key()),
                 Token::from_nano(0),
@@ -230,13 +255,103 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
 
     // this should fail to store as the amount paid is not enough
     files_api
-        .upload_with_payments(content_bytes.clone(), &wallet_client, false)
+        .upload_with_payments(content_bytes.clone(), false)
         .await?;
 
     assert!(matches!(
-        files_api.read_bytes(content_addr).await,
+        files_api.read_bytes(content_addr, None).await,
         Err(ClientError::Network(NetworkError::RecordNotFound))
     ));
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn storage_payment_register_creation_succeeds() -> Result<()> {
+    let paying_wallet_balance = 65_000_000_000;
+    let paying_wallet_dir = TempDir::new()?;
+
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    println!("Paying for random Register address...");
+    let mut rng = rand::thread_rng();
+    let xor_name = XorName::random(&mut rng);
+    let address = RegisterAddress::new(xor_name, client.signer_pk());
+    let net_addr = NetworkAddress::from_register_address(address);
+
+    let _cost = wallet_client
+        .pay_for_storage(std::iter::once(net_addr), true)
+        .await?;
+
+    let mut register = client
+        .create_register(xor_name, &mut wallet_client, true)
+        .await?;
+
+    let retrieved_reg = client.get_register(address).await?;
+
+    assert_eq!(register.read(), retrieved_reg.read());
+
+    let random_entry = rng.gen::<[u8; 32]>().to_vec();
+
+    register.write(&random_entry)?;
+    register.sync(&mut wallet_client, true).await?;
+
+    let retrieved_reg = client.get_register(address).await?;
+
+    assert_eq!(retrieved_reg.read().iter().next().unwrap().1, random_entry);
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
+    let paying_wallet_balance = 55_000_000_005;
+    let paying_wallet_dir = TempDir::new()?;
+
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    let mut rng = rand::thread_rng();
+    let xor_name = XorName::random(&mut rng);
+    let address = RegisterAddress::new(xor_name, client.signer_pk());
+    let net_address =
+        NetworkAddress::RegisterAddress(RegisterAddress::new(xor_name, client.signer_pk()));
+
+    let mut no_data_payments = BTreeMap::default();
+    no_data_payments.insert(
+        net_address.clone(),
+        vec![(
+            PublicAddress::new(bls::SecretKey::random().public_key()),
+            Token::from_nano(0),
+        )],
+    );
+
+    wallet_client
+        .mut_wallet()
+        .local_send_storage_payment(no_data_payments, None)?;
+
+    // this should fail to store as the amount paid is not enough
+    let mut register = client
+        .create_register(xor_name, &mut wallet_client, false)
+        .await?;
+
+    sleep(Duration::from_secs(5)).await;
+    assert!(matches!(
+        client.get_register(address).await,
+        Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
+    ));
+
+    let random_entry = rng.gen::<[u8; 32]>().to_vec();
+    register.write(&random_entry)?;
+
+    sleep(Duration::from_secs(5)).await;
+    assert!(matches!(
+    register.sync(&mut wallet_client, false).await,
+            Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
+        ));
 
     Ok(())
 }
