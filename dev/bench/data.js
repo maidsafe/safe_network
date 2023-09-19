@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695131866270,
+  "lastUpdate": 1695136787971,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8302,6 +8302,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.602337411642934,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "0200aae7afe62d9cbd2f969a747bd27097caef1e",
+          "message": "chore(ntworking): record changes to range of responsibility",
+          "timestamp": "2023-09-19T14:09:31Z",
+          "tree_id": "1d781bc6fab7e3ccb3b3f16c2c52a014baeee7ca",
+          "url": "https://github.com/maidsafe/safe_network/commit/0200aae7afe62d9cbd2f969a747bd27097caef1e"
+        },
+        "date": 1695136786222,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11024299482113942,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5432293909274182,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.489410168157986,
             "unit": "MiB/s"
           }
         ]
