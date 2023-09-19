@@ -79,6 +79,19 @@ const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
+// Protocol support shall be downward compatible for patch only version update.
+// i.e. versions of `A.B.X` shall be considered as a same protocol of `A.B`
+pub(crate) fn truncate_patch_version(full_str: &str) -> &str {
+    if full_str.matches('.').count() == 2 {
+        match full_str.rfind('.') {
+            Some(pos) => &full_str[..pos],
+            None => full_str,
+        }
+    } else {
+        full_str
+    }
+}
+
 /// NodeBehaviour struct
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
@@ -203,7 +216,7 @@ impl NetworkBuilder {
             Some(store_cfg),
             false,
             ProtocolSupport::Full,
-            SN_NODE_VERSION_STR.to_string(),
+            truncate_patch_version(SN_NODE_VERSION_STR).to_string(),
         )?;
 
         // Listen on the provided address
@@ -246,7 +259,7 @@ impl NetworkBuilder {
             None,
             true,
             ProtocolSupport::Outbound,
-            IDENTIFY_CLIENT_VERSION_STR.to_string(),
+            truncate_patch_version(IDENTIFY_CLIENT_VERSION_STR).to_string(),
         )?;
 
         if let Some(limit) = concurrency_limit {
@@ -277,7 +290,7 @@ impl NetworkBuilder {
 
             request_response::cbor::Behaviour::new(
                 [(
-                    StreamProtocol::new(REQ_RESPONSE_VERSION_STR),
+                    StreamProtocol::new(truncate_patch_version(REQ_RESPONSE_VERSION_STR)),
                     req_res_protocol,
                 )],
                 cfg,
@@ -323,7 +336,7 @@ impl NetworkBuilder {
         // Identify Behaviour
         let identify = {
             let cfg = libp2p::identify::Config::new(
-                IDENTIFY_PROTOCOL_STR.to_string(),
+                truncate_patch_version(IDENTIFY_PROTOCOL_STR).to_string(),
                 self.keypair.public(),
             )
             .with_agent_version(identify_version);
