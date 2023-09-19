@@ -17,7 +17,7 @@ bls = { package = "blsttc", version = "8.0.1" }
 custom_debug = "~0.5.0"
 dirs-next = "~2.0.0"
 hex = "~0.4.3"
-itertools = "~0.10.1"
+itertools = "~0.11.0"
 lazy_static = "~1.4.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
