@@ -8,7 +8,7 @@
 
 use crate::{
     close_group_majority,
-    driver::SwarmDriver,
+    driver::{truncate_patch_version, SwarmDriver},
     error::{Error, Result},
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
 };
@@ -44,7 +44,7 @@ use tracing::{info, warn};
 use xor_name::XorName;
 
 /// Our agent string has as a prefix that we can match against.
-const IDENTIFY_AGENT_STR: &str = "safe/node/";
+const IDENTIFY_AGENT_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
 
 /// Using XorName to differentiate different record content under the same key.
 pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
@@ -196,7 +196,9 @@ impl SwarmDriver {
                         if (self.local
                             || self.dialed_peers.contains(&peer_id)
                             || self.unroutable_peers.contains(&peer_id))
-                            && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
+                            && info
+                                .agent_version
+                                .starts_with(truncate_patch_version(IDENTIFY_AGENT_STR))
                         {
                             let addrs = match self.local {
                                 true => info.listen_addrs,
