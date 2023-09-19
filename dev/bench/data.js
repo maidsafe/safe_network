@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695121650231,
+  "lastUpdate": 1695121651983,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -19222,6 +19222,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 174,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "310879f528079a6603a8604a6dd6f739e35785c1",
+          "message": "chore: error handling when failed fetch store cost",
+          "timestamp": "2023-09-19T10:01:59Z",
+          "tree_id": "4fdbc95567f0c2209203676d2cd23f22b23ec928",
+          "url": "https://github.com/maidsafe/safe_network/commit/310879f528079a6603a8604a6dd6f739e35785c1"
+        },
+        "date": 1695121651581,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 216.01076,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 176,
             "unit": "MB"
           }
         ]
