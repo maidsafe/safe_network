@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695121336309,
+  "lastUpdate": 1695121650231,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -13717,6 +13717,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 61.12051,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "310879f528079a6603a8604a6dd6f739e35785c1",
+          "message": "chore: error handling when failed fetch store cost",
+          "timestamp": "2023-09-19T10:01:59Z",
+          "tree_id": "4fdbc95567f0c2209203676d2cd23f22b23ec928",
+          "url": "https://github.com/maidsafe/safe_network/commit/310879f528079a6603a8604a6dd6f739e35785c1"
+        },
+        "date": 1695121649847,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 58.118145,
             "unit": "MB"
           }
         ]
