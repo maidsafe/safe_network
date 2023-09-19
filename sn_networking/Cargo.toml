@@ -21,11 +21,11 @@ async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
 futures = "~0.3.13"
 hyper = { version = "0.14", features = ["server", "tcp", "http1"], optional = true}
-itertools = "~0.10.1"
+itertools = "~0.11.0"
 custom_debug = "~0.5.0"
 libp2p = { version="0.52", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux"] }
 libp2p-metrics = { version = "0.13.1", features = ["identify", "kad", ], optional = true }
-libp2p-quic = { version = "0.8.0-alpha", features = ["tokio"], optional = true }
+libp2p-quic = { version = "0.9.2", features = ["tokio"], optional = true }
 prometheus-client = { version = "0.21.2", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
