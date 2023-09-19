@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695113344680,
+  "lastUpdate": 1695113347330,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -19120,6 +19120,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 182,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "8422399a2773e9da3dfb6609417552a929af55bb",
+          "message": "feat: log payment amount",
+          "timestamp": "2023-09-19T07:44:53Z",
+          "tree_id": "ebf5548ed876f335672a159fde3453842813377a",
+          "url": "https://github.com/maidsafe/safe_network/commit/8422399a2773e9da3dfb6609417552a929af55bb"
+        },
+        "date": 1695113346391,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 218.46835,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 174,
             "unit": "MB"
           }
         ]
