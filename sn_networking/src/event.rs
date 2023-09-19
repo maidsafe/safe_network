@@ -728,7 +728,6 @@ impl SwarmDriver {
     /// Set the acceptable range of record entry. A record is removed from the storage if the
     /// distance between the record and the node is greater than the `distance_range`
     fn update_record_distance_range(&mut self) -> Option<()> {
-        debug!("setting record distance range on close group change");
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         let distance_range = self
             .close_group
@@ -740,7 +739,7 @@ impl SwarmDriver {
             .kademlia
             .store_mut()
             .set_distance_range(distance_range);
-        trace!("set distance_range successfully");
+        debug!("set distance_range successfully to {distance_range:?}");
         Some(())
     }
 
