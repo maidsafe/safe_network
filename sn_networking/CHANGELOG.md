@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.8...sn_networking-v0.6.9) - 2023-09-19
+
+### Fixed
+- shorter wait on verification put
+
 ## [0.6.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.7...sn_networking-v0.6.8) - 2023-09-18
 
 ### Fixed
