@@ -1298,6 +1298,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.90.19](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.18...sn_node-v0.90.19) - 2023-09-19
+
+### Added
+- log payment amount
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
