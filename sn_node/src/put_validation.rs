@@ -458,7 +458,7 @@ impl Node {
         wallet
             .store()
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
-        trace!("Payment accepted for record {pretty_key:?}");
+        info!("Payment of {received_fee:?} nanos accepted for record {pretty_key:?}");
 
         Ok(())
     }
