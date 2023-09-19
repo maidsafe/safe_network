@@ -15,7 +15,7 @@ mod subcommands;
 use crate::{
     cli::Opt,
     subcommands::{
-        files::{files_cmds, offline_files_cmds, FilesCmds},
+        files::files_cmds,
         register::register_cmds,
         wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
         SubCmd,
@@ -66,11 +66,6 @@ async fn main() -> Result<()> {
         | WalletCmds::GetFaucet { .. } = cmds
         {
             wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
-            return Ok(());
-        }
-    } else if let SubCmd::Files(cmd) = &opt.cmd {
-        if let FilesCmds::Ls {} = cmd {
-            offline_files_cmds(cmd, &client_data_dir_path).await?;
             return Ok(());
         }
     }
