@@ -28,6 +28,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
 
+      - run: sudo apt-get install protobuf-compiler
+
       - name: Build node and client
         run: cargo build --release --bin safenode --bin safe --bin faucet
         timeout-minutes: 30
