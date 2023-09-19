@@ -12,7 +12,11 @@ use super::{
 };
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
-use libp2p::{identity::Keypair, kad::Record, Multiaddr};
+use libp2p::{
+    identity::Keypair,
+    kad::{Quorum, Record},
+    Multiaddr,
+};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_dbc::{DbcId, PublicAddress, SignedSpend, Token};
@@ -324,7 +328,7 @@ impl Client {
 
         Ok(self
             .network
-            .put_record(record, record_to_verify, optional_permit)
+            .put_record(record, record_to_verify, optional_permit, Quorum::One)
             .await?)
     }
 
@@ -371,7 +375,7 @@ impl Client {
 
         Ok(self
             .network
-            .put_record(record, record_to_verify, None)
+            .put_record(record, record_to_verify, None, Quorum::All)
             .await?)
     }
 

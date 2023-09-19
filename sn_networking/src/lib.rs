@@ -34,7 +34,7 @@ use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketKey, Record, RecordKey},
+    kad::{KBucketKey, Quorum, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
@@ -355,25 +355,14 @@ impl Network {
     }
 
     /// Put `Record` to network
-    /// optionally verify the record is stored after putting it to network
+    /// Optionally verify the record is stored after putting it to network
+    /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
     pub async fn put_record(
         &self,
         record: Record,
         verify_store: Option<Record>,
-        optional_permit: Option<OwnedSemaphorePermit>,
-    ) -> Result<()> {
-        self.put_record_with_retries(record, verify_store, optional_permit)
-            .await
-    }
-
-    /// Put `Record` to network
-    /// Verify the record is stored after putting it to network
-    /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
-    async fn put_record_with_retries(
-        &self,
-        record: Record,
-        verify_store: Option<Record>,
         mut optional_permit: Option<OwnedSemaphorePermit>,
+        quorum: Quorum,
     ) -> Result<()> {
         let mut retries = 0;
 
@@ -386,7 +375,12 @@ impl Network {
             );
 
             let res = self
-                .put_record_once(record.clone(), verify_store.clone(), optional_permit)
+                .put_record_once(
+                    record.clone(),
+                    verify_store.clone(),
+                    optional_permit,
+                    quorum,
+                )
                 .await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
@@ -405,6 +399,7 @@ impl Network {
         record: Record,
         verify_store: Option<Record>,
         starting_permit: Option<OwnedSemaphorePermit>,
+        quorum: Quorum,
     ) -> Result<()> {
         let mut _permit = starting_permit;
 
@@ -421,6 +416,7 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::PutRecord {
             record: record.clone(),
             sender,
+            quorum,
         })?;
         let response = receiver.await?;
 
