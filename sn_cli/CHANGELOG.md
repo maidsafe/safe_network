@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.50](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.49...sn_cli-v0.81.50) - 2023-09-19
+
+### Other
+- error handling when failed fetch store cost
+
 ## [0.81.49](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.48...sn_cli-v0.81.49) - 2023-09-19
 
 ### Other
