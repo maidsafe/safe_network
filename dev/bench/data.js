@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695218015454,
+  "lastUpdate": 1695218334232,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -14465,6 +14465,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 62.431232,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d9eaf409b07df97d8eb2d38495c43b2f4aac1831",
+          "message": "ci: fix borked release workflow file",
+          "timestamp": "2023-09-20T15:24:04+02:00",
+          "tree_id": "c85c43491058cf956502b3a582474c998cefad9b",
+          "url": "https://github.com/maidsafe/safe_network/commit/d9eaf409b07df97d8eb2d38495c43b2f4aac1831"
+        },
+        "date": 1695218333440,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 60.42419,
             "unit": "MB"
           }
         ]
