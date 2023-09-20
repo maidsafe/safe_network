@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695194998681,
+  "lastUpdate": 1695195303121,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -13989,6 +13989,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 64.462845,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "22b379796152807aeb0b644b0987f402004973c1",
+          "message": "ci: install protobuf compiler for ubuntu workflows",
+          "timestamp": "2023-09-20T06:06:43Z",
+          "tree_id": "0da8fca346fb9496980db205bd05dfc0c0ce4463",
+          "url": "https://github.com/maidsafe/safe_network/commit/22b379796152807aeb0b644b0987f402004973c1"
+        },
+        "date": 1695195302235,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 64.14745,
             "unit": "MB"
           }
         ]
