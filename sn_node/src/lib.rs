@@ -60,8 +60,8 @@ pub use self::{
 };
 
 use libp2p::Multiaddr;
-use sn_dbc::PublicAddress;
 use sn_networking::Network;
+use sn_transfers::MainPubkey;
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
@@ -72,7 +72,7 @@ pub struct Node {
     events_channel: NodeEventsChannel,
     /// Peers that are dialed at startup of node.
     initial_peers: Vec<Multiaddr>,
-    reward_address: PublicAddress,
+    reward_address: MainPubkey,
     #[cfg(feature = "open-metrics")]
     node_metrics: metrics::NodeMetrics,
 }

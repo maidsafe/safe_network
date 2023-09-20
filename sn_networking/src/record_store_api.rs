@@ -11,8 +11,8 @@ use libp2p::kad::{
     store::{RecordStore, Result},
     KBucketDistance as Distance, ProviderRecord, Record, RecordKey,
 };
-use sn_dbc::Token;
 use sn_protocol::NetworkAddress;
+use sn_transfers::Nano;
 use std::{borrow::Cow, collections::HashSet};
 
 pub enum UnifiedRecordStore {
@@ -111,11 +111,11 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn store_cost(&self) -> Token {
+    pub(crate) fn store_cost(&self) -> Nano {
         match self {
             Self::Client(_) => {
                 warn!("Calling store cost calculation at Client. This should not happen");
-                Token::zero()
+                Nano::zero()
             }
             Self::Node(store) => store.store_cost(),
         }

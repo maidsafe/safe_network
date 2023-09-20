@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_dbc::{Error as DbcError, Token};
+use crate::{Error as CashNoteError, Nano};
 
 use thiserror::Error;
 
@@ -19,11 +19,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Not enough balance to perform a transaction
     #[error("Not enough balance, {0} available, {1} required")]
-    NotEnoughBalance(Token, Token),
-    /// An error from the `sn_dbc` crate.
-    #[error("Dbc error: {0}")]
-    Dbcs(#[from] Box<DbcError>),
-    /// DbcReissueFailed
-    #[error("DbcReissueFailed: {0}")]
-    DbcReissueFailed(String),
+    NotEnoughBalance(Nano, Nano),
+    /// An error from the `sn_transfers` crate.
+    #[error("CashNote error: {0}")]
+    CashNotes(#[from] Box<CashNoteError>),
+    /// CashNoteReissueFailed
+    #[error("CashNoteReissueFailed: {0}")]
+    CashNoteReissueFailed(String),
 }
