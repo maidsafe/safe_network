@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695198989703,
+  "lastUpdate": 1695204304092,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8458,6 +8458,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.603253618904533,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "8f9791027e76183f95dcf96522426b9f06a48efd",
+          "message": "fix: make clearer cli send asks for whole token amounts, not nanos",
+          "timestamp": "2023-09-20T09:02:59Z",
+          "tree_id": "76883c1f6d3f5a00bff0672765a29c92b211e1f0",
+          "url": "https://github.com/maidsafe/safe_network/commit/8f9791027e76183f95dcf96522426b9f06a48efd"
+        },
+        "date": 1695204301777,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.1058300061550275,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5312544585796894,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.738527231375829,
             "unit": "MiB/s"
           }
         ]
