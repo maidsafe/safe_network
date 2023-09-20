@@ -34,6 +34,8 @@ jobs:
             target: aarch64-unknown-linux-musl
     steps:
       - uses: actions/checkout@v3
+      
+
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -72,7 +74,8 @@ jobs:
       AWS_DEFAULT_REGION: eu-west-2
       GH_TOKEN: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
 
-    st
+    steps:
+
 
       - uses: actions/checkout@v3
         with:
