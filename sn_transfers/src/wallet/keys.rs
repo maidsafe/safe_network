@@ -25,7 +25,7 @@ pub fn parse_main_pubkey<T: AsRef<[u8]>>(hex: T) -> Result<MainPubkey> {
 }
 
 /// Writes the public address and main key (hex-encoded) to different locations at disk.
-pub(super) fn store_new_keypair(wallet_dir: &Path, main_key: &MainSecretKey) -> Result<()> {
+pub(crate) fn store_new_keypair(wallet_dir: &Path, main_key: &MainSecretKey) -> Result<()> {
     let secret_key_path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);
     let public_key_path = wallet_dir.join(MAIN_PUBKEY_FILENAME);
     std::fs::write(secret_key_path, encode(main_key.to_bytes()))?;

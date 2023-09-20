@@ -61,7 +61,7 @@ impl TransactionBuilder {
         let input_src_tx = cashnote.src_tx.clone();
         let input = Input {
             unique_pubkey: cashnote.unique_pubkey(),
-            amount: cashnote.token()?,
+            amount: cashnote.value()?,
         };
         self = self.add_input(input, derived_key.clone(), input_src_tx);
         Ok(self)

@@ -65,6 +65,7 @@ pub use self::{
     keys::{bls_secret_from_hex, parse_main_pubkey},
     local_store::LocalWallet,
 };
+pub(crate) use keys::store_new_keypair;
 pub use transfer::{CashNoteRedemption, Transfer};
 
 use crate::{MainPubkey, NanoTokens, UniquePubkey};

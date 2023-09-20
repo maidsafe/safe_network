@@ -67,7 +67,7 @@ fn select_inputs(
     for (cash_note, derived_key) in available_cash_notes {
         let input_key = cash_note.unique_pubkey();
 
-        let cash_note_balance = match cash_note.token() {
+        let cash_note_balance = match cash_note.value() {
             Ok(token) => token,
             Err(err) => {
                 warn!(
@@ -135,7 +135,7 @@ fn create_transfer_with(
     let mut inputs = vec![];
     let mut src_txs = BTreeMap::new();
     for (cash_note, derived_key) in selected_inputs.cash_notes_to_spend {
-        let token = match cash_note.token() {
+        let token = match cash_note.value() {
             Ok(token) => token,
             Err(err) => {
                 warn!("Ignoring cash_note, as it didn't have the correct derived key: {err}");
