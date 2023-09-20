@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.55](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.54...sn_cli-v0.81.55) - 2023-09-20
+
+### Fixed
+- make clearer cli send asks for whole token amounts, not nanos
+
 ## [0.81.54](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.53...sn_cli-v0.81.54) - 2023-09-20
 
 ### Other
