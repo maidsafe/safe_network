@@ -77,4 +77,11 @@ pub(crate) struct Opt {
     /// This may increase operation speed, but offers no guarantees that operations were successful.
     #[clap(global = true, short = 'n')]
     pub no_verify: bool,
+
+    /// Specify the name of the network that you'd like to connect.
+    ///
+    /// This argument will be ignored if the "peers" argument is set or if the `local-discovery` feature flag is
+    /// enabled.
+    #[clap(long = "network")]
+    pub network_name: Option<String>,
 }
