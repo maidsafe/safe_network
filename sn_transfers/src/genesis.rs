@@ -104,10 +104,10 @@ pub fn create_genesis_wallet() -> LocalWallet {
 
     let secret_key = bls::SecretKey::from_hex(GENESIS_CASHNOTE_SK)
         .expect("Genesis key hex shall be successfully parsed.");
+    debug!("genesis wallet pubkey: {:?}", secret_key.public_key());
     let main_key = MainSecretKey::new(secret_key);
-    let main_key_path = wallet_dir.join("main_key");
-    std::fs::write(main_key_path, hex::encode(main_key.to_bytes()))
-        .expect("Genesis key hex shall be successfully stored.");
+    crate::wallet::store_new_keypair(&wallet_dir, &main_key)
+        .expect("Genesis key shall be successfully stored.");
 
     LocalWallet::load_from(&root_dir)
         .expect("Faucet wallet (after genesis) shall be created successfully.")
@@ -120,6 +120,7 @@ pub(crate) fn create_first_cash_note_from_key(
     first_cash_note_key: &MainSecretKey,
 ) -> GenesisResult<CashNote> {
     let main_pubkey = first_cash_note_key.main_pubkey();
+    debug!("genesis cashnote main_pubkey: {:?}", main_pubkey);
     let derivation_index = [0u8; 32];
     let derived_key = first_cash_note_key.derive_key(&derivation_index);
 
@@ -177,7 +178,7 @@ pub(super) fn split(
         .derived_key(main_key)
         .map_err(|e| Error::FailedToParseReason(Box::new(e)))?;
     let token = cash_note
-        .token()
+        .value()
         .map_err(|e| Error::FailedToParseReason(Box::new(e)))?;
     let input = Input {
         unique_pubkey: cash_note.unique_pubkey(),
