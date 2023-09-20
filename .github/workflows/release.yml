@@ -34,6 +34,8 @@ jobs:
             target: aarch64-unknown-linux-musl
     steps:
       - uses: actions/checkout@v3
+      - run: sudo apt-get install protobuf-compiler
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -72,10 +74,13 @@ jobs:
       GH_TOKEN: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
 
     steps:
+      - run: sudo apt-get install protobuf-compiler
+
       - uses: actions/checkout@v3
         with:
           fetch-depth: "0"
           token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+        
       - uses: actions/download-artifact@master
         with:
           name: safe_network-x86_64-pc-windows-msvc
