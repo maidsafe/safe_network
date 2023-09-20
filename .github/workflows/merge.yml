@@ -98,10 +98,6 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build unit tests before running
-        run: cargo test --release --lib --bins --no-run 
-        timeout-minutes: 30
-
       - name: Run testnet tests
         timeout-minutes: 25
         run: cargo test --release --package sn_testnet
