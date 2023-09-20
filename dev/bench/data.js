@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695192410530,
+  "lastUpdate": 1695194998681,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8380,6 +8380,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.529911381652327,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "22b379796152807aeb0b644b0987f402004973c1",
+          "message": "ci: install protobuf compiler for ubuntu workflows",
+          "timestamp": "2023-09-20T06:06:43Z",
+          "tree_id": "0da8fca346fb9496980db205bd05dfc0c0ce4463",
+          "url": "https://github.com/maidsafe/safe_network/commit/22b379796152807aeb0b644b0987f402004973c1"
+        },
+        "date": 1695194995679,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10646063261230496,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5348787861428431,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.518205835277292,
             "unit": "MiB/s"
           }
         ]
