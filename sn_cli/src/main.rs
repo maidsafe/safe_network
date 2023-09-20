@@ -24,7 +24,7 @@ use crate::{
 };
 use bls::SecretKey;
 use clap::Parser;
-use color_eyre::Result;
+use color_eyre::{eyre::Context, Result};
 use libp2p::Multiaddr;
 use sn_client::Client;
 #[cfg(feature = "metrics")]
@@ -34,9 +34,10 @@ use std::path::PathBuf;
 use tracing::Level;
 
 const CLIENT_KEY: &str = "clientkey";
-// URL containing the multi-addresses of the bootstrap nodes
-#[cfg(feature = "network-contacts")]
-const NETWORK_CONTACTS_URL: &str = "PLACEHOLDER";
+// URL containing the multi-addresses of the bootstrap nodes.
+const NETWORK_CONTACTS_URL: &str = "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts";
+// The maximum number of retries to be performed while trying to fetch the network contacts file.
+const MAX_NETWORK_CONTACTS_GET_RETRIES: usize = 3;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -77,24 +78,31 @@ async fn main() -> Result<()> {
     println!("Instantiating a SAFE client...");
     let secret_key = get_client_secret_key(&client_data_dir_path)?;
 
-    let peers: Option<Vec<Multiaddr>> = if opt.peers.peers.is_empty() {
-        if cfg!(feature = "local-discovery") {
-            info!("No peers given. As `local-discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
-            None
-        } else if cfg!(feature = "network-contacts") {
-            info!("No peers given and `local-discovery` feature is disabled. As 'network-contacts' feature is enabled, trying to fetch the network contacts from s3.");
-            #[cfg(feature = "network-contacts")]
-            let peers = Some(get_bootstrap_peers_from_s3().await?);
-            #[cfg(not(feature = "network-contacts"))]
-            let peers = None;
-            peers
-        } else {
-            let log_str = "No peers were passed using the '--peers' argument. And both the 'local-discovery' and 'network-contacts' flags are disabled. Thus we cannot connect to the network.";
-            warn!(log_str);
-            return Err(color_eyre::eyre::eyre!(log_str));
-        }
-    } else {
+    let peers: Option<Vec<Multiaddr>> = if !opt.peers.peers.is_empty() {
         Some(opt.peers.peers)
+    } else if cfg!(feature = "local-discovery") {
+        info!("No peers given. As `local-discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
+        None
+    } else {
+        let network_contacts_url = opt
+            .network_name
+            .map(|name| format!("{NETWORK_CONTACTS_URL}-{name}"))
+            .unwrap_or(NETWORK_CONTACTS_URL.to_string());
+        let network_contacts_url = url::Url::parse(&network_contacts_url)
+            .wrap_err("Error while parsing the network contacts URL")?;
+
+        info!("No peers given and `local-discovery` feature is disabled. Trying to fetch the network contacts from {network_contacts_url}");
+        match get_bootstrap_peers_from_url(&network_contacts_url).await {
+            Ok(peers) => Some(peers),
+            Err(err) => {
+                let err = err.wrap_err(format!(
+                    "Error while fetching bootstrap peers from {network_contacts_url}"
+                ));
+
+                error!("{err:?}");
+                return Err(color_eyre::eyre::eyre!(err));
+            }
+        }
     };
 
     let client = Client::new(secret_key, peers, opt.timeout, opt.concurrency).await?;
@@ -124,15 +132,11 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/// Get bootstrap peers from the Network Contacts file stored in s3
-/// This file is updated by Maidsafe and contains the contacts for the currently running "network"
-#[cfg(feature = "network-contacts")]
-async fn get_bootstrap_peers_from_s3() -> Result<Vec<Multiaddr>> {
-    const MAX_RETRIES: usize = 3;
-
+/// Get bootstrap peers from the Network contacts file stored in the given URL.
+async fn get_bootstrap_peers_from_url(url: &url::Url) -> Result<Vec<Multiaddr>> {
     let mut retries = 0;
     loop {
-        let response = reqwest::get(url::Url::parse(NETWORK_CONTACTS_URL)?).await;
+        let response = reqwest::get(url.clone()).await;
 
         match response {
             Ok(response) => {
@@ -157,23 +161,23 @@ async fn get_bootstrap_peers_from_s3() -> Result<Vec<Multiaddr>> {
                     }
                 } else {
                     retries += 1;
-                    if retries >= MAX_RETRIES {
+                    if retries >= MAX_NETWORK_CONTACTS_GET_RETRIES {
                         return Err(color_eyre::eyre::eyre!(
-                            "Could not GET network contacts from {NETWORK_CONTACTS_URL} after {MAX_RETRIES} retries",
+                            "Could not GET network contacts from {NETWORK_CONTACTS_URL} after {MAX_NETWORK_CONTACTS_GET_RETRIES} retries",
                         ));
                     }
                 }
             }
             Err(err) => {
                 retries += 1;
-                if retries >= MAX_RETRIES {
+                if retries >= MAX_NETWORK_CONTACTS_GET_RETRIES {
                     return Err(color_eyre::eyre::eyre!(
-                        "Failed to perform request to {NETWORK_CONTACTS_URL} after {MAX_RETRIES} retries due to: {err:?}"
+                        "Failed to perform request to {NETWORK_CONTACTS_URL} after {MAX_NETWORK_CONTACTS_GET_RETRIES} retries due to: {err:?}"
                     ));
                 }
             }
         }
-        trace!("Failed to get bootstrap peers from s3, retrying {retries}/{MAX_RETRIES}");
+        trace!("Failed to get bootstrap peers from s3, retrying {retries}/{MAX_NETWORK_CONTACTS_GET_RETRIES}");
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
 }
