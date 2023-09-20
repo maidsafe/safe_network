@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::GenesisMaterial;
-use crate::{mock, CashNote, Hash, Nano, Result, TransactionBuilder};
+use crate::{mock, CashNote, Hash, NanoTokens, Result, TransactionBuilder};
 
 /// A builder for initializing a set of N spentbooks and generating a
 /// genesis cashnote with amount Z.
@@ -36,7 +36,14 @@ impl GenesisBuilder {
 
     /// builds and returns spentbooks, genesis_cashnote_shares, and genesis cashnote
     #[allow(clippy::type_complexity)]
-    pub fn build(mut self) -> Result<(Vec<mock::SpentbookNode>, CashNote, GenesisMaterial, Nano)> {
+    pub fn build(
+        mut self,
+    ) -> Result<(
+        Vec<mock::SpentbookNode>,
+        CashNote,
+        GenesisMaterial,
+        NanoTokens,
+    )> {
         let genesis_material = GenesisMaterial::default();
         let cashnote_builder = TransactionBuilder::default()
             .add_input(
@@ -72,7 +79,12 @@ impl GenesisBuilder {
     #[allow(clippy::type_complexity)]
     pub fn init_genesis(
         num_spentbook_nodes: usize,
-    ) -> Result<(Vec<mock::SpentbookNode>, CashNote, GenesisMaterial, Nano)> {
+    ) -> Result<(
+        Vec<mock::SpentbookNode>,
+        CashNote,
+        GenesisMaterial,
+        NanoTokens,
+    )> {
         Self::default()
             .gen_spentbook_nodes(num_spentbook_nodes)
             .build()
@@ -82,7 +94,8 @@ impl GenesisBuilder {
     /// and genesis cashnote.
     /// The spentbook node uses a shared randomly generated SecretKeySet.
     #[allow(clippy::type_complexity)]
-    pub fn init_genesis_single() -> Result<(mock::SpentbookNode, CashNote, GenesisMaterial, Nano)> {
+    pub fn init_genesis_single(
+    ) -> Result<(mock::SpentbookNode, CashNote, GenesisMaterial, NanoTokens)> {
         let (spentbook_nodes, genesis_cashnote, genesis_material, token) =
             Self::default().gen_spentbook_nodes(1).build()?;
 

@@ -12,7 +12,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sn_transfers::{
     mock,
     rand::{CryptoRng, RngCore},
-    random_derivation_index, rng, CashNote, Hash, MainSecretKey, Nano, Result,
+    random_derivation_index, rng, CashNote, Hash, MainSecretKey, NanoTokens, Result,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -22,7 +22,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
     let mut rng = rng::from_seed([0u8; 32]);
 
     let (mut spentbook_node, (starting_cashnote, starting_main_key)) =
-        generate_cashnote_of_value(Nano::from(N_OUTPUTS), &mut rng).unwrap();
+        generate_cashnote_of_value(NanoTokens::from(N_OUTPUTS), &mut rng).unwrap();
 
     let derived_key = starting_cashnote.derived_key(&starting_main_key).unwrap();
     let cashnote_builder = sn_transfers::TransactionBuilder::default()
@@ -31,7 +31,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
         .add_outputs((0..N_OUTPUTS).map(|_| {
             let main_key = MainSecretKey::random_from_rng(&mut rng);
             (
-                Nano::from(1),
+                NanoTokens::from(1),
                 main_key.main_pubkey(),
                 random_derivation_index(&mut rng),
             )
@@ -73,14 +73,17 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
     let mut rng = rng::from_seed([0u8; 32]);
 
     let (mut spentbook_node, (starting_cashnote, starting_main_key)) =
-        generate_cashnote_of_value(Nano::from(N_OUTPUTS), &mut rng).unwrap();
+        generate_cashnote_of_value(NanoTokens::from(N_OUTPUTS), &mut rng).unwrap();
 
     let outputs: BTreeMap<_, _> = (0..N_OUTPUTS)
         .map(|_| {
             let main_key = MainSecretKey::random_from_rng(&mut rng);
             let derivation_index = random_derivation_index(&mut rng);
             let unique_pubkey = main_key.derive_key(&derivation_index).unique_pubkey();
-            (unique_pubkey, (main_key, derivation_index, Nano::from(1)))
+            (
+                unique_pubkey,
+                (main_key, derivation_index, NanoTokens::from(1)),
+            )
         })
         .collect();
 
@@ -119,7 +122,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
 
     let merge_cashnote_builder = tx_builder
         .add_output(
-            Nano::from(N_OUTPUTS),
+            NanoTokens::from(N_OUTPUTS),
             main_key.main_pubkey(),
             derivation_index,
         )
@@ -160,7 +163,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
 
 #[allow(clippy::result_large_err)]
 fn generate_cashnote_of_value(
-    token: Nano,
+    token: NanoTokens,
     rng: &mut (impl RngCore + CryptoRng),
 ) -> Result<(mock::SpentbookNode, (CashNote, MainSecretKey))> {
     let (mut spentbook_node, genesis_cashnote, genesis_material, __token) =
@@ -168,7 +171,7 @@ fn generate_cashnote_of_value(
 
     let output_tokens = vec![
         token,
-        Nano::from(mock::GenesisMaterial::GENESIS_AMOUNT - token.as_nano()),
+        NanoTokens::from(mock::GenesisMaterial::GENESIS_AMOUNT - token.as_nano()),
     ];
 
     let main_key = MainSecretKey::random_from_rng(rng);

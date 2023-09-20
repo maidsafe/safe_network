@@ -3,12 +3,12 @@ use crate::Client;
 
 use sn_transfers::genesis::{create_faucet_wallet, load_genesis_wallet};
 use sn_transfers::wallet::LocalWallet;
-use sn_transfers::{CashNote, MainPubkey, Nano};
+use sn_transfers::{CashNote, MainPubkey, NanoTokens};
 
 /// Returns a cash_note with the requested number of tokens, for use by E2E test instances.
 /// Note this will create a faucet having a Genesis balance
 pub async fn get_tokens_from_faucet(
-    amount: Nano,
+    amount: NanoTokens,
     to: MainPubkey,
     client: &Client,
 ) -> Result<CashNote> {

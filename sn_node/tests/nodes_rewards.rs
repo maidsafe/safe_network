@@ -16,7 +16,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_transfers::wallet::LocalWallet;
-use sn_transfers::Nano;
+use sn_transfers::NanoTokens;
 use xor_name::XorName;
 
 use assert_fs::TempDir;
@@ -117,8 +117,8 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
 }
 
 // Helper which reads all nodes local wallets returning the total balance
-fn current_rewards_balance() -> Result<Nano> {
-    let mut total_rewards = Nano::zero();
+fn current_rewards_balance() -> Result<NanoTokens> {
+    let mut total_rewards = NanoTokens::zero();
     let node_dir_path = dirs_next::data_dir()
         .ok_or_else(|| eyre!("Failed to obtain data directory path"))?
         .join("safe")

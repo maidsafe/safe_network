@@ -9,11 +9,11 @@
 use crate::Node;
 
 use sn_protocol::error::{Error, Result};
-use sn_transfers::Nano;
+use sn_transfers::NanoTokens;
 
 impl Node {
     /// Gets the local storecost.
-    pub async fn current_storecost(&self) -> Result<Nano> {
+    pub async fn current_storecost(&self) -> Result<NanoTokens> {
         let cost = self
             .network
             .get_local_storecost()

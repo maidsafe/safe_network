@@ -11,7 +11,7 @@ use crate::{
     PrettyPrintRecordKey,
 };
 use serde::{Deserialize, Serialize};
-use sn_transfers::{Nano, SignedSpend};
+use sn_transfers::{NanoTokens, SignedSpend};
 use thiserror::Error;
 
 /// A specialised `Result` type for protocol crate.
@@ -61,7 +61,10 @@ pub enum Error {
     GetStoreCostFailed,
     /// The amount paid by payment proof is not the required for the received content
     #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
-    PaymentProofInsufficientAmount { paid: Nano, expected: Nano },
+    PaymentProofInsufficientAmount {
+        paid: NanoTokens,
+        expected: NanoTokens,
+    },
     /// Payment proof received has no inputs
     #[error(
         "Payment proof received with record:{0:?}. No payment for our node in its transaction"

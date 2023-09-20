@@ -10,7 +10,7 @@ use crate::{
     transaction::{Output, Transaction},
     DerivationIndex, DerivedSecretKey, FeeOutput, Input, MainPubkey, Spend, UniquePubkey,
 };
-use crate::{CashNote, Error, Hash, Nano, Result, SignedSpend};
+use crate::{CashNote, Error, Hash, NanoTokens, Result, SignedSpend};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -81,7 +81,7 @@ impl TransactionBuilder {
     /// Add an output given the token, the MainPubkey and the DerivationIndex
     pub fn add_output(
         mut self,
-        token: Nano,
+        token: NanoTokens,
         main_pubkey: MainPubkey,
         derivation_index: DerivationIndex,
     ) -> Self {
@@ -98,7 +98,7 @@ impl TransactionBuilder {
     /// Add a list of outputs given the tokens, the MainPubkey and the DerivationIndex
     pub fn add_outputs(
         mut self,
-        outputs: impl IntoIterator<Item = (Nano, MainPubkey, DerivationIndex)>,
+        outputs: impl IntoIterator<Item = (NanoTokens, MainPubkey, DerivationIndex)>,
     ) -> Self {
         for (token, main_pubkey, derivation_index) in outputs.into_iter() {
             self = self.add_output(token, main_pubkey, derivation_index);
@@ -118,20 +118,20 @@ impl TransactionBuilder {
     }
 
     /// Get sum of inputs
-    pub fn inputs_tokens_sum(&self) -> Nano {
+    pub fn inputs_tokens_sum(&self) -> NanoTokens {
         let amount = self.inputs.iter().map(|i| i.amount.as_nano()).sum();
-        Nano::from(amount)
+        NanoTokens::from(amount)
     }
 
     /// Get sum of outputs
-    pub fn outputs_tokens_sum(&self) -> Nano {
+    pub fn outputs_tokens_sum(&self) -> NanoTokens {
         let amount = self
             .outputs
             .iter()
             .map(|o| o.amount.as_nano())
             .chain(std::iter::once(self.fee.token.as_nano()))
             .sum();
-        Nano::from(amount)
+        NanoTokens::from(amount)
     }
 
     /// Get inputs.
@@ -211,7 +211,7 @@ impl CashNoteBuilder {
     ///
     /// See TransactionVerifier::verify() for a description of
     /// verifier requirements.
-    pub fn build(self) -> Result<Vec<(CashNote, Nano)>> {
+    pub fn build(self) -> Result<Vec<(CashNote, NanoTokens)>> {
         // Verify the tx, along with signed spends.
         // Note that we do this just once for entire tx, not once per output CashNote.
         self.spent_tx
@@ -222,12 +222,12 @@ impl CashNoteBuilder {
     }
 
     /// Build the output CashNotes (no verification over Tx or SignedSpend is performed).
-    pub fn build_without_verifying(self) -> Result<Vec<(CashNote, Nano)>> {
+    pub fn build_without_verifying(self) -> Result<Vec<(CashNote, NanoTokens)>> {
         self.build_output_cashnotes()
     }
 
     // Private helper to build output CashNotes.
-    fn build_output_cashnotes(self) -> Result<Vec<(CashNote, Nano)>> {
+    fn build_output_cashnotes(self) -> Result<Vec<(CashNote, NanoTokens)>> {
         self.spent_tx
             .outputs
             .iter()

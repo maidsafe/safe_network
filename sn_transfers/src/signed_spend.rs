@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Error, Hash, Nano, Result, Signature, Transaction, UniquePubkey};
+use crate::{Error, Hash, NanoTokens, Result, Signature, Transaction, UniquePubkey};
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -43,7 +43,7 @@ impl SignedSpend {
     }
 
     /// Get Nano
-    pub fn token(&self) -> &Nano {
+    pub fn token(&self) -> &NanoTokens {
         &self.spend.token
     }
 
@@ -114,7 +114,7 @@ pub struct Spend {
     pub reason: Hash,
     /// The amount of the input CashNote.
     #[debug(skip)]
-    pub token: Nano,
+    pub token: NanoTokens,
     /// The transaction that the input CashNote was created in.
     #[debug(skip)]
     pub cashnote_creation_tx: Transaction,

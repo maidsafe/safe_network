@@ -8,7 +8,7 @@
 
 use super::GenesisMaterial;
 use crate::{
-    transaction::Transaction, unique_keys::MainPubkey, Error, Hash, Nano, Output, Result,
+    transaction::Transaction, unique_keys::MainPubkey, Error, Hash, NanoTokens, Output, Result,
     SignedSpend, UniquePubkey,
 };
 use std::collections::{BTreeMap, HashMap};
@@ -41,7 +41,7 @@ pub struct SpentbookNode {
     pub transactions: HashMap<Hash, Transaction>,
     pub unique_pubkeys: BTreeMap<UniquePubkey, Hash>,
     pub outputs_by_input_id: BTreeMap<UniquePubkey, Output>,
-    pub genesis: (UniquePubkey, Nano),
+    pub genesis: (UniquePubkey, NanoTokens),
 }
 
 impl Default for SpentbookNode {

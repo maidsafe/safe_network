@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Error as CashNoteError, Nano};
+use crate::{Error as CashNoteError, NanoTokens};
 
 use thiserror::Error;
 
@@ -19,7 +19,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Not enough balance to perform a transaction
     #[error("Not enough balance, {0} available, {1} required")]
-    NotEnoughBalance(Nano, Nano),
+    NotEnoughBalance(NanoTokens, NanoTokens),
     /// An error from the `sn_transfers` crate.
     #[error("CashNote error: {0}")]
     CashNotes(#[from] Box<CashNoteError>),

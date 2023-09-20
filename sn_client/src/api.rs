@@ -28,7 +28,7 @@ use sn_protocol::{
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{MainPubkey, Nano, SignedSpend, UniquePubkey};
+use sn_transfers::{MainPubkey, NanoTokens, SignedSpend, UniquePubkey};
 
 use sn_registers::SignedRegister;
 use sn_transfers::{client_transfers::SpendRequest, wallet::Transfer};
@@ -470,7 +470,7 @@ impl Client {
     pub async fn get_store_costs_at_address(
         &self,
         address: &NetworkAddress,
-    ) -> Result<Vec<(MainPubkey, Nano)>> {
+    ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
         let tolerance = 1.5;
         trace!("Getting store cost at {address:?}, with tolerance of {tolerance} times the cost");
 
@@ -479,12 +479,12 @@ impl Client {
             .network
             .get_store_costs_from_network(address.clone())
             .await?;
-        let adjusted_costs: Vec<(MainPubkey, Nano)> = costs
+        let adjusted_costs: Vec<(MainPubkey, NanoTokens)> = costs
             .into_iter()
             .map(|(address, token)| {
                 (
                     address,
-                    Nano::from((token.as_nano() as f64 * tolerance) as u64),
+                    NanoTokens::from((token.as_nano() as f64 * tolerance) as u64),
                 )
             })
             .collect();

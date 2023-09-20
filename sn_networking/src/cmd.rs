@@ -20,7 +20,7 @@ use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::Nano;
+use sn_transfers::NanoTokens;
 use std::collections::HashSet;
 use tokio::sync::oneshot;
 
@@ -93,7 +93,7 @@ pub enum SwarmCmd {
     },
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
-        sender: oneshot::Sender<Nano>,
+        sender: oneshot::Sender<NanoTokens>,
     },
     /// Get data from the local RecordStore
     GetLocalRecord {
