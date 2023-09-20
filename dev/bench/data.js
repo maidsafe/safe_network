@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695241939281,
+  "lastUpdate": 1695242209335,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -14669,6 +14669,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57.13101,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "d1c55406d2c8956295f19daadb2a31b016471830",
+          "message": "ci: remove unused prebuild for unit tests",
+          "timestamp": "2023-09-20T19:00:32Z",
+          "tree_id": "a5aaa4c7bb4373f95fbee06ca8d9429d2478a8d3",
+          "url": "https://github.com/maidsafe/safe_network/commit/d1c55406d2c8956295f19daadb2a31b016471830"
+        },
+        "date": 1695242208802,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 58.19187,
             "unit": "MB"
           }
         ]
