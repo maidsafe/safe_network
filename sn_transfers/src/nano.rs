@@ -35,7 +35,7 @@ impl Nano {
     }
 
     /// New value from a number of nano tokens.
-    pub const fn from_nano(value: u64) -> Self {
+    pub const fn from(value: u64) -> Self {
         Self(value)
     }
 
@@ -46,12 +46,12 @@ impl Nano {
 
     /// Computes `self + rhs`, returning `None` if overflow occurred.
     pub fn checked_add(self, rhs: Nano) -> Option<Nano> {
-        self.0.checked_add(rhs.0).map(Self::from_nano)
+        self.0.checked_add(rhs.0).map(Self::from)
     }
 
     /// Computes `self - rhs`, returning `None` if overflow occurred.
     pub fn checked_sub(self, rhs: Nano) -> Option<Nano> {
-        self.0.checked_sub(rhs.0).map(Self::from_nano)
+        self.0.checked_sub(rhs.0).map(Self::from)
     }
 
     /// Converts the Nanos into bytes
@@ -93,7 +93,7 @@ impl FromStr for Nano {
             }
         };
 
-        Ok(Self::from_nano(converted_units + remainder))
+        Ok(Self::from(converted_units + remainder))
     }
 }
 

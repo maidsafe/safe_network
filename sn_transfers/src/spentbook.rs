@@ -53,7 +53,7 @@ mod tests {
                 let unique_pubkey = main_key.main_pubkey().new_unique_pubkey(&derivation_index);
                 (
                     unique_pubkey,
-                    (main_key, derivation_index, Nano::from_nano(*amount)),
+                    (main_key, derivation_index, Nano::from(*amount)),
                 )
             })
             .collect();
@@ -151,7 +151,7 @@ mod tests {
                 let unique_pubkey = main_key.main_pubkey().new_unique_pubkey(&derivation_index);
                 (
                     unique_pubkey,
-                    (main_key, derivation_index, Nano::from_nano(*amount)),
+                    (main_key, derivation_index, Nano::from(*amount)),
                 )
             })
             .collect();
@@ -213,7 +213,7 @@ mod tests {
                 let unique_pubkey = main_key.main_pubkey().new_unique_pubkey(&derivation_index);
                 (
                     unique_pubkey,
-                    (main_key, derivation_index, Nano::from_nano(*amount)),
+                    (main_key, derivation_index, Nano::from(*amount)),
                 )
             })
             .collect();

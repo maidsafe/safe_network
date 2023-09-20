@@ -35,7 +35,7 @@ impl FeeOutput {
     pub fn new(id: Hash, amount: u64, root_hash: Hash) -> Self {
         Self {
             id,
-            token: Nano::from_nano(amount),
+            token: Nano::from(amount),
             root_hash,
         }
     }

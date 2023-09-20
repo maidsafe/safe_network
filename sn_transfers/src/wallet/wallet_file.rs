@@ -101,7 +101,7 @@ pub(super) fn store_created_cash_notes(
 
 /// Loads all the cash_notes found in the received cash_notes dir.
 pub(super) fn load_received_cash_notes(wallet_dir: &Path) -> Result<Vec<CashNote>> {
-    let received_cash_notes_path = match std::env::var("RECEIVED_CashNoteS_PATH") {
+    let received_cash_notes_path = match std::env::var("RECEIVED_CASHNOTES_PATH") {
         Ok(path) => PathBuf::from(path),
         Err(_) => wallet_dir.join(RECEIVED_CASHNOTES_DIR_NAME),
     };

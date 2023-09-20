@@ -22,7 +22,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
     let mut rng = rng::from_seed([0u8; 32]);
 
     let (mut spentbook_node, (starting_cashnote, starting_main_key)) =
-        generate_cashnote_of_value(Nano::from_nano(N_OUTPUTS), &mut rng).unwrap();
+        generate_cashnote_of_value(Nano::from(N_OUTPUTS), &mut rng).unwrap();
 
     let derived_key = starting_cashnote.derived_key(&starting_main_key).unwrap();
     let cashnote_builder = sn_transfers::TransactionBuilder::default()
@@ -31,7 +31,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
         .add_outputs((0..N_OUTPUTS).map(|_| {
             let main_key = MainSecretKey::random_from_rng(&mut rng);
             (
-                Nano::from_nano(1),
+                Nano::from(1),
                 main_key.main_pubkey(),
                 random_derivation_index(&mut rng),
             )
@@ -73,17 +73,14 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
     let mut rng = rng::from_seed([0u8; 32]);
 
     let (mut spentbook_node, (starting_cashnote, starting_main_key)) =
-        generate_cashnote_of_value(Nano::from_nano(N_OUTPUTS), &mut rng).unwrap();
+        generate_cashnote_of_value(Nano::from(N_OUTPUTS), &mut rng).unwrap();
 
     let outputs: BTreeMap<_, _> = (0..N_OUTPUTS)
         .map(|_| {
             let main_key = MainSecretKey::random_from_rng(&mut rng);
             let derivation_index = random_derivation_index(&mut rng);
             let unique_pubkey = main_key.derive_key(&derivation_index).unique_pubkey();
-            (
-                unique_pubkey,
-                (main_key, derivation_index, Nano::from_nano(1)),
-            )
+            (unique_pubkey, (main_key, derivation_index, Nano::from(1)))
         })
         .collect();
 
@@ -122,7 +119,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
 
     let merge_cashnote_builder = tx_builder
         .add_output(
-            Nano::from_nano(N_OUTPUTS),
+            Nano::from(N_OUTPUTS),
             main_key.main_pubkey(),
             derivation_index,
         )
@@ -171,7 +168,7 @@ fn generate_cashnote_of_value(
 
     let output_tokens = vec![
         token,
-        Nano::from_nano(mock::GenesisMaterial::GENESIS_AMOUNT - token.as_nano()),
+        Nano::from(mock::GenesisMaterial::GENESIS_AMOUNT - token.as_nano()),
     ];
 
     let main_key = MainSecretKey::random_from_rng(rng);

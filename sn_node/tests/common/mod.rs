@@ -98,7 +98,7 @@ pub async fn get_funded_wallet(
     root_dir: &Path,
     amount: u64,
 ) -> Result<LocalWallet> {
-    let wallet_balance = Nano::from_nano(amount);
+    let wallet_balance = Nano::from(amount);
     let mut local_wallet = get_wallet(root_dir).await;
 
     println!("Getting {wallet_balance} tokens from the faucet...");
