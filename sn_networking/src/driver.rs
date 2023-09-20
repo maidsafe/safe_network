@@ -370,13 +370,9 @@ impl NetworkBuilder {
             libp2p::gossipsub::MessageAuthenticity::Signed(self.keypair.clone());
 
         // build a gossipsub network behaviour
-        let mut gossipsub: libp2p::gossipsub::Behaviour =
-            libp2p::gossipsub::Behaviour::new(message_authenticity, gossipsub_config).unwrap();
-
-        // Create a Gossipsub topic
-        let topic = libp2p::gossipsub::IdentTopic::new("example-topic");
-        // subscribe to the topic
-        gossipsub.subscribe(&topic).unwrap();
+        let gossipsub: libp2p::gossipsub::Behaviour =
+            libp2p::gossipsub::Behaviour::new(message_authenticity, gossipsub_config)
+                .expect("Failed to instantiate Gossipsub behaviour.");
 
         if !self.local {
             debug!("Preventing non-global dials");

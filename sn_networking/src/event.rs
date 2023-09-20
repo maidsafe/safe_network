@@ -135,7 +135,7 @@ pub enum NetworkEvent {
     /// Report unverified record
     UnverifiedRecord(Record),
     /// Gossipsub message received
-    Gossipsub {
+    GossipsubMsg {
         /// Topic the message was published on
         topic: String,
         /// The raw bytes of the received message
@@ -176,8 +176,8 @@ impl Debug for NetworkEvent {
                 let pretty_key = PrettyPrintRecordKey::from(record.key.clone());
                 write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
             }
-            NetworkEvent::Gossipsub { topic, .. } => {
-                write!(f, "NetworkEvent::Gossipsub({topic})")
+            NetworkEvent::GossipsubMsg { topic, .. } => {
+                write!(f, "NetworkEvent::GossipsubMsg({topic})")
             }
         }
     }
@@ -335,7 +335,7 @@ impl SwarmDriver {
                 libp2p::gossipsub::Event::Message { message, .. } => {
                     let topic = message.topic.into_string();
                     let msg = message.data;
-                    self.send_event(NetworkEvent::Gossipsub { topic, msg });
+                    self.send_event(NetworkEvent::GossipsubMsg { topic, msg });
                 }
                 other => trace!("Gossipsub Event has been ignored: {other:?}"),
             },

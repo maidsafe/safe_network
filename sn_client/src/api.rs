@@ -158,6 +158,7 @@ impl Client {
 
                     continue;
                 }
+                Ok(ClientEvent::GossipsubMsg { .. }) => {}
                 Err(err) => {
                     error!("Unexpected error during client startup {err:?}");
                     println!("Unexpected error during client startup {err:?}");
@@ -204,36 +205,43 @@ impl Client {
     }
 
     fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
-        if let NetworkEvent::PeerAdded(peer_id) = event {
-            self.peers_added += 1;
-            debug!("PeerAdded: {peer_id}");
+        match event {
+            NetworkEvent::PeerAdded(peer_id) => {
+                self.peers_added += 1;
+                debug!("PeerAdded: {peer_id}");
 
-            // In case client running in non-local-discovery mode,
-            // it may take some time to fill up the RT.
-            // To avoid such delay may fail the query with RecordNotFound,
-            // wait till certain amount of peers populated into RT
-            if self.peers_added >= CLOSE_GROUP_SIZE {
-                if let Some(progress) = &self.progress {
-                    progress.finish_with_message("Connected to the Network");
-                    // Remove the progress bar
-                    self.progress = None;
-                }
+                // In case client running in non-local-discovery mode,
+                // it may take some time to fill up the RT.
+                // To avoid such delay may fail the query with RecordNotFound,
+                // wait till certain amount of peers populated into RT
+                if self.peers_added >= CLOSE_GROUP_SIZE {
+                    if let Some(progress) = &self.progress {
+                        progress.finish_with_message("Connected to the Network");
+                        // Remove the progress bar
+                        self.progress = None;
+                    }
 
-                self.events_channel
-                    .broadcast(ClientEvent::ConnectedToNetwork)?;
-            } else {
-                debug!(
-                    "{}/{} initial peers found.",
-                    self.peers_added, CLOSE_GROUP_SIZE
-                );
-
-                if let Some(progress) = &self.progress {
-                    progress.set_message(format!(
+                    self.events_channel
+                        .broadcast(ClientEvent::ConnectedToNetwork)?;
+                } else {
+                    debug!(
                         "{}/{} initial peers found.",
                         self.peers_added, CLOSE_GROUP_SIZE
-                    ));
+                    );
+
+                    if let Some(progress) = &self.progress {
+                        progress.set_message(format!(
+                            "{}/{} initial peers found.",
+                            self.peers_added, CLOSE_GROUP_SIZE
+                        ));
+                    }
                 }
             }
+            NetworkEvent::GossipsubMsg { topic, msg } => {
+                self.events_channel
+                    .broadcast(ClientEvent::GossipsubMsg { topic, msg })?;
+            }
+            _other => {}
         }
 
         Ok(())
@@ -490,5 +498,19 @@ impl Client {
             .collect();
 
         Ok(adjusted_costs)
+    }
+
+    /// Subscribe to given gossipsub topic
+    pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
+        info!("Subscribing to topic id: {topic_id}");
+        self.network.subscribe_to_topic(topic_id)?;
+        Ok(())
+    }
+
+    /// Publish message on given topic
+    pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
+        info!("Publishing msg on topic id: {topic_id}");
+        self.network.publish_on_topic(topic_id, msg)?;
+        Ok(())
     }
 }

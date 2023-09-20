@@ -227,9 +227,15 @@ impl Network {
         get_fees_from_store_cost_responses(all_costs)
     }
 
-    pub fn publish_on_topic(&self, msg: Vec<u8>) -> Result<()> {
-        let topic_id = libp2p::gossipsub::IdentTopic::new("example-topic");
-        self.send_swarm_cmd(SwarmCmd::GossipMsg { topic_id, msg })?;
+    /// Subscribe to given gossipsub topic
+    pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::GossipsubSubscribe(topic_id))?;
+        Ok(())
+    }
+
+    /// Publish a msg on a given topic
+    pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::GossipsubPublish { topic_id, msg })?;
         Ok(())
     }
 
