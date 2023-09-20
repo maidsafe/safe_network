@@ -11,8 +11,8 @@ mod tests {
     use crate::{
         mock, random_derivation_index,
         tests::{TinyInt, TinyVec},
-        CashNote, DerivedSecretKey, Error, Hash, MainSecretKey, Nano, Result, SignedSpend, Spend,
-        TransactionBuilder,
+        CashNote, DerivedSecretKey, Error, Hash, MainSecretKey, NanoTokens, Result, SignedSpend,
+        Spend, TransactionBuilder,
     };
     use bls::SecretKey;
     use quickcheck_macros::quickcheck;
@@ -53,7 +53,7 @@ mod tests {
                 let unique_pubkey = main_key.main_pubkey().new_unique_pubkey(&derivation_index);
                 (
                     unique_pubkey,
-                    (main_key, derivation_index, Nano::from(*amount)),
+                    (main_key, derivation_index, NanoTokens::from(*amount)),
                 )
             })
             .collect();
@@ -151,7 +151,7 @@ mod tests {
                 let unique_pubkey = main_key.main_pubkey().new_unique_pubkey(&derivation_index);
                 (
                     unique_pubkey,
-                    (main_key, derivation_index, Nano::from(*amount)),
+                    (main_key, derivation_index, NanoTokens::from(*amount)),
                 )
             })
             .collect();
@@ -213,7 +213,7 @@ mod tests {
                 let unique_pubkey = main_key.main_pubkey().new_unique_pubkey(&derivation_index);
                 (
                     unique_pubkey,
-                    (main_key, derivation_index, Nano::from(*amount)),
+                    (main_key, derivation_index, NanoTokens::from(*amount)),
                 )
             })
             .collect();

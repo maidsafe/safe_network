@@ -38,7 +38,7 @@ pub(crate) use self::error::{Error, Result};
 pub use self::transfer::create_offline_transfer;
 
 use crate::{
-    CashNote, DerivationIndex, DerivedSecretKey, MainPubkey, Nano, SignedSpend, Transaction,
+    CashNote, DerivationIndex, DerivedSecretKey, MainPubkey, NanoTokens, SignedSpend, Transaction,
     UniquePubkey,
 };
 
@@ -52,9 +52,9 @@ pub struct Inputs {
     /// to transfer the below specified amount of tokens to each recipients.
     pub cash_notes_to_spend: Vec<(CashNote, DerivedSecretKey)>,
     /// The amounts and cash_note ids for the cash_notes that will be created to hold the transferred tokens.
-    pub recipients: Vec<(Nano, MainPubkey, DerivationIndex)>,
+    pub recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
     /// Any surplus amount after spending the necessary input cash_notes.
-    pub change: (Nano, MainPubkey),
+    pub change: (NanoTokens, MainPubkey),
 }
 
 /// The created cash_notes and change cash_note from a transfer

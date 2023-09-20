@@ -15,7 +15,7 @@ use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, 
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
 use sn_transfers::wallet::parse_main_pubkey;
-use sn_transfers::Nano;
+use sn_transfers::NanoTokens;
 use std::path::PathBuf;
 use tracing::{error, info};
 use tracing_core::Level;
@@ -131,7 +131,7 @@ async fn claim_genesis(client: &Client) {
 async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> {
     let to = parse_main_pubkey(to)?;
     use std::str::FromStr;
-    let amount = Nano::from_str(amount)?;
+    let amount = NanoTokens::from_str(amount)?;
     if amount.as_nano() == 0 {
         println!("Invalid format or zero amount passed in. Nothing sent.");
         return Err(eyre::eyre!(

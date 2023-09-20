@@ -13,7 +13,7 @@ use common::{get_client_and_wallet, get_wallet, init_logging};
 use sn_client::send;
 
 use sn_transfers::client_transfers::create_offline_transfer;
-use sn_transfers::{random_derivation_index, rng, Hash, Nano};
+use sn_transfers::{random_derivation_index, rng, Hash, NanoTokens};
 
 use assert_fs::TempDir;
 use eyre::Result;
@@ -28,12 +28,12 @@ async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
     let (client, first_wallet) =
         get_client_and_wallet(first_wallet_dir.path(), first_wallet_balance).await?;
 
-    let second_wallet_balance = Nano::from(first_wallet_balance / 2);
+    let second_wallet_balance = NanoTokens::from(first_wallet_balance / 2);
     println!("Transferring from first wallet to second wallet: {second_wallet_balance}.");
     let second_wallet_dir = TempDir::new()?;
     let mut second_wallet = get_wallet(second_wallet_dir.path()).await;
 
-    assert_eq!(second_wallet.balance(), Nano::zero());
+    assert_eq!(second_wallet.balance(), NanoTokens::zero());
 
     let tokens = send(
         first_wallet,
@@ -69,13 +69,13 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     // create wallet 2 and 3 to receive money from 1
     let second_wallet_dir = TempDir::new()?;
     let second_wallet = get_wallet(second_wallet_dir.path()).await;
-    assert_eq!(second_wallet.balance(), Nano::zero());
+    assert_eq!(second_wallet.balance(), NanoTokens::zero());
     let third_wallet_dir = TempDir::new()?;
     let third_wallet = get_wallet(third_wallet_dir.path()).await;
-    assert_eq!(third_wallet.balance(), Nano::zero());
+    assert_eq!(third_wallet.balance(), NanoTokens::zero());
 
     // manually forge two transfers of the same source
-    let amount = Nano::from(first_wallet_balance / 3);
+    let amount = NanoTokens::from(first_wallet_balance / 3);
     let to1 = first_wallet.address();
     let to2 = second_wallet.address();
     let to3 = third_wallet.address();

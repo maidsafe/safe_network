@@ -10,7 +10,7 @@ use super::{Error, Inputs, Result, SpendRequest, TransferOutputs};
 
 use crate::{
     random_derivation_index, rng, CashNote, DerivationIndex, DerivedSecretKey, FeeOutput, Hash,
-    Input, MainPubkey, Nano, TransactionBuilder,
+    Input, MainPubkey, NanoTokens, TransactionBuilder,
 };
 
 use std::collections::BTreeMap;
@@ -27,13 +27,13 @@ use std::collections::BTreeMap;
 /// them upon request, the transaction will be completed.
 pub fn create_offline_transfer(
     available_cash_notes: Vec<(CashNote, DerivedSecretKey)>,
-    recipients: Vec<(Nano, MainPubkey, DerivationIndex)>,
+    recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
     change_to: MainPubkey,
     reason_hash: Hash,
 ) -> Result<TransferOutputs> {
     let total_output_amount = recipients
         .iter()
-        .try_fold(Nano::zero(), |total, (amount, _, _)| {
+        .try_fold(NanoTokens::zero(), |total, (amount, _, _)| {
             total.checked_add(*amount)
         })
         .ok_or_else(|| {
@@ -58,10 +58,10 @@ pub fn create_offline_transfer(
 /// Select the necessary number of cash_notes from those that we were passed.
 fn select_inputs(
     available_cash_notes: Vec<(CashNote, DerivedSecretKey)>,
-    total_output_amount: Nano,
-) -> Result<(Vec<(CashNote, DerivedSecretKey)>, Nano)> {
+    total_output_amount: NanoTokens,
+) -> Result<(Vec<(CashNote, DerivedSecretKey)>, NanoTokens)> {
     let mut cash_notes_to_spend = Vec::new();
-    let mut total_input_amount = Nano::zero();
+    let mut total_input_amount = NanoTokens::zero();
     let mut change_amount = total_output_amount;
 
     for (cash_note, derived_key) in available_cash_notes {
@@ -98,7 +98,8 @@ fn select_inputs(
                 }
             }
             None => {
-                change_amount = Nano::from(cash_note_balance.as_nano() - change_amount.as_nano());
+                change_amount =
+                    NanoTokens::from(cash_note_balance.as_nano() - change_amount.as_nano());
                 break;
             }
         }
