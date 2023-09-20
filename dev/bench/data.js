@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695209378837,
+  "lastUpdate": 1695209380719,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20038,6 +20038,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 164,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4a7962aa490d6316a2aa5371e188faee63d68026",
+          "message": "ci: use action to install protobuf",
+          "timestamp": "2023-09-20T12:56:42+02:00",
+          "tree_id": "1980f741e741da78b450746d5ac8bb58c43393ef",
+          "url": "https://github.com/maidsafe/safe_network/commit/4a7962aa490d6316a2aa5371e188faee63d68026"
+        },
+        "date": 1695209380300,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 210.37465,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 165,
             "unit": "MB"
           }
         ]
