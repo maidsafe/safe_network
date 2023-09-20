@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695212258279,
+  "lastUpdate": 1695212260765,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20140,6 +20140,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 165,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ee170432e7d932e4fa5bc5f41f13ab160a8cf454",
+          "message": "ci: disable arm builds for now",
+          "timestamp": "2023-09-20T13:44:09+02:00",
+          "tree_id": "4ed041629cb61f3e0579021f5de869967b8cf8f3",
+          "url": "https://github.com/maidsafe/safe_network/commit/ee170432e7d932e4fa5bc5f41f13ab160a8cf454"
+        },
+        "date": 1695212259852,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 213.27872,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 178,
             "unit": "MB"
           }
         ]
