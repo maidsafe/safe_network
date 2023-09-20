@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695212260765,
+  "lastUpdate": 1695217186525,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8614,6 +8614,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.478871211632132,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d18d4c1c628f00536c333767e10ff693bde720c8",
+          "message": "fix: revert protoc/tonic-build update, remove protoc-builder install on ci\n\nReinstate arm builds",
+          "timestamp": "2023-09-20T15:11:05+02:00",
+          "tree_id": "e92c7074a99c1c4a5cff78c5bf148d1801f0a5c6",
+          "url": "https://github.com/maidsafe/safe_network/commit/d18d4c1c628f00536c333767e10ff693bde720c8"
+        },
+        "date": 1695217183944,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10403125300669275,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5701195990052789,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.474802079664452,
             "unit": "MiB/s"
           }
         ]
