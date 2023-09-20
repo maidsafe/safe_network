@@ -19,7 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: sudo apt-get install protobuf-compiler
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -54,7 +57,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - run: sudo apt-get install protobuf-compiler
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -63,7 +69,6 @@ jobs:
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
-      - run: sudo apt-get install protobuf-compiler
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -93,18 +98,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protobuf Compiler (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-
-      - name: Install Protobuf Compiler (macOS)
-        if: matrix.os == 'macos-latest'
-        run: brew install protobuf
-
-      - name: Install Protobuf Compiler (Windows)
-        if: matrix.os == 'windows-latest'
-        run: choco install protoc
-
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -152,18 +149,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protobuf Compiler (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-
-      - name: Install Protobuf Compiler (macOS)
-        if: matrix.os == 'macos-latest'
-        run: brew install protobuf
-
-      - name: Install Protobuf Compiler (Windows)
-        if: matrix.os == 'windows-latest'
-        run: choco install protoc
-
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -256,18 +245,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protobuf Compiler (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-
-      - name: Install Protobuf Compiler (macOS)
-        if: matrix.os == 'macos-latest'
-        run: brew install protobuf
-
-      - name: Install Protobuf Compiler (Windows)
-        if: matrix.os == 'windows-latest'
-        run: choco install protoc
-
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -347,18 +328,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protobuf Compiler (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-
-      - name: Install Protobuf Compiler (macOS)
-        if: matrix.os == 'macos-latest'
-        run: brew install protobuf
-
-      - name: Install Protobuf Compiler (Windows)
-        if: matrix.os == 'windows-latest'
-        run: choco install protoc
-
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
@@ -480,18 +453,10 @@ jobs:
           with:
             toolchain: stable
 
-        - name: Install Protobuf Compiler (Ubuntu)
-          if: matrix.os == 'ubuntu-latest'
-          run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-  
-        - name: Install Protobuf Compiler (macOS)
-          if: matrix.os == 'macos-latest'
-          run: brew install protobuf
-  
-        - name: Install Protobuf Compiler (Windows)
-          if: matrix.os == 'windows-latest'
-          run: choco install protoc
-    
+        - name: Install Protoc
+          uses: arduino/setup-protoc@v2
+          with:
+            repo-token: ${{ secrets.GITHUB_TOKEN }}
 
         - uses: Swatinem/rust-cache@v2
 
