@@ -27,11 +27,6 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
-
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Build node and client
         run: cargo build --release --bin safenode --bin safe --bin faucet

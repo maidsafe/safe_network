@@ -19,10 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -57,10 +53,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -98,10 +90,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -149,10 +137,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -245,10 +229,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -328,10 +308,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
@@ -452,11 +428,6 @@ jobs:
         - uses: dtolnay/rust-toolchain@stable
           with:
             toolchain: stable
-
-        - name: Install Protoc
-          uses: arduino/setup-protoc@v2
-          with:
-            repo-token: ${{ secrets.GITHUB_TOKEN }}
 
         - uses: Swatinem/rust-cache@v2
 
