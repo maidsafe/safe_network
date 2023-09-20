@@ -47,7 +47,7 @@ async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
     client.verify(&tokens).await?;
     second_wallet.deposit(&vec![tokens])?;
     assert_eq!(second_wallet.balance(), second_wallet_balance);
-    println!("Nanos deposited to second wallet: {second_wallet_balance}.");
+    println!("CashNotes deposited to second wallet: {second_wallet_balance}.");
 
     let first_wallet = get_wallet(&first_wallet_dir).await;
     assert!(second_wallet_balance.as_nano() == first_wallet.balance().as_nano());
