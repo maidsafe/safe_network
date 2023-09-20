@@ -60,7 +60,7 @@ type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRe
 
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
-// TODO: revisit once utxo is in
+// TODO: revisit once cashnote_redemption is in
 const MAX_PACKET_SIZE: usize = 1024 * 1024 * 5; // the chunk size is 1mb, so should be higher than that to prevent failures, 5mb here to allow for CashNote storage
 
 // Timeout for requests sent/received through the request_response behaviour.

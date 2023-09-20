@@ -11,7 +11,7 @@ use super::{
         create_received_cash_notes_dir, get_unconfirmed_txs, get_wallet, load_cash_note,
         load_received_cash_notes, store_created_cash_notes, store_unconfirmed_txs, store_wallet,
     },
-    KeyLessWallet, Result, Transfer, Utxo,
+    CashNoteRedemption, KeyLessWallet, Result, Transfer,
 };
 
 use crate::client_transfers::{
@@ -363,8 +363,8 @@ impl LocalWallet {
         Ok(())
     }
 
-    pub fn unwrap_transfer(&self, transfer: Transfer) -> Result<Vec<Utxo>> {
-        transfer.utxos(self.key.secret_key())
+    pub fn unwrap_transfer(&self, transfer: Transfer) -> Result<Vec<CashNoteRedemption>> {
+        transfer.cashnote_redemptions(self.key.secret_key())
     }
 
     pub fn derive_key(&self, derivation_index: &DerivationIndex) -> DerivedSecretKey {
