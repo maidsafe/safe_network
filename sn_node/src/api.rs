@@ -76,6 +76,18 @@ impl RunningNode {
         let addresses = self.network.get_all_local_record_addresses().await?;
         Ok(addresses)
     }
+
+    /// Subscribe to given gossipsub topic
+    pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
+        self.network.subscribe_to_topic(topic_id)?;
+        Ok(())
+    }
+
+    /// Publish a message on a given gossipsub topic
+    pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
+        self.network.publish_on_topic(topic_id, msg)?;
+        Ok(())
+    }
 }
 
 impl Node {
@@ -225,7 +237,7 @@ impl Node {
                 | NetworkEvent::PeerRemoved(_)
                 | NetworkEvent::NewListenAddr(_)
                 | NetworkEvent::NatStatusChanged(_)
-                | NetworkEvent::Gossipsub { .. } => break,
+                | NetworkEvent::GossipsubMsg { .. } => break,
             }
         }
         trace!("Handling NetworkEvent {event:?}");
@@ -300,9 +312,9 @@ impl Node {
                     }
                 }
             }
-            NetworkEvent::Gossipsub { topic, msg } => {
+            NetworkEvent::GossipsubMsg { topic, msg } => {
                 self.events_channel
-                    .broadcast(NodeEvent::Gossipsub { topic, msg });
+                    .broadcast(NodeEvent::GossipsubMsg { topic, msg });
             }
         }
     }

@@ -45,6 +45,21 @@ message RecordAddressesResponse {
     repeated bytes addresses = 1;
 }
 
+// Subsribe to a gossipsub topic
+message GossipsubSubscribeRequest {
+  string topic = 1;
+}
+
+message GossipsubSubscribeResponse {}
+
+// Publish a msg on a gossipsub topic
+message GossipsubPublishRequest {
+  string topic = 1;
+  bytes msg = 2;
+}
+
+message GossipsubPublishResponse {}
+
 // Stop the safenode app
 message StopRequest {
   uint64 delay_millis = 1;

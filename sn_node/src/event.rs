@@ -60,7 +60,7 @@ pub enum NodeEvent {
     /// AutoNAT discovered we are behind a NAT, thus private.
     BehindNat,
     /// Gossipsub message received
-    Gossipsub {
+    GossipsubMsg {
         /// Topic the message was published on
         topic: String,
         /// The raw bytes of the received message

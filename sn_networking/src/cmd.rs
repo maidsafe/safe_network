@@ -114,10 +114,12 @@ pub enum SwarmCmd {
     AddKeysToReplicationFetcher {
         keys: Vec<NetworkAddress>,
     },
+    /// Subscribe to a given Gossipsub topic
+    GossipsubSubscribe(String),
     /// Publish a message through Gossipsub protocol
-    GossipMsg {
+    GossipsubPublish {
         /// Topic to publish on
-        topic_id: libp2p::gossipsub::IdentTopic,
+        topic_id: String,
         /// Raw bytes of the message to publish
         msg: Vec<u8>,
     },
@@ -359,12 +361,16 @@ impl SwarmDriver {
                     .send(current_state)
                     .map_err(|_| Error::InternalMsgChannelDropped)?;
             }
-            SwarmCmd::GossipMsg { topic_id, msg } => {
+            SwarmCmd::GossipsubSubscribe(topic_id) => {
+                let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
+                self.swarm.behaviour_mut().gossipsub.subscribe(&topic_id)?;
+            }
+            SwarmCmd::GossipsubPublish { topic_id, msg } => {
+                let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
                 self.swarm
                     .behaviour_mut()
                     .gossipsub
-                    .publish(topic_id, msg)
-                    .unwrap();
+                    .publish(topic_id, msg)?;
             }
         }
 

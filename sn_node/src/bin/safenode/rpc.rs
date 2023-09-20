@@ -24,9 +24,11 @@ use tracing::{debug, info, trace};
 
 use safenode_proto::safe_node_server::{SafeNode, SafeNodeServer};
 use safenode_proto::{
-    NetworkInfoRequest, NetworkInfoResponse, NodeEvent, NodeEventsRequest, NodeInfoRequest,
-    NodeInfoResponse, RecordAddressesRequest, RecordAddressesResponse, RestartRequest,
-    RestartResponse, StopRequest, StopResponse, UpdateRequest, UpdateResponse,
+    GossipsubPublishRequest, GossipsubPublishResponse, GossipsubSubscribeRequest,
+    GossipsubSubscribeResponse, NetworkInfoRequest, NetworkInfoResponse, NodeEvent,
+    NodeEventsRequest, NodeInfoRequest, NodeInfoResponse, RecordAddressesRequest,
+    RecordAddressesResponse, RestartRequest, RestartResponse, StopRequest, StopResponse,
+    UpdateRequest, UpdateResponse,
 };
 
 // this includes code generated from .proto files
@@ -151,6 +153,52 @@ impl SafeNode for SafeNodeRpcService {
             .collect();
 
         Ok(Response::new(RecordAddressesResponse { addresses }))
+    }
+
+    async fn subscribe_to_topic(
+        &self,
+        request: Request<GossipsubSubscribeRequest>,
+    ) -> Result<Response<GossipsubSubscribeResponse>, Status> {
+        trace!(
+            "RPC request received at {}: {:?}",
+            self.addr,
+            request.get_ref()
+        );
+
+        let topic = &request.get_ref().topic;
+
+        match self.running_node.subscribe_to_topic(topic.clone()) {
+            Ok(()) => Ok(Response::new(GossipsubSubscribeResponse {})),
+            Err(err) => Err(Status::new(
+                Code::Internal,
+                format!("Failed to subscribe to topic '{topic}': {err}"),
+            )),
+        }
+    }
+
+    async fn publish_on_topic(
+        &self,
+        request: Request<GossipsubPublishRequest>,
+    ) -> Result<Response<GossipsubPublishResponse>, Status> {
+        trace!(
+            "RPC request received at {}: {:?}",
+            self.addr,
+            request.get_ref()
+        );
+
+        let topic = &request.get_ref().topic;
+        let msg = &request.get_ref().msg;
+
+        match self
+            .running_node
+            .publish_on_topic(topic.clone(), msg.clone())
+        {
+            Ok(()) => Ok(Response::new(GossipsubPublishResponse {})),
+            Err(err) => Err(Status::new(
+                Code::Internal,
+                format!("Failed to publish on topic '{topic}': {err}"),
+            )),
+        }
     }
 
     async fn stop(&self, request: Request<StopRequest>) -> Result<Response<StopResponse>, Status> {

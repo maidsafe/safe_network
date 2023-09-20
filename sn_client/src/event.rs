@@ -42,6 +42,13 @@ pub enum ClientEvent {
     /// No network activity has been received for a given duration
     /// we should error out
     InactiveClient(std::time::Duration),
+    /// Gossipsub message received on a topic the client has subscribed to
+    GossipsubMsg {
+        /// Topic the message was published on
+        topic: String,
+        /// The raw bytes of the received message
+        msg: Vec<u8>,
+    },
 }
 
 /// Receiver Channel where users of the public API can listen to events broadcasted by the client.
