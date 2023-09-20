@@ -19,7 +19,7 @@ env:
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
 
 jobs:
-  benchmark:
+  benchmark-cli:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: Run and log benchmark criterion results on gh-pages
     # right now only ubuntu, running on multiple systems would require many pushes...\
