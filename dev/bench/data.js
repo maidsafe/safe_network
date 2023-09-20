@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695217507206,
+  "lastUpdate": 1695218015454,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8653,6 +8653,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.474802079664452,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d9eaf409b07df97d8eb2d38495c43b2f4aac1831",
+          "message": "ci: fix borked release workflow file",
+          "timestamp": "2023-09-20T15:24:04+02:00",
+          "tree_id": "c85c43491058cf956502b3a582474c998cefad9b",
+          "url": "https://github.com/maidsafe/safe_network/commit/d9eaf409b07df97d8eb2d38495c43b2f4aac1831"
+        },
+        "date": 1695218013124,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10267987370624779,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5610936366801373,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.472002434224588,
             "unit": "MiB/s"
           }
         ]
