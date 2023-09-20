@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695204619950,
+  "lastUpdate": 1695206576482,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -8497,6 +8497,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.738527231375829,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0d24c3fa8e61a5cf9db2cac6d9b1e6c52fa20e68",
+          "message": "ci: fix x-platform release builds for protobuf compiler",
+          "timestamp": "2023-09-20T12:16:08+02:00",
+          "tree_id": "d737a8bba0504317bb37023d15bde4044caa8466",
+          "url": "https://github.com/maidsafe/safe_network/commit/0d24c3fa8e61a5cf9db2cac6d9b1e6c52fa20e68"
+        },
+        "date": 1695206574642,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10636384818390407,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5279999430066301,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.525512159495197,
             "unit": "MiB/s"
           }
         ]
