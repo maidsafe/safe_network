@@ -233,7 +233,7 @@ impl NodeRecordStore {
         let cost = calculate_cost_for_relevant_records(relevant_records_len);
 
         debug!("Cost is now {cost:?}");
-        Nano::from_nano(cost)
+        Nano::from(cost)
     }
 
     /// Calculate how many records are stored within a distance range

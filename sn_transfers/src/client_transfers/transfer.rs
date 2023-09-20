@@ -98,8 +98,7 @@ fn select_inputs(
                 }
             }
             None => {
-                change_amount =
-                    Nano::from_nano(cash_note_balance.as_nano() - change_amount.as_nano());
+                change_amount = Nano::from(cash_note_balance.as_nano() - change_amount.as_nano());
                 break;
             }
         }
