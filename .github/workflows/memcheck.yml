@@ -31,8 +31,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
 
-      - run: sudo apt-get install protobuf-compiler
-
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          
       - name: install ripgrep
         shell: bash
         run: sudo apt-get install -y ripgrep

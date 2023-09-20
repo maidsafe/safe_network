@@ -44,8 +44,10 @@ jobs:
       - shell: bash
         run: cargo install just
 
-      - run: sudo apt-get install protobuf-compiler
-
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - shell: bash
         run: just build-release-artifacts "${{ matrix.target }}"
       - uses: actions/upload-artifact@main
