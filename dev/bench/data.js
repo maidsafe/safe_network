@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695217501690,
+  "lastUpdate": 1695217507206,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20242,6 +20242,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 178,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d18d4c1c628f00536c333767e10ff693bde720c8",
+          "message": "fix: revert protoc/tonic-build update, remove protoc-builder install on ci\n\nReinstate arm builds",
+          "timestamp": "2023-09-20T15:11:05+02:00",
+          "tree_id": "e92c7074a99c1c4a5cff78c5bf148d1801f0a5c6",
+          "url": "https://github.com/maidsafe/safe_network/commit/d18d4c1c628f00536c333767e10ff693bde720c8"
+        },
+        "date": 1695217506297,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 203.5712,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 172,
             "unit": "MB"
           }
         ]
