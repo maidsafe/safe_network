@@ -9,9 +9,9 @@
 use crate::NetworkAddress;
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
-pub use sn_dbc::{DbcId, Hash};
+pub use sn_transfers::{Hash, UniquePubkey};
 
-/// Data and Dbc cmds - recording spends or creating, updating, and removing data.
+/// Data and CashNote cmds - recording spends or creating, updating, and removing data.
 ///
 /// See the [`protocol`] module documentation for more details of the types supported by the Safe
 /// Network, and their semantics.

@@ -10,19 +10,19 @@ use std::collections::BTreeSet;
 
 use crate::Network;
 
-use sn_dbc::{Dbc, DbcId, DbcSecrets, DbcTransaction, DerivationIndex, SignedSpend};
 use sn_protocol::{
     error::{Error, Result},
-    storage::{try_deserialize_record, DbcAddress, RecordHeader, RecordKind},
+    storage::{try_deserialize_record, RecordHeader, RecordKind, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::wallet::{LocalWallet, Transfer};
+use sn_transfers::{CashNote, DerivationIndex, SignedSpend, Transaction, UniquePubkey};
 use tokio::task::JoinSet;
 
 impl Network {
     /// Gets a spend from the Network.
-    pub async fn get_spend(&self, address: DbcAddress, re_attempt: bool) -> Result<SignedSpend> {
-        let key = NetworkAddress::from_dbc_address(address).to_record_key();
+    pub async fn get_spend(&self, address: SpendAddress, re_attempt: bool) -> Result<SignedSpend> {
+        let key = NetworkAddress::from_cash_note_address(address).to_record_key();
         let record = self
             .get_record_from_network(key, None, re_attempt)
             .await
@@ -34,7 +34,7 @@ impl Network {
         let header =
             RecordHeader::from_record(&record).map_err(|_| Error::SpendNotFound(address))?;
 
-        if let RecordKind::DbcSpend = header.kind {
+        if let RecordKind::Spend = header.kind {
             match try_deserialize_record::<Vec<SignedSpend>>(&record)
                 .map_err(|_| Error::SpendNotFound(address))?
                 .as_slice()
@@ -57,32 +57,32 @@ impl Network {
             }
         } else {
             error!("RecordKind mismatch while trying to retrieve a Vec<SignedSpend>");
-            Err(Error::RecordKindMismatch(RecordKind::DbcSpend))
+            Err(Error::RecordKindMismatch(RecordKind::Spend))
         }
     }
 
-    /// This function is used to receive a Transfer and turn it back into spendable DBCs.
+    /// This function is used to receive a Transfer and turn it back into spendable CashNotes.
     /// Needs Network connection.
     /// Verify Transfer and rebuild spendable currency from it
     /// Returns an `Error::FailedToDecypherTransfer` if the transfer cannot be decyphered
     /// (This means the transfer is not for us as it was not encrypted to our key)
     /// Returns an `Error::InvalidTransfer` if the transfer is not valid
-    /// Else returns a list of DBCs that can be deposited to our wallet and spent
+    /// Else returns a list of CashNotes that can be deposited to our wallet and spent
     pub async fn verify_and_unpack_transfer(
         &self,
         transfer: Transfer,
         wallet: &LocalWallet,
-    ) -> Result<Vec<Dbc>> {
+    ) -> Result<Vec<CashNote>> {
         // get UTXOs from encrypted Transfer
         trace!("Decyphering Transfer");
         let utxos = wallet
             .unwrap_transfer(transfer)
             .map_err(|_| Error::FailedToDecypherTransfer)?;
-        let public_address = wallet.address();
+        let main_pubkey = wallet.address();
 
         // get the parent transactions
         trace!("Getting parent Tx for validation");
-        let parent_addrs: BTreeSet<DbcAddress> = utxos.iter().map(|u| u.parent_spend).collect();
+        let parent_addrs: BTreeSet<SpendAddress> = utxos.iter().map(|u| u.parent_spend).collect();
         let mut tasks = JoinSet::new();
         for addr in parent_addrs.clone() {
             let self_clone = self.clone();
@@ -95,21 +95,21 @@ impl Network {
                 .map_err(|e| Error::InvalidTransfer(format!("{e}")))?;
             let _ = parent_spends.insert(signed_spend.clone());
         }
-        let parent_txs: BTreeSet<DbcTransaction> =
+        let parent_txs: BTreeSet<Transaction> =
             parent_spends.iter().map(|s| s.spent_tx()).collect();
 
         // get all the other parent_spends from those Txs
         trace!("Getting parent spends for validation");
         let already_collected_parents = &parent_addrs;
-        let other_parent_dbc_addr: BTreeSet<DbcAddress> = parent_txs
+        let other_parent_cash_note_addr: BTreeSet<SpendAddress> = parent_txs
             .clone()
             .into_iter()
             .flat_map(|tx| tx.inputs)
-            .map(|i| DbcAddress::from_dbc_id(&i.dbc_id()))
+            .map(|i| SpendAddress::from_unique_pubkey(&i.unique_pubkey()))
             .filter(|addr| !already_collected_parents.contains(addr))
             .collect();
         let mut tasks = JoinSet::new();
-        for addr in other_parent_dbc_addr {
+        for addr in other_parent_cash_note_addr {
             let self_clone = self.clone();
             let _ = tasks.spawn(async move { self_clone.get_spend(addr, true).await });
         }
@@ -121,20 +121,16 @@ impl Network {
         }
 
         // get our outputs from Tx
-        let our_output_dbc_ids: Vec<(DbcId, DerivationIndex)> = utxos
+        let our_output_unique_pubkeys: Vec<(UniquePubkey, DerivationIndex)> = utxos
             .iter()
             .map(|u| (wallet.derive_key(&u.derivation_index), u.derivation_index))
-            .map(|(k, d)| (k.dbc_id(), d))
+            .map(|(k, d)| (k.unique_pubkey(), d))
             .collect();
-        let mut our_output_dbcs = Vec::new();
-        for (id, derivation_index) in our_output_dbc_ids.into_iter() {
-            let secrets = DbcSecrets {
-                public_address,
-                derivation_index,
-            };
+        let mut our_output_cash_notes = Vec::new();
+        for (id, derivation_index) in our_output_unique_pubkeys.into_iter() {
             let src_tx = parent_txs
                 .iter()
-                .find(|tx| tx.outputs.iter().any(|o| o.dbc_id() == &id))
+                .find(|tx| tx.outputs.iter().any(|o| o.unique_pubkey() == &id))
                 .ok_or(Error::InvalidTransfer(
                     "None of the UTXOs are refered to in upstream Txs".to_string(),
                 ))?
@@ -144,13 +140,14 @@ impl Network {
                 .filter(|s| s.spent_tx_hash() == src_tx.hash())
                 .cloned()
                 .collect();
-            let dbc = Dbc {
+            let cash_note = CashNote {
                 id,
                 src_tx,
-                secrets,
                 signed_spends,
+                main_pubkey,
+                derivation_index,
             };
-            our_output_dbcs.push(dbc);
+            our_output_cash_notes.push(cash_note);
         }
 
         // check Txs and parent spends are valid
@@ -165,6 +162,6 @@ impl Network {
                 .map_err(|e| Error::InvalidTransfer(format!("Payment parent Tx invalid: {e}")))?;
         }
 
-        Ok(our_output_dbcs)
+        Ok(our_output_cash_notes)
     }
 }

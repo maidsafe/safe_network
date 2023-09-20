@@ -6,12 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::collections::BTreeMap;
+use crate::{CashNote, DerivationIndex, MainPubkey, SpendAddress};
 
 use bls::{Ciphertext, PublicKey, SecretKey};
 use serde::{Deserialize, Serialize};
-use sn_dbc::{Dbc, DerivationIndex, PublicAddress};
-use sn_protocol::storage::DbcAddress;
+use std::collections::BTreeMap;
 
 use super::error::{Error, Result};
 
@@ -24,21 +23,21 @@ pub struct Transfer {
 }
 
 impl Transfer {
-    /// This function is used to create Transfer from DBCs, can be done offline, and sent to the recipient.
-    /// Creates Transfers from the given dbcs
-    /// Grouping DBCs by recipient into different transfers
+    /// This function is used to create Transfer from CashNotes, can be done offline, and sent to the recipient.
+    /// Creates Transfers from the given cash_notes
+    /// Grouping CashNotes by recipient into different transfers
     /// This Transfer can be sent safely to the recipients as all data in it is encrypted
-    /// The recipients can then decrypt the data and use it to verify and reconstruct the DBCs
-    pub fn transfers_from_dbcs(dbcs: Vec<Dbc>) -> Result<Vec<Transfer>> {
-        let mut utxos_map: BTreeMap<PublicAddress, Vec<Utxo>> = BTreeMap::new();
-        for dbc in dbcs {
-            let recipient = dbc.secrets.public_address;
-            let derivation_index = dbc.derivation_index();
-            let parent_spend_addr = match dbc.signed_spends.iter().next() {
-                Some(s) => DbcAddress::from_dbc_id(s.dbc_id()),
+    /// The recipients can then decrypt the data and use it to verify and reconstruct the CashNotes
+    pub fn transfers_from_cash_notes(cash_notes: Vec<CashNote>) -> Result<Vec<Transfer>> {
+        let mut utxos_map: BTreeMap<MainPubkey, Vec<Utxo>> = BTreeMap::new();
+        for cash_note in cash_notes {
+            let recipient = cash_note.main_pubkey;
+            let derivation_index = cash_note.derivation_index();
+            let parent_spend_addr = match cash_note.signed_spends.iter().next() {
+                Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
                 None => {
                     warn!(
-                        "Skipping DBC {dbc:?} while creating Transfer as it has no parent spends."
+                        "Skipping CashNote {cash_note:?} while creating Transfer as it has no parent spends."
                     );
                     continue;
                 }
@@ -112,12 +111,12 @@ pub struct Utxo {
     pub derivation_index: DerivationIndex,
     /// spentbook entry of one of one of the inputs (parent spends)
     /// using data found at this address the owner can check that the output is valid money
-    pub parent_spend: DbcAddress,
+    pub parent_spend: SpendAddress,
 }
 
 impl Utxo {
     /// Create a new Utxo
-    pub fn new(derivation_index: DerivationIndex, parent_spend: DbcAddress) -> Self {
+    pub fn new(derivation_index: DerivationIndex, parent_spend: SpendAddress) -> Self {
         Self {
             derivation_index,
             parent_spend,
@@ -156,7 +155,7 @@ mod tests {
     #[test]
     fn test_utxo_conversions() {
         let rng = &mut bls::rand::thread_rng();
-        let utxo = Utxo::new([42; 32], DbcAddress::new(XorName::random(rng)));
+        let utxo = Utxo::new([42; 32], SpendAddress::new(XorName::random(rng)));
         let sk = SecretKey::random();
         let pk = sk.public_key();
 
@@ -173,7 +172,7 @@ mod tests {
     #[test]
     fn test_utxo_transfer() {
         let rng = &mut bls::rand::thread_rng();
-        let utxo = Utxo::new([42; 32], DbcAddress::new(XorName::random(rng)));
+        let utxo = Utxo::new([42; 32], SpendAddress::new(XorName::random(rng)));
         let sk = SecretKey::random();
         let pk = sk.public_key();
 

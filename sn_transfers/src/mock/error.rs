@@ -5,9 +5,13 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
+use thiserror::Error;
 
-mod chunk;
+use serde::{Deserialize, Serialize};
 
-pub use self::chunk::ChunkAddress;
-pub use sn_registers::RegisterAddress;
-pub use sn_transfers::SpendAddress;
+#[derive(Error, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// Mock error variants.
+pub enum Error {
+    #[error("CashNote has already been spent")]
+    CashNoteAlreadySpent,
+}

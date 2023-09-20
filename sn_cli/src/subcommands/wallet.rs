@@ -9,8 +9,8 @@
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, Files, WalletClient};
-use sn_dbc::Token;
-use sn_transfers::wallet::{parse_public_address, LocalWallet};
+use sn_transfers::wallet::{parse_main_pubkey, LocalWallet};
+use sn_transfers::Nano;
 use std::{
     io::Read,
     path::{Path, PathBuf},
@@ -37,24 +37,24 @@ pub enum WalletCmds {
         #[clap(long)]
         peer_id: Vec<String>,
     },
-    /// Deposit DBCs from the received directory to the local wallet.
-    /// Or Read a hex encoded DBC from stdin.
+    /// Deposit CashNotes from the received directory to the local wallet.
+    /// Or Read a hex encoded CashNote from stdin.
     ///
     /// The default received directory is platform specific:
-    ///  - Linux: $HOME/.local/share/safe/wallet/received_dbcs
-    ///  - macOS: $HOME/Library/Application Support/safe/wallet/received_dbcs
-    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\wallet\received_dbcs
+    ///  - Linux: $HOME/.local/share/safe/wallet/received_cash_notes
+    ///  - macOS: $HOME/Library/Application Support/safe/wallet/received_cash_notes
+    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\wallet\received_cash_notes
     ///
-    /// If you find the default path unwieldy, you can also set the RECEIVED_DBCS_PATH environment
+    /// If you find the default path unwieldy, you can also set the RECEIVED_CashNoteS_PATH environment
     /// variable to a path you would prefer to work with.
     #[clap(verbatim_doc_comment)]
     Deposit {
-        /// Read a hex encoded DBC from stdin.
+        /// Read a hex encoded CashNote from stdin.
         #[clap(long, default_value = "false")]
         stdin: bool,
-        /// The hex encoded DBC.
+        /// The hex encoded CashNote.
         #[clap(long)]
-        dbc: Option<String>,
+        cash_note: Option<String>,
     },
     /// Get tokens from a faucet.
     GetFaucet {
@@ -62,7 +62,7 @@ pub enum WalletCmds {
         #[clap(name = "url")]
         url: String,
     },
-    /// Send a DBC.
+    /// Send a CashNote.
     Send {
         /// The number of SafeNetworkTokens to send.
         #[clap(name = "amount")]
@@ -106,7 +106,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             }
             Ok(())
         }
-        WalletCmds::Deposit { stdin, dbc } => deposit(root_dir, *stdin, dbc.clone()),
+        WalletCmds::Deposit { stdin, cash_note } => deposit(root_dir, *stdin, cash_note.clone()),
         WalletCmds::GetFaucet { url } => get_faucet(root_dir, url.clone()).await,
         cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
     }
@@ -152,7 +152,7 @@ fn address(root_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn balance(root_dir: &Path) -> Result<Token> {
+fn balance(root_dir: &Path) -> Result<Nano> {
     let wallet = LocalWallet::try_load_from(root_dir)?;
     let balance = wallet.balance();
     Ok(balance)
@@ -173,7 +173,7 @@ async fn get_faucet(root_dir: &Path, url: String) -> Result<()> {
     let is_ok = response.status().is_success();
     let body = response.text().await?;
     if is_ok {
-        deposit_from_dbc_hex(root_dir, body)?;
+        deposit_from_cash_note_hex(root_dir, body)?;
         println!("Successfully got tokens from faucet.");
     } else {
         println!(
@@ -184,13 +184,13 @@ async fn get_faucet(root_dir: &Path, url: String) -> Result<()> {
     Ok(())
 }
 
-fn deposit(root_dir: &Path, read_from_stdin: bool, dbc: Option<String>) -> Result<()> {
+fn deposit(root_dir: &Path, read_from_stdin: bool, cash_note: Option<String>) -> Result<()> {
     if read_from_stdin {
-        return read_dbc_from_stdin(root_dir);
+        return read_cash_note_from_stdin(root_dir);
     }
 
-    if let Some(dbc_hex) = dbc {
-        return deposit_from_dbc_hex(root_dir, dbc_hex);
+    if let Some(cash_note_hex) = cash_note {
+        return deposit_from_cash_note_hex(root_dir, cash_note_hex);
     }
 
     let mut wallet = LocalWallet::load_from(root_dir)?;
@@ -200,7 +200,7 @@ fn deposit(root_dir: &Path, read_from_stdin: bool, dbc: Option<String>) -> Resul
     wallet.try_load_deposits()?;
 
     let deposited =
-        sn_dbc::Token::from_nano(wallet.balance().as_nano() - previous_balance.as_nano());
+        sn_transfers::Nano::from_nano(wallet.balance().as_nano() - previous_balance.as_nano());
     if deposited.is_zero() {
         println!("Nothing deposited.");
     } else if let Err(err) = wallet.store() {
@@ -212,23 +212,23 @@ fn deposit(root_dir: &Path, read_from_stdin: bool, dbc: Option<String>) -> Resul
     Ok(())
 }
 
-fn read_dbc_from_stdin(root_dir: &Path) -> Result<()> {
-    println!("Please paste your DBC below:");
+fn read_cash_note_from_stdin(root_dir: &Path) -> Result<()> {
+    println!("Please paste your CashNote below:");
     let mut input = String::new();
     std::io::stdin().read_to_string(&mut input)?;
-    deposit_from_dbc_hex(root_dir, input)
+    deposit_from_cash_note_hex(root_dir, input)
 }
 
-fn deposit_from_dbc_hex(root_dir: &Path, input: String) -> Result<()> {
+fn deposit_from_cash_note_hex(root_dir: &Path, input: String) -> Result<()> {
     let mut wallet = LocalWallet::load_from(root_dir)?;
-    let dbc = sn_dbc::Dbc::from_hex(input.trim())?;
+    let cash_note = sn_transfers::CashNote::from_hex(input.trim())?;
 
     let old_balance = wallet.balance();
-    wallet.deposit(&vec![dbc])?;
+    wallet.deposit(&vec![cash_note])?;
     let new_balance = wallet.balance();
     wallet.store()?;
 
-    println!("Successfully stored dbc to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
+    println!("Successfully stored cash_note to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
 
     Ok(())
 }
@@ -240,10 +240,10 @@ async fn send(
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
-    let address = parse_public_address(to)?;
+    let address = parse_main_pubkey(to)?;
 
     use std::str::FromStr;
-    let amount = Token::from_str(&amount)?;
+    let amount = Nano::from_str(&amount)?;
     if amount.as_nano() == 0 {
         println!("Invalid format or zero amount passed in. Nothing sent.");
         return Ok(());
@@ -253,7 +253,7 @@ async fn send(
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
 
     match wallet_client.send(amount, address, verify_store).await {
-        Ok(new_dbc) => {
+        Ok(new_cash_note) => {
             println!("Sent {amount:?} to {address:?}");
             let mut wallet = wallet_client.into_wallet();
             let new_balance = wallet.balance();
@@ -264,8 +264,8 @@ async fn send(
                 println!("Successfully stored wallet with new balance {new_balance}.");
             }
 
-            wallet.store_dbc(&new_dbc)?;
-            println!("Successfully stored new dbc to wallet dir. It can now be sent to the recipient, using any channel of choice.");
+            wallet.store_cash_note(&new_cash_note)?;
+            println!("Successfully stored new cash_note to wallet dir. It can now be sent to the recipient, using any channel of choice.");
         }
         Err(err) => {
             println!("Failed to send {amount:?} to {address:?} due to {err:?}.");

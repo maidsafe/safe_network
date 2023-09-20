@@ -7,11 +7,11 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    storage::{DbcAddress, RecordKind, RegisterAddress},
+    storage::{RecordKind, RegisterAddress, SpendAddress},
     PrettyPrintRecordKey,
 };
 use serde::{Deserialize, Serialize};
-use sn_dbc::{SignedSpend, Token};
+use sn_transfers::{Nano, SignedSpend};
 use thiserror::Error;
 
 /// A specialised `Result` type for protocol crate.
@@ -43,7 +43,7 @@ pub enum Error {
 
     // ---------- spend errors
     #[error("Spend not found: {0:?}")]
-    SpendNotFound(DbcAddress),
+    SpendNotFound(SpendAddress),
     #[error("Failed to store spend: {0:?}")]
     SpendNotStored(String),
     #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
@@ -52,7 +52,7 @@ pub enum Error {
     SpendSignatureInvalid(String),
     #[error("Invalid Parent Tx: {0}")]
     SpendParentTxInvalid(String),
-    #[error("Dbc Spend is empty")]
+    #[error("CashNote Spend is empty")]
     SpendIsEmpty,
 
     // ---------- payment errors
@@ -61,7 +61,7 @@ pub enum Error {
     GetStoreCostFailed,
     /// The amount paid by payment proof is not the required for the received content
     #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
-    PaymentProofInsufficientAmount { paid: Token, expected: Token },
+    PaymentProofInsufficientAmount { paid: Nano, expected: Nano },
     /// Payment proof received has no inputs
     #[error(
         "Payment proof received with record:{0:?}. No payment for our node in its transaction"

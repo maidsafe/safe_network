@@ -24,11 +24,11 @@ use tiny_http::{Response, Server};
 /// # run faucet server
 /// cargo run  --features="local-discovery" --bin faucet --release -- server
 ///
-/// # query faucet server for DBC at `get local wallet address`
-/// curl "localhost:8000/`cargo run  --features="local-discovery"  --bin safe --release  wallet address | tail -n 1`" > dbc_hex
+/// # query faucet server for CashNote at `get local wallet address`
+/// curl "localhost:8000/`cargo run  --features="local-discovery"  --bin safe --release  wallet address | tail -n 1`" > cash_note_hex
 ///
-/// # feed DBC to local wallet
-/// cat dbc_hex | cargo run  --features="local-discovery"  --bin safe --release  wallet deposit --stdin
+/// # feed CashNote to local wallet
+/// cat cash_note_hex | cargo run  --features="local-discovery"  --bin safe --release  wallet deposit --stdin
 ///
 /// # balance should be updated
 /// ```
@@ -49,9 +49,9 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
         let key = request.url().trim_matches(path::is_separator);
 
         match send_tokens(client, "100", key).await {
-            Ok(dbc) => {
+            Ok(cash_note) => {
                 println!("Sent tokens to {}", key);
-                let response = Response::from_string(dbc);
+                let response = Response::from_string(cash_note);
                 let _ = request
                     .respond(response)
                     .map_err(|e| eprintln!("Failed to send response: {}", e));

@@ -16,11 +16,11 @@ use libp2p::{
     swarm::dial_opts::DialOpts,
     Multiaddr, PeerId,
 };
-use sn_dbc::Token;
 use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
+use sn_transfers::Nano;
 use std::collections::HashSet;
 use tokio::sync::oneshot;
 
@@ -93,7 +93,7 @@ pub enum SwarmCmd {
     },
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
-        sender: oneshot::Sender<Token>,
+        sender: oneshot::Sender<Nano>,
     },
     /// Get data from the local RecordStore
     GetLocalRecord {

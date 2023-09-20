@@ -24,11 +24,11 @@ pub use self::{
 use super::NetworkAddress;
 use crate::{
     error::{Error, Result},
-    storage::{Chunk, DbcAddress},
+    storage::{Chunk, SpendAddress},
 };
 use serde::{Deserialize, Serialize};
-use sn_dbc::SignedSpend;
 use sn_registers::SignedRegister;
+use sn_transfers::SignedSpend;
 use xor_name::XorName;
 
 #[allow(clippy::large_enum_variant)]
@@ -55,7 +55,7 @@ pub enum ReplicatedData {
     /// A chunk of data.
     Chunk(Chunk),
     /// A set of SignedSpends
-    DbcSpend(Vec<SignedSpend>),
+    Spend(Vec<SignedSpend>),
     /// A signed register
     Register(SignedRegister),
 }
@@ -75,9 +75,9 @@ impl ReplicatedData {
     pub fn name(&self) -> Result<XorName> {
         let name = match self {
             Self::Chunk(chunk) => *chunk.name(),
-            Self::DbcSpend(spends) => {
+            Self::Spend(spends) => {
                 if let Some(spend) = spends.first() {
-                    *DbcAddress::from_dbc_id(spend.dbc_id()).xorname()
+                    *SpendAddress::from_unique_pubkey(spend.unique_pubkey()).xorname()
                 } else {
                     return Err(Error::SpendIsEmpty);
                 }
@@ -91,9 +91,11 @@ impl ReplicatedData {
     pub fn dst(&self) -> Result<NetworkAddress> {
         let dst = match self {
             Self::Chunk(chunk) => NetworkAddress::from_chunk_address(*chunk.address()),
-            Self::DbcSpend(spends) => {
+            Self::Spend(spends) => {
                 if let Some(spend) = spends.first() {
-                    NetworkAddress::from_dbc_address(DbcAddress::from_dbc_id(spend.dbc_id()))
+                    NetworkAddress::from_cash_note_address(SpendAddress::from_unique_pubkey(
+                        spend.unique_pubkey(),
+                    ))
                 } else {
                     return Err(Error::SpendIsEmpty);
                 }

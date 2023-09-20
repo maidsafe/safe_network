@@ -9,7 +9,7 @@
 use crate::error::Result;
 
 use serde::{Deserialize, Serialize};
-use sn_dbc::{PublicAddress, Token};
+use sn_transfers::{MainPubkey, Nano};
 use std::fmt::Debug;
 
 /// The response to a query, containing the query result.
@@ -18,9 +18,9 @@ use std::fmt::Debug;
 pub enum QueryResponse {
     GetStoreCost {
         /// The store cost in nanos for storing the next record.
-        store_cost: Result<Token>,
-        /// The dbc PublicAddress to pay this node's store cost to.
-        payment_address: PublicAddress,
+        store_cost: Result<Nano>,
+        /// The cash_note MainPubkey to pay this node's store cost to.
+        payment_address: MainPubkey,
     },
 }
 

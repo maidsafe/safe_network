@@ -18,7 +18,7 @@ use thiserror::Error;
 #[allow(missing_docs)]
 pub enum Error {
     #[error("Genesis error {0}")]
-    GenesisError(#[from] sn_transfers::dbc_genesis::Error),
+    GenesisError(#[from] sn_transfers::genesis::Error),
 
     /// Could not acquire a Semaphore permit.
     #[error("Could not acquire a Semaphore permit.")]

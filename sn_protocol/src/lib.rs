@@ -16,7 +16,7 @@ pub mod messages;
 /// Storage types for spends, chunks and registers.
 pub mod storage;
 
-use self::storage::{ChunkAddress, DbcAddress, RegisterAddress};
+use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
 use bytes::Bytes;
 use libp2p::{
     kad::{KBucketDistance as Distance, KBucketKey as Key, RecordKey},
@@ -40,8 +40,8 @@ pub enum NetworkAddress {
     PeerId(Vec<u8>),
     /// The NetworkAddress is representing a ChunkAddress.
     ChunkAddress(ChunkAddress),
-    /// The NetworkAddress is representing a DbcAddress.
-    DbcAddress(DbcAddress),
+    /// The NetworkAddress is representing a SpendAddress.
+    SpendAddress(SpendAddress),
     /// The NetworkAddress is representing a ChunkAddress.
     RegisterAddress(RegisterAddress),
     /// The NetworkAddress is representing a RecordKey.
@@ -54,9 +54,9 @@ impl NetworkAddress {
         NetworkAddress::ChunkAddress(chunk_address)
     }
 
-    /// Return a `NetworkAddress` representation of the `DbcAddress`.
-    pub fn from_dbc_address(dbc_address: DbcAddress) -> Self {
-        NetworkAddress::DbcAddress(dbc_address)
+    /// Return a `NetworkAddress` representation of the `SpendAddress`.
+    pub fn from_cash_note_address(cash_note_address: SpendAddress) -> Self {
+        NetworkAddress::SpendAddress(cash_note_address)
     }
 
     /// Return a `NetworkAddress` representation of the `RegisterAddress`.
@@ -79,7 +79,9 @@ impl NetworkAddress {
         match self {
             NetworkAddress::PeerId(bytes) | NetworkAddress::RecordKey(bytes) => bytes.to_vec(),
             NetworkAddress::ChunkAddress(chunk_address) => chunk_address.xorname().0.to_vec(),
-            NetworkAddress::DbcAddress(dbc_address) => dbc_address.xorname().0.to_vec(),
+            NetworkAddress::SpendAddress(cash_note_address) => {
+                cash_note_address.xorname().0.to_vec()
+            }
             NetworkAddress::RegisterAddress(register_address) => {
                 register_address.xorname().0.to_vec()
             }
@@ -100,7 +102,7 @@ impl NetworkAddress {
     /// Try to return the represented `XorName`.
     pub fn as_xorname(&self) -> Option<XorName> {
         match self {
-            NetworkAddress::DbcAddress(dbc_address) => Some(*dbc_address.xorname()),
+            NetworkAddress::SpendAddress(cash_note_address) => Some(*cash_note_address.xorname()),
             NetworkAddress::ChunkAddress(chunk_address) => Some(*chunk_address.xorname()),
             NetworkAddress::RegisterAddress(register_address) => Some(register_address.xorname()),
             _ => None,
@@ -123,7 +125,9 @@ impl NetworkAddress {
             NetworkAddress::RegisterAddress(register_address) => {
                 RecordKey::new(&register_address.xorname())
             }
-            NetworkAddress::DbcAddress(dbc_address) => RecordKey::new(dbc_address.xorname()),
+            NetworkAddress::SpendAddress(cash_note_address) => {
+                RecordKey::new(cash_note_address.xorname())
+            }
             NetworkAddress::PeerId(bytes) => RecordKey::new(bytes),
         }
     }
@@ -164,8 +168,11 @@ impl Debug for NetworkAddress {
                     chunk_address.xorname()
                 )
             }
-            NetworkAddress::DbcAddress(dbc_address) => {
-                format!("NetworkAddress::DbcAddress({:?} - ", dbc_address.xorname())
+            NetworkAddress::SpendAddress(cash_note_address) => {
+                format!(
+                    "NetworkAddress::SpendAddress({:?} - ",
+                    cash_note_address.xorname()
+                )
             }
             NetworkAddress::RegisterAddress(register_address) => format!(
                 "NetworkAddress::RegisterAddress({:?} - ",
@@ -190,8 +197,8 @@ impl Display for NetworkAddress {
             NetworkAddress::ChunkAddress(addr) => {
                 write!(f, "NetworkAddress::ChunkAddress({addr:?})")
             }
-            NetworkAddress::DbcAddress(addr) => {
-                write!(f, "NetworkAddress::DbcAddress({addr:?})")
+            NetworkAddress::SpendAddress(addr) => {
+                write!(f, "NetworkAddress::SpendAddress({addr:?})")
             }
             NetworkAddress::RegisterAddress(addr) => {
                 write!(f, "NetworkAddress::RegisterAddress({addr:?})")

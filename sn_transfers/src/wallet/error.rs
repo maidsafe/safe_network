@@ -14,10 +14,13 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 /// Transfer errors.
 #[derive(Debug, Error)]
 pub enum Error {
-    /// No DBCs available for spend
-    #[error("No DBCs available for spend")]
-    NoDbcsAvailable,
-    /// Dbc add would overflow
+    /// No CashNotes available for spend
+    #[error("No CashNotes available for spend")]
+    NoCashNotesAvailable,
+    /// Address provided is of the wrong type
+    #[error("Invalid address type")]
+    InvalidAddressType,
+    /// CashNote add would overflow
     #[error("Total price exceed possible token amount")]
     TotalPriceTooHigh,
     /// Failed to create offline transfer.
@@ -25,7 +28,7 @@ pub enum Error {
     CreateOfflineTransfer(#[from] crate::client_transfers::Error),
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
-    CouldNotSendTokens(String),
+    CouldNotSendMoney(String),
     /// A general error when a retrieving a store cost fails
     #[error("Failed to get store cost due to {0}")]
     CouldNotGetStoreCost(String),
@@ -58,9 +61,9 @@ pub enum Error {
     #[error("Transfer deserialisation failed")]
     TransferDeserializationFailed,
 
-    /// Dbc error.
-    #[error("Dbc error: {0}")]
-    Dbc(#[from] sn_dbc::Error),
+    /// CashNote error.
+    #[error("CashNote error: {0}")]
+    CashNote(#[from] crate::Error),
     /// Bls error.
     #[error("Bls error: {0}")]
     Bls(#[from] bls::error::Error),

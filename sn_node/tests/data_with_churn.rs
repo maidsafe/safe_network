@@ -17,13 +17,13 @@ use common::{
 use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files, WalletClient};
-use sn_dbc::{Dbc, MainKey, Token};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_protocol::{
-    storage::{Chunk, ChunkAddress, DbcAddress, RegisterAddress},
+    storage::{Chunk, ChunkAddress, RegisterAddress, SpendAddress},
     NetworkAddress,
 };
 use sn_transfers::wallet::LocalWallet;
+use sn_transfers::{CashNote, MainSecretKey, Nano};
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
@@ -46,7 +46,7 @@ const EXTRA_CHURN_COUNT: u32 = 5;
 const CHURN_CYCLES: u32 = 1;
 const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 15;
 const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 5;
-const DBC_CREATION_RATIO_TO_CHURN: u32 = 1;
+const CASHNOTE_CREATION_RATIO_TO_CHURN: u32 = 1;
 
 const CHUNKS_SIZE: usize = 1024 * 1024;
 
@@ -60,7 +60,7 @@ const TEST_DURATION: Duration = Duration::from_secs(60 * 60); // 1hr
 const TRANSFERS_WALLET_INITIAL_BALANCE: u64 = 200_000_000_000;
 
 type ContentList = Arc<RwLock<VecDeque<NetworkAddress>>>;
-type DbcMap = Arc<RwLock<BTreeMap<DbcAddress, Dbc>>>;
+type CashNoteMap = Arc<RwLock<BTreeMap<SpendAddress, CashNote>>>;
 
 struct ContentError {
     net_addr: NetworkAddress,
@@ -144,10 +144,10 @@ async fn data_availability_during_churn() -> Result<()> {
     // Shared bucket where we keep track of content created/stored on the network
     let content = ContentList::default();
 
-    // Shared bucket where we keep track of DBCs created/stored on the network
-    let dbcs = DbcMap::default();
+    // Shared bucket where we keep track of CashNotes created/stored on the network
+    let cash_notes = CashNoteMap::default();
 
-    // Spawn a task to create Registers and DBCs at random locations,
+    // Spawn a task to create Registers and CashNotes at random locations,
     // at a higher frequency than the churning events
     if !chunks_only {
         println!("Creating transfer wallet taking balance from the payment wallet");
@@ -171,11 +171,11 @@ async fn data_availability_during_churn() -> Result<()> {
             paying_wallet_dir.path().to_path_buf(),
         );
 
-        create_dbc_task(
+        create_cash_note_task(
             client.clone(),
             transfers_wallet,
             content.clone(),
-            dbcs.clone(),
+            cash_notes.clone(),
             churn_period,
         );
     }
@@ -206,7 +206,7 @@ async fn data_availability_during_churn() -> Result<()> {
         client.clone(),
         content.clone(),
         content_erred.clone(),
-        dbcs.clone(),
+        cash_notes.clone(),
         churn_period,
         paying_wallet_dir.path().to_path_buf(),
     );
@@ -217,7 +217,7 @@ async fn data_availability_during_churn() -> Result<()> {
         client.clone(),
         content_erred.clone(),
         failures.clone(),
-        dbcs.clone(),
+        cash_notes.clone(),
         churn_period,
         paying_wallet_dir.path().to_path_buf(),
     );
@@ -260,7 +260,7 @@ async fn data_availability_during_churn() -> Result<()> {
     for net_addr in content.iter() {
         let client = client.clone();
         let net_addr = net_addr.clone();
-        let dbcs = dbcs.clone();
+        let cash_notes = cash_notes.clone();
         let churn_period = churn_period;
 
         let failures = failures.clone();
@@ -269,7 +269,7 @@ async fn data_availability_during_churn() -> Result<()> {
             final_retry_query_content(
                 &client,
                 &net_addr,
-                dbcs,
+                cash_notes,
                 churn_period,
                 failures,
                 &wallet_dir,
@@ -303,34 +303,34 @@ async fn data_availability_during_churn() -> Result<()> {
     Ok(())
 }
 
-// Spawns a task which periodically creates DBCs at random locations.
-fn create_dbc_task(
+// Spawns a task which periodically creates CashNotes at random locations.
+fn create_cash_note_task(
     client: Client,
     transfers_wallet: LocalWallet,
     content: ContentList,
-    dbcs: DbcMap,
+    cash_notes: CashNoteMap,
     churn_period: Duration,
 ) {
     let _handle = tokio::spawn(async move {
-        // Create Dbc at a higher frequency than the churning events
-        let delay = churn_period / DBC_CREATION_RATIO_TO_CHURN;
+        // Create CashNote at a higher frequency than the churning events
+        let delay = churn_period / CASHNOTE_CREATION_RATIO_TO_CHURN;
 
         let mut wallet_client = WalletClient::new(client.clone(), transfers_wallet);
 
         loop {
             sleep(delay).await;
 
-            let dest_pk = MainKey::random().public_address();
-            let dbc = wallet_client
-                .send(Token::from_nano(10), dest_pk, false)
+            let dest_pk = MainSecretKey::random().main_pubkey();
+            let cash_note = wallet_client
+                .send(Nano::from_nano(10), dest_pk, false)
                 .await
-                .expect("Failed to send DBC to {dest_pk}");
+                .expect("Failed to send CashNote to {dest_pk}");
 
-            let dbc_addr = DbcAddress::from_dbc_id(&dbc.id());
-            let net_addr = NetworkAddress::DbcAddress(dbc_addr);
-            println!("Created DBC at {dbc_addr:?} after {delay:?}");
+            let cash_note_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
+            let net_addr = NetworkAddress::SpendAddress(cash_note_addr);
+            println!("Created CashNote at {cash_note_addr:?} after {delay:?}");
             content.write().await.push_back(net_addr);
-            let _ = dbcs.write().await.insert(dbc_addr, dbc);
+            let _ = cash_notes.write().await.insert(cash_note_addr, cash_note);
         }
     });
 }
@@ -474,7 +474,7 @@ fn query_content_task(
     client: Client,
     content: ContentList,
     content_erred: ContentErredList,
-    dbcs: DbcMap,
+    cash_notes: CashNoteMap,
     churn_period: Duration,
     root_dir: PathBuf,
 ) {
@@ -494,7 +494,7 @@ fn query_content_task(
             trace!("Querying content (bucket index: {index}) at {net_addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match query_content(&client, &root_dir, &net_addr, dbcs.clone()).await {
+            match query_content(&client, &root_dir, &net_addr, cash_notes.clone()).await {
                 Ok(_) => {
                     let _ = content_erred.write().await.remove(&net_addr);
                 }
@@ -563,7 +563,7 @@ fn retry_query_content_task(
     client: Client,
     content_erred: ContentErredList,
     failures: ContentErredList,
-    dbcs: DbcMap,
+    cash_notes: CashNoteMap,
     churn_period: Duration,
     wallet_dir: PathBuf,
 ) {
@@ -580,7 +580,7 @@ fn retry_query_content_task(
 
                 println!("Querying erred content at {net_addr}, attempt: #{attempts} ...");
                 if let Err(last_err) =
-                    query_content(&client, &wallet_dir, &net_addr, dbcs.clone()).await
+                    query_content(&client, &wallet_dir, &net_addr, cash_notes.clone()).await
                 {
                     println!("Erred content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                     // We only keep it to retry 'MAX_NUM_OF_QUERY_ATTEMPTS' times,
@@ -606,7 +606,7 @@ fn retry_query_content_task(
 async fn final_retry_query_content(
     client: &Client,
     net_addr: &NetworkAddress,
-    dbcs: DbcMap,
+    cash_notes: CashNoteMap,
     churn_period: Duration,
     failures: ContentErredList,
     wallet_dir: &Path,
@@ -616,7 +616,9 @@ async fn final_retry_query_content(
     loop {
         println!("Final querying content at {net_addr}, attempt: #{attempts} ...");
         debug!("Final querying content at {net_addr}, attempt: #{attempts} ...");
-        if let Err(last_err) = query_content(client, wallet_dir, &net_addr, dbcs.clone()).await {
+        if let Err(last_err) =
+            query_content(client, wallet_dir, &net_addr, cash_notes.clone()).await
+        {
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
                 println!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                 bail!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
@@ -639,20 +641,20 @@ async fn query_content(
     client: &Client,
     wallet_dir: &Path,
     net_addr: &NetworkAddress,
-    dbcs: DbcMap,
+    cash_notes: CashNoteMap,
 ) -> Result<(), Error> {
     match net_addr {
-        NetworkAddress::DbcAddress(addr) => {
-            if let Some(dbc) = dbcs.read().await.get(addr) {
-                match client.verify(dbc).await {
+        NetworkAddress::SpendAddress(addr) => {
+            if let Some(cash_note) = cash_notes.read().await.get(addr) {
+                match client.verify(cash_note).await {
                     Ok(_) => Ok(()),
                     Err(err) => Err(Error::CouldNotVerifyTransfer(format!(
-                        "Verification of dbc {addr:?} failed with error: {err:?}"
+                        "Verification of cash_note {addr:?} failed with error: {err:?}"
                     ))),
                 }
             } else {
                 Err(Error::CouldNotVerifyTransfer(format!(
-                    "Do not have the DBC: {addr:?}"
+                    "Do not have the CashNote: {addr:?}"
                 )))
             }
         }

@@ -1,17 +1,17 @@
 use super::{wallet::send, Result};
 use crate::Client;
 
-use sn_dbc::{Dbc, PublicAddress, Token};
-use sn_transfers::dbc_genesis::{create_faucet_wallet, load_genesis_wallet};
+use sn_transfers::genesis::{create_faucet_wallet, load_genesis_wallet};
 use sn_transfers::wallet::LocalWallet;
+use sn_transfers::{CashNote, MainPubkey, Nano};
 
-/// Returns a dbc with the requested number of tokens, for use by E2E test instances.
+/// Returns a cash_note with the requested number of tokens, for use by E2E test instances.
 /// Note this will create a faucet having a Genesis balance
 pub async fn get_tokens_from_faucet(
-    amount: Token,
-    to: PublicAddress,
+    amount: Nano,
+    to: MainPubkey,
     client: &Client,
-) -> Result<Dbc> {
+) -> Result<CashNote> {
     Ok(send(
         load_faucet_wallet_from_genesis_wallet(client).await?,
         amount,
@@ -43,7 +43,7 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
 
     let faucet_balance = genesis_wallet.balance();
     println!("Sending {faucet_balance} from genesis to faucet wallet..");
-    let dbc = send(
+    let cash_note = send(
         genesis_wallet,
         faucet_balance,
         faucet_wallet.address(),
@@ -52,14 +52,14 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
     )
     .await?;
 
-    faucet_wallet.deposit(&vec![dbc.clone()])?;
+    faucet_wallet.deposit(&vec![cash_note.clone()])?;
     faucet_wallet
         .store()
         .expect("Faucet wallet shall be stored successfully.");
     println!("Faucet wallet balance: {}", faucet_wallet.balance());
 
     println!("Verifying the transfer from genesis...");
-    if let Err(error) = client.verify(&dbc).await {
+    if let Err(error) = client.verify(&cash_note).await {
         panic!("Could not verify the transfer from genesis: {error:?}");
     } else {
         println!("Successfully verified the transfer from genesis on the second try.");
