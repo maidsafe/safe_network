@@ -67,7 +67,7 @@ pub use self::{
 };
 pub use transfer::{CashNoteRedemption, Transfer};
 
-use crate::{MainPubkey, Nano, UniquePubkey};
+use crate::{MainPubkey, NanoTokens, UniquePubkey};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -77,7 +77,7 @@ pub(super) struct KeyLessWallet {
     /// spent when sending tokens to other addresses.
     spent_cash_notes: BTreeSet<UniquePubkey>,
     /// These are the UniquePubkeys of cash_notes we own that are not yet spent.
-    available_cash_notes: BTreeMap<UniquePubkey, Nano>,
+    available_cash_notes: BTreeMap<UniquePubkey, NanoTokens>,
     /// These are the UniquePubkeys of cash_notes we've created by
     /// sending tokens to other addresses.
     /// They are not owned by us, but we

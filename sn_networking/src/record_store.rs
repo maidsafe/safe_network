@@ -15,7 +15,7 @@ use libp2p::{
     },
 };
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
-use sn_transfers::Nano;
+use sn_transfers::NanoTokens;
 use std::{
     borrow::Cow,
     collections::HashSet,
@@ -222,7 +222,7 @@ impl NodeRecordStore {
     }
 
     /// Calculate the cost to store data for our current store state
-    pub(crate) fn store_cost(&self) -> Nano {
+    pub(crate) fn store_cost(&self) -> NanoTokens {
         let relevant_records_len = if let Some(distance_range) = self.distance_range {
             self.get_records_within_distance_range(&self.records, distance_range)
         } else {
@@ -233,7 +233,7 @@ impl NodeRecordStore {
         let cost = calculate_cost_for_relevant_records(relevant_records_len);
 
         debug!("Cost is now {cost:?}");
-        Nano::from(cost)
+        NanoTokens::from(cost)
     }
 
     /// Calculate how many records are stored within a distance range

@@ -24,7 +24,7 @@ use sn_transfers::{
     genesis::{is_genesis_parent_tx, GENESIS_CASHNOTE},
     wallet::{LocalWallet, Transfer},
 };
-use sn_transfers::{CashNote, Nano, SignedSpend, UniquePubkey};
+use sn_transfers::{CashNote, NanoTokens, SignedSpend, UniquePubkey};
 use std::collections::{BTreeSet, HashSet};
 
 impl Node {
@@ -429,7 +429,7 @@ impl Node {
             self.network.get_local_storecost().await.map_err(|e| {
                 ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
             })?;
-        let mut received_fee = Nano::zero();
+        let mut received_fee = NanoTokens::zero();
         for cash_note in cash_notes.iter() {
             let amount = cash_note.token().map_err(|_| {
                 ProtocolError::RecordNotStored(

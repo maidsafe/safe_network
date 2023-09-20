@@ -10,7 +10,7 @@ use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, Files, WalletClient};
 use sn_transfers::wallet::{parse_main_pubkey, LocalWallet};
-use sn_transfers::Nano;
+use sn_transfers::NanoTokens;
 use std::{
     io::Read,
     path::{Path, PathBuf},
@@ -152,7 +152,7 @@ fn address(root_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn balance(root_dir: &Path) -> Result<Nano> {
+fn balance(root_dir: &Path) -> Result<NanoTokens> {
     let wallet = LocalWallet::try_load_from(root_dir)?;
     let balance = wallet.balance();
     Ok(balance)
@@ -200,7 +200,7 @@ fn deposit(root_dir: &Path, read_from_stdin: bool, cash_note: Option<String>) ->
     wallet.try_load_deposits()?;
 
     let deposited =
-        sn_transfers::Nano::from(wallet.balance().as_nano() - previous_balance.as_nano());
+        sn_transfers::NanoTokens::from(wallet.balance().as_nano() - previous_balance.as_nano());
     if deposited.is_zero() {
         println!("Nothing deposited.");
     } else if let Err(err) = wallet.store() {
@@ -243,7 +243,7 @@ async fn send(
     let address = parse_main_pubkey(to)?;
 
     use std::str::FromStr;
-    let amount = Nano::from_str(&amount)?;
+    let amount = NanoTokens::from_str(&amount)?;
     if amount.as_nano() == 0 {
         println!("Invalid format or zero amount passed in. Nothing sent.");
         return Ok(());

@@ -37,7 +37,7 @@ pub use crate::{
     cashnote::CashNote,
     error::{Error, Result},
     fee_output::FeeOutput,
-    nano::Nano,
+    nano::NanoTokens,
     signed_spend::{SignedSpend, Spend},
     transaction::{Input, Output, Transaction},
     unique_keys::{

@@ -23,7 +23,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_transfers::wallet::LocalWallet;
-use sn_transfers::{CashNote, MainSecretKey, Nano};
+use sn_transfers::{CashNote, MainSecretKey, NanoTokens};
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
@@ -322,7 +322,7 @@ fn create_cash_note_task(
 
             let dest_pk = MainSecretKey::random().main_pubkey();
             let cash_note = wallet_client
-                .send(Nano::from(10), dest_pk, false)
+                .send(NanoTokens::from(10), dest_pk, false)
                 .await
                 .expect("Failed to send CashNote to {dest_pk}");
 

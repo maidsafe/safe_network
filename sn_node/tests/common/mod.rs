@@ -28,7 +28,7 @@ use rand::{
     Rng,
 };
 use sn_logging::{LogFormat, LogOutputDest};
-use sn_transfers::Nano;
+use sn_transfers::NanoTokens;
 use std::{
     fs::File,
     io::Write,
@@ -98,7 +98,7 @@ pub async fn get_funded_wallet(
     root_dir: &Path,
     amount: u64,
 ) -> Result<LocalWallet> {
-    let wallet_balance = Nano::from(amount);
+    let wallet_balance = NanoTokens::from(amount);
     let mut local_wallet = get_wallet(root_dir).await;
 
     println!("Getting {wallet_balance} tokens from the faucet...");

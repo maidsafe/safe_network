@@ -4,7 +4,7 @@
 // This SAFE Network Software is licensed under the BSD-3-Clause license.
 // Please see the LICENSE file for more details.
 
-use crate::{FeeOutput, Nano, SignedSpend, UniquePubkey};
+use crate::{FeeOutput, NanoTokens, SignedSpend, UniquePubkey};
 use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::BTreeSet};
 use tiny_keccak::{Hasher, Sha3};
@@ -16,14 +16,14 @@ type Result<T> = std::result::Result<T, Error>;
 #[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Input {
     pub unique_pubkey: UniquePubkey,
-    pub amount: Nano,
+    pub amount: NanoTokens,
 }
 
 impl Input {
     pub fn new(unique_pubkey: UniquePubkey, amount: u64) -> Self {
         Self {
             unique_pubkey,
-            amount: Nano::from(amount),
+            amount: NanoTokens::from(amount),
         }
     }
 
@@ -42,14 +42,14 @@ impl Input {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Output {
     pub unique_pubkey: UniquePubkey,
-    pub amount: Nano,
+    pub amount: NanoTokens,
 }
 
 impl Output {
     pub fn new(unique_pubkey: UniquePubkey, amount: u64) -> Self {
         Self {
             unique_pubkey,
-            amount: Nano::from(amount),
+            amount: NanoTokens::from(amount),
         }
     }
 

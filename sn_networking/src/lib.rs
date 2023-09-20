@@ -44,7 +44,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::MainPubkey;
-use sn_transfers::Nano;
+use sn_transfers::NanoTokens;
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
 use tokio::sync::{mpsc, oneshot, OwnedSemaphorePermit, Semaphore};
 use tracing::warn;
@@ -182,7 +182,7 @@ impl Network {
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
-    ) -> Result<Vec<(MainPubkey, Nano)>> {
+    ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
         let (sender, receiver) = oneshot::channel();
         // get permit if semaphore supplied
         let mut _permit = None;
@@ -332,7 +332,7 @@ impl Network {
     }
 
     /// Get the cost of storing the next record from the network
-    pub async fn get_local_storecost(&self) -> Result<Nano> {
+    pub async fn get_local_storecost(&self) -> Result<NanoTokens> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetLocalStoreCost { sender })?;
 
@@ -607,8 +607,8 @@ impl Network {
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
 #[allow(clippy::result_large_err)]
 fn get_fees_from_store_cost_responses(
-    mut all_costs: Vec<(MainPubkey, Nano)>,
-) -> Result<Vec<(MainPubkey, Nano)>> {
+    mut all_costs: Vec<(MainPubkey, NanoTokens)>,
+) -> Result<Vec<(MainPubkey, NanoTokens)>> {
     // TODO: we should make this configurable based upon data type
     // or user requirements for resilience.
     let desired_quote_count = CLOSE_GROUP_SIZE;
@@ -685,7 +685,7 @@ mod tests {
         let mut costs = vec![];
         for i in 0..CLOSE_GROUP_SIZE {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
-            costs.push((addr, Nano::from(i as u64)));
+            costs.push((addr, NanoTokens::from(i as u64)));
         }
         let prices = get_fees_from_store_cost_responses(costs)?;
         let total_price: u64 = prices
@@ -712,7 +712,7 @@ mod tests {
         let mut costs = vec![];
         for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
-            costs.push((addr, Nano::from(i as u64)));
+            costs.push((addr, NanoTokens::from(i as u64)));
         }
 
         if get_fees_from_store_cost_responses(costs).is_ok() {
@@ -730,7 +730,7 @@ mod tests {
         for i in 0..responses_count {
             // push random MainPubkey and Nano
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
-            costs.push((addr, Nano::from(i)));
+            costs.push((addr, NanoTokens::from(i)));
             println!("price added {}", i);
         }
 

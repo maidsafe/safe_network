@@ -16,7 +16,7 @@ use sn_transfers::{
     client_transfers::TransferOutputs,
     wallet::{Error, LocalWallet, Result},
 };
-use sn_transfers::{CashNote, MainPubkey, Nano};
+use sn_transfers::{CashNote, MainPubkey, NanoTokens};
 
 use futures::future::join_all;
 use std::{
@@ -45,7 +45,7 @@ impl WalletClient {
     }
 
     /// Get the wallet balance
-    pub fn balance(&self) -> Nano {
+    pub fn balance(&self) -> NanoTokens {
         self.wallet.balance()
     }
 
@@ -73,7 +73,7 @@ impl WalletClient {
     /// Can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
     pub async fn send(
         &mut self,
-        amount: Nano,
+        amount: NanoTokens,
         to: MainPubkey,
         verify_store: bool,
     ) -> Result<CashNote> {
@@ -106,7 +106,7 @@ impl WalletClient {
         &self,
 
         address: &NetworkAddress,
-    ) -> Result<Vec<(MainPubkey, Nano)>> {
+    ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
         self.client
             .get_store_costs_at_address(address)
             .await
@@ -122,8 +122,8 @@ impl WalletClient {
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
         verify_store: bool,
-    ) -> Result<Nano> {
-        let mut total_cost = Nano::zero();
+    ) -> Result<NanoTokens> {
+        let mut total_cost = NanoTokens::zero();
 
         let mut payment_map = BTreeMap::default();
 
@@ -184,15 +184,15 @@ impl WalletClient {
     /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
     pub async fn pay_for_records(
         &mut self,
-        all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, Nano)>>,
+        all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
         verify_store: bool,
-    ) -> Result<Nano> {
+    ) -> Result<NanoTokens> {
         // TODO:
         // Check for any existing payment CashNotes, and use them if they exist, only topping up if needs be
         let num_of_payments = all_data_payments.len();
 
         let now = Instant::now();
-        let mut total_cost = Nano::zero();
+        let mut total_cost = NanoTokens::zero();
         for (_data, costs) in all_data_payments.iter() {
             for (_target, cost) in costs {
                 if let Some(new_cost) = total_cost.checked_add(*cost) {
@@ -331,7 +331,7 @@ impl Client {
 /// This marks the spent CashNote as spent in the Network
 pub async fn send(
     from: LocalWallet,
-    amount: Nano,
+    amount: NanoTokens,
     to: MainPubkey,
     client: &Client,
     verify_store: bool,

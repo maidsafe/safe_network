@@ -8,7 +8,7 @@
 
 use crate::{
     transaction::Transaction, unique_keys::MainPubkey, DerivationIndex, DerivedSecretKey, Error,
-    FeeOutput, Hash, MainSecretKey, Nano, Result, SignedSpend, UniquePubkey,
+    FeeOutput, Hash, MainSecretKey, NanoTokens, Result, SignedSpend, UniquePubkey,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -112,7 +112,7 @@ impl CashNote {
     }
 
     /// Return the Nanos for this CashNote.
-    pub fn token(&self) -> Result<Nano> {
+    pub fn token(&self) -> Result<NanoTokens> {
         Ok(self
             .src_tx
             .outputs
@@ -203,7 +203,7 @@ pub(crate) mod tests {
         rand::{CryptoRng, RngCore},
         transaction::Output,
         unique_keys::random_derivation_index,
-        FeeOutput, Hash, Nano,
+        FeeOutput, Hash, NanoTokens,
     };
     use bls::{PublicKey, SecretKey};
     use std::convert::TryInto;
@@ -234,7 +234,7 @@ pub(crate) mod tests {
         assert_eq!(cashnote.token()?.as_nano(), 1_530_000_000);
 
         let fee_amount = cashnote.fee_output().token;
-        assert_eq!(fee_amount, Nano::from(3_500));
+        assert_eq!(fee_amount, NanoTokens::from(3_500));
 
         Ok(())
     }
@@ -265,7 +265,7 @@ pub(crate) mod tests {
         assert_eq!(cashnote.token()?, cashnote_from_hex.token()?);
 
         let fee_amount = cashnote.fee_output().token;
-        assert_eq!(fee_amount, Nano::from(2_500));
+        assert_eq!(fee_amount, NanoTokens::from(2_500));
 
         Ok(())
     }
@@ -351,8 +351,8 @@ pub(crate) mod tests {
             mock::GenesisBuilder::init_genesis_single()?;
 
         let output_tokens = vec![
-            Nano::from(amount),
-            Nano::from(mock::GenesisMaterial::GENESIS_AMOUNT - amount),
+            NanoTokens::from(amount),
+            NanoTokens::from(mock::GenesisMaterial::GENESIS_AMOUNT - amount),
         ];
 
         let derived_key = genesis_cashnote.derived_key(&genesis_material.main_key)?;
