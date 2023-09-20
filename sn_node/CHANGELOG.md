@@ -1358,6 +1358,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.90.31](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.30...sn_node-v0.90.31) - 2023-09-20
+
+### Other
+- more iterations for verify reward update
+- *(release)* sn_cli-v0.81.61/sn_networking-v0.6.14/sn_client-v0.89.21
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
