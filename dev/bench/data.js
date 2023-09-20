@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695204304092,
+  "lastUpdate": 1695204617389,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -14125,6 +14125,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 66.80576,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "8f9791027e76183f95dcf96522426b9f06a48efd",
+          "message": "fix: make clearer cli send asks for whole token amounts, not nanos",
+          "timestamp": "2023-09-20T09:02:59Z",
+          "tree_id": "76883c1f6d3f5a00bff0672765a29c92b211e1f0",
+          "url": "https://github.com/maidsafe/safe_network/commit/8f9791027e76183f95dcf96522426b9f06a48efd"
+        },
+        "date": 1695204616464,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 60.485634,
             "unit": "MB"
           }
         ]
