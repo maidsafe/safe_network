@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695192121485,
+  "lastUpdate": 1695192408899,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -13921,6 +13921,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 59.64595,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "06f886a5c4dd671c1dd8ed948ace4011b0ffd461",
+          "message": "chore: allow chunks to be Quorum::One\n\nAs they are self-verifiable we don't need majority there",
+          "timestamp": "2023-09-20T05:42:04Z",
+          "tree_id": "6b6efac35c4fdc15848152bb51de05bf203ea69c",
+          "url": "https://github.com/maidsafe/safe_network/commit/06f886a5c4dd671c1dd8ed948ace4011b0ffd461"
+        },
+        "date": 1695192408490,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 64.462845,
             "unit": "MB"
           }
         ]
