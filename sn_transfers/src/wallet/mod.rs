@@ -55,7 +55,7 @@
 mod error;
 mod keys;
 mod local_store;
-mod utxo;
+mod transfer;
 mod wallet_file;
 
 use crate::client_transfers::ContentPaymentsIdMap;
@@ -65,7 +65,7 @@ pub use self::{
     keys::{bls_secret_from_hex, parse_main_pubkey},
     local_store::LocalWallet,
 };
-pub use utxo::{Transfer, Utxo};
+pub use transfer::{CashNoteRedemption, Transfer};
 
 use crate::{MainPubkey, Nano, UniquePubkey};
 use std::collections::{BTreeMap, BTreeSet};

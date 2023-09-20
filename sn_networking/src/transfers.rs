@@ -73,16 +73,19 @@ impl Network {
         transfer: Transfer,
         wallet: &LocalWallet,
     ) -> Result<Vec<CashNote>> {
-        // get UTXOs from encrypted Transfer
+        // get CashNoteRedemptions from encrypted Transfer
         trace!("Decyphering Transfer");
-        let utxos = wallet
+        let cashnote_redemptions = wallet
             .unwrap_transfer(transfer)
             .map_err(|_| Error::FailedToDecypherTransfer)?;
         let main_pubkey = wallet.address();
 
         // get the parent transactions
         trace!("Getting parent Tx for validation");
-        let parent_addrs: BTreeSet<SpendAddress> = utxos.iter().map(|u| u.parent_spend).collect();
+        let parent_addrs: BTreeSet<SpendAddress> = cashnote_redemptions
+            .iter()
+            .map(|u| u.parent_spend)
+            .collect();
         let mut tasks = JoinSet::new();
         for addr in parent_addrs.clone() {
             let self_clone = self.clone();
@@ -121,7 +124,7 @@ impl Network {
         }
 
         // get our outputs from Tx
-        let our_output_unique_pubkeys: Vec<(UniquePubkey, DerivationIndex)> = utxos
+        let our_output_unique_pubkeys: Vec<(UniquePubkey, DerivationIndex)> = cashnote_redemptions
             .iter()
             .map(|u| (wallet.derive_key(&u.derivation_index), u.derivation_index))
             .map(|(k, d)| (k.unique_pubkey(), d))
@@ -132,7 +135,7 @@ impl Network {
                 .iter()
                 .find(|tx| tx.outputs.iter().any(|o| o.unique_pubkey() == &id))
                 .ok_or(Error::InvalidTransfer(
-                    "None of the UTXOs are refered to in upstream Txs".to_string(),
+                    "None of the CashNoteRedemptions are refered to in upstream Txs".to_string(),
                 ))?
                 .clone();
             let signed_spends: BTreeSet<SignedSpend> = parent_spends
