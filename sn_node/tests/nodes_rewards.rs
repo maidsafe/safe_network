@@ -51,21 +51,31 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
         .await?;
 
     let prev_rewards_balance = current_rewards_balance()?;
-
-    files_api.upload_with_payments(content_bytes, true).await?;
-
-    // sleep for 1 second to allow nodes to process and store the payment
-    sleep(Duration::from_secs(1)).await;
-
-    let new_rewards_balance = current_rewards_balance()?;
-
     let expected_rewards_balance = prev_rewards_balance
         .checked_add(cost)
         .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
 
-    assert_eq!(expected_rewards_balance, new_rewards_balance);
+    files_api.upload_with_payments(content_bytes, true).await?;
+
+    verify_rewards(expected_rewards_balance).await?;
 
     Ok(())
+}
+
+async fn verify_rewards(expected_rewards_balance: Token) -> Result<()> {
+    let mut iteration = 0;
+    let mut cur_rewards_history = Vec::new();
+
+    while iteration < 10 {
+        iteration += 1;
+        let new_rewards_balance = current_rewards_balance()?;
+        if expected_rewards_balance == new_rewards_balance {
+            return Ok(());
+        }
+        cur_rewards_history.push(new_rewards_balance);
+        sleep(Duration::from_secs(1)).await;
+    }
+    panic!("Network doesn't get expected reward {expected_rewards_balance:?} after {iteration} iterations, history is {cur_rewards_history:?}");
 }
 
 #[tokio::test]
@@ -93,21 +103,15 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
         .await?;
 
     let prev_rewards_balance = current_rewards_balance()?;
+    let expected_rewards_balance = prev_rewards_balance
+        .checked_add(cost)
+        .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
 
     let _register = client
         .create_register(register_addr, &mut wallet_client, false)
         .await?;
 
-    // sleep for 10 second to allow nodes to process and store the payment
-    sleep(Duration::from_secs(10)).await;
-
-    let new_rewards_balance = current_rewards_balance()?;
-
-    let expected_rewards_balance = prev_rewards_balance
-        .checked_add(cost)
-        .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
-
-    assert_eq!(expected_rewards_balance, new_rewards_balance);
+    verify_rewards(expected_rewards_balance).await?;
 
     Ok(())
 }
