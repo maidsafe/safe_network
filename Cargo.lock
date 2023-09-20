@@ -4066,7 +4066,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.81.60"
+version = "0.81.61"
 dependencies = [
  "bincode",
  "blsttc",
@@ -4097,7 +4097,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.89.20"
+version = "0.89.21"
 dependencies = [
  "async-trait",
  "bincode",
@@ -4164,7 +4164,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.6.13"
+version = "0.6.14"
 dependencies = [
  "async-trait",
  "blsttc",
