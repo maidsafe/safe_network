@@ -4068,7 +4068,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.81.53"
+version = "0.81.54"
 dependencies = [
  "bincode",
  "blsttc",
@@ -4099,7 +4099,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.89.19"
+version = "0.89.20"
 dependencies = [
  "async-trait",
  "bincode",
@@ -4145,7 +4145,7 @@ dependencies = [
 
 [[package]]
 name = "sn_logging"
-version = "0.2.8"
+version = "0.2.9"
 dependencies = [
  "file-rotate",
  "opentelemetry",
@@ -4166,7 +4166,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.6.12"
+version = "0.6.13"
 dependencies = [
  "async-trait",
  "blsttc",
@@ -4195,7 +4195,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.90.23"
+version = "0.90.24"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4298,7 +4298,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.2.144"
+version = "0.2.145"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",
@@ -4321,7 +4321,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.11.14"
+version = "0.11.15"
 dependencies = [
  "assert_fs",
  "async-trait",
