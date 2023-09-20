@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use tiny_keccak::{Hasher, Sha3};
 
-/// Represents a Digital Bearer Certificate (CashNote).
+/// Represents a CashNote (CashNote).
 ///
 /// A CashNote is like a check. Only the recipient can spend it.
 ///

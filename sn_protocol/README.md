@@ -75,7 +75,7 @@ The `storage` module handles the storage aspects of the protocol.
 ### API Calls
 
 - `ChunkAddress`: Address of a chunk in the network.
-- `SpendAddress`: Address of a CashNote (Digital Bearer Certificate) in the network.
+- `SpendAddress`: Address of a CashNote's Spend in the network.
 - `Header`: Header information for storage items.
 
 ## Protobuf Definitions
