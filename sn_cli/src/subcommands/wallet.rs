@@ -64,7 +64,7 @@ pub enum WalletCmds {
     },
     /// Send a DBC.
     Send {
-        /// The number of nanos to send.
+        /// The number of SafeNetworkTokens to send.
         #[clap(name = "amount")]
         amount: String,
         /// Hex-encoded public address of the recipient.
