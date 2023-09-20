@@ -352,11 +352,12 @@ impl LocalWallet {
             }
 
             if cash_note.derived_key(&self.key).is_err() {
+                debug!("cash_note is not our key");
                 continue;
             }
 
-            let token = cash_note.token()?;
-            self.wallet.available_cash_notes.insert(id, token);
+            let value = cash_note.value()?;
+            self.wallet.available_cash_notes.insert(id, value);
             self.store_cash_note(cash_note)?;
         }
 
@@ -382,6 +383,7 @@ fn load_from_path(
         None => {
             let key = main_key.unwrap_or(MainSecretKey::random());
             store_new_keypair(wallet_dir, &key)?;
+            warn!("No main key found when loading wallet from path, generating a new one with pubkey: {:?}", key.main_pubkey());
             key
         }
     };
@@ -422,8 +424,8 @@ impl KeyLessWallet {
     fn balance(&self) -> NanoTokens {
         // loop through avaiable bcs and get total token count
         let mut balance = 0;
-        for (_unique_pubkey, token) in self.available_cash_notes.iter() {
-            balance += token.as_nano();
+        for (_unique_pubkey, value) in self.available_cash_notes.iter() {
+            balance += value.as_nano();
         }
 
         NanoTokens::from(balance)
@@ -452,7 +454,7 @@ mod tests {
 
         wallet
             .available_cash_notes
-            .insert(genesis.unique_pubkey(), genesis.token()?);
+            .insert(genesis.unique_pubkey(), genesis.value()?);
 
         store_wallet(&wallet_dir, &wallet)?;
 
@@ -657,7 +659,7 @@ mod tests {
         );
 
         let recipient_cash_note = &created_cash_notes[0];
-        assert_eq!(NanoTokens::from(send_amount), recipient_cash_note.token()?);
+        assert_eq!(NanoTokens::from(send_amount), recipient_cash_note.value()?);
         assert_eq!(&recipient_main_pubkey, recipient_cash_note.main_pubkey());
 
         Ok(())

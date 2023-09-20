@@ -111,8 +111,8 @@ impl CashNote {
             .unwrap_or_default()
     }
 
-    /// Return the Nanos for this CashNote.
-    pub fn token(&self) -> Result<NanoTokens> {
+    /// Return the value in NanoTokens for this CashNote.
+    pub fn value(&self) -> Result<NanoTokens> {
         Ok(self
             .src_tx
             .outputs
@@ -231,7 +231,7 @@ pub(crate) mod tests {
         let hex = cashnote.to_hex()?;
 
         let cashnote = CashNote::from_hex(&hex)?;
-        assert_eq!(cashnote.token()?.as_nano(), 1_530_000_000);
+        assert_eq!(cashnote.value()?.as_nano(), 1_530_000_000);
 
         let fee_amount = cashnote.fee_output().token;
         assert_eq!(fee_amount, NanoTokens::from(3_500));
@@ -262,7 +262,7 @@ pub(crate) mod tests {
         let hex = cashnote.to_hex()?;
         let cashnote_from_hex = CashNote::from_hex(&hex)?;
 
-        assert_eq!(cashnote.token()?, cashnote_from_hex.token()?);
+        assert_eq!(cashnote.value()?, cashnote_from_hex.value()?);
 
         let fee_amount = cashnote.fee_output().token;
         assert_eq!(fee_amount, NanoTokens::from(2_500));

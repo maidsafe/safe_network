@@ -431,7 +431,7 @@ impl Node {
             })?;
         let mut received_fee = NanoTokens::zero();
         for cash_note in cash_notes.iter() {
-            let amount = cash_note.token().map_err(|_| {
+            let amount = cash_note.value().map_err(|_| {
                 ProtocolError::RecordNotStored(
                     pretty_key.clone(),
                     "Failed to get CashNote value".to_string(),

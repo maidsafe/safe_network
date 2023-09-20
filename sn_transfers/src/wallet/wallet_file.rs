@@ -143,6 +143,7 @@ pub(super) fn load_received_cash_notes(wallet_dir: &Path) -> Result<Vec<CashNote
 
 /// Loads a specific cash_note from path
 pub fn load_cash_note(unique_pubkey: &UniquePubkey, wallet_dir: &Path) -> Option<CashNote> {
+    trace!("Loading cash_note from file with pubkey: {unique_pubkey:?}");
     let created_cash_notes_path = wallet_dir.join(CREATED_CASHNOTES_DIR_NAME);
     let unique_pubkey_name = *SpendAddress::from_unique_pubkey(unique_pubkey).xorname();
     let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
@@ -150,7 +151,7 @@ pub fn load_cash_note(unique_pubkey: &UniquePubkey, wallet_dir: &Path) -> Option
     let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
 
     // Read the cash_note data from the file
-    match fs::read_to_string(cash_note_file_path) {
+    match fs::read_to_string(cash_note_file_path.clone()) {
         Ok(cash_note_data) => {
             // Convert the cash_note data from hex to CashNote
             match CashNote::from_hex(cash_note_data.trim()) {
@@ -162,7 +163,10 @@ pub fn load_cash_note(unique_pubkey: &UniquePubkey, wallet_dir: &Path) -> Option
             }
         }
         Err(error) => {
-            warn!("Failed to read cash_note file: {}", error);
+            warn!(
+                "Failed to read cash_note file {:?}: {}",
+                cash_note_file_path, error
+            );
             None
         }
     }

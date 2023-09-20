@@ -91,7 +91,7 @@ mod tests {
 
         for (cashnote, output_token) in output_cashnotes.iter() {
             let (main_key, _, token) = first_output_key_map.get(&cashnote.unique_pubkey()).unwrap();
-            let cashnote_token = cashnote.token()?;
+            let cashnote_token = cashnote.value()?;
             assert_eq!(token, &cashnote_token);
             assert_eq!(cashnote_token, *output_token);
             assert!(cashnote.verify(main_key).is_ok());
@@ -103,7 +103,7 @@ mod tests {
                 for (cashnote, _) in output_cashnotes.iter() {
                     // note: we could just use the amount provided by CashNoteBuilder::build()
                     // but we go further to verify the correct value is encrypted in the CashNote.
-                    sum += cashnote.token()?.as_nano()
+                    sum += cashnote.value()?.as_nano()
                 }
                 sum
             },
