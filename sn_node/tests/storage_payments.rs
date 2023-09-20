@@ -139,7 +139,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
         .await?;
 
     // check we've paid only for the subset of addresses, 1 nano per addr
-    let new_balance = Nano::from_nano(wallet_original_balance - storage_cost.as_nano());
+    let new_balance = Nano::from(wallet_original_balance - storage_cost.as_nano());
     println!("Verifying new balance on paying wallet is {new_balance} ...");
     let paying_wallet = wallet_client.into_wallet();
     assert_eq!(paying_wallet.balance(), new_balance);
@@ -159,7 +159,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
         .await?;
 
     // check we've paid only for addresses we haven't previously paid for, 1 nano per addr
-    let new_balance = Nano::from_nano(
+    let new_balance = Nano::from(
         wallet_original_balance - (random_content_addrs.len() as u64 * storage_cost.as_nano()),
     );
     println!("Verifying new balance on paying wallet is now {new_balance} ...");
@@ -241,7 +241,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
             *chunk_name,
             vec![(
                 MainPubkey::new(bls::SecretKey::random().public_key()),
-                Nano::from_nano(0),
+                Nano::from(0),
             )],
         );
     }
@@ -329,7 +329,7 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
             .expect("RegisterAddress should convert to XorName"),
         vec![(
             MainPubkey::new(bls::SecretKey::random().public_key()),
-            Nano::from_nano(0),
+            Nano::from(0),
         )],
     );
 

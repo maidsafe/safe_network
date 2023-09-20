@@ -484,7 +484,7 @@ impl Client {
             .map(|(address, token)| {
                 (
                     address,
-                    Nano::from_nano((token.as_nano() as f64 * tolerance) as u64),
+                    Nano::from((token.as_nano() as f64 * tolerance) as u64),
                 )
             })
             .collect();

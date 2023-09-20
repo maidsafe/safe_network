@@ -120,7 +120,7 @@ impl TransactionBuilder {
     /// Get sum of inputs
     pub fn inputs_tokens_sum(&self) -> Nano {
         let amount = self.inputs.iter().map(|i| i.amount.as_nano()).sum();
-        Nano::from_nano(amount)
+        Nano::from(amount)
     }
 
     /// Get sum of outputs
@@ -131,7 +131,7 @@ impl TransactionBuilder {
             .map(|o| o.amount.as_nano())
             .chain(std::iter::once(self.fee.token.as_nano()))
             .sum();
-        Nano::from_nano(amount)
+        Nano::from(amount)
     }
 
     /// Get inputs.

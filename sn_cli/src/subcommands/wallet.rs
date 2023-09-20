@@ -45,7 +45,7 @@ pub enum WalletCmds {
     ///  - macOS: $HOME/Library/Application Support/safe/wallet/received_cash_notes
     ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\wallet\received_cash_notes
     ///
-    /// If you find the default path unwieldy, you can also set the RECEIVED_CashNoteS_PATH environment
+    /// If you find the default path unwieldy, you can also set the RECEIVED_CASHNOTES_PATH environment
     /// variable to a path you would prefer to work with.
     #[clap(verbatim_doc_comment)]
     Deposit {
@@ -200,7 +200,7 @@ fn deposit(root_dir: &Path, read_from_stdin: bool, cash_note: Option<String>) ->
     wallet.try_load_deposits()?;
 
     let deposited =
-        sn_transfers::Nano::from_nano(wallet.balance().as_nano() - previous_balance.as_nano());
+        sn_transfers::Nano::from(wallet.balance().as_nano() - previous_balance.as_nano());
     if deposited.is_zero() {
         println!("Nothing deposited.");
     } else if let Err(err) = wallet.store() {

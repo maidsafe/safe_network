@@ -23,7 +23,7 @@ impl Input {
     pub fn new(unique_pubkey: UniquePubkey, amount: u64) -> Self {
         Self {
             unique_pubkey,
-            amount: Nano::from_nano(amount),
+            amount: Nano::from(amount),
         }
     }
 
@@ -49,7 +49,7 @@ impl Output {
     pub fn new(unique_pubkey: UniquePubkey, amount: u64) -> Self {
         Self {
             unique_pubkey,
-            amount: Nano::from_nano(amount),
+            amount: Nano::from(amount),
         }
     }
 

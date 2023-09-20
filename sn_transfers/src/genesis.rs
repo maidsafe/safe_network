@@ -127,7 +127,7 @@ pub(crate) fn create_first_cash_note_from_key(
     // The src tx is empty as this is the first CashNote.
     let genesis_input = Input {
         unique_pubkey: derived_key.unique_pubkey(),
-        amount: Nano::from_nano(GENESIS_CASHNOTE_AMOUNT),
+        amount: Nano::from(GENESIS_CASHNOTE_AMOUNT),
     };
 
     let reason = Hash::hash(b"GENESIS");
@@ -135,7 +135,7 @@ pub(crate) fn create_first_cash_note_from_key(
     let cash_note_builder = TransactionBuilder::default()
         .add_input(genesis_input, derived_key, Transaction::empty())
         .add_output(
-            Nano::from_nano(GENESIS_CASHNOTE_AMOUNT),
+            Nano::from(GENESIS_CASHNOTE_AMOUNT),
             main_pubkey,
             derivation_index,
         )
@@ -188,7 +188,7 @@ pub(super) fn split(
         .map(|_| {
             let amount = token.as_nano() / number as u64;
             (
-                Nano::from_nano(amount),
+                Nano::from(amount),
                 main_key.main_pubkey(),
                 random_derivation_index(rng),
             )

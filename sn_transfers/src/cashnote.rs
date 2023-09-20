@@ -234,7 +234,7 @@ pub(crate) mod tests {
         assert_eq!(cashnote.token()?.as_nano(), 1_530_000_000);
 
         let fee_amount = cashnote.fee_output().token;
-        assert_eq!(fee_amount, Nano::from_nano(3_500));
+        assert_eq!(fee_amount, Nano::from(3_500));
 
         Ok(())
     }
@@ -265,7 +265,7 @@ pub(crate) mod tests {
         assert_eq!(cashnote.token()?, cashnote_from_hex.token()?);
 
         let fee_amount = cashnote.fee_output().token;
-        assert_eq!(fee_amount, Nano::from_nano(2_500));
+        assert_eq!(fee_amount, Nano::from(2_500));
 
         Ok(())
     }
@@ -351,8 +351,8 @@ pub(crate) mod tests {
             mock::GenesisBuilder::init_genesis_single()?;
 
         let output_tokens = vec![
-            Nano::from_nano(amount),
-            Nano::from_nano(mock::GenesisMaterial::GENESIS_AMOUNT - amount),
+            Nano::from(amount),
+            Nano::from(mock::GenesisMaterial::GENESIS_AMOUNT - amount),
         ];
 
         let derived_key = genesis_cashnote.derived_key(&genesis_material.main_key)?;

@@ -685,7 +685,7 @@ mod tests {
         let mut costs = vec![];
         for i in 0..CLOSE_GROUP_SIZE {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
-            costs.push((addr, Nano::from_nano(i as u64)));
+            costs.push((addr, Nano::from(i as u64)));
         }
         let prices = get_fees_from_store_cost_responses(costs)?;
         let total_price: u64 = prices
@@ -712,7 +712,7 @@ mod tests {
         let mut costs = vec![];
         for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
-            costs.push((addr, Nano::from_nano(i as u64)));
+            costs.push((addr, Nano::from(i as u64)));
         }
 
         if get_fees_from_store_cost_responses(costs).is_ok() {
@@ -730,7 +730,7 @@ mod tests {
         for i in 0..responses_count {
             // push random MainPubkey and Nano
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
-            costs.push((addr, Nano::from_nano(i)));
+            costs.push((addr, Nano::from(i)));
             println!("price added {}", i);
         }
 

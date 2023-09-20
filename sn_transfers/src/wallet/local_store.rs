@@ -426,7 +426,7 @@ impl KeyLessWallet {
             balance += token.as_nano();
         }
 
-        Nano::from_nano(balance)
+        Nano::from(balance)
     }
 }
 
@@ -647,7 +647,7 @@ mod tests {
         let send_amount = 100;
         let recipient_key = MainSecretKey::random();
         let recipient_main_pubkey = recipient_key.main_pubkey();
-        let to = vec![(Nano::from_nano(send_amount), recipient_main_pubkey)];
+        let to = vec![(Nano::from(send_amount), recipient_main_pubkey)];
         let created_cash_notes = sender.local_send(to, None)?;
 
         assert_eq!(1, created_cash_notes.len());
@@ -657,7 +657,7 @@ mod tests {
         );
 
         let recipient_cash_note = &created_cash_notes[0];
-        assert_eq!(Nano::from_nano(send_amount), recipient_cash_note.token()?);
+        assert_eq!(Nano::from(send_amount), recipient_cash_note.token()?);
         assert_eq!(&recipient_main_pubkey, recipient_cash_note.main_pubkey());
 
         Ok(())
@@ -677,7 +677,7 @@ mod tests {
         let send_amount = 100;
         let recipient_key = MainSecretKey::random();
         let recipient_main_pubkey = recipient_key.main_pubkey();
-        let to = vec![(Nano::from_nano(send_amount), recipient_main_pubkey)];
+        let to = vec![(Nano::from(send_amount), recipient_main_pubkey)];
         let _created_cash_notes = sender.local_send(to, None)?;
 
         sender.store()?;
@@ -755,7 +755,7 @@ mod tests {
         let mut recipient = LocalWallet::load_from(&recipient_root_dir)?;
         let recipient_main_pubkey = recipient.key.main_pubkey();
 
-        let to = vec![(Nano::from_nano(send_amount), recipient_main_pubkey)];
+        let to = vec![(Nano::from(send_amount), recipient_main_pubkey)];
         let created_cash_notes = sender.local_send(to, None)?;
         let cash_note = created_cash_notes[0].clone();
         let unique_pubkey = cash_note.unique_pubkey();
