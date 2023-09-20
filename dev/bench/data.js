@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695192408899,
+  "lastUpdate": 1695192410530,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -19528,6 +19528,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 155,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "06f886a5c4dd671c1dd8ed948ace4011b0ffd461",
+          "message": "chore: allow chunks to be Quorum::One\n\nAs they are self-verifiable we don't need majority there",
+          "timestamp": "2023-09-20T05:42:04Z",
+          "tree_id": "6b6efac35c4fdc15848152bb51de05bf203ea69c",
+          "url": "https://github.com/maidsafe/safe_network/commit/06f886a5c4dd671c1dd8ed948ace4011b0ffd461"
+        },
+        "date": 1695192409992,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193.3271,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 160,
             "unit": "MB"
           }
         ]
