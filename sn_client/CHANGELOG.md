@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.19](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.18...sn_client-v0.89.19) - 2023-09-20
+
+### Other
+- allow chunks to be Quorum::One
+
 ## [0.89.18](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.17...sn_client-v0.89.18) - 2023-09-19
 
 ### Other

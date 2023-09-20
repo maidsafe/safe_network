@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.12](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.11...sn_networking-v0.6.12) - 2023-09-20
+
+### Other
+- allow chunks to be Quorum::One
+- *(networking)* enable caching of records (in theory)
+
 ## [0.6.11](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.10...sn_networking-v0.6.11) - 2023-09-19
 
 ### Other
