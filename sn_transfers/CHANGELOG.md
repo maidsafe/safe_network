@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.15](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.14...sn_transfers-v0.11.15) - 2023-09-20
+
+### Other
+- major dep updates
+
 ## [0.11.14](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.13...sn_transfers-v0.11.14) - 2023-09-18
 
 ### Added
