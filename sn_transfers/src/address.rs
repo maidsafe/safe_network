@@ -6,29 +6,29 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_dbc::DbcId;
+use crate::UniquePubkey;
 
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
 use xor_name::XorName;
 
-/// The address of a Dbc in the network.
-/// This is used to find information of if it is spent, not to store the actual Dbc.
+/// The address of a SignedSpend in the network.
+/// This is used to check if a CashNote is spent, note that the actual CashNote is not stored on the Network.
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
-pub struct DbcAddress(XorName);
+pub struct SpendAddress(XorName);
 
-impl DbcAddress {
-    /// Construct a `DbcAddress` given an `XorName`.
+impl SpendAddress {
+    /// Construct a `SpendAddress` given an `XorName`.
     pub fn new(name: XorName) -> Self {
         Self(name)
     }
 
-    /// Construct a `DbcAddress` from a `DbcId`.
-    pub fn from_dbc_id(dbc_id: &DbcId) -> Self {
-        Self::new(XorName::from_content(&dbc_id.to_bytes()))
+    /// Construct a `SpendAddress` from a `UniquePubkey`.
+    pub fn from_unique_pubkey(unique_pubkey: &UniquePubkey) -> Self {
+        Self::new(XorName::from_content(&unique_pubkey.to_bytes()))
     }
 
-    /// Return the name, which is the hash of `DbcId`.
+    /// Return the name, which is the hash of `UniquePubkey`.
     pub fn xorname(&self) -> &XorName {
         &self.0
     }

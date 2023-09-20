@@ -6,8 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod chunk;
+mod error;
+mod genesis_builder;
+mod genesis_material;
+mod mock_spentbook;
 
-pub use self::chunk::ChunkAddress;
-pub use sn_registers::RegisterAddress;
-pub use sn_transfers::SpendAddress;
+pub use self::{
+    error::Error, genesis_builder::GenesisBuilder, genesis_material::GenesisMaterial,
+    mock_spentbook::SpentbookNode,
+};

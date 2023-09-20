@@ -12,10 +12,10 @@ use clap::{Parser, Subcommand};
 use eyre::{eyre, Result};
 use faucet_server::run_faucet_server;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
-use sn_dbc::Token;
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
-use sn_transfers::wallet::parse_public_address;
+use sn_transfers::wallet::parse_main_pubkey;
+use sn_transfers::Nano;
 use std::path::PathBuf;
 use tracing::{error, info};
 use tracing_core::Level;
@@ -90,15 +90,15 @@ struct Opt {
 
 #[derive(Subcommand, Debug)]
 enum SubCmd {
-    /// Claim the amount in the genesis DBC and deposit it to the faucet local wallet.
+    /// Claim the amount in the genesis CashNote and deposit it to the faucet local wallet.
     /// This needs to be run before a testnet is opened to the public, as to not have
-    /// the genesis claimed by someone else (the key and dbc are public for audit).
+    /// the genesis claimed by someone else (the key and cash_note are public for audit).
     ClaimGenesis,
     Send {
         /// This shall be the number of nanos to send.
         #[clap(name = "amount")]
         amount: String,
-        /// This must be a hex-encoded `PublicAddress`.
+        /// This must be a hex-encoded `MainPubkey`.
         #[clap(name = "to")]
         to: String,
     },
@@ -127,11 +127,11 @@ async fn claim_genesis(client: &Client) {
     let _wallet = load_faucet_wallet_from_genesis_wallet(client).await;
 }
 
-/// returns the hex-encoded dbc
+/// returns the hex-encoded cash_note
 async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> {
-    let to = parse_public_address(to)?;
+    let to = parse_main_pubkey(to)?;
     use std::str::FromStr;
-    let amount = Token::from_str(amount)?;
+    let amount = Nano::from_str(amount)?;
     if amount.as_nano() == 0 {
         println!("Invalid format or zero amount passed in. Nothing sent.");
         return Err(eyre::eyre!(
@@ -139,11 +139,11 @@ async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> 
         ));
     }
 
-    let dbc = get_tokens_from_faucet(amount, to, client).await?;
-    let dbc_hex = dbc.to_hex()?;
-    println!("{dbc_hex}");
+    let cash_note = get_tokens_from_faucet(amount, to, client).await?;
+    let cash_note_hex = cash_note.to_hex()?;
+    println!("{cash_note_hex}");
 
-    Ok(dbc_hex)
+    Ok(cash_note_hex)
 }
 
 fn parse_log_output(val: &str) -> Result<LogOutputDest> {

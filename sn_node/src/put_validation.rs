@@ -11,20 +11,20 @@ use crate::{
     Marker, Node,
 };
 use libp2p::kad::{Record, RecordKey};
-use sn_dbc::{Dbc, DbcId, SignedSpend, Token};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::CmdOk,
     storage::{
-        try_deserialize_record, try_serialize_record, Chunk, DbcAddress, RecordHeader, RecordKind,
+        try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{
-    dbc_genesis::{is_genesis_parent_tx, GENESIS_DBC},
+    genesis::{is_genesis_parent_tx, GENESIS_CASHNOTE},
     wallet::{LocalWallet, Transfer},
 };
+use sn_transfers::{CashNote, Nano, SignedSpend, UniquePubkey};
 use std::collections::{BTreeSet, HashSet};
 
 impl Node {
@@ -59,7 +59,7 @@ impl Node {
                     PrettyPrintRecordKey::from(record.key),
                 ))
             }
-            RecordKind::DbcSpend => self.validate_spend_record(record).await,
+            RecordKind::Spend => self.validate_spend_record(record).await,
             RecordKind::Register => {
                 error!("Register should not be validated at this point");
                 Err(ProtocolError::InvalidPutWithoutPayment(
@@ -100,8 +100,8 @@ impl Node {
         let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
 
         for spend in &spends {
-            let dbc_addr = DbcAddress::from_dbc_id(spend.dbc_id());
-            let address = NetworkAddress::DbcAddress(dbc_addr);
+            let cash_note_addr = SpendAddress::from_unique_pubkey(spend.unique_pubkey());
+            let address = NetworkAddress::SpendAddress(cash_note_addr);
 
             // if it already exists, we still have to check if its a double spend or no, so we can ignore the result here
             let _exists = self
@@ -136,7 +136,7 @@ impl Node {
 
                 self.store_chunk(chunk)
             }
-            RecordKind::DbcSpend => self.validate_spend_record(record).await,
+            RecordKind::Spend => self.validate_spend_record(record).await,
             RecordKind::Register => {
                 let register = try_deserialize_record::<SignedRegister>(&record)?;
 
@@ -279,17 +279,17 @@ impl Node {
         &self,
         signed_spends: Vec<SignedSpend>,
     ) -> Result<CmdOk, ProtocolError> {
-        // make sure that the dbc_ids match
-        let dbc_id = if let Some((first, elements)) = signed_spends.split_first() {
-            let common_dbc_id = *first.dbc_id();
+        // make sure that the unique_pubkeys match
+        let unique_pubkey = if let Some((first, elements)) = signed_spends.split_first() {
+            let common_unique_pubkey = *first.unique_pubkey();
             if elements
                 .iter()
-                .all(|spend| spend.dbc_id() == &common_dbc_id)
+                .all(|spend| spend.unique_pubkey() == &common_unique_pubkey)
             {
-                common_dbc_id
+                common_unique_pubkey
             } else {
                 let err = Err(ProtocolError::SpendNotStored(
-                    "found SignedSpends with differing dbc_ids".to_string(),
+                    "found SignedSpends with differing unique_pubkeys".to_string(),
                 ));
                 error!("{err:?}");
                 return err;
@@ -301,13 +301,13 @@ impl Node {
             warn!("Empty vec provided to validate and store spend, {err:?}");
             return err;
         };
-        let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
+        let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
 
-        let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
+        let key = NetworkAddress::from_cash_note_address(cash_note_addr).to_record_key();
         let pretty_key = PrettyPrintRecordKey::from(key.clone());
         debug!(
             "validating and storing spends {:?} - {:?}",
-            dbc_addr.xorname(),
+            cash_note_addr.xorname(),
             pretty_key
         );
 
@@ -317,7 +317,7 @@ impl Node {
             .await
             .map_err(|_err| {
                 let err = ProtocolError::SpendNotStored(format!(
-                    "Error while checking if Spend's key was present locally, {dbc_addr:?}"
+                    "Error while checking if Spend's key was present locally, {cash_note_addr:?}"
                 ));
                 warn!("{err:?}");
                 err
@@ -325,7 +325,7 @@ impl Node {
 
         // validate the signed spends against the network and the local copy
         let validated_spends = match self
-            .signed_spend_validation(signed_spends.clone(), dbc_id, present_locally)
+            .signed_spend_validation(signed_spends.clone(), unique_pubkey, present_locally)
             .await?
         {
             Some(spends) => spends,
@@ -350,19 +350,22 @@ impl Node {
         // store the record into the local storage
         let record = Record {
             key,
-            value: try_serialize_record(&validated_spends, RecordKind::DbcSpend)?,
+            value: try_serialize_record(&validated_spends, RecordKind::Spend)?,
             publisher: None,
             expires: None,
         };
         self.network.put_local_record(record).map_err(|_| {
-            let err = ProtocolError::SpendNotStored(format!("Cannot PUT Spend with {dbc_addr:?}"));
+            let err =
+                ProtocolError::SpendNotStored(format!("Cannot PUT Spend with {cash_note_addr:?}"));
             error!("Cannot put spend {err:?}");
             err
         })?;
 
         // Notify the sender of any double spend
         if validated_spends.len() > 1 {
-            warn!("Got a double spend for the SpendDbc PUT with dbc_id {dbc_id:?}",);
+            warn!(
+                "Got a double spend for the SpendCashNote PUT with unique_pubkey {unique_pubkey:?}",
+            );
             let mut proof = validated_spends.iter();
             if let (Some(spend_one), Some(spend_two)) = (proof.next(), proof.next()) {
                 return Err(ProtocolError::DoubleSpendAttempt(
@@ -377,13 +380,13 @@ impl Node {
         Ok(CmdOk::StoredSuccessfully)
     }
 
-    /// Gets DBCs out of a Payment, this includes network verifications of the Transfer
-    async fn dbcs_from_payment(
+    /// Gets CashNotes out of a Payment, this includes network verifications of the Transfer
+    async fn cash_notes_from_payment(
         &self,
         payment: Vec<Transfer>,
         wallet: &LocalWallet,
         pretty_key: PrettyPrintRecordKey,
-    ) -> Result<Vec<Dbc>, ProtocolError> {
+    ) -> Result<Vec<CashNote>, ProtocolError> {
         for transfer in payment {
             match self
                 .network
@@ -395,7 +398,7 @@ impl Node {
                 // transfer invalid
                 Err(e) => return Err(e),
                 // transfer ok
-                Ok(dbcs) => return Ok(dbcs),
+                Ok(cash_notes) => return Ok(cash_notes),
             };
         }
 
@@ -417,8 +420,8 @@ impl Node {
 
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key:?}");
-        let dbcs = self
-            .dbcs_from_payment(payment, &wallet, pretty_key.clone())
+        let cash_notes = self
+            .cash_notes_from_payment(payment, &wallet, pretty_key.clone())
             .await?;
 
         // check payment is sufficient
@@ -426,12 +429,12 @@ impl Node {
             self.network.get_local_storecost().await.map_err(|e| {
                 ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
             })?;
-        let mut received_fee = Token::zero();
-        for dbc in dbcs.iter() {
-            let amount = dbc.token().map_err(|_| {
+        let mut received_fee = Nano::zero();
+        for cash_note in cash_notes.iter() {
+            let amount = cash_note.token().map_err(|_| {
                 ProtocolError::RecordNotStored(
                     pretty_key.clone(),
-                    "Failed to get DBC value".to_string(),
+                    "Failed to get CashNote value".to_string(),
                 )
             })?;
             received_fee =
@@ -439,7 +442,7 @@ impl Node {
                     .checked_add(amount)
                     .ok_or(ProtocolError::RecordNotStored(
                         pretty_key.clone(),
-                        "DBC value overflow".to_string(),
+                        "CashNote value overflow".to_string(),
                     ))?;
         }
         if received_fee < current_store_cost {
@@ -451,9 +454,9 @@ impl Node {
         }
         trace!("Payment sufficient for record {pretty_key:?}");
 
-        // deposit the DBCs in our wallet
+        // deposit the CashNotes in our wallet
         wallet
-            .deposit(&dbcs)
+            .deposit(&cash_notes)
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
         wallet
             .store()
@@ -514,26 +517,28 @@ impl Node {
     /// the spends has to be stored to the `RecordStore`. The resultant spends are aggregated and can
     /// have a max of only 2 elements. Any double spend error has to be thrown by the caller.
     ///
-    /// The Vec<SignedSpend> must all have the same dbc_id.
+    /// The Vec<SignedSpend> must all have the same unique_pubkey.
     ///
-    /// - If the SignedSpend for the provided DbcId is present locally, check for new spends by
+    /// - If the SignedSpend for the provided UniquePubkey is present locally, check for new spends by
     /// comparing it with the local copy.
     /// - If incoming signed_spends.len() > 1, aggregate store them directly as they are a double spent.
-    /// - If incoming signed_spends.len() == 1, then check for parent_inputs and the closest(dbc_id)
+    /// - If incoming signed_spends.len() == 1, then check for parent_inputs and the closest(unique_pubkey)
     /// for any double spend, which are then aggregated and returned.
     async fn signed_spend_validation(
         &self,
         mut signed_spends: Vec<SignedSpend>,
-        dbc_id: DbcId,
+        unique_pubkey: UniquePubkey,
         present_locally: bool,
     ) -> Result<Option<Vec<SignedSpend>>, ProtocolError> {
-        // get the DbcId; used for validation
-        let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
-        let record_key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
-        debug!("Validating and storing spend {dbc_addr:?}, present_locally: {present_locally}");
+        // get the UniquePubkey; used for validation
+        let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
+        let record_key = NetworkAddress::from_cash_note_address(cash_note_addr).to_record_key();
+        debug!(
+            "Validating and storing spend {cash_note_addr:?}, present_locally: {present_locally}"
+        );
 
         if present_locally {
-            debug!("DbcSpend with DbcId {dbc_id:?} already exists, checking if it's the same spend/double spend",);
+            debug!("Spend with UniquePubkey {unique_pubkey:?} already exists, checking if it's the same spend/double spend",);
             let local_record = self
                 .network
                 .get_local_record(&record_key)
@@ -549,15 +554,18 @@ impl Node {
                 Some(r) => r,
                 None => {
                     error!("Could not retrieve Record with key{record_key:?}, the Record is supposed to be present.");
-                    return Err(ProtocolError::SpendNotFound(dbc_addr));
+                    return Err(ProtocolError::SpendNotFound(cash_note_addr));
                 }
             };
 
             let local_header = RecordHeader::from_record(&local_record)?;
             // Make sure the local copy is of the same kind
-            if !matches!(local_header.kind, RecordKind::DbcSpend) {
-                error!("Expected DbcRecord kind, found {:?}", local_header.kind);
-                return Err(ProtocolError::RecordKindMismatch(RecordKind::DbcSpend));
+            if !matches!(local_header.kind, RecordKind::Spend) {
+                error!(
+                    "Expected CashNoteRecord kind, found {:?}",
+                    local_header.kind
+                );
+                return Err(ProtocolError::RecordKindMismatch(RecordKind::Spend));
             }
 
             let local_signed_spends: Vec<SignedSpend> = try_deserialize_record(&local_record)?;
@@ -571,7 +579,7 @@ impl Node {
 
             // return early if the PUT is for the same local copy
             if newly_seen_spends.is_empty() {
-                debug!("Vec<SignedSpend> with addr {dbc_addr:?} already exists, not overwriting!",);
+                debug!("Vec<SignedSpend> with addr {cash_note_addr:?} already exists, not overwriting!",);
                 return Ok(None);
             } else {
                 debug!(
@@ -585,7 +593,7 @@ impl Node {
             }
         }
 
-        // Check the parent spends and check the closest(dbc_id) for any double spend
+        // Check the parent spends and check the closest(unique_pubkey) for any double spend
         // if so aggregate the spends and return just 2 spends.
         let signed_spends = match signed_spends.len() {
             0 => {
@@ -611,7 +619,7 @@ impl Node {
                 if let Err(e) = signed_spend.verify(signed_spend.spent_tx_hash()) {
                     let err = Err(ProtocolError::SpendSignatureInvalid(format!(
                         "while verifying spend for {:?}: {e:?}",
-                        signed_spend.dbc_id()
+                        signed_spend.unique_pubkey()
                     )));
                     error!("Error while verifying signed spend signature {err:?}");
                     return err;
@@ -619,25 +627,29 @@ impl Node {
 
                 // Get parents
                 let mut parent_spends = BTreeSet::new();
-                if is_genesis_parent_tx(&signed_spend.spend.dbc_creation_tx)
-                    && signed_spend.dbc_id() == &GENESIS_DBC.id
+                if is_genesis_parent_tx(&signed_spend.spend.cashnote_creation_tx)
+                    && signed_spend.unique_pubkey() == &GENESIS_CASHNOTE.id
                 {
-                    trace!("GENESIS_DBC {dbc_addr:?} doesn't have a parent");
+                    trace!("GENESIS_CASHNOTE {cash_note_addr:?} doesn't have a parent");
                 } else {
                     trace!(
-                        "Checking dbc {dbc_addr:?} parent transaction {:?}",
-                        signed_spend.spend.dbc_creation_tx
+                        "Checking cash_note {cash_note_addr:?} parent transaction {:?}",
+                        signed_spend.spend.cashnote_creation_tx
                     );
-                    for parent_input in &signed_spend.spend.dbc_creation_tx.inputs {
-                        let parent_dbc_address = DbcAddress::from_dbc_id(&parent_input.dbc_id());
+                    for parent_input in &signed_spend.spend.cashnote_creation_tx.inputs {
+                        let parent_cash_note_address =
+                            SpendAddress::from_unique_pubkey(&parent_input.unique_pubkey());
                         trace!(
-                            "Checking parent input at {:?} - {parent_dbc_address:?}",
-                            parent_input.dbc_id(),
+                            "Checking parent input at {:?} - {parent_cash_note_address:?}",
+                            parent_input.unique_pubkey(),
                         );
-                        let parent = self.network.get_spend(parent_dbc_address, false).await?;
+                        let parent = self
+                            .network
+                            .get_spend(parent_cash_note_address, false)
+                            .await?;
                         trace!(
-                            "Got parent input at {:?} - {parent_dbc_address:?}",
-                            parent_input.dbc_id(),
+                            "Got parent input at {:?} - {parent_cash_note_address:?}",
+                            parent_input.unique_pubkey(),
                         );
                         let _ = parent_spends.insert(parent);
                     }
@@ -649,23 +661,23 @@ impl Node {
                     return Err(err);
                 }
 
-                // check the network if any spend has happened for the same dbc_id
+                // check the network if any spend has happened for the same unique_pubkey
                 // Does not return an error, instead the Vec<SignedSpend> is returned.
-                debug!("Check if any spend exist for the same dbc_id {dbc_addr:?}");
-                let mut spends = match self.network.get_spend(dbc_addr, false).await {
+                debug!("Check if any spend exist for the same unique_pubkey {cash_note_addr:?}");
+                let mut spends = match self.network.get_spend(cash_note_addr, false).await {
                     Ok(spend) => {
-                        debug!("Got spend from network for the same dbc_id");
+                        debug!("Got spend from network for the same unique_pubkey");
                         vec![spend]
                     }
                     // Q: Should we not aggregate the double spends instead of using vec![]
                     Err(err) => {
-                        debug!("Got error while fetching spend for the same dbc_id {err:?}");
+                        debug!("Got error while fetching spend for the same unique_pubkey {err:?}");
                         vec![]
                     }
                 };
                 // aggregate the spends from the network with our own
                 spends.push(signed_spend);
-                aggregate_spends(spends, dbc_id)
+                aggregate_spends(spends, unique_pubkey)
             }
             _ => {
                 warn!("Received >1 spends with parent. Aggregating the spends to check for double spend. Not performing parent check or querying the network for double spend");
@@ -673,7 +685,7 @@ impl Node {
                 // We don't have to check parent/ ask network for extra spend.
                 // Validate and store just 2 of them.
                 // The nodes will be synced up during replication.
-                aggregate_spends(signed_spends, dbc_id)
+                aggregate_spends(signed_spends, unique_pubkey)
             }
         };
 

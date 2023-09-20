@@ -27,8 +27,8 @@ use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
-use sn_dbc::Token;
 use sn_logging::{LogFormat, LogOutputDest};
+use sn_transfers::Nano;
 use std::{
     fs::File,
     io::Write,
@@ -98,7 +98,7 @@ pub async fn get_funded_wallet(
     root_dir: &Path,
     amount: u64,
 ) -> Result<LocalWallet> {
-    let wallet_balance = Token::from_nano(amount);
+    let wallet_balance = Nano::from_nano(amount);
     let mut local_wallet = get_wallet(root_dir).await;
 
     println!("Getting {wallet_balance} tokens from the faucet...");
@@ -108,7 +108,7 @@ pub async fn get_funded_wallet(
     client.verify(&tokens).await?;
     local_wallet.deposit(&vec![tokens])?;
     assert_eq!(local_wallet.balance(), wallet_balance);
-    println!("Tokens deposited to the wallet that'll pay for storage: {wallet_balance}.");
+    println!("Nanos deposited to the wallet that'll pay for storage: {wallet_balance}.");
 
     Ok(local_wallet)
 }

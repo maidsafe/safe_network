@@ -13,13 +13,13 @@ use std::collections::BTreeMap;
 use common::{get_client_and_wallet, init_logging, random_content};
 
 use sn_client::{Error as ClientError, WalletClient};
-use sn_dbc::{PublicAddress, Token};
 use sn_networking::Error as NetworkError;
 use sn_protocol::{
     error::Error as ProtocolError,
     storage::{ChunkAddress, RegisterAddress},
     NetworkAddress,
 };
+use sn_transfers::{MainPubkey, Nano};
 
 use assert_fs::TempDir;
 use eyre::Result;
@@ -139,7 +139,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
         .await?;
 
     // check we've paid only for the subset of addresses, 1 nano per addr
-    let new_balance = Token::from_nano(wallet_original_balance - storage_cost.as_nano());
+    let new_balance = Nano::from_nano(wallet_original_balance - storage_cost.as_nano());
     println!("Verifying new balance on paying wallet is {new_balance} ...");
     let paying_wallet = wallet_client.into_wallet();
     assert_eq!(paying_wallet.balance(), new_balance);
@@ -148,7 +148,9 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     assert!(random_content_addrs
         .iter()
         .take(subset_len)
-        .all(|name| paying_wallet.get_payment_dbc_ids(name).is_some()));
+        .all(|name| paying_wallet
+            .get_payment_unique_pubkeys(&name.as_xorname().unwrap())
+            .is_some()));
 
     // now let's request to pay for all addresses, even that we've already paid for a subset of them
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
@@ -157,7 +159,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
         .await?;
 
     // check we've paid only for addresses we haven't previously paid for, 1 nano per addr
-    let new_balance = Token::from_nano(
+    let new_balance = Nano::from_nano(
         wallet_original_balance - (random_content_addrs.len() as u64 * storage_cost.as_nano()),
     );
     println!("Verifying new balance on paying wallet is now {new_balance} ...");
@@ -167,7 +169,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     // let's verify payment proofs now for all addresses have been cached in the wallet
     // assert!(random_content_addrs
     //     .iter()
-    //     .all(|name| paying_wallet.get_payment_dbc_ids(name) == transfer_outputs_map.get(name)));
+    //     .all(|name| paying_wallet.get_payment_unique_pubkeys(name) == transfer_outputs_map.get(name)));
 
     Ok(())
 }
@@ -236,10 +238,10 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
     let mut no_data_payments = BTreeMap::default();
     for (chunk_name, _) in chunks.iter() {
         no_data_payments.insert(
-            NetworkAddress::ChunkAddress(ChunkAddress::new(*chunk_name)),
+            *chunk_name,
             vec![(
-                PublicAddress::new(bls::SecretKey::random().public_key()),
-                Token::from_nano(0),
+                MainPubkey::new(bls::SecretKey::random().public_key()),
+                Nano::from_nano(0),
             )],
         );
     }
@@ -322,10 +324,12 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
 
     let mut no_data_payments = BTreeMap::default();
     no_data_payments.insert(
-        net_address.clone(),
+        net_address
+            .as_xorname()
+            .expect("RegisterAddress should convert to XorName"),
         vec![(
-            PublicAddress::new(bls::SecretKey::random().public_key()),
-            Token::from_nano(0),
+            MainPubkey::new(bls::SecretKey::random().public_key()),
+            Nano::from_nano(0),
         )],
     );
 

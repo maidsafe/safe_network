@@ -13,7 +13,6 @@ use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr, PeerId};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sn_dbc::MainKey;
 use sn_networking::{
     MsgResponder, NetworkBuilder, NetworkEvent, SwarmLocalState, CLOSE_GROUP_SIZE,
 };
@@ -22,6 +21,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::wallet::LocalWallet;
+use sn_transfers::MainSecretKey;
 use std::{
     collections::HashSet,
     net::SocketAddr,
@@ -99,8 +99,8 @@ impl Node {
         root_dir: PathBuf,
     ) -> Result<RunningNode> {
         // TODO: Make this key settable, and accessible via API
-        let reward_key = MainKey::random();
-        let reward_address = reward_key.public_address();
+        let reward_key = MainSecretKey::random();
+        let reward_address = reward_key.main_pubkey();
 
         let wallet = LocalWallet::load_from_main_key(&root_dir, reward_key)?;
         wallet.store()?;

@@ -7,14 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::client_transfers::SpendRequest;
+use crate::{CashNote, SpendAddress, UniquePubkey};
 
 use super::{
     error::{Error, Result},
     KeyLessWallet,
 };
 
-use sn_dbc::{Dbc, DbcId};
-use sn_protocol::storage::DbcAddress;
 use std::{
     collections::BTreeSet,
     fs,
@@ -23,13 +22,13 @@ use std::{
 
 // Filename for storing a wallet.
 const WALLET_FILE_NAME: &str = "wallet";
-const CREATED_DBCS_DIR_NAME: &str = "created_dbcs";
-const RECEIVED_DBCS_DIR_NAME: &str = "received_dbcs";
+const CREATED_CASHNOTES_DIR_NAME: &str = "created_cash_notes";
+const RECEIVED_CASHNOTES_DIR_NAME: &str = "received_cash_notes";
 const UNCONFRIMED_TX_NAME: &str = "unconfirmed_txs";
 
-pub(super) fn create_received_dbcs_dir(wallet_dir: &Path) -> Result<()> {
-    let received_dbcs_dir = wallet_dir.join(RECEIVED_DBCS_DIR_NAME);
-    fs::create_dir_all(received_dbcs_dir)?;
+pub(super) fn create_received_cash_notes_dir(wallet_dir: &Path) -> Result<()> {
+    let received_cash_notes_dir = wallet_dir.join(RECEIVED_CASHNOTES_DIR_NAME);
+    fs::create_dir_all(received_cash_notes_dir)?;
     Ok(())
 }
 /// Writes the `KeyLessWallet` to the specified path.
@@ -77,34 +76,38 @@ pub(super) fn get_unconfirmed_txs(wallet_dir: &Path) -> Result<Option<BTreeSet<S
     Ok(Some(unconfirmed_txs))
 }
 
-/// Hex encode and write each `Dbc` to a separate file in respective
-/// recipient public address dir in the created dbcs dir. Each file is named after the dbc id.
-pub(super) fn store_created_dbcs(created_dbcs: Vec<&Dbc>, wallet_dir: &Path) -> Result<()> {
-    // The create dbcs dir within the wallet dir.
-    let created_dbcs_path = wallet_dir.join(CREATED_DBCS_DIR_NAME);
-    for dbc in created_dbcs.iter() {
-        let dbc_id_name = *DbcAddress::from_dbc_id(&dbc.id()).xorname();
-        let dbc_id_file_name = format!("{}.dbc", hex::encode(dbc_id_name));
+/// Hex encode and write each `CashNote` to a separate file in respective
+/// recipient public address dir in the created cash_notes dir. Each file is named after the cash_note id.
+pub(super) fn store_created_cash_notes(
+    created_cash_notes: Vec<&CashNote>,
+    wallet_dir: &Path,
+) -> Result<()> {
+    // The create cash_notes dir within the wallet dir.
+    let created_cash_notes_path = wallet_dir.join(CREATED_CASHNOTES_DIR_NAME);
+    for cash_note in created_cash_notes.iter() {
+        let unique_pubkey_name =
+            *SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey()).xorname();
+        let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
 
-        fs::create_dir_all(&created_dbcs_path)?;
+        fs::create_dir_all(&created_cash_notes_path)?;
 
-        let dbc_file_path = created_dbcs_path.join(dbc_id_file_name);
+        let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
 
-        let hex = dbc.to_hex().map_err(Error::Dbc)?;
-        fs::write(dbc_file_path, &hex)?;
+        let hex = cash_note.to_hex().map_err(Error::CashNote)?;
+        fs::write(cash_note_file_path, &hex)?;
     }
     Ok(())
 }
 
-/// Loads all the dbcs found in the received dbcs dir.
-pub(super) fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
-    let received_dbcs_path = match std::env::var("RECEIVED_DBCS_PATH") {
+/// Loads all the cash_notes found in the received cash_notes dir.
+pub(super) fn load_received_cash_notes(wallet_dir: &Path) -> Result<Vec<CashNote>> {
+    let received_cash_notes_path = match std::env::var("RECEIVED_CashNoteS_PATH") {
         Ok(path) => PathBuf::from(path),
-        Err(_) => wallet_dir.join(RECEIVED_DBCS_DIR_NAME),
+        Err(_) => wallet_dir.join(RECEIVED_CASHNOTES_DIR_NAME),
     };
 
     let mut deposits = vec![];
-    for entry in walkdir::WalkDir::new(&received_dbcs_path)
+    for entry in walkdir::WalkDir::new(&received_cash_notes_path)
         .into_iter()
         .flatten()
     {
@@ -112,51 +115,54 @@ pub(super) fn load_received_dbcs(wallet_dir: &Path) -> Result<Vec<Dbc>> {
             let file_name = entry.file_name();
             println!("Reading deposited tokens from {file_name:?}.");
 
-            let dbc_data = fs::read_to_string(entry.path())?;
-            let dbc = match Dbc::from_hex(dbc_data.trim()) {
-                Ok(dbc) => dbc,
+            let cash_note_data = fs::read_to_string(entry.path())?;
+            let cash_note = match CashNote::from_hex(cash_note_data.trim()) {
+                Ok(cash_note) => cash_note,
                 Err(_) => {
                     println!(
-                        "This file does not appear to have valid hex-encoded DBC data. \
+                        "This file does not appear to have valid hex-encoded CashNote data. \
                         Skipping it."
                     );
                     continue;
                 }
             };
 
-            deposits.push(dbc);
+            deposits.push(cash_note);
         }
     }
 
     if deposits.is_empty() {
-        println!("No deposits found at {}.", received_dbcs_path.display());
+        println!(
+            "No deposits found at {}.",
+            received_cash_notes_path.display()
+        );
     }
 
     Ok(deposits)
 }
 
-/// Loads a specific dbc from path
-pub fn load_dbc(dbc_id: &DbcId, wallet_dir: &Path) -> Option<Dbc> {
-    let created_dbcs_path = wallet_dir.join(CREATED_DBCS_DIR_NAME);
-    let dbc_id_name = *DbcAddress::from_dbc_id(dbc_id).xorname();
-    let dbc_id_file_name = format!("{}.dbc", hex::encode(dbc_id_name));
-    // Construct the path to the dbc file
-    let dbc_file_path = created_dbcs_path.join(dbc_id_file_name);
+/// Loads a specific cash_note from path
+pub fn load_cash_note(unique_pubkey: &UniquePubkey, wallet_dir: &Path) -> Option<CashNote> {
+    let created_cash_notes_path = wallet_dir.join(CREATED_CASHNOTES_DIR_NAME);
+    let unique_pubkey_name = *SpendAddress::from_unique_pubkey(unique_pubkey).xorname();
+    let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
+    // Construct the path to the cash_note file
+    let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
 
-    // Read the dbc data from the file
-    match fs::read_to_string(dbc_file_path) {
-        Ok(dbc_data) => {
-            // Convert the dbc data from hex to Dbc
-            match Dbc::from_hex(dbc_data.trim()) {
-                Ok(dbc) => Some(dbc),
+    // Read the cash_note data from the file
+    match fs::read_to_string(cash_note_file_path) {
+        Ok(cash_note_data) => {
+            // Convert the cash_note data from hex to CashNote
+            match CashNote::from_hex(cash_note_data.trim()) {
+                Ok(cash_note) => Some(cash_note),
                 Err(error) => {
-                    warn!("Failed to convert dbc data from hex: {}", error);
+                    warn!("Failed to convert cash_note data from hex: {}", error);
                     None
                 }
             }
         }
         Err(error) => {
-            warn!("Failed to read dbc file: {}", error);
+            warn!("Failed to read cash_note file: {}", error);
             None
         }
     }

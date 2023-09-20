@@ -165,8 +165,8 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > dbc_hex
-          cat dbc_hex | cargo run --bin safe --release -- --log-output-dest=data-dir wallet deposit --stdin
+          cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > cashnote_hex
+          cat cashnote_hex | cargo run --bin safe --release -- --log-output-dest=data-dir wallet deposit --stdin
         env:
           SN_LOG: "all"
         timeout-minutes: 5
@@ -217,7 +217,7 @@ jobs:
 
   spend_test:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
-    name: dbc spend tests against network
+    name: spend tests against network
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -267,7 +267,7 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 25
 
-      - name: execute the dbc spend tests
+      - name: execute the spend tests
         run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture
         env:
           SN_LOG: "all"
