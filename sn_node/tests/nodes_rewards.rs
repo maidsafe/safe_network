@@ -62,7 +62,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     Ok(())
 }
 
-async fn verify_rewards(expected_rewards_balance: Token) -> Result<()> {
+async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
     let mut iteration = 0;
     let mut cur_rewards_history = Vec::new();
 
