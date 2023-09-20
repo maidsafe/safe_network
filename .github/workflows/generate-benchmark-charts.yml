@@ -72,12 +72,12 @@ jobs:
       ########################
       ### Benchmark        ###
       ########################
-      - name: Bench `safe`
+      - name: Bench `safe` cli
         shell: bash
         # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
         # passes to tee which displays it in the terminal and writes to output.txt
         run: |
-          cargo criterion --features=local-discovery --message-format=json 2>&1 | tee -a output.txt
+          cargo criterion --features=local-discovery --message-format=json 2>&1 -p sn_cli | tee -a output.txt
           cat output.txt | rg benchmark-complete | jq -s 'map({
             name: (.id | split("/"))[-1],
             unit: "MiB/s",
