@@ -35,18 +35,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Install Protobuf Compiler (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-
-      - name: Install Protobuf Compiler (macOS)
-        if: matrix.os == 'macos-latest'
-        run: brew install protobuf
-
-      - name: Install Protobuf Compiler (Windows)
-        if: matrix.os == 'windows-latest'
-        run: choco install protoc
-
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -86,7 +78,10 @@ jobs:
       GH_TOKEN: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
 
     steps:
-      - run: sudo apt-get install protobuf-compiler
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/checkout@v3
         with:
