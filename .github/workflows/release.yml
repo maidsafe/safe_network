@@ -26,10 +26,11 @@ jobs:
             target: x86_64-apple-darwin
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-          - os: ubuntu-latest
-            target: arm-unknown-linux-musleabi
-          - os: ubuntu-latest
-            target: armv7-unknown-linux-musleabihf
+          # arm builds disabled just now as protoc buffer isntall does not work there
+          # - os: ubuntu-latest
+          #   target: arm-unknown-linux-musleabi
+          # - os: ubuntu-latest
+          #   target: armv7-unknown-linux-musleabihf
           - os: ubuntu-latest
             target: aarch64-unknown-linux-musl
     steps:
@@ -100,14 +101,14 @@ jobs:
         with:
           name: safe_network-x86_64-apple-darwin
           path: artifacts/x86_64-apple-darwin/release
-      - uses: actions/download-artifact@master
-        with:
-          name: safe_network-arm-unknown-linux-musleabi
-          path: artifacts/arm-unknown-linux-musleabi/release
-      - uses: actions/download-artifact@master
-        with:
-          name: safe_network-armv7-unknown-linux-musleabihf
-          path: artifacts/armv7-unknown-linux-musleabihf/release
+      # - uses: actions/download-artifact@master
+      #   with:
+      #     name: safe_network-arm-unknown-linux-musleabi
+      #     path: artifacts/arm-unknown-linux-musleabi/release
+      # - uses: actions/download-artifact@master
+      #   with:
+      #     name: safe_network-armv7-unknown-linux-musleabihf
+      #     path: artifacts/armv7-unknown-linux-musleabihf/release
       - uses: actions/download-artifact@master
         with:
           name: safe_network-aarch64-unknown-linux-musl
