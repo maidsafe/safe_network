@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use libp2p::{
+    gossipsub::{PublishError, SubscriptionError},
     kad::{self, Record},
     request_response::{OutboundFailure, RequestId},
     swarm::DialError,
@@ -103,6 +104,12 @@ pub enum Error {
     #[cfg(feature = "open-metrics")]
     #[error("Network Metric error")]
     NetworkMetricError,
+
+    #[error("Gossipsub publish Error: {0}")]
+    GossipsubPublishError(#[from] PublishError),
+
+    #[error("Gossipsub subscribe Error: {0}")]
+    GossipsubSubscriptionError(#[from] SubscriptionError),
 }
 
 #[cfg(test)]

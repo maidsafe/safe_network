@@ -34,6 +34,12 @@ service SafeNode {
   // Returns the Addresses of all the Records stored by this node
   rpc RecordAddresses (RecordAddressesRequest) returns (RecordAddressesResponse);
 
+  // Subscribe to a Gossipsub topic
+  rpc SubscribeToTopic (GossipsubSubscribeRequest) returns (GossipsubSubscribeResponse);
+
+  // Publish a msg on a Gossipsub topic
+  rpc PublishOnTopic (GossipsubPublishRequest) returns (GossipsubPublishResponse);
+
   // Stop the execution of this node
   rpc Stop (StopRequest) returns (StopResponse);
 

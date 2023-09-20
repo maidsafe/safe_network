@@ -16,6 +16,7 @@ use crate::{
     cli::Opt,
     subcommands::{
         files::files_cmds,
+        gossipsub::gossipsub_cmds,
         register::register_cmds,
         wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
         SubCmd,
@@ -109,6 +110,7 @@ async fn main() -> Result<()> {
         SubCmd::Register(cmds) => {
             register_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
+        SubCmd::Gossipsub(cmds) => gossipsub_cmds(cmds, &client).await?,
     };
 
     Ok(())
