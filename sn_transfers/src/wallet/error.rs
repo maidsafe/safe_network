@@ -48,12 +48,12 @@ pub enum Error {
     #[error("Could not serialize main key to hex: {0}")]
     FailedToHexEncodeKey(String),
 
-    #[error("UTXO serialisation failed")]
-    UtxoSerialisationFailed,
-    #[error("UTXO decryption failed")]
-    UtxoDecryptionFailed,
-    #[error("UTXO encryption failed")]
-    UtxoEncryptionFailed,
+    #[error("CashNoteRedemption serialisation failed")]
+    CashNoteRedemptionSerialisationFailed,
+    #[error("CashNoteRedemption decryption failed")]
+    CashNoteRedemptionDecryptionFailed,
+    #[error("CashNoteRedemption encryption failed")]
+    CashNoteRedemptionEncryptionFailed,
     #[error("We are not a recipient of this Transfer")]
     NotRecipient,
     #[error("Transfer serialisation failed")]
