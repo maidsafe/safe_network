@@ -24,7 +24,9 @@ use crate::{
 };
 use bls::SecretKey;
 use clap::Parser;
-use color_eyre::{eyre::Context, Result};
+#[cfg(feature = "network-contacts")]
+use color_eyre::eyre::Context;
+use color_eyre::Result;
 use libp2p::Multiaddr;
 use sn_client::Client;
 #[cfg(feature = "metrics")]
@@ -34,8 +36,12 @@ use std::path::PathBuf;
 use tracing::Level;
 
 const CLIENT_KEY: &str = "clientkey";
+
+#[cfg(feature = "network-contacts")]
 // URL containing the multi-addresses of the bootstrap nodes.
 const NETWORK_CONTACTS_URL: &str = "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts";
+
+#[cfg(feature = "network-contacts")]
 // The maximum number of retries to be performed while trying to fetch the network contacts file.
 const MAX_NETWORK_CONTACTS_GET_RETRIES: usize = 3;
 
@@ -83,26 +89,37 @@ async fn main() -> Result<()> {
     } else if cfg!(feature = "local-discovery") {
         info!("No peers given. As `local-discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
         None
-    } else {
-        let network_contacts_url = opt
-            .network_name
-            .map(|name| format!("{NETWORK_CONTACTS_URL}-{name}"))
-            .unwrap_or(NETWORK_CONTACTS_URL.to_string());
-        let network_contacts_url = url::Url::parse(&network_contacts_url)
-            .wrap_err("Error while parsing the network contacts URL")?;
+    } else if cfg!(feature = "network-contacts") {
+        #[cfg(feature = "network-contacts")]
+        let peers = {
+            println!("Trying to fetch the bootstrap peers from the network contacts URL.");
+            let network_contacts_url = opt
+                .network_contacts_url
+                .unwrap_or(NETWORK_CONTACTS_URL.to_string());
+            let network_contacts_url = url::Url::parse(&network_contacts_url)
+                .wrap_err("Error while parsing the network contacts URL")?;
 
-        info!("No peers given and `local-discovery` feature is disabled. Trying to fetch the network contacts from {network_contacts_url}");
-        match get_bootstrap_peers_from_url(&network_contacts_url).await {
-            Ok(peers) => Some(peers),
-            Err(err) => {
-                let err = err.wrap_err(format!(
-                    "Error while fetching bootstrap peers from {network_contacts_url}"
-                ));
+            info!("No peers given and 'local-discovery' feature is disabled. Trying to fetch the network contacts from {network_contacts_url}");
+            match get_bootstrap_peers_from_url(&network_contacts_url).await {
+                Ok(peers) => Some(peers),
+                Err(err) => {
+                    let err = err.wrap_err(format!(
+                        "Error while fetching bootstrap peers from {network_contacts_url}"
+                    ));
 
-                error!("{err:?}");
-                return Err(color_eyre::eyre::eyre!(err));
+                    error!("{err:?}");
+                    return Err(color_eyre::eyre::eyre!(err));
+                }
             }
-        }
+        };
+        // should not be reachable, but needed for the compiler to be happy.
+        #[cfg(not(feature = "network-contacts"))]
+        let peers = None;
+        peers
+    } else {
+        let err_str = "No peers given, 'local-discovery' and 'network-contacts' feature flags are disabled. We cannot connect to the network.";
+        error!("{err_str}");
+        return Err(color_eyre::eyre::eyre!("{err_str}"));
     };
 
     let client = Client::new(secret_key, peers, opt.timeout, opt.concurrency).await?;
@@ -132,6 +149,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "network-contacts")]
 /// Get bootstrap peers from the Network contacts file stored in the given URL.
 async fn get_bootstrap_peers_from_url(url: &url::Url) -> Result<Vec<Multiaddr>> {
     let mut retries = 0;
