@@ -151,6 +151,51 @@ jobs:
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly Unit Test Run Failed"
 
+  gossipsub:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
+    name: Gossipsub E2E tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build node
+        run: cargo build --release --bin safenode
+        timeout-minutes: 30
+
+      - name: Build gossipsub testing executable
+        run: cargo test --release -p sn_node --features=local-discovery --test msgs_over_gossipsub --no-run
+        timeout-minutes: 30
+
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          faucet-path: target/release/faucet
+          platform: ${{ matrix.os }}
+
+      - name: Gossipsub - nodes to subscribe to topics, and publish messages 
+        run: cargo test --release -p sn_node --features local-discovery msgs_over_gossipsub -- --nocapture
+        timeout-minutes: 20
+
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_e2e
+          platform: ${{ matrix.os }}
+
   spend_test:
     name: spend tests against network
     runs-on: ${{ matrix.os }}
