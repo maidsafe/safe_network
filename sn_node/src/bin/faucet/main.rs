@@ -13,36 +13,23 @@ use eyre::{eyre, Result};
 use faucet_server::run_faucet_server;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
-use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
-use sn_transfers::wallet::parse_main_pubkey;
-use sn_transfers::NanoTokens;
+use sn_peers_acquisition::{parse_peers_args, PeersArgs};
+use sn_transfers::{wallet::parse_main_pubkey, NanoTokens};
 use std::path::PathBuf;
-use tracing::{error, info};
+use tracing::info;
 use tracing_core::Level;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut opt = Opt::parse();
-    // This is only used for non-local-discocery,
-    // i.e. make SAFE_PEERS always being a fall back option for initial peers.
-    if !cfg!(feature = "local-discovery") {
-        match std::env::var("SAFE_PEERS") {
-            Ok(str) => match parse_peer_addr(&str) {
-                Ok(peer) => {
-                    if !opt
-                        .peers
-                        .peers
-                        .iter()
-                        .any(|existing_peer| *existing_peer == peer)
-                    {
-                        opt.peers.peers.push(peer);
-                    }
-                }
-                Err(err) => error!("Can't parse SAFE_PEERS {str:?} with error {err:?}"),
-            },
-            Err(err) => error!("Can't get env var SAFE_PEERS with error {err:?}"),
-        }
-    }
+    let opt = Opt::parse();
+
+    let bootstrap_peers = parse_peers_args(opt.peers).await?;
+    let bootstrap_peers = if bootstrap_peers.is_empty() {
+        // empty vec is returned if `local-discovery` flag is provided
+        None
+    } else {
+        Some(bootstrap_peers)
+    };
 
     let _log_appender_guard = if let Some(log_output_dest) = opt.log_output_dest {
         let logging_targets = vec![
@@ -58,7 +45,7 @@ async fn main() -> Result<()> {
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
-    let client = Client::new(secret_key, Some(opt.peers.peers), None, None).await?;
+    let client = Client::new(secret_key, bootstrap_peers, None, None).await?;
 
     faucet_cmds(opt.cmd, &client).await?;
 

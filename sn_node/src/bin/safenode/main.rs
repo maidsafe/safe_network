@@ -18,7 +18,7 @@ use libp2p::{identity::Keypair, Multiaddr, PeerId};
 use sn_logging::metrics::init_metrics;
 use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
 use sn_node::{Marker, Node, NodeEvent, NodeEventsReceiver};
-use sn_peers_acquisition::{parse_peer_addr, PeersArgs};
+use sn_peers_acquisition::{parse_peers_args, PeersArgs};
 use std::{
     env,
     io::Write,
@@ -139,7 +139,7 @@ enum NodeCtrl {
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    let mut opt = Opt::parse();
+    let opt = Opt::parse();
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(opt.root_dir)?;
@@ -150,38 +150,8 @@ fn main() -> Result<()> {
         opt.log_format,
     )?;
 
-    // The original passed in peers may got restarted as well.
-    // Hence, try to parse from env_var and add as initial peers,
-    // if not presented yet.
-    // This is only used for non-local-discocery,
-    // i.e. make SAFE_PEERS always being a fall back option for initial peers.
-    if !cfg!(feature = "local-discovery") {
-        match std::env::var("SAFE_PEERS") {
-            Ok(str) => match parse_peer_addr(&str) {
-                Ok(peer) => {
-                    if !opt
-                        .peers
-                        .peers
-                        .iter()
-                        .any(|existing_peer| *existing_peer == peer)
-                    {
-                        opt.peers.peers.push(peer);
-                    }
-                }
-                Err(err) => error!("Can't parse SAFE_PEERS {str:?} with error {err:?}"),
-            },
-            Err(err) => error!("Can't get env var SAFE_PEERS with error {err:?}"),
-        }
-    }
-
-    if opt.peers.peers.is_empty() {
-        if !cfg!(feature = "local-discovery") {
-            warn!("No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.");
-        } else {
-            info!("No peers given. As `local-discovery` feature is enabled, we will attempt to connect to the network using mDNS.");
-        }
-    }
-    let initial_peers = opt.peers.peers.clone();
+    let rt = Runtime::new()?;
+    let bootstrap_peers = rt.block_on(parse_peers_args(opt.peers))?;
 
     let msg = format!(
         "Running {} v{}",
@@ -191,18 +161,17 @@ fn main() -> Result<()> {
     info!("\n{}\n{}", msg, "=".repeat(msg.len()));
     debug!("Built with git version: {}", sn_build_info::git_info());
 
-    info!("Node started with initial_peers {initial_peers:?}");
+    info!("Node started with initial_peers {bootstrap_peers:?}");
 
     // Create a tokio runtime per `start_node` attempt, this ensures
     // any spawned tasks are closed before we would attempt to run
     // another process with these args.
-    let rt = Runtime::new()?;
     #[cfg(feature = "metrics")]
     rt.spawn(init_metrics(std::process::id()));
     rt.block_on(start_node(
         keypair,
         node_socket_addr,
-        initial_peers,
+        bootstrap_peers,
         opt.rpc,
         opt.local,
         &log_output_dest,

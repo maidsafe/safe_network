@@ -4437,9 +4437,12 @@ name = "sn_peers_acquisition"
 version = "0.1.6"
 dependencies = [
  "clap 4.4.4",
- "eyre",
+ "color-eyre",
  "libp2p",
+ "reqwest",
+ "tokio",
  "tracing",
+ "url",
 ]
 
 [[package]]
