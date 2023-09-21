@@ -11,11 +11,15 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.1.6"
 
 [features]
-default=[]
-local-discovery=[]
+default = []
+local-discovery = []
+network-contacts = ["reqwest", "tokio", "url"]
 
 [dependencies]
 clap = { version = "4.2.1", features = ["derive", "env"] }
-eyre = "0.6.8"
- libp2p = { version="0.52", features = [] }
+color-eyre = "~0.6"
+libp2p = { version="0.52", features = [] }
+reqwest = { version="0.11.18", default-features=false, features = ["rustls"], optional = true }
+tokio = { version = "1.32.0", optional = true}
 tracing = { version = "~0.1.26" }
+url = { version = "2.4.0", optional = true }
