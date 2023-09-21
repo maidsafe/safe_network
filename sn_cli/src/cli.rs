@@ -78,10 +78,11 @@ pub(crate) struct Opt {
     #[clap(global = true, short = 'n')]
     pub no_verify: bool,
 
-    /// Specify the name of the network that you'd like to connect.
+    /// Specify the URL to fetch the network contacts from.
     ///
-    /// This argument will be ignored if the "peers" argument is set or if the `local-discovery` feature flag is
+    /// This argument will be overridden if the "peers" argument is set or if the `local-discovery` feature flag is
     /// enabled.
-    #[clap(long = "network")]
-    pub network_name: Option<String>,
+    #[cfg(feature = "network-contacts")]
+    #[clap(long)]
+    pub network_contacts_url: Option<String>,
 }
