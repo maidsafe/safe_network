@@ -217,13 +217,12 @@ impl SwarmDriver {
                                 .unique()
                                 .collect();
 
-                            debug!(%peer_id, ?addrs, "identify: adding addresses to routing table");
                             for multiaddr in addrs.clone() {
                                 // If the peer was unroutable, we dial it.
                                 if !self.dialed_peers.contains(&peer_id)
                                     && self.unroutable_peers.contains(&peer_id)
                                 {
-                                    debug!("identify: dialing unroutable peer by its announced listen address");
+                                    debug!("identify: dialing unroutable peer by its announced listen address: {peer_id:?}");
                                     if let Err(err) = self.dial_with_opts(
                                         DialOpts::peer_id(peer_id)
                                             // By default the condition is 'Disconnected'. But we still want to establish an outbound connection,
@@ -244,6 +243,8 @@ impl SwarmDriver {
                                         }
                                     }
                                 } else {
+                                    trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
+
                                     let _routing_update = self
                                         .swarm
                                         .behaviour_mut()
@@ -643,7 +644,7 @@ impl SwarmDriver {
                     self.send_event(NetworkEvent::PeerAdded(peer));
                     let connected_peers = self.swarm.connected_peers().count();
 
-                    info!("Connected peers: {connected_peers}");
+                    info!("New peer added to routing table: {peer:?}, now we have #{connected_peers} connected peers");
                     // kad bootstrap process needs at least one peer in the RT be carried out.
                     // Carry out bootstrap until we have at least CLOSE_GROUP_SIZE peers
                     if connected_peers <= CLOSE_GROUP_SIZE && !self.bootstrap_ongoing {
