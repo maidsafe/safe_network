@@ -271,6 +271,9 @@ fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
     if cfg!(feature = "local-discovery") {
         args.extend(["--features", "local-discovery"]);
     }
+    if cfg!(feature = "network-contacts") {
+        args.extend(["--features", "network-contacts"]);
+    }
     if cfg!(feature = "quic") {
         args.extend(["--features", "quic"]);
     }
