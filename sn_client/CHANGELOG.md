@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.90.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.23...sn_client-v0.90.0) - 2023-09-21
+
+### Added
+- dusking DBCs
+
+### Other
+- rename Nano NanoTokens
+- improve naming
+
 ## [0.89.23](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.22...sn_client-v0.89.23) - 2023-09-21
 
 ### Other

@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.6.10...sn_protocol-v0.7.0) - 2023-09-21
+
+### Added
+- dusking DBCs
+
+### Other
+- remove dbc dust comments
+- rename Nano NanoTokens
+
 ## [0.6.10](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.6.9...sn_protocol-v0.6.10) - 2023-09-18
 
 ### Added

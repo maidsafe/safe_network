@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.15...sn_transfers-v0.12.0) - 2023-09-21
+
+### Added
+- rename utxo by CashNoteRedemption
+- dusking DBCs
+
+### Fixed
+- udeps
+- incompatible hardcoded value, add logs
+
+### Other
+- remove dbc dust comments
+- rename Nano NanoTokens
+- improve naming
+
 ## [0.11.15](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.14...sn_transfers-v0.11.15) - 2023-09-20
 
 ### Other
