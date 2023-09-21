@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.64](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.63...sn_cli-v0.81.64) - 2023-09-21
+
+### Added
+- provide a `files ls` command
+
+### Other
+- *(release)* sn_client-v0.89.22
+- store uploaded files list as text
+- clarify `files download` usage
+- output address of uploaded file
+
 ## [0.81.63](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.62...sn_cli-v0.81.63) - 2023-09-20
 
 ### Other
