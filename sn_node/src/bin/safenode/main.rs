@@ -151,8 +151,8 @@ fn main() -> Result<()> {
     )?;
 
     let rt = Runtime::new()?;
-    let bootstrap_peers = rt.block_on(parse_peers_args(opt.peers))?;
-
+    // bootstrap peers can be empty for the genesis node.
+    let bootstrap_peers = rt.block_on(parse_peers_args(opt.peers)).unwrap_or(vec![]);
     let msg = format!(
         "Running {} v{}",
         env!("CARGO_BIN_NAME"),

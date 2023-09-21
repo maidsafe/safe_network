@@ -17,6 +17,7 @@ statemap = []
 otlp = []
 local-discovery = []
 quic = []
+network-contacts = []
 open-metrics = []
 
 [[bin]]
