@@ -77,12 +77,4 @@ pub(crate) struct Opt {
     /// This may increase operation speed, but offers no guarantees that operations were successful.
     #[clap(global = true, short = 'n')]
     pub no_verify: bool,
-
-    /// Specify the URL to fetch the network contacts from.
-    ///
-    /// This argument will be overridden if the "peers" argument is set or if the `local-discovery` feature flag is
-    /// enabled.
-    #[cfg(feature = "network-contacts")]
-    #[clap(long)]
-    pub network_contacts_url: Option<String>,
 }
