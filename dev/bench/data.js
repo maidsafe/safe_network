@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695373377344,
+  "lastUpdate": 1695373666511,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -14941,6 +14941,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 59.715584,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "afd0411cf9d407c5a01183edff4b872c77c12760",
+          "message": "feat(cli): deps update and arbitrary change for cli\n\nBREAKING CHANGE: dbc deprecation did seemingly not kick off a release\nfor the CLI.",
+          "timestamp": "2023-09-22T10:29:19+02:00",
+          "tree_id": "3f6ed5aedec944479d2346b8c11c5bc03027f2c4",
+          "url": "https://github.com/maidsafe/safe_network/commit/afd0411cf9d407c5a01183edff4b872c77c12760"
+        },
+        "date": 1695373666114,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 59.039745,
             "unit": "MB"
           }
         ]
