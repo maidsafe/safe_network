@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.7.0...sn_networking-v0.7.1) - 2023-09-22
+
+### Added
+- *(apis)* adding client and node APIs, as well as safenode RPC services to pub/sub to gossipsub topics
+- *(network)* adding support for gossipsub behaviour/messaging
+
 ## [0.7.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.15...sn_networking-v0.7.0) - 2023-09-21
 
 ### Added
