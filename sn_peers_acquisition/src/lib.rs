@@ -63,8 +63,8 @@ pub async fn parse_peers_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
     } else if cfg!(feature = "network-contacts") {
         #[cfg(feature = "network-contacts")]
         let peers = {
-            info!("Trying to fetch the bootstrap peers from the network contacts URL.");
-            println!("Trying to fetch the bootstrap peers from the network contacts URL.");
+            info!("Trying to fetch the bootstrap peers from {NETWORK_CONTACTS_URL}");
+            println!("Trying to fetch the bootstrap peers from {NETWORK_CONTACTS_URL}");
             let url = args
                 .network_contacts_url
                 .unwrap_or(Url::parse(NETWORK_CONTACTS_URL)?);
