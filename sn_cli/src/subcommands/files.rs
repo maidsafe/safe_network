@@ -116,7 +116,7 @@ pub(super) async fn chunk_path(
     root_dir: &Path,
     files_path: &Path,
 ) -> Result<BTreeMap<XorName, ChunkedFile>> {
-    trace!("Starting to chunk {files_path:?}");
+    trace!("Starting to chunk {files_path:?} now.");
 
     let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
 
