@@ -17,7 +17,7 @@ use url::Url;
 
 #[cfg(feature = "network-contacts")]
 // URL containing the multi-addresses of the bootstrap nodes.
-const NETWORK_CONTACTS_URL: &str = "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts";
+const NETWORK_CONTACTS_URL: &str = "http://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts";
 
 #[cfg(feature = "network-contacts")]
 // The maximum number of retries to be performed while trying to fetch the network contacts file.
@@ -68,13 +68,24 @@ pub async fn parse_peers_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
             let url = args
                 .network_contacts_url
                 .unwrap_or(Url::parse(NETWORK_CONTACTS_URL)?);
-            get_bootstrap_peers_from_url(url)
+            let peers = get_bootstrap_peers_from_url(url)
                 .await
-                .wrap_err("Error while fetching bootstrap peers from Network contacts URL")
+                .wrap_err("Error while fetching bootstrap peers from Network contacts URL")?;
+
+            if peers.is_empty() {
+                return Err(color_eyre::eyre::eyre!(
+                    "Could not obtain a single valid multi-addr from URL {NETWORK_CONTACTS_URL}"
+                ));
+            } else {
+                Ok(peers)
+            }
         };
         // should not be reachable, but needed for the compiler to be happy.
         #[cfg(not(feature = "network-contacts"))]
         let peers = Ok(vec![]);
+
+        println!("--->>> Bootstrap peers: {:?}", peers);
+
         peers
     } else {
         let err_str = "No peers given, 'local-discovery' and 'network-contacts' feature flags are disabled. We cannot connect to the network.";
@@ -120,8 +131,10 @@ async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
             Ok(response) => {
                 let mut multi_addresses = Vec::new();
                 if response.status().is_success() {
-                    // We store CSV of the multiaddr
-                    for addr in response.text().await?.split(',') {
+                    let text = response.text().await?;
+                    println!("Got bootstrap peers from URL {text}");
+                    // example of contacts file exists in resources/network-contacts-examples
+                    for addr in text.split('\n') {
                         match parse_peer_addr(addr) {
                             Ok(addr) => multi_addresses.push(addr),
                             Err(err) => {

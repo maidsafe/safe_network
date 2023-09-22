@@ -75,6 +75,11 @@ async fn main() -> Result<()> {
     let secret_key = get_client_secret_key(&client_data_dir_path)?;
 
     let bootstrap_peers = parse_peers_args(opt.peers).await?;
+
+    println!(
+        "Connecting to the network w/peers: {:?}...",
+        bootstrap_peers
+    );
     let bootstrap_peers = if bootstrap_peers.is_empty() {
         // empty vec is returned if `local-discovery` flag is provided
         None
