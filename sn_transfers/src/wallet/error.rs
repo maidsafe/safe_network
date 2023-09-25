@@ -25,7 +25,7 @@ pub enum Error {
     TotalPriceTooHigh,
     /// Failed to create offline transfer.
     #[error("Offline transfer creation error {0}")]
-    CreateOfflineTransfer(#[from] crate::client_transfers::Error),
+    CreateOfflineTransfer(#[from] crate::transfers::Error),
     /// A general error when a transfer fails.
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendMoney(String),

@@ -11,8 +11,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sn_transfers::{
     rand::{CryptoRng, RngCore},
-    random_derivation_index, rng, CashNote, FeeOutput, Hash, MainSecretKey, NanoTokens, Output,
-    Result, SignedSpend, Transaction, UniquePubkey,
+    rng, CashNote, Hash, MainSecretKey, NanoTokens, Output, Result, SignedSpend, Transaction,
+    TransactionBuilder, UniquePubkey,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -25,7 +25,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
         generate_cashnote_of_value(NanoTokens::from(N_OUTPUTS), &mut rng).unwrap();
 
     let derived_key = starting_cashnote.derived_key(&starting_main_key).unwrap();
-    let cashnote_builder = sn_transfers::TransactionBuilder::default()
+    let cashnote_builder = TransactionBuilder::default()
         .add_input_cashnote(&starting_cashnote, &derived_key)
         .unwrap()
         .add_outputs((0..N_OUTPUTS).map(|_| {
@@ -33,7 +33,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
             (
                 NanoTokens::from(1),
                 main_key.main_pubkey(),
-                random_derivation_index(&mut rng),
+                UniquePubkey::random_derivation_index(&mut rng),
             )
         }))
         .build(Hash::default())
@@ -84,7 +84,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
     let outputs: BTreeMap<_, _> = (0..N_OUTPUTS)
         .map(|_| {
             let main_key = MainSecretKey::random_from_rng(&mut rng);
-            let derivation_index = random_derivation_index(&mut rng);
+            let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
             let unique_pubkey = main_key.derive_key(&derivation_index).unique_pubkey();
             (
                 unique_pubkey,
@@ -94,7 +94,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         .collect();
 
     let derived_key = starting_cashnote.derived_key(&starting_main_key).unwrap();
-    let cashnote_builder = sn_transfers::TransactionBuilder::default()
+    let cashnote_builder = TransactionBuilder::default()
         .add_input_cashnote(&starting_cashnote, &derived_key)
         .unwrap()
         .add_outputs(
@@ -124,9 +124,9 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
     let cashnotes = cashnote_builder.build().unwrap();
 
     let main_key = MainSecretKey::random_from_rng(&mut rng);
-    let derivation_index = random_derivation_index(&mut rng);
+    let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
 
-    let mut tx_builder = sn_transfers::TransactionBuilder::default();
+    let mut tx_builder = TransactionBuilder::default();
 
     for (cashnote, _) in cashnotes.into_iter() {
         let (main_key, _, _) = outputs.get(&cashnote.unique_pubkey()).unwrap();
@@ -186,7 +186,7 @@ fn generate_cashnote_of_value(
     mut rng: &mut (impl RngCore + CryptoRng),
 ) -> Result<(CashNote, MainSecretKey)> {
     let main_key = MainSecretKey::random_from_rng(&mut rng);
-    let derivation_index = random_derivation_index(&mut rng);
+    let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
     let derived_key = main_key.derive_key(&derivation_index);
 
     let tx = Transaction {
@@ -195,7 +195,7 @@ fn generate_cashnote_of_value(
             unique_pubkey: derived_key.unique_pubkey(),
             amount,
         }],
-        fee: FeeOutput::default(),
+        fee: Default::default(),
     };
 
     let cashnote = CashNote {

@@ -6,14 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_transfers::{client_transfers::SpendRequest, wallet::Transfer};
+use sn_transfers::{transfers::SpendRequest, wallet::Transfer};
 use xor_name::XorName;
 
 use super::Client;
 
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
-    client_transfers::TransferOutputs,
+    transfers::TransferOutputs,
     wallet::{Error, LocalWallet, Result},
 };
 use sn_transfers::{CashNote, MainPubkey, NanoTokens};
