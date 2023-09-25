@@ -69,7 +69,7 @@ let client = Client::new(signer, peers, req_response_timeout, custom_concurrency
 - **Description**: Store `Chunk` as a record.
 - **Parameters**:
   - `chunk: Chunk`
-  - `payment: Vec<Dbc>`
+  - `payment: Vec<CashNote>`
   - `verify_store: bool`
 - **Returns**: `Result<()>`
 
@@ -81,7 +81,7 @@ let client = Client::new(signer, peers, req_response_timeout, custom_concurrency
 
 #### `network_store_spend`
 
-- **Description**: Send a `SpendDbc` request to the network.
+- **Description**: Send a `SpendCashNote` request to the network.
 - **Parameters**:
   - `spend: SpendRequest`
   - `verify_store: bool`
@@ -89,8 +89,8 @@ let client = Client::new(signer, peers, req_response_timeout, custom_concurrency
 
 #### `get_spend_from_network`
 
-- **Description**: Get a dbc spend from the network.
-- **Parameters**: `dbc_id: &DbcId`
+- **Description**: Get a cash_note spend from the network.
+- **Parameters**: `cash_note_id: &CashNoteId`
 - **Returns**: `Result<SignedSpend>`
 
 #### `get_store_costs_at_address`

@@ -12,19 +12,23 @@ use super::{
 };
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
-use libp2p::{identity::Keypair, kad::Record, Multiaddr};
+use libp2p::{
+    identity::Keypair,
+    kad::{Quorum, Record},
+    Multiaddr,
+};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
-use sn_dbc::{DbcId, PublicAddress, SignedSpend, Token};
 use sn_networking::{multiaddr_is_global, NetworkBuilder, NetworkEvent, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
     storage::{
-        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, DbcAddress,
-        RecordHeader, RecordKind, RegisterAddress,
+        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
+        RecordKind, RegisterAddress, SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
+use sn_transfers::{MainPubkey, NanoTokens, SignedSpend, UniquePubkey};
 
 use sn_registers::SignedRegister;
 use sn_transfers::{client_transfers::SpendRequest, wallet::Transfer};
@@ -154,6 +158,7 @@ impl Client {
 
                     continue;
                 }
+                Ok(ClientEvent::GossipsubMsg { .. }) => {}
                 Err(err) => {
                     error!("Unexpected error during client startup {err:?}");
                     println!("Unexpected error during client startup {err:?}");
@@ -200,36 +205,43 @@ impl Client {
     }
 
     fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
-        if let NetworkEvent::PeerAdded(peer_id) = event {
-            self.peers_added += 1;
-            debug!("PeerAdded: {peer_id}");
+        match event {
+            NetworkEvent::PeerAdded(peer_id) => {
+                self.peers_added += 1;
+                debug!("PeerAdded: {peer_id}");
 
-            // In case client running in non-local-discovery mode,
-            // it may take some time to fill up the RT.
-            // To avoid such delay may fail the query with RecordNotFound,
-            // wait till certain amount of peers populated into RT
-            if self.peers_added >= CLOSE_GROUP_SIZE {
-                if let Some(progress) = &self.progress {
-                    progress.finish_with_message("Connected to the Network");
-                    // Remove the progress bar
-                    self.progress = None;
-                }
+                // In case client running in non-local-discovery mode,
+                // it may take some time to fill up the RT.
+                // To avoid such delay may fail the query with RecordNotFound,
+                // wait till certain amount of peers populated into RT
+                if self.peers_added >= CLOSE_GROUP_SIZE {
+                    if let Some(progress) = &self.progress {
+                        progress.finish_with_message("Connected to the Network");
+                        // Remove the progress bar
+                        self.progress = None;
+                    }
 
-                self.events_channel
-                    .broadcast(ClientEvent::ConnectedToNetwork)?;
-            } else {
-                debug!(
-                    "{}/{} initial peers found.",
-                    self.peers_added, CLOSE_GROUP_SIZE
-                );
-
-                if let Some(progress) = &self.progress {
-                    progress.set_message(format!(
+                    self.events_channel
+                        .broadcast(ClientEvent::ConnectedToNetwork)?;
+                } else {
+                    debug!(
                         "{}/{} initial peers found.",
                         self.peers_added, CLOSE_GROUP_SIZE
-                    ));
+                    );
+
+                    if let Some(progress) = &self.progress {
+                        progress.set_message(format!(
+                            "{}/{} initial peers found.",
+                            self.peers_added, CLOSE_GROUP_SIZE
+                        ));
+                    }
                 }
             }
+            NetworkEvent::GossipsubMsg { topic, msg } => {
+                self.events_channel
+                    .broadcast(ClientEvent::GossipsubMsg { topic, msg })?;
+            }
+            _other => {}
         }
 
         Ok(())
@@ -324,7 +336,7 @@ impl Client {
 
         Ok(self
             .network
-            .put_record(record, record_to_verify, optional_permit)
+            .put_record(record, record_to_verify, optional_permit, Quorum::One)
             .await?)
     }
 
@@ -345,20 +357,20 @@ impl Client {
         }
     }
 
-    /// Send a `SpendDbc` request to the network
+    /// Send a `SpendCashNote` request to the network
     pub(crate) async fn network_store_spend(
         &self,
         spend: SpendRequest,
         verify_store: bool,
     ) -> Result<()> {
-        let dbc_id = *spend.signed_spend.dbc_id();
-        let dbc_addr = DbcAddress::from_dbc_id(&dbc_id);
+        let unique_pubkey = *spend.signed_spend.unique_pubkey();
+        let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
 
-        trace!("Sending spend {dbc_id:?} to the network via put_record, with addr of {dbc_addr:?}");
-        let key = NetworkAddress::from_dbc_address(dbc_addr).to_record_key();
+        trace!("Sending spend {unique_pubkey:?} to the network via put_record, with addr of {cash_note_addr:?}");
+        let key = NetworkAddress::from_cash_note_address(cash_note_addr).to_record_key();
         let record = Record {
             key,
-            value: try_serialize_record(&[spend.signed_spend], RecordKind::DbcSpend)?,
+            value: try_serialize_record(&[spend.signed_spend], RecordKind::Spend)?,
             publisher: None,
             expires: None,
         };
@@ -371,17 +383,20 @@ impl Client {
 
         Ok(self
             .network
-            .put_record(record, record_to_verify, None)
+            .put_record(record, record_to_verify, None, Quorum::All)
             .await?)
     }
 
-    /// Get a dbc spend from network
-    pub async fn get_spend_from_network(&self, dbc_id: &DbcId) -> Result<SignedSpend> {
-        let address = DbcAddress::from_dbc_id(dbc_id);
-        let key = NetworkAddress::from_dbc_address(address).to_record_key();
+    /// Get a cash_note spend from network
+    pub async fn get_spend_from_network(
+        &self,
+        unique_pubkey: &UniquePubkey,
+    ) -> Result<SignedSpend> {
+        let address = SpendAddress::from_unique_pubkey(unique_pubkey);
+        let key = NetworkAddress::from_cash_note_address(address).to_record_key();
 
         trace!(
-            "Getting spend {dbc_id:?} with record_key {:?}",
+            "Getting spend {unique_pubkey:?} with record_key {:?}",
             PrettyPrintRecordKey::from(key.clone())
         );
         let record = self
@@ -389,24 +404,26 @@ impl Client {
             .get_record_from_network(key.clone(), None, true)
             .await
             .map_err(|err| {
-                Error::CouldNotVerifyTransfer(format!("dbc_id {dbc_id:?} errored: {err:?}"))
+                Error::CouldNotVerifyTransfer(format!(
+                    "unique_pubkey {unique_pubkey:?} errored: {err:?}"
+                ))
             })?;
         debug!(
-            "For spend {dbc_id:?} got record from the network, {:?}",
+            "For spend {unique_pubkey:?} got record from the network, {:?}",
             PrettyPrintRecordKey::from(record.key.clone())
         );
 
         let header = RecordHeader::from_record(&record).map_err(|err| {
             Error::CouldNotVerifyTransfer(format!(
-                "Can't parse RecordHeader for the dbc_id {dbc_id:?} with error {err:?}"
+                "Can't parse RecordHeader for the unique_pubkey {unique_pubkey:?} with error {err:?}"
             ))
         })?;
 
-        if let RecordKind::DbcSpend = header.kind {
+        if let RecordKind::Spend = header.kind {
             let mut deserialized_record = try_deserialize_record::<Vec<SignedSpend>>(&record)
                 .map_err(|err| {
                     Error::CouldNotVerifyTransfer(format!(
-                        "Can't deserialize record for the dbc_id {dbc_id:?} with error {err:?}"
+                        "Can't deserialize record for the unique_pubkey {unique_pubkey:?} with error {err:?}"
                     ))
                 })?;
 
@@ -414,28 +431,30 @@ impl Client {
                 0 => {
                     trace!("Found no spend for {address:?}");
                     Err(Error::CouldNotVerifyTransfer(format!(
-                        "Fetched record shows no spend for dbc {dbc_id:?}."
+                        "Fetched record shows no spend for cash_note {unique_pubkey:?}."
                     )))
                 }
                 1 => {
                     let signed_spend = deserialized_record.remove(0);
                     trace!("Spend get for address: {address:?} successful");
-                    if dbc_id == signed_spend.dbc_id() {
+                    if unique_pubkey == signed_spend.unique_pubkey() {
                         match signed_spend.verify(signed_spend.spent_tx_hash()) {
                             Ok(_) => {
-                                trace!("Verified signed spend got from networkfor {dbc_id:?}");
+                                trace!(
+                                    "Verified signed spend got from networkfor {unique_pubkey:?}"
+                                );
                                 Ok(signed_spend)
                             }
                             Err(err) => {
-                                warn!("Invalid signed spend got from network for {dbc_id:?}: {err:?}.");
+                                warn!("Invalid signed spend got from network for {unique_pubkey:?}: {err:?}.");
                                 Err(Error::CouldNotVerifyTransfer(format!(
-                                "Spend failed verifiation for the dbc_id {dbc_id:?} with error {err:?}")))
+                                "Spend failed verifiation for the unique_pubkey {unique_pubkey:?} with error {err:?}")))
                             }
                         }
                     } else {
-                        warn!("Signed spend ({:?}) got from network mismatched the expected one {dbc_id:?}.", signed_spend.dbc_id());
+                        warn!("Signed spend ({:?}) got from network mismatched the expected one {unique_pubkey:?}.", signed_spend.unique_pubkey());
                         Err(Error::CouldNotVerifyTransfer(format!(
-                                "Signed spend ({:?}) got from network mismatched the expected one {dbc_id:?}.", signed_spend.dbc_id())))
+                                "Signed spend ({:?}) got from network mismatched the expected one {unique_pubkey:?}.", signed_spend.unique_pubkey())))
                     }
                 }
                 _ => {
@@ -444,14 +463,14 @@ impl Client {
                     let two = deserialized_record.remove(0);
                     error!("Found double spend for {address:?}");
                     Err(Error::CouldNotVerifyTransfer(format!(
-                "Found double spend for the dbc_id {dbc_id:?} - {:?}: spend_one {:?} and spend_two {:?}",
+                "Found double spend for the unique_pubkey {unique_pubkey:?} - {:?}: spend_one {:?} and spend_two {:?}",
                 PrettyPrintRecordKey::from(key), one.derived_key_sig, two.derived_key_sig
             )))
                 }
             }
         } else {
-            error!("RecordKind mismatch while trying to retrieve a dbc spend");
-            Err(ProtocolError::RecordKindMismatch(RecordKind::DbcSpend).into())
+            error!("RecordKind mismatch while trying to retrieve a cash_note spend");
+            Err(ProtocolError::RecordKindMismatch(RecordKind::Spend).into())
         }
     }
 
@@ -459,7 +478,7 @@ impl Client {
     pub async fn get_store_costs_at_address(
         &self,
         address: &NetworkAddress,
-    ) -> Result<Vec<(PublicAddress, Token)>> {
+    ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
         let tolerance = 1.5;
         trace!("Getting store cost at {address:?}, with tolerance of {tolerance} times the cost");
 
@@ -468,16 +487,30 @@ impl Client {
             .network
             .get_store_costs_from_network(address.clone())
             .await?;
-        let adjusted_costs: Vec<(PublicAddress, Token)> = costs
+        let adjusted_costs: Vec<(MainPubkey, NanoTokens)> = costs
             .into_iter()
             .map(|(address, token)| {
                 (
                     address,
-                    Token::from_nano((token.as_nano() as f64 * tolerance) as u64),
+                    NanoTokens::from((token.as_nano() as f64 * tolerance) as u64),
                 )
             })
             .collect();
 
         Ok(adjusted_costs)
+    }
+
+    /// Subscribe to given gossipsub topic
+    pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
+        info!("Subscribing to topic id: {topic_id}");
+        self.network.subscribe_to_topic(topic_id)?;
+        Ok(())
+    }
+
+    /// Publish message on given topic
+    pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
+        info!("Publishing msg on topic id: {topic_id}");
+        self.network.publish_on_topic(topic_id, msg)?;
+        Ok(())
     }
 }

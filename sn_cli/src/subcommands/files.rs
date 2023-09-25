@@ -10,8 +10,8 @@ use super::wallet::{ChunkedFile, BATCH_SIZE};
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{
-    eyre::{bail, Error},
-    Result,
+    eyre::{bail, eyre, Error},
+    Help, Result,
 };
 use libp2p::futures::future::join_all;
 use sn_client::{Client, Files};
@@ -19,6 +19,8 @@ use sn_protocol::storage::{Chunk, ChunkAddress};
 use std::{
     collections::BTreeMap,
     fs,
+    io::prelude::*,
+    io::{BufRead, BufReader},
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
@@ -29,8 +31,10 @@ use xor_name::XorName;
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
     Upload {
-        /// The location of the files to upload.
-        #[clap(name = "path", value_name = "DIRECTORY")]
+        /// The location of the file(s) to upload.
+        ///
+        /// Can be a file or a directory.
+        #[clap(name = "path", value_name = "PATH")]
         path: PathBuf,
         /// The batch_size to split chunks into parallely handling batches
         /// during payment and upload processing.
@@ -38,11 +42,19 @@ pub enum FilesCmds {
         batch_size: usize,
     },
     Download {
-        /// Name of the file to download.
-        #[clap(name = "file_name")]
+        /// The name to apply to the downloaded file.
+        ///
+        /// If the name argument is used, the address argument must also be supplied.
+        ///
+        /// If neither are, all the files uploaded by the current user will be downloaded again.
+        #[clap(name = "name")]
         file_name: Option<String>,
-        /// Address of the file to download, in hex string.
-        #[clap(name = "file_addr")]
+        /// The hex address of a file.
+        ///
+        /// If the address argument is used, the name argument must also be supplied.
+        ///
+        /// If neither are, all the files uploaded by the current user will be downloaded again.
+        #[clap(name = "address")]
         file_addr: Option<String>,
     },
 }
@@ -61,6 +73,17 @@ pub(crate) async fn files_cmds(
             file_name,
             file_addr,
         } => {
+            if (file_name.is_some() && file_addr.is_none())
+                || (file_addr.is_some() && file_name.is_none())
+            {
+                return Err(
+                    eyre!("Both the name and address must be supplied if either are used")
+                        .suggestion(
+                        "Please run the command again in the form 'files upload <name> <address>'",
+                    ),
+                );
+            }
+
             let file_api: Files = Files::new(client, root_dir.to_path_buf());
 
             match (file_name, file_addr) {
@@ -79,7 +102,7 @@ pub(crate) async fn files_cmds(
                     .await
                 }
                 _ => {
-                    println!("Trying to download files recorded in uploaded_files folder");
+                    println!("Attempting to download all files uploaded by the current user...");
                     download_files(&file_api, root_dir).await?
                 }
             }
@@ -93,7 +116,7 @@ pub(super) async fn chunk_path(
     root_dir: &Path,
     files_path: &Path,
 ) -> Result<BTreeMap<XorName, ChunkedFile>> {
-    trace!("Starting to chunk {files_path:?}");
+    trace!("Starting to chunk {files_path:?} now.");
 
     let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
 
@@ -130,8 +153,8 @@ pub(super) async fn chunk_path(
     Ok(chunked_files)
 }
 
-/// Given a directory, upload all files contained
-/// Optionally verifies data was stored successfully
+/// Given a file or directory, upload either the file or all the files in the directory. Optionally
+/// verify if the data was stored successfully.
 async fn upload_files(
     files_path: PathBuf,
     client: Client,
@@ -141,23 +164,17 @@ async fn upload_files(
 ) -> Result<()> {
     let start_time = std::time::Instant::now();
     debug!(
-        "Uploading files from {:?}, will verify?: {verify_store}",
+        "Uploading file(s) from {:?}, will verify?: {verify_store}",
         files_path
     );
-    // The input files_path has to be a dir
-    let file_names_path = root_dir.join("uploaded_files");
 
     // Payment shall always be verified.
     let chunks_to_upload = chunk_path(&client, root_dir, &files_path).await?;
 
-    // the file's xorname and name to be recorded locally
-    let content_to_be_written_locally = {
-        let content = chunks_to_upload
-            .iter()
-            .map(|(file_addr, chunked_file)| (file_addr, &chunked_file.file_name))
-            .collect::<Vec<_>>();
-        bincode::serialize(&content)?
-    };
+    let uploaded_file_info = chunks_to_upload
+        .iter()
+        .map(|(file_addr, chunked_file)| (*file_addr, chunked_file.file_name.clone()))
+        .collect::<Vec<_>>();
 
     let chunks_to_upload = chunks_to_upload
         .into_iter()
@@ -189,21 +206,21 @@ async fn upload_files(
         ))
         .await
         {
-            result??;
+            let _ = result?;
         }
 
         let elapsed = now.elapsed();
         println!(
-            "After {elapsed:?}, uploaded {:?} chunks, current progress is {progress}/{total_chunks_uploading}. ",
+            "Uploaded {:?} chunks in {elapsed:?}. Current progress is {progress}/{total_chunks_uploading}.",
             chunks_batch.len(),
         );
         info!(
-            "After {elapsed:?}, uploaded {:?} chunks, current progress is {progress}/{total_chunks_uploading}. ",
+            "Uploaded {:?} chunks in {elapsed:?}. Current progress is {progress}/{total_chunks_uploading}.",
             chunks_batch.len(),
         );
     }
 
-    println!("First round of upload completed, verifying and repaying if required...");
+    println!("First round of upload complete. Verifying and repaying if required...");
 
     // If we are not verifying, we can skip this
     if verify_store {
@@ -213,7 +230,7 @@ async fn upload_files(
         while !data_to_verify_or_repay.is_empty() {
             tokio::time::sleep(Duration::from_secs(3)).await;
             trace!(
-                "Verifying and potential topping up payment of {:?} chunks",
+                "Verifying and potentially topping up payment of {:?} chunks",
                 data_to_verify_or_repay.len()
             );
             data_to_verify_or_repay =
@@ -227,15 +244,17 @@ async fn upload_files(
         format_elapsed_time(start_time.elapsed())
     );
 
-    // Record the uploaded files locally to be able to fetch them later
-    fs::create_dir_all(file_names_path.as_path())?;
-    let date_time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-    let file_names_path = file_names_path.join(format!("file_names_{date_time}"));
-    println!(
-        "Writing {} bytes to {file_names_path:?}",
-        content_to_be_written_locally.len()
-    );
-    fs::write(file_names_path, content_to_be_written_locally)?;
+    let file_names_path = root_dir.join("uploaded_files");
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(true)
+        .open(file_names_path)?;
+    for (addr, file_name) in uploaded_file_info.iter() {
+        println!("Uploaded {} to {:x}", file_name, addr);
+        writeln!(file, "{:x}: {}", addr, file_name)?;
+    }
+    file.flush()?;
 
     Ok(())
 }
@@ -298,7 +317,7 @@ async fn verify_and_repay_if_needed(
     let total_chunks = chunks_paths.len();
 
     println!(
-        "======= Verification: {total_chunks} chunks to be checked and repayed if required ============="
+        "======= Verification: {total_chunks} chunks to be checked and repaid if required ============="
     );
 
     let now = Instant::now();
@@ -344,19 +363,17 @@ async fn verify_and_repay_if_needed(
         .collect::<Vec<_>>();
 
     if total_failed_chunks.is_empty() {
-        println!(
-            "======= Verification Completed! All chunks have been paid and stored! ============="
-        );
+        println!("======= Verification complete: all chunks paid and stored =============");
         return Ok(total_failed_chunks);
     }
 
     let num_of_failed_chunks = failed_chunks.len();
-    println!("======= Verification: {num_of_failed_chunks} chunks were not stored in the network, repaying them in batches =============");
+    println!("======= Verification: {num_of_failed_chunks} chunks were not stored. Repaying them in batches. =============");
 
     // If there were any failed chunks, we need to repay them
     for failed_chunks_batch in failed_chunks.chunks(batch_size) {
         println!(
-            "Failed to fetch {} chunks, attempting to repay them",
+            "Failed to fetch {} chunks. Attempting to repay them.",
             failed_chunks_batch.len()
         );
 
@@ -394,34 +411,41 @@ async fn verify_and_repay_if_needed(
     }
 
     let elapsed = now.elapsed();
-    println!("After {elapsed:?}, repaid and re-uploaded {num_of_failed_chunks:?} chunks");
+    println!("Repaid and re-uploaded {num_of_failed_chunks:?} chunks in {elapsed:?}");
 
     Ok(total_failed_chunks)
 }
 
 async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
-    let docs_of_uploaded_files_path = root_dir.join("uploaded_files");
+    let uploaded_files_path = root_dir.join("uploaded_files");
     let download_path = root_dir.join("downloaded_files");
     std::fs::create_dir_all(download_path.as_path())?;
 
-    for entry in WalkDir::new(docs_of_uploaded_files_path)
-        .into_iter()
-        .flatten()
-    {
-        if entry.file_type().is_file() {
-            let index_doc_bytes = Bytes::from(fs::read(entry.path())?);
-            let index_doc_name = entry.file_name();
+    let file = std::fs::File::open(&uploaded_files_path)?;
+    let reader = BufReader::new(file);
+    let mut uploaded_files = Vec::new();
+    for line in reader.lines() {
+        let line = line?;
+        let parts: Vec<&str> = line.split(": ").collect();
 
-            println!("Loading file names from index doc {index_doc_name:?}");
-            let files_to_fetch: Vec<(XorName, String)> = bincode::deserialize(&index_doc_bytes)?;
+        if parts.len() == 2 {
+            let xor_name_hex = parts[0];
+            let file_name = parts[1];
 
-            if files_to_fetch.is_empty() {
-                println!("No files to download!");
-            }
-            for (xorname, file_name) in files_to_fetch.iter() {
-                download_file(file_api, xorname, file_name, &download_path).await;
-            }
+            let bytes = hex::decode(xor_name_hex)?;
+            let xor_name_bytes: [u8; 32] = bytes
+                .try_into()
+                .expect("Failed to parse XorName from hex string");
+            let xor_name = XorName(xor_name_bytes);
+
+            uploaded_files.push((xor_name, file_name.to_string()));
+        } else {
+            println!("Skipping malformed line: {}", line);
         }
+    }
+
+    for (xorname, file_name) in uploaded_files.iter() {
+        download_file(file_api, xorname, file_name, &download_path).await;
     }
 
     Ok(())
@@ -444,13 +468,9 @@ async fn download_file(
     file_name: &String,
     download_path: &Path,
 ) {
-    println!(
-        "Downloading file {file_name:?} with address {:64x}",
-        xorname
-    );
-    debug!("Downloading file {file_name:?}");
+    println!("Downloading {file_name} from {:64x}", xorname);
+    debug!("Downloading {file_name} from {:64x}", xorname);
     let downloaded_file_path = download_path.join(file_name);
-    // The downloaded file will be writen to the folder directly.
     match file_api
         .read_bytes(
             ChunkAddress::new(*xorname),
@@ -459,12 +479,18 @@ async fn download_file(
         .await
     {
         Ok(_) => {
-            debug!("Successfully got file {file_name}!");
-            println!("Successfully got file {file_name}, stored at {downloaded_file_path:?}!");
+            debug!(
+                "Saved {file_name} at {}",
+                downloaded_file_path.to_string_lossy()
+            );
+            println!(
+                "Saved {file_name} at {}",
+                downloaded_file_path.to_string_lossy()
+            );
         }
         Err(error) => {
-            error!("Did not get file {file_name:?} from the network! {error}");
-            println!("Did not get file {file_name:?} from the network! {error}")
+            error!("Error downloading {file_name:?}: {error}");
+            println!("Error downloading {file_name:?}: {error}")
         }
     }
 }

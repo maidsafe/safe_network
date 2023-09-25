@@ -6,6 +6,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.90.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.90.0...sn_client-v0.90.1) - 2023-09-22
+
+### Added
+- *(apis)* adding client and node APIs, as well as safenode RPC services to pub/sub to gossipsub topics
+
+## [0.90.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.23...sn_client-v0.90.0) - 2023-09-21
+
+### Added
+- dusking DBCs
+
+### Other
+- rename Nano NanoTokens
+- improve naming
+
+## [0.89.23](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.22...sn_client-v0.89.23) - 2023-09-21
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.89.22](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.21...sn_client-v0.89.22) - 2023-09-21
+
+### Other
+- clarify `files download` usage
+- output address of uploaded file
+
+## [0.89.21](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.20...sn_client-v0.89.21) - 2023-09-20
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.89.20](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.19...sn_client-v0.89.20) - 2023-09-20
+
+### Other
+- major dep updates
+
+## [0.89.19](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.18...sn_client-v0.89.19) - 2023-09-20
+
+### Other
+- allow chunks to be Quorum::One
+
+## [0.89.18](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.17...sn_client-v0.89.18) - 2023-09-19
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.89.17](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.16...sn_client-v0.89.17) - 2023-09-19
+
+### Other
+- error handling when failed fetch store cost
+
 ## [0.89.16](https://github.com/maidsafe/safe_network/compare/sn_client-v0.89.15...sn_client-v0.89.16) - 2023-09-19
 
 ### Other

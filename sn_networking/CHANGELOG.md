@@ -6,6 +6,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.7.0...sn_networking-v0.7.1) - 2023-09-22
+
+### Added
+- *(apis)* adding client and node APIs, as well as safenode RPC services to pub/sub to gossipsub topics
+- *(network)* adding support for gossipsub behaviour/messaging
+
+## [0.7.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.15...sn_networking-v0.7.0) - 2023-09-21
+
+### Added
+- rename utxo by CashNoteRedemption
+- dusking DBCs
+
+### Other
+- rename Nano NanoTokens
+- improve naming
+
+## [0.6.15](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.14...sn_networking-v0.6.15) - 2023-09-21
+
+### Other
+- *(networking)* reduce identify log noise
+
+## [0.6.14](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.13...sn_networking-v0.6.14) - 2023-09-20
+
+### Added
+- downward compatible for patch version updates
+
+## [0.6.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.12...sn_networking-v0.6.13) - 2023-09-20
+
+### Other
+- major dep updates
+
+## [0.6.12](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.11...sn_networking-v0.6.12) - 2023-09-20
+
+### Other
+- allow chunks to be Quorum::One
+- *(networking)* enable caching of records (in theory)
+
+## [0.6.11](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.10...sn_networking-v0.6.11) - 2023-09-19
+
+### Other
+- *(ntworking)* record changes to range of responsibility
+
 ## [0.6.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.6.9...sn_networking-v0.6.10) - 2023-09-19
 
 ### Other

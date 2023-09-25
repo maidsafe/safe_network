@@ -1221,6 +1221,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.2.141](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.140...sn_testnet-v0.2.141) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.2.142](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.141...sn_testnet-v0.2.142) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.2.143](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.142...sn_testnet-v0.2.143) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.2.144](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.143...sn_testnet-v0.2.144) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.2.145](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.144...sn_testnet-v0.2.145) - 2023-09-20
+
+### Other
+- major dep updates
+
+## [0.2.146](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.145...sn_testnet-v0.2.146) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.2.147](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.146...sn_testnet-v0.2.147) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.2.148](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.147...sn_testnet-v0.2.148) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.2.149](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.148...sn_testnet-v0.2.149) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.2.150](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.149...sn_testnet-v0.2.150) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.2.151](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.150...sn_testnet-v0.2.151) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.2.152](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.151...sn_testnet-v0.2.152) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.2.153](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.152...sn_testnet-v0.2.153) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.2.154](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.153...sn_testnet-v0.2.154) - 2023-09-21
+
+### Other
+- update dependencies
+
+## [0.2.155](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.154...sn_testnet-v0.2.155) - 2023-09-22
+
+### Other
+- update dependencies
+
+## [0.2.156](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.155...sn_testnet-v0.2.156) - 2023-09-22
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>

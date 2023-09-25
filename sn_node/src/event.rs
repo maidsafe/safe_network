@@ -8,8 +8,8 @@
 
 use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
-use sn_dbc::DbcId;
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
+use sn_transfers::UniquePubkey;
 use tokio::sync::broadcast;
 
 const NODE_EVENT_CHANNEL_SIZE: usize = 10_000;
@@ -53,12 +53,19 @@ pub enum NodeEvent {
     RegisterCreated(RegisterAddress),
     /// A Register edit operation has been applied in local storage
     RegisterEdited(RegisterAddress),
-    /// A DBC Spend has been stored in local storage
-    SpendStored(DbcId),
+    /// A CashNote Spend has been stored in local storage
+    SpendStored(UniquePubkey),
     /// One of the sub event channel closed and unrecoverable.
     ChannelClosed,
     /// AutoNAT discovered we are behind a NAT, thus private.
     BehindNat,
+    /// Gossipsub message received
+    GossipsubMsg {
+        /// Topic the message was published on
+        topic: String,
+        /// The raw bytes of the received message
+        msg: Vec<u8>,
+    },
 }
 
 impl NodeEvent {

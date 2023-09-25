@@ -27,7 +27,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
-
+          
       - name: Build node and client
         run: cargo build --release --bin safenode --bin safe --bin faucet
         timeout-minutes: 30
@@ -47,8 +47,8 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > dbc_hex
-          cat dbc_hex | cargo run --bin safe --release -- --log-output-dest=data-dir wallet deposit --stdin
+          cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > cashnote_hex
+          cat cashnote_hex | cargo run --bin safe --release -- --log-output-dest=data-dir wallet deposit --stdin
         env:
           SN_LOG: "all"
         timeout-minutes: 2
@@ -151,8 +151,53 @@ jobs:
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly Unit Test Run Failed"
 
+  gossipsub:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
+    name: Gossipsub E2E tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build node
+        run: cargo build --release --bin safenode
+        timeout-minutes: 30
+
+      - name: Build gossipsub testing executable
+        run: cargo test --release -p sn_node --features=local-discovery --test msgs_over_gossipsub --no-run
+        timeout-minutes: 30
+
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          faucet-path: target/release/faucet
+          platform: ${{ matrix.os }}
+
+      - name: Gossipsub - nodes to subscribe to topics, and publish messages 
+        run: cargo test --release -p sn_node --features local-discovery msgs_over_gossipsub -- --nocapture
+        timeout-minutes: 20
+
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_e2e
+          platform: ${{ matrix.os }}
+
   spend_test:
-    name: dbc spend tests against network
+    name: spend tests against network
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -195,7 +240,7 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 25
 
-      - name: execute the dbc spend test
+      - name: execute the spend test
         run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture
         env:
           CARGO_TARGET_DIR: "./transfer-target"

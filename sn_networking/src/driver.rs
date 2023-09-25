@@ -28,7 +28,7 @@ use libp2p::mdns;
 use libp2p::{
     autonat,
     identity::Keypair,
-    kad::{Kademlia, KademliaConfig, QueryId, Record},
+    kad::{Kademlia, KademliaCaching, KademliaConfig, QueryId, Record},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{
@@ -60,8 +60,8 @@ type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRe
 
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
-// TODO: revisit once utxo is in
-const MAX_PACKET_SIZE: usize = 1024 * 1024 * 5; // the chunk size is 1mb, so should be higher than that to prevent failures, 5mb here to allow for DBC storage
+// TODO: revisit once cashnote_redemption is in
+const MAX_PACKET_SIZE: usize = 1024 * 1024 * 5; // the chunk size is 1mb, so should be higher than that to prevent failures, 5mb here to allow for CashNote storage
 
 // Timeout for requests sent/received through the request_response behaviour.
 const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
@@ -79,6 +79,19 @@ const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
+// Protocol support shall be downward compatible for patch only version update.
+// i.e. versions of `A.B.X` shall be considered as a same protocol of `A.B`
+pub(crate) fn truncate_patch_version(full_str: &str) -> &str {
+    if full_str.matches('.').count() == 2 {
+        match full_str.rfind('.') {
+            Some(pos) => &full_str[..pos],
+            None => full_str,
+        }
+    } else {
+        full_str
+    }
+}
+
 /// NodeBehaviour struct
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
@@ -89,6 +102,7 @@ pub(super) struct NodeBehaviour {
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
     pub(super) autonat: Toggle<autonat::Behaviour>,
+    pub(super) gossipsub: libp2p::gossipsub::Behaviour,
 }
 
 #[derive(Debug)]
@@ -169,6 +183,11 @@ impl NetworkBuilder {
             .disjoint_query_paths(true)
             // Records never expire
             .set_record_ttl(None)
+            // Enable caching of records if we use Quorum::One for GetRecord (which should be used for chunks)
+            // This means the closest 16 nodes would be caching the record
+            .set_caching(KademliaCaching::Enabled {
+                max_peers: CLOSE_GROUP_SIZE as u16 * 2,
+            })
             // Emit PUT events for validation prior to insertion into the RecordStore.
             // This is no longer needed as the record_storage::put now can carry out validation.
             // .set_record_filtering(KademliaStoreInserts::FilterBoth)
@@ -198,7 +217,7 @@ impl NetworkBuilder {
             Some(store_cfg),
             false,
             ProtocolSupport::Full,
-            SN_NODE_VERSION_STR.to_string(),
+            truncate_patch_version(SN_NODE_VERSION_STR).to_string(),
         )?;
 
         // Listen on the provided address
@@ -241,7 +260,7 @@ impl NetworkBuilder {
             None,
             true,
             ProtocolSupport::Outbound,
-            IDENTIFY_CLIENT_VERSION_STR.to_string(),
+            truncate_patch_version(IDENTIFY_CLIENT_VERSION_STR).to_string(),
         )?;
 
         if let Some(limit) = concurrency_limit {
@@ -272,7 +291,7 @@ impl NetworkBuilder {
 
             request_response::cbor::Behaviour::new(
                 [(
-                    StreamProtocol::new(REQ_RESPONSE_VERSION_STR),
+                    StreamProtocol::new(truncate_patch_version(REQ_RESPONSE_VERSION_STR)),
                     req_res_protocol,
                 )],
                 cfg,
@@ -318,7 +337,7 @@ impl NetworkBuilder {
         // Identify Behaviour
         let identify = {
             let cfg = libp2p::identify::Config::new(
-                IDENTIFY_PROTOCOL_STR.to_string(),
+                truncate_patch_version(IDENTIFY_PROTOCOL_STR).to_string(),
                 self.keypair.public(),
             )
             .with_agent_version(identify_version);
@@ -340,6 +359,20 @@ impl NetworkBuilder {
         let mut transport = libp2p_quic::tokio::Transport::new(quic::Config::new(&self.keypair))
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
+
+        // Gossipsub behaviour
+        // set default parameters for gossipsub
+        let gossipsub_config = libp2p::gossipsub::Config::default();
+
+        // Set the message authenticity - Here we expect the publisher
+        // to sign the message with their key.
+        let message_authenticity =
+            libp2p::gossipsub::MessageAuthenticity::Signed(self.keypair.clone());
+
+        // build a gossipsub network behaviour
+        let gossipsub: libp2p::gossipsub::Behaviour =
+            libp2p::gossipsub::Behaviour::new(message_authenticity, gossipsub_config)
+                .expect("Failed to instantiate Gossipsub behaviour.");
 
         if !self.local {
             debug!("Preventing non-global dials");
@@ -382,6 +415,7 @@ impl NetworkBuilder {
             #[cfg(feature = "local-discovery")]
             mdns,
             autonat,
+            gossipsub,
         };
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
 

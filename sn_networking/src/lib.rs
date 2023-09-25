@@ -34,17 +34,17 @@ use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketKey, Record, RecordKey},
+    kad::{KBucketKey, Quorum, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
-use sn_dbc::PublicAddress;
-use sn_dbc::Token;
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
     storage::{RecordHeader, RecordKind},
     NetworkAddress, PrettyPrintRecordKey,
 };
+use sn_transfers::MainPubkey;
+use sn_transfers::NanoTokens;
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
 use tokio::sync::{mpsc, oneshot, OwnedSemaphorePermit, Semaphore};
 use tracing::warn;
@@ -185,7 +185,7 @@ impl Network {
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
-    ) -> Result<Vec<(PublicAddress, Token)>> {
+    ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
         let (sender, receiver) = oneshot::channel();
         // get permit if semaphore supplied
         let mut _permit = None;
@@ -195,7 +195,7 @@ impl Network {
         }
 
         trace!("Attempting to get store cost");
-        // first we need to get CLOSE_GROUP of the dbc_id
+        // first we need to get CLOSE_GROUP of the unique_pubkey
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
             key: record_address.clone(),
             sender,
@@ -228,6 +228,18 @@ impl Network {
         }
 
         get_fees_from_store_cost_responses(all_costs)
+    }
+
+    /// Subscribe to given gossipsub topic
+    pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::GossipsubSubscribe(topic_id))?;
+        Ok(())
+    }
+
+    /// Publish a msg on a given topic
+    pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::GossipsubPublish { topic_id, msg })?;
+        Ok(())
     }
 
     /// Get the Record from the network
@@ -335,7 +347,7 @@ impl Network {
     }
 
     /// Get the cost of storing the next record from the network
-    pub async fn get_local_storecost(&self) -> Result<Token> {
+    pub async fn get_local_storecost(&self) -> Result<NanoTokens> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetLocalStoreCost { sender })?;
 
@@ -358,25 +370,14 @@ impl Network {
     }
 
     /// Put `Record` to network
-    /// optionally verify the record is stored after putting it to network
+    /// Optionally verify the record is stored after putting it to network
+    /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
     pub async fn put_record(
         &self,
         record: Record,
         verify_store: Option<Record>,
-        optional_permit: Option<OwnedSemaphorePermit>,
-    ) -> Result<()> {
-        self.put_record_with_retries(record, verify_store, optional_permit)
-            .await
-    }
-
-    /// Put `Record` to network
-    /// Verify the record is stored after putting it to network
-    /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
-    async fn put_record_with_retries(
-        &self,
-        record: Record,
-        verify_store: Option<Record>,
         mut optional_permit: Option<OwnedSemaphorePermit>,
+        quorum: Quorum,
     ) -> Result<()> {
         let mut retries = 0;
 
@@ -389,7 +390,12 @@ impl Network {
             );
 
             let res = self
-                .put_record_once(record.clone(), verify_store.clone(), optional_permit)
+                .put_record_once(
+                    record.clone(),
+                    verify_store.clone(),
+                    optional_permit,
+                    quorum,
+                )
                 .await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
@@ -408,6 +414,7 @@ impl Network {
         record: Record,
         verify_store: Option<Record>,
         starting_permit: Option<OwnedSemaphorePermit>,
+        quorum: Quorum,
     ) -> Result<()> {
         let mut _permit = starting_permit;
 
@@ -424,6 +431,7 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::PutRecord {
             record: record.clone(),
             sender,
+            quorum,
         })?;
         let response = receiver.await?;
 
@@ -614,8 +622,8 @@ impl Network {
 /// Given `all_costs` it will return the CLOSE_GROUP majority cost.
 #[allow(clippy::result_large_err)]
 fn get_fees_from_store_cost_responses(
-    mut all_costs: Vec<(PublicAddress, Token)>,
-) -> Result<Vec<(PublicAddress, Token)>> {
+    mut all_costs: Vec<(MainPubkey, NanoTokens)>,
+) -> Result<Vec<(MainPubkey, NanoTokens)>> {
     // TODO: we should make this configurable based upon data type
     // or user requirements for resilience.
     let desired_quote_count = CLOSE_GROUP_SIZE;
@@ -691,8 +699,8 @@ mod tests {
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..CLOSE_GROUP_SIZE {
-            let addr = PublicAddress::new(bls::SecretKey::random().public_key());
-            costs.push((addr, Token::from_nano(i as u64)));
+            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
+            costs.push((addr, NanoTokens::from(i as u64)));
         }
         let prices = get_fees_from_store_cost_responses(costs)?;
         let total_price: u64 = prices
@@ -718,8 +726,8 @@ mod tests {
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
-            let addr = PublicAddress::new(bls::SecretKey::random().public_key());
-            costs.push((addr, Token::from_nano(i as u64)));
+            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
+            costs.push((addr, NanoTokens::from(i as u64)));
         }
 
         if get_fees_from_store_cost_responses(costs).is_ok() {
@@ -735,9 +743,9 @@ mod tests {
         let responses_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
         for i in 0..responses_count {
-            // push random PublicAddress and Token
-            let addr = PublicAddress::new(bls::SecretKey::random().public_key());
-            costs.push((addr, Token::from_nano(i)));
+            // push random MainPubkey and Nano
+            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
+            costs.push((addr, NanoTokens::from(i)));
             println!("price added {}", i);
         }
 

@@ -8,7 +8,7 @@
 
 use crate::{
     close_group_majority,
-    driver::SwarmDriver,
+    driver::{truncate_patch_version, SwarmDriver},
     error::{Error, Result},
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
 };
@@ -44,7 +44,7 @@ use tracing::{info, warn};
 use xor_name::XorName;
 
 /// Our agent string has as a prefix that we can match against.
-const IDENTIFY_AGENT_STR: &str = "safe/node/";
+const IDENTIFY_AGENT_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
 
 /// Using XorName to differentiate different record content under the same key.
 pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
@@ -58,6 +58,7 @@ pub(super) enum NodeEvent {
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
     Autonat(autonat::Event),
+    Gossipsub(libp2p::gossipsub::Event),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -88,6 +89,12 @@ impl From<libp2p::identify::Event> for NodeEvent {
 impl From<autonat::Event> for NodeEvent {
     fn from(event: autonat::Event) -> Self {
         NodeEvent::Autonat(event)
+    }
+}
+
+impl From<libp2p::gossipsub::Event> for NodeEvent {
+    fn from(event: libp2p::gossipsub::Event) -> Self {
+        NodeEvent::Gossipsub(event)
     }
 }
 
@@ -127,6 +134,13 @@ pub enum NetworkEvent {
     NatStatusChanged(NatStatus),
     /// Report unverified record
     UnverifiedRecord(Record),
+    /// Gossipsub message received
+    GossipsubMsg {
+        /// Topic the message was published on
+        topic: String,
+        /// The raw bytes of the received message
+        msg: Vec<u8>,
+    },
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -162,6 +176,9 @@ impl Debug for NetworkEvent {
                 let pretty_key = PrettyPrintRecordKey::from(record.key.clone());
                 write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
             }
+            NetworkEvent::GossipsubMsg { topic, .. } => {
+                write!(f, "NetworkEvent::GossipsubMsg({topic})")
+            }
         }
     }
 }
@@ -196,7 +213,9 @@ impl SwarmDriver {
                         if (self.local
                             || self.dialed_peers.contains(&peer_id)
                             || self.unroutable_peers.contains(&peer_id))
-                            && info.agent_version.starts_with(IDENTIFY_AGENT_STR)
+                            && info
+                                .agent_version
+                                .starts_with(truncate_patch_version(IDENTIFY_AGENT_STR))
                         {
                             let addrs = match self.local {
                                 true => info.listen_addrs,
@@ -215,13 +234,12 @@ impl SwarmDriver {
                                 .unique()
                                 .collect();
 
-                            debug!(%peer_id, ?addrs, "identify: adding addresses to routing table");
                             for multiaddr in addrs.clone() {
                                 // If the peer was unroutable, we dial it.
                                 if !self.dialed_peers.contains(&peer_id)
                                     && self.unroutable_peers.contains(&peer_id)
                                 {
-                                    debug!("identify: dialing unroutable peer by its announced listen address");
+                                    debug!("identify: dialing unroutable peer by its announced listen address: {peer_id:?}");
                                     if let Err(err) = self.dial_with_opts(
                                         DialOpts::peer_id(peer_id)
                                             // By default the condition is 'Disconnected'. But we still want to establish an outbound connection,
@@ -242,6 +260,8 @@ impl SwarmDriver {
                                         }
                                     }
                                 } else {
+                                    trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
+
                                     let _routing_update = self
                                         .swarm
                                         .behaviour_mut()
@@ -310,6 +330,14 @@ impl SwarmDriver {
                         NatStatus::Unknown => {}
                     };
                 }
+            },
+            SwarmEvent::Behaviour(NodeEvent::Gossipsub(event)) => match event {
+                libp2p::gossipsub::Event::Message { message, .. } => {
+                    let topic = message.topic.into_string();
+                    let msg = message.data;
+                    self.send_event(NetworkEvent::GossipsubMsg { topic, msg });
+                }
+                other => trace!("Gossipsub Event has been ignored: {other:?}"),
             },
             SwarmEvent::NewListenAddr { address, .. } => {
                 let local_peer_id = *self.swarm.local_peer_id();
@@ -641,7 +669,7 @@ impl SwarmDriver {
                     self.send_event(NetworkEvent::PeerAdded(peer));
                     let connected_peers = self.swarm.connected_peers().count();
 
-                    info!("Connected peers: {connected_peers}");
+                    info!("New peer added to routing table: {peer:?}, now we have #{connected_peers} connected peers");
                     // kad bootstrap process needs at least one peer in the RT be carried out.
                     // Carry out bootstrap until we have at least CLOSE_GROUP_SIZE peers
                     if connected_peers <= CLOSE_GROUP_SIZE && !self.bootstrap_ongoing {
@@ -728,7 +756,6 @@ impl SwarmDriver {
     /// Set the acceptable range of record entry. A record is removed from the storage if the
     /// distance between the record and the node is greater than the `distance_range`
     fn update_record_distance_range(&mut self) -> Option<()> {
-        debug!("setting record distance range on close group change");
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         let distance_range = self
             .close_group
@@ -740,7 +767,7 @@ impl SwarmDriver {
             .kademlia
             .store_mut()
             .set_distance_range(distance_range);
-        trace!("set distance_range successfully");
+        debug!("set distance_range successfully to {distance_range:?}");
         Some(())
     }
 

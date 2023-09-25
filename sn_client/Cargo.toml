@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.89.16"
+version = "0.90.1"
 
 [features]
 default=[]
@@ -23,18 +23,17 @@ bytes = { version = "1.0.1", features = ["serde"] }
 futures = "~0.3.13"
 hex = "~0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
-itertools = "~0.10.1"
+itertools = "~0.11.0"
 libp2p = { version="0.52", features = ["identify"] }
 prometheus-client = { version = "0.21.2", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
-rayon = "~1.5.1"
+rayon = "1.7.0"
 self_encryption = "~0.28.4"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_dbc = { version = "20.0.0", features = ["serdes"] }
-sn_networking = { path = "../sn_networking", version = "0.6.10" }
-sn_protocol = { path = "../sn_protocol", version = "0.6.10" }
+sn_networking = { path = "../sn_networking", version = "0.7.1" }
+sn_protocol = { path = "../sn_protocol", version = "0.7.1" }
 sn_registers = { path = "../sn_registers", version = "0.2.6" }
-sn_transfers = { path = "../sn_transfers", version = "0.11.14" }
+sn_transfers = { path = "../sn_transfers", version = "0.12.0" }
 tempfile = "3.6.0"
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"

@@ -13,7 +13,6 @@ use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr, PeerId};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sn_dbc::MainKey;
 use sn_networking::{
     MsgResponder, NetworkBuilder, NetworkEvent, SwarmLocalState, CLOSE_GROUP_SIZE,
 };
@@ -22,6 +21,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::wallet::LocalWallet;
+use sn_transfers::MainSecretKey;
 use std::{
     collections::HashSet,
     net::SocketAddr,
@@ -76,17 +76,29 @@ impl RunningNode {
         let addresses = self.network.get_all_local_record_addresses().await?;
         Ok(addresses)
     }
+
+    /// Subscribe to given gossipsub topic
+    pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
+        self.network.subscribe_to_topic(topic_id)?;
+        Ok(())
+    }
+
+    /// Publish a message on a given gossipsub topic
+    pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
+        self.network.publish_on_topic(topic_id, msg)?;
+        Ok(())
+    }
 }
 
 impl Node {
     /// Asynchronously runs a new node instance, setting up the swarm driver,
     /// creating a data storage, and handling network events. Returns the
-    /// created node and a `NodeEventsChannel` for listening to node-related
-    /// events.
+    /// created `RunningNode` which contians a `NodeEventsChannel` for listening
+    /// to node-related events.
     ///
     /// # Returns
     ///
-    /// A tuple containing a `Node` instance and a `NodeEventsChannel`.
+    /// A `RunningNode` instance.
     ///
     /// # Errors
     ///
@@ -99,8 +111,8 @@ impl Node {
         root_dir: PathBuf,
     ) -> Result<RunningNode> {
         // TODO: Make this key settable, and accessible via API
-        let reward_key = MainKey::random();
-        let reward_address = reward_key.public_address();
+        let reward_key = MainSecretKey::random();
+        let reward_address = reward_key.main_pubkey();
 
         let wallet = LocalWallet::load_from_main_key(&root_dir, reward_key)?;
         wallet.store()?;
@@ -224,7 +236,8 @@ impl Node {
                 NetworkEvent::PeerAdded(_)
                 | NetworkEvent::PeerRemoved(_)
                 | NetworkEvent::NewListenAddr(_)
-                | NetworkEvent::NatStatusChanged(_) => break,
+                | NetworkEvent::NatStatusChanged(_)
+                | NetworkEvent::GossipsubMsg { .. } => break,
             }
         }
         trace!("Handling NetworkEvent {event:?}");
@@ -298,6 +311,10 @@ impl Node {
                         trace!("UnverifiedRecord {key} failed to be stored with error {err:?}.")
                     }
                 }
+            }
+            NetworkEvent::GossipsubMsg { topic, msg } => {
+                self.events_channel
+                    .broadcast(NodeEvent::GossipsubMsg { topic, msg });
             }
         }
     }

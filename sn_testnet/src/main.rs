@@ -212,7 +212,7 @@ async fn main() -> Result<()> {
         faucet_bin_path.push(FAUCET_BIN_NAME);
     }
 
-    info!("Launching DBC faucet server");
+    info!("Launching CashNote faucet server");
     run_faucet(gen_multi_addr, faucet_bin_path)?;
 
     println!("Testnet and faucet launched successfully");

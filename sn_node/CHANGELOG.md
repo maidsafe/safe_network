@@ -1303,6 +1303,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - log payment amount
 
+## [0.90.20](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.19...sn_node-v0.90.20) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.90.21](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.20...sn_node-v0.90.21) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.90.22](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.21...sn_node-v0.90.22) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.90.23](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.22...sn_node-v0.90.23) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.90.24](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.23...sn_node-v0.90.24) - 2023-09-20
+
+### Other
+- major dep updates
+
+## [0.90.25](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.24...sn_node-v0.90.25) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.90.26](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.25...sn_node-v0.90.26) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.90.27](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.26...sn_node-v0.90.27) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.90.28](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.27...sn_node-v0.90.28) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.90.29](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.28...sn_node-v0.90.29) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.90.30](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.29...sn_node-v0.90.30) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.90.31](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.30...sn_node-v0.90.31) - 2023-09-20
+
+### Other
+- more iterations for verify reward update
+- *(release)* sn_cli-v0.81.61/sn_networking-v0.6.14/sn_client-v0.89.21
+
+## [0.90.32](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.31...sn_node-v0.90.32) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.90.33](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.32...sn_node-v0.90.33) - 2023-09-21
+
+### Other
+- *(release)* sn_client-v0.89.22
+
+## [0.90.34](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.33...sn_node-v0.90.34) - 2023-09-22
+
+### Other
+- update dependencies
+
+## [0.90.35](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.34...sn_node-v0.90.35) - 2023-09-22
+
+### Added
+- *(apis)* adding client and node APIs, as well as safenode RPC services to pub/sub to gossipsub topics
+- *(network)* adding support for gossipsub behaviour/messaging
+
+### Other
+- *(gossipsub)* CI testing with nodes subscribing to gossipsub topics and publishing messages
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

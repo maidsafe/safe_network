@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod chunk;
-mod dbc;
 
-pub use self::{chunk::ChunkAddress, dbc::DbcAddress};
+pub use self::chunk::ChunkAddress;
 pub use sn_registers::RegisterAddress;
+pub use sn_transfers::SpendAddress;

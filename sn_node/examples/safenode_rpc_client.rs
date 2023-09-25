@@ -11,8 +11,8 @@ use eyre::Result;
 use libp2p::{Multiaddr, PeerId};
 use safenode_proto::safe_node_client::SafeNodeClient;
 use safenode_proto::{
-    NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RecordAddressesRequest, RestartRequest,
-    StopRequest, UpdateRequest,
+    GossipsubPublishRequest, GossipsubSubscribeRequest, NetworkInfoRequest, NodeEventsRequest,
+    NodeInfoRequest, RecordAddressesRequest, RestartRequest, StopRequest, UpdateRequest,
 };
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_node::NodeEvent;
@@ -49,6 +49,20 @@ enum Cmd {
     /// Note this blocks the app and it will print events as they are broadcasted by the node
     #[clap(name = "events")]
     Events,
+    /// Subscribe to a given Gossipsub topic
+    #[clap(name = "subscribe")]
+    Subscribe {
+        /// Name of the topic
+        topic: String,
+    },
+    /// Publish a msg on a given Gossipsub topic
+    #[clap(name = "publish")]
+    Publish {
+        /// Name of the topic
+        topic: String,
+        /// Message to publish
+        msg: String,
+    },
     /// Restart the node after the specified delay
     #[clap(name = "restart")]
     Restart {
@@ -91,6 +105,8 @@ async fn main() -> Result<()> {
         Cmd::Info => node_info(addr).await,
         Cmd::Netinfo => network_info(addr).await,
         Cmd::Events => node_events(addr).await,
+        Cmd::Subscribe { topic } => gossipsub_subscribe(addr, topic).await,
+        Cmd::Publish { topic, msg } => gossipsub_publish(addr, topic, msg).await,
         Cmd::Restart { delay_millis } => node_restart(addr, delay_millis).await,
         Cmd::Stop { delay_millis } => node_stop(addr, delay_millis).await,
         Cmd::Update { delay_millis } => node_update(addr, delay_millis).await,
@@ -181,6 +197,31 @@ pub async fn record_addresses(addr: SocketAddr) -> Result<()> {
         println!("Key: {key:?}");
     }
 
+    Ok(())
+}
+
+pub async fn gossipsub_subscribe(addr: SocketAddr, topic: String) -> Result<()> {
+    let endpoint = format!("https://{addr}");
+    let mut client = SafeNodeClient::connect(endpoint).await?;
+    let _response = client
+        .subscribe_to_topic(Request::new(GossipsubSubscribeRequest {
+            topic: topic.clone(),
+        }))
+        .await?;
+    println!("Node successfully received the request to subscribe to topic '{topic}'");
+    Ok(())
+}
+
+pub async fn gossipsub_publish(addr: SocketAddr, topic: String, msg: String) -> Result<()> {
+    let endpoint = format!("https://{addr}");
+    let mut client = SafeNodeClient::connect(endpoint).await?;
+    let _response = client
+        .publish_on_topic(Request::new(GossipsubPublishRequest {
+            topic: topic.clone(),
+            msg: msg.into(),
+        }))
+        .await?;
+    println!("Node successfully received the request to publish on topic '{topic}'");
     Ok(())
 }
 

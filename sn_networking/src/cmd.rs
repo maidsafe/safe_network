@@ -16,11 +16,11 @@ use libp2p::{
     swarm::dial_opts::DialOpts,
     Multiaddr, PeerId,
 };
-use sn_dbc::Token;
 use sn_protocol::{
     messages::{Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
+use sn_transfers::NanoTokens;
 use std::collections::HashSet;
 use tokio::sync::oneshot;
 
@@ -93,7 +93,7 @@ pub enum SwarmCmd {
     },
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
-        sender: oneshot::Sender<Token>,
+        sender: oneshot::Sender<NanoTokens>,
     },
     /// Get data from the local RecordStore
     GetLocalRecord {
@@ -104,6 +104,7 @@ pub enum SwarmCmd {
     PutRecord {
         record: Record,
         sender: oneshot::Sender<Result<()>>,
+        quorum: Quorum,
     },
     /// Put record to the local RecordStore
     PutLocalRecord {
@@ -112,6 +113,15 @@ pub enum SwarmCmd {
     /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
         keys: Vec<NetworkAddress>,
+    },
+    /// Subscribe to a given Gossipsub topic
+    GossipsubSubscribe(String),
+    /// Publish a message through Gossipsub protocol
+    GossipsubPublish {
+        /// Topic to publish on
+        topic_id: String,
+        /// Raw bytes of the message to publish
+        msg: Vec<u8>,
     },
 }
 
@@ -177,7 +187,11 @@ impl SwarmDriver {
                     .map(|rec| rec.into_owned());
                 let _ = sender.send(record);
             }
-            SwarmCmd::PutRecord { record, sender } => {
+            SwarmCmd::PutRecord {
+                record,
+                sender,
+                quorum,
+            } => {
                 let record_key = PrettyPrintRecordKey::from(record.key.clone());
                 trace!(
                     "Putting record sized: {:?} to network {:?}",
@@ -188,7 +202,7 @@ impl SwarmDriver {
                     .swarm
                     .behaviour_mut()
                     .kademlia
-                    .put_record(record, Quorum::All)
+                    .put_record(record, quorum)
                 {
                     Ok(request_id) => {
                         trace!("Sent record {record_key:?} to network. Request id: {request_id:?} to network");
@@ -346,6 +360,17 @@ impl SwarmDriver {
                 sender
                     .send(current_state)
                     .map_err(|_| Error::InternalMsgChannelDropped)?;
+            }
+            SwarmCmd::GossipsubSubscribe(topic_id) => {
+                let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
+                self.swarm.behaviour_mut().gossipsub.subscribe(&topic_id)?;
+            }
+            SwarmCmd::GossipsubPublish { topic_id, msg } => {
+                let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
+                self.swarm
+                    .behaviour_mut()
+                    .gossipsub
+                    .publish(topic_id, msg)?;
             }
         }
 

@@ -6,6 +6,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.82.1](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.0...sn_cli-v0.82.1) - 2023-09-22
+
+### Added
+- *(apis)* adding client and node APIs, as well as safenode RPC services to pub/sub to gossipsub topics
+
+## [0.82.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.64...sn_cli-v0.82.0) - 2023-09-22
+
+### Added
+- *(cli)* deps update and arbitrary change for cli
+
+## [0.81.64](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.63...sn_cli-v0.81.64) - 2023-09-21
+
+### Added
+- provide a `files ls` command
+
+### Other
+- *(release)* sn_client-v0.89.22
+- store uploaded files list as text
+- clarify `files download` usage
+- output address of uploaded file
+
+## [0.81.63](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.62...sn_cli-v0.81.63) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.81.62](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.61...sn_cli-v0.81.62) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.81.61](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.60...sn_cli-v0.81.61) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.81.60](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.59...sn_cli-v0.81.60) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.81.59](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.58...sn_cli-v0.81.59) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.81.58](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.57...sn_cli-v0.81.58) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.81.57](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.56...sn_cli-v0.81.57) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.81.56](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.55...sn_cli-v0.81.56) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.81.55](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.54...sn_cli-v0.81.55) - 2023-09-20
+
+### Fixed
+- make clearer cli send asks for whole token amounts, not nanos
+
+## [0.81.54](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.53...sn_cli-v0.81.54) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.81.53](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.52...sn_cli-v0.81.53) - 2023-09-20
+
+### Other
+- update dependencies
+
+## [0.81.52](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.51...sn_cli-v0.81.52) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.81.51](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.50...sn_cli-v0.81.51) - 2023-09-19
+
+### Other
+- update dependencies
+
+## [0.81.50](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.49...sn_cli-v0.81.50) - 2023-09-19
+
+### Other
+- error handling when failed fetch store cost
+
 ## [0.81.49](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.81.48...sn_cli-v0.81.49) - 2023-09-19
 
 ### Other
