@@ -17,7 +17,7 @@ use url::Url;
 
 #[cfg(feature = "network-contacts")]
 // URL containing the multi-addresses of the bootstrap nodes.
-const NETWORK_CONTACTS_URL: &str = "http://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts";
+const NETWORK_CONTACTS_URL: &str = "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts";
 
 #[cfg(feature = "network-contacts")]
 // The maximum number of retries to be performed while trying to fetch the network contacts file.
