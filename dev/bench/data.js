@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695632806435,
+  "lastUpdate": 1695632809438,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -21364,6 +21364,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 171,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "fa9058c8ee3a9f87b95355a630102f97a48f5ef9",
+          "message": "feat(peers): use rustls-tls and readd https to the network-contacts url",
+          "timestamp": "2023-09-25T07:59:25Z",
+          "tree_id": "cbff2f2f4bf4d39bee4268430b065cd2a02c169d",
+          "url": "https://github.com/maidsafe/safe_network/commit/fa9058c8ee3a9f87b95355a630102f97a48f5ef9"
+        },
+        "date": 1695632808142,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 214.06924,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 179,
             "unit": "MB"
           }
         ]
