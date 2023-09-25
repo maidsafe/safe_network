@@ -67,7 +67,7 @@ lazy_static! {
     static ref FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::new(());
 }
 
-//  Get a new Client for testing
+///  Get a new Client for testing
 pub async fn get_client() -> Client {
     let secret_key = bls::SecretKey::random();
 
@@ -82,6 +82,7 @@ pub async fn get_client() -> Client {
     } else {
         None
     };
+
     println!("Client bootstrap with peer {bootstrap_peers:?}");
     Client::new(secret_key, bootstrap_peers, None, None)
         .await
