@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.82.4](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.3...sn_cli-v0.82.4) - 2023-09-25
+
+### Added
+- *(cli)* wrap repayment error for clarity
+
 ## [0.82.3](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.2...sn_cli-v0.82.3) - 2023-09-25
 
 ### Added
