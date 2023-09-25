@@ -31,7 +31,7 @@ const MAX_RECORDS_COUNT: usize = 2048;
 
 /// A `RecordStore` that stores records on disk.
 pub struct NodeRecordStore {
-    /// The identity of the peer owning the store.
+    /// The identity of the peer owning the store as record Key
     local_key: KBucketKey<PeerId>,
     /// The configuration of the store.
     config: NodeRecordStoreConfig,

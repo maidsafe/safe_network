@@ -696,10 +696,9 @@ impl SwarmDriver {
                 let _ = self.check_for_change_in_our_close_group();
             }
             KademliaEvent::InboundRequest {
-                request: InboundRequest::PutRecord { .. },
+                request: InboundRequest::AddProvider { record },
             } => {
-                // Ignored to reduce logging. When `Record filtering` is enabled,
-                // the `record` variable will contain the content for further validation before put.
+                info!("Provider to be added: {record:?}")
             }
             KademliaEvent::InboundRequest {
                 request:

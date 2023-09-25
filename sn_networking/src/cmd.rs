@@ -234,6 +234,7 @@ impl SwarmDriver {
                         if !new_keys_to_fetch.is_empty() {
                             self.send_event(NetworkEvent::KeysForReplication(new_keys_to_fetch));
                         }
+                        self.swarm.behaviour_mut().kademlia.start_providing(key)?;
                     }
                     Err(err) => return Err(err.into()),
                 };

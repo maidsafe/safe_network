@@ -188,11 +188,8 @@ impl NetworkBuilder {
             .set_caching(KademliaCaching::Enabled {
                 max_peers: CLOSE_GROUP_SIZE as u16 * 2,
             })
-            // Emit PUT events for validation prior to insertion into the RecordStore.
-            // This is no longer needed as the record_storage::put now can carry out validation.
-            // .set_record_filtering(KademliaStoreInserts::FilterBoth)
             // Disable provider records publication job
-            .set_provider_publication_interval(None);
+            .set_provider_publication_interval(Some(Duration::from_secs(60)));
 
         let store_cfg = {
             // Configures the disk_store to store records under the provided path and increase the max record size
