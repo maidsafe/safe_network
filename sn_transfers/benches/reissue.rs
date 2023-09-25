@@ -10,9 +10,9 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sn_transfers::{
-    mock,
     rand::{CryptoRng, RngCore},
-    random_derivation_index, rng, CashNote, Hash, MainSecretKey, NanoTokens, Result,
+    random_derivation_index, rng, CashNote, FeeOutput, Hash, MainSecretKey, NanoTokens, Output,
+    Result, SignedSpend, Transaction, UniquePubkey,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -21,7 +21,7 @@ const N_OUTPUTS: u64 = 100;
 fn bench_reissue_1_to_100(c: &mut Criterion) {
     let mut rng = rng::from_seed([0u8; 32]);
 
-    let (mut spentbook_node, (starting_cashnote, starting_main_key)) =
+    let (starting_cashnote, starting_main_key) =
         generate_cashnote_of_value(NanoTokens::from(N_OUTPUTS), &mut rng).unwrap();
 
     let derived_key = starting_cashnote.derived_key(&starting_main_key).unwrap();
@@ -40,8 +40,14 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
         .unwrap();
 
     let spent_tx = &cashnote_builder.spent_tx;
+    let mut spentbook_node = BTreeMap::new();
     for signed_spend in cashnote_builder.signed_spends() {
-        spentbook_node.log_spent(spent_tx, signed_spend).unwrap();
+        if spentbook_node
+            .insert(signed_spend.unique_pubkey(), signed_spend)
+            .is_some()
+        {
+            panic!("cashnote double spend");
+        };
     }
 
     let signed_spends: BTreeSet<_> = cashnote_builder
@@ -72,7 +78,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
 fn bench_reissue_100_to_1(c: &mut Criterion) {
     let mut rng = rng::from_seed([0u8; 32]);
 
-    let (mut spentbook_node, (starting_cashnote, starting_main_key)) =
+    let (starting_cashnote, starting_main_key) =
         generate_cashnote_of_value(NanoTokens::from(N_OUTPUTS), &mut rng).unwrap();
 
     let outputs: BTreeMap<_, _> = (0..N_OUTPUTS)
@@ -94,16 +100,26 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         .add_outputs(
             outputs
                 .iter()
-                .map(|(_, (main_key, derivation_index, token))| {
-                    (*token, main_key.main_pubkey(), *derivation_index)
+                .map(|(_, (main_key, derivation_index, value))| {
+                    (*value, main_key.main_pubkey(), *derivation_index)
                 }),
         )
         .build(Hash::default())
         .unwrap();
 
-    let spent_tx = cashnote_builder.spent_tx.clone();
-    for signed_spend in cashnote_builder.signed_spends() {
-        spentbook_node.log_spent(&spent_tx, signed_spend).unwrap();
+    let mut spentbook_node: BTreeMap<UniquePubkey, SignedSpend> = BTreeMap::new();
+    let signed_spends: Vec<SignedSpend> = cashnote_builder
+        .signed_spends()
+        .into_iter()
+        .cloned()
+        .collect();
+    for signed_spend in signed_spends {
+        if spentbook_node
+            .insert(*signed_spend.unique_pubkey(), signed_spend)
+            .is_some()
+        {
+            panic!("cashnote double spend");
+        };
     }
     let cashnotes = cashnote_builder.build().unwrap();
 
@@ -131,9 +147,12 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
 
     let merge_spent_tx = merge_cashnote_builder.spent_tx.clone();
     for signed_spend in merge_cashnote_builder.signed_spends() {
-        spentbook_node
-            .log_spent(&merge_spent_tx, signed_spend)
-            .unwrap();
+        if spentbook_node
+            .insert(*signed_spend.unique_pubkey(), signed_spend.to_owned())
+            .is_some()
+        {
+            panic!("cashnote double spend");
+        };
     }
 
     let signed_spends: BTreeSet<_> = merge_cashnote_builder
@@ -163,40 +182,31 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
 
 #[allow(clippy::result_large_err)]
 fn generate_cashnote_of_value(
-    token: NanoTokens,
-    rng: &mut (impl RngCore + CryptoRng),
-) -> Result<(mock::SpentbookNode, (CashNote, MainSecretKey))> {
-    let (mut spentbook_node, genesis_cashnote, genesis_material, __token) =
-        mock::GenesisBuilder::init_genesis_single()?;
+    amount: NanoTokens,
+    mut rng: &mut (impl RngCore + CryptoRng),
+) -> Result<(CashNote, MainSecretKey)> {
+    let main_key = MainSecretKey::random_from_rng(&mut rng);
+    let derivation_index = random_derivation_index(&mut rng);
+    let derived_key = main_key.derive_key(&derivation_index);
 
-    let output_tokens = vec![
-        token,
-        NanoTokens::from(mock::GenesisMaterial::GENESIS_AMOUNT - token.as_nano()),
-    ];
+    let tx = Transaction {
+        inputs: vec![],
+        outputs: vec![Output {
+            unique_pubkey: derived_key.unique_pubkey(),
+            amount,
+        }],
+        fee: FeeOutput::default(),
+    };
 
-    let main_key = MainSecretKey::random_from_rng(rng);
+    let cashnote = CashNote {
+        id: derived_key.unique_pubkey(),
+        src_tx: tx,
+        signed_spends: Default::default(),
+        main_pubkey: main_key.main_pubkey(),
+        derivation_index,
+    };
 
-    let derived_key = genesis_cashnote
-        .derived_key(&genesis_material.main_key)
-        .unwrap();
-    let cashnote_builder = sn_transfers::TransactionBuilder::default()
-        .add_input_cashnote(&genesis_cashnote, &derived_key)
-        .unwrap()
-        .add_outputs(
-            output_tokens
-                .into_iter()
-                .map(|token| (token, main_key.main_pubkey(), random_derivation_index(rng))),
-        )
-        .build(Hash::default())?;
-
-    let tx = cashnote_builder.spent_tx.clone();
-    for signed_spend in cashnote_builder.signed_spends() {
-        spentbook_node.log_spent(&tx, signed_spend)?;
-    }
-
-    let (starting_cashnote, _) = cashnote_builder.build()?.into_iter().next().unwrap();
-
-    Ok((spentbook_node, (starting_cashnote, main_key)))
+    Ok((cashnote, main_key))
 }
 
 criterion_group! {

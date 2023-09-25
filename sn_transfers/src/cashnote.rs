@@ -199,13 +199,9 @@ pub(crate) mod tests {
     use super::*;
 
     use crate::{
-        mock,
-        rand::{CryptoRng, RngCore},
-        transaction::Output,
-        unique_keys::random_derivation_index,
-        FeeOutput, Hash, NanoTokens,
+        transaction::Output, unique_keys::random_derivation_index, FeeOutput, Hash, NanoTokens,
     };
-    use bls::{PublicKey, SecretKey};
+    use bls::SecretKey;
     use std::convert::TryInto;
 
     #[test]
@@ -273,22 +269,32 @@ pub(crate) mod tests {
     #[test]
     fn input_should_error_if_unique_pubkey_is_not_derived_from_main_key() -> Result<(), Error> {
         let mut rng = crate::rng::from_seed([0u8; 32]);
-        let (_, _, (cashnote, _)) = generate_cashnote_of_value_from_pk_hex(
-            100,
-            "a14a1887c61f95d5bdf6d674da3032dad77f2168fe6bf5e282aa02394bd45f41f0\
-            fe722b61fa94764da42a9b628701db",
-            &mut rng,
-        )?;
-        let sk = get_secret_key_from_hex(
-            "d823b03be25ad306ce2c2ef8f67d8a49322ed2a8636de5dbf01f6cc3467dc91e",
-        )?;
-        let main_key = MainSecretKey::new(sk);
-        let result = cashnote.derived_key(&main_key);
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().to_string(),
-            "Main key does not match public address."
-        );
+        let amount = 100;
+
+        let main_key = MainSecretKey::random_from_rng(&mut rng);
+        let derivation_index = random_derivation_index(&mut rng);
+        let derived_key = main_key.derive_key(&derivation_index);
+
+        let tx = Transaction {
+            inputs: vec![],
+            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
+            fee: FeeOutput::default(),
+        };
+
+        let cashnote = CashNote {
+            id: derived_key.unique_pubkey(),
+            src_tx: tx,
+            signed_spends: Default::default(),
+            main_pubkey: main_key.main_pubkey(),
+            derivation_index,
+        };
+
+        let other_main_key = MainSecretKey::random_from_rng(&mut rng);
+        let result = cashnote.derived_key(&other_main_key);
+        assert!(matches!(
+            result,
+            Err(Error::MainSecretKeyDoesNotMatchMainPubkey)
+        ));
         Ok(())
     }
 
@@ -321,65 +327,6 @@ pub(crate) mod tests {
         ));
 
         Ok(())
-    }
-
-    pub(crate) fn generate_cashnote_of_value_from_pk_hex(
-        amount: u64,
-        pk_hex: &str,
-        rng: &mut (impl RngCore + CryptoRng),
-    ) -> Result<(mock::SpentbookNode, CashNote, (CashNote, CashNote))> {
-        let pk_bytes =
-            hex::decode(pk_hex).map_err(|e| Error::HexDeserializationFailed(e.to_string()))?;
-        let pk_bytes: [u8; bls::PK_SIZE] = pk_bytes.try_into().unwrap_or_else(|v: Vec<u8>| {
-            panic!(
-                "Expected vec of length {} but received vec of length {}",
-                bls::PK_SIZE,
-                v.len()
-            )
-        });
-        let pk = PublicKey::from_bytes(pk_bytes)?;
-        let main_pubkey = MainPubkey::new(pk);
-        generate_cashnote_of_value(amount, main_pubkey, rng)
-    }
-
-    fn generate_cashnote_of_value(
-        amount: u64,
-        recipient: MainPubkey,
-        rng: &mut (impl RngCore + CryptoRng),
-    ) -> Result<(mock::SpentbookNode, CashNote, (CashNote, CashNote))> {
-        let (mut spentbook_node, genesis_cashnote, genesis_material, _) =
-            mock::GenesisBuilder::init_genesis_single()?;
-
-        let output_tokens = vec![
-            NanoTokens::from(amount),
-            NanoTokens::from(mock::GenesisMaterial::GENESIS_AMOUNT - amount),
-        ];
-
-        let derived_key = genesis_cashnote.derived_key(&genesis_material.main_key)?;
-        let cashnote_builder = crate::TransactionBuilder::default()
-            .add_input_cashnote(&genesis_cashnote, &derived_key)
-            .unwrap()
-            .add_outputs(
-                output_tokens
-                    .into_iter()
-                    .map(|token| (token, recipient, random_derivation_index(rng))),
-            )
-            .build(Hash::default())?;
-
-        let tx = &cashnote_builder.spent_tx;
-        for signed_spend in cashnote_builder.signed_spends() {
-            spentbook_node.log_spent(tx, signed_spend)?
-        }
-
-        let mut iter = cashnote_builder.build()?.into_iter();
-        let (starting_cashnote, _) = iter.next().unwrap();
-        let (change_cashnote, _) = iter.next().unwrap();
-
-        Ok((
-            spentbook_node,
-            genesis_cashnote,
-            (starting_cashnote, change_cashnote),
-        ))
     }
 
     fn get_secret_key_from_hex(sk_hex: &str) -> Result<SecretKey, Error> {

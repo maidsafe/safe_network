@@ -82,7 +82,4 @@ pub enum Error {
 
     #[error("Overflow occurred while adding values")]
     NumericOverflow,
-
-    #[error("mock object error.")]
-    Mock(#[from] crate::mock::Error),
 }
