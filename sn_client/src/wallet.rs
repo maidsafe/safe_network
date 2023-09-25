@@ -174,6 +174,26 @@ impl WalletClient {
         info!("Storecosts retrieved");
 
         if !payment_map.is_empty() {
+            // For each target address
+            for (xor, payments) in &mut payment_map {
+                // All payments done for an address, should be multiple nodes.
+                let notes = self.wallet.get_payment_cash_notes(xor);
+                for note in notes {
+                    // Find a payment we're doing to an address, for which we have a cashnote already
+                    if let Some(e) = payments
+                        .iter_mut()
+                        .find(|(pubkey, _)| pubkey == note.main_pubkey())
+                    {
+                        if let Ok(value) = note.value() {
+                            // Subtract what we already paid from what we're about to pay.
+                            if let Some(new_amount) = e.1.checked_sub(value) {
+                                e.1 = new_amount;
+                            }
+                        }
+                    }
+                }
+            }
+
             let cost = self.pay_for_records(payment_map, verify_store).await?;
 
             if let Some(cost) = total_cost.checked_add(cost) {
