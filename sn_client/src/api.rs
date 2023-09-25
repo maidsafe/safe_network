@@ -507,6 +507,13 @@ impl Client {
         Ok(())
     }
 
+    /// Unsubscribe from given gossipsub topic
+    pub fn unsubscribe_from_topic(&self, topic_id: String) -> Result<()> {
+        info!("Unsubscribing from topic id: {topic_id}");
+        self.network.unsubscribe_from_topic(topic_id)?;
+        Ok(())
+    }
+
     /// Publish message on given topic
     pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
         info!("Publishing msg on topic id: {topic_id}");
