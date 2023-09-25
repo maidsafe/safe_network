@@ -43,12 +43,12 @@ build-release-artifacts arch:
   cargo clean
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
     cargo install cross
-    cross build --release --target $arch --bin safe
-    cross build --release --target $arch --bin safenode
+    cross build --release --features=network-contacts --target $arch --bin safe
+    cross build --release --features=network-contacts --target $arch --bin safenode
     cross build --release --target $arch --bin testnet
   else
-    cargo build --release --target $arch --bin safe
-    cargo build --release --target $arch --bin safenode
+    cargo build --release --features=network-contacts --target $arch --bin safe
+    cargo build --release --features=network-contacts --target $arch --bin safenode
     cargo build --release --target $arch --bin testnet
   fi
 
