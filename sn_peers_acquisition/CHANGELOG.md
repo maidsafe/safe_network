@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.1.6...sn_peers_acquisition-v0.1.7) - 2023-09-25
+
+### Added
+- *(peers)* use rustls-tls and readd https to the network-contacts url
+- *(peers)* use a common way to bootstrap into the network for all the bins
+
+### Fixed
+- *(peers_acquisition)* bail on fail to parse peer id
+
+### Other
+- more logs around parsing network-contacts
+- log the actual contacts url in messages
+
 ## [0.1.6](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.1.5...sn_peers_acquisition-v0.1.6) - 2023-08-30
 
 ### Other
