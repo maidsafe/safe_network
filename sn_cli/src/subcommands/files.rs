@@ -10,7 +10,7 @@ use super::wallet::{ChunkedFile, BATCH_SIZE};
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{
-    eyre::{bail, eyre, Error},
+    eyre::{bail, eyre, Context, Error},
     Help, Result,
 };
 use libp2p::futures::future::join_all;
@@ -387,7 +387,8 @@ async fn verify_and_repay_if_needed(
                     .map(|(addr, _path)| sn_protocol::NetworkAddress::ChunkAddress(*addr)),
                 true,
             )
-            .await?;
+            .await
+            .wrap_err("Failed to repay for record storage for {failed_chunks_batch:?}.")?;
 
         // outcome here is not important as we'll verify this later
         let upload_file_api = file_api.clone();
