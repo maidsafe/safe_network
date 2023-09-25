@@ -6,11 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Error, Inputs, Result, SpendRequest, TransferOutputs};
+use super::{Error, Result, SpendRequest, TranferInputs, TransferOutputs};
 
 use crate::{
-    random_derivation_index, rng, CashNote, DerivationIndex, DerivedSecretKey, FeeOutput, Hash,
-    Input, MainPubkey, NanoTokens, TransactionBuilder,
+    rng, CashNote, DerivationIndex, DerivedSecretKey, FeeOutput, Hash, Input, MainPubkey,
+    NanoTokens, TransactionBuilder, UniquePubkey,
 };
 
 use std::collections::BTreeMap;
@@ -46,7 +46,7 @@ pub fn create_offline_transfer(
     let (cash_notes_to_spend, change_amount) =
         select_inputs(available_cash_notes, total_output_amount)?;
 
-    let selected_inputs = Inputs {
+    let selected_inputs = TranferInputs {
         cash_notes_to_spend,
         recipients,
         change: (change_amount, change_to),
@@ -123,11 +123,11 @@ fn select_inputs(
 /// to the network. When those same signed spends can be retrieved from
 /// enough peers in the network, the transaction will be completed.
 fn create_transfer_with(
-    selected_inputs: Inputs,
+    selected_inputs: TranferInputs,
     reason_hash: Hash,
     fee: Option<FeeOutput>,
 ) -> Result<TransferOutputs> {
-    let Inputs {
+    let TranferInputs {
         change: (change, change_to),
         ..
     } = selected_inputs;
@@ -159,7 +159,7 @@ fn create_transfer_with(
     }
 
     let mut rng = rng::thread_rng();
-    let derivation_index = random_derivation_index(&mut rng);
+    let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
     let change_id = change_to.new_unique_pubkey(&derivation_index);
     if !change.is_zero() {
         tx_builder = tx_builder.add_output(change, change_to, derivation_index);

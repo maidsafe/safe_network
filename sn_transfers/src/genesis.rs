@@ -9,7 +9,7 @@
 use super::wallet::LocalWallet;
 
 #[cfg(test)]
-use crate::{random_derivation_index, rng};
+use crate::{rng, UniquePubkey};
 
 use crate::{
     CashNote, Error as CashNoteError, Hash, Input, MainSecretKey, NanoTokens, Transaction,
@@ -191,7 +191,7 @@ pub(super) fn split(
             (
                 NanoTokens::from(amount),
                 main_key.main_pubkey(),
-                random_derivation_index(rng),
+                UniquePubkey::random_derivation_index(rng),
             )
         })
         .collect();

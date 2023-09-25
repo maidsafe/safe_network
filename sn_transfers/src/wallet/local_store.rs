@@ -14,12 +14,12 @@ use super::{
     CashNoteRedemption, KeyLessWallet, Result, Transfer,
 };
 
-use crate::client_transfers::{
+use crate::transfers::{
     create_offline_transfer, ContentPaymentsIdMap, SpendRequest, TransferOutputs,
 };
 use crate::{
-    random_derivation_index, CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
-    MainSecretKey, NanoTokens, UniquePubkey,
+    CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
+    UniquePubkey,
 };
 use itertools::Itertools;
 use xor_name::XorName;
@@ -207,7 +207,13 @@ impl LocalWallet {
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| (amount, address, random_derivation_index(&mut rng)))
+            .map(|(amount, address)| {
+                (
+                    amount,
+                    address,
+                    UniquePubkey::random_derivation_index(&mut rng),
+                )
+            })
             .collect();
 
         let available_cash_notes = self.available_cash_notes();
@@ -245,7 +251,13 @@ impl LocalWallet {
             let mut rng = &mut rand::thread_rng();
             let unique_key_vec: Vec<(NanoTokens, MainPubkey, [u8; 32])> = payees
                 .into_iter()
-                .map(|(address, amount)| (amount, address, random_derivation_index(&mut rng)))
+                .map(|(address, amount)| {
+                    (
+                        amount,
+                        address,
+                        UniquePubkey::random_derivation_index(&mut rng),
+                    )
+                })
                 .collect_vec();
             all_payees_only.extend(unique_key_vec.clone());
             to_unique_keys.insert(content_addr, unique_key_vec);

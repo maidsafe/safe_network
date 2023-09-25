@@ -198,9 +198,7 @@ impl CashNote {
 pub(crate) mod tests {
     use super::*;
 
-    use crate::{
-        transaction::Output, unique_keys::random_derivation_index, FeeOutput, Hash, NanoTokens,
-    };
+    use crate::{transaction::Output, FeeOutput, Hash, NanoTokens, UniquePubkey};
     use bls::SecretKey;
     use std::convert::TryInto;
 
@@ -209,7 +207,7 @@ pub(crate) mod tests {
         let mut rng = crate::rng::from_seed([0u8; 32]);
         let amount = 1_530_000_000;
         let main_key = MainSecretKey::random_from_rng(&mut rng);
-        let derivation_index = random_derivation_index(&mut rng);
+        let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
         let derived_key = main_key.derive_key(&derivation_index);
         let tx = Transaction {
             inputs: vec![],
@@ -240,7 +238,7 @@ pub(crate) mod tests {
         let mut rng = crate::rng::from_seed([0u8; 32]);
         let amount = 100;
         let main_key = MainSecretKey::random_from_rng(&mut rng);
-        let derivation_index = random_derivation_index(&mut rng);
+        let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
         let derived_key = main_key.derive_key(&derivation_index);
         let tx = Transaction {
             inputs: vec![],
@@ -272,7 +270,7 @@ pub(crate) mod tests {
         let amount = 100;
 
         let main_key = MainSecretKey::random_from_rng(&mut rng);
-        let derivation_index = random_derivation_index(&mut rng);
+        let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
         let derived_key = main_key.derive_key(&derivation_index);
 
         let tx = Transaction {
@@ -304,7 +302,7 @@ pub(crate) mod tests {
         let amount = 100;
 
         let main_key = MainSecretKey::random_from_rng(&mut rng);
-        let derivation_index = random_derivation_index(&mut rng);
+        let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
         let derived_key = main_key.derive_key(&derivation_index);
 
         let tx = Transaction {

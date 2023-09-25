@@ -58,7 +58,7 @@ mod local_store;
 mod transfer;
 mod wallet_file;
 
-use crate::client_transfers::ContentPaymentsIdMap;
+use crate::transfers::ContentPaymentsIdMap;
 
 pub use self::{
     error::{Error, Result},
