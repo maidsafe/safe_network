@@ -11,10 +11,10 @@
 #[macro_use]
 extern crate tracing;
 
-/// Client handling of token transfers.
-pub mod client_transfers;
 /// Genesis utilities.
 pub mod genesis;
+/// Client handling of token transfers.
+pub mod transfers;
 /// A wallet for network tokens.
 pub mod wallet;
 
@@ -31,17 +31,14 @@ mod unique_keys;
 // re-export crates used in our public API
 pub use crate::{
     address::SpendAddress,
-    builder::{CashNoteBuilder, TransactionBuilder},
+    builder::TransactionBuilder,
     cashnote::CashNote,
     error::{Error, Result},
     fee_output::FeeOutput,
     nano::NanoTokens,
     signed_spend::{SignedSpend, Spend},
     transaction::{Input, Output, Transaction},
-    unique_keys::{
-        random_derivation_index, DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey,
-        UniquePubkey,
-    },
+    unique_keys::{DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, UniquePubkey},
 };
 pub use bls::{self, rand, Ciphertext, PublicKey, PublicKeySet, Signature, SignatureShare};
 

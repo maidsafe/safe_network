@@ -12,8 +12,8 @@ use common::{get_client_and_wallet, get_wallet, init_logging};
 
 use sn_client::send;
 
-use sn_transfers::client_transfers::create_offline_transfer;
-use sn_transfers::{random_derivation_index, rng, Hash, NanoTokens};
+use sn_transfers::transfers::create_offline_transfer;
+use sn_transfers::{rng, Hash, NanoTokens, UniquePubkey};
 
 use assert_fs::TempDir;
 use eyre::Result;
@@ -85,8 +85,8 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
 
     let mut rng = rng::thread_rng();
 
-    let to2_unique_key = (amount, to2, random_derivation_index(&mut rng));
-    let to3_unique_key = (amount, to3, random_derivation_index(&mut rng));
+    let to2_unique_key = (amount, to2, UniquePubkey::random_derivation_index(&mut rng));
+    let to3_unique_key = (amount, to3, UniquePubkey::random_derivation_index(&mut rng));
     let reason_hash = Hash::default();
 
     let transfer_to_2 =
