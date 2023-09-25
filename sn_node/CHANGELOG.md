@@ -1393,6 +1393,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.90.37](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.36...sn_node-v0.90.37) - 2023-09-25
+
+### Added
+- *(peers)* use a common way to bootstrap into the network for all the bins
+
+### Fixed
+- *(peers_acquisition)* bail on fail to parse peer id
+- *(peers)* node can start without bootstrap peers
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
