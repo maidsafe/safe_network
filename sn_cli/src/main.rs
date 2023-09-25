@@ -28,6 +28,7 @@ use color_eyre::Result;
 use sn_client::Client;
 #[cfg(feature = "metrics")]
 use sn_logging::{init_logging, metrics::init_metrics, LogFormat};
+use sn_peers_acquisition::parse_peers_args;
 use sn_transfers::wallet::bls_secret_from_hex;
 use std::path::PathBuf;
 use tracing::Level;
@@ -73,23 +74,20 @@ async fn main() -> Result<()> {
     println!("Instantiating a SAFE client...");
     let secret_key = get_client_secret_key(&client_data_dir_path)?;
 
-    if opt.peers.peers.is_empty() {
-        if !cfg!(feature = "local-discovery") {
-            let log_str = "No peers given. As `local-discovery` feature is disabled, we will not be able to connect to the network.";
-            warn!(log_str);
-            return Err(color_eyre::eyre::eyre!(log_str));
-        } else {
-            info!("No peers given. As `local-discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
-        }
-    }
+    let bootstrap_peers = parse_peers_args(opt.peers).await?;
 
-    let client = Client::new(
-        secret_key,
-        Some(opt.peers.peers),
-        opt.timeout,
-        opt.concurrency,
-    )
-    .await?;
+    println!(
+        "Connecting to the network w/peers: {:?}...",
+        bootstrap_peers
+    );
+    let bootstrap_peers = if bootstrap_peers.is_empty() {
+        // empty vec is returned if `local-discovery` flag is provided
+        None
+    } else {
+        Some(bootstrap_peers)
+    };
+
+    let client = Client::new(secret_key, bootstrap_peers, opt.timeout, opt.concurrency).await?;
 
     // default to verifying storage
     let should_verify_store = !opt.no_verify;
