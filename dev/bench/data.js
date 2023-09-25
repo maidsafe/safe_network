@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695632809438,
+  "lastUpdate": 1695635970186,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9082,6 +9082,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.85815377848934,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5927ba7577484febf01e67ff45cfcfd5ab3725f9",
+          "message": "feat(cli): wrap repayment error for clarity",
+          "timestamp": "2023-09-25T08:55:01Z",
+          "tree_id": "fb647b3e26725f6b59573e8159b421066810e89a",
+          "url": "https://github.com/maidsafe/safe_network/commit/5927ba7577484febf01e67ff45cfcfd5ab3725f9"
+        },
+        "date": 1695635968183,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11459698321331618,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5670746285820482,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 6.7291765190238015,
             "unit": "MiB/s"
           }
         ]
