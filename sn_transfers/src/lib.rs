@@ -25,11 +25,9 @@ mod error;
 mod fee_output;
 mod nano;
 mod signed_spend;
-mod spentbook;
 mod transaction;
 mod unique_keys;
 
-pub mod mock;
 // re-export crates used in our public API
 pub use crate::{
     address::SpendAddress,
