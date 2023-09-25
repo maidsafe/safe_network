@@ -10,7 +10,7 @@ mod common;
 
 use common::safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
-    NodeEventsRequest,
+    GossipsubUnsubscribeRequest, NodeEventsRequest,
 };
 use sn_node::NodeEvent;
 
@@ -32,7 +32,8 @@ async fn msgs_over_gossipsub() -> Result<()> {
     for node_index in 1..NODE_COUNT + 1 {
         // request current node to subscribe to a fresh new topic
         addr.set_port(12000 + node_index as u16);
-        let topic = format!("TestTopic-{node_index}");
+        let random_num = rand::random::<u64>();
+        let topic = format!("TestTopic-{node_index}-{random_num}");
         node_subscribe_to_topic(addr, topic.clone()).await?;
 
         println!("Node {node_index} subscribed to {topic}");
@@ -47,7 +48,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
             println!("Listening to node events...");
             let mut count = 0;
 
-            let _ = timeout(Duration::from_millis(10000), async {
+            let _ = timeout(Duration::from_millis(4000), async {
                 let mut stream = response.into_inner();
                 while let Some(Ok(e)) = stream.next().await {
                     match NodeEvent::from_bytes(&e.event) {
@@ -57,6 +58,9 @@ async fn msgs_over_gossipsub() -> Result<()> {
                                 String::from_utf8(msg).unwrap()
                             );
                             count += 1;
+                            if count == NODE_COUNT - 1 {
+                                break;
+                            }
                         }
                         Ok(_) => { /* ignored */ }
                         Err(_) => {
@@ -73,7 +77,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
         tokio::time::sleep(Duration::from_millis(1000)).await;
 
         // have all other nodes to publish each a different msg to that same topic
-        other_nodes_to_publish_on_topic(addr, topic).await?;
+        other_nodes_to_publish_on_topic(addr, topic.clone()).await?;
 
         let count = handle.await??;
         println!("Messages received by node {node_index}: {count}");
@@ -82,6 +86,8 @@ async fn msgs_over_gossipsub() -> Result<()> {
             "No message received by node at index {}",
             node_index
         );
+
+        node_unsubscribe_from_topic(addr, topic).await?;
     }
 
     Ok(())
@@ -94,6 +100,18 @@ async fn node_subscribe_to_topic(addr: SocketAddr, topic: String) -> Result<()> 
     // subscribe to given topic
     let _response = rpc_client
         .subscribe_to_topic(Request::new(GossipsubSubscribeRequest { topic }))
+        .await?;
+
+    Ok(())
+}
+
+async fn node_unsubscribe_from_topic(addr: SocketAddr, topic: String) -> Result<()> {
+    let endpoint = format!("https://{addr}");
+    let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+
+    // unsubscribe from given topic
+    let _response = rpc_client
+        .unsubscribe_from_topic(Request::new(GossipsubUnsubscribeRequest { topic }))
         .await?;
 
     Ok(())

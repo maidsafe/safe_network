@@ -83,6 +83,12 @@ impl RunningNode {
         Ok(())
     }
 
+    /// Unsubscribe from given gossipsub topic
+    pub fn unsubscribe_from_topic(&self, topic_id: String) -> Result<()> {
+        self.network.unsubscribe_from_topic(topic_id)?;
+        Ok(())
+    }
+
     /// Publish a message on a given gossipsub topic
     pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
         self.network.publish_on_topic(topic_id, msg)?;

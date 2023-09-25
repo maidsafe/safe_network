@@ -11,8 +11,9 @@ use eyre::Result;
 use libp2p::{Multiaddr, PeerId};
 use safenode_proto::safe_node_client::SafeNodeClient;
 use safenode_proto::{
-    GossipsubPublishRequest, GossipsubSubscribeRequest, NetworkInfoRequest, NodeEventsRequest,
-    NodeInfoRequest, RecordAddressesRequest, RestartRequest, StopRequest, UpdateRequest,
+    GossipsubPublishRequest, GossipsubSubscribeRequest, GossipsubUnsubscribeRequest,
+    NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RecordAddressesRequest, RestartRequest,
+    StopRequest, UpdateRequest,
 };
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_node::NodeEvent;
@@ -52,6 +53,12 @@ enum Cmd {
     /// Subscribe to a given Gossipsub topic
     #[clap(name = "subscribe")]
     Subscribe {
+        /// Name of the topic
+        topic: String,
+    },
+    /// Unsubscribe from a given Gossipsub topic
+    #[clap(name = "unsubscribe")]
+    Unsubscribe {
         /// Name of the topic
         topic: String,
     },
@@ -106,6 +113,7 @@ async fn main() -> Result<()> {
         Cmd::Netinfo => network_info(addr).await,
         Cmd::Events => node_events(addr).await,
         Cmd::Subscribe { topic } => gossipsub_subscribe(addr, topic).await,
+        Cmd::Unsubscribe { topic } => gossipsub_unsubscribe(addr, topic).await,
         Cmd::Publish { topic, msg } => gossipsub_publish(addr, topic, msg).await,
         Cmd::Restart { delay_millis } => node_restart(addr, delay_millis).await,
         Cmd::Stop { delay_millis } => node_stop(addr, delay_millis).await,
@@ -209,6 +217,18 @@ pub async fn gossipsub_subscribe(addr: SocketAddr, topic: String) -> Result<()> 
         }))
         .await?;
     println!("Node successfully received the request to subscribe to topic '{topic}'");
+    Ok(())
+}
+
+pub async fn gossipsub_unsubscribe(addr: SocketAddr, topic: String) -> Result<()> {
+    let endpoint = format!("https://{addr}");
+    let mut client = SafeNodeClient::connect(endpoint).await?;
+    let _response = client
+        .unsubscribe_from_topic(Request::new(GossipsubUnsubscribeRequest {
+            topic: topic.clone(),
+        }))
+        .await?;
+    println!("Node successfully received the request to unsubscribe from topic '{topic}'");
     Ok(())
 }
 

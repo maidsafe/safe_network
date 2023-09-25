@@ -18,6 +18,12 @@ pub enum GossipsubCmds {
         #[clap(name = "topic")]
         topic: String,
     },
+    /// Unsubscribe from a topic
+    Unsubscribe {
+        /// The name of the topic.
+        #[clap(name = "topic")]
+        topic: String,
+    },
     /// Publish a message on a given topic
     Publish {
         /// The name of the topic.
@@ -41,6 +47,10 @@ pub(crate) async fn gossipsub_cmds(cmds: GossipsubCmds, client: &Client) -> Resu
                     println!("New message published: {msg}");
                 }
             }
+        }
+        GossipsubCmds::Unsubscribe { topic } => {
+            client.unsubscribe_from_topic(topic.clone())?;
+            println!("Unsubscribed from topic '{topic}'.");
         }
         GossipsubCmds::Publish { topic, msg } => {
             client.publish_on_topic(topic.clone(), msg.into())?;

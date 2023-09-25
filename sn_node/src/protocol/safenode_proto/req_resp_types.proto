@@ -52,6 +52,13 @@ message GossipsubSubscribeRequest {
 
 message GossipsubSubscribeResponse {}
 
+// Unsubsribe from a gossipsub topic
+message GossipsubUnsubscribeRequest {
+  string topic = 1;
+}
+
+message GossipsubUnsubscribeResponse {}
+
 // Publish a msg on a gossipsub topic
 message GossipsubPublishRequest {
   string topic = 1;

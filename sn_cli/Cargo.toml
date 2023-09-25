@@ -20,7 +20,7 @@ harness = false
 
 [features]
 default = ["metrics"]
-local-discovery=["sn_client/local-discovery"]
+local-discovery=["sn_client/local-discovery", "sn_peers_acquisition/local-discovery"]
 metrics = ["sn_logging/process-metrics"]
 network-contacts = ["sn_peers_acquisition/network-contacts"]
 open-metrics = ["sn_client/open-metrics"]

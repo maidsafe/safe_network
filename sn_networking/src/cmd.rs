@@ -116,6 +116,8 @@ pub enum SwarmCmd {
     },
     /// Subscribe to a given Gossipsub topic
     GossipsubSubscribe(String),
+    /// Unsubscribe from a given Gossipsub topic
+    GossipsubUnsubscribe(String),
     /// Publish a message through Gossipsub protocol
     GossipsubPublish {
         /// Topic to publish on
@@ -364,6 +366,13 @@ impl SwarmDriver {
             SwarmCmd::GossipsubSubscribe(topic_id) => {
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
                 self.swarm.behaviour_mut().gossipsub.subscribe(&topic_id)?;
+            }
+            SwarmCmd::GossipsubUnsubscribe(topic_id) => {
+                let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
+                self.swarm
+                    .behaviour_mut()
+                    .gossipsub
+                    .unsubscribe(&topic_id)?;
             }
             SwarmCmd::GossipsubPublish { topic_id, msg } => {
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);

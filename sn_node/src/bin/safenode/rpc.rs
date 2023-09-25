@@ -25,10 +25,10 @@ use tracing::{debug, info, trace};
 use safenode_proto::safe_node_server::{SafeNode, SafeNodeServer};
 use safenode_proto::{
     GossipsubPublishRequest, GossipsubPublishResponse, GossipsubSubscribeRequest,
-    GossipsubSubscribeResponse, NetworkInfoRequest, NetworkInfoResponse, NodeEvent,
-    NodeEventsRequest, NodeInfoRequest, NodeInfoResponse, RecordAddressesRequest,
-    RecordAddressesResponse, RestartRequest, RestartResponse, StopRequest, StopResponse,
-    UpdateRequest, UpdateResponse,
+    GossipsubSubscribeResponse, GossipsubUnsubscribeRequest, GossipsubUnsubscribeResponse,
+    NetworkInfoRequest, NetworkInfoResponse, NodeEvent, NodeEventsRequest, NodeInfoRequest,
+    NodeInfoResponse, RecordAddressesRequest, RecordAddressesResponse, RestartRequest,
+    RestartResponse, StopRequest, StopResponse, UpdateRequest, UpdateResponse,
 };
 
 // this includes code generated from .proto files
@@ -172,6 +172,27 @@ impl SafeNode for SafeNodeRpcService {
             Err(err) => Err(Status::new(
                 Code::Internal,
                 format!("Failed to subscribe to topic '{topic}': {err}"),
+            )),
+        }
+    }
+
+    async fn unsubscribe_from_topic(
+        &self,
+        request: Request<GossipsubUnsubscribeRequest>,
+    ) -> Result<Response<GossipsubUnsubscribeResponse>, Status> {
+        trace!(
+            "RPC request received at {}: {:?}",
+            self.addr,
+            request.get_ref()
+        );
+
+        let topic = &request.get_ref().topic;
+
+        match self.running_node.unsubscribe_from_topic(topic.clone()) {
+            Ok(()) => Ok(Response::new(GossipsubUnsubscribeResponse {})),
+            Err(err) => Err(Status::new(
+                Code::Internal,
+                format!("Failed to unsubscribe from topic '{topic}': {err}"),
             )),
         }
     }
