@@ -245,9 +245,8 @@ impl LocalWallet {
         reason_hash: Option<Hash>,
     ) -> Result<()> {
         // create a unique key for each output
-        let mut to_unique_keys = BTreeMap::default();
         let mut all_payees_only = vec![];
-        for (content_addr, payees) in all_data_payments.clone().into_iter() {
+        for (_content_addr, payees) in all_data_payments.clone().into_iter() {
             let mut rng = &mut rand::thread_rng();
             let unique_key_vec: Vec<(NanoTokens, MainPubkey, [u8; 32])> = payees
                 .into_iter()
@@ -260,7 +259,6 @@ impl LocalWallet {
                 })
                 .collect_vec();
             all_payees_only.extend(unique_key_vec.clone());
-            to_unique_keys.insert(content_addr, unique_key_vec);
         }
 
         let reason_hash = reason_hash.unwrap_or_default();
