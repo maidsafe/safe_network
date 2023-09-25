@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695635970186,
+  "lastUpdate": 1695636261780,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -15213,6 +15213,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 64.958466,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5927ba7577484febf01e67ff45cfcfd5ab3725f9",
+          "message": "feat(cli): wrap repayment error for clarity",
+          "timestamp": "2023-09-25T08:55:01Z",
+          "tree_id": "fb647b3e26725f6b59573e8159b421066810e89a",
+          "url": "https://github.com/maidsafe/safe_network/commit/5927ba7577484febf01e67ff45cfcfd5ab3725f9"
+        },
+        "date": 1695636261350,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 62.693375,
             "unit": "MB"
           }
         ]
