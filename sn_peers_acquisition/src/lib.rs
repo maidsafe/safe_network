@@ -56,6 +56,7 @@ pub struct PeersArgs {
 /// and `network-contacts` flag respectively. The later ones are ignored if one of the prior option is used.
 pub async fn parse_peers_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
     if !args.peers.is_empty() {
+        info!("Using passed peers or SAFE_PEERS env variable");
         Ok(args.peers)
     } else if cfg!(feature = "local-discovery") {
         info!("No peers given. As `local-discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
@@ -83,8 +84,6 @@ pub async fn parse_peers_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
         // should not be reachable, but needed for the compiler to be happy.
         #[cfg(not(feature = "network-contacts"))]
         let peers = Ok(vec![]);
-
-        println!("--->>> Bootstrap peers: {:?}", peers);
 
         peers
     } else {
@@ -132,15 +131,16 @@ async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
                 let mut multi_addresses = Vec::new();
                 if response.status().is_success() {
                     let text = response.text().await?;
-                    println!("Got bootstrap peers from URL {text}");
+                    trace!("Got bootstrap peers from {url}: {text}");
                     // example of contacts file exists in resources/network-contacts-examples
                     for addr in text.split('\n') {
-                        match parse_peer_addr(addr) {
-                            Ok(addr) => multi_addresses.push(addr),
-                            Err(err) => {
-                                error!("Failed to parse multi-address of {addr:?} with {err:?} from URL")
-                            }
+                        // ignore empty/last lines
+                        if addr.is_empty() {
+                            continue;
                         }
+
+                        debug!("Attempting to parse {addr}");
+                        multi_addresses.push(parse_peer_addr(addr)?);
                     }
                     if !multi_addresses.is_empty() {
                         trace!("Successfully got bootstrap peers from URL {multi_addresses:?}");
