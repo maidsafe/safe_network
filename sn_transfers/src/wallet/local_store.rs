@@ -15,7 +15,7 @@ use super::{
 };
 
 use crate::transfers::{
-    create_offline_transfer, ContentPaymentsIdMap, SpendRequest, TransferOutputs,
+    create_offline_transfer, ContentPaymentsIdMap, OfflineTransfer, SpendRequest,
 };
 use crate::{
     CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
@@ -169,12 +169,6 @@ impl LocalWallet {
         available_cash_notes
     }
 
-    /// Add given storage payment proofs to the wallet's cache,
-    /// so they can be used when uploading the paid content.
-    pub fn add_content_payments_map(&mut self, proofs: ContentPaymentsIdMap) {
-        self.wallet.payment_transactions.extend(proofs);
-    }
-
     /// Return the payment cash_note ids for the given content address name if cached.
     pub fn get_payment_unique_pubkeys(&self, name: &XorName) -> Option<&Vec<UniquePubkey>> {
         self.wallet.payment_transactions.get(name)
@@ -308,7 +302,7 @@ impl LocalWallet {
         Ok(())
     }
 
-    fn update_local_wallet(&mut self, transfer: TransferOutputs) -> Result<()> {
+    fn update_local_wallet(&mut self, transfer: OfflineTransfer) -> Result<()> {
         // First of all, update client local state.
         let spent_unique_pubkeys: BTreeSet<_> = transfer
             .tx
@@ -375,7 +369,7 @@ impl LocalWallet {
     }
 
     pub fn unwrap_transfer(&self, transfer: Transfer) -> Result<Vec<CashNoteRedemption>> {
-        transfer.cashnote_redemptions(self.key.secret_key())
+        transfer.cashnote_redemptions(&self.key)
     }
 
     pub fn derive_key(&self, derivation_index: &DerivationIndex) -> DerivedSecretKey {

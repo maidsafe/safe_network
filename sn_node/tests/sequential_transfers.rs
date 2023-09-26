@@ -12,7 +12,7 @@ use common::{get_client_and_wallet, get_wallet, init_logging};
 
 use sn_client::send;
 
-use sn_transfers::transfers::create_offline_transfer;
+use sn_transfers::create_offline_transfer;
 use sn_transfers::{rng, Hash, NanoTokens, UniquePubkey};
 
 use assert_fs::TempDir;

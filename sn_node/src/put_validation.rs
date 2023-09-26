@@ -20,10 +20,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::{
-    genesis::{is_genesis_parent_tx, GENESIS_CASHNOTE},
-    wallet::{LocalWallet, Transfer},
-};
+use sn_transfers::{is_genesis_parent_tx, LocalWallet, Transfer, GENESIS_CASHNOTE};
 use sn_transfers::{CashNote, NanoTokens, SignedSpend, UniquePubkey};
 use std::collections::{BTreeSet, HashSet};
 

@@ -15,7 +15,7 @@ use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress},
     NetworkAddress,
 };
-use sn_transfers::wallet::LocalWallet;
+use sn_transfers::LocalWallet;
 use sn_transfers::NanoTokens;
 use xor_name::XorName;
 

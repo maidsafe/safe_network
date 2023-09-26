@@ -19,7 +19,7 @@ use sn_protocol::{
 use sn_registers::{
     Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister, User,
 };
-use sn_transfers::wallet::Transfer;
+use sn_transfers::Transfer;
 
 use std::collections::{BTreeSet, LinkedList};
 use xor_name::XorName;
