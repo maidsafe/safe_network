@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695707610403,
+  "lastUpdate": 1695707890746,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -15417,6 +15417,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 62.541824,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bf8cc2b8b18e222c5c9379e268cd5ebb944696ac",
+          "message": "feat(apis): adding client and node APIs, as well as safenode RPC service to unsubscribe from gossipsub topics",
+          "timestamp": "2023-09-26T04:53:16Z",
+          "tree_id": "17e9d251e8a0ffbf04640775e6c9290e3efa91f0",
+          "url": "https://github.com/maidsafe/safe_network/commit/bf8cc2b8b18e222c5c9379e268cd5ebb944696ac"
+        },
+        "date": 1695707890352,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57.12691,
             "unit": "MB"
           }
         ]
