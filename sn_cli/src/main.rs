@@ -29,7 +29,7 @@ use sn_client::Client;
 #[cfg(feature = "metrics")]
 use sn_logging::{init_logging, metrics::init_metrics, LogFormat};
 use sn_peers_acquisition::parse_peers_args;
-use sn_transfers::wallet::bls_secret_from_hex;
+use sn_transfers::bls_secret_from_hex;
 use std::path::PathBuf;
 use tracing::Level;
 

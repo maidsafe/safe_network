@@ -21,7 +21,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::wallet::LocalWallet;
+use sn_transfers::LocalWallet;
 
 use std::{
     fs::{self, create_dir_all, File},

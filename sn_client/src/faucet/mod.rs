@@ -1,8 +1,8 @@
 use super::{wallet::send, Result};
 use crate::Client;
 
-use sn_transfers::genesis::{create_faucet_wallet, load_genesis_wallet};
-use sn_transfers::wallet::LocalWallet;
+use sn_transfers::LocalWallet;
+use sn_transfers::{create_faucet_wallet, load_genesis_wallet};
 use sn_transfers::{CashNote, MainPubkey, NanoTokens};
 
 /// Returns a cash_note with the requested number of tokens, for use by E2E test instances.

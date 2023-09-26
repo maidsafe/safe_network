@@ -6,11 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    rand::{distributions::Standard, Rng, RngCore},
-    PublicKey,
-};
-use bls::{serde_impl::SerdeSecret, SecretKey, PK_SIZE};
+use crate::rand::{distributions::Standard, Rng, RngCore};
+use bls::{serde_impl::SerdeSecret, PublicKey, SecretKey, PK_SIZE};
 use serde::{Deserialize, Serialize};
 
 /// This is used to generate a new UniquePubkey
@@ -126,7 +123,7 @@ impl MainPubkey {
 pub struct MainSecretKey(SerdeSecret<SecretKey>);
 
 impl MainSecretKey {
-    ///
+    /// Create a new MainSecretKey from a bls SecretKey.
     pub fn new(secret_key: SecretKey) -> Self {
         Self(SerdeSecret(secret_key))
     }

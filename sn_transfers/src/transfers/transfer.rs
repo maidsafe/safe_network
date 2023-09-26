@@ -6,14 +6,27 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Error, Result, SpendRequest, TranferInputs, TransferOutputs};
+use super::{Error, OfflineTransfer, Result, SpendRequest};
 
 use crate::{
-    rng, CashNote, DerivationIndex, DerivedSecretKey, FeeOutput, Hash, Input, MainPubkey,
-    NanoTokens, TransactionBuilder, UniquePubkey,
+    rng, transaction::Input, CashNote, DerivationIndex, DerivedSecretKey, FeeOutput, Hash,
+    MainPubkey, NanoTokens, TransactionBuilder, UniquePubkey,
 };
 
 use std::collections::BTreeMap;
+
+/// The input details necessary to
+/// carry out a transfer of tokens.
+#[derive(Debug)]
+struct TranferInputs {
+    /// The selected cash_notes to spend, with the necessary amounts contained
+    /// to transfer the below specified amount of tokens to each recipients.
+    pub cash_notes_to_spend: Vec<(CashNote, DerivedSecretKey)>,
+    /// The amounts and cash_note ids for the cash_notes that will be created to hold the transferred tokens.
+    pub recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
+    /// Any surplus amount after spending the necessary input cash_notes.
+    pub change: (NanoTokens, MainPubkey),
+}
 
 /// A function for creating an offline transfer of tokens.
 /// This is done by creating new cash_notes to the recipients (and a change cash_note if any)
@@ -30,7 +43,7 @@ pub fn create_offline_transfer(
     recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
     change_to: MainPubkey,
     reason_hash: Hash,
-) -> Result<TransferOutputs> {
+) -> Result<OfflineTransfer> {
     let total_output_amount = recipients
         .iter()
         .try_fold(NanoTokens::zero(), |total, (amount, _, _)| {
@@ -126,7 +139,7 @@ fn create_transfer_with(
     selected_inputs: TranferInputs,
     reason_hash: Hash,
     fee: Option<FeeOutput>,
-) -> Result<TransferOutputs> {
+) -> Result<OfflineTransfer> {
     let TranferInputs {
         change: (change, change_to),
         ..
@@ -226,7 +239,7 @@ fn create_transfer_with(
         }
     });
 
-    Ok(TransferOutputs {
+    Ok(OfflineTransfer {
         tx,
         created_cash_notes,
         change_cash_note,

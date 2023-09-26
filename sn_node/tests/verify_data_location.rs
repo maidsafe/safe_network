@@ -25,7 +25,7 @@ use sn_client::{Client, Files, WalletClient};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{storage::ChunkAddress, NetworkAddress, PrettyPrintRecordKey};
-use sn_transfers::wallet::LocalWallet;
+use sn_transfers::LocalWallet;
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     fs::File,

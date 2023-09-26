@@ -18,7 +18,7 @@ use thiserror::Error;
 #[allow(missing_docs)]
 pub enum Error {
     #[error("Genesis error {0}")]
-    GenesisError(#[from] sn_transfers::genesis::Error),
+    GenesisError(#[from] sn_transfers::GenesisError),
 
     /// Could not acquire a Semaphore permit.
     #[error("Could not acquire a Semaphore permit.")]
@@ -29,7 +29,7 @@ pub enum Error {
     NoNetworkConcurrencyLimiterFound,
 
     #[error("Transfer Error {0}.")]
-    Transfers(#[from] sn_transfers::wallet::Error),
+    Transfers(#[from] sn_transfers::WalletError),
 
     #[error("Network Error {0}.")]
     Network(#[from] sn_networking::Error),

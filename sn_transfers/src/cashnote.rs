@@ -199,8 +199,6 @@ pub(crate) mod tests {
     use super::*;
 
     use crate::{transaction::Output, FeeOutput, Hash, NanoTokens, UniquePubkey};
-    use bls::SecretKey;
-    use std::convert::TryInto;
 
     #[test]
     fn from_hex_should_deserialize_a_hex_encoded_string_to_a_cashnote() -> Result<(), Error> {
@@ -325,19 +323,5 @@ pub(crate) mod tests {
         ));
 
         Ok(())
-    }
-
-    fn get_secret_key_from_hex(sk_hex: &str) -> Result<SecretKey, Error> {
-        let sk_bytes =
-            hex::decode(sk_hex).map_err(|e| Error::HexDeserializationFailed(e.to_string()))?;
-        let mut sk_bytes: [u8; bls::SK_SIZE] = sk_bytes.try_into().unwrap_or_else(|v: Vec<u8>| {
-            panic!(
-                "Expected vec of length {} but received vec of length {}",
-                bls::SK_SIZE,
-                v.len()
-            )
-        });
-        sk_bytes.reverse();
-        Ok(SecretKey::from_bytes(sk_bytes)?)
     }
 }

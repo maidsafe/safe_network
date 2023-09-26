@@ -8,7 +8,7 @@
 
 use sn_networking::Error as NetworkError;
 use sn_protocol::error::Error as ProtocolError;
-use sn_transfers::wallet::Error as RewardsWalletError;
+use sn_transfers::WalletError;
 use thiserror::Error;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
@@ -27,5 +27,5 @@ pub enum Error {
     NodeEventParsingFailed,
 
     #[error("Node's rewards wallet error {0}")]
-    RewardsWallet(#[from] RewardsWalletError),
+    RewardsWallet(#[from] WalletError),
 }

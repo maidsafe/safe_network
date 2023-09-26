@@ -34,34 +34,20 @@ use std::collections::BTreeMap;
 
 use xor_name::XorName;
 
-pub(crate) use self::error::{Error, Result};
-pub use self::transfer::create_offline_transfer;
+use crate::{CashNote, SignedSpend, Transaction, UniquePubkey};
 
-use crate::{
-    CashNote, DerivationIndex, DerivedSecretKey, MainPubkey, NanoTokens, SignedSpend, Transaction,
-    UniquePubkey,
-};
-
+pub use self::error::{Error, Result};
 pub type ContentPaymentsIdMap = BTreeMap<XorName, Vec<UniquePubkey>>;
 
-/// The input details necessary to
-/// carry out a transfer of tokens.
-#[derive(Debug)]
-pub struct TranferInputs {
-    /// The selected cash_notes to spend, with the necessary amounts contained
-    /// to transfer the below specified amount of tokens to each recipients.
-    pub cash_notes_to_spend: Vec<(CashNote, DerivedSecretKey)>,
-    /// The amounts and cash_note ids for the cash_notes that will be created to hold the transferred tokens.
-    pub recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
-    /// Any surplus amount after spending the necessary input cash_notes.
-    pub change: (NanoTokens, MainPubkey),
-}
+/// Utility function to create an offline transfer
+pub use self::transfer::create_offline_transfer;
 
-/// Output data of a Transfer.
+/// Offline Transfer
+/// This struct contains all the necessary information to carry out the transfer.
 /// The created cash_notes and change cash_note from a transfer
 /// of tokens from one or more cash_notes, into one or more new cash_notes.
 #[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
-pub struct TransferOutputs {
+pub struct OfflineTransfer {
     /// This is the transaction where all the below
     /// spends were made and cash_notes created.
     pub tx: Transaction,

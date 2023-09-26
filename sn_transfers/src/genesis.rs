@@ -8,9 +8,6 @@
 
 use super::wallet::LocalWallet;
 
-#[cfg(test)]
-use crate::{rng, UniquePubkey};
-
 use crate::{
     CashNote, Error as CashNoteError, Hash, Input, MainSecretKey, NanoTokens, Transaction,
     TransactionBuilder,
@@ -97,7 +94,7 @@ pub fn load_genesis_wallet() -> Result<LocalWallet, Error> {
     Ok(genesis_wallet)
 }
 
-pub fn create_genesis_wallet() -> LocalWallet {
+fn create_genesis_wallet() -> LocalWallet {
     let root_dir = get_genesis_dir();
     let wallet_dir = root_dir.join("wallet");
     std::fs::create_dir_all(&wallet_dir).expect("Genesis wallet path to be successfully created.");
@@ -116,7 +113,7 @@ pub fn create_genesis_wallet() -> LocalWallet {
 /// Create a first CashNote given any key (i.e. not specifically the hard coded genesis key).
 /// The derivation index and blinding factor are hard coded to ensure deterministic creation.
 /// This is useful in tests.
-pub(crate) fn create_first_cash_note_from_key(
+pub fn create_first_cash_note_from_key(
     first_cash_note_key: &MainSecretKey,
 ) -> GenesisResult<CashNote> {
     let main_pubkey = first_cash_note_key.main_pubkey();
@@ -162,58 +159,6 @@ pub(crate) fn create_first_cash_note_from_key(
     })?;
 
     Ok(genesis_cash_note)
-}
-
-/// Split a cash_note into multiple. ONLY FOR TEST.
-#[cfg(test)]
-#[allow(clippy::result_large_err, unused)]
-pub(super) fn split(
-    cash_note: &CashNote,
-    main_key: &MainSecretKey,
-    number: usize,
-) -> GenesisResult<Vec<(CashNote, NanoTokens)>> {
-    let rng = &mut rng::thread_rng();
-
-    let derived_key = cash_note
-        .derived_key(main_key)
-        .map_err(|e| Error::FailedToParseReason(Box::new(e)))?;
-    let token = cash_note
-        .value()
-        .map_err(|e| Error::FailedToParseReason(Box::new(e)))?;
-    let input = Input {
-        unique_pubkey: cash_note.unique_pubkey(),
-        amount: token,
-    };
-
-    let recipients: Vec<_> = (0..number)
-        .map(|_| {
-            let amount = token.as_nano() / number as u64;
-            (
-                NanoTokens::from(amount),
-                main_key.main_pubkey(),
-                UniquePubkey::random_derivation_index(rng),
-            )
-        })
-        .collect();
-
-    let cash_note_builder = TransactionBuilder::default()
-        .add_input(input, derived_key, cash_note.src_tx.clone())
-        .add_outputs(recipients)
-        .build(Hash::default())
-        .map_err(|err| {
-            Error::GenesisCashNoteError(format!(
-                "Failed to build the CashNote transaction for genesis CashNote: {err}",
-            ))
-        })?;
-
-    // build the output CashNotes
-    let output_cash_notes = cash_note_builder.build_without_verifying().map_err(|err| {
-        Error::GenesisCashNoteError(format!(
-            "CashNote builder failed to create output genesis CashNote: {err}",
-        ))
-    })?;
-
-    Ok(output_cash_notes)
 }
 
 pub fn create_faucet_wallet() -> LocalWallet {

@@ -68,7 +68,7 @@ pub use self::{
 pub(crate) use keys::store_new_keypair;
 pub use transfer::{CashNoteRedemption, Transfer};
 
-use crate::{MainPubkey, NanoTokens, UniquePubkey};
+use crate::{NanoTokens, UniquePubkey};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -87,9 +87,4 @@ pub(super) struct KeyLessWallet {
     cash_notes_created_for_others: BTreeSet<UniquePubkey>,
     /// Cached proofs of storage transactions made to be used for uploading the paid content.
     payment_transactions: ContentPaymentsIdMap,
-}
-
-/// Return the name of a MainPubkey.
-pub fn main_pubkey_name(main_pubkey: &MainPubkey) -> xor_name::XorName {
-    xor_name::XorName::from_content(&main_pubkey.to_bytes())
 }

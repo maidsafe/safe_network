@@ -11,7 +11,7 @@ use sn_protocol::{
     error::{Error, Result},
     storage::SpendAddress,
 };
-use sn_transfers::genesis::{is_genesis_parent_tx, GENESIS_CASHNOTE};
+use sn_transfers::{is_genesis_parent_tx, GENESIS_CASHNOTE};
 use sn_transfers::{SignedSpend, UniquePubkey};
 use std::{
     collections::{BTreeSet, HashSet},
