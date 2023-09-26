@@ -31,7 +31,7 @@ use sn_protocol::{
 use sn_transfers::{MainPubkey, NanoTokens, SignedSpend, UniquePubkey};
 
 use sn_registers::SignedRegister;
-use sn_transfers::{client_transfers::SpendRequest, wallet::Transfer};
+use sn_transfers::{transfers::SpendRequest, wallet::Transfer};
 use std::time::Duration;
 use tokio::{sync::OwnedSemaphorePermit, task::spawn};
 use tracing::trace;
@@ -504,6 +504,13 @@ impl Client {
     pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
         info!("Subscribing to topic id: {topic_id}");
         self.network.subscribe_to_topic(topic_id)?;
+        Ok(())
+    }
+
+    /// Unsubscribe from given gossipsub topic
+    pub fn unsubscribe_from_topic(&self, topic_id: String) -> Result<()> {
+        info!("Unsubscribing from topic id: {topic_id}");
+        self.network.unsubscribe_from_topic(topic_id)?;
         Ok(())
     }
 

@@ -34,6 +34,13 @@ impl UniquePubkey {
     pub fn verify<M: AsRef<[u8]>>(&self, sig: &bls::Signature, msg: M) -> bool {
         self.0.verify(sig, msg)
     }
+
+    // generates a random derivation index
+    pub fn random_derivation_index(rng: &mut impl RngCore) -> DerivationIndex {
+        let mut bytes = [0u8; 32];
+        rng.fill_bytes(&mut bytes);
+        bytes
+    }
 }
 
 /// This is the key that unlocks the value of a CashNote.
@@ -174,13 +181,6 @@ impl MainSecretKey {
     }
 
     pub fn random_derived_key(&self, rng: &mut impl RngCore) -> DerivedSecretKey {
-        self.derive_key(&random_derivation_index(rng))
+        self.derive_key(&UniquePubkey::random_derivation_index(rng))
     }
-}
-
-// generates a random derivation index
-pub fn random_derivation_index(rng: &mut impl RngCore) -> [u8; 32] {
-    let mut bytes = [0u8; 32];
-    rng.fill_bytes(&mut bytes);
-    bytes
 }

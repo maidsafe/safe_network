@@ -37,6 +37,9 @@ service SafeNode {
   // Subscribe to a Gossipsub topic
   rpc SubscribeToTopic (GossipsubSubscribeRequest) returns (GossipsubSubscribeResponse);
 
+  // Unsubscribe from a Gossipsub topic
+  rpc UnsubscribeFromTopic (GossipsubUnsubscribeRequest) returns (GossipsubUnsubscribeResponse);
+
   // Publish a msg on a Gossipsub topic
   rpc PublishOnTopic (GossipsubPublishRequest) returns (GossipsubPublishResponse);
 

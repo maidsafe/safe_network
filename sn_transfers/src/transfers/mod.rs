@@ -47,7 +47,7 @@ pub type ContentPaymentsIdMap = BTreeMap<XorName, Vec<UniquePubkey>>;
 /// The input details necessary to
 /// carry out a transfer of tokens.
 #[derive(Debug)]
-pub struct Inputs {
+pub struct TranferInputs {
     /// The selected cash_notes to spend, with the necessary amounts contained
     /// to transfer the below specified amount of tokens to each recipients.
     pub cash_notes_to_spend: Vec<(CashNote, DerivedSecretKey)>,
@@ -57,6 +57,7 @@ pub struct Inputs {
     pub change: (NanoTokens, MainPubkey),
 }
 
+/// Output data of a Transfer.
 /// The created cash_notes and change cash_note from a transfer
 /// of tokens from one or more cash_notes, into one or more new cash_notes.
 #[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]

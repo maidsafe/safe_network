@@ -8,6 +8,7 @@
 
 use super::error::Result;
 
+use serde::Serialize;
 use tokio::sync::broadcast;
 
 // Channel where events will be broadcasted by the client.
@@ -35,7 +36,7 @@ impl ClientEventsChannel {
 }
 
 /// Type of events broadcasted by the client to the public API.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum ClientEvent {
     /// The client has been connected to the network
     ConnectedToNetwork,

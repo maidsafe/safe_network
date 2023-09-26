@@ -6,6 +6,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.82.7](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.6...sn_cli-v0.82.7) - 2023-09-26
+
+### Added
+- *(apis)* adding client and node APIs, as well as safenode RPC service to unsubscribe from gossipsub topics
+
+## [0.82.6](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.5...sn_cli-v0.82.6) - 2023-09-25
+
+### Other
+- update dependencies
+
+## [0.82.5](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.4...sn_cli-v0.82.5) - 2023-09-25
+
+### Other
+- update dependencies
+
+## [0.82.4](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.3...sn_cli-v0.82.4) - 2023-09-25
+
+### Added
+- *(cli)* wrap repayment error for clarity
+
+## [0.82.3](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.2...sn_cli-v0.82.3) - 2023-09-25
+
+### Added
+- *(peers)* use a common way to bootstrap into the network for all the bins
+- *(cli)* fetch network contacts for the provided network name
+- *(cli)* fetch bootstrap peers from network contacts
+
+### Other
+- more logs around parsing network-contacts
+- *(cli)* feature gate network contacts and fetch from URL
+
+## [0.82.2](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.1...sn_cli-v0.82.2) - 2023-09-25
+
+### Other
+- update dependencies
+
 ## [0.82.1](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.0...sn_cli-v0.82.1) - 2023-09-22
 
 ### Added
