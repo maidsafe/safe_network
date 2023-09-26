@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695728232729,
+  "lastUpdate": 1695728464394,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -15485,6 +15485,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57.12691,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "david.irvine@maidsafe.net",
+            "name": "David Irvine",
+            "username": "dirvine"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "45c118e9664495cb600f56b27c10273288c7859e",
+          "message": "feat(close group): Change close group size to 5",
+          "timestamp": "2023-09-26T10:40:02Z",
+          "tree_id": "5850a7a0d747e2b4bfd06043b1988eaf3b6ee7bc",
+          "url": "https://github.com/maidsafe/safe_network/commit/45c118e9664495cb600f56b27c10273288c7859e"
+        },
+        "date": 1695728463973,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50.7904,
             "unit": "MB"
           }
         ]
