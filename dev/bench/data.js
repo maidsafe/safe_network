@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695707892272,
+  "lastUpdate": 1695728232729,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9238,6 +9238,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 6.79444573295789,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "david.irvine@maidsafe.net",
+            "name": "David Irvine",
+            "username": "dirvine"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "45c118e9664495cb600f56b27c10273288c7859e",
+          "message": "feat(close group): Change close group size to 5",
+          "timestamp": "2023-09-26T10:40:02Z",
+          "tree_id": "5850a7a0d747e2b4bfd06043b1988eaf3b6ee7bc",
+          "url": "https://github.com/maidsafe/safe_network/commit/45c118e9664495cb600f56b27c10273288c7859e"
+        },
+        "date": 1695728231321,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11379954689816962,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6143860317966917,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.887783198819315,
             "unit": "MiB/s"
           }
         ]
