@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.5](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.7.4...sn_networking-v0.7.5) - 2023-09-26
+
+### Added
+- *(close group)* Change close group size to 5
+
 ## [0.7.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.7.3...sn_networking-v0.7.4) - 2023-09-26
 
 ### Added
