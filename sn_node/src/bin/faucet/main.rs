@@ -14,7 +14,7 @@ use faucet_server::run_faucet_server;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
-use sn_transfers::{wallet::parse_main_pubkey, NanoTokens};
+use sn_transfers::{parse_main_pubkey, NanoTokens};
 use std::path::PathBuf;
 use tracing::info;
 use tracing_core::Level;

@@ -31,7 +31,7 @@ use sn_protocol::{
 use sn_transfers::{MainPubkey, NanoTokens, SignedSpend, UniquePubkey};
 
 use sn_registers::SignedRegister;
-use sn_transfers::{transfers::SpendRequest, wallet::Transfer};
+use sn_transfers::{SpendRequest, Transfer};
 use std::time::Duration;
 use tokio::{sync::OwnedSemaphorePermit, task::spawn};
 use tracing::trace;

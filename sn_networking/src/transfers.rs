@@ -15,8 +15,8 @@ use sn_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::wallet::{LocalWallet, Transfer};
 use sn_transfers::{CashNote, DerivationIndex, SignedSpend, Transaction, UniquePubkey};
+use sn_transfers::{LocalWallet, Transfer};
 use tokio::task::JoinSet;
 
 impl Network {

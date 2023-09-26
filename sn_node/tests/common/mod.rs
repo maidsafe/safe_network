@@ -18,7 +18,7 @@ use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client, Files};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::storage::ChunkAddress;
-use sn_transfers::wallet::LocalWallet;
+use sn_transfers::LocalWallet;
 
 use bytes::Bytes;
 use eyre::{eyre, Result};

@@ -22,7 +22,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress, RegisterAddress, SpendAddress},
     NetworkAddress,
 };
-use sn_transfers::wallet::LocalWallet;
+use sn_transfers::LocalWallet;
 use sn_transfers::{CashNote, MainSecretKey, NanoTokens};
 use std::{
     collections::{BTreeMap, VecDeque},

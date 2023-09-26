@@ -9,8 +9,8 @@
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, Files, WalletClient};
-use sn_transfers::wallet::{parse_main_pubkey, LocalWallet};
 use sn_transfers::NanoTokens;
+use sn_transfers::{parse_main_pubkey, LocalWallet};
 use std::{
     io::Read,
     path::{Path, PathBuf},

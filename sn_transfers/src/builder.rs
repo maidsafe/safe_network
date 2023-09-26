@@ -52,32 +52,6 @@ impl TransactionBuilder {
         self
     }
 
-    /// Add an input given a CashNote and its DerivedSecretKey.
-    pub fn add_input_cashnote(
-        mut self,
-        cashnote: &CashNote,
-        derived_key: &DerivedSecretKey,
-    ) -> Result<Self> {
-        let input_src_tx = cashnote.src_tx.clone();
-        let input = Input {
-            unique_pubkey: cashnote.unique_pubkey(),
-            amount: cashnote.value()?,
-        };
-        self = self.add_input(input, derived_key.clone(), input_src_tx);
-        Ok(self)
-    }
-
-    /// Add an input given a list of CashNotes and associated DerivedSecretKeys.
-    pub fn add_input_cashnotes(
-        mut self,
-        cashnotes: &[(CashNote, DerivedSecretKey)],
-    ) -> Result<Self> {
-        for (cashnote, derived_key) in cashnotes.iter() {
-            self = self.add_input_cashnote(cashnote, derived_key)?;
-        }
-        Ok(self)
-    }
-
     /// Add an output given the token, the MainPubkey and the DerivationIndex
     pub fn add_output(
         mut self,
@@ -110,38 +84,6 @@ impl TransactionBuilder {
     pub fn set_fee_output(mut self, output: FeeOutput) -> Self {
         self.fee = output;
         self
-    }
-
-    /// Get a list of input ids.
-    pub fn input_ids(&self) -> Vec<UniquePubkey> {
-        self.inputs.iter().map(|i| i.unique_pubkey()).collect()
-    }
-
-    /// Get sum of inputs
-    pub fn inputs_tokens_sum(&self) -> NanoTokens {
-        let amount = self.inputs.iter().map(|i| i.amount.as_nano()).sum();
-        NanoTokens::from(amount)
-    }
-
-    /// Get sum of outputs
-    pub fn outputs_tokens_sum(&self) -> NanoTokens {
-        let amount = self
-            .outputs
-            .iter()
-            .map(|o| o.amount.as_nano())
-            .chain(std::iter::once(self.fee.token.as_nano()))
-            .sum();
-        NanoTokens::from(amount)
-    }
-
-    /// Get inputs.
-    pub fn inputs(&self) -> &Vec<Input> {
-        &self.inputs
-    }
-
-    /// Get outputs.
-    pub fn outputs(&self) -> &Vec<Output> {
-        &self.outputs
     }
 
     /// Build the Transaction by signing the inputs. Return a CashNoteBuilder.

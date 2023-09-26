@@ -6,17 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_transfers::{transfers::SpendRequest, wallet::Transfer};
+use sn_transfers::{SpendRequest, Transfer};
 use xor_name::XorName;
 
 use super::Client;
 
 use sn_protocol::NetworkAddress;
-use sn_transfers::{
-    transfers::TransferOutputs,
-    wallet::{Error, LocalWallet, Result},
-};
 use sn_transfers::{CashNote, MainPubkey, NanoTokens};
+use sn_transfers::{LocalWallet, OfflineTransfer, WalletError, WalletResult};
 
 use futures::future::join_all;
 use std::{
@@ -40,7 +37,7 @@ impl WalletClient {
     }
 
     /// Stores the wallet to disk.
-    pub fn store_local_wallet(&self) -> Result<()> {
+    pub fn store_local_wallet(&self) -> WalletResult<()> {
         self.wallet.store()
     }
 
@@ -59,13 +56,13 @@ impl WalletClient {
     }
 
     /// Get the payment transfers for a given network address
-    pub fn get_payment_transfers(&self, address: &NetworkAddress) -> Result<Vec<Transfer>> {
+    pub fn get_payment_transfers(&self, address: &NetworkAddress) -> WalletResult<Vec<Transfer>> {
         match &address.as_xorname() {
             Some(xorname) => {
                 let cash_notes = self.wallet.get_payment_cash_notes(xorname);
                 Transfer::transfers_from_cash_notes(cash_notes)
             }
-            None => Err(Error::InvalidAddressType),
+            None => Err(WalletError::InvalidAddressType),
         }
     }
 
@@ -76,7 +73,7 @@ impl WalletClient {
         amount: NanoTokens,
         to: MainPubkey,
         verify_store: bool,
-    ) -> Result<CashNote> {
+    ) -> WalletResult<CashNote> {
         let created_cash_notes = self.wallet.local_send(vec![(amount, to)], None)?;
 
         // send to network
@@ -94,7 +91,7 @@ impl WalletClient {
         // return created CashNotes even if network part failed???
         match &created_cash_notes[..] {
             [info, ..] => Ok(info.clone()),
-            [] => Err(Error::CouldNotSendMoney(
+            [] => Err(WalletError::CouldNotSendMoney(
                 "No CashNotes were returned from the wallet.".into(),
             )),
         }
@@ -104,13 +101,12 @@ impl WalletClient {
     /// Returns a Vec of proofs
     pub async fn get_store_cost_at_address(
         &self,
-
         address: &NetworkAddress,
-    ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
+    ) -> WalletResult<Vec<(MainPubkey, NanoTokens)>> {
         self.client
             .get_store_costs_at_address(address)
             .await
-            .map_err(|error| Error::CouldNotSendMoney(error.to_string()))
+            .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()))
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
@@ -122,7 +118,7 @@ impl WalletClient {
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
         verify_store: bool,
-    ) -> Result<NanoTokens> {
+    ) -> WalletResult<NanoTokens> {
         let mut total_cost = NanoTokens::zero();
 
         let mut payment_map = BTreeMap::default();
@@ -135,7 +131,7 @@ impl WalletClient {
                 let costs = client
                     .get_store_costs_at_address(&content_addr)
                     .await
-                    .map_err(|error| Error::CouldNotSendMoney(error.to_string()));
+                    .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()));
                 (content_addr, costs)
             });
         }
@@ -186,7 +182,7 @@ impl WalletClient {
         &mut self,
         all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
         verify_store: bool,
-    ) -> Result<NanoTokens> {
+    ) -> WalletResult<NanoTokens> {
         // TODO:
         // Check for any existing payment CashNotes, and use them if they exist, only topping up if needs be
         let num_of_payments = all_data_payments.len();
@@ -198,7 +194,7 @@ impl WalletClient {
                 if let Some(new_cost) = total_cost.checked_add(*cost) {
                     total_cost = new_cost;
                 } else {
-                    return Err(Error::TotalPriceTooHigh);
+                    return Err(WalletError::TotalPriceTooHigh);
                 }
             }
         }
@@ -263,7 +259,7 @@ impl Client {
         &self,
         spend_requests: &BTreeSet<SpendRequest>,
         verify_store: bool,
-    ) -> Result<()> {
+    ) -> WalletResult<()> {
         let mut tasks = Vec::new();
 
         for spend_request in spend_requests {
@@ -275,7 +271,7 @@ impl Client {
         }
 
         for spend_attempt_result in join_all(tasks).await {
-            spend_attempt_result.map_err(|err| Error::CouldNotSendMoney(err.to_string()))?;
+            spend_attempt_result.map_err(|err| WalletError::CouldNotSendMoney(err.to_string()))?;
         }
 
         Ok(())
@@ -283,7 +279,7 @@ impl Client {
 
     /// Send a spend request to the network.
     /// This does _not_ verify the spend has been put to the network correctly
-    pub async fn send_without_verify(&self, transfer: TransferOutputs) -> Result<()> {
+    pub async fn send_without_verify(&self, transfer: OfflineTransfer) -> WalletResult<()> {
         let mut tasks = Vec::new();
         for spend_request in &transfer.all_spend_requests {
             trace!(
@@ -294,13 +290,13 @@ impl Client {
         }
 
         for spend_attempt_result in join_all(tasks).await {
-            spend_attempt_result.map_err(|err| Error::CouldNotSendMoney(err.to_string()))?;
+            spend_attempt_result.map_err(|err| WalletError::CouldNotSendMoney(err.to_string()))?;
         }
 
         Ok(())
     }
 
-    pub async fn verify(&self, cash_note: &CashNote) -> Result<()> {
+    pub async fn verify(&self, cash_note: &CashNote) -> WalletResult<()> {
         // We need to get all the spends in the cash_note from the network,
         // and compare them to the spends in the cash_note, to know if the
         // transfer is considered valid in the network.
@@ -312,7 +308,7 @@ impl Client {
         let mut received_spends = std::collections::BTreeSet::new();
         for result in join_all(tasks).await {
             let network_valid_spend =
-                result.map_err(|err| Error::CouldNotVerifyTransfer(err.to_string()))?;
+                result.map_err(|err| WalletError::CouldNotVerifyTransfer(err.to_string()))?;
             let _ = received_spends.insert(network_valid_spend);
         }
 
@@ -321,7 +317,7 @@ impl Client {
         if received_spends == cash_note.signed_spends {
             return Ok(());
         }
-        Err(Error::CouldNotVerifyTransfer(
+        Err(WalletError::CouldNotVerifyTransfer(
             "The spends in network were not the same as the ones in the CashNote. The parents of this CashNote are probably double spends.".into(),
         ))
     }
@@ -335,7 +331,7 @@ pub async fn send(
     to: MainPubkey,
     client: &Client,
     verify_store: bool,
-) -> Result<CashNote> {
+) -> WalletResult<CashNote> {
     if amount.as_nano() == 0 {
         panic!("Amount must be more than zero.");
     }
@@ -373,7 +369,7 @@ pub async fn send(
         .expect("Created cash_note shall be successfully stored.");
 
     if did_error {
-        return Err(Error::UnconfirmedTxAfterRetries);
+        return Err(WalletError::UnconfirmedTxAfterRetries);
     }
 
     Ok(new_cash_note)

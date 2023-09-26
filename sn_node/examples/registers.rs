@@ -8,7 +8,7 @@
 
 use sn_client::{Client, Error, WalletClient};
 use sn_registers::RegisterAddress;
-use sn_transfers::wallet::LocalWallet;
+use sn_transfers::LocalWallet;
 use xor_name::XorName;
 
 use bls::SecretKey;

@@ -6,9 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{CashNote, DerivationIndex, MainPubkey, SpendAddress};
+use crate::{CashNote, Ciphertext, DerivationIndex, MainPubkey, MainSecretKey, SpendAddress};
 
-use bls::{Ciphertext, PublicKey, SecretKey};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -53,7 +52,7 @@ impl Transfer {
 
         let mut transfers = Vec::new();
         for (recipient, cashnote_redemptions) in cashnote_redemptions_map {
-            let t = Transfer::create(cashnote_redemptions, recipient.0)
+            let t = Transfer::create(cashnote_redemptions, recipient)
                 .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
             transfers.push(t)
         }
@@ -66,7 +65,7 @@ impl Transfer {
     ///     not to be confused with the derived keys
     pub fn create(
         cashnote_redemptions: Vec<CashNoteRedemption>,
-        recipient: PublicKey,
+        recipient: MainPubkey,
     ) -> Result<Self> {
         let encrypted_cashnote_redemptions = cashnote_redemptions
             .into_iter()
@@ -79,7 +78,7 @@ impl Transfer {
 
     /// Get the CashNoteRedemptions from the Payment
     /// This is used by the recipient of a payment to decrypt the cashnote_redemptions in a payment
-    pub fn cashnote_redemptions(&self, sk: &SecretKey) -> Result<Vec<CashNoteRedemption>> {
+    pub fn cashnote_redemptions(&self, sk: &MainSecretKey) -> Result<Vec<CashNoteRedemption>> {
         let mut cashnote_redemptions = Vec::new();
         for cypher in &self.encrypted_cashnote_redemptions {
             let cashnote_redemption = CashNoteRedemption::decrypt(cypher, sk)?;
@@ -143,14 +142,15 @@ impl CashNoteRedemption {
     }
 
     /// Encrypt the CashNoteRedemption to a public key
-    pub fn encrypt(&self, pk: PublicKey) -> Result<Ciphertext> {
+    pub fn encrypt(&self, pk: MainPubkey) -> Result<Ciphertext> {
         let bytes = self.to_bytes()?;
-        Ok(pk.encrypt(bytes))
+        Ok(pk.0.encrypt(bytes))
     }
 
     /// Decrypt the CashNoteRedemption with a secret key
-    pub fn decrypt(cypher: &Ciphertext, sk: &SecretKey) -> Result<Self> {
+    pub fn decrypt(cypher: &Ciphertext, sk: &MainSecretKey) -> Result<Self> {
         let bytes = sk
+            .secret_key()
             .decrypt(cypher)
             .ok_or(Error::CashNoteRedemptionDecryptionFailed)?;
         Self::from_bytes(&bytes)
@@ -168,8 +168,8 @@ mod tests {
         let rng = &mut bls::rand::thread_rng();
         let cashnote_redemption =
             CashNoteRedemption::new([42; 32], SpendAddress::new(XorName::random(rng)));
-        let sk = SecretKey::random();
-        let pk = sk.public_key();
+        let sk = MainSecretKey::random();
+        let pk = sk.main_pubkey();
 
         let bytes = cashnote_redemption.to_bytes().unwrap();
         let cipher = cashnote_redemption.encrypt(pk).unwrap();
@@ -186,8 +186,8 @@ mod tests {
         let rng = &mut bls::rand::thread_rng();
         let cashnote_redemption =
             CashNoteRedemption::new([42; 32], SpendAddress::new(XorName::random(rng)));
-        let sk = SecretKey::random();
-        let pk = sk.public_key();
+        let sk = MainSecretKey::random();
+        let pk = sk.main_pubkey();
 
         let payment = Transfer::create(vec![cashnote_redemption.clone()], pk).unwrap();
         let cashnote_redemptions = payment.cashnote_redemptions(&sk).unwrap();

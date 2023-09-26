@@ -1,5 +1,5 @@
 // Copyright 2023 MaidSafe.net limited.
-//
+
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -10,58 +10,62 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sn_transfers::{
-    rand::{CryptoRng, RngCore},
-    rng, CashNote, Hash, MainSecretKey, NanoTokens, Output, Result, SignedSpend, Transaction,
-    TransactionBuilder, UniquePubkey,
+    create_first_cash_note_from_key, create_offline_transfer, rng, CashNote, DerivationIndex, Hash,
+    MainSecretKey, NanoTokens, UniquePubkey,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
 const N_OUTPUTS: u64 = 100;
 
 fn bench_reissue_1_to_100(c: &mut Criterion) {
+    // prepare transfer of genesis cashnote
     let mut rng = rng::from_seed([0u8; 32]);
-
-    let (starting_cashnote, starting_main_key) =
-        generate_cashnote_of_value(NanoTokens::from(N_OUTPUTS), &mut rng).unwrap();
-
-    let derived_key = starting_cashnote.derived_key(&starting_main_key).unwrap();
-    let cashnote_builder = TransactionBuilder::default()
-        .add_input_cashnote(&starting_cashnote, &derived_key)
-        .unwrap()
-        .add_outputs((0..N_OUTPUTS).map(|_| {
+    let (starting_cashnote, starting_main_key) = generate_cashnote();
+    let recipients = (0..N_OUTPUTS)
+        .map(|_| {
             let main_key = MainSecretKey::random_from_rng(&mut rng);
             (
                 NanoTokens::from(1),
                 main_key.main_pubkey(),
                 UniquePubkey::random_derivation_index(&mut rng),
             )
-        }))
-        .build(Hash::default())
-        .unwrap();
+        })
+        .collect::<Vec<_>>();
 
-    let spent_tx = &cashnote_builder.spent_tx;
+    // transfer to N_OUTPUTS recipients
+    let zero = DerivationIndex::from([0u8; 32]);
+    let offline_transfer = create_offline_transfer(
+        vec![(starting_cashnote, starting_main_key.derive_key(&zero))],
+        recipients,
+        starting_main_key.main_pubkey(),
+        Hash::default(),
+    )
+    .expect("transfer to succeed");
+
+    // simulate spentbook to check for double spends
     let mut spentbook_node = BTreeMap::new();
-    for signed_spend in cashnote_builder.signed_spends() {
+    for spend in offline_transfer.all_spend_requests.clone().into_iter() {
         if spentbook_node
-            .insert(signed_spend.unique_pubkey(), signed_spend)
+            .insert(*spend.signed_spend.unique_pubkey(), spend)
             .is_some()
         {
             panic!("cashnote double spend");
         };
     }
-
-    let signed_spends: BTreeSet<_> = cashnote_builder
-        .signed_spends()
+    let spent_tx = offline_transfer.tx;
+    let signed_spends: BTreeSet<_> = offline_transfer
+        .all_spend_requests
         .into_iter()
-        .cloned()
+        .map(|spend| spend.signed_spend)
         .collect();
 
+    // bench verification
     c.bench_function(&format!("reissue split 1 to {N_OUTPUTS}"), |b| {
         #[cfg(unix)]
         let guard = pprof::ProfilerGuard::new(100).unwrap();
 
         b.iter(|| {
-            black_box(spent_tx)
+            black_box(spent_tx.clone())
                 .verify_against_inputs_spent(&signed_spends)
                 .unwrap();
         });
@@ -76,91 +80,92 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
 }
 
 fn bench_reissue_100_to_1(c: &mut Criterion) {
+    // prepare transfer of genesis cashnote, this time sending to our own key derived
     let mut rng = rng::from_seed([0u8; 32]);
-
-    let (starting_cashnote, starting_main_key) =
-        generate_cashnote_of_value(NanoTokens::from(N_OUTPUTS), &mut rng).unwrap();
-
-    let outputs: BTreeMap<_, _> = (0..N_OUTPUTS)
-        .map(|_| {
+    let (starting_cashnote, starting_main_key) = generate_cashnote();
+    let recipients = (0..N_OUTPUTS)
+        .map(|n| {
             let main_key = MainSecretKey::random_from_rng(&mut rng);
-            let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
-            let unique_pubkey = main_key.derive_key(&derivation_index).unique_pubkey();
+            // use n as both the amount and the derivation index
+            // so we can easily get the derived key back below
+            // if more than 256 outputs, this will wrap around and one key will get multiple cashnotes, which is OK
+            let mut derivation_index = [0u8; 32];
+            derivation_index[0] = n as u8;
             (
-                unique_pubkey,
-                (main_key, derivation_index, NanoTokens::from(1)),
+                NanoTokens::from(n),
+                main_key.main_pubkey(),
+                derivation_index,
             )
         })
-        .collect();
+        .collect::<Vec<_>>();
 
-    let derived_key = starting_cashnote.derived_key(&starting_main_key).unwrap();
-    let cashnote_builder = TransactionBuilder::default()
-        .add_input_cashnote(&starting_cashnote, &derived_key)
-        .unwrap()
-        .add_outputs(
-            outputs
-                .iter()
-                .map(|(_, (main_key, derivation_index, value))| {
-                    (*value, main_key.main_pubkey(), *derivation_index)
-                }),
-        )
-        .build(Hash::default())
-        .unwrap();
+    // transfer to N_OUTPUTS recipients
+    let zero = DerivationIndex::from([0u8; 32]);
+    let offline_transfer = create_offline_transfer(
+        vec![(starting_cashnote, starting_main_key.derive_key(&zero))],
+        recipients,
+        starting_main_key.main_pubkey(),
+        Hash::default(),
+    )
+    .expect("transfer to succeed");
 
-    let mut spentbook_node: BTreeMap<UniquePubkey, SignedSpend> = BTreeMap::new();
-    let signed_spends: Vec<SignedSpend> = cashnote_builder
-        .signed_spends()
+    // simulate spentbook to check for double spends
+    let mut spentbook_node = BTreeMap::new();
+    let signed_spends: BTreeSet<_> = offline_transfer
+        .all_spend_requests
+        .clone()
         .into_iter()
-        .cloned()
+        .map(|spend| spend.signed_spend)
         .collect();
-    for signed_spend in signed_spends {
+    for spend in signed_spends.into_iter() {
         if spentbook_node
-            .insert(*signed_spend.unique_pubkey(), signed_spend)
-            .is_some()
-        {
-            panic!("cashnote double spend");
-        };
-    }
-    let cashnotes = cashnote_builder.build().unwrap();
-
-    let main_key = MainSecretKey::random_from_rng(&mut rng);
-    let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
-
-    let mut tx_builder = TransactionBuilder::default();
-
-    for (cashnote, _) in cashnotes.into_iter() {
-        let (main_key, _, _) = outputs.get(&cashnote.unique_pubkey()).unwrap();
-        let derived_key = cashnote.derived_key(main_key).unwrap();
-        tx_builder = tx_builder
-            .add_input_cashnote(&cashnote, &derived_key)
-            .unwrap();
-    }
-
-    let merge_cashnote_builder = tx_builder
-        .add_output(
-            NanoTokens::from(N_OUTPUTS),
-            main_key.main_pubkey(),
-            derivation_index,
-        )
-        .build(Hash::default())
-        .unwrap();
-
-    let merge_spent_tx = merge_cashnote_builder.spent_tx.clone();
-    for signed_spend in merge_cashnote_builder.signed_spends() {
-        if spentbook_node
-            .insert(*signed_spend.unique_pubkey(), signed_spend.to_owned())
+            .insert(*spend.unique_pubkey(), spend)
             .is_some()
         {
             panic!("cashnote double spend");
         };
     }
 
-    let signed_spends: BTreeSet<_> = merge_cashnote_builder
-        .signed_spends()
+    // prepare to send all of those cashnotes to a single key
+    let total_amount = offline_transfer
+        .created_cash_notes
+        .iter()
+        .map(|cn| cn.value().unwrap().as_nano())
+        .sum();
+    let many_cashnotes = offline_transfer
+        .created_cash_notes
         .into_iter()
-        .cloned()
+        .map(|cn| {
+            // get the derivation index from the amount
+            let amount = cn.value().unwrap().as_nano();
+            let mut derivation_index = [0u8; 32];
+            derivation_index[0] = amount as u8;
+            let sk = starting_main_key.derive_key(&derivation_index);
+            (cn, sk)
+        })
+        .collect();
+    let one_single_recipient = vec![(
+        NanoTokens::from(total_amount),
+        starting_main_key.main_pubkey(),
+        UniquePubkey::random_derivation_index(&mut rng),
+    )];
+
+    // create transfer to merge all of the cashnotes into one
+    let many_to_one_transfer = create_offline_transfer(
+        many_cashnotes,
+        one_single_recipient,
+        starting_main_key.main_pubkey(),
+        Hash::default(),
+    )
+    .expect("transfer to succeed");
+    let merge_spent_tx = many_to_one_transfer.tx.clone();
+    let signed_spends = many_to_one_transfer
+        .all_spend_requests
+        .into_iter()
+        .map(|spend| spend.signed_spend)
         .collect();
 
+    // bench verification
     c.bench_function(&format!("reissue merge {N_OUTPUTS} to 1"), |b| {
         #[cfg(unix)]
         let guard = pprof::ProfilerGuard::new(100).unwrap();
@@ -181,32 +186,10 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
 }
 
 #[allow(clippy::result_large_err)]
-fn generate_cashnote_of_value(
-    amount: NanoTokens,
-    mut rng: &mut (impl RngCore + CryptoRng),
-) -> Result<(CashNote, MainSecretKey)> {
-    let main_key = MainSecretKey::random_from_rng(&mut rng);
-    let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
-    let derived_key = main_key.derive_key(&derivation_index);
-
-    let tx = Transaction {
-        inputs: vec![],
-        outputs: vec![Output {
-            unique_pubkey: derived_key.unique_pubkey(),
-            amount,
-        }],
-        fee: Default::default(),
-    };
-
-    let cashnote = CashNote {
-        id: derived_key.unique_pubkey(),
-        src_tx: tx,
-        signed_spends: Default::default(),
-        main_pubkey: main_key.main_pubkey(),
-        derivation_index,
-    };
-
-    Ok((cashnote, main_key))
+fn generate_cashnote() -> (CashNote, MainSecretKey) {
+    let key = MainSecretKey::random();
+    let genesis = create_first_cash_note_from_key(&key).expect("Genesis creation to succeed.");
+    (genesis, key)
 }
 
 criterion_group! {
