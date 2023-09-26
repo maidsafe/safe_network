@@ -4536,7 +4536,6 @@ dependencies = [
  "itertools 0.11.0",
  "lazy_static",
  "pprof",
- "quickcheck",
  "rand",
  "rmp-serde",
  "serde",
