@@ -1417,6 +1417,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.90.41](https://github.com/maidsafe/safe_network/compare/sn_node-v0.90.40...sn_node-v0.90.41) - 2023-09-26
+
+### Added
+- *(apis)* adding client and node APIs, as well as safenode RPC service to unsubscribe from gossipsub topics
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
