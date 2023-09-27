@@ -35,6 +35,11 @@ use std::{
 };
 use tokio::task::spawn;
 
+/// Expected prefix string in a topic name where transfers notifications are sent on.
+/// E.g. transfer notifications for key `pub-key-A` will be sent on a topic named `TRANSFER_NOTIF_pub-key-A`.
+/// The notification msg is expected to be encrypted against the referencced public key.
+const TRANSFER_NOTIF_TOPIC_PREFIX: &str = "TRANSFER_NOTIF_";
+
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
 #[derive(Clone)]
@@ -325,13 +330,24 @@ impl Node {
                     error!("Failed to remove local record: {e:?}");
                 }
             }
-            NetworkEvent::GossipsubMsg { topic, msg } => {
+            NetworkEvent::GossipsubMsg { mut topic, msg } => {
                 info!(
                     ">>> New Gossipsub msg received on topic '{topic}': {}",
                     String::from_utf8(msg.clone()).unwrap_or_else(|m| format!("{m:?}"))
                 );
-                self.events_channel
-                    .broadcast(NodeEvent::GossipsubMsg { topic, msg });
+                if topic.starts_with(TRANSFER_NOTIF_TOPIC_PREFIX) {
+                    // this is a notification of a transfer we are subscribed to
+                    let key_hex = topic.split_off(TRANSFER_NOTIF_TOPIC_PREFIX.len());
+                    let key_str = String::from_utf8(hex::decode(key_hex).unwrap()).unwrap();
+                    let key = bls::PublicKey::from_hex(&key_str).unwrap();
+                    let transfer =
+                        sn_transfers::Transfer::from_hex(&String::from_utf8(msg).unwrap()).unwrap();
+                    self.events_channel
+                        .broadcast(NodeEvent::TransferNotif { key, transfer });
+                } else {
+                    self.events_channel
+                        .broadcast(NodeEvent::GossipsubMsg { topic, msg });
+                }
             }
         }
     }

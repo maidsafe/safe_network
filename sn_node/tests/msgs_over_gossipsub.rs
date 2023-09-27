@@ -95,12 +95,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
 
 #[tokio::test]
 async fn msgs_over_gossipsub_to_testnet() -> Result<()> {
-    let addresses = [
-        "127.0.0.1:12002",
-        "127.0.0.1:12003",
-        "127.0.0.1:12004",
-        "127.0.0.1:12005",
-    ];
+    let addresses = ["127.0.0.1:12001"];
 
     let topic = "genesis-test-1".to_string();
 
@@ -108,7 +103,7 @@ async fn msgs_over_gossipsub_to_testnet() -> Result<()> {
         let addr: SocketAddr = addr.parse()?;
         tokio::time::sleep(Duration::from_millis(1000)).await;
 
-        let msg = format!("TestMsg-from-{index}");
+        let msg = format!("TestMsg-from-{index}={addr}");
 
         let endpoint = format!("https://{addr}");
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;

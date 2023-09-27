@@ -190,10 +190,10 @@ pub async fn node_events(addr: SocketAddr, only_rewards: bool) -> Result<()> {
     let mut stream = response.into_inner();
     while let Some(Ok(e)) = stream.next().await {
         let event = match NodeEvent::from_bytes(&e.event) {
-            Ok(NodeEvent::GossipsubMsg { topic, msg }) if only_rewards => {
+            Ok(NodeEvent::TransferNotif { key, transfer }) if only_rewards => {
                 println!(
-                    "New node reward notification received: {topic} {}",
-                    String::from_utf8(msg)?
+                    "New node reward notification received: {key:?} {}",
+                    transfer.to_hex()?
                 );
                 continue;
             }
