@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695822356625,
+  "lastUpdate": 1695822359220,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -22282,6 +22282,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 41,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4f5d54cad6f851d5df7c40589c8b063f429de2c2",
+          "message": "feat(networking): remove optional_semaphore being passed down from apps",
+          "timestamp": "2023-09-27T12:42:50Z",
+          "tree_id": "1ae0c18b67248931b29ab06f0fba07842329faa8",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f5d54cad6f851d5df7c40589c8b063f429de2c2"
+        },
+        "date": 1695822357820,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 160.70656,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 44,
             "unit": "MB"
           }
         ]
