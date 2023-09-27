@@ -322,7 +322,7 @@ fn create_cash_note_task(
 
             let dest_pk = MainSecretKey::random().main_pubkey();
             let cash_note = wallet_client
-                .send(NanoTokens::from(10), dest_pk, false)
+                .send_cash_note(NanoTokens::from(10), dest_pk, false)
                 .await
                 .expect("Failed to send CashNote to {dest_pk}");
 

@@ -6,11 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
+use super::{
     transaction::{Output, Transaction},
-    DerivationIndex, DerivedSecretKey, FeeOutput, Input, MainPubkey, Spend, UniquePubkey,
+    CashNote, DerivationIndex, DerivedSecretKey, FeeOutput, Hash, Input, MainPubkey, NanoTokens,
+    SignedSpend, Spend, UniquePubkey,
 };
-use crate::{CashNote, Error, Hash, NanoTokens, Result, SignedSpend};
+
+use crate::{Error, Result};
+
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 

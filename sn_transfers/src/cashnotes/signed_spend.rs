@@ -6,7 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Error, Hash, NanoTokens, Result, Signature, Transaction, UniquePubkey};
+use super::{Hash, NanoTokens, Transaction, UniquePubkey};
+use crate::{Error, Result, Signature};
+
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;

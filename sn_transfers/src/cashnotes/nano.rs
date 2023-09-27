@@ -6,7 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::error::{Error, Result};
+use crate::{Error, Result};
+
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display, Formatter},
@@ -69,7 +70,9 @@ impl FromStr for NanoTokens {
             let units = itr
                 .next()
                 .and_then(|s| s.parse::<u64>().ok())
-                .ok_or_else(|| Error::FailedToParseNano("Can't parse token units".to_string()))?;
+                .ok_or_else(|| {
+                    Error::FailedToParseNanoToken("Can't parse token units".to_string())
+                })?;
 
             units
                 .checked_mul(TOKEN_TO_RAW_CONVERSION)
@@ -83,7 +86,7 @@ impl FromStr for NanoTokens {
                 0
             } else {
                 let parsed_remainder = remainder_str.parse::<u64>().map_err(|_| {
-                    Error::FailedToParseNano("Can't parse token remainder".to_string())
+                    Error::FailedToParseNanoToken("Can't parse token remainder".to_string())
                 })?;
 
                 let remainder_conversion = TOKEN_TO_RAW_POWER_OF_10_CONVERSION
@@ -142,19 +145,19 @@ mod tests {
         );
 
         assert_eq!(
-            Err(Error::FailedToParseNano(
+            Err(Error::FailedToParseNanoToken(
                 "Can't parse token units".to_string()
             )),
             NanoTokens::from_str("a")
         );
         assert_eq!(
-            Err(Error::FailedToParseNano(
+            Err(Error::FailedToParseNanoToken(
                 "Can't parse token remainder".to_string()
             )),
             NanoTokens::from_str("0.a")
         );
         assert_eq!(
-            Err(Error::FailedToParseNano(
+            Err(Error::FailedToParseNanoToken(
                 "Can't parse token remainder".to_string()
             )),
             NanoTokens::from_str("0.0.0")

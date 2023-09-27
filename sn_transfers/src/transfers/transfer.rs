@@ -6,243 +6,212 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Error, OfflineTransfer, Result, SpendRequest};
+use crate::{CashNote, Ciphertext, DerivationIndex, MainPubkey, MainSecretKey, SpendAddress};
 
-use crate::{
-    rng, transaction::Input, CashNote, DerivationIndex, DerivedSecretKey, FeeOutput, Hash,
-    MainPubkey, NanoTokens, TransactionBuilder, UniquePubkey,
-};
-
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-/// The input details necessary to
-/// carry out a transfer of tokens.
-#[derive(Debug)]
-struct TranferInputs {
-    /// The selected cash_notes to spend, with the necessary amounts contained
-    /// to transfer the below specified amount of tokens to each recipients.
-    pub cash_notes_to_spend: Vec<(CashNote, DerivedSecretKey)>,
-    /// The amounts and cash_note ids for the cash_notes that will be created to hold the transferred tokens.
-    pub recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
-    /// Any surplus amount after spending the necessary input cash_notes.
-    pub change: (NanoTokens, MainPubkey),
+use crate::error::{Error, Result};
+
+/// Transfer sent to a recipient
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
+pub struct Transfer {
+    /// List of encrypted CashNoteRedemptions from which a recipient can verify and get money
+    /// Only the recipient can decrypt these CashNoteRedemptions
+    encrypted_cashnote_redemptions: Vec<Ciphertext>,
 }
 
-/// A function for creating an offline transfer of tokens.
-/// This is done by creating new cash_notes to the recipients (and a change cash_note if any)
-/// by selecting from the available input cash_notes, and creating the necessary
-/// spends to do so.
-///
-/// Those signed spends are found in each new cash_note, and must be uploaded to the network
-/// for the transaction to take effect.
-/// The peers will validate each signed spend they receive, before accepting it.
-/// Once enough peers have accepted all the spends of the transaction, and serve
-/// them upon request, the transaction will be completed.
-pub fn create_offline_transfer(
-    available_cash_notes: Vec<(CashNote, DerivedSecretKey)>,
-    recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
-    change_to: MainPubkey,
-    reason_hash: Hash,
-) -> Result<OfflineTransfer> {
-    let total_output_amount = recipients
-        .iter()
-        .try_fold(NanoTokens::zero(), |total, (amount, _, _)| {
-            total.checked_add(*amount)
-        })
-        .ok_or_else(|| {
-            Error::CashNoteReissueFailed(
-                "Overflow occurred while summing the amounts for the recipients.".to_string(),
-            )
-        })?;
-
-    // We need to select the necessary number of cash_notes from those that we were passed.
-    let (cash_notes_to_spend, change_amount) =
-        select_inputs(available_cash_notes, total_output_amount)?;
-
-    let selected_inputs = TranferInputs {
-        cash_notes_to_spend,
-        recipients,
-        change: (change_amount, change_to),
-    };
-
-    create_transfer_with(selected_inputs, reason_hash, None)
-}
-
-/// Select the necessary number of cash_notes from those that we were passed.
-fn select_inputs(
-    available_cash_notes: Vec<(CashNote, DerivedSecretKey)>,
-    total_output_amount: NanoTokens,
-) -> Result<(Vec<(CashNote, DerivedSecretKey)>, NanoTokens)> {
-    let mut cash_notes_to_spend = Vec::new();
-    let mut total_input_amount = NanoTokens::zero();
-    let mut change_amount = total_output_amount;
-
-    for (cash_note, derived_key) in available_cash_notes {
-        let input_key = cash_note.unique_pubkey();
-
-        let cash_note_balance = match cash_note.value() {
-            Ok(token) => token,
-            Err(err) => {
-                warn!(
-                    "Ignoring input CashNote (id: {input_key:?}) due to missing an output: {err:?}"
-                );
-                continue;
-            }
-        };
-
-        // Add this CashNote as input to be spent.
-        cash_notes_to_spend.push((cash_note, derived_key));
-
-        // Input amount increases with the amount of the cash_note.
-        total_input_amount = total_input_amount.checked_add(cash_note_balance)
-            .ok_or_else(|| {
-                Error::CashNoteReissueFailed(
-                    "Overflow occurred while increasing total input amount while trying to cover the output CashNotes."
-                    .to_string(),
-            )
-            })?;
-
-        // If we've already combined input CashNotes for the total output amount, then stop.
-        match change_amount.checked_sub(cash_note_balance) {
-            Some(pending_output) => {
-                change_amount = pending_output;
-                if change_amount.as_nano() == 0 {
-                    break;
+impl Transfer {
+    /// This function is used to create Transfer from CashNotes, can be done offline, and sent to the recipient.
+    /// Creates Transfers from the given cash_notes
+    /// Grouping CashNotes by recipient into different transfers
+    /// This Transfer can be sent safely to the recipients as all data in it is encrypted
+    /// The recipients can then decrypt the data and use it to verify and reconstruct the CashNotes
+    pub fn transfers_from_cash_notes(cash_notes: Vec<CashNote>) -> Result<Vec<Transfer>> {
+        let mut cashnote_redemptions_map: BTreeMap<MainPubkey, Vec<CashNoteRedemption>> =
+            BTreeMap::new();
+        for cash_note in cash_notes {
+            let recipient = cash_note.main_pubkey;
+            let derivation_index = cash_note.derivation_index();
+            let parent_spend_addr = match cash_note.signed_spends.iter().next() {
+                Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
+                None => {
+                    warn!(
+                        "Skipping CashNote {cash_note:?} while creating Transfer as it has no parent spends."
+                    );
+                    continue;
                 }
-            }
-            None => {
-                change_amount =
-                    NanoTokens::from(cash_note_balance.as_nano() - change_amount.as_nano());
-                break;
-            }
+            };
+
+            let u = CashNoteRedemption::new(derivation_index, parent_spend_addr);
+            cashnote_redemptions_map
+                .entry(recipient)
+                .or_insert_with(Vec::new)
+                .push(u);
         }
+
+        let mut transfers = Vec::new();
+        for (recipient, cashnote_redemptions) in cashnote_redemptions_map {
+            let t = Transfer::create(cashnote_redemptions, recipient)
+                .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
+            transfers.push(t)
+        }
+        Ok(transfers)
     }
 
-    // Make sure total input amount gathered with input CashNotes are enough for the output amount
-    if total_output_amount > total_input_amount {
-        return Err(Error::NotEnoughBalance(
-            total_input_amount,
-            total_output_amount,
-        ));
+    /// This function is used to create a Transfer from a CashNote, can be done offline, and sent to the recipient.
+    /// Creates a Transfer from the given cash_note
+    /// This Transfer can be sent safely to the recipients as all data in it is encrypted
+    /// The recipients can then decrypt the data and use it to verify and reconstruct the CashNote
+    pub fn transfers_from_cash_note(cash_note: CashNote) -> Result<Transfer> {
+        let recipient = cash_note.main_pubkey;
+        let derivation_index = cash_note.derivation_index();
+        let parent_spend_addr = match cash_note.signed_spends.iter().next() {
+            Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
+            None => {
+                return Err(Error::CashNoteHasNoParentSpends);
+            }
+        };
+
+        let u = CashNoteRedemption::new(derivation_index, parent_spend_addr);
+        let t = Transfer::create(vec![u], recipient)
+            .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
+        Ok(t)
     }
 
-    Ok((cash_notes_to_spend, change_amount))
+    /// Create a new transfer
+    /// cashnote_redemptions: List of CashNoteRedemptions to be used for payment
+    /// recipient: main Public key (donation key) of the recipient,
+    ///     not to be confused with the derived keys
+    pub fn create(
+        cashnote_redemptions: Vec<CashNoteRedemption>,
+        recipient: MainPubkey,
+    ) -> Result<Self> {
+        let encrypted_cashnote_redemptions = cashnote_redemptions
+            .into_iter()
+            .map(|cashnote_redemption| cashnote_redemption.encrypt(recipient))
+            .collect::<Result<Vec<Ciphertext>>>()?;
+        Ok(Transfer {
+            encrypted_cashnote_redemptions,
+        })
+    }
+
+    /// Get the CashNoteRedemptions from the Payment
+    /// This is used by the recipient of a payment to decrypt the cashnote_redemptions in a payment
+    pub fn cashnote_redemptions(&self, sk: &MainSecretKey) -> Result<Vec<CashNoteRedemption>> {
+        let mut cashnote_redemptions = Vec::new();
+        for cypher in &self.encrypted_cashnote_redemptions {
+            let cashnote_redemption = CashNoteRedemption::decrypt(cypher, sk)?;
+            cashnote_redemptions.push(cashnote_redemption);
+        }
+        Ok(cashnote_redemptions)
+    }
+
+    /// Deserializes a `Transfer` represented as a hex string to a `Transfer`.
+    pub fn from_hex(hex: &str) -> Result<Self> {
+        let mut bytes = hex::decode(hex).map_err(|_| Error::TransferDeserializationFailed)?;
+        bytes.reverse();
+        let transfer: Transfer =
+            bincode::deserialize(&bytes).map_err(|_| Error::TransferDeserializationFailed)?;
+        Ok(transfer)
+    }
+
+    /// Serialize this `Transfer` instance to a readable hex string that a human can copy paste
+    pub fn to_hex(&self) -> Result<String> {
+        let mut serialized =
+            bincode::serialize(&self).map_err(|_| Error::TransferSerializationFailed)?;
+        serialized.reverse();
+        Ok(hex::encode(serialized))
+    }
 }
 
-/// The tokens of the input cash_notes will be transfered to the
-/// new cash_notes (and a change cash_note if any), which are returned from this function.
-/// This does not register the transaction in the network.
-/// To do that, the `signed_spends` of each new cash_note, has to be uploaded
-/// to the network. When those same signed spends can be retrieved from
-/// enough peers in the network, the transaction will be completed.
-fn create_transfer_with(
-    selected_inputs: TranferInputs,
-    reason_hash: Hash,
-    fee: Option<FeeOutput>,
-) -> Result<OfflineTransfer> {
-    let TranferInputs {
-        change: (change, change_to),
-        ..
-    } = selected_inputs;
+/// Unspent Transaction (Tx) Output
+/// Information can be used by the Tx recipient of this output
+/// to check that they recieved money and to spend it
+///
+/// This struct contains sensitive information that should be kept secret
+/// so it should be encrypted to the recipient's public key (public address)
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
+pub struct CashNoteRedemption {
+    /// derivation index of the CashNoteRedemption
+    /// with this derivation index the owner can derive
+    /// the secret key from their main key needed to spend this CashNoteRedemption
+    pub derivation_index: DerivationIndex,
+    /// spentbook entry of one of one of the inputs (parent spends)
+    /// using data found at this address the owner can check that the output is valid money
+    pub parent_spend: SpendAddress,
+}
 
-    let mut inputs = vec![];
-    let mut src_txs = BTreeMap::new();
-    for (cash_note, derived_key) in selected_inputs.cash_notes_to_spend {
-        let token = match cash_note.value() {
-            Ok(token) => token,
-            Err(err) => {
-                warn!("Ignoring cash_note, as it didn't have the correct derived key: {err}");
-                continue;
-            }
-        };
-        let input = Input {
-            unique_pubkey: cash_note.unique_pubkey(),
-            amount: token,
-        };
-        inputs.push((input, derived_key, cash_note.src_tx.clone()));
-        let _ = src_txs.insert(cash_note.unique_pubkey(), cash_note.src_tx);
-    }
-
-    let mut tx_builder = TransactionBuilder::default()
-        .add_inputs(inputs)
-        .add_outputs(selected_inputs.recipients);
-
-    if let Some(fee_output) = fee {
-        tx_builder = tx_builder.set_fee_output(fee_output);
-    }
-
-    let mut rng = rng::thread_rng();
-    let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
-    let change_id = change_to.new_unique_pubkey(&derivation_index);
-    if !change.is_zero() {
-        tx_builder = tx_builder.add_output(change, change_to, derivation_index);
-    }
-
-    // Finalize the tx builder to get the cash_note builder.
-    let cash_note_builder = tx_builder
-        .build(reason_hash)
-        .map_err(Box::new)
-        .map_err(Error::CashNotes)?;
-
-    let tx = cash_note_builder.spent_tx.clone();
-
-    let signed_spends: BTreeMap<_, _> = cash_note_builder
-        .signed_spends()
-        .into_iter()
-        .map(|spend| (spend.unique_pubkey(), spend))
-        .collect();
-
-    // We must have a source transaction for each signed spend (i.e. the tx where the cash_note was created).
-    // These are required to upload the spends to the network.
-    if !signed_spends
-        .iter()
-        .all(|(unique_pubkey, _)| src_txs.contains_key(*unique_pubkey))
-    {
-        return Err(Error::CashNoteReissueFailed(
-            "Not all signed spends could be matched to a source cash_note transaction.".to_string(),
-        ));
-    }
-
-    let mut all_spend_requests = vec![];
-    for (unique_pubkey, signed_spend) in signed_spends.into_iter() {
-        let parent_tx = src_txs
-            .get(unique_pubkey)
-            .ok_or(Error::CashNoteReissueFailed(format!(
-                "Missing source cash_note tx of {unique_pubkey:?}!"
-            )))?;
-
-        let spend_requests = SpendRequest {
-            signed_spend: signed_spend.clone(),
-            parent_tx: parent_tx.clone(),
-        };
-
-        all_spend_requests.push(spend_requests);
-    }
-
-    // Perform validations of input tx and signed spends,
-    // as well as building the output CashNotes.
-    let mut created_cash_notes: Vec<_> = cash_note_builder
-        .build()
-        .map_err(Box::new)
-        .map_err(Error::CashNotes)?
-        .into_iter()
-        .map(|(cash_note, _)| cash_note)
-        .collect();
-
-    let mut change_cash_note = None;
-    created_cash_notes.retain(|created| {
-        if created.unique_pubkey() == change_id {
-            change_cash_note = Some(created.clone());
-            false
-        } else {
-            true
+impl CashNoteRedemption {
+    /// Create a new CashNoteRedemption
+    pub fn new(derivation_index: DerivationIndex, parent_spend: SpendAddress) -> Self {
+        Self {
+            derivation_index,
+            parent_spend,
         }
-    });
+    }
 
-    Ok(OfflineTransfer {
-        tx,
-        created_cash_notes,
-        change_cash_note,
-        all_spend_requests,
-    })
+    /// Serialize the CashNoteRedemption to bytes
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        rmp_serde::to_vec(self).map_err(|_| Error::CashNoteRedemptionSerialisationFailed)
+    }
+
+    /// Deserialize the CashNoteRedemption from bytes
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        rmp_serde::from_slice(bytes).map_err(|_| Error::CashNoteRedemptionSerialisationFailed)
+    }
+
+    /// Encrypt the CashNoteRedemption to a public key
+    pub fn encrypt(&self, pk: MainPubkey) -> Result<Ciphertext> {
+        let bytes = self.to_bytes()?;
+        Ok(pk.0.encrypt(bytes))
+    }
+
+    /// Decrypt the CashNoteRedemption with a secret key
+    pub fn decrypt(cypher: &Ciphertext, sk: &MainSecretKey) -> Result<Self> {
+        let bytes = sk
+            .secret_key()
+            .decrypt(cypher)
+            .ok_or(Error::CashNoteRedemptionDecryptionFailed)?;
+        Self::from_bytes(&bytes)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use xor_name::XorName;
+
+    use super::*;
+
+    #[test]
+    fn test_cashnote_redemption_conversions() {
+        let rng = &mut bls::rand::thread_rng();
+        let cashnote_redemption =
+            CashNoteRedemption::new([42; 32], SpendAddress::new(XorName::random(rng)));
+        let sk = MainSecretKey::random();
+        let pk = sk.main_pubkey();
+
+        let bytes = cashnote_redemption.to_bytes().unwrap();
+        let cipher = cashnote_redemption.encrypt(pk).unwrap();
+
+        let cashnote_redemption2 = CashNoteRedemption::from_bytes(&bytes).unwrap();
+        let cashnote_redemption3 = CashNoteRedemption::decrypt(&cipher, &sk).unwrap();
+
+        assert_eq!(cashnote_redemption, cashnote_redemption2);
+        assert_eq!(cashnote_redemption, cashnote_redemption3);
+    }
+
+    #[test]
+    fn test_cashnote_redemption_transfer() {
+        let rng = &mut bls::rand::thread_rng();
+        let cashnote_redemption =
+            CashNoteRedemption::new([42; 32], SpendAddress::new(XorName::random(rng)));
+        let sk = MainSecretKey::random();
+        let pk = sk.main_pubkey();
+
+        let payment = Transfer::create(vec![cashnote_redemption.clone()], pk).unwrap();
+        let cashnote_redemptions = payment.cashnote_redemptions(&sk).unwrap();
+
+        assert_eq!(cashnote_redemptions, vec![cashnote_redemption]);
+    }
 }

@@ -45,16 +45,12 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
     // simulate spentbook to check for double spends
     let mut spentbook_node = BTreeSet::new();
     for spend in &offline_transfer.all_spend_requests {
-        if !spentbook_node.insert(*spend.signed_spend.unique_pubkey()) {
+        if !spentbook_node.insert(*spend.unique_pubkey()) {
             panic!("cashnote double spend");
         };
     }
     let spent_tx = offline_transfer.tx;
-    let signed_spends: BTreeSet<_> = offline_transfer
-        .all_spend_requests
-        .into_iter()
-        .map(|spend| spend.signed_spend)
-        .collect();
+    let signed_spends: BTreeSet<_> = offline_transfer.all_spend_requests.into_iter().collect();
 
     // bench verification
     c.bench_function(&format!("reissue split 1 to {N_OUTPUTS}"), |b| {
@@ -107,7 +103,6 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         .all_spend_requests
         .clone()
         .into_iter()
-        .map(|spend| spend.signed_spend)
         .collect();
     for spend in signed_spends.into_iter() {
         if !spentbook_node.insert(*spend.unique_pubkey()) {
@@ -148,7 +143,6 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
     let signed_spends = many_to_one_transfer
         .all_spend_requests
         .into_iter()
-        .map(|spend| spend.signed_spend)
         .collect();
 
     // bench verification

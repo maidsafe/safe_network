@@ -6,10 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    transaction::Transaction, unique_keys::MainPubkey, DerivationIndex, DerivedSecretKey, Error,
-    FeeOutput, Hash, MainSecretKey, NanoTokens, Result, SignedSpend, UniquePubkey,
+use super::{
+    DerivationIndex, DerivedSecretKey, FeeOutput, Hash, MainPubkey, MainSecretKey, NanoTokens,
+    SignedSpend, Transaction, UniquePubkey,
 };
+
+use crate::{Error, Result};
+
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use tiny_keccak::{Hasher, Sha3};
@@ -191,137 +194,5 @@ impl CashNote {
             bincode::serialize(&self).map_err(|e| Error::HexSerializationFailed(e.to_string()))?;
         serialized.reverse();
         Ok(hex::encode(serialized))
-    }
-}
-
-#[cfg(test)]
-pub(crate) mod tests {
-    use super::*;
-
-    use crate::{transaction::Output, FeeOutput, Hash, NanoTokens, UniquePubkey};
-
-    #[test]
-    fn from_hex_should_deserialize_a_hex_encoded_string_to_a_cashnote() -> Result<(), Error> {
-        let mut rng = crate::rng::from_seed([0u8; 32]);
-        let amount = 1_530_000_000;
-        let main_key = MainSecretKey::random_from_rng(&mut rng);
-        let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
-        let derived_key = main_key.derive_key(&derivation_index);
-        let tx = Transaction {
-            inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-            fee: FeeOutput::new(Hash::default(), 3_500, Hash::default()),
-        };
-        let cashnote = CashNote {
-            id: derived_key.unique_pubkey(),
-            src_tx: tx,
-            signed_spends: Default::default(),
-            main_pubkey: main_key.main_pubkey(),
-            derivation_index,
-        };
-
-        let hex = cashnote.to_hex()?;
-
-        let cashnote = CashNote::from_hex(&hex)?;
-        assert_eq!(cashnote.value()?.as_nano(), 1_530_000_000);
-
-        let fee_amount = cashnote.fee_output().token;
-        assert_eq!(fee_amount, NanoTokens::from(3_500));
-
-        Ok(())
-    }
-
-    #[test]
-    fn to_hex_should_serialize_a_cashnote_to_a_hex_encoded_string() -> Result<(), Error> {
-        let mut rng = crate::rng::from_seed([0u8; 32]);
-        let amount = 100;
-        let main_key = MainSecretKey::random_from_rng(&mut rng);
-        let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
-        let derived_key = main_key.derive_key(&derivation_index);
-        let tx = Transaction {
-            inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-            fee: FeeOutput::new(Hash::default(), 2_500, Hash::default()),
-        };
-        let cashnote = CashNote {
-            id: derived_key.unique_pubkey(),
-            src_tx: tx,
-            signed_spends: Default::default(),
-            main_pubkey: main_key.main_pubkey(),
-            derivation_index,
-        };
-
-        let hex = cashnote.to_hex()?;
-        let cashnote_from_hex = CashNote::from_hex(&hex)?;
-
-        assert_eq!(cashnote.value()?, cashnote_from_hex.value()?);
-
-        let fee_amount = cashnote.fee_output().token;
-        assert_eq!(fee_amount, NanoTokens::from(2_500));
-
-        Ok(())
-    }
-
-    #[test]
-    fn input_should_error_if_unique_pubkey_is_not_derived_from_main_key() -> Result<(), Error> {
-        let mut rng = crate::rng::from_seed([0u8; 32]);
-        let amount = 100;
-
-        let main_key = MainSecretKey::random_from_rng(&mut rng);
-        let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
-        let derived_key = main_key.derive_key(&derivation_index);
-
-        let tx = Transaction {
-            inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-            fee: FeeOutput::default(),
-        };
-
-        let cashnote = CashNote {
-            id: derived_key.unique_pubkey(),
-            src_tx: tx,
-            signed_spends: Default::default(),
-            main_pubkey: main_key.main_pubkey(),
-            derivation_index,
-        };
-
-        let other_main_key = MainSecretKey::random_from_rng(&mut rng);
-        let result = cashnote.derived_key(&other_main_key);
-        assert!(matches!(
-            result,
-            Err(Error::MainSecretKeyDoesNotMatchMainPubkey)
-        ));
-        Ok(())
-    }
-
-    #[test]
-    fn test_cashnote_without_inputs_fails_verification() -> Result<(), Error> {
-        let mut rng = crate::rng::from_seed([0u8; 32]);
-        let amount = 100;
-
-        let main_key = MainSecretKey::random_from_rng(&mut rng);
-        let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
-        let derived_key = main_key.derive_key(&derivation_index);
-
-        let tx = Transaction {
-            inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-            fee: FeeOutput::default(),
-        };
-
-        let cashnote = CashNote {
-            id: derived_key.unique_pubkey(),
-            src_tx: tx,
-            signed_spends: Default::default(),
-            main_pubkey: main_key.main_pubkey(),
-            derivation_index,
-        };
-
-        assert!(matches!(
-            cashnote.verify(&main_key),
-            Err(Error::MissingTxInputs)
-        ));
-
-        Ok(())
     }
 }

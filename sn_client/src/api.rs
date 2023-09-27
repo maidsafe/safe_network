@@ -24,10 +24,8 @@ use sn_protocol::{
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{MainPubkey, NanoTokens, SignedSpend, UniquePubkey};
-
 use sn_registers::SignedRegister;
-use sn_transfers::{SpendRequest, Transfer};
+use sn_transfers::{MainPubkey, NanoTokens, SignedSpend, Transfer, UniquePubkey};
 use std::time::Duration;
 use tokio::task::spawn;
 use tracing::trace;
@@ -340,17 +338,17 @@ impl Client {
     /// Send a `SpendCashNote` request to the network
     pub(crate) async fn network_store_spend(
         &self,
-        spend: SpendRequest,
+        spend: SignedSpend,
         verify_store: bool,
     ) -> Result<()> {
-        let unique_pubkey = *spend.signed_spend.unique_pubkey();
+        let unique_pubkey = *spend.unique_pubkey();
         let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
 
         trace!("Sending spend {unique_pubkey:?} to the network via put_record, with addr of {cash_note_addr:?}");
         let key = NetworkAddress::from_cash_note_address(cash_note_addr).to_record_key();
         let record = Record {
             key,
-            value: try_serialize_record(&[spend.signed_spend], RecordKind::Spend)?,
+            value: try_serialize_record(&[spend], RecordKind::Spend)?,
             publisher: None,
             expires: None,
         };

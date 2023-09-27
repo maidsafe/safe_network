@@ -55,7 +55,6 @@
 mod error;
 mod keys;
 mod local_store;
-mod transfer;
 mod wallet_file;
 
 use crate::transfers::ContentPaymentsIdMap;
@@ -66,7 +65,6 @@ pub use self::{
     local_store::LocalWallet,
 };
 pub(crate) use keys::store_new_keypair;
-pub use transfer::{CashNoteRedemption, Transfer};
 
 use crate::{NanoTokens, UniquePubkey};
 use std::collections::{BTreeMap, BTreeSet};

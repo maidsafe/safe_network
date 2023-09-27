@@ -6,8 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::transfers::SpendRequest;
-use crate::{CashNote, SpendAddress, UniquePubkey};
+use crate::{CashNote, SignedSpend, SpendAddress, UniquePubkey};
 
 use super::{
     error::{Error, Result},
@@ -24,7 +23,7 @@ use std::{
 const WALLET_FILE_NAME: &str = "wallet";
 const CREATED_CASHNOTES_DIR_NAME: &str = "created_cash_notes";
 const RECEIVED_CASHNOTES_DIR_NAME: &str = "received_cash_notes";
-const UNCONFRIMED_TX_NAME: &str = "unconfirmed_txs";
+const UNCONFRIMED_TX_NAME: &str = "unconfirmed_spend_requests";
 
 pub(super) fn create_received_cash_notes_dir(wallet_dir: &Path) -> Result<()> {
     let received_cash_notes_dir = wallet_dir.join(RECEIVED_CASHNOTES_DIR_NAME);
@@ -52,28 +51,30 @@ pub(super) fn get_wallet(wallet_dir: &Path) -> Result<Option<KeyLessWallet>> {
     Ok(Some(wallet))
 }
 
-/// Writes the `unconfirmed_txs` to the specified path.
-pub(super) fn store_unconfirmed_txs(
+/// Writes the `unconfirmed_spend_requests` to the specified path.
+pub(super) fn store_unconfirmed_spend_requests(
     wallet_dir: &Path,
-    unconfirmed_txs: &BTreeSet<SpendRequest>,
+    unconfirmed_spend_requests: &BTreeSet<SignedSpend>,
 ) -> Result<()> {
-    let unconfirmed_txs_path = wallet_dir.join(UNCONFRIMED_TX_NAME);
-    let bytes = bincode::serialize(&unconfirmed_txs)?;
-    fs::write(unconfirmed_txs_path, bytes)?;
+    let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFRIMED_TX_NAME);
+    let bytes = bincode::serialize(&unconfirmed_spend_requests)?;
+    fs::write(unconfirmed_spend_requests_path, bytes)?;
     Ok(())
 }
 
 /// Returns `Some(Vec<SpendRequest>)` or None if file doesn't exist.
-pub(super) fn get_unconfirmed_txs(wallet_dir: &Path) -> Result<Option<BTreeSet<SpendRequest>>> {
+pub(super) fn get_unconfirmed_spend_requests(
+    wallet_dir: &Path,
+) -> Result<Option<BTreeSet<SignedSpend>>> {
     let path = wallet_dir.join(UNCONFRIMED_TX_NAME);
     if !path.is_file() {
         return Ok(None);
     }
 
     let bytes = fs::read(&path)?;
-    let unconfirmed_txs = bincode::deserialize(&bytes)?;
+    let unconfirmed_spend_requests = bincode::deserialize(&bytes)?;
 
-    Ok(Some(unconfirmed_txs))
+    Ok(Some(unconfirmed_spend_requests))
 }
 
 /// Hex encode and write each `CashNote` to a separate file in respective
@@ -93,7 +94,9 @@ pub(super) fn store_created_cash_notes(
 
         let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
 
-        let hex = cash_note.to_hex().map_err(Error::CashNote)?;
+        let hex = cash_note
+            .to_hex()
+            .map_err(|_| Error::FailedToHexEncodeCashNote)?;
         fs::write(cash_note_file_path, &hex)?;
     }
     Ok(())

@@ -8,14 +8,16 @@
 use super::{
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
-        create_received_cash_notes_dir, get_unconfirmed_txs, get_wallet, load_cash_note,
-        load_received_cash_notes, store_created_cash_notes, store_unconfirmed_txs, store_wallet,
+        create_received_cash_notes_dir, get_unconfirmed_spend_requests, get_wallet, load_cash_note,
+        load_received_cash_notes, store_created_cash_notes, store_unconfirmed_spend_requests,
+        store_wallet,
     },
-    CashNoteRedemption, KeyLessWallet, Result, Transfer,
+    Error, KeyLessWallet, Result,
 };
 
-use crate::transfers::{
-    create_offline_transfer, ContentPaymentsIdMap, OfflineTransfer, SpendRequest,
+use crate::{
+    transfers::{create_offline_transfer, ContentPaymentsIdMap, OfflineTransfer},
+    CashNoteRedemption, SignedSpend, Transfer,
 };
 use crate::{
     CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
@@ -40,12 +42,9 @@ pub struct LocalWallet {
     wallet: KeyLessWallet,
     /// The dir of the wallet file, main key, public address, and new cash_notes.
     wallet_dir: PathBuf,
-    /// These have not yet been successfully confirmed in
-    /// the network and need to be republished, to reach network validity.
-    /// We maintain the order they were added in, as to republish
-    /// them in the correct order, in case any later spend was
-    /// dependent on an earlier spend.
-    unconfirmed_txs: BTreeSet<SpendRequest>,
+    /// These have not yet been successfully sent to the network
+    /// and need to be, to reach network validity.
+    unconfirmed_spend_requests: BTreeSet<SignedSpend>,
 }
 
 impl LocalWallet {
@@ -70,14 +69,13 @@ impl LocalWallet {
         load_cash_note(unique_pubkey, &self.wallet_dir)
     }
 
-    /// Store unconfirmed_txs to disk.
-    pub fn store_unconfirmed_txs(&mut self) -> Result<()> {
-        store_unconfirmed_txs(&self.wallet_dir, self.unconfirmed_txs())
+    /// Store unconfirmed_spend_requests to disk.
+    pub fn store_unconfirmed_spend_requests(&mut self) -> Result<()> {
+        store_unconfirmed_spend_requests(&self.wallet_dir, self.unconfirmed_spend_requests())
     }
 
-    /// Unconfirmed txs exist
-    pub fn unconfirmed_txs_exist(&self) -> bool {
-        !self.unconfirmed_txs.is_empty()
+    pub fn unconfirmed_spend_requests_exist(&self) -> bool {
+        !self.unconfirmed_spend_requests.is_empty()
     }
 
     /// Try to load any new cash_notes from the `received cash_notes dir` in the wallet dir.
@@ -93,12 +91,13 @@ impl LocalWallet {
         // This creates the received_cash_notes dir if it doesn't exist.
         std::fs::create_dir_all(&wallet_dir)?;
         // This creates the main_key file if it doesn't exist.
-        let (key, wallet, unconfirmed_txs) = load_from_path(&wallet_dir, Some(main_key))?;
+        let (key, wallet, unconfirmed_spend_requests) =
+            load_from_path(&wallet_dir, Some(main_key))?;
         Ok(Self {
             key,
             wallet,
             wallet_dir: wallet_dir.to_path_buf(),
-            unconfirmed_txs,
+            unconfirmed_spend_requests,
         })
     }
 
@@ -107,24 +106,24 @@ impl LocalWallet {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
         // This creates the received_cash_notes dir if it doesn't exist.
         std::fs::create_dir_all(&wallet_dir)?;
-        let (key, wallet, unconfirmed_txs) = load_from_path(&wallet_dir, None)?;
+        let (key, wallet, unconfirmed_spend_requests) = load_from_path(&wallet_dir, None)?;
         Ok(Self {
             key,
             wallet,
             wallet_dir: wallet_dir.to_path_buf(),
-            unconfirmed_txs,
+            unconfirmed_spend_requests,
         })
     }
 
     /// Tries to loads a serialized wallet from a path, bailing out if it doesn't exist.
     pub fn try_load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        let (key, wallet, unconfirmed_txs) = load_from_path(&wallet_dir, None)?;
+        let (key, wallet, unconfirmed_spend_requests) = load_from_path(&wallet_dir, None)?;
         Ok(Self {
             key,
             wallet,
             wallet_dir: wallet_dir.to_path_buf(),
-            unconfirmed_txs,
+            unconfirmed_spend_requests,
         })
     }
 
@@ -132,12 +131,12 @@ impl LocalWallet {
         self.key.main_pubkey()
     }
 
-    pub fn unconfirmed_txs(&self) -> &BTreeSet<SpendRequest> {
-        &self.unconfirmed_txs
+    pub fn unconfirmed_spend_requests(&self) -> &BTreeSet<SignedSpend> {
+        &self.unconfirmed_spend_requests
     }
 
-    pub fn clear_unconfirmed_txs(&mut self) {
-        self.unconfirmed_txs = Default::default();
+    pub fn clear_unconfirmed_spend_requests(&mut self) {
+        self.unconfirmed_spend_requests = Default::default();
     }
 
     pub fn balance(&self) -> NanoTokens {
@@ -332,7 +331,7 @@ impl LocalWallet {
         self.store_cash_notes(transfer.created_cash_notes.iter().collect())?;
 
         for request in transfer.all_spend_requests {
-            self.unconfirmed_txs.insert(request);
+            self.unconfirmed_spend_requests.insert(request);
         }
         Ok(())
     }
@@ -344,11 +343,6 @@ impl LocalWallet {
 
         for cash_note in cash_notes {
             let id = cash_note.unique_pubkey();
-
-            if let Some(_cash_note) = load_cash_note(&id, &self.wallet_dir) {
-                debug!("cash_note exists");
-                return Ok(());
-            }
 
             if self.wallet.spent_cash_notes.contains(&id) {
                 debug!("cash_note is spent");
@@ -362,6 +356,12 @@ impl LocalWallet {
 
             let value = cash_note.value()?;
             self.wallet.available_cash_notes.insert(id, value);
+
+            if let Some(_cash_note) = load_cash_note(&id, &self.wallet_dir) {
+                debug!("cash_note exists");
+                return Ok(());
+            }
+
             self.store_cash_note(cash_note)?;
         }
 
@@ -369,7 +369,9 @@ impl LocalWallet {
     }
 
     pub fn unwrap_transfer(&self, transfer: Transfer) -> Result<Vec<CashNoteRedemption>> {
-        transfer.cashnote_redemptions(&self.key)
+        transfer
+            .cashnote_redemptions(&self.key)
+            .map_err(|_| Error::FailedToDecypherTransfer)
     }
 
     pub fn derive_key(&self, derivation_index: &DerivationIndex) -> DerivedSecretKey {
@@ -381,7 +383,7 @@ impl LocalWallet {
 fn load_from_path(
     wallet_dir: &Path,
     main_key: Option<MainSecretKey>,
-) -> Result<(MainSecretKey, KeyLessWallet, BTreeSet<SpendRequest>)> {
+) -> Result<(MainSecretKey, KeyLessWallet, BTreeSet<SignedSpend>)> {
     let key = match get_main_key(wallet_dir)? {
         Some(key) => key,
         None => {
@@ -391,8 +393,8 @@ fn load_from_path(
             key
         }
     };
-    let unconfirmed_txs = match get_unconfirmed_txs(wallet_dir)? {
-        Some(unconfirmed_txs) => unconfirmed_txs,
+    let unconfirmed_spend_requests = match get_unconfirmed_spend_requests(wallet_dir)? {
+        Some(unconfirmed_spend_requests) => unconfirmed_spend_requests,
         None => Default::default(),
     };
     let wallet = match get_wallet(wallet_dir)? {
@@ -412,7 +414,7 @@ fn load_from_path(
         }
     };
 
-    Ok((key, wallet, unconfirmed_txs))
+    Ok((key, wallet, unconfirmed_spend_requests))
 }
 
 impl KeyLessWallet {
@@ -478,7 +480,7 @@ mod tests {
 
         let deposit_only = LocalWallet {
             key,
-            unconfirmed_txs: Default::default(),
+            unconfirmed_spend_requests: Default::default(),
 
             wallet: KeyLessWallet::new(),
             wallet_dir: dir.path().to_path_buf(),
@@ -504,7 +506,7 @@ mod tests {
 
         let mut deposit_only = LocalWallet {
             key: MainSecretKey::random(),
-            unconfirmed_txs: Default::default(),
+            unconfirmed_spend_requests: Default::default(),
 
             wallet: KeyLessWallet::new(),
             wallet_dir: dir.path().to_path_buf(),
@@ -529,7 +531,7 @@ mod tests {
 
         let mut deposit_only = LocalWallet {
             key,
-            unconfirmed_txs: Default::default(),
+            unconfirmed_spend_requests: Default::default(),
 
             wallet: KeyLessWallet::new(),
             wallet_dir: dir.path().to_path_buf(),
@@ -550,7 +552,7 @@ mod tests {
 
         let mut local_wallet = LocalWallet {
             key: MainSecretKey::random(),
-            unconfirmed_txs: Default::default(),
+            unconfirmed_spend_requests: Default::default(),
 
             wallet: KeyLessWallet::new(),
             wallet_dir: dir.path().to_path_buf(),
@@ -575,7 +577,7 @@ mod tests {
         let mut deposit_only = LocalWallet {
             key,
             wallet: KeyLessWallet::new(),
-            unconfirmed_txs: Default::default(),
+            unconfirmed_spend_requests: Default::default(),
             wallet_dir: dir.path().to_path_buf(),
         };
 

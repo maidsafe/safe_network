@@ -9,47 +9,31 @@
 #[macro_use]
 extern crate tracing;
 
-mod address;
-mod builder;
-mod cashnote;
+mod cashnotes;
 mod error;
-mod fee_output;
 mod genesis;
-mod nano;
-mod reason_hash;
-mod signed_spend;
-mod transaction;
 mod transfers;
-mod unique_keys;
 mod wallet;
 
-pub(crate) use crate::{builder::TransactionBuilder, fee_output::FeeOutput, transaction::Input};
+pub(crate) use cashnotes::{FeeOutput, Input, TransactionBuilder};
 
 /// Types used in the public API
-pub use crate::{
-    address::SpendAddress,
-    cashnote::CashNote,
-    error::{Error, Result},
-    nano::NanoTokens,
-    reason_hash::Hash,
-    signed_spend::{SignedSpend, Spend},
-    transaction::Transaction,
-    transfers::{OfflineTransfer, SpendRequest},
-    unique_keys::{DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, UniquePubkey},
-    wallet::Transfer,
+pub use cashnotes::{
+    CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
+    SignedSpend, Spend, SpendAddress, Transaction, UniquePubkey,
 };
+pub use error::{Error, Result};
+pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
 
 /// Utilities exposed
-pub use crate::{
-    genesis::{
-        create_faucet_wallet, create_first_cash_note_from_key, is_genesis_parent_tx,
-        load_genesis_wallet,
-    },
-    genesis::{Error as GenesisError, GENESIS_CASHNOTE},
-    transfers::create_offline_transfer,
-    wallet::{bls_secret_from_hex, parse_main_pubkey},
-    wallet::{Error as WalletError, LocalWallet, Result as WalletResult},
+pub use genesis::{
+    create_faucet_wallet, create_first_cash_note_from_key, is_genesis_parent_tx,
+    load_genesis_wallet,
 };
+pub use genesis::{Error as GenesisError, GENESIS_CASHNOTE};
+pub use transfers::create_offline_transfer;
+pub use wallet::{bls_secret_from_hex, parse_main_pubkey};
+pub use wallet::{Error as WalletError, LocalWallet, Result as WalletResult};
 
 // re-export crates used in our public API
 pub use bls::{self, rand, Ciphertext, Signature};
