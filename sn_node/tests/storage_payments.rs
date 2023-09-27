@@ -251,7 +251,9 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         .local_send_storage_payment(no_data_payments, None)?;
 
     // invalid spends
-    client.send(wallet_client.unconfirmed_txs(), true).await?;
+    client
+        .send(wallet_client.unconfirmed_spend_requests(), true)
+        .await?;
 
     sleep(Duration::from_secs(5)).await;
 

@@ -42,8 +42,7 @@ If you don't wish to download the same files multiple times, remove the text doc
 If you don't have `SAFE_PEERS` set, you can pass in a `--peer` argument to commands like this:
 `cargo run --release --bin safe -- --peer <multiaddress> files upload ~/dir/with/files`
 
-
-## Token transfers
+## Local Faucet
 
 Start a local network as described above.
 
@@ -54,12 +53,6 @@ To get the address of your wallet, just call the address cmd. It will create the
 - Claim genesis
 `cargo run --release --bin faucet -- claim-genesis`
 
-- Get your wallet address
-`cargo run --release --bin safe -- wallet address`
-
-- Send tokens from the faucet to your wallet
-`cargo run --release --bin faucet -- send [amount] [address]`
-
 - Start a local faucet server
 `cargo run --release --bin faucet -- server`
 
@@ -67,6 +60,19 @@ To get the address of your wallet, just call the address cmd. It will create the
 `cargo run --release --bin safe wallet get-faucet http://localhost:8000`
 
 Please note that this feature is still unstable and most likely won't work yet.
+
+## Token transfers
+
+Start a local network and a faucet as described above.
+
+- Get your wallet address
+`cargo run --release --bin safe -- wallet address`
+
+- Send tokens to an address, this will output a Transfer hex string that you must send to the recipient out-of-band
+`cargo run --release --bin safe -- wallet send [amount] [address]`
+
+- Receive tokens from a Transfer hex string
+`cargo run --release --bin safe -- wallet receive [transfer]`
 
 ## Using example app which exercises the Register APIs
 

@@ -6,7 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_transfers::{SpendRequest, Transfer};
+use futures::TryFutureExt;
+use sn_transfers::{SignedSpend, Transfer};
 use xor_name::XorName;
 
 use super::Client;
@@ -47,12 +48,12 @@ impl WalletClient {
     }
 
     /// Do we have any unconfirmed transactions?
-    pub fn unconfirmed_txs_exist(&self) -> bool {
-        self.wallet.unconfirmed_txs_exist()
+    pub fn unconfirmed_spend_requests_exist(&self) -> bool {
+        self.wallet.unconfirmed_spend_requests_exist()
     }
     /// Get unconfirmed txs
-    pub fn unconfirmed_txs(&self) -> &BTreeSet<SpendRequest> {
-        self.wallet.unconfirmed_txs()
+    pub fn unconfirmed_spend_requests(&self) -> &BTreeSet<SignedSpend> {
+        self.wallet.unconfirmed_spend_requests()
     }
 
     /// Get the payment transfers for a given network address
@@ -60,7 +61,7 @@ impl WalletClient {
         match &address.as_xorname() {
             Some(xorname) => {
                 let cash_notes = self.wallet.get_payment_cash_notes(xorname);
-                Transfer::transfers_from_cash_notes(cash_notes)
+                Ok(Transfer::transfers_from_cash_notes(cash_notes)?)
             }
             None => Err(WalletError::InvalidAddressType),
         }
@@ -68,7 +69,7 @@ impl WalletClient {
 
     /// Send tokens to another wallet.
     /// Can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
-    pub async fn send(
+    pub async fn send_cash_note(
         &mut self,
         amount: NanoTokens,
         to: MainPubkey,
@@ -79,18 +80,24 @@ impl WalletClient {
         // send to network
         if let Err(error) = self
             .client
-            .send(self.wallet.unconfirmed_txs(), verify_store)
+            .send(self.wallet.unconfirmed_spend_requests(), verify_store)
             .await
         {
-            warn!("The transfer was not successfully registered in the network: {error:?}. It will be retried later.");
+            return Err(WalletError::CouldNotSendMoney(format!(
+                "The transfer was not successfully registered in the network: {error:?}"
+            )));
         } else {
             // clear unconfirmed txs
-            self.wallet.clear_unconfirmed_txs();
+            self.wallet.clear_unconfirmed_spend_requests();
         }
 
-        // return created CashNotes even if network part failed???
+        // return the first CashNote (assuming there is only one because we only sent to one recipient)
         match &created_cash_notes[..] {
-            [info, ..] => Ok(info.clone()),
+            [cashnote] => Ok(cashnote.clone()),
+            [_multiple, ..] => Err(WalletError::CouldNotSendMoney(
+                "Multiple CashNotes were returned from the transaction when only one was expected. This is a BUG."
+                    .into(),
+            )),
             [] => Err(WalletError::CouldNotSendMoney(
                 "No CashNotes were returned from the wallet.".into(),
             )),
@@ -207,14 +214,14 @@ impl WalletClient {
 
         let spend_attempt_result = self
             .client
-            .send(self.wallet.unconfirmed_txs(), verify_store)
+            .send(self.wallet.unconfirmed_spend_requests(), verify_store)
             .await;
         if let Err(error) = spend_attempt_result {
             warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
             return Err(error);
         } else {
             info!("Spend has completed: {:?}", spend_attempt_result);
-            self.wallet.clear_unconfirmed_txs();
+            self.wallet.clear_unconfirmed_spend_requests();
         }
 
         let elapsed = now.elapsed();
@@ -229,11 +236,11 @@ impl WalletClient {
     pub async fn resend_pending_txs(&mut self, verify_store: bool) {
         if self
             .client
-            .send(self.wallet.unconfirmed_txs(), verify_store)
+            .send(self.wallet.unconfirmed_spend_requests(), verify_store)
             .await
             .is_ok()
         {
-            self.wallet.clear_unconfirmed_txs();
+            self.wallet.clear_unconfirmed_spend_requests();
             // We might want to be _really_ sure and do the below
             // as well, but it's not necessary.
             // use crate::domain::wallet::VerifyingClient;
@@ -257,7 +264,7 @@ impl Client {
     /// This can optionally verify the spend has been correctly stored before returning
     pub async fn send(
         &self,
-        spend_requests: &BTreeSet<SpendRequest>,
+        spend_requests: &BTreeSet<SignedSpend>,
         verify_store: bool,
     ) -> WalletResult<()> {
         let mut tasks = Vec::new();
@@ -265,7 +272,7 @@ impl Client {
         for spend_request in spend_requests {
             trace!(
                 "sending spend request to the network: {:?}: {spend_request:#?}",
-                spend_request.signed_spend.unique_pubkey()
+                spend_request.unique_pubkey()
             );
             tasks.push(self.network_store_spend(spend_request.clone(), verify_store));
         }
@@ -277,6 +284,20 @@ impl Client {
         Ok(())
     }
 
+    /// Receive a Transfer, verify and redeem CashNotes from the Network.
+    pub async fn receive(
+        &self,
+        transfer: Transfer,
+        wallet: &LocalWallet,
+    ) -> WalletResult<Vec<CashNote>> {
+        let cashnotes = self
+            .network
+            .verify_and_unpack_transfer(transfer, wallet)
+            .map_err(|e| WalletError::CouldNotReceiveMoney(format!("{e:?}")))
+            .await?;
+        Ok(cashnotes)
+    }
+
     /// Send a spend request to the network.
     /// This does _not_ verify the spend has been put to the network correctly
     pub async fn send_without_verify(&self, transfer: OfflineTransfer) -> WalletResult<()> {
@@ -284,7 +305,7 @@ impl Client {
         for spend_request in &transfer.all_spend_requests {
             trace!(
                 "sending spend request to the network: {:?}: {spend_request:#?}",
-                spend_request.signed_spend.unique_pubkey()
+                spend_request.unique_pubkey()
             );
             tasks.push(self.network_store_spend(spend_request.clone(), false));
         }
@@ -338,14 +359,14 @@ pub async fn send(
 
     let mut wallet_client = WalletClient::new(client.clone(), from);
     let new_cash_note = wallet_client
-        .send(amount, to, verify_store)
+        .send_cash_note(amount, to, verify_store)
         .await
         .expect("Nanos shall be successfully sent.");
 
     let mut did_error = false;
     if verify_store {
         let mut attempts = 0;
-        while wallet_client.unconfirmed_txs_exist() {
+        while wallet_client.unconfirmed_spend_requests_exist() {
             info!("Unconfirmed txs exist, sending again after 1 second...");
             sleep(Duration::from_secs(1)).await;
             wallet_client.resend_pending_txs(verify_store).await;
