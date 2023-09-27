@@ -34,7 +34,7 @@ use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketKey, Quorum, Record, RecordKey},
+    kad::{KBucketKey, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
@@ -383,7 +383,6 @@ impl Network {
         record: Record,
         verify_store: Option<Record>,
         mut optional_permit: Option<OwnedSemaphorePermit>,
-        quorum: Quorum,
     ) -> Result<()> {
         let mut retries = 0;
 
@@ -396,12 +395,7 @@ impl Network {
             );
 
             let res = self
-                .put_record_once(
-                    record.clone(),
-                    verify_store.clone(),
-                    optional_permit,
-                    quorum,
-                )
+                .put_record_once(record.clone(), verify_store.clone(), optional_permit)
                 .await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
@@ -420,7 +414,6 @@ impl Network {
         record: Record,
         verify_store: Option<Record>,
         starting_permit: Option<OwnedSemaphorePermit>,
-        quorum: Quorum,
     ) -> Result<()> {
         let mut _permit = starting_permit;
 
@@ -437,7 +430,6 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::PutRecord {
             record: record.clone(),
             sender,
-            quorum,
         })?;
         let response = receiver.await?;
 
