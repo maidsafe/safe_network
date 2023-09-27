@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695817570223,
+  "lastUpdate": 1695817571854,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -22180,6 +22180,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 42,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "b54b7bf920256221656b598d4313913722de089b",
+          "message": "feat(client): fail fast when a chunk is missing",
+          "timestamp": "2023-09-27T11:05:40Z",
+          "tree_id": "2c613bf2096fc06f9c6fc30d635e8270ae59598e",
+          "url": "https://github.com/maidsafe/safe_network/commit/b54b7bf920256221656b598d4313913722de089b"
+        },
+        "date": 1695817571387,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 133.17734,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 41,
             "unit": "MB"
           }
         ]
