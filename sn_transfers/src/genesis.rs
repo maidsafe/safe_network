@@ -111,7 +111,7 @@ fn create_genesis_wallet() -> LocalWallet {
 }
 
 /// Create a first CashNote given any key (i.e. not specifically the hard coded genesis key).
-/// The derivation index and blinding factor are hard coded to ensure deterministic creation.
+/// The derivation index is hard coded to ensure deterministic creation.
 /// This is useful in tests.
 pub fn create_first_cash_note_from_key(
     first_cash_note_key: &MainSecretKey,

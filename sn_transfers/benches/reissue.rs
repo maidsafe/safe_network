@@ -13,7 +13,7 @@ use sn_transfers::{
     create_first_cash_note_from_key, create_offline_transfer, rng, CashNote, DerivationIndex, Hash,
     MainSecretKey, NanoTokens, UniquePubkey,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 const N_OUTPUTS: u64 = 100;
 
@@ -43,12 +43,9 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
     .expect("transfer to succeed");
 
     // simulate spentbook to check for double spends
-    let mut spentbook_node = BTreeMap::new();
+    let mut spentbook_node = BTreeSet::new();
     for spend in &offline_transfer.all_spend_requests {
-        if spentbook_node
-            .insert(*spend.signed_spend.unique_pubkey(), spend.clone())
-            .is_some()
-        {
+        if !spentbook_node.insert(*spend.signed_spend.unique_pubkey()) {
             panic!("cashnote double spend");
         };
     }
@@ -110,7 +107,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
     .expect("transfer to succeed");
 
     // simulate spentbook to check for double spends
-    let mut spentbook_node = BTreeMap::new();
+    let mut spentbook_node = BTreeSet::new();
     let signed_spends: BTreeSet<_> = offline_transfer
         .all_spend_requests
         .clone()
@@ -118,10 +115,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         .map(|spend| spend.signed_spend)
         .collect();
     for spend in signed_spends.into_iter() {
-        if spentbook_node
-            .insert(*spend.unique_pubkey(), spend)
-            .is_some()
-        {
+        if !spentbook_node.insert(*spend.unique_pubkey()) {
             panic!("cashnote double spend");
         };
     }
