@@ -77,29 +77,24 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
 }
 
 fn bench_reissue_100_to_1(c: &mut Criterion) {
-    // prepare transfer of genesis cashnote, this time sending to our own key derived
+    // prepare transfer of genesis cashnote to recipient_of_100_mainkey
     let mut rng = rng::from_seed([0u8; 32]);
     let (starting_cashnote, starting_main_key) = generate_cashnote();
+    let recipient_of_100_mainkey = MainSecretKey::random_from_rng(&mut rng);
     let recipients = (0..N_OUTPUTS)
-        .map(|n| {
-            let main_key = MainSecretKey::random_from_rng(&mut rng);
-            // use n as both the amount and the derivation index
-            // so we can easily get the derived key back below
-            // if more than 256 outputs, this will wrap around and one key will get multiple cashnotes, which is OK
-            let mut derivation_index = [0u8; 32];
-            derivation_index[0] = n as u8;
+        .map(|_| {
             (
-                NanoTokens::from(n),
-                main_key.main_pubkey(),
-                derivation_index,
+                NanoTokens::from(1),
+                recipient_of_100_mainkey.main_pubkey(),
+                UniquePubkey::random_derivation_index(&mut rng),
             )
         })
         .collect::<Vec<_>>();
 
-    // transfer to N_OUTPUTS recipients
-    let zero = DerivationIndex::from([0u8; 32]);
+    // transfer to N_OUTPUTS recipients derived from recipient_of_100_mainkey
+    let derive = starting_cashnote.derivation_index();
     let offline_transfer = create_offline_transfer(
-        vec![(starting_cashnote, starting_main_key.derive_key(&zero))],
+        vec![(starting_cashnote, starting_main_key.derive_key(&derive))],
         recipients,
         starting_main_key.main_pubkey(),
         Hash::default(),
@@ -120,7 +115,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         };
     }
 
-    // prepare to send all of those cashnotes to a single key
+    // prepare to send all of those cashnotes back to our starting_main_key
     let total_amount = offline_transfer
         .created_cash_notes
         .iter()
@@ -130,11 +125,8 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         .created_cash_notes
         .into_iter()
         .map(|cn| {
-            // get the derivation index from the amount
-            let amount = cn.value().unwrap().as_nano();
-            let mut derivation_index = [0u8; 32];
-            derivation_index[0] = amount as u8;
-            let sk = starting_main_key.derive_key(&derivation_index);
+            let derivation_index = cn.derivation_index();
+            let sk = recipient_of_100_mainkey.derive_key(&derivation_index);
             (cn, sk)
         })
         .collect();
