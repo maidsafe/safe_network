@@ -41,9 +41,17 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     let _log_appender_guard = if let Some(log_output_dest) = opt.log_output_dest {
         let logging_targets = vec![
-            ("safe".to_string(), Level::INFO),
-            ("sn_client".to_string(), Level::INFO),
-            ("sn_networking".to_string(), Level::INFO),
+            // TODO: Reset to nice and clean defaults once we have a better idea of what we want
+            ("sn_networking".to_string(), Level::DEBUG),
+            ("safe".to_string(), Level::TRACE),
+            ("sn_build_info".to_string(), Level::TRACE),
+            ("sn_cli".to_string(), Level::TRACE),
+            ("sn_client".to_string(), Level::TRACE),
+            ("sn_logging".to_string(), Level::TRACE),
+            ("sn_peers_acquisition".to_string(), Level::TRACE),
+            ("sn_protocol".to_string(), Level::TRACE),
+            ("sn_registers".to_string(), Level::TRACE),
+            ("sn_transfers".to_string(), Level::TRACE),
         ];
         init_logging(
             logging_targets,
