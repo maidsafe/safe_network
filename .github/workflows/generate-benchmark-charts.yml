@@ -157,17 +157,17 @@ jobs:
         shell: bash
         run: |
           peak_mem_usage=$(
-            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs/safe.* -o --no-line-number --no-filename | 
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename | 
             awk -F':' '/"memory_used_mb":/{print $2}' | 
             sort -n | 
             tail -n 1
           )
           total_mem=$(
-            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs/safe.* -o --no-line-number --no-filename | 
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename | 
             awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
           )
           num_of_times=$(
-            rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs/safe.* -c --stats |
+            rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs --glob safe.* -c --stats |
             rg "(\d+) matches" |
             rg "\d+" -o
           )
