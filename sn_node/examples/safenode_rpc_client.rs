@@ -50,6 +50,10 @@ enum Cmd {
     /// Note this blocks the app and it will print events as they are broadcasted by the node
     #[clap(name = "events")]
     Events,
+    /// Start listening for node rewards events.
+    /// Note this blocks the app and it will print events as they are broadcasted by the node
+    #[clap(name = "rewards")]
+    RewardsEvents,
     /// Subscribe to a given Gossipsub topic
     #[clap(name = "subscribe")]
     Subscribe {
@@ -111,7 +115,8 @@ async fn main() -> Result<()> {
     match opt.cmd {
         Cmd::Info => node_info(addr).await,
         Cmd::Netinfo => network_info(addr).await,
-        Cmd::Events => node_events(addr).await,
+        Cmd::Events => node_events(addr, false).await,
+        Cmd::RewardsEvents => node_events(addr, true).await,
         Cmd::Subscribe { topic } => gossipsub_subscribe(addr, topic).await,
         Cmd::Unsubscribe { topic } => gossipsub_unsubscribe(addr, topic).await,
         Cmd::Publish { topic, msg } => gossipsub_publish(addr, topic, msg).await,
@@ -169,17 +174,27 @@ pub async fn network_info(addr: SocketAddr) -> Result<()> {
     Ok(())
 }
 
-pub async fn node_events(addr: SocketAddr) -> Result<()> {
+pub async fn node_events(addr: SocketAddr, only_rewards: bool) -> Result<()> {
     let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint).await?;
     let response = client
         .node_events(Request::new(NodeEventsRequest {}))
         .await?;
 
-    println!("Listening to node events... (press Ctrl+C to exit)");
+    if only_rewards {
+        println!("Listening to node rewards notifications... (press Ctrl+C to exit)");
+    } else {
+        println!("Listening to node events... (press Ctrl+C to exit)");
+    }
+
     let mut stream = response.into_inner();
     while let Some(Ok(e)) = stream.next().await {
         let event = match NodeEvent::from_bytes(&e.event) {
+            Ok(NodeEvent::GossipsubMsg { topic, msg }) if only_rewards => {
+                println!("New node reward notification received: {topic} {msg:?}");
+                continue;
+            }
+            Ok(_) if only_rewards => continue,
             Ok(event) => event,
             Err(_) => {
                 println!("Error while parsing received NodeEvent");

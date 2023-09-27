@@ -326,6 +326,7 @@ impl Node {
                 }
             }
             NetworkEvent::GossipsubMsg { topic, msg } => {
+                info!(">>> New Gossipsub msg received on topic '{topic}': {msg:?}");
                 self.events_channel
                     .broadcast(NodeEvent::GossipsubMsg { topic, msg });
             }
