@@ -1438,6 +1438,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(logging)* set default log levels to be more verbose
 - *(logging)* set default logging to data-dir
 
+## [0.91.2](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.1...sn_node-v0.91.2) - 2023-09-27
+
+### Added
+- *(networking)* remove optional_semaphore being passed down from apps
+
+### Other
+- *(release)* sn_cli-v0.83.2/sn_client-v0.91.1
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

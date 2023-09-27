@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.91.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.1...sn_client-v0.91.2) - 2023-09-27
+
+### Added
+- *(networking)* remove optional_semaphore being passed down from apps
+- all records are Quorum::All once more
+
 ## [0.91.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.0...sn_client-v0.91.1) - 2023-09-27
 
 ### Added

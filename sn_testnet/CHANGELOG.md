@@ -1346,6 +1346,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.2.166](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.165...sn_testnet-v0.2.166) - 2023-09-27
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>
