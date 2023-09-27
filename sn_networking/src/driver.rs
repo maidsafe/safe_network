@@ -28,7 +28,7 @@ use libp2p::mdns;
 use libp2p::{
     autonat,
     identity::Keypair,
-    kad::{Kademlia, KademliaCaching, KademliaConfig, QueryId, Record},
+    kad::{Kademlia, KademliaConfig, QueryId, Record},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{
@@ -183,11 +183,6 @@ impl NetworkBuilder {
             .disjoint_query_paths(true)
             // Records never expire
             .set_record_ttl(None)
-            // Enable caching of records if we use Quorum::One for GetRecord (which should be used for chunks)
-            // This means the closest 16 nodes would be caching the record
-            .set_caching(KademliaCaching::Enabled {
-                max_peers: CLOSE_GROUP_SIZE as u16 * 2,
-            })
             // Emit PUT events for validation prior to insertion into the RecordStore.
             // This is no longer needed as the record_storage::put now can carry out validation.
             // .set_record_filtering(KademliaStoreInserts::FilterBoth)
