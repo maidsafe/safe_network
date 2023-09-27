@@ -349,7 +349,7 @@ impl ClientRegister {
         Ok(self
             .client
             .network
-            .put_record(record, record_to_verify, None)
+            .put_record(record, record_to_verify)
             .await?)
     }
 

@@ -30,7 +30,7 @@ use std::{
     time::Instant,
 };
 use tempfile::tempdir;
-use tokio::{sync::OwnedSemaphorePermit, task};
+use tokio::task;
 use tracing::trace;
 use xor_name::XorName;
 
@@ -165,7 +165,6 @@ impl Files {
         &self,
         chunk: Chunk,
         verify_store: bool,
-        optional_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
         let chunk_addr = chunk.network_address();
         trace!("Client upload started for chunk: {chunk_addr:?}");
@@ -185,7 +184,7 @@ impl Files {
             payment.len()
         );
         self.client
-            .store_chunk(chunk, payment, verify_store, optional_permit)
+            .store_chunk(chunk, payment, verify_store)
             .await?;
 
         trace!("Client upload completed for chunk: {chunk_addr:?}");
@@ -238,7 +237,7 @@ impl Files {
 
         for (_chunk_name, chunk_path) in chunks_paths {
             let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
-            self.get_local_payment_and_upload_chunk(chunk, verify, None)
+            self.get_local_payment_and_upload_chunk(chunk, verify)
                 .await?;
         }
 
