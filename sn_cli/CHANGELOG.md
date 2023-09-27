@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.83.1](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.0...sn_cli-v0.83.1) - 2023-09-27
+
+### Added
+- *(logging)* set default log levels to be more verbose
+- *(logging)* set default logging to data-dir
+
+### Other
+- *(client)* add timestamp to client log path
+
 ## [0.83.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.82.8...sn_cli-v0.83.0) - 2023-09-27
 
 ### Added
