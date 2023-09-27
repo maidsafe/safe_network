@@ -29,7 +29,7 @@ use sn_transfers::{MainPubkey, NanoTokens, SignedSpend, UniquePubkey};
 use sn_registers::SignedRegister;
 use sn_transfers::{SpendRequest, Transfer};
 use std::time::Duration;
-use tokio::{sync::OwnedSemaphorePermit, task::spawn};
+use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
 
@@ -174,18 +174,6 @@ impl Client {
         Ok(client)
     }
 
-    /// Get the client's network concurrency permit
-    ///
-    /// This allows us to grab a permit early if we're dealing with large data (chunks)
-    /// and want to hold off on loading more until other operations are complete.
-    pub async fn get_network_concurrency_permit(&self) -> Result<OwnedSemaphorePermit> {
-        if let Some(limiter) = self.network.concurrency_limiter() {
-            Ok(limiter.acquire_owned().await?)
-        } else {
-            Err(Error::NoNetworkConcurrencyLimiterFound)
-        }
-    }
-
     /// Set up our initial progress bar for network connectivity
     fn setup_connection_progress() -> ProgressBar {
         // Network connection progress bar
@@ -312,7 +300,6 @@ impl Client {
         chunk: Chunk,
         payment: Vec<Transfer>,
         verify_store: bool,
-        optional_permit: Option<OwnedSemaphorePermit>,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
@@ -330,10 +317,7 @@ impl Client {
             None
         };
 
-        Ok(self
-            .network
-            .put_record(record, record_to_verify, optional_permit)
-            .await?)
+        Ok(self.network.put_record(record, record_to_verify).await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.
@@ -377,10 +361,7 @@ impl Client {
             None
         };
 
-        Ok(self
-            .network
-            .put_record(record, record_to_verify, None)
-            .await?)
+        Ok(self.network.put_record(record, record_to_verify).await?)
     }
 
     /// Get a cash_note spend from network

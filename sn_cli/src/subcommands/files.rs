@@ -295,7 +295,7 @@ async fn upload_chunk(
     let chunk = Chunk::new(Bytes::from(fs::read(path)?));
 
     file_api
-        .get_local_payment_and_upload_chunk(chunk, verify_store, None)
+        .get_local_payment_and_upload_chunk(chunk, verify_store)
         .await?;
 
     println!(
