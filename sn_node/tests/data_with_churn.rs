@@ -445,7 +445,7 @@ fn store_chunks_task(
                     }
                 };
                 match file_api
-                    .get_local_payment_and_upload_chunk(chunk, true, None)
+                    .get_local_payment_and_upload_chunk(chunk, true)
                     .await
                 {
                     Ok(()) => content

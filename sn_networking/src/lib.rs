@@ -46,7 +46,7 @@ use sn_protocol::{
 use sn_transfers::MainPubkey;
 use sn_transfers::NanoTokens;
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
-use tokio::sync::{mpsc, oneshot, OwnedSemaphorePermit, Semaphore};
+use tokio::sync::{mpsc, oneshot, Semaphore};
 use tracing::warn;
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
@@ -378,12 +378,7 @@ impl Network {
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
     /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
-    pub async fn put_record(
-        &self,
-        record: Record,
-        verify_store: Option<Record>,
-        mut optional_permit: Option<OwnedSemaphorePermit>,
-    ) -> Result<()> {
+    pub async fn put_record(&self, record: Record, verify_store: Option<Record>) -> Result<()> {
         let mut retries = 0;
 
         // let mut has_permit = optional_permit.is_some();
@@ -395,27 +390,25 @@ impl Network {
             );
 
             let res = self
-                .put_record_once(record.clone(), verify_store.clone(), optional_permit)
+                .put_record_once(record.clone(), verify_store.clone())
                 .await;
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
             }
-
-            // the permit will have been consumed above.
-            optional_permit = None;
 
             retries += 1;
         }
         Err(Error::FailedToVerifyRecordWasStored(record.key.into()))
     }
 
-    async fn put_record_once(
-        &self,
-        record: Record,
-        verify_store: Option<Record>,
-        starting_permit: Option<OwnedSemaphorePermit>,
-    ) -> Result<()> {
-        let mut _permit = starting_permit;
+    async fn put_record_once(&self, record: Record, verify_store: Option<Record>) -> Result<()> {
+        // get permit if semaphore supplied
+        let _permit = if let Some(semaphore) = self.concurrency_limiter.clone() {
+            let our_permit = semaphore.acquire_owned().await?;
+            Some(our_permit)
+        } else {
+            None
+        };
 
         let record_key = record.key.clone();
         let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
