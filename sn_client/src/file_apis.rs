@@ -266,7 +266,7 @@ impl Files {
         };
 
         let expected_count = data_map.infos().len();
-        let mut missing_chunks = Vec::new();
+        // let mut missing_chunks = Vec::new();
         let mut ordered_read_futures = FuturesOrdered::new();
         let now = Instant::now();
 
@@ -283,36 +283,25 @@ impl Files {
         // The futures are executed concurrently, but the result is returned in the order in which they were inserted.
         let mut index = 0;
         while let Some((dst_hash, result)) = ordered_read_futures.next().await {
-            match result {
-                Ok(chunk) => {
-                    let encrypted_chunk = EncryptedChunk {
-                        index,
-                        content: chunk.value().clone(),
-                    };
-                    let _ = decryptor.next_encrypted(encrypted_chunk)?;
-                }
-                Err(err) => {
-                    warn!("Reading chunk {dst_hash:?} from network, resulted in error {err:?}.");
-                    missing_chunks.push(dst_hash);
-                }
-            }
+            let chunk = result.map_err(|error| {
+                error!("Chunk missing {dst_hash:?} with {error:?}");
+                Error::ChunkMissing(dst_hash)
+            })?;
+            let encrypted_chunk = EncryptedChunk {
+                index,
+                content: chunk.value().clone(),
+            };
+            let _ = decryptor.next_encrypted(encrypted_chunk)?;
+
             index += 1;
-            info!("Client download progress {index:?}/{expected_count:?}");
-            println!("Client download progress {index:?}/{expected_count:?}");
+            info!("Client (read all) download progress {index:?}/{expected_count:?}");
+            println!("Client (read all) download progress {index:?}/{expected_count:?}");
         }
 
         let elapsed = now.elapsed();
         println!("Client downloaded file in {elapsed:?}");
 
-        if !missing_chunks.is_empty() {
-            Err(Error::NotEnoughChunksRetrieved {
-                expected: expected_count,
-                retrieved: expected_count - missing_chunks.len(),
-                missing_chunks,
-            })?
-        } else {
-            Ok(None)
-        }
+        Ok(None)
     }
 
     /// Extracts a file DataMapLevel from a chunk.
@@ -365,22 +354,17 @@ impl Files {
         for chunk_info in chunks_info.clone().into_iter() {
             let client = self.client.clone();
             let task = task::spawn(async move {
-                match client
+                let chunk = client
                     .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
                     .await
-                {
-                    Ok(chunk) => Ok(EncryptedChunk {
-                        index: chunk_info.index,
-                        content: chunk.value().clone(),
-                    }),
-                    Err(err) => {
-                        warn!(
-                            "Error reading chunk {} from network: {err:?}.",
-                            chunk_info.dst_hash
-                        );
-                        Err(err)
-                    }
-                }
+                    .map_err(|error| {
+                        error!("Chunk missing {:?} with {error:?}", chunk_info.dst_hash);
+                        Error::ChunkMissing(chunk_info.dst_hash)
+                    })?;
+                Ok::<EncryptedChunk, Error>(EncryptedChunk {
+                    index: chunk_info.index,
+                    content: chunk.value().clone(),
+                })
             });
             tasks.push(task);
         }
