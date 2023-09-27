@@ -325,10 +325,17 @@ fn init_logging(
     format: Option<LogFormat>,
 ) -> Result<(String, Option<WorkerGuard>)> {
     let logging_targets = vec![
-        ("safenode".to_string(), Level::INFO),
-        ("sn_transfers".to_string(), Level::INFO),
-        ("sn_networking".to_string(), Level::INFO),
-        ("sn_node".to_string(), Level::INFO),
+        // TODO: Reset to nice and clean defaults once we have a better idea of what we want
+        ("sn_networking".to_string(), Level::DEBUG),
+        ("safenode".to_string(), Level::TRACE),
+        ("sn_build_info".to_string(), Level::TRACE),
+        ("sn_logging".to_string(), Level::TRACE),
+        ("sn_node".to_string(), Level::TRACE),
+        ("sn_peers_acquisition".to_string(), Level::TRACE),
+        ("sn_protocol".to_string(), Level::TRACE),
+        ("sn_registers".to_string(), Level::TRACE),
+        ("sn_testnet".to_string(), Level::TRACE),
+        ("sn_transfers".to_string(), Level::TRACE),
     ];
 
     let output_dest = match log_output_dest {
