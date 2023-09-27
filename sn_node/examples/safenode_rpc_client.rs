@@ -191,7 +191,10 @@ pub async fn node_events(addr: SocketAddr, only_rewards: bool) -> Result<()> {
     while let Some(Ok(e)) = stream.next().await {
         let event = match NodeEvent::from_bytes(&e.event) {
             Ok(NodeEvent::GossipsubMsg { topic, msg }) if only_rewards => {
-                println!("New node reward notification received: {topic} {msg:?}");
+                println!(
+                    "New node reward notification received: {topic} {}",
+                    String::from_utf8(msg)?
+                );
                 continue;
             }
             Ok(_) if only_rewards => continue,
