@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695815348805,
+  "lastUpdate": 1695817347845,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9355,6 +9355,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 11.123309776870617,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "b54b7bf920256221656b598d4313913722de089b",
+          "message": "feat(client): fail fast when a chunk is missing",
+          "timestamp": "2023-09-27T11:05:40Z",
+          "tree_id": "2c613bf2096fc06f9c6fc30d635e8270ae59598e",
+          "url": "https://github.com/maidsafe/safe_network/commit/b54b7bf920256221656b598d4313913722de089b"
+        },
+        "date": 1695817345951,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11477105031393461,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6198318781473363,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.750690230877385,
             "unit": "MiB/s"
           }
         ]
