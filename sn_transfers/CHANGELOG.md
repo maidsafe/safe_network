@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.12.2...sn_transfers-v0.13.0) - 2023-09-27
+
+### Added
+- deep clean sn_transfers, reduce exposition, remove dead code
+
+### Fixed
+- benches
+- uncomment benches in Cargo.toml
+
+### Other
+- optimise bench
+- improve cloning
+- udeps
+
 ## [0.12.2](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.12.1...sn_transfers-v0.12.2) - 2023-09-25
 
 ### Other
