@@ -240,6 +240,24 @@ You can check your reward balance by running:
             ctrl_tx,
             started_instant,
         );
+    } else {
+        info!("======= PID: {pid} =======");
+        let mut addr = node_socket_addr;
+        if pid > 1025 {
+            addr.set_port(pid as u16);
+        } else {
+            addr.set_port(12000 + pid as u16);
+        }
+        info!("================================");
+        info!("======= RPC ADDR: {addr} =======");
+        info!("================================");
+        rpc::start_rpc_service(
+            addr,
+            log_output_dest,
+            running_node.clone(),
+            ctrl_tx,
+            started_instant,
+        );
     }
 
     // Keep the node and gRPC service (if enabled) running.
