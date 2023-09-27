@@ -9,8 +9,8 @@
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, Files, WalletClient};
-use sn_transfers::NanoTokens;
 use sn_transfers::{parse_main_pubkey, LocalWallet};
+use sn_transfers::{NanoTokens, Transfer};
 use std::{
     io::Read,
     path::{Path, PathBuf},
@@ -62,7 +62,11 @@ pub enum WalletCmds {
         #[clap(name = "url")]
         url: String,
     },
-    /// Send a CashNote.
+    /// Send a transfer.
+    ///
+    /// This command will create a new transfer and encrypt it for the recipient.
+    /// This encrypted transfer can then be shared with the recipient, who can then
+    /// use the 'receive' command to claim the funds.
     Send {
         /// The number of SafeNetworkTokens to send.
         #[clap(name = "amount")]
@@ -70,6 +74,12 @@ pub enum WalletCmds {
         /// Hex-encoded public address of the recipient.
         #[clap(name = "to")]
         to: String,
+    },
+    /// Receive a transfer created by the 'send' command.
+    Receive {
+        /// Encrypted transfer.
+        #[clap(name = "transfer")]
+        transfer: String,
     },
     /// Make a payment for chunk storage based on files to be stored.
     ///
@@ -120,6 +130,7 @@ pub(crate) async fn wallet_cmds(
 ) -> Result<()> {
     match cmds {
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
+        WalletCmds::Receive { transfer } => receive(transfer, client, root_dir).await?,
         WalletCmds::Pay {
             path,
             batch_size: _,
@@ -252,7 +263,10 @@ async fn send(
     let wallet = LocalWallet::load_from(root_dir)?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
 
-    match wallet_client.send(amount, address, verify_store).await {
+    match wallet_client
+        .send_cash_note(amount, address, verify_store)
+        .await
+    {
         Ok(new_cash_note) => {
             println!("Sent {amount:?} to {address:?}");
             let mut wallet = wallet_client.into_wallet();
@@ -265,13 +279,46 @@ async fn send(
             }
 
             wallet.store_cash_note(&new_cash_note)?;
-            println!("Successfully stored new cash_note to wallet dir. It can now be sent to the recipient, using any channel of choice.");
+            let transfer = Transfer::transfers_from_cash_note(new_cash_note)?.to_hex()?;
+            println!(
+                "The encrypted transfer has been successfully created. Please share this to the recipient:\n\n{transfer}\n\nThe recipient can then use the 'receive' command to claim the funds."
+            );
         }
         Err(err) => {
             println!("Failed to send {amount:?} to {address:?} due to {err:?}.");
         }
     }
 
+    Ok(())
+}
+
+async fn receive(transfer: String, client: &Client, root_dir: &Path) -> Result<()> {
+    let transfer = match Transfer::from_hex(&transfer) {
+        Ok(transfer) => transfer,
+        Err(err) => {
+            println!("Failed to parse transfer: {err:?}");
+            return Ok(());
+        }
+    };
+    println!("Successfully parsed transfer.");
+
+    println!("Verifying transfer with the Network...");
+    let mut wallet = LocalWallet::load_from(root_dir)?;
+    let cashnotes = match client.receive(transfer, &wallet).await {
+        Ok(cashnotes) => cashnotes,
+        Err(err) => {
+            println!("Failed to verify and redeem transfer: {err:?}");
+            return Ok(());
+        }
+    };
+    println!("Successfully verified transfer.");
+
+    let old_balance = wallet.balance();
+    wallet.deposit(&cashnotes)?;
+    let new_balance = wallet.balance();
+    wallet.store()?;
+
+    println!("Successfully stored cash_note to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
     Ok(())
 }
 

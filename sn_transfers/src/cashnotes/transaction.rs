@@ -4,7 +4,7 @@
 // This SAFE Network Software is licensed under the BSD-3-Clause license.
 // Please see the LICENSE file for more details.
 
-use crate::{FeeOutput, NanoTokens, SignedSpend, UniquePubkey};
+use super::{FeeOutput, NanoTokens, SignedSpend, UniquePubkey};
 use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::BTreeSet};
 use tiny_keccak::{Hasher, Sha3};
@@ -181,7 +181,7 @@ impl Transaction {
 
         if signed_spends.len() != self.inputs.len() {
             return Err(Error::SignedSpendInputLenMismatch {
-                current: signed_spends.len(),
+                got: signed_spends.len(),
                 expected: self.inputs.len(),
             });
         }

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::UniquePubkey;
+use crate::{NanoTokens, UniquePubkey};
 use thiserror::Error;
 
 /// Specialisation of `std::Result`.
@@ -23,63 +23,65 @@ pub enum Error {
     /// The amount would exceed the maximum value for `Nano` (u64::MAX).
     #[error("The token amount would exceed the maximum value (u64::MAX).")]
     ExcessiveNanoValue,
-    /// Failed to parse a `Nano` from a string.
+    /// Failed to parse a `NanoToken` from a string.
     #[error("Failed to parse: {0}")]
-    FailedToParseNano(String),
+    FailedToParseNanoToken(String),
 
     #[error("Invalid Spend Signature for {0:?}")]
     InvalidSpendSignature(UniquePubkey),
-
     #[error("Transaction hash does not match the transaction signed by spentbook.")]
     InvalidTransactionHash,
-
     #[error("CashNote ciphers are not present in transaction outputs.")]
     CashNoteCiphersNotPresentInTransactionOutput,
-
     #[error("Output not found in transaction outputs.")]
     OutputNotFound,
-
     #[error("UniquePubkey is not unique across all transaction outputs.")]
     UniquePubkeyNotUniqueAcrossOutputs,
-
-    #[error(
-        "The number of SignedSpend ({current}) does not match the number of inputs ({expected})."
-    )]
-    SignedSpendInputLenMismatch { current: usize, expected: usize },
-
+    #[error("The number of SignedSpend ({got}) does not match the number of inputs ({expected}).")]
+    SignedSpendInputLenMismatch { got: usize, expected: usize },
     #[error("A SignedSpend UniquePubkey does not match an MlsagSignature UniquePubkey.")]
     SignedSpendInputIdMismatch,
-
     #[error("SignedSpends for {0:?} have mismatching reasons.")]
     SignedSpendReasonMismatch(UniquePubkey),
-
     #[error("Decryption failed.")]
     DecryptionBySecretKeyFailed,
-
     #[error("UniquePubkey not found.")]
     UniquePubkeyNotFound,
-
     #[error("Main key does not match public address.")]
     MainSecretKeyDoesNotMatchMainPubkey,
-
     #[error("Could not deserialize specified hex string to a CashNote: {0}")]
     HexDeserializationFailed(String),
-
     #[error("Could not serialize CashNote to hex: {0}")]
     HexSerializationFailed(String),
+    #[error("The input and output amounts of the tx do not match.")]
+    InconsistentTransaction,
+    #[error("The CashNote tx must have at least one input.")]
+    MissingTxInputs,
+    #[error("CashNote id is not unique across all tx inputs.")]
+    UniquePubkeyNotUniqueAcrossInputs,
+    #[error("Overflow occurred while adding values")]
+    NumericOverflow,
+
+    /// Not enough balance to perform a transaction
+    #[error("Not enough balance, {0} available, {1} required")]
+    NotEnoughBalance(NanoTokens, NanoTokens),
+    #[error("CashNoteHasNoParentSpends: {0}")]
+    CashNoteReissueFailed(String),
+    #[error("CashNote has no parent spends")]
+    CashNoteHasNoParentSpends,
+    #[error("CashNoteRedemption serialisation failed")]
+    CashNoteRedemptionSerialisationFailed,
+    #[error("CashNoteRedemption decryption failed")]
+    CashNoteRedemptionDecryptionFailed,
+    #[error("CashNoteRedemption encryption failed")]
+    CashNoteRedemptionEncryptionFailed,
+    #[error("We are not a recipient of this Transfer")]
+    NotRecipient,
+    #[error("Transfer serialisation failed")]
+    TransferSerializationFailed,
+    #[error("Transfer deserialisation failed")]
+    TransferDeserializationFailed,
 
     #[error("Bls error: {0}")]
     Blsttc(#[from] bls::error::Error),
-
-    #[error("The input and output amounts of the tx do not match.")]
-    InconsistentTransaction,
-
-    #[error("The CashNote tx must have at least one input.")]
-    MissingTxInputs,
-
-    #[error("CashNote id is not unique across all tx inputs.")]
-    UniquePubkeyNotUniqueAcrossInputs,
-
-    #[error("Overflow occurred while adding values")]
-    NumericOverflow,
 }
