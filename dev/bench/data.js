@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695822133295,
+  "lastUpdate": 1695822356625,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -15757,6 +15757,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50.31936,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4f5d54cad6f851d5df7c40589c8b063f429de2c2",
+          "message": "feat(networking): remove optional_semaphore being passed down from apps",
+          "timestamp": "2023-09-27T12:42:50Z",
+          "tree_id": "1ae0c18b67248931b29ab06f0fba07842329faa8",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f5d54cad6f851d5df7c40589c8b063f429de2c2"
+        },
+        "date": 1695822356189,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52.404224,
             "unit": "MB"
           }
         ]
