@@ -17,11 +17,16 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDest> {
     match val {
         "stdout" => Ok(LogOutputDest::Stdout),
         "data-dir" => {
+            // Get the current timestamp and format it to be human readable
+            let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+
+            // Get the data directory path and append the timestamp to the log file name
             let dir = dirs_next::data_dir()
                 .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
                 .join("safe")
                 .join("client")
-                .join("logs");
+                .join("logs")
+                .join(format!("log_{}", timestamp));
             Ok(LogOutputDest::Path(dir))
         }
         // The path should be a directory, but we can't use something like `is_dir` to check
