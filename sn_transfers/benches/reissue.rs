@@ -44,9 +44,9 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
 
     // simulate spentbook to check for double spends
     let mut spentbook_node = BTreeMap::new();
-    for spend in offline_transfer.all_spend_requests.clone().into_iter() {
+    for spend in &offline_transfer.all_spend_requests {
         if spentbook_node
-            .insert(*spend.signed_spend.unique_pubkey(), spend)
+            .insert(*spend.signed_spend.unique_pubkey(), spend.clone())
             .is_some()
         {
             panic!("cashnote double spend");
