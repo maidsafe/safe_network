@@ -71,12 +71,14 @@ struct Opt {
     ///
     /// Valid values are "stdout", "data-dir", or a custom path.
     ///
+    /// `data-dir` is the default value.
+    ///
     /// The data directory location is platform specific:
     ///  - Linux: $HOME/.local/share/safe/node/<peer-id>/logs
     ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>\logs
     #[allow(rustdoc::invalid_html_tags)]
-    #[clap(long, default_value_t = LogOutputDestArg::Stdout, value_parser = parse_log_output, verbatim_doc_comment)]
+    #[clap(long, default_value_t = LogOutputDestArg::DataDir, value_parser = parse_log_output, verbatim_doc_comment)]
     log_output_dest: LogOutputDestArg,
 
     /// Specify the logging format.

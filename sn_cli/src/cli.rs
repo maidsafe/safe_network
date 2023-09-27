@@ -39,12 +39,14 @@ pub(crate) struct Opt {
     ///
     /// Valid values are "stdout", "data-dir", or a custom path.
     ///
+    /// `data-dir` is the default value.
+    ///
     /// The data directory location is platform specific:
     ///  - Linux: $HOME/.local/share/safe/client/logs
     ///  - macOS: $HOME/Library/Application Support/safe/client/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
     #[allow(rustdoc::invalid_html_tags)]
-    #[clap(long, value_parser = parse_log_output, verbatim_doc_comment)]
+    #[clap(long, value_parser = parse_log_output, verbatim_doc_comment, default_value = "data-dir")]
     pub log_output_dest: Option<LogOutputDest>,
 
     /// Specify the logging format.
