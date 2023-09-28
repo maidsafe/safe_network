@@ -137,7 +137,17 @@ pub(super) async fn chunk_path(
             };
 
             let (file_addr, _size, chunks) =
-                file_api.chunk_file(entry.path(), chunks_dir.as_path())?;
+                match file_api.chunk_file(entry.path(), chunks_dir.as_path()) {
+                    Ok((file_addr, size, chunks)) => (file_addr, size, chunks),
+                    Err(err) => {
+                        println!(
+                            "Skipping file {:?} as it could not be chunked: {:?}",
+                            entry.path(),
+                            err
+                        );
+                        continue;
+                    }
+                };
             num_of_chunks += chunks.len();
 
             chunked_files.insert(file_addr, ChunkedFile { file_name, chunks });
