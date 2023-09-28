@@ -9,12 +9,12 @@
 use crate::Node;
 use crate::{error::Result, log_markers::Marker};
 use libp2p::{
-    kad::{RecordKey, K_VALUE},
+    kad::{Record, RecordKey, K_VALUE},
     PeerId,
 };
 use sn_networking::{sort_peers_by_address, CLOSE_GROUP_SIZE};
 use sn_protocol::{
-    messages::{Cmd, Request},
+    messages::{Cmd, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::collections::BTreeMap;
@@ -54,7 +54,7 @@ impl Node {
         let all_records = self.network.get_all_local_record_addresses().await?;
 
         trace!(
-            "Replication triggered, we have #{:?} records",
+            "Replication triggered by the churning of {peer_id:?}, we have #{:?} records",
             all_records.len()
         );
 
@@ -67,9 +67,9 @@ impl Node {
         for key in all_records {
             let sorted_based_on_key =
                 sort_peers_by_address(all_peers.clone(), &key, CLOSE_GROUP_SIZE + 1)?;
-            trace!("replication: close for {key:?} are: {sorted_based_on_key:?}");
 
             if sorted_based_on_key.contains(&peer_id) {
+                trace!("replication: close for {key:?} are: {sorted_based_on_key:?}");
                 let target_peer = if is_removal {
                     // For dead peer, only replicate to farthest close_group peer,
                     // when the dead peer was one of the close_group peers to the record.
@@ -97,7 +97,6 @@ impl Node {
                 keys_to_replicate.push(key.clone());
             }
         }
-        trace!("replication list {replicate_to:?}");
 
         for (peer_id, keys) in replicate_to {
             let (_left, mut remaining_keys) = keys.split_at(0);
@@ -114,32 +113,65 @@ impl Node {
 
     /// Add a list of keys to the Replication fetcher.
     /// These keys are later fetched from network.
-    pub(crate) fn add_keys_to_replication_fetcher(&self, keys: Vec<NetworkAddress>) -> Result<()> {
-        self.network.add_keys_to_replication_fetcher(keys)?;
+    pub(crate) fn add_keys_to_replication_fetcher(
+        &self,
+        holder: PeerId,
+        keys: Vec<NetworkAddress>,
+    ) -> Result<()> {
+        self.network.add_keys_to_replication_fetcher(holder, keys)?;
         Ok(())
     }
 
     /// Get the Record from a peer or from the network without waiting.
     pub(crate) fn fetch_replication_keys_without_wait(
         &self,
-        keys_to_fetch: Vec<RecordKey>,
+        keys_to_fetch: Vec<(PeerId, RecordKey)>,
     ) -> Result<()> {
-        for key in keys_to_fetch {
+        for (holder, key) in keys_to_fetch {
             let node = self.clone();
+            let requester = NetworkAddress::from_peer(self.network.peer_id);
             let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
+                let pretty_key = PrettyPrintRecordKey::from(key.clone());
+                trace!("Fetching record {pretty_key:?} from node {holder:?}");
+                let req = Request::Query(Query::GetReplicatedRecord {
+                    requester,
+                    key: NetworkAddress::from_record_key(key.clone()),
+                });
+                let record_opt = if let Ok(resp) = node.network.send_request(req, holder).await {
+                    match resp {
+                        Response::Query(QueryResponse::GetReplicatedRecord(result)) => match result
+                        {
+                            Ok((_holder, record_content)) => Some(record_content),
+                            Err(err) => {
+                                trace!("Failed fetch record {pretty_key:?} from node {holder:?}, with error {err:?}");
+                                None
+                            }
+                        },
+                        other => {
+                            trace!("Cannot fetch record {pretty_key:?} from node {holder:?}, with response {other:?}");
+                            None
+                        }
+                    }
+                } else {
+                    None
+                };
+
+                let record = if let Some(record_content) = record_opt {
+                    Record::new(key, record_content)
+                } else {
+                    trace!(
+                        "Can not fetch record {pretty_key:?} from node {holder:?}, fetching from the network"
+                    );
+                    node.network
+                        .get_record_from_network(key, None, false)
+                        .await?
+                };
+
                 trace!(
-                    "Fetching data for replication {:?} from the network",
-                    PrettyPrintRecordKey::from(key.clone())
-                );
-                let record = node
-                    .network
-                    .get_record_from_network(key.clone(), None, false)
-                    .await?;
-                trace!(
-                    "Got Replication Record {:?} from network, validating and storing it",
-                    PrettyPrintRecordKey::from(key)
+                    "Got Replication Record {pretty_key:?} from network, validating and storing it"
                 );
                 let _ = node.store_prepaid_record(record).await?;
+
                 Ok(())
             });
         }
@@ -153,14 +185,15 @@ impl Node {
         peer_id: &PeerId,
         keys: Vec<NetworkAddress>,
     ) -> Result<()> {
-        let len = keys.len();
-        trace!("Sending a replication list to {peer_id:?} keys: {keys:?}");
+        trace!(
+            "Sending a replication list of {} keys to {peer_id:?} keys: {keys:?}",
+            keys.len()
+        );
         let request = Request::Cmd(Cmd::Replicate {
             holder: our_address.clone(),
             keys,
         });
 
-        debug!("Sending a replication list with {len:?} keys to {peer_id:?}");
         self.network.send_req_ignore_reply(request, *peer_id)?;
 
         Ok(())

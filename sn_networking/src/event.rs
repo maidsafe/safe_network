@@ -126,8 +126,8 @@ pub enum NetworkEvent {
     PeerAdded(PeerId),
     // Peer has been removed from the Routing Table
     PeerRemoved(PeerId),
-    /// The Records for the these keys are to be fetched from the network
-    KeysForReplication(Vec<RecordKey>),
+    /// The records bearing these keys are to be fetched from the holder or the network
+    KeysForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
     /// AutoNAT status changed
@@ -162,7 +162,7 @@ impl Debug for NetworkEvent {
             NetworkEvent::KeysForReplication(list) => {
                 let pretty_list: Vec<_> = list
                     .iter()
-                    .map(|key| PrettyPrintRecordKey::from(key.clone()))
+                    .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key.clone())))
                     .collect();
                 write!(f, "NetworkEvent::KeysForReplication({pretty_list:?})")
             }
@@ -582,11 +582,13 @@ impl SwarmDriver {
             KademliaEvent::OutboundQueryProgressed {
                 id,
                 result:
-                    QueryResult::GetRecord(Ok(GetRecordOk::FinishedWithNoAdditionalRecord { .. })),
+                    QueryResult::GetRecord(Ok(GetRecordOk::FinishedWithNoAdditionalRecord {
+                        cache_candidates,
+                    })),
                 stats,
                 step,
             } => {
-                trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?}");
+                trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?} - {cache_candidates:?}");
                 if let Some((sender, result_map)) = self.pending_get_record.remove(&id) {
                     if let Some((record, _)) = result_map.values().next() {
                         debug!(
