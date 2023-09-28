@@ -1446,6 +1446,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(release)* sn_cli-v0.83.2/sn_client-v0.91.1
 
+## [0.91.3](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.2...sn_node-v0.91.3) - 2023-09-28
+
+### Added
+- client to client transfers
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
