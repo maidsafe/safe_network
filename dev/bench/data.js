@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695888607465,
+  "lastUpdate": 1695888827807,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -15825,6 +15825,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52.404224,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "02b9dd4eb0ededd3f192585dd3cf572d3f7450a0",
+          "message": "feat: client to client transfers",
+          "timestamp": "2023-09-28T07:11:53Z",
+          "tree_id": "c663caa335b0c67e50b19a895c5f65bddebc1543",
+          "url": "https://github.com/maidsafe/safe_network/commit/02b9dd4eb0ededd3f192585dd3cf572d3f7450a0"
+        },
+        "date": 1695888827431,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50.86003,
             "unit": "MB"
           }
         ]
