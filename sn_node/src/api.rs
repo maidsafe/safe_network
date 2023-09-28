@@ -17,6 +17,7 @@ use sn_networking::{
     MsgResponder, NetworkBuilder, NetworkEvent, SwarmLocalState, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
+    error::Error as ProtocolError,
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -333,6 +334,9 @@ impl Node {
                 // This only exists to ensure we dont drop the handle and
                 // exit early, potentially logging false connection woes
             }
+            Response::Query(QueryResponse::GetReplicatedRecord(resp)) => {
+                error!("Response to replication shall be handled by called not by common handler, {resp:?}");
+            }
             other => {
                 warn!("handle_response not implemented for {other:?}");
             }
@@ -361,6 +365,24 @@ impl Node {
                     payment_address,
                 }
             }
+            Query::GetReplicatedRecord { requester, key } => {
+                trace!("Got GetReplicatedRecord from {requester:?} regarding {key:?}");
+
+                let our_address = NetworkAddress::from_peer(self.network.peer_id);
+                let mut result = Err(ProtocolError::ReplicatedRecordNotFound {
+                    holder: Box::new(our_address.clone()),
+                    key: Box::new(key.clone()),
+                });
+                let record_key = key.as_record_key();
+
+                if let Some(record_key) = record_key {
+                    if let Ok(Some(record)) = self.network.get_local_record(&record_key).await {
+                        result = Ok((our_address, record.value));
+                    }
+                }
+
+                QueryResponse::GetReplicatedRecord(result)
+            }
         };
         Response::Query(resp)
     }
@@ -368,12 +390,19 @@ impl Node {
     fn handle_node_cmd(&self, cmd: Cmd) -> Response {
         Marker::NodeCmdReceived(&cmd).log();
         let resp = match cmd {
-            Cmd::Replicate { keys, .. } => {
-                debug!("Replicate list received {} keys", keys.len());
-                trace!("received replication keys {keys:?}");
+            Cmd::Replicate { holder, keys } => {
+                trace!(
+                    "Received replication list from {holder:?} of {} keys {keys:?}",
+                    keys.len()
+                );
 
-                // todo: error is not propagated to the caller here
-                let _ = self.add_keys_to_replication_fetcher(keys);
+                if let Some(peer_id) = holder.as_peer_id() {
+                    // todo: error is not propagated to the caller here
+                    let _ = self.add_keys_to_replication_fetcher(peer_id, keys);
+                } else {
+                    error!("Within the replication list, Can not parse peer_id from {holder:?}");
+                }
+
                 // if we do not send a response, we can cause connection failures.
                 CmdResponse::Replicate(Ok(()))
             }

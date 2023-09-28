@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::error::Result;
+use crate::{error::Result, NetworkAddress};
 
 use serde::{Deserialize, Serialize};
 use sn_transfers::{MainPubkey, NanoTokens};
@@ -22,6 +22,12 @@ pub enum QueryResponse {
         /// The cash_note MainPubkey to pay this node's store cost to.
         payment_address: MainPubkey,
     },
+    // ===== ReplicatedRecord =====
+    //
+    /// Response to [`GetReplicatedRecord`]
+    ///
+    /// [`GetReplicatedRecord`]: crate::messages::Query::GetReplicatedRecord
+    GetReplicatedRecord(Result<(NetworkAddress, Vec<u8>)>),
 }
 
 /// The response to a Cmd, containing the query result.

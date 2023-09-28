@@ -148,7 +148,7 @@ jobs:
           sending_list_count=$(rg "Sending a replication list" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Sent $sending_list_count replication lists"
-          received_list_count=$(rg "Replicate list received" $NODE_DATA_PATH -c --stats | \
+          received_list_count=$(rg "Received replication list from" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Received $received_list_count replication lists"
           fetching_attempt_count=$(rg "FetchingKeysForReplication" $NODE_DATA_PATH -c --stats | \
