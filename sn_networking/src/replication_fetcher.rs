@@ -8,7 +8,7 @@
 #![allow(clippy::mutable_key_type)]
 
 use crate::CLOSE_GROUP_SIZE;
-use libp2p::kad::RecordKey;
+use libp2p::{kad::RecordKey, PeerId};
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{
     collections::{HashMap, HashSet},
@@ -27,8 +27,9 @@ type ReplicationRequestSentTime = Instant;
 
 #[derive(Default, Debug)]
 pub(crate) struct ReplicationFetcher {
-    to_be_fetched: HashMap<RecordKey, Option<ReplicationRequestSentTime>>,
-    on_going_fetches: usize,
+    to_be_fetched: HashMap<(RecordKey, PeerId), Option<ReplicationRequestSentTime>>,
+    // Avoid fetching same chunk from different nodes AND carry out too many parallel tasks.
+    on_going_fetches: HashMap<RecordKey, PeerId>,
 }
 
 impl ReplicationFetcher {
@@ -36,9 +37,10 @@ impl ReplicationFetcher {
     // fetched from the peer/network.
     pub(crate) fn add_keys(
         &mut self,
+        holder: PeerId,
         incoming_keys: Vec<NetworkAddress>,
         locally_stored_keys: &HashSet<RecordKey>,
-    ) -> Vec<RecordKey> {
+    ) -> Vec<(PeerId, RecordKey)> {
         self.remove_stored_keys(locally_stored_keys);
 
         // add non existing keys to the fetcher
@@ -46,7 +48,7 @@ impl ReplicationFetcher {
             .into_iter()
             .filter_map(|incoming| incoming.as_record_key())
             .filter(|incoming| !locally_stored_keys.contains(incoming))
-            .for_each(|incoming| self.add_key(incoming));
+            .for_each(|incoming| self.add_key(holder, incoming));
 
         self.next_keys_to_fetch()
     }
@@ -54,11 +56,11 @@ impl ReplicationFetcher {
     // Notify the replication fetcher about a newly added Record to the node.
     // The corresponding key can now be removed from the replication fetcher.
     // Also returns the next set of keys that has to be fetched from the peer/network.
-    pub(crate) fn notify_about_new_put(&mut self, new_put: &RecordKey) -> Vec<RecordKey> {
+    pub(crate) fn notify_about_new_put(&mut self, new_put: &RecordKey) -> Vec<(PeerId, RecordKey)> {
+        self.to_be_fetched.retain(|(key, _), _| key != new_put);
+
         // if we're actively fetching for the key, reduce the on_going_fetches
-        if self.to_be_fetched.remove(new_put).is_some() {
-            self.on_going_fetches = self.on_going_fetches.saturating_sub(1);
-        }
+        let _ = self.on_going_fetches.remove(new_put);
 
         self.next_keys_to_fetch()
     }
@@ -66,14 +68,13 @@ impl ReplicationFetcher {
     // Returns the set of keys that has to be fetched from the peer/network.
     // Target must not be under-fetching
     // and no more than MAX_PARALLEL_FETCH fetches to be undertaken at the same time.
-    pub(crate) fn next_keys_to_fetch(&mut self) -> Vec<RecordKey> {
+    pub(crate) fn next_keys_to_fetch(&mut self) -> Vec<(PeerId, RecordKey)> {
         self.prune_expired_keys();
 
-        if self.on_going_fetches >= MAX_PARALLEL_FETCH {
+        if self.on_going_fetches.len() >= MAX_PARALLEL_FETCH {
             warn!("Replication Fetcher doesn't have free capacity.");
             return vec![];
         }
-        let mut fetches_left = MAX_PARALLEL_FETCH - self.on_going_fetches;
 
         if !self.to_be_fetched.is_empty() {
             debug!(
@@ -83,19 +84,23 @@ impl ReplicationFetcher {
         }
 
         let mut data_to_fetch = vec![];
-        for (key, is_fetching) in self.to_be_fetched.iter_mut() {
-            // Already carriedout expiration pruning above.
+        for ((key, holder), is_fetching) in self.to_be_fetched.iter_mut() {
+            // Already carried out expiration pruning above.
             // Hence here only need to check whether is ongoing fetching.
-            if is_fetching.is_none() && fetches_left > 0 {
-                data_to_fetch.push(key.clone());
+            // Also avoid fetching same record from different nodes.
+            if is_fetching.is_none()
+                && self.on_going_fetches.len() < MAX_PARALLEL_FETCH
+                && !self.on_going_fetches.contains_key(key)
+            {
+                data_to_fetch.push((*holder, key.clone()));
                 *is_fetching = Some(Instant::now());
-                fetches_left -= 1;
+                let _ = self.on_going_fetches.insert(key.clone(), *holder);
             }
         }
 
         let pretty_keys: Vec<_> = data_to_fetch
             .iter()
-            .map(|key| PrettyPrintRecordKey::from(key.clone()))
+            .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key.clone())))
             .collect();
 
         if !data_to_fetch.is_empty() {
@@ -106,19 +111,18 @@ impl ReplicationFetcher {
             );
         }
 
-        self.on_going_fetches += data_to_fetch.len();
         data_to_fetch
     }
 
     // Just remove outdated entries, which indicates a failure to fetch from network.
     // Leave it to to the next round of replication if triggered again.
     fn prune_expired_keys(&mut self) {
-        self.to_be_fetched.retain(|key, is_fetching| {
+        self.to_be_fetched.retain(|(key, holder), is_fetching| {
             let is_expired = if let Some(requested_time) = is_fetching {
                 if Instant::now() > *requested_time + FETCH_TIMEOUT {
-                    self.on_going_fetches = self.on_going_fetches.saturating_sub(1);
+                    self.on_going_fetches.retain(|data, node| data != key || node != holder);
                     debug!(
-                        "Prune record {:?} from the replication_fetcher due to timeout.",
+                        "Prune record {:?} at {holder:?} from the replication_fetcher due to timeout.",
                         PrettyPrintRecordKey::from(key.clone())
                     );
                     true
@@ -135,12 +139,12 @@ impl ReplicationFetcher {
     /// Remove keys that we hold already and no longer need to be replicated.
     fn remove_stored_keys(&mut self, existing_keys: &HashSet<RecordKey>) {
         self.to_be_fetched
-            .retain(|key, _| !existing_keys.contains(key));
+            .retain(|(key, _), _| !existing_keys.contains(key));
     }
 
     /// Add the key if not present yet.
-    fn add_key(&mut self, key: RecordKey) {
-        let _ = self.to_be_fetched.entry(key).or_insert(None);
+    fn add_key(&mut self, holder: PeerId, key: RecordKey) {
+        let _ = self.to_be_fetched.entry((key, holder)).or_insert(None);
     }
 }
 
@@ -148,7 +152,7 @@ impl ReplicationFetcher {
 mod tests {
     use super::{ReplicationFetcher, FETCH_TIMEOUT, MAX_PARALLEL_FETCH};
     use eyre::Result;
-    use libp2p::kad::RecordKey;
+    use libp2p::{kad::RecordKey, PeerId};
     use sn_protocol::NetworkAddress;
     use std::{collections::HashSet, time::Duration};
 
@@ -164,13 +168,15 @@ mod tests {
             incoming_keys.push(key);
         });
 
-        let keys_to_fetch = replication_fetcher.add_keys(incoming_keys, &locally_stored_keys);
+        let keys_to_fetch =
+            replication_fetcher.add_keys(PeerId::random(), incoming_keys, &locally_stored_keys);
         assert_eq!(keys_to_fetch.len(), MAX_PARALLEL_FETCH);
 
         // we should not fetch anymore keys
         let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
         let key = NetworkAddress::from_record_key(RecordKey::from(random_data));
-        let keys_to_fetch = replication_fetcher.add_keys(vec![key], &locally_stored_keys);
+        let keys_to_fetch =
+            replication_fetcher.add_keys(PeerId::random(), vec![key], &locally_stored_keys);
         assert!(keys_to_fetch.is_empty());
 
         tokio::time::sleep(FETCH_TIMEOUT + Duration::from_secs(1)).await;

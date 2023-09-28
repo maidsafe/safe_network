@@ -487,8 +487,12 @@ impl Network {
     }
 
     // Add a list of keys of a holder to Replication Fetcher.
-    pub fn add_keys_to_replication_fetcher(&self, keys: Vec<NetworkAddress>) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { keys })
+    pub fn add_keys_to_replication_fetcher(
+        &self,
+        holder: PeerId,
+        keys: Vec<NetworkAddress>,
+    ) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { holder, keys })
     }
 
     /// Send `Request` to the given `PeerId` and await for the response. If `self` is the recipient,

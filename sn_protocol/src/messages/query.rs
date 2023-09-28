@@ -21,6 +21,17 @@ use serde::{Deserialize, Serialize};
 pub enum Query {
     /// Retrieve the cost of storing a record at the given address.
     GetStoreCost(NetworkAddress),
+    /// Retrieve a specific record from a specific peer.
+    ///
+    /// This should eventually lead to a [`GetReplicatedRecord`] response.
+    ///
+    /// [`GetReplicatedRecord`]: super::QueryResponse::GetReplicatedRecord
+    GetReplicatedRecord {
+        /// Sender of the query
+        requester: NetworkAddress,
+        /// Key of the record to be fetched
+        key: NetworkAddress,
+    },
 }
 
 impl Query {
@@ -28,6 +39,9 @@ impl Query {
     pub fn dst(&self) -> NetworkAddress {
         match self {
             Query::GetStoreCost(address) => address.clone(),
+            // Shall not be called for this, as this is a `one-to-one` message,
+            // and the destionation shall be decided by the requester already.
+            Query::GetReplicatedRecord { key, .. } => key.clone(),
         }
     }
 }
@@ -37,6 +51,9 @@ impl std::fmt::Display for Query {
         match self {
             Query::GetStoreCost(address) => {
                 write!(f, "Query::GetStoreCost({address:?})")
+            }
+            Query::GetReplicatedRecord { key, requester } => {
+                write!(f, "Query::GetStoreCost({requester:?} {key:?})")
             }
         }
     }

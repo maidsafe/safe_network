@@ -111,6 +111,7 @@ pub enum SwarmCmd {
     },
     /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
+        holder: PeerId,
         keys: Vec<NetworkAddress>,
     },
     /// Subscribe to a given Gossipsub topic
@@ -143,7 +144,7 @@ impl SwarmDriver {
         );
 
         match cmd {
-            SwarmCmd::AddKeysToReplicationFetcher { keys } => {
+            SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
                 // Only store record from Replication that close enough to us.
                 let all_peers = self.get_all_local_peers();
                 let keys_to_store = keys
@@ -158,7 +159,9 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .record_addresses_ref();
-                let keys_to_fetch = self.replication_fetcher.add_keys(keys_to_store, all_keys);
+                let keys_to_fetch =
+                    self.replication_fetcher
+                        .add_keys(holder, keys_to_store, all_keys);
                 if !keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
                 }

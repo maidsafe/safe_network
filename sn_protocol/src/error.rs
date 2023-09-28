@@ -8,7 +8,7 @@
 
 use crate::{
     storage::{RecordKind, RegisterAddress, SpendAddress},
-    PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use serde::{Deserialize, Serialize};
 use sn_transfers::{NanoTokens, SignedSpend};
@@ -81,6 +81,16 @@ pub enum Error {
     FailedToGetTransferParentSpend,
     #[error("Transfer is invalid: {0}")]
     InvalidTransfer(String),
+
+    // ---------- replication errors
+    /// Replication not found.
+    #[error("Peer {holder:?} cannot find Record {key:?}")]
+    ReplicatedRecordNotFound {
+        /// Holder that being contacted
+        holder: Box<NetworkAddress>,
+        /// Key of the missing record
+        key: Box<NetworkAddress>,
+    },
 
     // ---------- record errors
     #[error("Record was not stored: {0:?}: {1:?}")]

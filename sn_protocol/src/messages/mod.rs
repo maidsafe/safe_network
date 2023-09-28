@@ -22,14 +22,8 @@ pub use self::{
 };
 
 use super::NetworkAddress;
-use crate::{
-    error::{Error, Result},
-    storage::{Chunk, SpendAddress},
-};
+
 use serde::{Deserialize, Serialize};
-use sn_registers::SignedRegister;
-use sn_transfers::SignedSpend;
-use xor_name::XorName;
 
 #[allow(clippy::large_enum_variant)]
 /// A request to peers in the network
@@ -50,16 +44,6 @@ pub enum Response {
     Query(QueryResponse),
 }
 
-#[derive(custom_debug::Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub enum ReplicatedData {
-    /// A chunk of data.
-    Chunk(Chunk),
-    /// A set of SignedSpends
-    Spend(Vec<SignedSpend>),
-    /// A signed register
-    Register(SignedRegister),
-}
-
 impl Request {
     /// Used to send a request to the close group of the address.
     pub fn dst(&self) -> NetworkAddress {
@@ -67,42 +51,6 @@ impl Request {
             Request::Cmd(cmd) => cmd.dst(),
             Request::Query(query) => query.dst(),
         }
-    }
-}
-
-impl ReplicatedData {
-    /// Return the name.
-    pub fn name(&self) -> Result<XorName> {
-        let name = match self {
-            Self::Chunk(chunk) => *chunk.name(),
-            Self::Spend(spends) => {
-                if let Some(spend) = spends.first() {
-                    *SpendAddress::from_unique_pubkey(spend.unique_pubkey()).xorname()
-                } else {
-                    return Err(Error::SpendIsEmpty);
-                }
-            }
-            Self::Register(register) => register.address().xorname(),
-        };
-        Ok(name)
-    }
-
-    /// Return the dst.
-    pub fn dst(&self) -> Result<NetworkAddress> {
-        let dst = match self {
-            Self::Chunk(chunk) => NetworkAddress::from_chunk_address(*chunk.address()),
-            Self::Spend(spends) => {
-                if let Some(spend) = spends.first() {
-                    NetworkAddress::from_cash_note_address(SpendAddress::from_unique_pubkey(
-                        spend.unique_pubkey(),
-                    ))
-                } else {
-                    return Err(Error::SpendIsEmpty);
-                }
-            }
-            Self::Register(register) => NetworkAddress::from_register_address(*register.address()),
-        };
-        Ok(dst)
     }
 }
 
