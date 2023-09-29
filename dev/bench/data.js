@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695984771349,
+  "lastUpdate": 1695984773885,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -22588,6 +22588,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 42,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "d22af4ea21f58aefe5143ff8a69a02e0ee9ec719",
+          "message": "fix(cli): dont bail on errors during repay/upload",
+          "timestamp": "2023-09-29T09:49:18Z",
+          "tree_id": "208cd2b2dfa37082be1ebd2181201683a0bab1ab",
+          "url": "https://github.com/maidsafe/safe_network/commit/d22af4ea21f58aefe5143ff8a69a02e0ee9ec719"
+        },
+        "date": 1695984772888,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 157.24135,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 43,
             "unit": "MB"
           }
         ]
