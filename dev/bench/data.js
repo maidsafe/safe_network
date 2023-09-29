@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695984773885,
+  "lastUpdate": 1695987019850,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9550,6 +9550,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 10.804473415290332,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "33a15e5c36d753de6175d1b3f880fc2e5d4592fd",
+          "message": "feat: replicate fetch from peer first then from network",
+          "timestamp": "2023-09-29T10:16:56Z",
+          "tree_id": "2a0348badd376d6dfce29db09b9e4cdcce148a4f",
+          "url": "https://github.com/maidsafe/safe_network/commit/33a15e5c36d753de6175d1b3f880fc2e5d4592fd"
+        },
+        "date": 1695987017754,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.1059680968076037,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5944936437786927,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 11.507701673519385,
             "unit": "MiB/s"
           }
         ]
