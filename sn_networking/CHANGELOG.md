@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.2...sn_networking-v0.8.3) - 2023-09-29
+
+### Added
+- replicate fetch from peer first then from network
+
 ## [0.8.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.1...sn_networking-v0.8.2) - 2023-09-28
 
 ### Other

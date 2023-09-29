@@ -1461,6 +1461,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.91.6](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.5...sn_node-v0.91.6) - 2023-09-29
+
+### Added
+- replicate fetch from peer first then from network
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
