@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695974761366,
+  "lastUpdate": 1695984531098,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9511,6 +9511,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 11.04449005587532,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "d22af4ea21f58aefe5143ff8a69a02e0ee9ec719",
+          "message": "fix(cli): dont bail on errors during repay/upload",
+          "timestamp": "2023-09-29T09:49:18Z",
+          "tree_id": "208cd2b2dfa37082be1ebd2181201683a0bab1ab",
+          "url": "https://github.com/maidsafe/safe_network/commit/d22af4ea21f58aefe5143ff8a69a02e0ee9ec719"
+        },
+        "date": 1695984528763,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11376849773485334,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6098593769843028,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.804473415290332,
             "unit": "MiB/s"
           }
         ]
