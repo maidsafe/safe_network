@@ -139,10 +139,13 @@ impl WalletClient {
                     .get_store_costs_at_address(&content_addr)
                     .await
                     .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()));
+
+                debug!("Storecosts retrieved for {content_addr:?}");
                 (content_addr, costs)
             });
         }
 
+        debug!("Pending store cost tasks: {:?}", tasks.len());
         while let Some(res) = tasks.join_next().await {
             // In case of cann't fetch cost from network for a content,
             // just skip it as it will then get verification failure,
@@ -151,6 +154,7 @@ impl WalletClient {
                 Ok((content_addr, Ok(cost))) => {
                     if let Some(xorname) = content_addr.as_xorname() {
                         let _ = payment_map.insert(xorname, cost);
+                        debug!("Storecosts inserted into payment map for {content_addr:?}");
                     } else {
                         warn!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
                         println!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
