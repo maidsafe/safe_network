@@ -207,7 +207,7 @@ impl Network {
             .into_iter()
             .collect_vec();
 
-        let request = Request::Query(Query::GetStoreCost(record_address));
+        let request = Request::Query(Query::GetStoreCost(record_address.clone()));
         let responses = self
             .send_and_get_responses(close_nodes, &request, true)
             .await;
@@ -215,7 +215,10 @@ impl Network {
         // loop over responses, generating an average fee and storing all responses along side
         let mut all_costs = vec![];
         for response in responses.into_iter().flatten() {
-            debug!("StoreCostReq received response: {:?}", response);
+            debug!(
+                "StoreCostReq for {record_address:?} received response: {:?}",
+                response
+            );
             if let Response::Query(QueryResponse::GetStoreCost {
                 store_cost: Ok(cost),
                 payment_address,
