@@ -417,7 +417,9 @@ async fn verify_and_repay_if_needed(
 
         // lets check there were no odd errors during upload
         for result in upload_results {
-            result??;
+            if let Err(error) = result? {
+                error!("Error uploading chunk during repayment: {error}");
+            };
         }
     }
 
