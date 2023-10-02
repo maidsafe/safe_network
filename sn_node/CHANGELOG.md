@@ -1487,6 +1487,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add read transfer from file option
 - faucet using transfers instead of sending raw cashnotes
 
+## [0.91.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.10...sn_node-v0.91.11) - 2023-10-02
+
+### Other
+- remove tracing feat deps
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
