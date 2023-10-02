@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696278940880,
+  "lastUpdate": 1696279183487,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -16369,6 +16369,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49.639423,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "3e77a56641698794a26dde1c43727ae311bc368e",
+          "message": "chore: remove tracing feat deps",
+          "timestamp": "2023-10-02T19:34:50Z",
+          "tree_id": "1b2c4a446271a5e4f0302de2242d5a0a2c5125a1",
+          "url": "https://github.com/maidsafe/safe_network/commit/3e77a56641698794a26dde1c43727ae311bc368e"
+        },
+        "date": 1696279182501,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49.975296,
             "unit": "MB"
           }
         ]
