@@ -231,6 +231,7 @@ impl Node {
                 // until we have enough nodes, else these might fail.
                 NetworkEvent::RequestReceived { .. }
                 | NetworkEvent::UnverifiedRecord(_)
+                | NetworkEvent::FailedToWrite(_)
                 | NetworkEvent::ResponseReceived { .. }
                 | NetworkEvent::KeysForReplication(_) => {
                     if log_when_not_enough_peers {
@@ -317,6 +318,11 @@ impl Node {
                         self.record_metrics(Marker::RecordRejected(&key));
                         trace!("UnverifiedRecord {key} failed to be stored with error {err:?}.")
                     }
+                }
+            }
+            NetworkEvent::FailedToWrite(key) => {
+                if let Err(e) = self.network.remove_failed_local_record(key) {
+                    error!("Failed to remove local record: {e:?}");
                 }
             }
             NetworkEvent::GossipsubMsg { topic, msg } => {

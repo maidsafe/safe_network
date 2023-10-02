@@ -109,6 +109,11 @@ pub enum SwarmCmd {
     PutLocalRecord {
         record: Record,
     },
+    /// Remove a local record from the RecordStore
+    /// Typically because the write failed
+    RemoveFailedLocalRecord {
+        key: RecordKey,
+    },
     /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
         holder: PeerId,
@@ -235,6 +240,9 @@ impl SwarmDriver {
                     }
                     Err(err) => return Err(err.into()),
                 };
+            }
+            SwarmCmd::RemoveFailedLocalRecord { key } => {
+                self.swarm.behaviour_mut().kademlia.store_mut().remove(&key)
             }
             SwarmCmd::RecordStoreHasKey { key, sender } => {
                 let has_key = self
