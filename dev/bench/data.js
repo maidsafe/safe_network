@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696238734753,
+  "lastUpdate": 1696238964720,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -16165,6 +16165,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52.75648,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ian@iancoleman.io",
+            "name": "Ian Coleman",
+            "username": "iancoleman"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "902706b5c6ef2181c88ef1b90de2aa11b44ac690",
+          "message": "feat(client): show feedback on long wait for costs",
+          "timestamp": "2023-10-02T08:13:12Z",
+          "tree_id": "ad4cc7064f905820892017689f07bc3da92e474a",
+          "url": "https://github.com/maidsafe/safe_network/commit/902706b5c6ef2181c88ef1b90de2aa11b44ac690"
+        },
+        "date": 1696238964371,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53.911552,
             "unit": "MB"
           }
         ]
