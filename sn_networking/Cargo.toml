@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_networking"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.8.4"
+version = "0.8.5"
 
 [features]
 default=[]
@@ -30,8 +30,8 @@ prometheus-client = { version = "0.21.2", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_protocol = { path = "../sn_protocol", version = "0.7.6" }
-sn_transfers = { path = "../sn_transfers", version = "0.13.1" }
+sn_protocol = { path = "../sn_protocol", version = "0.7.7" }
+sn_transfers = { path = "../sn_transfers", version = "0.13.2" }
 thiserror = "1.0.23"
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
