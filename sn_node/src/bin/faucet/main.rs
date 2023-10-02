@@ -14,7 +14,7 @@ use faucet_server::run_faucet_server;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
-use sn_transfers::{parse_main_pubkey, NanoTokens};
+use sn_transfers::{parse_main_pubkey, NanoTokens, Transfer};
 use std::path::PathBuf;
 use tracing::info;
 use tracing_core::Level;
@@ -124,7 +124,7 @@ async fn claim_genesis(client: &Client) {
     let _wallet = load_faucet_wallet_from_genesis_wallet(client).await;
 }
 
-/// returns the hex-encoded cash_note
+/// returns the hex-encoded transfer
 async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> {
     let to = parse_main_pubkey(to)?;
     use std::str::FromStr;
@@ -137,10 +137,10 @@ async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> 
     }
 
     let cash_note = get_tokens_from_faucet(amount, to, client).await?;
-    let cash_note_hex = cash_note.to_hex()?;
-    println!("{cash_note_hex}");
+    let transfer_hex = Transfer::transfers_from_cash_note(cash_note)?.to_hex()?;
+    println!("{transfer_hex}");
 
-    Ok(cash_note_hex)
+    Ok(transfer_hex)
 }
 
 fn parse_log_output(val: &str) -> Result<LogOutputDest> {
