@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696252348829,
+  "lastUpdate": 1696258167277,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9706,6 +9706,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 11.095487629205063,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "be141f9eb4c27d6d4fe6c7a9ef05be2bb126f10d",
+          "message": "chore: trim transfer hex nl and spaces",
+          "timestamp": "2023-10-02T13:48:53Z",
+          "tree_id": "51600472c10d22980a6dedec7e463caf457d3519",
+          "url": "https://github.com/maidsafe/safe_network/commit/be141f9eb4c27d6d4fe6c7a9ef05be2bb126f10d"
+        },
+        "date": 1696258166027,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11656037973502462,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6051224840464619,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 11.22721824584867,
             "unit": "MiB/s"
           }
         ]
