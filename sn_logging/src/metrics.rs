@@ -11,8 +11,8 @@ use std::time::Duration;
 use sysinfo::{self, CpuExt, Pid, PidExt, ProcessExt, System, SystemExt};
 use tracing::{debug, error};
 
-const UPDATE_INTERVAL: Duration = Duration::from_secs(5);
-const TO_MB: f32 = 1_000_000.0;
+const UPDATE_INTERVAL: Duration = Duration::from_secs(15);
+const TO_MB: u64 = 1_000_000;
 
 // The following Metrics are collected and logged
 #[derive(Debug, Serialize)]
@@ -22,12 +22,6 @@ struct Metrics {
     physical_cpu_threads: usize,
     // Percentage of CPU used
     system_cpu_usage_percent: f32,
-    // Total system memory in MBytes
-    system_total_memory_mb: f32,
-    // RAM used in MBytes
-    system_memory_used_mb: f32,
-    // Percentage of RAM used
-    system_memory_usage_percent: f32,
     // Process metrics is None if the Pid for the process is invalid
     process: Option<ProcessMetrics>,
 }
@@ -38,15 +32,15 @@ struct ProcessMetrics {
     // Percentage of CPU used by the process
     cpu_usage_percent: f32,
     // RAM used in MBytes
-    memory_used_mb: f32,
+    memory_used_mb: u64,
     // Bytes read from disk during UPDATE_INTERVAL
     bytes_read: u64,
     // Bytes written to disk during UPDATE_INTERVAL
     bytes_written: u64,
     // The total MBytes read from disk by the process
-    total_mb_read: f32,
+    total_mb_read: u64,
     // The total MBytes written to disk by the process
-    total_mb_written: f32,
+    total_mb_written: u64,
 }
 
 // Obtains the system metrics every UPDATE_INTERVAL and logs it.
@@ -63,11 +57,11 @@ pub async fn init_metrics(pid: u32) {
                 let disk_usage = safenode.disk_usage();
                 let process = ProcessMetrics {
                     cpu_usage_percent: safenode.cpu_usage(),
-                    memory_used_mb: safenode.memory() as f32 / TO_MB,
+                    memory_used_mb: safenode.memory() / TO_MB,
                     bytes_read: disk_usage.read_bytes,
                     bytes_written: disk_usage.written_bytes,
-                    total_mb_read: disk_usage.total_read_bytes as f32 / TO_MB,
-                    total_mb_written: disk_usage.total_written_bytes as f32 / TO_MB,
+                    total_mb_read: disk_usage.total_read_bytes / TO_MB,
+                    total_mb_written: disk_usage.total_written_bytes / TO_MB,
                 };
                 Some(process)
             }
@@ -81,10 +75,6 @@ pub async fn init_metrics(pid: u32) {
         let metrics = Metrics {
             physical_cpu_threads: sys.cpus().len(),
             system_cpu_usage_percent: cpu_stat.cpu_usage(),
-            system_total_memory_mb: sys.total_memory() as f32 / TO_MB,
-            system_memory_used_mb: sys.used_memory() as f32 / TO_MB,
-            system_memory_usage_percent: (sys.used_memory() as f32 / sys.total_memory() as f32)
-                * 100.0,
             process,
         };
         match serde_json::to_string(&metrics) {
