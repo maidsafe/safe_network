@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696236420696,
+  "lastUpdate": 1696236422520,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -22792,6 +22792,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 41,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "13d00e7b676294f6b93788f346a6daef297f0e20",
+          "message": "chore(client): more logs around StoreCost retrieveal\n\nWe're seeing odd hangs, this may well help",
+          "timestamp": "2023-10-02T07:45:38Z",
+          "tree_id": "c70a73bd67476f272c0172896622786e4c0d9858",
+          "url": "https://github.com/maidsafe/safe_network/commit/13d00e7b676294f6b93788f346a6daef297f0e20"
+        },
+        "date": 1696236422044,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 200.81459,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 44,
             "unit": "MB"
           }
         ]
