@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696252347021,
+  "lastUpdate": 1696252348829,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -22991,6 +22991,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 147.88199,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 42,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e7b3fd8cdb194f30800af621e1f39192fa7b4f40",
+          "message": "feat: remove unused fee output",
+          "timestamp": "2023-10-02T12:06:37Z",
+          "tree_id": "fb0793d0a30dc860b376b05f88ad7ce0f5e6df86",
+          "url": "https://github.com/maidsafe/safe_network/commit/e7b3fd8cdb194f30800af621e1f39192fa7b4f40"
+        },
+        "date": 1696252348372,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 152.10497,
             "unit": "MB"
           },
           {
