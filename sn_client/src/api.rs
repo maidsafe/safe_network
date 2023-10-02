@@ -324,7 +324,7 @@ impl Client {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, false)
+            .get_record_from_network(key, None, true)
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
