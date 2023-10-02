@@ -297,7 +297,7 @@ async fn send(
 
 async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Path) -> Result<()> {
     let transfer = if is_file {
-        std::fs::read_to_string(transfer)?
+        std::fs::read_to_string(transfer)?.trim().to_string()
     } else {
         transfer
     };
