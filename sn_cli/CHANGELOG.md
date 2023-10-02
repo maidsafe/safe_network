@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.83.11](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.10...sn_cli-v0.83.11) - 2023-10-02
+
+### Added
+- add read transfer from file option
+- faucet using transfers instead of sending raw cashnotes
+
+### Other
+- trim transfer hex nl and spaces
+- add some more error info printing
+
 ## [0.83.10](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.9...sn_cli-v0.83.10) - 2023-10-02
 
 ### Other
