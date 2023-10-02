@@ -202,11 +202,12 @@ impl NodeRecordStore {
 
         let filename = Self::key_to_hex(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
-        let _ = self.records.insert(r.key);
+        let _ = self.records.insert(r.key.clone());
 
-        // TODO: How could we clean up records if we fail to insert?
+        let cloned_event_sender = self.event_sender.clone();
+
         tokio::spawn(async move {
-            match fs::write(file_path, r.value) {
+            match fs::write(&file_path, r.value) {
                 Ok(_) => {
                     info!("Wrote record {record_key:?} to disk! filename: {filename}");
                 }
@@ -214,6 +215,16 @@ impl NodeRecordStore {
                     error!(
                         "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
                     );
+
+                    if let Some(event_sender) = cloned_event_sender {
+                        if let Err(error) =
+                            event_sender.send(NetworkEvent::FailedToWrite(r.key)).await
+                        {
+                            error!("SwarmDriver failed to send event: {}", error);
+                        }
+                    } else {
+                        error!("Record store doesn't have event_sender could not log failed write to disk for {file_path:?}");
+                    }
                 }
             }
         });
