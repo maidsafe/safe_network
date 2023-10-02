@@ -117,7 +117,6 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             Ok(())
         }
         WalletCmds::Deposit { stdin, cash_note } => deposit(root_dir, *stdin, cash_note.clone()),
-        WalletCmds::GetFaucet { url } => get_faucet(root_dir, url.clone()).await,
         cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
     }
 }
@@ -131,6 +130,7 @@ pub(crate) async fn wallet_cmds(
     match cmds {
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
         WalletCmds::Receive { transfer } => receive(transfer, client, root_dir).await?,
+        WalletCmds::GetFaucet { url } => get_faucet(root_dir, client, url.clone()).await?,
         WalletCmds::Pay {
             path,
             batch_size: _,
@@ -169,7 +169,7 @@ fn balance(root_dir: &Path) -> Result<NanoTokens> {
     Ok(balance)
 }
 
-async fn get_faucet(root_dir: &Path, url: String) -> Result<()> {
+async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()> {
     let wallet = LocalWallet::load_from(root_dir)?;
     let address_hex = hex::encode(wallet.address().to_bytes());
     let url = if !url.contains("://") {
@@ -184,7 +184,7 @@ async fn get_faucet(root_dir: &Path, url: String) -> Result<()> {
     let is_ok = response.status().is_success();
     let body = response.text().await?;
     if is_ok {
-        deposit_from_cash_note_hex(root_dir, body)?;
+        receive(body, client, root_dir).await?;
         println!("Successfully got tokens from faucet.");
     } else {
         println!(
