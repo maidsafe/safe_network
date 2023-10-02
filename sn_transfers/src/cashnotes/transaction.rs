@@ -4,7 +4,7 @@
 // This SAFE Network Software is licensed under the BSD-3-Clause license.
 // Please see the LICENSE file for more details.
 
-use super::{FeeOutput, NanoTokens, SignedSpend, UniquePubkey};
+use super::{NanoTokens, SignedSpend, UniquePubkey};
 use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::BTreeSet};
 use tiny_keccak::{Hasher, Sha3};
@@ -69,7 +69,6 @@ impl Output {
 pub struct Transaction {
     pub inputs: Vec<Input>,
     pub outputs: Vec<Output>,
-    pub fee: FeeOutput,
 }
 
 impl PartialEq for Transaction {
@@ -97,7 +96,6 @@ impl Transaction {
         Self {
             inputs: vec![],
             outputs: vec![],
-            fee: FeeOutput::default(),
         }
     }
 
@@ -111,8 +109,6 @@ impl Transaction {
         for o in self.outputs.iter() {
             v.extend(&o.to_bytes());
         }
-        v.extend("fee".as_bytes());
-        v.extend(&self.fee.to_bytes());
         v.extend("end".as_bytes());
         v
     }
@@ -156,7 +152,6 @@ impl Transaction {
             .outputs
             .iter()
             .map(|o| o.amount)
-            .chain(std::iter::once(self.fee.token))
             .try_fold(0, |acc: u64, o| {
                 acc.checked_add(o.as_nano()).ok_or(Error::NumericOverflow)
             })?;

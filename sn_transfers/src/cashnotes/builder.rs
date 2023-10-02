@@ -8,8 +8,8 @@
 
 use super::{
     transaction::{Output, Transaction},
-    CashNote, DerivationIndex, DerivedSecretKey, FeeOutput, Hash, Input, MainPubkey, NanoTokens,
-    SignedSpend, Spend, UniquePubkey,
+    CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens, SignedSpend,
+    Spend, UniquePubkey,
 };
 
 use crate::{Error, Result};
@@ -25,7 +25,6 @@ pub type InputSrcTx = Transaction;
 pub struct TransactionBuilder {
     inputs: Vec<Input>,
     outputs: Vec<Output>,
-    fee: FeeOutput,
     input_details: BTreeMap<UniquePubkey, (DerivedSecretKey, InputSrcTx)>,
     output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
 }
@@ -83,18 +82,11 @@ impl TransactionBuilder {
         self
     }
 
-    /// Sets the given fee output.
-    pub fn set_fee_output(mut self, output: FeeOutput) -> Self {
-        self.fee = output;
-        self
-    }
-
     /// Build the Transaction by signing the inputs. Return a CashNoteBuilder.
     pub fn build(self, reason: Hash) -> Result<CashNoteBuilder> {
         let spent_tx = Transaction {
             inputs: self.inputs.clone(),
             outputs: self.outputs.clone(),
-            fee: self.fee.clone(),
         };
         let signed_spends: BTreeSet<_> = self
             .inputs

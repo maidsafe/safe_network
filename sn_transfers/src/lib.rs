@@ -15,7 +15,7 @@ mod genesis;
 mod transfers;
 mod wallet;
 
-pub(crate) use cashnotes::{FeeOutput, Input, TransactionBuilder};
+pub(crate) use cashnotes::{Input, TransactionBuilder};
 
 /// Types used in the public API
 pub use cashnotes::{
