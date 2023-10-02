@@ -77,6 +77,9 @@ pub enum WalletCmds {
     },
     /// Receive a transfer created by the 'send' command.
     Receive {
+        /// Read the encrypted transfer from a file.
+        #[clap(long, default_value = "false")]
+        file: bool,
         /// Encrypted transfer.
         #[clap(name = "transfer")]
         transfer: String,
@@ -129,7 +132,7 @@ pub(crate) async fn wallet_cmds(
 ) -> Result<()> {
     match cmds {
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
-        WalletCmds::Receive { transfer } => receive(transfer, client, root_dir).await?,
+        WalletCmds::Receive { file, transfer } => receive(transfer, file, client, root_dir).await?,
         WalletCmds::GetFaucet { url } => get_faucet(root_dir, client, url.clone()).await?,
         WalletCmds::Pay {
             path,
@@ -184,7 +187,7 @@ async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()>
     let is_ok = response.status().is_success();
     let body = response.text().await?;
     if is_ok {
-        receive(body, client, root_dir).await?;
+        receive(body, false, client, root_dir).await?;
         println!("Successfully got tokens from faucet.");
     } else {
         println!(
@@ -292,7 +295,13 @@ async fn send(
     Ok(())
 }
 
-async fn receive(transfer: String, client: &Client, root_dir: &Path) -> Result<()> {
+async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Path) -> Result<()> {
+    let transfer = if is_file {
+        std::fs::read_to_string(transfer)?
+    } else {
+        transfer
+    };
+
     let transfer = match Transfer::from_hex(&transfer) {
         Ok(transfer) => transfer,
         Err(err) => {

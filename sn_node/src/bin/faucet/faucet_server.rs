@@ -28,7 +28,7 @@ use tiny_http::{Response, Server};
 /// curl "localhost:8000/`cargo run  --features="local-discovery"  --bin safe --release  wallet address | tail -n 1`" > transfer_hex
 ///
 /// # receive transfer with our wallet
-/// cargo run  --features="local-discovery" --bin safe --release  wallet receive `cat transfer_hex`
+/// cargo run  --features="local-discovery" --bin safe --release  wallet receive --file transfer_hex
 ///
 /// # balance should be updated
 /// ```
