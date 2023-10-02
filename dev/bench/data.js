@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1695987266537,
+  "lastUpdate": 1696236197919,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9589,6 +9589,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 11.507701673519385,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "13d00e7b676294f6b93788f346a6daef297f0e20",
+          "message": "chore(client): more logs around StoreCost retrieveal\n\nWe're seeing odd hangs, this may well help",
+          "timestamp": "2023-10-02T07:45:38Z",
+          "tree_id": "c70a73bd67476f272c0172896622786e4c0d9858",
+          "url": "https://github.com/maidsafe/safe_network/commit/13d00e7b676294f6b93788f346a6daef297f0e20"
+        },
+        "date": 1696236196191,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10911247581393023,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6180024099121333,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.302408539962679,
             "unit": "MiB/s"
           }
         ]
