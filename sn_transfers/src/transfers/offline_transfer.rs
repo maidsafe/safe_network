@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    rng, CashNote, DerivationIndex, DerivedSecretKey, FeeOutput, Hash, Input, MainPubkey,
-    NanoTokens, SignedSpend, Transaction, TransactionBuilder, UniquePubkey,
+    rng, CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens,
+    SignedSpend, Transaction, TransactionBuilder, UniquePubkey,
 };
 use crate::{Error, Result};
 
@@ -88,7 +88,7 @@ pub fn create_offline_transfer(
         change: (change_amount, change_to),
     };
 
-    create_offline_transfer_with(selected_inputs, reason_hash, None)
+    create_offline_transfer_with(selected_inputs, reason_hash)
 }
 
 /// Select the necessary number of cash_notes from those that we were passed.
@@ -161,7 +161,6 @@ fn select_inputs(
 fn create_offline_transfer_with(
     selected_inputs: TranferInputs,
     reason_hash: Hash,
-    fee: Option<FeeOutput>,
 ) -> Result<OfflineTransfer> {
     let TranferInputs {
         change: (change, change_to),
@@ -189,10 +188,6 @@ fn create_offline_transfer_with(
     let mut tx_builder = TransactionBuilder::default()
         .add_inputs(inputs)
         .add_outputs(selected_inputs.recipients);
-
-    if let Some(fee_output) = fee {
-        tx_builder = tx_builder.set_fee_output(fee_output);
-    }
 
     let mut rng = rng::thread_rng();
     let derivation_index = UniquePubkey::random_derivation_index(&mut rng);

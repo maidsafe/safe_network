@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    DerivationIndex, DerivedSecretKey, FeeOutput, Hash, MainPubkey, MainSecretKey, NanoTokens,
-    SignedSpend, Transaction, UniquePubkey,
+    DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    Transaction, UniquePubkey,
 };
 
 use crate::{Error, Result};
@@ -97,11 +97,6 @@ impl CashNote {
     /// Return the derivation index that was used to derive UniquePubkey and corresponding DerivedSecretKey of a CashNote.
     pub fn derivation_index(&self) -> DerivationIndex {
         self.derivation_index
-    }
-
-    /// Return the fee output used in the source transaction
-    pub fn fee_output(&self) -> &FeeOutput {
-        &self.src_tx.fee
     }
 
     /// Return the reason why this CashNote was spent.
