@@ -64,7 +64,7 @@ jobs:
       - name: Create and fund a wallet to pay for files storage
         run: |
           cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          cargo run --bin safe --release -- wallet receive `cat transfer_hex`
+          cargo run --bin safe --release -- wallet receive --file transfer_hex
         env:
           SN_LOG: "all"
         timeout-minutes: 10
