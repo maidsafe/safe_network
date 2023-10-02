@@ -62,7 +62,6 @@ impl Files {
         Ok(WalletClient::new(self.client.clone(), wallet))
     }
 
-    #[instrument(skip(self), level = "debug")]
     /// Reads a file from the network, whose contents are contained within one or more chunks.
     pub async fn read_bytes(
         &self,
@@ -93,7 +92,6 @@ impl Files {
     /// and the length of bytes to be read.
     /// Passing `0` to position reads the data from the beginning,
     /// and the `length` is just an upper limit.
-    #[instrument(skip_all, level = "trace")]
     pub async fn read_from(
         &self,
         address: ChunkAddress,
@@ -122,7 +120,6 @@ impl Files {
 
     /// Directly writes [`Bytes`] to the network in the
     /// form of immutable chunks, without any batching.
-    #[instrument(skip(self, bytes), level = "debug")]
     pub async fn upload_with_payments(
         &self,
         bytes: Bytes,
@@ -134,7 +131,6 @@ impl Files {
 
     /// Tries to chunk the file, returning `(head_address, file_size, chunk_names)`
     /// and writes encrypted chunks to disk.
-    #[instrument(skip_all, level = "trace")]
     pub fn chunk_file(&self, file_path: &Path, chunk_dir: &Path) -> ChunkFileResult {
         let mut file = File::open(file_path)?;
         let metadata = file.metadata()?;
@@ -160,7 +156,6 @@ impl Files {
     /// Directly writes Chunks to the network in the
     /// form of immutable self encrypted chunks.
     ///
-    #[instrument(skip_all, level = "trace")]
     pub async fn get_local_payment_and_upload_chunk(
         &self,
         chunk: Chunk,
@@ -223,7 +218,6 @@ impl Files {
     // --------------------------------------------
 
     /// Used for testing
-    #[instrument(skip(self, bytes), level = "trace")]
     async fn upload_bytes(&self, bytes: Bytes, verify: bool) -> Result<NetworkAddress> {
         let temp_dir = tempdir()?;
         let file_path = temp_dir.path().join("tempfile");
@@ -306,7 +300,6 @@ impl Files {
     /// Extracts a file DataMapLevel from a chunk.
     /// If the DataMapLevel is not the first level mapping directly to the user's contents,
     /// the process repeats itself until it obtains the first level DataMapLevel.
-    #[instrument(skip_all, level = "trace")]
     async fn unpack_chunk(&self, mut chunk: Chunk) -> Result<DataMap> {
         loop {
             match deserialize(chunk.value()).map_err(Error::Serialisation)? {
@@ -322,7 +315,6 @@ impl Files {
     }
     // Gets a subset of chunks from the network, decrypts and
     // reads `len` bytes of the data starting at given `pos` of original file.
-    #[instrument(skip_all, level = "trace")]
     async fn seek(&self, data_map: DataMap, pos: usize, len: usize) -> Result<Bytes> {
         let info = self_encryption::seek_info(data_map.file_size(), pos, len);
         let range = &info.index_range;
@@ -344,7 +336,6 @@ impl Files {
         Ok(bytes)
     }
 
-    #[instrument(skip_all, level = "trace")]
     async fn try_get_chunks(&self, chunks_info: Vec<ChunkInfo>) -> Result<Vec<EncryptedChunk>> {
         let expected_count = chunks_info.len();
         let mut retrieved_chunks = vec![];
