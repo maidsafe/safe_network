@@ -391,10 +391,47 @@ impl SwarmDriver {
             }
             SwarmCmd::GossipsubPublish { topic_id, msg } => {
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
-                self.swarm
-                    .behaviour_mut()
-                    .gossipsub
-                    .publish(topic_id, msg)?;
+
+                let gossipsub = &mut self.swarm.behaviour_mut().gossipsub;
+
+                let all_peers: Vec<_> = gossipsub.all_peers().collect();
+                info!(
+                    ">>> {topic_id} to publish with {} all_peers",
+                    all_peers.len()
+                );
+                for (peer, topics) in all_peers {
+                    let topics_list: Vec<String> = topics.iter().map(|t| t.to_string()).collect();
+                    info!(">>> {topic_id} {} -> [{:?}]", peer, topics_list);
+                }
+
+                let all_peers: Vec<_> = gossipsub.all_mesh_peers().collect();
+                info!(
+                    ">>> {topic_id} to publish with {} all_mesh_peers",
+                    all_peers.len()
+                );
+                for peer in all_peers {
+                    info!(">>> {topic_id} {}", peer);
+                }
+
+                let all_peers: Vec<_> = gossipsub.mesh_peers(&topic_id.hash()).collect();
+                info!(
+                    ">>> {topic_id} to publish with {} mesh_peers",
+                    all_peers.len()
+                );
+                for peer in all_peers {
+                    info!(">>> {topic_id} {}", peer);
+                }
+
+                // add_explicit_peer(&mut self, peer_id: &PeerId)
+
+                match gossipsub.publish(topic_id.clone(), msg) {
+                    Ok(msg_id) => {
+                        info!(">>> {topic_id} Pub OK: {msg_id}");
+                    }
+                    Err(err) => {
+                        info!(">>> {topic_id} Pub ERROR: {err:?}");
+                    }
+                }
             }
         }
 

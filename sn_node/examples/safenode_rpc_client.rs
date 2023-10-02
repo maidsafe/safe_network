@@ -198,6 +198,10 @@ pub async fn node_events(addr: SocketAddr, only_rewards: bool) -> Result<()> {
                 continue;
             }
             Ok(_) if only_rewards => continue,
+            Ok(NodeEvent::GossipsubMsg { topic, msg }) => {
+                println!("New event received: {topic} - {}", String::from_utf8(msg)?);
+                continue;
+            }
             Ok(event) => event,
             Err(_) => {
                 println!("Error while parsing received NodeEvent");

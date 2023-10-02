@@ -357,7 +357,10 @@ impl NetworkBuilder {
 
         // Gossipsub behaviour
         // set default parameters for gossipsub
-        let gossipsub_config = libp2p::gossipsub::Config::default();
+        let gossipsub_config = libp2p::gossipsub::ConfigBuilder::default()
+            .flood_publish(true) // this is the default anyways
+            .build()
+            .unwrap();
 
         // Set the message authenticity - Here we expect the publisher
         // to sign the message with their key.
