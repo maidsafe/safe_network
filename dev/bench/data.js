@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696258390665,
+  "lastUpdate": 1696278940880,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9745,6 +9745,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 11.22721824584867,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "3e77a56641698794a26dde1c43727ae311bc368e",
+          "message": "chore: remove tracing feat deps",
+          "timestamp": "2023-10-02T19:34:50Z",
+          "tree_id": "1b2c4a446271a5e4f0302de2242d5a0a2c5125a1",
+          "url": "https://github.com/maidsafe/safe_network/commit/3e77a56641698794a26dde1c43727ae311bc368e"
+        },
+        "date": 1696278938580,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10699618006445025,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6067836311805272,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.729906387792152,
             "unit": "MiB/s"
           }
         ]
