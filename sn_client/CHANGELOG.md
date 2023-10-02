@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.91.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.4...sn_client-v0.91.5) - 2023-10-02
+
+### Other
+- *(client)* more logs around StoreCost retrieveal
+
 ## [0.91.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.3...sn_client-v0.91.4) - 2023-09-29
 
 ### Other
