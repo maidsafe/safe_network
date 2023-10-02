@@ -202,6 +202,10 @@ async fn upload_files(
         progress += chunks_batch.len();
 
         // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
+        println!(
+            "Getting upload costs from network for {} chunks...",
+            chunks_batch.len()
+        );
         file_api
             .pay_for_chunks(chunks_batch.iter().map(|(name, _)| *name).collect(), true)
             .await?;
