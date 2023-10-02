@@ -306,6 +306,7 @@ async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Pa
         Ok(transfer) => transfer,
         Err(err) => {
             println!("Failed to parse transfer: {err:?}");
+            println!("Transfer: \"{transfer}\"");
             return Ok(());
         }
     };
