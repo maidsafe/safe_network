@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696252125066,
+  "lastUpdate": 1696252347021,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -16233,6 +16233,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53.911552,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e7b3fd8cdb194f30800af621e1f39192fa7b4f40",
+          "message": "feat: remove unused fee output",
+          "timestamp": "2023-10-02T12:06:37Z",
+          "tree_id": "fb0793d0a30dc860b376b05f88ad7ce0f5e6df86",
+          "url": "https://github.com/maidsafe/safe_network/commit/e7b3fd8cdb194f30800af621e1f39192fa7b4f40"
+        },
+        "date": 1696252346624,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54.99699,
             "unit": "MB"
           }
         ]
