@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696339901151,
+  "lastUpdate": 1696339904096,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -23710,6 +23710,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 34,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "d97e7873f9d3bdd7b072851a62120cbcb3afec33",
+          "message": "feat: faucet retry genesis claim on failure",
+          "timestamp": "2023-10-03T12:24:46Z",
+          "tree_id": "8a5f13cc7d9d2e318d53630ceb4a6b8c6c9f923b",
+          "url": "https://github.com/maidsafe/safe_network/commit/d97e7873f9d3bdd7b072851a62120cbcb3afec33"
+        },
+        "date": 1696339903343,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 178,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 36,
             "unit": "MB"
           }
         ]
