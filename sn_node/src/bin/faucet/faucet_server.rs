@@ -36,7 +36,10 @@ use tiny_http::{Response, Server};
 pub async fn run_faucet_server(client: &Client) -> Result<()> {
     let server =
         Server::http("0.0.0.0:8000").map_err(|e| eyre!("Failed to start server: {}", e))?;
-    claim_genesis(client).await;
+    claim_genesis(client).await.map_err(|e| {
+        eprintln!("Faucet Server couldn't start as we failed to claim Genesis");
+        e
+    })?;
 
     println!("Starting http server listening on port 8000...");
     for request in server.incoming_requests() {

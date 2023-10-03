@@ -9,7 +9,7 @@
 mod faucet_server;
 
 use clap::{Parser, Subcommand};
-use eyre::{eyre, Result};
+use eyre::{bail, eyre, Result};
 use faucet_server::run_faucet_server;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
 use sn_logging::{init_logging, LogFormat, LogOutputDest};
@@ -107,7 +107,7 @@ enum SubCmd {
 async fn faucet_cmds(cmds: SubCmd, client: &Client) -> Result<()> {
     match cmds {
         SubCmd::ClaimGenesis => {
-            claim_genesis(client).await;
+            claim_genesis(client).await?;
         }
         SubCmd::Send { amount, to } => {
             send_tokens(client, &amount, &to).await?;
@@ -120,8 +120,17 @@ async fn faucet_cmds(cmds: SubCmd, client: &Client) -> Result<()> {
     Ok(())
 }
 
-async fn claim_genesis(client: &Client) {
-    let _wallet = load_faucet_wallet_from_genesis_wallet(client).await;
+async fn claim_genesis(client: &Client) -> Result<()> {
+    for i in 1..6 {
+        if let Err(e) = load_faucet_wallet_from_genesis_wallet(client).await {
+            println!("Failed to claim genesis: {}", e);
+        } else {
+            println!("Genesis claimed!");
+            return Ok(());
+        }
+        println!("Trying to claiming genesis... attempt {}", i);
+    }
+    bail!("Failed to claim genesis")
 }
 
 /// returns the hex-encoded transfer
