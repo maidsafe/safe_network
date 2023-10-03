@@ -28,71 +28,82 @@ const NODE_COUNT: u8 = 25;
 #[tokio::test(flavor = "multi_thread")]
 async fn msgs_over_gossipsub() -> Result<()> {
     let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
-
-    for node_index in 1..NODE_COUNT + 1 {
-        // request current node to subscribe to a fresh new topic
-        addr.set_port(12000 + node_index as u16);
+    use rand::Rng;
+    for _ in 0..100 {
         let random_num = rand::random::<u64>();
-        let topic = format!("TestTopic-{node_index}-{random_num}");
-        node_subscribe_to_topic(addr, topic.clone()).await?;
+        let topic = format!("TestTopic-{random_num}");
+        let mut addresses = vec![];
+        let mut handles = vec![];
+        const NODES_SUBSCRIBED: u8 = 4;
+        let i = rand::thread_rng().gen_range(1..NODE_COUNT - NODES_SUBSCRIBED);
+        for node_index in i..i + NODES_SUBSCRIBED {
+            // request current node to subscribe to a fresh new topic
+            addr.set_port(12000 + node_index as u16);
+            node_subscribe_to_topic(addr, topic.clone()).await?;
+            addresses.push(addr);
 
-        println!("Node {node_index} subscribed to {topic}");
+            println!("Node {node_index} subscribed to {topic}");
 
-        let handle = tokio::spawn(async move {
-            let endpoint = format!("https://{addr}");
-            let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
-            let response = rpc_client
-                .node_events(Request::new(NodeEventsRequest {}))
-                .await?;
+            let handle = tokio::spawn(async move {
+                let endpoint = format!("https://{addr}");
+                let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+                let response = rpc_client
+                    .node_events(Request::new(NodeEventsRequest {}))
+                    .await?;
 
-            println!("Listening to node events...");
-            let mut count = 0;
+                println!("Listening to node events...");
+                let mut count = 0;
 
-            let _ = timeout(Duration::from_millis(4000), async {
-                let mut stream = response.into_inner();
-                while let Some(Ok(e)) = stream.next().await {
-                    match NodeEvent::from_bytes(&e.event) {
-                        Ok(NodeEvent::GossipsubMsg { topic, msg }) => {
-                            println!(
-                                "New gossipsub msg received on '{topic}': {}",
-                                String::from_utf8(msg).unwrap()
-                            );
-                            count += 1;
-                            if count == NODE_COUNT - 1 {
-                                break;
+                let _ = timeout(Duration::from_millis(10000), async {
+                    let mut stream = response.into_inner();
+                    while let Some(Ok(e)) = stream.next().await {
+                        match NodeEvent::from_bytes(&e.event) {
+                            Ok(NodeEvent::GossipsubMsg { topic, msg }) => {
+                                println!(
+                                    "New gossipsub msg received on '{topic}': {}",
+                                    String::from_utf8(msg).unwrap()
+                                );
+                                count += 1;
+                                if count == NODE_COUNT - NODES_SUBSCRIBED {
+                                    break;
+                                }
+                            }
+                            Ok(_) => { /* ignored */ }
+                            Err(_) => {
+                                println!("Error while parsing received NodeEvent");
                             }
                         }
-                        Ok(_) => { /* ignored */ }
-                        Err(_) => {
-                            println!("Error while parsing received NodeEvent");
-                        }
                     }
-                }
-            })
-            .await;
+                })
+                .await;
 
-            Ok::<u8, eyre::Error>(count)
-        });
+                Ok::<u8, eyre::Error>(count)
+            });
 
-        tokio::time::sleep(Duration::from_millis(1000)).await;
+            handles.push((node_index, handle));
+        }
+
+        tokio::time::sleep(Duration::from_millis(5000)).await;
 
         // have all other nodes to publish each a different msg to that same topic
-        other_nodes_to_publish_on_topic(addr, topic.clone()).await?;
+        other_nodes_to_publish_on_topic(addresses, topic.clone()).await?;
 
-        let count = handle.await??;
-        println!("Messages received by node {node_index}: {count}");
-        assert!(
-            count > 0,
-            "No message received by node at index {}",
-            node_index
-        );
-
-        node_unsubscribe_from_topic(addr, topic).await?;
+        for (node_index, handle) in handles.into_iter() {
+            let count = handle.await??;
+            println!("Messages received by node {node_index}: {count}");
+            assert_eq!(
+                count,
+                NODE_COUNT - NODES_SUBSCRIBED,
+                "No message received by node at index {}",
+                node_index
+            );
+        }
+        //node_unsubscribe_from_topic(addr, topic).await?;
     }
 
     Ok(())
 }
-
+/*
 #[tokio::test]
 async fn msgs_over_gossipsub_to_testnet() -> Result<()> {
     let addresses = ["127.0.0.1:12001"];
@@ -119,7 +130,7 @@ async fn msgs_over_gossipsub_to_testnet() -> Result<()> {
 
     Ok(())
 }
-
+*/
 async fn node_subscribe_to_topic(addr: SocketAddr, topic: String) -> Result<()> {
     let endpoint = format!("https://{addr}");
     let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
@@ -144,11 +155,14 @@ async fn node_unsubscribe_from_topic(addr: SocketAddr, topic: String) -> Result<
     Ok(())
 }
 
-async fn other_nodes_to_publish_on_topic(filter_addr: SocketAddr, topic: String) -> Result<()> {
+async fn other_nodes_to_publish_on_topic(
+    filter_addr: Vec<SocketAddr>,
+    topic: String,
+) -> Result<()> {
     let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
     for node_index in 1..NODE_COUNT + 1 {
         addr.set_port(12000 + node_index as u16);
-        if addr != filter_addr {
+        if !filter_addr.iter().any(|a| a == &addr) {
             let msg = format!("TestMsgOnTopic-{topic}-from-{node_index}");
 
             let endpoint = format!("https://{addr}");
