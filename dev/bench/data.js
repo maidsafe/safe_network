@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696335610838,
+  "lastUpdate": 1696339695414,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -9940,6 +9940,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 11.086500192642108,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "d97e7873f9d3bdd7b072851a62120cbcb3afec33",
+          "message": "feat: faucet retry genesis claim on failure",
+          "timestamp": "2023-10-03T12:24:46Z",
+          "tree_id": "8a5f13cc7d9d2e318d53630ceb4a6b8c6c9f923b",
+          "url": "https://github.com/maidsafe/safe_network/commit/d97e7873f9d3bdd7b072851a62120cbcb3afec33"
+        },
+        "date": 1696339693290,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.15513072520038423,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.8036969287462608,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 10.964299286582259,
             "unit": "MiB/s"
           }
         ]
