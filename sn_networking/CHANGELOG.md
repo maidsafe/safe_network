@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.7...sn_networking-v0.8.8) - 2023-10-03
+
+### Other
+- log status of pending_get_record
+
 ## [0.8.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.6...sn_networking-v0.8.7) - 2023-10-03
 
 ### Added
