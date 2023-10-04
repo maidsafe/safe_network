@@ -46,7 +46,7 @@ enum RecordType {
 
 impl NodeMetrics {
     pub(crate) fn new(registry: &mut Registry) -> Self {
-        let sub_registry = registry.sub_registry_with_prefix("safenode");
+        let sub_registry = registry.sub_registry_with_prefix("sn_node");
 
         let put_record_ok = Family::default();
         sub_registry.register(
