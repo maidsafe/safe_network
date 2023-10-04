@@ -385,24 +385,29 @@ impl LocalWallet {
         payment_map: &mut BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
     ) {
         // For each target address
-        for (xor, payments) in payment_map {
+        for (xor, payments) in payment_map.iter_mut() {
             // All payments done for an address, should be multiple nodes.
             let notes = self.get_payment_cash_notes(xor);
             for note in notes {
-                // Find a payment we're doing to an address, for which we have a cashnote already
-                if let Some(e) = payments
+                // Find payment to a node, for which we have a cashnote already
+                if let Some(payment) = payments
                     .iter_mut()
                     .find(|(pubkey, _)| pubkey == note.main_pubkey())
                 {
                     if let Ok(value) = note.value() {
                         // Subtract what we already paid from what we're about to pay.
-                        if let Some(new_amount) = e.1.checked_sub(value) {
-                            e.1 = new_amount;
-                        }
+                        // `checked_sub` overflows if would be negative, so we set it to 0.
+                        payment.1 = payment.1.checked_sub(value).unwrap_or(0.into());
                     }
                 }
             }
+
+            // Remove all payments that are 0.
+            payments.retain(|payment| payment.1 > 0.into());
         }
+
+        // Remove entries that do not have payments associated anymore.
+        payment_map.retain(|_xor, payments| !payments.is_empty());
     }
 }
 
