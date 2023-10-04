@@ -73,12 +73,6 @@ pub(crate) struct Opt {
     #[clap(long = "timeout", global = true, value_parser = |t: &str| -> Result<Duration> { Ok(t.parse().map(Duration::from_secs)?) })]
     pub timeout: Option<Duration>,
 
-    /// Maximum concurrent uploads/downloads.
-    ///
-    /// Defaults to 5.
-    #[clap(long = "concurrency", short = 'c', global = true)]
-    pub concurrency: Option<usize>,
-
     /// Prevent verification of data storage on the network.
     ///
     /// This may increase operation speed, but offers no guarantees that operations were successful.

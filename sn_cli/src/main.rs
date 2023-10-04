@@ -96,7 +96,7 @@ async fn main() -> Result<()> {
         Some(bootstrap_peers)
     };
 
-    let client = Client::new(secret_key, bootstrap_peers, opt.timeout, opt.concurrency).await?;
+    let client = Client::new(secret_key, bootstrap_peers, opt.timeout).await?;
 
     // default to verifying storage
     let should_verify_store = !opt.no_verify;
