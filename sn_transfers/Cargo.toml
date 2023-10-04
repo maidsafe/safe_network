@@ -25,7 +25,7 @@ tokio = { version = "1.32.0", features = ["macros", "rt"] }
 thiserror = "1.0.24"
 tiny-keccak = { version = "~2.0.2", features = [ "sha3" ] }
 tracing = { version = "~0.1.26" }
-walkdir = "2.3.1"
+walkdir = "~2.4.0"
 xor_name = "5.0.0"
 
 [dev-dependencies]
