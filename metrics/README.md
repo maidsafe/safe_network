@@ -1,11 +1,16 @@
 # Safe Network Metrics
+Collect and visualize metrics from Safe Network nodes using Prometheus and Grafana.
 
-Prerequisite:
-1. Install `docker-compose`
-2. Run safe nodes with `--feature=open-metrics` enabled
+### Prerequisites
+1. **Docker & Docker-Compose:** Ensure you have both docker and docker-compose installed on your system.
+2. **Safe Node Configuration:** When running your Safe nodes, ensure they are started with the `--feature=open-metrics` flag enabled.
 
-Run `cargo run --release optional<log_dir_path>` to scan all the log files under the provided path and provision
-prometheus with the node metrics servers. This would then start the prometheus-grafana containers and print the
-grafana dashboard URL.
+### Usage
 
-The `log_dir_path` defaults to `data-dir` if it is not provided.
+If the nodes are started with the `open-metrics` feature, then the URL to the metrics server are written to the log files. Provide the `[log_dir_path]...` to scan the logs to obtain the server URLs. If `[log_dir_path]...` is not provided, it defaults to `data-dir` log that the nodes use by default.
+
+```bash
+cargo run --release --bin metrics -- [log_dir_path]...
+```
+
+After running the above command, Prometheus and Grafana containers will start automatically. And the Grafana dashboard URL will be printed to the console. Access this URL to visualize your node metrics.
