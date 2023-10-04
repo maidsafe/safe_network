@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.92.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.2...sn_client-v0.92.3) - 2023-10-04
+
+### Fixed
+- *(wallet)* remove expect statments
+
 ## [0.92.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.1...sn_client-v0.92.2) - 2023-10-04
 
 ### Fixed
