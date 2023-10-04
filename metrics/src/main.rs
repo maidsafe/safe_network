@@ -64,6 +64,10 @@ fn main() -> Result<()> {
         metrics_server_list.extend(get_metric_servers(log_dir)?);
     }
 
+    if metrics_server_list.is_empty() {
+        return Err(eyre!("Could not find any metrics server. Aborting!"));
+    }
+
     println!(
         "Collecting metrics from {} nodes",
         metrics_server_list.len()
