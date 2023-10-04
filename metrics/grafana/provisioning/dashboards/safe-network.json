@@ -64,6 +64,77 @@
         "type": "prometheus",
         "uid": "prometheusdatasourceuuid"
       },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          },
+          "unit": "decmbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 8,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.1.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheusdatasourceuuid"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sn_networking_process_memory_used_mb{node_id=~\"$var_node_list\"}",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{node_id}}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Process Memory Usage",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheusdatasourceuuid"
+      },
       "description": "The number of records stored in each node",
       "fieldConfig": {
         "defaults": {
@@ -92,7 +163,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 7
       },
       "id": 9,
       "options": {
@@ -136,6 +207,7 @@
         "type": "prometheus",
         "uid": "prometheusdatasourceuuid"
       },
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -148,28 +220,23 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 100
               }
             ]
-          },
-          "unit": "decmbytes"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 9,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 14
       },
-      "id": 8,
+      "id": 10,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
+        "displayMode": "basic",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -178,7 +245,8 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "showUnfilled": true,
+        "valueMode": "color"
       },
       "pluginVersion": "10.1.4",
       "targets": [
@@ -189,7 +257,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sn_networking_process_memory_used_mb{node_id=~\"$var_node_list\"}",
+          "expr": "sn_node_reward_wallet_balance",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -199,8 +267,8 @@
           "useBackend": false
         }
       ],
-      "title": "Process Memory Usage",
-      "type": "stat"
+      "title": "Reward Balance",
+      "type": "bargauge"
     },
     {
       "datasource": {
@@ -264,7 +332,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 14
+        "y": 23
       },
       "id": 6,
       "options": {
@@ -363,7 +431,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 14
+        "y": 23
       },
       "id": 5,
       "options": {
@@ -462,7 +530,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 14
+        "y": 23
       },
       "id": 7,
       "options": {
@@ -564,7 +632,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 22
+        "y": 31
       },
       "id": 1,
       "options": {
@@ -666,7 +734,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 22
+        "y": 31
       },
       "id": 2,
       "options": {
@@ -764,7 +832,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 39
       },
       "id": 3,
       "options": {
@@ -832,7 +900,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 39
       },
       "id": 4,
       "options": {

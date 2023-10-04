@@ -458,6 +458,12 @@ impl Node {
         wallet
             .store(vec![])
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
+        #[cfg(feature = "open-metrics")]
+        let _ = self
+            .node_metrics
+            .reward_wallet_balance
+            .set(wallet.balance().as_nano() as i64);
+
         info!("Payment of {received_fee:?} nanos accepted for record {pretty_key:?}");
 
         Ok(())

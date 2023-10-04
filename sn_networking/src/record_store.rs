@@ -83,6 +83,7 @@ impl NodeRecordStore {
             records: Default::default(),
             event_sender,
             distance_range: None,
+            #[cfg(feature = "open-metrics")]
             record_count_metric: None,
         }
     }
