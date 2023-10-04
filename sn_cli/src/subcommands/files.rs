@@ -250,6 +250,11 @@ async fn upload_files(
         chunks_to_upload.len()
     );
     println!("New wallet balance: {final_balance}");
+    info!(
+        "Made payment of {total_cost} for {} chunks",
+        chunks_to_upload.len()
+    );
+    info!("New wallet balance: {final_balance}");
 
     // If we are not verifying, we can skip this
     if verify_store {
@@ -279,6 +284,7 @@ async fn upload_files(
         .open(file_names_path)?;
     for (addr, file_name) in uploaded_file_info.iter() {
         println!("Uploaded {} to {:x}", file_name, addr);
+        info!("Uploaded {} to {:x}", file_name, addr);
         writeln!(file, "{:x}: {}", addr, file_name)?;
     }
     file.flush()?;
