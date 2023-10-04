@@ -47,7 +47,7 @@ tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "r
 tracing = { version = "~0.1.26" }
 tracing-core = "0.1.30"
 url = "2.4.0"
-walkdir = "2.3.1"
+walkdir = "~2.4.0"
 xor_name = "5.0.0"
 
 [dev-dependencies]

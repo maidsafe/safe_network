@@ -33,12 +33,12 @@ libp2p = { version="0.52" }
 # watch out updating this, protoc compiler needs to be installed on all build systems
 # arm builds + musl are very problematic
 prost = { version = "0.9" }
-regex = "1.7.1"
+regex = "~1.9.6"
 tonic = { version = "0.6.2" }
 tracing = "~0.1.26"
 tracing-core = "~0.1.21"
 tracing-subscriber = "~0.3.1"
-walkdir = "2"
+walkdir = "~2.4.0"
 
 [dependencies.tokio]
 version = "1.17.0"
