@@ -235,7 +235,7 @@ impl Register {
     /// Check if a register op is valid for our current register
     pub fn check_register_op(&self, op: &RegisterOp) -> Result<()> {
         self.check_user_permissions(op.source)?;
-        if self.permissions.everyone_can_write() {
+        if self.permissions.anyone_can_write() {
             return Ok(()); // anyone can write, so no need to check the signature
         }
 
