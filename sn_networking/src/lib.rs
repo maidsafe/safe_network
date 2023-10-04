@@ -47,8 +47,8 @@ use sn_protocol::{
 };
 use sn_transfers::MainPubkey;
 use sn_transfers::NanoTokens;
-use std::{collections::HashSet, path::PathBuf, sync::Arc};
-use tokio::sync::{mpsc, oneshot, Semaphore};
+use std::{collections::HashSet, path::PathBuf};
+use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
@@ -117,25 +117,12 @@ pub struct Network {
     pub peer_id: PeerId,
     pub root_dir_path: PathBuf,
     keypair: Keypair,
-    /// Optional Concurrent limiter to limit the number of concurrent requests
-    /// Intended for client side use
-    concurrency_limiter: None,
 }
 
 impl Network {
     /// Signs the given data with the node's keypair.
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         self.keypair.sign(msg).map_err(Error::from)
-    }
-
-    /// Get the network's concurrency limiter
-    pub fn concurrency_limiter(&self) -> Option<Arc<Semaphore>> {
-        self.concurrency_limiter.clone()
-    }
-
-    /// Set a new concurrency semaphore to limit client network operations
-    pub fn set_concurrency_limit(&mut self, limit: usize) {
-        self.concurrency_limiter = Some(Arc::new(Semaphore::new(limit)));
     }
 
     /// Dial the given peer at the given address.
@@ -189,13 +176,6 @@ impl Network {
         record_address: NetworkAddress,
     ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
         let (sender, receiver) = oneshot::channel();
-        // get permit if semaphore supplied
-        let mut _permit = None;
-        if let Some(semaphore) = self.concurrency_limiter.clone() {
-            let our_permit = semaphore.acquire_owned().await?;
-            _permit = Some(our_permit);
-        }
-
         trace!("Attempting to get store cost");
         // first we need to get CLOSE_GROUP of the unique_pubkey
         self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
@@ -264,17 +244,11 @@ impl Network {
         quorum: GetQuorum,
         re_attempt: bool,
     ) -> Result<Record> {
-        let mut _permit = None;
-
         let total_attempts = if re_attempt { VERIFICATION_ATTEMPTS } else { 1 };
 
         let mut verification_attempts = 0;
 
         while verification_attempts < total_attempts {
-            if let Some(semaphore) = self.concurrency_limiter.clone() {
-                let our_permit = semaphore.acquire_owned().await?;
-                _permit = Some(our_permit);
-            }
             verification_attempts += 1;
             info!(
                 "Getting record of {:?} attempts {verification_attempts:?}/{total_attempts:?}",
@@ -357,9 +331,6 @@ impl Network {
                 }
             }
 
-            // drop any permit while we wait
-            _permit = None;
-
             // wait for a bit before re-trying
             if re_attempt {
                 tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
@@ -398,7 +369,6 @@ impl Network {
     pub async fn put_record(&self, record: Record, verify_store: Option<Record>) -> Result<()> {
         let mut retries = 0;
 
-        // let mut has_permit = optional_permit.is_some();
         // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
         while retries < PUT_RECORD_RETRIES {
             info!(
@@ -419,14 +389,6 @@ impl Network {
     }
 
     async fn put_record_once(&self, record: Record, verify_store: Option<Record>) -> Result<()> {
-        // get permit if semaphore supplied
-        let _permit = if let Some(semaphore) = self.concurrency_limiter.clone() {
-            let our_permit = semaphore.acquire_owned().await?;
-            Some(our_permit)
-        } else {
-            None
-        };
-
         let record_key = record.key.clone();
         let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
         info!(
@@ -442,8 +404,6 @@ impl Network {
             sender,
         })?;
         let response = receiver.await?;
-
-        drop(_permit);
 
         if verify_store.is_some() {
             // Small wait before we attempt to verify.

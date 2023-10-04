@@ -256,18 +256,13 @@ impl NetworkBuilder {
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
             );
 
-        let concurrency_limit = self.concurrency_limit;
-        let (mut network, net_event_recv, driver) = self.build(
+        let (network, net_event_recv, driver) = self.build(
             kad_cfg,
             None,
             true,
             ProtocolSupport::Outbound,
             truncate_patch_version(IDENTIFY_CLIENT_VERSION_STR).to_string(),
         )?;
-
-        if let Some(limit) = concurrency_limit {
-            network.set_concurrency_limit(limit);
-        }
 
         Ok((network, net_event_recv, driver))
     }
@@ -451,7 +446,6 @@ impl NetworkBuilder {
                 peer_id,
                 root_dir_path: self.root_dir,
                 keypair: self.keypair,
-                concurrency_limiter: None,
             },
             network_event_receiver,
             swarm_driver,

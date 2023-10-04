@@ -33,10 +33,6 @@ use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
 
-// Maximum number of concurrency to be allowed at any time
-// eg, concurrent uploads/downloads of chunks, managed by a semaphore
-pub const DEFAULT_CLIENT_CONCURRENCY: usize = 5;
-
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(30);
 
@@ -46,7 +42,6 @@ impl Client {
         signer: SecretKey,
         peers: Option<Vec<Multiaddr>>,
         req_response_timeout: Option<Duration>,
-        custom_concurrency_limit: Option<usize>,
     ) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
         let local = match peers {
@@ -63,8 +58,6 @@ impl Client {
         if let Some(request_timeout) = req_response_timeout {
             network_builder.request_timeout(request_timeout);
         }
-        network_builder
-            .concurrency_limit(custom_concurrency_limit.unwrap_or(DEFAULT_CLIENT_CONCURRENCY));
 
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_registry(Registry::default());
