@@ -206,9 +206,14 @@ async fn upload_files(
             "Getting upload costs from network for {} chunks...",
             chunks_batch.len()
         );
-        file_api
+        let (cost, new_balance) = file_api
             .pay_for_chunks(chunks_batch.iter().map(|(name, _)| *name).collect(), true)
             .await?;
+        println!("Made payment of {cost} for {} chunks", chunks_batch.len());
+        println!(
+            "Stored wallet with cached payment proofs. New balance: {}",
+            new_balance
+        );
 
         // Verification will be carried out later on, if being asked to.
         // Hence no need to carry out verification within the first attempt.

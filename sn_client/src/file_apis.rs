@@ -21,7 +21,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::LocalWallet;
+use sn_transfers::{LocalWallet, NanoTokens};
 
 use std::{
     fs::{self, create_dir_all, File},
@@ -186,8 +186,14 @@ impl Files {
         Ok(())
     }
 
-    /// Pay for a given set of chunks
-    pub async fn pay_for_chunks(&self, chunks: Vec<XorName>, verify_store: bool) -> Result<()> {
+    /// Pay for a given set of chunks.
+    ///
+    /// Returns the cost and the resulting new balance of the local wallet.
+    pub async fn pay_for_chunks(
+        &self,
+        chunks: Vec<XorName>,
+        verify_store: bool,
+    ) -> Result<(NanoTokens, NanoTokens)> {
         let mut wallet_client = self.wallet()?;
         info!("Paying for and uploading {:?} chunks", chunks.len());
 
@@ -199,18 +205,10 @@ impl Files {
                 verify_store,
             )
             .await?;
-        println!("Made payment of {cost} for {} chunks", chunks.len(),);
 
-        if let Err(err) = wallet_client.store_local_wallet() {
-            println!("Failed to store wallet: {err:?}");
-        } else {
-            println!(
-                "Stored wallet with cached payment proofs. New balance: {}",
-                wallet_client.balance()
-            );
-        }
-
-        Ok(())
+        wallet_client.store_local_wallet()?;
+        let new_balance = wallet_client.balance();
+        Ok((cost, new_balance))
     }
 
     // --------------------------------------------
