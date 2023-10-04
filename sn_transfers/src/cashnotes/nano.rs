@@ -61,6 +61,12 @@ impl NanoTokens {
     }
 }
 
+impl From<u64> for NanoTokens {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
 impl FromStr for NanoTokens {
     type Err = Error;
 
