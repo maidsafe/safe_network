@@ -66,10 +66,6 @@ impl LocalWallet {
         store_created_cash_notes(cash_note, &self.wallet_dir)
     }
 
-    pub fn get_cash_note(&mut self, unique_pubkey: &UniquePubkey) -> Option<CashNote> {
-        load_cash_note(unique_pubkey, &self.wallet_dir)
-    }
-
     /// Store unconfirmed_spend_requests to disk.
     pub fn store_unconfirmed_spend_requests(&mut self) -> Result<()> {
         store_unconfirmed_spend_requests(&self.wallet_dir, self.unconfirmed_spend_requests())
