@@ -279,6 +279,14 @@ impl NetworkBuilder {
         let peer_id = PeerId::from(self.keypair.public());
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
 
+        #[cfg(feature = "open-metrics")]
+        let network_metrics = {
+            let mut metrics_registry = self.metrics_registry.unwrap_or_default();
+            let metrics = NetworkMetrics::new(&mut metrics_registry);
+            run_metrics_server(metrics_registry);
+            metrics
+        };
+
         // RequestResponse Behaviour
         let request_response = {
             let mut cfg = RequestResponseConfig::default();
@@ -306,6 +314,9 @@ impl NetworkBuilder {
                         store_cfg,
                         Some(network_event_sender.clone()),
                     );
+                    #[cfg(feature = "open-metrics")]
+                    let node_record_store = node_record_store
+                        .set_record_count_metric(network_metrics.records_stored.clone());
                     let store = UnifiedRecordStore::Node(node_record_store);
                     debug!("Using Kademlia with NodeRecordStore!");
                     Kademlia::with_config(peer_id, store, kad_cfg)
@@ -396,14 +407,6 @@ impl NetworkBuilder {
             None
         };
         let autonat = Toggle::from(autonat);
-
-        #[cfg(feature = "open-metrics")]
-        let network_metrics = {
-            let mut metrics_registry = self.metrics_registry.unwrap_or_default();
-            let metrics = NetworkMetrics::new(&mut metrics_registry);
-            run_metrics_server(metrics_registry);
-            metrics
-        };
 
         let behaviour = NodeBehaviour {
             request_response,

@@ -14,6 +14,8 @@ use libp2p::{
         KBucketDistance as Distance, KBucketKey,
     },
 };
+#[cfg(feature = "open-metrics")]
+use prometheus_client::metrics::gauge::Gauge;
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use sn_transfers::NanoTokens;
 use std::{
@@ -42,6 +44,9 @@ pub struct NodeRecordStore {
     /// Distance range specify the acceptable range of record entry.
     /// None means accept all records.
     distance_range: Option<Distance>,
+    #[cfg(feature = "open-metrics")]
+    /// Used to report the number of records held by the store to the metrics server.
+    record_count_metric: Option<Gauge>,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -78,7 +83,15 @@ impl NodeRecordStore {
             records: Default::default(),
             event_sender,
             distance_range: None,
+            record_count_metric: None,
         }
+    }
+
+    /// Set the record_count_metric to report the number of records stored to the metrics server
+    #[cfg(feature = "open-metrics")]
+    pub fn set_record_count_metric(mut self, metric: Gauge) -> Self {
+        self.record_count_metric = Some(metric);
+        self
     }
 
     // Converts a Key into a Hex string.
@@ -160,7 +173,7 @@ impl NodeRecordStore {
                     }
                 }
             } else {
-                // we should not prune, but warn as we're at max capcaity
+                // we should not prune, but warn as we're at max capacity
                 warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
                 return Err(Error::MaxRecords);
             }
@@ -203,6 +216,10 @@ impl NodeRecordStore {
         let filename = Self::key_to_hex(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
         let _ = self.records.insert(r.key.clone());
+        #[cfg(feature = "open-metrics")]
+        if let Some(metric) = &self.record_count_metric {
+            let _ = metric.set(self.records.len() as i64);
+        }
 
         let cloned_event_sender = self.event_sender.clone();
 
@@ -336,6 +353,10 @@ impl RecordStore for NodeRecordStore {
 
     fn remove(&mut self, k: &Key) {
         let _ = self.records.remove(k);
+        #[cfg(feature = "open-metrics")]
+        if let Some(metric) = &self.record_count_metric {
+            let _ = metric.set(self.records.len() as i64);
+        }
 
         let filename = Self::key_to_hex(k);
         let file_path = self.config.storage_dir.join(&filename);

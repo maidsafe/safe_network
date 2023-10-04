@@ -20,16 +20,26 @@ pub(crate) struct NetworkMetrics {
     // re-implemented the trait for the wrapper struct, we can instead call self.record(libp2p_event)
     libp2p_metrics: Libp2pMetrics,
 
+    // metrics from sn_networking
+    pub(crate) records_stored: Gauge,
+
+    // system info
     process_memory_used_mb: Gauge,
-    // from 0 to 100
     process_cpu_usage_percentage: Gauge,
 }
 
 impl NetworkMetrics {
     pub fn new(registry: &mut Registry) -> Self {
         let libp2p_metrics = Libp2pMetrics::new(registry);
-
         let sub_registry = registry.sub_registry_with_prefix("sn_networking");
+
+        let records_stored = Gauge::default();
+        sub_registry.register(
+            "records_stored",
+            "The number of records stored locally",
+            records_stored.clone(),
+        );
+
         let process_memory_used_mb = Gauge::default();
         sub_registry.register(
             "process_memory_used_mb",
@@ -46,6 +56,7 @@ impl NetworkMetrics {
 
         let network_metrics = Self {
             libp2p_metrics,
+            records_stored,
             process_memory_used_mb,
             process_cpu_usage_percentage,
         };
@@ -55,7 +66,7 @@ impl NetworkMetrics {
     }
 
     // Updates registry with sysinfo metrics
-    pub fn system_metrics_recorder_task(&self) {
+    fn system_metrics_recorder_task(&self) {
         // spawn task to record system metrics
         let process_memory_used_mb = self.process_memory_used_mb.clone();
         let process_cpu_usage_percentage = self.process_cpu_usage_percentage.clone();
