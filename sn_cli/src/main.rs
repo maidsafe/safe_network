@@ -64,6 +64,9 @@ async fn main() -> Result<()> {
     #[cfg(feature = "metrics")]
     tokio::spawn(init_metrics(std::process::id()));
 
+    // Log the full command that was run
+    info!("\"{}\"", std::env::args().collect::<Vec<_>>().join(" "));
+
     debug!("Built with git version: {}", sn_build_info::git_info());
     println!("Built with git version: {}", sn_build_info::git_info());
 
@@ -76,6 +79,7 @@ async fn main() -> Result<()> {
             return Ok(());
         }
     }
+
     println!("Instantiating a SAFE client...");
     let secret_key = get_client_secret_key(&client_data_dir_path)?;
 
