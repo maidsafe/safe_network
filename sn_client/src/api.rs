@@ -239,6 +239,11 @@ impl Client {
         self.signer.sign(data)
     }
 
+    /// Return a reference to the signer secret key
+    pub fn signer(&self) -> &SecretKey {
+        &self.signer
+    }
+
     /// Return the public key of the data signing key
     pub fn signer_pk(&self) -> PublicKey {
         self.signer.public_key()

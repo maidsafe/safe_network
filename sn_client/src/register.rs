@@ -16,9 +16,7 @@ use sn_protocol::{
     storage::{try_serialize_record, RecordKind},
     NetworkAddress,
 };
-use sn_registers::{
-    Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister, User,
-};
+use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
 use sn_transfers::Transfer;
 
 use std::collections::{BTreeSet, LinkedList};
@@ -154,12 +152,11 @@ impl ClientRegister {
     pub fn write_atop(&mut self, entry: &[u8], children: BTreeSet<EntryHash>) -> Result<()> {
         // check permissions first
         let public_key = self.client.signer_pk();
-        self.register
-            .check_user_permissions(User::Key(public_key))?;
+        self.register.check_user_permissions(public_key)?;
 
-        let (_hash, mut op) = self.register.write(entry.into(), children)?;
-        let signature = self.client.sign(op.bytes_for_signing());
-        op.add_signature(public_key, signature)?;
+        let (_hash, op) = self
+            .register
+            .write(entry.into(), children, self.client.signer())?;
         let cmd = RegisterCmd::Edit(op);
 
         self.ops.push_front(cmd);

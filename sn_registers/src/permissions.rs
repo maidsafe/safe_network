@@ -6,34 +6,28 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use bls::PublicKey;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, hash::Hash};
-
-/// User that can access a Register.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Debug)]
-pub enum User {
-    /// Any user.
-    Anyone,
-    /// User identified by its public key.
-    Key(bls::PublicKey),
-}
 
 /// Register permissions
 /// Everyone can read a Register, all data is public on safe network.
 /// The Default value is nobody can write.
 #[derive(Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Hash, Debug, Default)]
 pub struct Permissions {
-    /// Anyone can read a Register since all data is public
+    /// Anyone can write to this Register
+    pub anyone_can_write: bool,
     /// The owner of a register can always write to it
     /// This is the list of users that the owner has allowed to write to this Register
-    pub writers: BTreeSet<User>,
+    pub writers: BTreeSet<PublicKey>,
 }
 
 impl Permissions {
     /// Constructs a new set of permissions with a list of users allowed to write
     /// Empty list means nobody (appart from the owner) can write
-    pub fn new_with(writers: impl IntoIterator<Item = User>) -> Self {
+    pub fn new_with(writers: impl IntoIterator<Item = PublicKey>) -> Self {
         Self {
+            anyone_can_write: false,
             writers: writers.into_iter().collect(),
         }
     }
@@ -41,7 +35,8 @@ impl Permissions {
     /// Constructs a new set of permissions where everyone can write
     pub fn new_anyone_can_write() -> Self {
         Self {
-            writers: vec![User::Anyone].into_iter().collect(),
+            anyone_can_write: true,
+            writers: Default::default(),
         }
     }
 
@@ -52,11 +47,11 @@ impl Permissions {
 
     /// Checks is everyone can write to this Register
     pub fn everyone_can_write(&self) -> bool {
-        self.writers.contains(&User::Anyone)
+        self.anyone_can_write
     }
 
     /// Returns true if the given user can write to this Register
-    pub fn can_write(&self, user: &User) -> bool {
+    pub fn can_write(&self, user: &PublicKey) -> bool {
         self.everyone_can_write() || self.writers.contains(user)
     }
 }
