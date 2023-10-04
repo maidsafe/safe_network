@@ -367,7 +367,10 @@ pub async fn send(
     let new_cash_note = wallet_client
         .send_cash_note(amount, to, verify_store)
         .await
-        .expect("Nanos shall be successfully sent.");
+        .map_err(|err| {
+            error!("Could not send cash note, err: {err:?}");
+            err
+        })?;
 
     let mut did_error = false;
     if verify_store {
@@ -388,12 +391,8 @@ pub async fn send(
     }
 
     let mut wallet = wallet_client.into_wallet();
-    wallet
-        .store()
-        .expect("Wallet shall be successfully stored.");
-    wallet
-        .store_cash_note(&new_cash_note)
-        .expect("Created cash_note shall be successfully stored.");
+    wallet.store()?;
+    wallet.store_cash_note(&new_cash_note)?;
 
     if did_error {
         return Err(WalletError::UnconfirmedTxAfterRetries);
