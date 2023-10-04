@@ -15,7 +15,9 @@ use indicatif::ProgressBar;
 use libp2p::{identity::Keypair, kad::Record, Multiaddr};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
-use sn_networking::{multiaddr_is_global, NetworkBuilder, NetworkEvent, CLOSE_GROUP_SIZE};
+use sn_networking::{
+    multiaddr_is_global, GetQuorum, NetworkBuilder, NetworkEvent, CLOSE_GROUP_SIZE,
+};
 use sn_protocol::{
     error::Error as ProtocolError,
     storage::{
@@ -258,7 +260,7 @@ impl Client {
 
         let record = self
             .network
-            .get_record_from_network(key, None, false)
+            .get_record_from_network(key, None, GetQuorum::Majority, false)
             .await
             .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
         debug!(
@@ -337,7 +339,7 @@ impl Client {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, true)
+            .get_record_from_network(key, None, GetQuorum::One, true)
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
@@ -389,7 +391,7 @@ impl Client {
         );
         let record = self
             .network
-            .get_record_from_network(key.clone(), None, true)
+            .get_record_from_network(key.clone(), None, GetQuorum::All, true)
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!(
