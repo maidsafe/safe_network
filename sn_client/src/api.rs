@@ -308,14 +308,22 @@ impl Client {
         let key = chunk.network_address().to_record_key();
 
         let record = Record {
-            key,
-            value: try_serialize_record(&(payment, chunk), RecordKind::ChunkWithPayment)?,
+            key: key.clone(),
+            value: try_serialize_record(&(payment, chunk.clone()), RecordKind::ChunkWithPayment)?,
             publisher: None,
             expires: None,
         };
 
         let record_to_verify = if verify_store {
-            Some(record.clone())
+            // The `ChunkWithPayment` is only used to send out via PutRecord.
+            // The holders shall only hold the `Chunk` copies.
+            // Hence the fetched record shall only be a `Chunk`
+            Some(Record {
+                key,
+                value: try_serialize_record(&chunk, RecordKind::Chunk)?,
+                publisher: None,
+                expires: None,
+            })
         } else {
             None
         };
