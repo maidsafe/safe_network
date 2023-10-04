@@ -134,6 +134,8 @@ pub enum NetworkEvent {
     NatStatusChanged(NatStatus),
     /// Report unverified record
     UnverifiedRecord(Record),
+    /// Report failed write to cleanup record store
+    FailedToWrite(RecordKey),
     /// Gossipsub message received
     GossipsubMsg {
         /// Topic the message was published on
@@ -175,6 +177,10 @@ impl Debug for NetworkEvent {
             NetworkEvent::UnverifiedRecord(record) => {
                 let pretty_key = PrettyPrintRecordKey::from(record.key.clone());
                 write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
+            }
+            NetworkEvent::FailedToWrite(record_key) => {
+                let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
+                write!(f, "NetworkEvent::FailedToWrite({pretty_key:?})")
             }
             NetworkEvent::GossipsubMsg { topic, .. } => {
                 write!(f, "NetworkEvent::GossipsubMsg({topic})")

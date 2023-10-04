@@ -9,7 +9,6 @@
 mod address;
 mod builder;
 mod cashnote;
-mod fee_output;
 mod nano;
 mod reason_hash;
 mod signed_spend;
@@ -17,7 +16,6 @@ mod transaction;
 mod unique_keys;
 
 pub(crate) use builder::TransactionBuilder;
-pub(crate) use fee_output::FeeOutput;
 pub(crate) use transaction::Input;
 
 pub use address::SpendAddress;
@@ -44,7 +42,6 @@ pub(crate) mod tests {
         let tx = Transaction {
             inputs: vec![],
             outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-            fee: FeeOutput::new(Hash::default(), 3_500, Hash::default()),
         };
         let cashnote = CashNote {
             id: derived_key.unique_pubkey(),
@@ -59,9 +56,6 @@ pub(crate) mod tests {
         let cashnote = CashNote::from_hex(&hex)?;
         assert_eq!(cashnote.value()?.as_nano(), 1_530_000_000);
 
-        let fee_amount = cashnote.fee_output().token;
-        assert_eq!(fee_amount, NanoTokens::from(3_500));
-
         Ok(())
     }
 
@@ -75,7 +69,6 @@ pub(crate) mod tests {
         let tx = Transaction {
             inputs: vec![],
             outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-            fee: FeeOutput::new(Hash::default(), 2_500, Hash::default()),
         };
         let cashnote = CashNote {
             id: derived_key.unique_pubkey(),
@@ -89,9 +82,6 @@ pub(crate) mod tests {
         let cashnote_from_hex = CashNote::from_hex(&hex)?;
 
         assert_eq!(cashnote.value()?, cashnote_from_hex.value()?);
-
-        let fee_amount = cashnote.fee_output().token;
-        assert_eq!(fee_amount, NanoTokens::from(2_500));
 
         Ok(())
     }
@@ -108,7 +98,6 @@ pub(crate) mod tests {
         let tx = Transaction {
             inputs: vec![],
             outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-            fee: FeeOutput::default(),
         };
 
         let cashnote = CashNote {
@@ -140,7 +129,6 @@ pub(crate) mod tests {
         let tx = Transaction {
             inputs: vec![],
             outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-            fee: FeeOutput::default(),
         };
 
         let cashnote = CashNote {

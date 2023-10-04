@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.10](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.9...sn_logging-v0.2.10) - 2023-10-03
+
+### Other
+- *(logging)* reduce metric frequency and logged stats.
+
 ## [0.2.9](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.8...sn_logging-v0.2.9) - 2023-09-20
 
 ### Other

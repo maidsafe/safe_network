@@ -1466,6 +1466,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - replicate fetch from peer first then from network
 
+## [0.91.7](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.6...sn_node-v0.91.7) - 2023-10-02
+
+### Other
+- update dependencies
+
+## [0.91.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.7...sn_node-v0.91.8) - 2023-10-02
+
+### Other
+- update dependencies
+
+## [0.91.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.8...sn_node-v0.91.9) - 2023-10-02
+
+### Other
+- update dependencies
+
+## [0.91.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.9...sn_node-v0.91.10) - 2023-10-02
+
+### Added
+- add read transfer from file option
+- faucet using transfers instead of sending raw cashnotes
+
+## [0.91.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.10...sn_node-v0.91.11) - 2023-10-02
+
+### Other
+- remove tracing feat deps
+
+## [0.91.12](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.11...sn_node-v0.91.12) - 2023-10-03
+
+### Added
+- *(node)* remove failed records if write fails
+
+## [0.91.13](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.12...sn_node-v0.91.13) - 2023-10-03
+
+### Other
+- update dependencies
+
+## [0.91.14](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.13...sn_node-v0.91.14) - 2023-10-03
+
+### Other
+- update dependencies
+
+## [0.91.15](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.14...sn_node-v0.91.15) - 2023-10-03
+
+### Other
+- update dependencies
+
+## [0.91.16](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.15...sn_node-v0.91.16) - 2023-10-03
+
+### Added
+- faucet retry genesis claim on failure
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

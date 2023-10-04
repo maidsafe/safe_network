@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.7...sn_networking-v0.8.8) - 2023-10-03
+
+### Other
+- log status of pending_get_record
+
+## [0.8.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.6...sn_networking-v0.8.7) - 2023-10-03
+
+### Added
+- immediate stop on RecordNotFound
+
+## [0.8.6](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.5...sn_networking-v0.8.6) - 2023-10-03
+
+### Added
+- *(node)* remove failed records if write fails
+
+## [0.8.5](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.4...sn_networking-v0.8.5) - 2023-10-02
+
+### Other
+- updated the following local packages: sn_transfers
+
+## [0.8.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.3...sn_networking-v0.8.4) - 2023-10-02
+
+### Other
+- *(client)* more logs around StoreCost retrieveal
+
 ## [0.8.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.2...sn_networking-v0.8.3) - 2023-09-29
 
 ### Added

@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.91.10](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.9...sn_client-v0.91.10) - 2023-10-03
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.91.9](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.8...sn_client-v0.91.9) - 2023-10-03
+
+### Added
+- re-attempt when get chunk from network
+
+## [0.91.8](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.7...sn_client-v0.91.8) - 2023-10-03
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.91.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.6...sn_client-v0.91.7) - 2023-10-02
+
+### Other
+- remove all spans.
+
+## [0.91.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.5...sn_client-v0.91.6) - 2023-10-02
+
+### Other
+- updated the following local packages: sn_transfers
+
+## [0.91.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.4...sn_client-v0.91.5) - 2023-10-02
+
+### Other
+- *(client)* more logs around StoreCost retrieveal
+
 ## [0.91.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.3...sn_client-v0.91.4) - 2023-09-29
 
 ### Other

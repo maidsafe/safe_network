@@ -16,7 +16,7 @@ use tiny_http::{Response, Server};
 
 /// Run the faucet server.
 ///
-/// This will listen on port 8000 and send tokens to any request.
+/// This will listen on port 8000 and send a transfer of tokens as response to any GET request.
 ///
 /// # Example
 ///
@@ -24,11 +24,11 @@ use tiny_http::{Response, Server};
 /// # run faucet server
 /// cargo run  --features="local-discovery" --bin faucet --release -- server
 ///
-/// # query faucet server for CashNote at `get local wallet address`
-/// curl "localhost:8000/`cargo run  --features="local-discovery"  --bin safe --release  wallet address | tail -n 1`" > cash_note_hex
+/// # query faucet server for money for our address `get local wallet address`
+/// curl "localhost:8000/`cargo run  --features="local-discovery"  --bin safe --release  wallet address | tail -n 1`" > transfer_hex
 ///
-/// # feed CashNote to local wallet
-/// cat cash_note_hex | cargo run  --features="local-discovery"  --bin safe --release  wallet deposit --stdin
+/// # receive transfer with our wallet
+/// cargo run  --features="local-discovery" --bin safe --release  wallet receive --file transfer_hex
 ///
 /// # balance should be updated
 /// ```
@@ -36,7 +36,10 @@ use tiny_http::{Response, Server};
 pub async fn run_faucet_server(client: &Client) -> Result<()> {
     let server =
         Server::http("0.0.0.0:8000").map_err(|e| eyre!("Failed to start server: {}", e))?;
-    claim_genesis(client).await;
+    claim_genesis(client).await.map_err(|e| {
+        eprintln!("Faucet Server couldn't start as we failed to claim Genesis");
+        e
+    })?;
 
     println!("Starting http server listening on port 8000...");
     for request in server.incoming_requests() {
@@ -49,9 +52,9 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
         let key = request.url().trim_matches(path::is_separator);
 
         match send_tokens(client, "100", key).await {
-            Ok(cash_note) => {
+            Ok(transfer) => {
                 println!("Sent tokens to {}", key);
-                let response = Response::from_string(cash_note);
+                let response = Response::from_string(transfer);
                 let _ = request
                     .respond(response)
                     .map_err(|e| eprintln!("Failed to send response: {}", e));

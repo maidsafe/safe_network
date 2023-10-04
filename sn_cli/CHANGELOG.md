@@ -6,6 +6,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.83.17](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.16...sn_cli-v0.83.17) - 2023-10-03
+
+### Other
+- update dependencies
+
+## [0.83.16](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.15...sn_cli-v0.83.16) - 2023-10-03
+
+### Other
+- update dependencies
+
+## [0.83.15](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.14...sn_cli-v0.83.15) - 2023-10-03
+
+### Other
+- update dependencies
+
+## [0.83.14](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.13...sn_cli-v0.83.14) - 2023-10-03
+
+### Other
+- update dependencies
+
+## [0.83.13](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.12...sn_cli-v0.83.13) - 2023-10-03
+
+### Other
+- update dependencies
+
+## [0.83.12](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.11...sn_cli-v0.83.12) - 2023-10-02
+
+### Other
+- update dependencies
+
+## [0.83.11](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.10...sn_cli-v0.83.11) - 2023-10-02
+
+### Added
+- add read transfer from file option
+- faucet using transfers instead of sending raw cashnotes
+
+### Other
+- trim transfer hex nl and spaces
+- add some more error info printing
+
+## [0.83.10](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.9...sn_cli-v0.83.10) - 2023-10-02
+
+### Other
+- update dependencies
+
+## [0.83.9](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.8...sn_cli-v0.83.9) - 2023-10-02
+
+### Added
+- *(client)* show feedback on long wait for costs
+
+## [0.83.8](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.7...sn_cli-v0.83.8) - 2023-10-02
+
+### Other
+- update dependencies
+
 ## [0.83.7](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.6...sn_cli-v0.83.7) - 2023-09-29
 
 ### Other

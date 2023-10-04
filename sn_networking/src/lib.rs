@@ -207,7 +207,7 @@ impl Network {
             .into_iter()
             .collect_vec();
 
-        let request = Request::Query(Query::GetStoreCost(record_address));
+        let request = Request::Query(Query::GetStoreCost(record_address.clone()));
         let responses = self
             .send_and_get_responses(close_nodes, &request, true)
             .await;
@@ -215,7 +215,10 @@ impl Network {
         // loop over responses, generating an average fee and storing all responses along side
         let mut all_costs = vec![];
         for response in responses.into_iter().flatten() {
-            debug!("StoreCostReq received response: {:?}", response);
+            debug!(
+                "StoreCostReq for {record_address:?} received response: {:?}",
+                response
+            );
             if let Response::Query(QueryResponse::GetStoreCost {
                 store_cost: Ok(cost),
                 payment_address,
@@ -327,6 +330,16 @@ impl Network {
                             ));
                         }
                     }
+                }
+                Err(Error::RecordNotFound) => {
+                    // libp2p RecordNotFound does mean no holders answered.
+                    // In that case, a retry will be somehow pointless,
+                    // hence return with error immediately.
+                    warn!(
+                        "No holder of record '{:?}' from network!. Terminating the fetch ...",
+                        PrettyPrintRecordKey::from(key.clone()),
+                    );
+                    break;
                 }
                 Err(error) => {
                     error!("{error:?}");
@@ -461,6 +474,12 @@ impl Network {
             record.value.len()
         );
         self.send_swarm_cmd(SwarmCmd::PutLocalRecord { record })
+    }
+
+    /// Remove a local record from the RecordStore after a failed write
+    pub fn remove_failed_local_record(&self, key: RecordKey) -> Result<()> {
+        trace!("Removing Record locally, for {:?}", key);
+        self.send_swarm_cmd(SwarmCmd::RemoveFailedLocalRecord { key })
     }
 
     /// Returns true if a RecordKey is present locally in the RecordStore

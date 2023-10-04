@@ -109,6 +109,11 @@ pub enum SwarmCmd {
     PutLocalRecord {
         record: Record,
     },
+    /// Remove a local record from the RecordStore
+    /// Typically because the write failed
+    RemoveFailedLocalRecord {
+        key: RecordKey,
+    },
     /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
         holder: PeerId,
@@ -175,6 +180,15 @@ impl SwarmDriver {
                 {
                     warn!("An existing get_record task {query_id:?} got replaced");
                 }
+                // Logging the status of the `pending_get_record`.
+                // We also interested in the status of `result_map` (which contains record) inside.
+                let total_records: usize = self
+                    .pending_get_record
+                    .iter()
+                    .map(|(_, (_, result_map))| result_map.len())
+                    .sum();
+                info!("We now have {} pending get record attempts and cached {total_records} fetched copies",
+                      self.pending_get_record.len());
             }
             SwarmCmd::GetLocalStoreCost { sender } => {
                 let cost = self.swarm.behaviour_mut().kademlia.store_mut().store_cost();
@@ -235,6 +249,9 @@ impl SwarmDriver {
                     }
                     Err(err) => return Err(err.into()),
                 };
+            }
+            SwarmCmd::RemoveFailedLocalRecord { key } => {
+                self.swarm.behaviour_mut().kademlia.store_mut().remove(&key)
             }
             SwarmCmd::RecordStoreHasKey { key, sender } => {
                 let has_key = self
