@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.91.11](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.10...sn_client-v0.91.11) - 2023-10-04
+
+### Added
+- *(client)* reuse cashnotes for address payments
+
+### Other
+- separate method and write test
+
 ## [0.91.10](https://github.com/maidsafe/safe_network/compare/sn_client-v0.91.9...sn_client-v0.91.10) - 2023-10-03
 
 ### Other

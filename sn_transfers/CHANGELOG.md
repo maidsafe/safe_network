@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.3](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.2...sn_transfers-v0.13.3) - 2023-10-04
+
+### Added
+- *(sn_transfers)* impl From for NanoTokens
+
+### Fixed
+- *(sn_transfers)* reuse payment overflow fix
+
+### Other
+- *(sn_transfers)* clippy and fmt
+- *(sn_transfers)* add reuse cashnote cases
+- separate method and write test
+
 ## [0.13.2](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.1...sn_transfers-v0.13.2) - 2023-10-02
 
 ### Added

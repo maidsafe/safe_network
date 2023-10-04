@@ -1517,6 +1517,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - faucet retry genesis claim on failure
 
+## [0.91.17](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.16...sn_node-v0.91.17) - 2023-10-04
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
