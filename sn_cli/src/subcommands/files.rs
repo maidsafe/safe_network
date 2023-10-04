@@ -62,12 +62,12 @@ pub enum FilesCmds {
 pub(crate) async fn files_cmds(
     cmds: FilesCmds,
     client: Client,
-    root_dir: &Path,
+    wallet_dir_path: &Path,
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
         FilesCmds::Upload { path, batch_size } => {
-            upload_files(path, client, root_dir, verify_store, batch_size).await?
+            upload_files(path, client, wallet_dir_path, verify_store, batch_size).await?
         }
         FilesCmds::Download {
             file_name,
@@ -84,7 +84,7 @@ pub(crate) async fn files_cmds(
                 );
             }
 
-            let file_api: Files = Files::new(client, root_dir.to_path_buf());
+            let file_api: Files = Files::new(client, wallet_dir_path.to_path_buf());
 
             match (file_name, file_addr) {
                 (Some(name), Some(address)) => {
@@ -97,13 +97,13 @@ pub(crate) async fn files_cmds(
                                 .expect("Failed to parse XorName from hex string"),
                         ),
                         &name,
-                        root_dir,
+                        wallet_dir_path,
                     )
                     .await
                 }
                 _ => {
                     println!("Attempting to download all files uploaded by the current user...");
-                    download_files(&file_api, root_dir).await?
+                    download_files(&file_api, wallet_dir_path).await?
                 }
             }
         }
@@ -112,13 +112,10 @@ pub(crate) async fn files_cmds(
 }
 
 pub(super) async fn chunk_path(
-    client: &Client,
-    root_dir: &Path,
+    file_api: &Files,
     files_path: &Path,
 ) -> Result<BTreeMap<XorName, ChunkedFile>> {
     trace!("Starting to chunk {files_path:?} now.");
-
-    let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
 
     // Get the list of Chunks addresses from the files found at 'files_path'
     let chunks_dir = std::env::temp_dir();
@@ -168,7 +165,7 @@ pub(super) async fn chunk_path(
 async fn upload_files(
     files_path: PathBuf,
     client: Client,
-    root_dir: &Path,
+    wallet_dir_path: &Path,
     verify_store: bool,
     batch_size: usize,
 ) -> Result<()> {
@@ -178,8 +175,10 @@ async fn upload_files(
         files_path
     );
 
+    let file_api: Files = Files::new(client.clone(), wallet_dir_path.to_path_buf());
+
     // Payment shall always be verified.
-    let chunks_to_upload = chunk_path(&client, root_dir, &files_path).await?;
+    let chunks_to_upload = chunk_path(&file_api, &files_path).await?;
 
     let uploaded_file_info = chunks_to_upload
         .iter()
@@ -194,9 +193,6 @@ async fn upload_files(
     let total_chunks_uploading = chunks_to_upload.len();
 
     let mut progress = 0;
-    // Clone necessary variables for each file upload
-    let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
-
     for chunks_batch in chunks_to_upload.chunks(batch_size) {
         let now = Instant::now();
         progress += chunks_batch.len();
@@ -243,8 +239,6 @@ async fn upload_files(
 
     // If we are not verifying, we can skip this
     if verify_store {
-        let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
-
         let mut data_to_verify_or_repay = chunks_to_upload;
         while !data_to_verify_or_repay.is_empty() {
             tokio::time::sleep(Duration::from_secs(3)).await;
@@ -263,7 +257,7 @@ async fn upload_files(
         format_elapsed_time(start_time.elapsed())
     );
 
-    let file_names_path = root_dir.join("uploaded_files");
+    let file_names_path = wallet_dir_path.join("uploaded_files");
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
