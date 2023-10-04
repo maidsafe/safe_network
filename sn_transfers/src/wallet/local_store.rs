@@ -478,7 +478,7 @@ mod tests {
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
         wallet::{local_store::WALLET_DIR_NAME, KeyLessWallet},
-        MainPubkey, MainSecretKey, NanoTokens, SpendAddress,
+        MainSecretKey, NanoTokens, SpendAddress,
     };
     use assert_fs::TempDir;
     use eyre::Result;
@@ -885,10 +885,13 @@ mod tests {
         sender.adjust_payment_map(&mut map);
 
         // The map should now only have the entries where store costs increased:
-        assert_eq!(map, BTreeMap::from([
-            (xor2, vec![(key2a, 10.into())]),
-            (xor4, vec![(key4b, 9.into())]),
-        ]));
+        assert_eq!(
+            map,
+            BTreeMap::from([
+                (xor2, vec![(key2a, 10.into())]),
+                (xor4, vec![(key4b, 9.into())]),
+            ])
+        );
 
         Ok(())
     }
