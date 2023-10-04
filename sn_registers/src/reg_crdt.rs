@@ -6,8 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{error::Result, Entry, EntryHash, Error, RegisterAddress, RegisterOp, User};
+use crate::{error::Result, Entry, EntryHash, Error, RegisterAddress, RegisterOp};
 
+use crdts::merkle_reg::Node as MerkleDagEntry;
 use crdts::{merkle_reg::MerkleReg, CmRDT, CvRDT};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -68,8 +69,7 @@ impl RegisterCrdt {
         &mut self,
         entry: Entry,
         children: BTreeSet<EntryHash>,
-        source: User,
-    ) -> Result<(EntryHash, RegisterOp)> {
+    ) -> Result<(EntryHash, RegisterAddress, MerkleDagEntry<Entry>)> {
         let address = *self.address();
 
         let children_array: BTreeSet<[u8; 32]> = children.iter().map(|itr| itr.0).collect();
@@ -77,10 +77,7 @@ impl RegisterCrdt {
         self.data.apply(crdt_op.clone());
         let hash = crdt_op.hash();
 
-        // We return the operation as it may need to be broadcasted to other replicas
-        let op = RegisterOp::new(address, crdt_op, source, None);
-
-        Ok((EntryHash(hash), op))
+        Ok((EntryHash(hash), address, crdt_op))
     }
 
     /// Apply a remote data CRDT operation to this replica of the `RegisterCrdtImpl`.
@@ -142,20 +139,20 @@ mod tests {
 
         let entry_1 = vec![0x1, 0x1];
         // Different RegisterCrdtImpl shall create same hashes for the same entry from root
-        let (entry_hash_1, _) = crdt_1.write(entry_1.clone(), parents.clone(), User::Anyone)?;
-        let (entry_hash_2, _) = crdt_2.write(entry_1, parents.clone(), User::Anyone)?;
+        let (entry_hash_1, _, _) = crdt_1.write(entry_1.clone(), parents.clone())?;
+        let (entry_hash_2, _, _) = crdt_2.write(entry_1, parents.clone())?;
         assert!(entry_hash_1 == entry_hash_2);
 
         let entry_2 = vec![0x2, 0x2];
         // RegisterCrdtImpl shall create differnt hashes for different entries from root
-        let (entry_hash_1_2, _) = crdt_1.write(entry_2, parents.clone(), User::Anyone)?;
+        let (entry_hash_1_2, _, _) = crdt_1.write(entry_2, parents.clone())?;
         assert!(entry_hash_1 != entry_hash_1_2);
 
         let entry_3 = vec![0x3, 0x3];
         // Different RegisterCrdtImpl shall create same hashes for the same entry from same parents
         let _ = parents.insert(entry_hash_1);
-        let (entry_hash_1_3, _) = crdt_1.write(entry_3.clone(), parents.clone(), User::Anyone)?;
-        let (entry_hash_2_3, _) = crdt_1.write(entry_3, parents, User::Anyone)?;
+        let (entry_hash_1_3, _, _) = crdt_1.write(entry_3.clone(), parents.clone())?;
+        let (entry_hash_2_3, _, _) = crdt_1.write(entry_3, parents)?;
         assert!(entry_hash_1_3 == entry_hash_2_3);
 
         Ok(())

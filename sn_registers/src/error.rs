@@ -6,10 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use bls::PublicKey;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{EntryHash, RegisterAddress, User};
+use crate::{EntryHash, RegisterAddress};
 
 #[derive(Error, Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub enum Error {
@@ -34,7 +35,7 @@ pub enum Error {
     },
     /// Access denied for user
     #[error("Access denied for user: {0:?}")]
-    AccessDenied(User),
+    AccessDenied(PublicKey),
     /// Cannot add another entry since the register entry cap has been reached.
     #[error("Cannot add another entry since the register entry cap has been reached: {0}")]
     TooManyEntries(usize),

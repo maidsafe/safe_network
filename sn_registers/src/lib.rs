@@ -18,7 +18,7 @@ pub use self::{
     address::RegisterAddress,
     error::Error,
     metadata::{Entry, EntryHash},
-    permissions::{Permissions, User},
+    permissions::Permissions,
     register::{Register, SignedRegister},
     register_op::RegisterOp,
 };
