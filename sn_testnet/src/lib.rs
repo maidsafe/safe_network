@@ -246,8 +246,6 @@ impl Testnet {
             self.node_launch_interval
         );
         std::thread::sleep(std::time::Duration::from_millis(self.node_launch_interval));
-        std::thread::sleep(std::time::Duration::from_millis(self.node_launch_interval));
-        std::thread::sleep(std::time::Duration::from_millis(self.node_launch_interval));
 
         let peer_id = self.rpc_client.obtain_peer_id(rpc_address).await?;
         #[cfg(not(feature = "quic"))]
