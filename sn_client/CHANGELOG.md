@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.92.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.1...sn_client-v0.92.2) - 2023-10-04
+
+### Fixed
+- record_to_verify for store_chunk shall be a Chunk
+
 ## [0.92.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.0...sn_client-v0.92.1) - 2023-10-04
 
 ### Other
