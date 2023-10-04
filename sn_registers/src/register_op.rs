@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{error::Result, Entry, Error, RegisterAddress, User};
+use crate::{error::Result, Entry, Error, RegisterAddress};
 
-use bls::PublicKey;
+use bls::{PublicKey, SecretKey};
 use crdts::merkle_reg::Node as MerkleDagEntry;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
@@ -23,9 +23,9 @@ pub struct RegisterOp {
     /// The data operation to apply.
     pub(crate) crdt_op: MerkleDagEntry<Entry>,
     /// The PublicKey of the entity that generated the operation
-    pub(crate) source: User,
+    pub(crate) source: PublicKey,
     /// The signature of source on hash(address, crdt_op, source) required to apply the op
-    pub(crate) signature: Option<bls::Signature>,
+    pub(crate) signature: bls::Signature,
 }
 
 impl std::hash::Hash for RegisterOp {
@@ -39,12 +39,13 @@ impl std::hash::Hash for RegisterOp {
 
 impl RegisterOp {
     /// Create a new RegisterOp
-    pub fn new(
+    pub(crate) fn new(
         address: RegisterAddress,
         crdt_op: MerkleDagEntry<Entry>,
-        source: User,
-        signature: Option<bls::Signature>,
+        signer: &SecretKey,
     ) -> Self {
+        let source = signer.public_key();
+        let signature = signer.sign(Self::bytes_for_signing(&address, &crdt_op, &source));
         Self {
             address,
             crdt_op,
@@ -59,49 +60,31 @@ impl RegisterOp {
     }
 
     /// the entity that generated the operation
-    pub fn source(&self) -> User {
+    pub fn source(&self) -> PublicKey {
         self.source
-    }
-
-    /// Add signature to register Op using provided secret key
-    pub fn sign_with(&mut self, sk: &bls::SecretKey) {
-        self.source = User::Key(sk.public_key());
-        let bytes = self.bytes_for_signing();
-        let signature = sk.sign(bytes.clone());
-        self.signature = Some(signature);
-        debug_assert!(self.verify_signature(&sk.public_key()).is_ok());
-    }
-
-    /// Manually add signature to register Op
-    pub fn add_signature(
-        &mut self,
-        public_key: PublicKey,
-        signature: bls::Signature,
-    ) -> Result<()> {
-        self.source = User::Key(public_key);
-        self.signature = Some(signature);
-        Ok(())
-    }
-
-    /// Returns a bytes version of the RegisterOp used for signing
-    /// Use this API when you want to sign a RegisterOp withtout providing a secret key to the RegisterOp API
-    pub fn bytes_for_signing(&self) -> Vec<u8> {
-        let mut hasher = DefaultHasher::new();
-        self.address.hash(&mut hasher);
-        self.crdt_op.hash().hash(&mut hasher);
-        self.source.hash(&mut hasher);
-        let hash_value = hasher.finish();
-        let bytes = hash_value.to_ne_bytes();
-        bytes.to_vec()
     }
 
     /// Check signature of register Op against provided public key
     pub fn verify_signature(&self, pk: &PublicKey) -> Result<()> {
-        let bytes = self.bytes_for_signing();
-        let sig = self.signature.as_ref().ok_or(Error::MissingSignature)?;
-        if !pk.verify(sig, bytes) {
+        let bytes = Self::bytes_for_signing(&self.address, &self.crdt_op, &self.source);
+        if !pk.verify(&self.signature, bytes) {
             return Err(Error::InvalidSignature);
         }
         Ok(())
+    }
+
+    /// Returns a bytes version of the RegisterOp used for signing
+    fn bytes_for_signing(
+        address: &RegisterAddress,
+        crdt_op: &MerkleDagEntry<Entry>,
+        source: &PublicKey,
+    ) -> Vec<u8> {
+        let mut hasher = DefaultHasher::new();
+        address.hash(&mut hasher);
+        crdt_op.hash().hash(&mut hasher);
+        source.hash(&mut hasher);
+        let hash_value = hasher.finish();
+        let bytes = hash_value.to_ne_bytes();
+        bytes.to_vec()
     }
 }
