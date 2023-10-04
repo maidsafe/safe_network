@@ -377,6 +377,33 @@ impl LocalWallet {
     pub fn derive_key(&self, derivation_index: &DerivationIndex) -> DerivedSecretKey {
         self.key.derive_key(derivation_index)
     }
+
+    /// Lookup previous payments and subtract them from the payments we're about to do.
+    /// In essence this will make sure we don't overpay.
+    pub fn adjust_payment_map(
+        &self,
+        payment_map: &mut BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
+    ) {
+        // For each target address
+        for (xor, payments) in payment_map {
+            // All payments done for an address, should be multiple nodes.
+            let notes = self.get_payment_cash_notes(xor);
+            for note in notes {
+                // Find a payment we're doing to an address, for which we have a cashnote already
+                if let Some(e) = payments
+                    .iter_mut()
+                    .find(|(pubkey, _)| pubkey == note.main_pubkey())
+                {
+                    if let Ok(value) = note.value() {
+                        // Subtract what we already paid from what we're about to pay.
+                        if let Some(new_amount) = e.1.checked_sub(value) {
+                            e.1 = new_amount;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Loads a serialized wallet from a path.
@@ -440,6 +467,8 @@ impl KeyLessWallet {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::{get_wallet, store_wallet, LocalWallet};
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
@@ -448,6 +477,7 @@ mod tests {
     };
     use assert_fs::TempDir;
     use eyre::Result;
+    use xor_name::XorName;
 
     #[tokio::test]
     async fn keyless_wallet_to_and_from_file() -> Result<()> {
@@ -802,6 +832,63 @@ mod tests {
 
         assert_eq!(available, &unique_pubkey);
         assert_eq!(send_amount, recipient.wallet.balance().as_nano());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn reuse_previous_cashnotes_for_payment_to_same_address() -> Result<()> {
+        let dir = create_temp_dir();
+        let root_dir = dir.path().to_path_buf();
+
+        let mut sender = LocalWallet::load_from(&root_dir)?;
+        let sender_cash_note =
+            create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
+        sender.deposit(&vec![sender_cash_note])?;
+
+        let mut rng = bls::rand::thread_rng();
+        let xor1 = XorName::random(&mut rng);
+        let xor2 = XorName::random(&mut rng);
+
+        let key1a = MainSecretKey::random().main_pubkey();
+        let key1b = MainSecretKey::random().main_pubkey();
+        let key2a = MainSecretKey::random().main_pubkey();
+        let key2b = MainSecretKey::random().main_pubkey();
+
+        let mut map = BTreeMap::from([
+            (
+                xor1,
+                vec![(key1a, NanoTokens::from(10)), (key1b, NanoTokens::from(12))],
+            ),
+            (
+                xor2,
+                vec![(key2a, NanoTokens::from(20)), (key2b, NanoTokens::from(22))],
+            ),
+        ]);
+
+        sender.local_send_storage_payment(map.clone(), None)?;
+
+        // Increase store cost by 5 tokens (20 -> 25)
+        map.get_mut(&xor2).unwrap().get_mut(0).unwrap().1 = NanoTokens::from(25);
+
+        sender.adjust_payment_map(&mut map);
+
+        assert_eq!(
+            map.get(&xor1).unwrap().get(0).unwrap().1,
+            NanoTokens::from(0)
+        );
+        assert_eq!(
+            map.get(&xor1).unwrap().get(1).unwrap().1,
+            NanoTokens::from(0)
+        );
+        assert_eq!(
+            map.get(&xor2).unwrap().get(0).unwrap().1,
+            NanoTokens::from(5)
+        );
+        assert_eq!(
+            map.get(&xor2).unwrap().get(1).unwrap().1,
+            NanoTokens::from(0)
+        );
 
         Ok(())
     }
