@@ -9,7 +9,7 @@
 use crate::{
     driver::SwarmDriver,
     error::{Error, Result},
-    sort_peers_by_address, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
+    sort_peers_by_address, GetQuorum, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
 };
 use libp2p::{
     kad::{store::RecordStore, Quorum, Record, RecordKey},
@@ -90,6 +90,7 @@ pub enum SwarmCmd {
     GetNetworkRecord {
         key: RecordKey,
         sender: oneshot::Sender<Result<Record>>,
+        quorum: GetQuorum,
     },
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
@@ -171,11 +172,15 @@ impl SwarmDriver {
                     self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
                 }
             }
-            SwarmCmd::GetNetworkRecord { key, sender } => {
+            SwarmCmd::GetNetworkRecord {
+                key,
+                sender,
+                quorum,
+            } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
                 if self
                     .pending_get_record
-                    .insert(query_id, (sender, Default::default()))
+                    .insert(query_id, (sender, Default::default(), quorum))
                     .is_some()
                 {
                     warn!("An existing get_record task {query_id:?} got replaced");
@@ -185,7 +190,7 @@ impl SwarmDriver {
                 let total_records: usize = self
                     .pending_get_record
                     .iter()
-                    .map(|(_, (_, result_map))| result_map.len())
+                    .map(|(_, (_, result_map, _quorum))| result_map.len())
                     .sum();
                 info!("We now have {} pending get record attempts and cached {total_records} fetched copies",
                       self.pending_get_record.len());

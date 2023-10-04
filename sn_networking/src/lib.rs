@@ -16,6 +16,7 @@ mod error;
 mod event;
 #[cfg(feature = "open-metrics")]
 mod metrics_service;
+mod quorum;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
@@ -26,6 +27,7 @@ pub use self::{
     driver::{NetworkBuilder, SwarmDriver},
     error::Error,
     event::{MsgResponder, NetworkEvent},
+    quorum::GetQuorum,
     record_store::NodeRecordStore,
 };
 
@@ -259,6 +261,7 @@ impl Network {
         &self,
         key: RecordKey,
         target_record: Option<Record>,
+        quorum: GetQuorum,
         re_attempt: bool,
     ) -> Result<Record> {
         let mut _permit = None;
@@ -282,6 +285,7 @@ impl Network {
             self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
                 key: key.clone(),
                 sender,
+                quorum,
             })?;
 
             match receiver
@@ -451,7 +455,7 @@ impl Network {
             trace!("attempting to verify {pretty_key:?}");
 
             // Verify the record is stored, requiring re-attempts
-            self.get_record_from_network(record_key, verify_store, true)
+            self.get_record_from_network(record_key, verify_store, GetQuorum::All, true)
                 .await
                 .map_err(|e| {
                     error!(

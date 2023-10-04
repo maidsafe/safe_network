@@ -10,7 +10,7 @@ use crate::{
     close_group_majority,
     driver::{truncate_patch_version, SwarmDriver},
     error::{Error, Result},
-    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE,
 };
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
@@ -595,7 +595,7 @@ impl SwarmDriver {
                 step,
             } => {
                 trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?} - {cache_candidates:?}");
-                if let Some((sender, result_map)) = self.pending_get_record.remove(&id) {
+                if let Some((sender, result_map, _quorum)) = self.pending_get_record.remove(&id) {
                     if let Some((record, _)) = result_map.values().next() {
                         debug!(
                             "Getting record {:?} early completed with {:?} copies received",
@@ -646,7 +646,7 @@ impl SwarmDriver {
                     }
                 }
 
-                if let Some((sender, _)) = self.pending_get_record.remove(&id) {
+                if let Some((sender, _, _)) = self.pending_get_record.remove(&id) {
                     sender
                         .send(Err(Error::RecordNotFound))
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
@@ -817,7 +817,7 @@ impl SwarmDriver {
         };
         let record_content_hash = XorName::from_content(&peer_record.record.value);
 
-        if let Some((sender, mut result_map)) = self.pending_get_record.remove(&query_id) {
+        if let Some((sender, mut result_map, quorum)) = self.pending_get_record.remove(&query_id) {
             let peer_list =
                 if let Some((_, mut peer_list)) = result_map.remove(&record_content_hash) {
                     let _ = peer_list.insert(peer_id);
@@ -828,7 +828,13 @@ impl SwarmDriver {
                     peer_list
                 };
 
-            let result = if peer_list.len() >= close_group_majority() {
+            let expected_answers = match quorum {
+                GetQuorum::Majority => close_group_majority(),
+                GetQuorum::All => CLOSE_GROUP_SIZE,
+                GetQuorum::One => 1,
+            };
+
+            let result = if peer_list.len() >= expected_answers {
                 Some(Ok(peer_record.record.clone()))
             } else if usize::from(count) >= CLOSE_GROUP_SIZE {
                 Some(Err(Error::RecordNotFound))
@@ -844,7 +850,7 @@ impl SwarmDriver {
             } else {
                 let _ = self
                     .pending_get_record
-                    .insert(query_id, (sender, result_map));
+                    .insert(query_id, (sender, result_map, quorum));
             }
         }
     }

@@ -18,7 +18,7 @@ use crate::{
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
-    Network, CLOSE_GROUP_SIZE,
+    GetQuorum, Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
 #[cfg(feature = "quic")]
@@ -56,7 +56,14 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
 type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
-type PendingGetRecord = HashMap<QueryId, (oneshot::Sender<Result<Record>>, GetRecordResultMap)>;
+type PendingGetRecord = HashMap<
+    QueryId,
+    (
+        oneshot::Sender<Result<Record>>,
+        GetRecordResultMap,
+        GetQuorum,
+    ),
+>;
 
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
