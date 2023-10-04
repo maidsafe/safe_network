@@ -257,7 +257,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sn_node_reward_wallet_balance",
+          "expr": "sn_node_reward_wallet_balance{node_id=~\"$var_node_list\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
