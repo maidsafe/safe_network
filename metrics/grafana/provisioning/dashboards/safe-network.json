@@ -55,10 +55,82 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+"id": null,
   "links": [],
   "liveNow": false,
   "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheusdatasourceuuid"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          },
+          "unit": "decmbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 8,
+      "options": {
+        "displayMode": "basic",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "valueMode": "color"
+      },
+      "pluginVersion": "10.1.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheusdatasourceuuid"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sn_networking_process_memory_used_mb{node_id=~\"$var_node_list\"}",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{node_id}}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Process Memory Usage",
+      "type": "bargauge"
+    },
     {
       "datasource": {
         "type": "prometheus",
@@ -121,7 +193,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 0
+        "y": 16
       },
       "id": 6,
       "options": {
@@ -145,7 +217,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "safenode_put_record_ok_total{node_id=~\"$var_node_list\", record_type=\"Chunk\"}",
+          "expr": "sn_node_put_record_ok_total{node_id=~\"$var_node_list\", record_type=\"Chunk\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -220,7 +292,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 0
+        "y": 16
       },
       "id": 5,
       "options": {
@@ -244,7 +316,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "safenode_put_record_ok_total{node_id=~\"$var_node_list\", record_type=\"Spend\"}",
+          "expr": "sn_node_put_record_ok_total{node_id=~\"$var_node_list\", record_type=\"Spend\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -319,7 +391,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 0
+        "y": 16
       },
       "id": 7,
       "options": {
@@ -343,7 +415,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "safenode_put_record_ok_total{node_id=~\"$var_node_list\", record_type=\"Register\"}",
+          "expr": "sn_node_put_record_ok_total{node_id=~\"$var_node_list\", record_type=\"Register\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -421,7 +493,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 24
       },
       "id": 1,
       "options": {
@@ -523,7 +595,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 24
       },
       "id": 2,
       "options": {
@@ -621,7 +693,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 32
       },
       "id": 3,
       "options": {
@@ -689,7 +761,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 32
       },
       "id": 4,
       "options": {
@@ -715,7 +787,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "safenode_peer_added_to_routing_table_total{node_id=~\"$var_node_list\"} - safenode_peer_removed_from_routing_table_total{node_id=~\"$var_node_list\"}",
+          "expr": "sn_node_peer_added_to_routing_table_total{node_id=~\"$var_node_list\"} - sn_node_peer_removed_from_routing_table_total{node_id=~\"$var_node_list\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,

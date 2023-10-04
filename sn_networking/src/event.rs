@@ -206,6 +206,8 @@ impl SwarmDriver {
                 }
             }
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
+                #[cfg(feature = "open-metrics")]
+                self.network_metrics.record(&(kad_event));
                 self.handle_kad_event(kad_event)?;
             }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
@@ -337,14 +339,18 @@ impl SwarmDriver {
                     };
                 }
             },
-            SwarmEvent::Behaviour(NodeEvent::Gossipsub(event)) => match event {
-                libp2p::gossipsub::Event::Message { message, .. } => {
-                    let topic = message.topic.into_string();
-                    let msg = message.data;
-                    self.send_event(NetworkEvent::GossipsubMsg { topic, msg });
+            SwarmEvent::Behaviour(NodeEvent::Gossipsub(event)) => {
+                #[cfg(feature = "open-metrics")]
+                self.network_metrics.record(&event);
+                match event {
+                    libp2p::gossipsub::Event::Message { message, .. } => {
+                        let topic = message.topic.into_string();
+                        let msg = message.data;
+                        self.send_event(NetworkEvent::GossipsubMsg { topic, msg });
+                    }
+                    other => trace!("Gossipsub Event has been ignored: {other:?}"),
                 }
-                other => trace!("Gossipsub Event has been ignored: {other:?}"),
-            },
+            }
             SwarmEvent::NewListenAddr { address, .. } => {
                 let local_peer_id = *self.swarm.local_peer_id();
                 let address = address.with(Protocol::P2p(local_peer_id));
