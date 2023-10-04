@@ -289,7 +289,6 @@ impl LocalWallet {
         }
 
         self.update_local_wallet(transfer_outputs)?;
-        println!("Transfers applied locally");
 
         self.wallet
             .payment_transactions
