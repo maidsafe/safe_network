@@ -15,6 +15,8 @@ mod driver;
 mod error;
 mod event;
 #[cfg(feature = "open-metrics")]
+mod metrics;
+#[cfg(feature = "open-metrics")]
 mod metrics_service;
 mod quorum;
 mod record_store;

@@ -14,7 +14,7 @@ version = "0.8.14"
 default=[]
 local-discovery=["libp2p/mdns"]
 quic=["libp2p-quic"]
-open-metrics=["libp2p-metrics", "prometheus-client", "hyper"]
+open-metrics=["libp2p-metrics", "prometheus-client", "hyper", "sysinfo"]
 
 [dependencies]
 async-trait = "0.1"
@@ -24,7 +24,7 @@ hyper = { version = "0.14", features = ["server", "tcp", "http1"], optional = tr
 itertools = "~0.11.0"
 custom_debug = "~0.5.0"
 libp2p = { version="0.52", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux", "gossipsub"] }
-libp2p-metrics = { version = "0.13.1", features = ["identify", "kad", ], optional = true }
+libp2p-metrics = { version = "0.13.1", features = ["identify", "kad", "gossipsub"], optional = true }
 libp2p-quic = { version = "0.9.2", features = ["tokio"], optional = true }
 prometheus-client = { version = "0.21.2", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
@@ -32,6 +32,7 @@ rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_protocol = { path = "../sn_protocol", version = "0.7.12" }
 sn_transfers = { path = "../sn_transfers", version = "0.13.6" }
+sysinfo = { version = "0.29.0", default-features = false, optional = true }
 thiserror = "1.0.23"
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }

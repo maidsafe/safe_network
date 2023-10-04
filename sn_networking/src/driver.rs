@@ -7,6 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 #[cfg(feature = "open-metrics")]
+use crate::metrics::NetworkMetrics;
+#[cfg(feature = "open-metrics")]
 use crate::metrics_service::run_metrics_server;
 use crate::{
     circular_vec::CircularVec,
@@ -38,8 +40,6 @@ use libp2p::{
     },
     Multiaddr, PeerId, Transport,
 };
-#[cfg(feature = "open-metrics")]
-use libp2p_metrics::Metrics as NetworkMetrics;
 #[cfg(feature = "quic")]
 use libp2p_quic as quic;
 #[cfg(feature = "open-metrics")]

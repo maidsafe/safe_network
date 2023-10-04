@@ -18,7 +18,7 @@ name = "faucet"
 path = "src/bin/faucet/main.rs"
 
 [features]
-default=["metrics"]
+default=["metrics", "open-metrics"]
 local-discovery=["sn_networking/local-discovery"]
 otlp = ["sn_logging/otlp"]
 metrics = ["sn_logging/process-metrics"]
