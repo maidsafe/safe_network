@@ -12,6 +12,7 @@ use prometheus_client::{
     metrics::{
         counter::Counter,
         family::Family,
+        gauge::Gauge,
         histogram::{exponential_buckets, Histogram},
     },
     registry::Registry,
@@ -27,9 +28,12 @@ pub(crate) struct NodeMetrics {
     replication_triggered: Counter,
     replication_keys_to_fetch: Histogram,
 
-    // Routing table
+    // routing table
     peer_added_to_routing_table: Counter,
     peer_removed_from_routing_table: Counter,
+
+    // wallet
+    pub(crate) reward_wallet_balance: Gauge,
 }
 
 #[derive(EncodeLabelSet, Hash, Clone, Eq, PartialEq, Debug)]
@@ -90,6 +94,13 @@ impl NodeMetrics {
             peer_removed_from_routing_table.clone(),
         );
 
+        let reward_wallet_balance = Gauge::default();
+        sub_registry.register(
+            "reward_wallet_balance",
+            "The number of Nanos in the node reward wallet",
+            reward_wallet_balance.clone(),
+        );
+
         Self {
             put_record_ok,
             put_record_err,
@@ -97,6 +108,7 @@ impl NodeMetrics {
             replication_keys_to_fetch,
             peer_added_to_routing_table,
             peer_removed_from_routing_table,
+            reward_wallet_balance,
         }
     }
 
