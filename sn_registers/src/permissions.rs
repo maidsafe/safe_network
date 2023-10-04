@@ -46,12 +46,12 @@ impl Permissions {
     }
 
     /// Checks is everyone can write to this Register
-    pub fn everyone_can_write(&self) -> bool {
+    pub fn anyone_can_write(&self) -> bool {
         self.anyone_can_write
     }
 
     /// Returns true if the given user can write to this Register
     pub fn can_write(&self, user: &PublicKey) -> bool {
-        self.everyone_can_write() || self.writers.contains(user)
+        self.anyone_can_write() || self.writers.contains(user)
     }
 }
