@@ -1,16 +1,51 @@
-# Safe Network Metrics
-Collect and visualize metrics from Safe Network nodes using Prometheus and Grafana.
+# Safe Network Metrics Dashboard
+Easily visualize metrics from Safe Network nodes using Prometheus and Grafana. This guide covers the steps to set up the dashboard and terminate it.
 
 ### Prerequisites
-1. **Docker & Docker-Compose:** Ensure you have both docker and docker-compose installed on your system.
-2. **Safe Node Configuration:** When running your Safe nodes, ensure they are started with the `--feature=open-metrics` flag enabled.
+1. **Docker & Docker-Compose:** Ensure you have both `docker` and `docker-compose` installed on your system and make sure they're running.
+2. **Safe Node Configuration:** When running your Safe nodes, ensure they are started with the `--feature=open-metrics` flag.
 
-### Usage
+### 1. Start the Dashboard:
 
-If the nodes are started with the `open-metrics` feature, then the URL to the metrics server are written to the log files. Provide the `[log_dir_path]...` to scan the logs to obtain the server URLs. If `[log_dir_path]...` is not provided, it defaults to `data-dir` log that the nodes use by default.
+#### Manual Start:
+Run the following command to scan the log files and fetch the metrics server URLs. These URLs will be used to create the Prometheus config file.
 
 ```bash
 cargo run --release --bin metrics -- [log_dir_path]...
 ```
+Note: If [log_dir_path]... is not provided, it will default to the `data-dir` log that nodes use by default.
 
-After running the above command, Prometheus and Grafana containers will start automatically. And the Grafana dashboard URL will be printed to the console. Access this URL to visualize your node metrics.
+The above command would write the Prometheus config file to `./metrics/prometheus/prometheus.yml`
+
+- Navigate to the metrics directory:
+```bash
+cd metrics
+```
+- Start the containers:
+```bash
+docker-compose up --detach
+```
+
+#### Automated Start:
+Run the binary with the `--run` flag to fetch the configuration file and automatically start the containers:
+
+```bash
+cargo run --release --bin metrics -- [log_dir_path]... --run
+```
+
+### 2. Access the Dashboard:
+Once started, access the Grafana dashboard at: http://localhost:3001/d/node_metrics/node-metrics?orgId=1&refresh=5s
+
+Login Credentials:
+```makefile
+username: admin
+password: pwd
+```
+
+### 3. Terminate the Dashboard:
+To stop the containers and clear all the data:
+
+```bash
+cd metrics
+docker-compose down --volumes
+```

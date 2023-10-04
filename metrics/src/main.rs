@@ -1,3 +1,11 @@
+// Copyright 2023 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
 use clap::{command, Arg, ArgAction};
 use color_eyre::{eyre::eyre, Result};
 use regex::Regex;
@@ -52,13 +60,22 @@ fn main() -> Result<()> {
 
     let matches = command!()
         .arg(
-            Arg::new("log_dirs").help("Provide one or more log directories to get the metrics server from.\nAll the files inside a provided dir are scanned.")
+            Arg::new("run")
+                .short('r')
+                .long("run")
+                .help("Runs the docker containers for you")
+                .action(ArgAction::SetTrue)
+            )
+        .arg(
+            Arg::new("log_dirs")
+                .help("Provide one or more log directories to get the metrics server from.\nAll the files inside a provided dir are scanned.")
                 .action(ArgAction::Append)
                 .value_parser(clap::value_parser!(PathBuf))
                 .default_value(default_log_dir.into_os_string())
         )
         .get_matches();
 
+    let should_run_containers = matches.get_flag("run");
     let mut metrics_server_list = BTreeMap::<NodeId, url::Url>::new();
     for log_dir in matches.get_many::<PathBuf>("log_dirs").unwrap() {
         metrics_server_list.extend(get_metric_servers(log_dir)?);
@@ -81,33 +98,38 @@ fn main() -> Result<()> {
     fs::create_dir_all(&prometheus_dir)?;
     fs::write(prometheus_dir.join("prometheus.yml"), prometheus_config)?;
 
-    // stop the containers if running already
-    let docker_output = Command::new("docker-compose")
-        .arg("down")
-        .arg("--volumes")
-        .current_dir(&working_dir)
-        .output()?;
-    if !docker_output.status.success() {
-        return Err(eyre!(
-            "'docker-compose down' failed with {:?}",
-            String::from_utf8(docker_output.stderr)?
-        ));
-    }
+    if should_run_containers {
+        // stop the containers if running already
+        let docker_output = Command::new("docker-compose")
+            .arg("down")
+            .arg("--volumes")
+            .current_dir(&working_dir)
+            .output()?;
+        if !docker_output.status.success() {
+            return Err(eyre!(
+                "'docker-compose down' failed with {:?}",
+                String::from_utf8(docker_output.stderr)?
+            ));
+        }
 
-    // start the containers
-    let docker_output = Command::new("docker-compose")
-        .arg("up")
-        .arg("-d")
-        .current_dir(&working_dir)
-        .output()?;
-    if !docker_output.status.success() {
-        return Err(eyre!(
-            "'docker-compose up' failed with {:?}",
-            String::from_utf8(docker_output.stderr)?
-        ));
+        // start the containers
+        let docker_output = Command::new("docker-compose")
+            .arg("up")
+            .arg("-d")
+            .current_dir(&working_dir)
+            .output()?;
+        if !docker_output.status.success() {
+            return Err(eyre!(
+                "'docker-compose up' failed with {:?}",
+                String::from_utf8(docker_output.stderr)?
+            ));
+        }
+
+        println!("Grafana dashboard is running at http://localhost:3001/d/node_metrics/node-metrics?orgId=1&refresh=5s");
+        println!("Connect with the following credentials\nusername:admin\npassword:pwd");
+    } else {
+        println!("The Prometheus config file has been updated with the metrics server URLs. The containers are not yet started\nRead the docs to start/stop the containers.");
     }
-    println!("Grafana dashboard is running at http://localhost:3001/d/node_metrics/node-metrics?orgId=1&refresh=5s");
-    println!("Connect with the following credentials\nusername:admin\npassword:pwd");
 
     Ok(())
 }
