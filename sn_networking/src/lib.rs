@@ -119,7 +119,7 @@ pub struct Network {
     keypair: Keypair,
     /// Optional Concurrent limiter to limit the number of concurrent requests
     /// Intended for client side use
-    concurrency_limiter: Option<Arc<Semaphore>>,
+    concurrency_limiter: None,
 }
 
 impl Network {
