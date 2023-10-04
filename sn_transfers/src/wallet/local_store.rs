@@ -473,7 +473,7 @@ mod tests {
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
         wallet::{local_store::WALLET_DIR_NAME, KeyLessWallet},
-        MainSecretKey, NanoTokens, SpendAddress,
+        MainPubkey, MainSecretKey, NanoTokens, SpendAddress,
     };
     use assert_fs::TempDir;
     use eyre::Result;
@@ -849,46 +849,41 @@ mod tests {
         let mut rng = bls::rand::thread_rng();
         let xor1 = XorName::random(&mut rng);
         let xor2 = XorName::random(&mut rng);
+        let xor3 = XorName::random(&mut rng);
+        let xor4 = XorName::random(&mut rng);
 
         let key1a = MainSecretKey::random().main_pubkey();
         let key1b = MainSecretKey::random().main_pubkey();
         let key2a = MainSecretKey::random().main_pubkey();
         let key2b = MainSecretKey::random().main_pubkey();
+        let key3a = MainSecretKey::random().main_pubkey();
+        let key3b = MainSecretKey::random().main_pubkey();
+        let key4a = MainSecretKey::random().main_pubkey();
+        let key4b = MainSecretKey::random().main_pubkey();
+
+        // Test 4 scenarios. 1) No change in cost. 2) Increase in cost. 3) Decrease in cost. 4) Both increase and decrease.
 
         let mut map = BTreeMap::from([
-            (
-                xor1,
-                vec![(key1a, NanoTokens::from(10)), (key1b, NanoTokens::from(12))],
-            ),
-            (
-                xor2,
-                vec![(key2a, NanoTokens::from(20)), (key2b, NanoTokens::from(22))],
-            ),
+            (xor1, vec![(key1a, 100.into()), (key1b, 101.into())]),
+            (xor2, vec![(key2a, 200.into()), (key2b, 201.into())]),
+            (xor3, vec![(key3a, 300.into()), (key3b, 301.into())]),
+            (xor4, vec![(key4a, 400.into()), (key4b, 401.into())]),
         ]);
 
         sender.local_send_storage_payment(map.clone(), None)?;
 
-        // Increase store cost by 5 tokens (20 -> 25)
-        map.get_mut(&xor2).unwrap().get_mut(0).unwrap().1 = NanoTokens::from(25);
+        map.get_mut(&xor2).expect("to have value")[0].1 = 210.into(); // increase: 200 -> 210
+        map.get_mut(&xor3).expect("to have value")[0].1 = 290.into(); // decrease: 300 -> 290
+        map.get_mut(&xor4).expect("to have value")[0].1 = 390.into(); // decrease: 400 -> 390
+        map.get_mut(&xor4).expect("to have value")[1].1 = 410.into(); // increase: 401 -> 410
 
         sender.adjust_payment_map(&mut map);
 
-        assert_eq!(
-            map.get(&xor1).unwrap().get(0).unwrap().1,
-            NanoTokens::from(0)
-        );
-        assert_eq!(
-            map.get(&xor1).unwrap().get(1).unwrap().1,
-            NanoTokens::from(0)
-        );
-        assert_eq!(
-            map.get(&xor2).unwrap().get(0).unwrap().1,
-            NanoTokens::from(5)
-        );
-        assert_eq!(
-            map.get(&xor2).unwrap().get(1).unwrap().1,
-            NanoTokens::from(0)
-        );
+        // The map should now only have the entries where store costs increased:
+        assert_eq!(map, BTreeMap::from([
+            (xor2, vec![(key2a, 10.into())]),
+            (xor4, vec![(key4b, 9.into())]),
+        ]));
 
         Ok(())
     }
