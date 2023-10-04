@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "metrics",
     "sn_build_info",
     "sn_cli",
     "sn_client",
