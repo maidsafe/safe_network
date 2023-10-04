@@ -212,3 +212,10 @@ upload-release-assets-to-s3 bin_name:
   for file in *.zip *.tar.gz; do
     aws s3 cp "$file" "s3://$bucket/$file" --acl public-read
   done
+
+run-local-network:
+  #!/usr/bin/env bash
+  pgrep safenode | xargs kill -9
+  pgrep faucet | xargs kill -9
+  rm -rf ~/.local/share/safe
+  cargo run --bin testnet --features local-discovery -- --build-node --build-faucet --interval 1000

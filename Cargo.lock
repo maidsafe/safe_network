@@ -4257,6 +4257,7 @@ dependencies = [
  "criterion 0.5.1",
  "dirs-next",
  "hex",
+ "indicatif",
  "libp2p",
  "reqwest",
  "sn_build_info",

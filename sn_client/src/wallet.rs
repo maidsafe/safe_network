@@ -20,7 +20,7 @@ use futures::future::join_all;
 use std::{
     collections::{BTreeMap, BTreeSet},
     iter::Iterator,
-    time::{Duration, Instant},
+    time::Duration,
 };
 use tokio::{task::JoinSet, time::sleep};
 
@@ -198,9 +198,6 @@ impl WalletClient {
     ) -> WalletResult<NanoTokens> {
         // TODO:
         // Check for any existing payment CashNotes, and use them if they exist, only topping up if needs be
-        let num_of_payments = all_data_payments.len();
-
-        let now = Instant::now();
         let mut total_cost = NanoTokens::zero();
         for (_data, costs) in all_data_payments.iter() {
             for (_target, cost) in costs {
@@ -229,10 +226,6 @@ impl WalletClient {
             info!("Spend has completed: {:?}", spend_attempt_result);
             self.wallet.clear_unconfirmed_spend_requests();
         }
-
-        let elapsed = now.elapsed();
-        println!("All transfers completed in {elapsed:?}");
-        println!("Total payment: {total_cost:?} nano tokens for {num_of_payments:?} chunks");
 
         Ok(total_cost)
     }
