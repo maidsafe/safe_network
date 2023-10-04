@@ -127,18 +127,23 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
 pub(crate) async fn wallet_cmds(
     cmds: WalletCmds,
     client: &Client,
-    root_dir: &Path,
+    wallet_dir_path: &Path,
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
-        WalletCmds::Receive { file, transfer } => receive(transfer, file, client, root_dir).await?,
-        WalletCmds::GetFaucet { url } => get_faucet(root_dir, client, url.clone()).await?,
+        WalletCmds::Send { amount, to } => {
+            send(amount, to, client, wallet_dir_path, verify_store).await?
+        }
+        WalletCmds::Receive { file, transfer } => {
+            receive(transfer, file, client, wallet_dir_path).await?
+        }
+        WalletCmds::GetFaucet { url } => get_faucet(wallet_dir_path, client, url.clone()).await?,
         WalletCmds::Pay {
             path,
             batch_size: _,
         } => {
-            let chunked_files = chunk_path(client, root_dir, &path).await?;
+            let file_api: Files = Files::new(client.clone(), wallet_dir_path.to_path_buf());
+            let chunked_files = chunk_path(&file_api, &path).await?;
 
             let all_chunks: Vec<_> = chunked_files
                 .values()
@@ -146,7 +151,6 @@ pub(crate) async fn wallet_cmds(
                 .map(|(n, _)| *n)
                 .collect();
 
-            let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
             // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
             file_api.pay_for_chunks(all_chunks, verify_store).await?;
         }
