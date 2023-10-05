@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.15](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.14...sn_networking-v0.8.15) - 2023-10-05
+
+### Added
+- *(metrics)* display node reward balance metrics
+- *(metrics)* display node record count metrics
+- *(metrics)* enable process memory and cpu usage metrics
+
+### Fixed
+- *(metrics)* do not bind to localhost as it causes issues with containers
+
 ## [0.8.14](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.13...sn_networking-v0.8.14) - 2023-10-05
 
 ### Added

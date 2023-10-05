@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.7](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.6...sn_transfers-v0.13.7) - 2023-10-05
+
+### Added
+- *(metrics)* enable node monitoring through dockerized grafana instance
+
 ## [0.13.6](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.5...sn_transfers-v0.13.6) - 2023-10-05
 
 ### Fixed
