@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696507386125,
+  "lastUpdate": 1696507636012,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -17253,6 +17253,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5c24c1e058da8c023ddf8563a7251cbc19a24f85",
+          "message": "fix(sn_transfers): be sure we store CashNotes before writing the wallet file\n\nThis should prevent concurrency issues with referenced Notes not existing on disk yet",
+          "timestamp": "2023-10-05T11:07:38Z",
+          "tree_id": "f1d8b7190ff1fb4a658c6464af4821c6a2482a98",
+          "url": "https://github.com/maidsafe/safe_network/commit/5c24c1e058da8c023ddf8563a7251cbc19a24f85"
+        },
+        "date": 1696507634545,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
