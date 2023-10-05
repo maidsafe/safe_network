@@ -25,6 +25,12 @@ const CREATED_CASHNOTES_DIR_NAME: &str = "created_cash_notes";
 const RECEIVED_CASHNOTES_DIR_NAME: &str = "received_cash_notes";
 const UNCONFRIMED_TX_NAME: &str = "unconfirmed_spend_requests";
 
+/// How many read attempts to make when reading a cash_note file
+const CASH_NOTE_READ_RETRIES: usize = 3;
+/// How long to wait between cash_note file read attempts
+/// retrries here might be needed if we're concurrently upload
+const CASH_NOTE_READ_DELAY_MS: u64 = 250;
+
 pub(super) fn create_received_cash_notes_dir(wallet_dir: &Path) -> Result<()> {
     let received_cash_notes_dir = wallet_dir.join(RECEIVED_CASHNOTES_DIR_NAME);
     fs::create_dir_all(received_cash_notes_dir)?;
@@ -153,24 +159,27 @@ pub fn load_cash_note(unique_pubkey: &UniquePubkey, wallet_dir: &Path) -> Option
     // Construct the path to the cash_note file
     let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
 
-    // Read the cash_note data from the file
-    match fs::read_to_string(cash_note_file_path.clone()) {
-        Ok(cash_note_data) => {
-            // Convert the cash_note data from hex to CashNote
-            match CashNote::from_hex(cash_note_data.trim()) {
-                Ok(cash_note) => Some(cash_note),
-                Err(error) => {
-                    warn!("Failed to convert cash_note data from hex: {}", error);
-                    None
+    // Retry loop for reading the cash_note data from the file
+    for _ in 0..CASH_NOTE_READ_RETRIES {
+        match fs::read_to_string(cash_note_file_path.clone()) {
+            Ok(cash_note_data) => {
+                // Convert the cash_note data from hex to CashNote
+                match CashNote::from_hex(cash_note_data.trim()) {
+                    Ok(cash_note) => return Some(cash_note),
+                    Err(error) => {
+                        warn!("Failed to convert cash_note data from hex: {}", error);
+                    }
                 }
             }
+            Err(error) => {
+                warn!(
+                    "Failed to read cash_note file {:?}: {}",
+                    cash_note_file_path, error
+                );
+            }
         }
-        Err(error) => {
-            warn!(
-                "Failed to read cash_note file {:?}: {}",
-                cash_note_file_path, error
-            );
-            None
-        }
+        // Delay between retries
+        std::thread::sleep(std::time::Duration::from_millis(CASH_NOTE_READ_DELAY_MS));
     }
+    None
 }
