@@ -221,7 +221,7 @@ fn deposit(root_dir: &Path, read_from_stdin: bool, cash_note: Option<String>) ->
         sn_transfers::NanoTokens::from(wallet.balance().as_nano() - previous_balance.as_nano());
     if deposited.is_zero() {
         println!("Nothing deposited.");
-    } else if let Err(err) = wallet.store() {
+    } else if let Err(err) = wallet.store(vec![]) {
         println!("Failed to store deposited ({deposited}) amount: {:?}", err);
     } else {
         println!("Deposited {deposited}.");
@@ -244,7 +244,7 @@ fn deposit_from_cash_note_hex(root_dir: &Path, input: String) -> Result<()> {
     let old_balance = wallet.balance();
     wallet.deposit(&vec![cash_note])?;
     let new_balance = wallet.balance();
-    wallet.store()?;
+    wallet.store(vec![])?;
 
     println!("Successfully stored cash_note to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
 
@@ -276,16 +276,15 @@ async fn send(
     {
         Ok(new_cash_note) => {
             println!("Sent {amount:?} to {address:?}");
-            let mut wallet = wallet_client.into_wallet();
+            let wallet = wallet_client.into_wallet();
             let new_balance = wallet.balance();
 
-            if let Err(err) = wallet.store() {
+            if let Err(err) = wallet.store(vec![&new_cash_note]) {
                 println!("Failed to store wallet: {err:?}");
             } else {
                 println!("Successfully stored wallet with new balance {new_balance}.");
             }
 
-            wallet.store_cash_note(&new_cash_note)?;
             let transfer = Transfer::transfers_from_cash_note(new_cash_note)?.to_hex()?;
             println!(
                 "The encrypted transfer has been successfully created. Please share this to the recipient:\n\n{transfer}\n\nThe recipient can then use the 'receive' command to claim the funds."
@@ -330,7 +329,7 @@ async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Pa
     let old_balance = wallet.balance();
     wallet.deposit(&cashnotes)?;
     let new_balance = wallet.balance();
-    wallet.store()?;
+    wallet.store(vec![])?;
 
     println!("Successfully stored cash_note to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
     Ok(())
