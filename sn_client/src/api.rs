@@ -350,6 +350,23 @@ impl Client {
         }
     }
 
+    /// Verify if a `Chunk` is stored by expected nodes on the network.
+    pub async fn verify_chunk_stored(&self, address: ChunkAddress) -> Result<Chunk> {
+        info!("Getting chunk: {address:?}");
+        let key = NetworkAddress::from_chunk_address(address).to_record_key();
+        let record = self
+            .network
+            .get_record_from_network(key, None, GetQuorum::All, true)
+            .await?;
+        let header = RecordHeader::from_record(&record)?;
+        if let RecordKind::Chunk = header.kind {
+            let chunk: Chunk = try_deserialize_record(&record)?;
+            Ok(chunk)
+        } else {
+            Err(ProtocolError::RecordKindMismatch(RecordKind::Chunk).into())
+        }
+    }
+
     /// Send a `SpendCashNote` request to the network
     pub(crate) async fn network_store_spend(
         &self,
