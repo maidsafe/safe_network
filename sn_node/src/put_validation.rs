@@ -456,7 +456,7 @@ impl Node {
             .deposit(&cash_notes)
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
         wallet
-            .store()
+            .store(vec![])
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
         info!("Payment of {received_fee:?} nanos accepted for record {pretty_key:?}");
 

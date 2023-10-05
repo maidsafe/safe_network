@@ -54,7 +54,7 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
 
     faucet_wallet.deposit(&vec![cash_note.clone()])?;
     faucet_wallet
-        .store()
+        .store(vec![])
         .expect("Faucet wallet shall be stored successfully.");
     println!("Faucet wallet balance: {}", faucet_wallet.balance());
 

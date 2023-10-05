@@ -39,7 +39,7 @@ impl WalletClient {
 
     /// Stores the wallet to disk.
     pub fn store_local_wallet(&self) -> WalletResult<()> {
-        self.wallet.store()
+        self.wallet.store(vec![])
     }
 
     /// Get the wallet balance
@@ -383,9 +383,8 @@ pub async fn send(
         }
     }
 
-    let mut wallet = wallet_client.into_wallet();
-    wallet.store()?;
-    wallet.store_cash_note(&new_cash_note)?;
+    let wallet = wallet_client.into_wallet();
+    wallet.store(vec![&new_cash_note])?;
 
     if did_error {
         return Err(WalletError::UnconfirmedTxAfterRetries);

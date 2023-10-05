@@ -85,7 +85,7 @@ pub fn load_genesis_wallet() -> Result<LocalWallet, Error> {
         .deposit(&vec![GENESIS_CASHNOTE.clone()])
         .map_err(|err| Error::WalletError(err.to_string()))?;
     genesis_wallet
-        .store()
+        .store(vec![])
         .expect("Genesis wallet shall be stored successfully.");
 
     let genesis_balance = genesis_wallet.balance();
