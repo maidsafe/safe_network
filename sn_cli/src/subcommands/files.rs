@@ -246,9 +246,16 @@ async fn upload_files(
     let now = Instant::now();
     for chunks_batch in chunks_to_upload.chunks(batch_size) {
         // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
-        let (cost, new_balance) = file_api
+        let (cost, new_balance) = match file_api
             .pay_for_chunks(chunks_batch.iter().map(|(name, _)| *name).collect(), true)
-            .await?;
+            .await
+        {
+            Ok((cost, new_balance)) => (cost, new_balance),
+            Err(err) => {
+                error!("Error paying for chunks: {err:?}");
+                continue;
+            }
+        };
         final_balance = new_balance;
         total_cost = total_cost
             .checked_add(cost)
