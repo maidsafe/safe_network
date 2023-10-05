@@ -49,7 +49,8 @@ pub struct LocalWallet {
 
 impl LocalWallet {
     /// Stores the wallet to disk.
-    pub fn store(&self) -> Result<()> {
+    pub fn store(&self, new_cash_notes: Vec<&CashNote>) -> Result<()> {
+        self.store_cash_notes(new_cash_notes)?;
         store_wallet(&self.wallet_dir, &self.wallet)
     }
 
@@ -61,7 +62,7 @@ impl LocalWallet {
 
     /// Stores the given cash_notes to the `created cash_notes dir` in the wallet dir.
     /// These can then be sent to the recipients out of band, over any channel preferred.
-    pub fn store_cash_notes(&mut self, cash_note: Vec<&CashNote>) -> Result<()> {
+    pub fn store_cash_notes(&self, cash_note: Vec<&CashNote>) -> Result<()> {
         store_created_cash_notes(cash_note, &self.wallet_dir)
     }
 
@@ -335,6 +336,7 @@ impl LocalWallet {
         Ok(())
     }
 
+    /// Store the given cash_notes to the `received cash_notes dir` in the wallet dir.
     pub fn deposit(&mut self, cash_notes: &Vec<CashNote>) -> Result<()> {
         if cash_notes.is_empty() {
             return Ok(());
@@ -636,7 +638,7 @@ mod tests {
         let genesis =
             create_first_cash_note_from_key(&depositor.key).expect("Genesis creation to succeed.");
         depositor.deposit(&vec![genesis])?;
-        depositor.store()?;
+        depositor.store(vec![])?;
 
         let deserialized = LocalWallet::load_from(&root_dir)?;
 
@@ -722,7 +724,7 @@ mod tests {
         let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
         let _created_cash_notes = sender.local_send(to, None)?;
 
-        sender.store()?;
+        sender.store(vec![])?;
 
         let deserialized = LocalWallet::load_from(&root_dir)?;
 
