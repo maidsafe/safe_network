@@ -91,9 +91,7 @@ impl Node {
                     }
                 };
 
-                let keys_to_replicate = replicate_to
-                    .entry(target_peer)
-                    .or_insert(Default::default());
+                let keys_to_replicate = replicate_to.entry(target_peer).or_default();
                 keys_to_replicate.push(key.clone());
             }
         }

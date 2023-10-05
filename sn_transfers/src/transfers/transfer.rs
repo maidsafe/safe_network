@@ -46,7 +46,7 @@ impl Transfer {
             let u = CashNoteRedemption::new(derivation_index, parent_spend_addr);
             cashnote_redemptions_map
                 .entry(recipient)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(u);
         }
 
