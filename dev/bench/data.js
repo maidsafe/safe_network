@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696521719052,
+  "lastUpdate": 1696521917803,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -17389,6 +17389,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "d50637924aa2419f2bddaa1de3ebe190f54de104",
+          "message": "fix(metrics): do not bind to localhost as it causes issues with containers",
+          "timestamp": "2023-10-05T15:06:18Z",
+          "tree_id": "89fc718f096e964df736043b11f484d25b6dbd63",
+          "url": "https://github.com/maidsafe/safe_network/commit/d50637924aa2419f2bddaa1de3ebe190f54de104"
+        },
+        "date": 1696521916910,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
