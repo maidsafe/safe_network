@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.83.26](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.25...sn_cli-v0.83.26) - 2023-10-05
+
+### Added
+- feat!(cli): remove concurrency argument
+
+### Fixed
+- *(client)* remove concurrency limitations
+
 ## [0.83.25](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.24...sn_cli-v0.83.25) - 2023-10-05
 
 ### Fixed

@@ -1560,6 +1560,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - *(sn_transfers)* be sure we store CashNotes before writing the wallet file
 
+## [0.91.25](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.24...sn_node-v0.91.25) - 2023-10-05
+
+### Added
+- feat!(cli): remove concurrency argument
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
