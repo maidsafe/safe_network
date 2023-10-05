@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.5](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.4...sn_transfers-v0.13.5) - 2023-10-05
+
+### Fixed
+- *(sn_transfers)* be sure we store CashNotes before writing the wallet file
+
 ## [0.13.4](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.3...sn_transfers-v0.13.4) - 2023-10-05
 
 ### Added
