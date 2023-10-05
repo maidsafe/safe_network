@@ -346,8 +346,8 @@ async fn verify_and_repay_if_needed(
             // Spawn a new task to fetch each chunk concurrently
             let handle = tokio::spawn(async move {
                 let chunk_address: ChunkAddress = ChunkAddress::new(name);
-                // Attempt to fetch the chunk
-                let res = file_api.client().get_chunk(chunk_address).await;
+                // make sure the chunk is stored
+                let res = file_api.client().verify_chunk_stored(chunk_address).await;
 
                 Ok::<_, Error>(((chunk_address, path), res.is_err()))
             });
