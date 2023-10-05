@@ -409,7 +409,7 @@ fn encrypt_large(
 fn package_small(file: SmallFile) -> Result<Chunk> {
     let chunk = to_chunk(file.bytes());
     if chunk.value().len() >= self_encryption::MIN_ENCRYPTABLE_BYTES {
-        return Err(Error::SmallFilePaddingNeeded(chunk.value().len()))?;
+        return Err(Error::SmallFilePaddingNeeded(chunk.value().len()).into());
     }
     Ok(chunk)
 }

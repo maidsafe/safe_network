@@ -261,7 +261,6 @@ async fn data_availability_during_churn() -> Result<()> {
         let client = client.clone();
         let net_addr = net_addr.clone();
         let cash_notes = cash_notes.clone();
-        let churn_period = churn_period;
 
         let failures = failures.clone();
         let wallet_dir = paying_wallet_dir.to_path_buf().clone();
