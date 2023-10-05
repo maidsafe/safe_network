@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.92.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.4...sn_client-v0.92.5) - 2023-10-05
+
+### Added
+- quorum for records get
+
+### Fixed
+- use specific verify func for chunk stored verification
+
 ## [0.92.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.3...sn_client-v0.92.4) - 2023-10-05
 
 ### Added
