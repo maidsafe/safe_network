@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696502848570,
+  "lastUpdate": 1696503096398,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -17185,6 +17185,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "df2cd42f1f0ca767f60730e530ef3316804e6cf1",
+          "message": "fix: use specific verify func for chunk stored verification",
+          "timestamp": "2023-10-05T09:56:12Z",
+          "tree_id": "29e2bac0086f3a9193b1720e52aff40fbabbae97",
+          "url": "https://github.com/maidsafe/safe_network/commit/df2cd42f1f0ca767f60730e530ef3316804e6cf1"
+        },
+        "date": 1696503095000,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
