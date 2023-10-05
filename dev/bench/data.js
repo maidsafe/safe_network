@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696496766690,
+  "lastUpdate": 1696502848570,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -10213,6 +10213,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 11.285017686895815,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "df2cd42f1f0ca767f60730e530ef3316804e6cf1",
+          "message": "fix: use specific verify func for chunk stored verification",
+          "timestamp": "2023-10-05T09:56:12Z",
+          "tree_id": "29e2bac0086f3a9193b1720e52aff40fbabbae97",
+          "url": "https://github.com/maidsafe/safe_network/commit/df2cd42f1f0ca767f60730e530ef3316804e6cf1"
+        },
+        "date": 1696502844618,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.12976731225662044,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.7772090812724306,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 24.225385744656986,
             "unit": "MiB/s"
           }
         ]
