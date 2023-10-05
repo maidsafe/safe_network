@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.92.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.3...sn_client-v0.92.4) - 2023-10-05
+
+### Added
+- use progress bars on `files upload`
+
+### Other
+- pay_for_chunks returns cost and new balance
+
 ## [0.92.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.2...sn_client-v0.92.3) - 2023-10-04
 
 ### Fixed
