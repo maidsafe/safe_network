@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Safe Node"
 name = "sn_node"
-version = "0.91.22"
+version = "0.91.23"
 edition = "2021"
 license = "GPL-3.0"
 homepage = "https://maidsafe.net"
@@ -55,9 +55,9 @@ self_encryption = "~0.28.4"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_build_info = { path="../sn_build_info", version = "0.1.2" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.1.7" }
-sn_client = { path = "../sn_client", version = "0.92.4" }
+sn_client = { path = "../sn_client", version = "0.92.5" }
 sn_logging = { path = "../sn_logging", version = "0.2.10" }
-sn_networking = { path = "../sn_networking", version = "0.8.11" }
+sn_networking = { path = "../sn_networking", version = "0.8.12" }
 sn_protocol = { path = "../sn_protocol", version = "0.7.10" }
 sn_registers = { path = "../sn_registers", version = "0.3.0" }
 sn_transfers = { path = "../sn_transfers", version = "0.13.4" }
