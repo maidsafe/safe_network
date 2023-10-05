@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696516344124,
+  "lastUpdate": 1696516545082,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -17321,6 +17321,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "539ec1f4b764ecdd314efbe110138073d234958d",
+          "message": "feat!(cli): remove concurrency argument",
+          "timestamp": "2023-10-05T16:14:19+02:00",
+          "tree_id": "5d291d917754ae8f890041f973525c06d4dde2a0",
+          "url": "https://github.com/maidsafe/safe_network/commit/539ec1f4b764ecdd314efbe110138073d234958d"
+        },
+        "date": 1696516543966,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
