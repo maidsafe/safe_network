@@ -1461,6 +1461,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.2.189](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.188...sn_testnet-v0.2.189) - 2023-10-05
+
+### Added
+- *(metrics)* enable process memory and cpu usage metrics
+- *(metrics)* enable node monitoring through dockerized grafana instance
+
+### Fixed
+- *(docs)* update metrics readme file
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>

@@ -1565,6 +1565,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - feat!(cli): remove concurrency argument
 
+## [0.91.26](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.25...sn_node-v0.91.26) - 2023-10-05
+
+### Added
+- *(metrics)* display node reward balance metrics
+- *(metrics)* enable process memory and cpu usage metrics
+- *(metrics)* enable node monitoring through dockerized grafana instance
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
