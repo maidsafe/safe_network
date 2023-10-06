@@ -779,7 +779,7 @@ mod tests {
         // Send to a new address.
         let recipient_root_dir = create_temp_dir();
         let recipient_root_dir = recipient_root_dir.path().to_path_buf();
-        let mut recipient = LocalWallet::load_from(&recipient_root_dir)?;
+        let recipient = LocalWallet::load_from(&recipient_root_dir)?;
         let recipient_main_pubkey = recipient.key.main_pubkey();
 
         let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
