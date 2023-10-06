@@ -1572,6 +1572,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(metrics)* enable process memory and cpu usage metrics
 - *(metrics)* enable node monitoring through dockerized grafana instance
 
+## [0.91.27](https://github.com/maidsafe/safe_network/compare/sn_node-v0.91.26...sn_node-v0.91.27) - 2023-10-06
+
+### Other
+- fix new clippy errors
+- *(test)* minor refactoring to gossipsub test
+- *(gossipsub)* make CI test to be more strict, 0-tolerance for missed published messages
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
