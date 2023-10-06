@@ -13,7 +13,11 @@ use super::{
     KeyLessWallet,
 };
 
-use std::{collections::BTreeSet, fs, path::Path};
+use std::{
+    collections::BTreeSet,
+    fs,
+    path::{Path, PathBuf},
+};
 
 // Filename for storing a wallet.
 const WALLET_FILE_NAME: &str = "wallet";
@@ -91,6 +95,45 @@ pub(super) fn store_created_cash_notes(
         fs::write(cash_note_file_path, &hex)?;
     }
     Ok(())
+}
+
+/// Loads all the cash_notes found in the cash_notes dir.
+pub(super) fn load_cash_notes_from_disk(wallet_dir: &Path) -> Result<Vec<CashNote>> {
+    let cash_notes_path = match std::env::var("CASHNOTES_PATH") {
+        Ok(path) => PathBuf::from(path),
+        Err(_) => wallet_dir.join(CASHNOTES_DIR_NAME),
+    };
+
+    let mut deposits = vec![];
+    for entry in walkdir::WalkDir::new(&cash_notes_path)
+        .into_iter()
+        .flatten()
+    {
+        if entry.file_type().is_file() {
+            let file_name = entry.file_name();
+            println!("Reading deposited tokens from {file_name:?}.");
+
+            let cash_note_data = fs::read_to_string(entry.path())?;
+            let cash_note = match CashNote::from_hex(cash_note_data.trim()) {
+                Ok(cash_note) => cash_note,
+                Err(_) => {
+                    println!(
+                        "This file does not appear to have valid hex-encoded CashNote data. \
+                        Skipping it."
+                    );
+                    continue;
+                }
+            };
+
+            deposits.push(cash_note);
+        }
+    }
+
+    if deposits.is_empty() {
+        println!("No deposits found at {}.", cash_notes_path.display());
+    }
+
+    Ok(deposits)
 }
 
 /// Loads a specific cash_note from path
