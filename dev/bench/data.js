@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696580850492,
+  "lastUpdate": 1696580852843,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -25036,6 +25036,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 32,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0e8075a537716849dc62b13ec7a90415e129404c",
+          "message": "chore(cli): reuse the client::send function to send amount from wallet",
+          "timestamp": "2023-10-06T07:44:28Z",
+          "tree_id": "2e5197e4819a3fcfb2e39dfefe86b37880d6d322",
+          "url": "https://github.com/maidsafe/safe_network/commit/0e8075a537716849dc62b13ec7a90415e129404c"
+        },
+        "date": 1696580852083,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 160,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 34,
             "unit": "MB"
           }
         ]
