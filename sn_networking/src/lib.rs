@@ -422,14 +422,7 @@ impl Network {
 
             // Verify the record is stored, requiring re-attempts
             self.get_record_from_network(record_key, verify_store, GetQuorum::All, true)
-                .await
-                .map_err(|e| {
-                    error!(
-                        "Failing to verify the put record {:?} with error {e:?}",
-                        pretty_key
-                    );
-                    Error::FailedToVerifyRecordWasStored(pretty_key)
-                })?;
+                .await?;
         }
 
         response
