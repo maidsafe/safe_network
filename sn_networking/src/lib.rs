@@ -314,16 +314,16 @@ impl Network {
                 }
                 Err(Error::RecordNotFound) => {
                     // libp2p RecordNotFound does mean no holders answered.
-                    // In that case, a retry will be somehow pointless,
-                    // hence return with error immediately.
-                    warn!(
-                        "No holder of record '{:?}' from network!. Terminating the fetch ...",
-                        PrettyPrintRecordKey::from(key.clone()),
-                    );
-
+                    // it does not actually mean the record does not exist.
+                    // just that those asked did not have it
                     if verification_attempts >= total_attempts {
                         break;
                     }
+
+                    warn!(
+                        "No holder of record '{:?}' found. Retrying the fetch ...",
+                        PrettyPrintRecordKey::from(key.clone()),
+                    );
                 }
                 Err(error) => {
                     error!("{error:?}");
