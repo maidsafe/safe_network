@@ -8,8 +8,9 @@
 use super::{
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
-        get_unconfirmed_spend_requests, get_wallet, load_created_cash_note,
-        store_created_cash_notes, store_unconfirmed_spend_requests, store_wallet,
+        get_unconfirmed_spend_requests, get_wallet, load_cash_notes_from_disk,
+        load_created_cash_note, store_created_cash_notes, store_unconfirmed_spend_requests,
+        store_wallet,
     },
     Error, KeyLessWallet, Result,
 };
@@ -72,6 +73,13 @@ impl LocalWallet {
 
     pub fn unconfirmed_spend_requests_exist(&self) -> bool {
         !self.unconfirmed_spend_requests.is_empty()
+    }
+
+    /// Try to load any new cash_notes from the `cash_notes dir` in the wallet dir.
+    pub fn try_load_cash_notes(&mut self) -> Result<()> {
+        let deposited = load_cash_notes_from_disk(&self.wallet_dir)?;
+        self.deposit_and_store_to_disk(&deposited)?;
+        Ok(())
     }
 
     /// Loads a serialized wallet from a path and given main key.
@@ -765,7 +773,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn store_created_cash_note_gives_file_that_try_load_deposits_can_use() -> Result<()> {
+    async fn store_created_cash_note_gives_file_that_try_load_cash_notes_can_use() -> Result<()> {
         let sender_root_dir = create_temp_dir();
         let sender_root_dir = sender_root_dir.path().to_path_buf();
 
@@ -779,7 +787,7 @@ mod tests {
         // Send to a new address.
         let recipient_root_dir = create_temp_dir();
         let recipient_root_dir = recipient_root_dir.path().to_path_buf();
-        let recipient = LocalWallet::load_from(&recipient_root_dir)?;
+        let mut recipient = LocalWallet::load_from(&recipient_root_dir)?;
         let recipient_main_pubkey = recipient.key.main_pubkey();
 
         let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
@@ -791,14 +799,10 @@ mod tests {
         let unique_pubkey_name = *SpendAddress::from_unique_pubkey(&unique_pubkey).xorname();
         let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
 
-        let created_cash_notes_dir = sender_root_dir
-            .join(WALLET_DIR_NAME)
-            .join("created_cash_notes");
+        let created_cash_notes_dir = sender_root_dir.join(WALLET_DIR_NAME).join("cash_notes");
         let created_cash_note_file = created_cash_notes_dir.join(&unique_pubkey_file_name);
 
-        let received_cash_note_dir = recipient_root_dir
-            .join(WALLET_DIR_NAME)
-            .join("received_cash_notes");
+        let received_cash_note_dir = recipient_root_dir.join(WALLET_DIR_NAME).join("cash_notes");
 
         std::fs::create_dir_all(&received_cash_note_dir)?;
         let received_cash_note_file = received_cash_note_dir.join(&unique_pubkey_file_name);
@@ -807,6 +811,8 @@ mod tests {
         std::fs::rename(created_cash_note_file, received_cash_note_file)?;
 
         assert_eq!(0, recipient.wallet.balance().as_nano());
+
+        recipient.try_load_cash_notes()?;
 
         assert_eq!(1, recipient.wallet.available_cash_notes.len());
 
