@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.83.30](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.29...sn_cli-v0.83.30) - 2023-10-06
+
+### Other
+- *(cli)* reuse the client::send function to send amount from wallet
+
 ## [0.83.29](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.28...sn_cli-v0.83.29) - 2023-10-06
 
 ### Other

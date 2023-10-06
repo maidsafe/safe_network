@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.93.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.9...sn_client-v0.93.0) - 2023-10-06
+
+### Fixed
+- *(client)* [**breaking**] unify send_without_verify and send functions
+
+### Other
+- *(cli)* reuse the client::send function to send amount from wallet
+
 ## [0.92.9](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.8...sn_client-v0.92.9) - 2023-10-06
 
 ### Other
