@@ -297,6 +297,7 @@ impl Network {
                     }
                 }
                 Err(Error::RecordNotEnoughCopies(returned_record)) => {
+                    debug!("Not enough copies found yet...");
                     // Only return when completed all attempts
                     if verification_attempts >= total_attempts {
                         if target_record.is_none()
@@ -319,7 +320,10 @@ impl Network {
                         "No holder of record '{:?}' from network!. Terminating the fetch ...",
                         PrettyPrintRecordKey::from(key.clone()),
                     );
-                    break;
+
+                    if verification_attempts >= total_attempts {
+                        break;
+                    }
                 }
                 Err(error) => {
                     error!("{error:?}");
