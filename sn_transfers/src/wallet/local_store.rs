@@ -8,9 +8,8 @@
 use super::{
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
-        create_received_cash_notes_dir, get_unconfirmed_spend_requests, get_wallet, load_cash_note,
-        load_received_cash_notes, store_created_cash_notes, store_unconfirmed_spend_requests,
-        store_wallet,
+        get_unconfirmed_spend_requests, get_wallet, load_created_cash_note,
+        store_created_cash_notes, store_unconfirmed_spend_requests, store_wallet,
     },
     Error, KeyLessWallet, Result,
 };
@@ -50,7 +49,7 @@ pub struct LocalWallet {
 impl LocalWallet {
     /// Stores the wallet to disk.
     pub fn store(&self, new_cash_notes: Vec<&CashNote>) -> Result<()> {
-        self.store_cash_notes(new_cash_notes)?;
+        self.store_cash_notes_to_disk(new_cash_notes)?;
         store_wallet(&self.wallet_dir, &self.wallet)
     }
 
@@ -62,7 +61,7 @@ impl LocalWallet {
 
     /// Stores the given cash_notes to the `created cash_notes dir` in the wallet dir.
     /// These can then be sent to the recipients out of band, over any channel preferred.
-    pub fn store_cash_notes(&self, cash_note: Vec<&CashNote>) -> Result<()> {
+    pub fn store_cash_notes_to_disk(&self, cash_note: Vec<&CashNote>) -> Result<()> {
         store_created_cash_notes(cash_note, &self.wallet_dir)
     }
 
@@ -73,13 +72,6 @@ impl LocalWallet {
 
     pub fn unconfirmed_spend_requests_exist(&self) -> bool {
         !self.unconfirmed_spend_requests.is_empty()
-    }
-
-    /// Try to load any new cash_notes from the `received cash_notes dir` in the wallet dir.
-    pub fn try_load_deposits(&mut self) -> Result<()> {
-        let deposited = load_received_cash_notes(&self.wallet_dir)?;
-        self.deposit(&deposited)?;
-        Ok(())
     }
 
     /// Loads a serialized wallet from a path and given main key.
@@ -148,7 +140,7 @@ impl LocalWallet {
         let mut available_cash_notes = vec![];
 
         for (id, _token) in self.wallet.available_cash_notes.iter() {
-            let held_cash_note = load_cash_note(id, &self.wallet_dir);
+            let held_cash_note = load_created_cash_note(id, &self.wallet_dir);
             if let Some(cash_note) = held_cash_note {
                 if let Ok(derived_key) = cash_note.derived_key(&self.key) {
                     available_cash_notes.push((cash_note.clone(), derived_key));
@@ -178,7 +170,7 @@ impl LocalWallet {
 
         if let Some(ids) = ids {
             for id in ids {
-                if let Some(cash_note) = load_cash_note(id, &self.wallet_dir) {
+                if let Some(cash_note) = load_created_cash_note(id, &self.wallet_dir) {
                     cash_notes.push(cash_note);
                 }
             }
@@ -324,7 +316,7 @@ impl LocalWallet {
                 .insert(cash_note.unique_pubkey());
         }
         // Store created CashNotes in a batch, improving IO performance
-        self.store_cash_notes(transfer.created_cash_notes.iter().collect())?;
+        self.store_cash_notes_to_disk(transfer.created_cash_notes.iter().collect())?;
 
         for request in transfer.all_spend_requests {
             self.unconfirmed_spend_requests.insert(request);
@@ -333,12 +325,12 @@ impl LocalWallet {
     }
 
     /// Store the given cash_notes to the `received cash_notes dir` in the wallet dir.
-    pub fn deposit(&mut self, cash_notes: &Vec<CashNote>) -> Result<()> {
-        if cash_notes.is_empty() {
+    pub fn deposit(&mut self, received_cash_notes: &Vec<CashNote>) -> Result<()> {
+        if received_cash_notes.is_empty() {
             return Ok(());
         }
 
-        for cash_note in cash_notes {
+        for cash_note in received_cash_notes {
             let id = cash_note.unique_pubkey();
 
             if self.wallet.spent_cash_notes.contains(&id) {
@@ -353,11 +345,6 @@ impl LocalWallet {
 
             let value = cash_note.value()?;
             self.wallet.available_cash_notes.insert(id, value);
-
-            if let Some(_cash_note) = load_cash_note(&id, &self.wallet_dir) {
-                debug!("cash_note exists");
-                return Ok(());
-            }
 
             self.store_cash_note(cash_note)?;
         }
@@ -438,7 +425,6 @@ fn load_from_path(
         None => {
             let wallet = KeyLessWallet::new();
             store_wallet(wallet_dir, &wallet)?;
-            create_received_cash_notes_dir(wallet_dir)?;
             wallet
         }
     };
@@ -820,8 +806,6 @@ mod tests {
         std::fs::rename(created_cash_note_file, received_cash_note_file)?;
 
         assert_eq!(0, recipient.wallet.balance().as_nano());
-
-        recipient.try_load_deposits()?;
 
         assert_eq!(1, recipient.wallet.available_cash_notes.len());
 
