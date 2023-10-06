@@ -82,10 +82,8 @@ pub fn load_genesis_wallet() -> Result<LocalWallet, Error> {
         GENESIS_CASHNOTE.unique_pubkey()
     );
     genesis_wallet
-        .deposit(&vec![GENESIS_CASHNOTE.clone()])
-        .map_err(|err| Error::WalletError(err.to_string()))?;
-    genesis_wallet
-        .store(vec![])
+        .deposit_and_store_to_disk(&vec![GENESIS_CASHNOTE.clone()])
+        .map_err(|err| Error::WalletError(err.to_string()))
         .expect("Genesis wallet shall be stored successfully.");
 
     let genesis_balance = genesis_wallet.balance();

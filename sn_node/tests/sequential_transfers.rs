@@ -45,7 +45,7 @@ async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
     .await?;
     println!("Verifying the transfer from first wallet...");
     client.verify(&tokens).await?;
-    second_wallet.deposit(&vec![tokens])?;
+    second_wallet.deposit_and_store_to_disk(&vec![tokens])?;
     assert_eq!(second_wallet.balance(), second_wallet_balance);
     println!("CashNotes deposited to second wallet: {second_wallet_balance}.");
 

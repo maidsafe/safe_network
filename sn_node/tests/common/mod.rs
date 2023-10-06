@@ -107,7 +107,7 @@ pub async fn get_funded_wallet(
 
     println!("Verifying the transfer from faucet...");
     client.verify(&tokens).await?;
-    local_wallet.deposit(&vec![tokens])?;
+    local_wallet.deposit_and_store_to_disk(&vec![tokens])?;
     assert_eq!(local_wallet.balance(), wallet_balance);
     println!("CashNotes deposited to the wallet that'll pay for storage: {wallet_balance}.");
 
