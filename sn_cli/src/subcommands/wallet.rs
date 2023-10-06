@@ -8,12 +8,14 @@
 
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
-use sn_client::{Client, Files, WalletClient};
-use sn_transfers::{parse_main_pubkey, LocalWallet};
-use sn_transfers::{NanoTokens, Transfer};
+use sn_client::{Client, Error as ClientError, Files};
+use sn_transfers::{
+    parse_main_pubkey, Error as TransferError, LocalWallet, NanoTokens, Transfer, WalletError,
+};
 use std::{
     io::Read,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 use url::Url;
 use xor_name::XorName;
@@ -258,42 +260,52 @@ async fn send(
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
-    let address = parse_main_pubkey(to)?;
+    let from = LocalWallet::load_from(root_dir)?;
+    let amount = match NanoTokens::from_str(&amount) {
+        Ok(amount) => amount,
+        Err(_) => {
+            println!("The amount cannot be parsed. Nothing sent.");
+            return Ok(());
+        }
+    };
+    let to = match parse_main_pubkey(to) {
+        Ok(to) => to,
+        Err(err) => {
+            println!("Error while parsing the recipient's 'to' key: {err:?}");
+            return Ok(());
+        }
+    };
 
-    use std::str::FromStr;
-    let amount = NanoTokens::from_str(&amount)?;
-    if amount.as_nano() == 0 {
-        println!("Invalid format or zero amount passed in. Nothing sent.");
-        return Ok(());
-    }
-
-    let wallet = LocalWallet::load_from(root_dir)?;
-    let mut wallet_client = WalletClient::new(client.clone(), wallet);
-
-    match wallet_client
-        .send_cash_note(amount, address, verify_store)
-        .await
-    {
-        Ok(new_cash_note) => {
-            println!("Sent {amount:?} to {address:?}");
-            let wallet = wallet_client.into_wallet();
-            let new_balance = wallet.balance();
-
-            if let Err(err) = wallet.store(vec![&new_cash_note]) {
-                println!("Failed to store wallet: {err:?}");
-            } else {
-                println!("Successfully stored wallet with new balance {new_balance}.");
-            }
-
-            let transfer = Transfer::transfers_from_cash_note(new_cash_note)?.to_hex()?;
-            println!(
-                "The encrypted transfer has been successfully created. Please share this to the recipient:\n\n{transfer}\n\nThe recipient can then use the 'receive' command to claim the funds."
-            );
+    let cash_note = match sn_client::send(from, amount, to, client, verify_store).await {
+        Ok(cash_note) => {
+            let wallet = LocalWallet::load_from(root_dir)?;
+            println!("Sent {amount:?} to {to:?}");
+            println!("New wallet balance is {}.", wallet.balance());
+            cash_note
         }
         Err(err) => {
-            println!("Failed to send {amount:?} to {address:?} due to {err:?}.");
+            match err {
+                ClientError::AmountIsZero => {
+                    println!("Zero amount passed in. Nothing sent.");
+                }
+                ClientError::Transfers(WalletError::Transfer(TransferError::NotEnoughBalance(
+                    available,
+                    required,
+                ))) => {
+                    println!("Could not send due to low balance.\nBalance: {available:?}\nRequired: {required:?}");
+                }
+                _ => {
+                    println!("Failed to send {amount:?} to {to:?} due to {err:?}.");
+                }
+            }
+            return Ok(());
         }
-    }
+    };
+
+    let transfer = Transfer::transfers_from_cash_note(cash_note)?.to_hex()?;
+    println!("The encrypted transfer has been successfully created.");
+    println!("Please share this to the recipient:\n\n{transfer}\n");
+    println!("The recipient can then use the 'receive' command to claim the funds.");
 
     Ok(())
 }

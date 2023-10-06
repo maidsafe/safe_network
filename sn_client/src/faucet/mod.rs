@@ -12,7 +12,7 @@ pub async fn get_tokens_from_faucet(
     to: MainPubkey,
     client: &Client,
 ) -> Result<CashNote> {
-    Ok(send(
+    send(
         load_faucet_wallet_from_genesis_wallet(client).await?,
         amount,
         to,
@@ -20,7 +20,7 @@ pub async fn get_tokens_from_faucet(
         // we should not need to wait for this
         true,
     )
-    .await?)
+    .await
 }
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
