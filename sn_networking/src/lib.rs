@@ -385,6 +385,13 @@ impl Network {
             let res = self
                 .put_record_once(record.clone(), verify_store.clone())
                 .await;
+
+            if matches!(res, Err(Error::RecordNotEnoughCopies(_)))
+                || matches!(res, Err(Error::RecordNotFound))
+            {
+                continue;
+            }
+
             if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
                 return res;
             }
