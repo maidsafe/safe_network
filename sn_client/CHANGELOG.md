@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.92.9](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.8...sn_client-v0.92.9) - 2023-10-06
+
+### Other
+- fix new clippy errors
+
 ## [0.92.8](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.7...sn_client-v0.92.8) - 2023-10-05
 
 ### Other
