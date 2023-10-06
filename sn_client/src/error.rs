@@ -20,14 +20,6 @@ pub enum Error {
     #[error("Genesis error {0}")]
     GenesisError(#[from] sn_transfers::GenesisError),
 
-    /// Could not acquire a Semaphore permit.
-    #[error("Could not acquire a Semaphore permit.")]
-    CouldNotAcquireSemaphorePermit(#[from] tokio::sync::AcquireError),
-
-    /// Could not acquire a network semaphore
-    #[error("Network layer does not have the expected concurrency limiter.")]
-    NoNetworkConcurrencyLimiterFound,
-
     #[error("Transfer Error {0}.")]
     Transfers(#[from] sn_transfers::WalletError),
 
@@ -40,6 +32,15 @@ pub enum Error {
     #[error("Register error {0}.")]
     Register(#[from] sn_registers::Error),
 
+    #[error("Chunks error {0}.")]
+    Chunks(#[from] super::chunks::Error),
+
+    #[error("SelfEncryption Error {0}.")]
+    SelfEncryptionIO(#[from] self_encryption::Error),
+
+    #[error("System IO Error {0}.")]
+    SystemIO(#[from] std::io::Error),
+
     #[error("Events receiver error {0}.")]
     EventsReceiver(#[from] tokio::sync::broadcast::error::RecvError),
 
@@ -50,20 +51,12 @@ pub enum Error {
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
 
-    #[error("Chunks error {0}.")]
-    Chunks(#[from] super::chunks::Error),
-
     #[error(
         "Content branches detected in the Register which need to be merged/resolved by user. \
         Entries hashes of branches are: {0:?}"
     )]
     ContentBranchDetected(BTreeSet<(EntryHash, Entry)>),
 
-    /// File system access error.
-    #[error("System IO Error {0}.")]
-    SystemIO(#[from] std::io::Error),
-
-    /// SelfEncryption error.
-    #[error("SelfEncryption Error {0}.")]
-    SelfEncryptionIO(#[from] self_encryption::Error),
+    #[error("The provided amount contains zero nanos")]
+    AmountIsZero,
 }
