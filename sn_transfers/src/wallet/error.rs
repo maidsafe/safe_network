@@ -8,12 +8,18 @@
 
 use thiserror::Error;
 
+use crate::UniquePubkey;
+
 /// Specialisation of `std::Result`.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Transfer errors.
 #[derive(Debug, Error)]
 pub enum Error {
+    /// The cashnote that was attempted to be spent has already been spent and is not the same
+    #[error("Double spend attempted")]
+    DoubleSpendAttempted(Vec<UniquePubkey>),
+
     /// Address provided is of the wrong type
     #[error("Invalid address type")]
     InvalidAddressType,

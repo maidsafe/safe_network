@@ -12,7 +12,8 @@ use super::{error::Result, Client};
 use futures::{future::join_all, TryFutureExt};
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
-    CashNote, LocalWallet, MainPubkey, NanoTokens, SignedSpend, Transfer, WalletError, WalletResult,
+    CashNote, LocalWallet, MainPubkey, NanoTokens, SignedSpend, Transfer, UniquePubkey,
+    WalletError, WalletResult,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -63,6 +64,11 @@ impl WalletClient {
             }
             None => Err(WalletError::InvalidAddressType),
         }
+    }
+
+    /// Remove CashNote from available_cash_notes
+    pub fn mark_note_as_spent(&mut self, cash_note_key: UniquePubkey) {
+        self.wallet.mark_note_as_spent(cash_note_key);
     }
 
     /// Send tokens to another wallet.
@@ -222,7 +228,19 @@ impl WalletClient {
             .await;
         if let Err(error) = spend_attempt_result {
             warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
-            return Err(error);
+
+            // if we have a DoubleSpend error, lets remove the CashNote from the wallet
+            if let WalletError::DoubleSpendAttempted(spent_cash_notes) = &error {
+                for cash_note_key in spent_cash_notes {
+                    warn!("Removing CashNote from wallet: {cash_note_key:?}");
+                    self.wallet.mark_note_as_spent(*cash_note_key);
+                    self.wallet.clear_specific_spend_request(*cash_note_key);
+                }
+            }
+
+            return Err(WalletError::CouldNotSendMoney(format!(
+                "The storage payment transfer was not successfully registered in the network: {error:?}"
+            )));
         } else {
             info!("Spend has completed: {:?}", spend_attempt_result);
             self.wallet.clear_unconfirmed_spend_requests();
@@ -277,14 +295,38 @@ impl Client {
                 "sending spend request to the network: {:?}: {spend_request:#?}",
                 spend_request.unique_pubkey()
             );
-            tasks.push(self.network_store_spend(spend_request.clone(), verify_store));
+
+            let the_task = async move {
+                let cash_note_key = spend_request.unique_pubkey();
+                let result = self
+                    .network_store_spend(spend_request.clone(), verify_store)
+                    .await;
+
+                (cash_note_key, result)
+            };
+            tasks.push(the_task);
         }
 
-        for spend_attempt_result in join_all(tasks).await {
-            spend_attempt_result.map_err(|err| WalletError::CouldNotSendMoney(err.to_string()))?;
+        let mut spent_cash_notes = Vec::new();
+        for (cash_note_key, spend_attempt_result) in join_all(tasks).await {
+            // if this is a record mismatch on spend, we need to clean up and remove the spent CashNote from the wallet
+            if let Err(Error::Network(sn_networking::Error::ReturnedRecordDoesNotMatch(
+                record_key,
+            ))) = spend_attempt_result
+            {
+                warn!("Record mismatch on spend, removing CashNote from wallet: {record_key:?}");
+                spent_cash_notes.push(*cash_note_key);
+            } else {
+                return spend_attempt_result
+                    .map_err(|err| WalletError::CouldNotSendMoney(err.to_string()));
+            }
         }
 
-        Ok(())
+        if spent_cash_notes.is_empty() {
+            Ok(())
+        } else {
+            Err(WalletError::DoubleSpendAttempted(spent_cash_notes))
+        }
     }
 
     /// Receive a Transfer, verify and redeem CashNotes from the Network.
