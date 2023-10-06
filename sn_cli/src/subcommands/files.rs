@@ -251,8 +251,10 @@ async fn upload_files(
             .await
         {
             Ok((cost, new_balance)) => (cost, new_balance),
-            Err(err) => {
-                error!("Error paying for chunks: {err:?}");
+            Err(error) => {
+                warn!(
+                    "Failed to pay for chunks. Validation steps should retry this batch: {error}"
+                );
                 continue;
             }
         };
