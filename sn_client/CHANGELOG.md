@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.93.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.93.0...sn_client-v0.93.1) - 2023-10-06
+
+### Added
+- feat!(sn_transfers): unify store api for wallet
+
+### Other
+- *(client)* dont println for wallet errors
+
 ## [0.93.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.92.9...sn_client-v0.93.0) - 2023-10-06
 
 ### Fixed

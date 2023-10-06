@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.17](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.16...sn_networking-v0.8.17) - 2023-10-06
+
+### Other
+- update comments around RecordNotFound
+- *(client)* dont println for wallet errors
+- *(sn_networking)* do not swallow record retry errors
+- *(sn_networking)* retry gets even if we hit RecordNotFound
+
 ## [0.8.16](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.15...sn_networking-v0.8.16) - 2023-10-06
 
 ### Other

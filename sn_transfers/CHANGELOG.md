@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.9](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.8...sn_transfers-v0.13.9) - 2023-10-06
+
+### Added
+- feat!(sn_transfers): unify store api for wallet
+
+### Fixed
+- readd api to load cash_notes from disk, update tests
+
+### Other
+- update comments around RecordNotFound
+- remove deposit vs received cashnote disctinction
+
 ## [0.13.8](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.7...sn_transfers-v0.13.8) - 2023-10-06
 
 ### Other
