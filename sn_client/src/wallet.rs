@@ -158,16 +158,13 @@ impl WalletClient {
                         debug!("Storecosts inserted into payment map for {content_addr:?}");
                     } else {
                         warn!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
-                        println!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
                     }
                 }
                 Ok((content_addr, Err(err))) => {
                     warn!("Cannot get store cost for {content_addr:?} with error {err:?}");
-                    println!("Cannot get store cost for {content_addr:?} with error {err:?}");
                 }
                 Err(e) => {
                     warn!("Cannot get a store cost for a content with error {e:?}");
-                    println!("Cannot get a store cost for a content with error {e:?}");
                 }
             }
         }
