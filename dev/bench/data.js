@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696578796652,
+  "lastUpdate": 1696578798310,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -24934,6 +24934,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 36,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "020b9f316a453b785b90edfef69753f18ec2909d",
+          "message": "ci: reduce memcheck churn test time\n\nBrings this inline with other churn tests, doing more in less time",
+          "timestamp": "2023-10-06T07:10:35Z",
+          "tree_id": "a9b010b269fc4666d6e5c1617f75258c44b7af6b",
+          "url": "https://github.com/maidsafe/safe_network/commit/020b9f316a453b785b90edfef69753f18ec2909d"
+        },
+        "date": 1696578797781,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 157,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 32,
             "unit": "MB"
           }
         ]
