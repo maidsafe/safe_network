@@ -14,7 +14,7 @@ use super::Client;
 
 use sn_protocol::NetworkAddress;
 use sn_transfers::{CashNote, MainPubkey, NanoTokens};
-use sn_transfers::{LocalWallet, OfflineTransfer, WalletError, WalletResult};
+use sn_transfers::{LocalWallet, WalletError, WalletResult};
 
 use futures::future::join_all;
 use std::{
@@ -80,7 +80,10 @@ impl WalletClient {
         // send to network
         if let Err(error) = self
             .client
-            .send(self.wallet.unconfirmed_spend_requests(), verify_store)
+            .send(
+                self.wallet.unconfirmed_spend_requests().iter(),
+                verify_store,
+            )
             .await
         {
             return Err(WalletError::CouldNotSendMoney(format!(
@@ -217,7 +220,10 @@ impl WalletClient {
 
         let spend_attempt_result = self
             .client
-            .send(self.wallet.unconfirmed_spend_requests(), verify_store)
+            .send(
+                self.wallet.unconfirmed_spend_requests().iter(),
+                verify_store,
+            )
             .await;
         if let Err(error) = spend_attempt_result {
             warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
@@ -235,7 +241,10 @@ impl WalletClient {
     pub async fn resend_pending_txs(&mut self, verify_store: bool) {
         if self
             .client
-            .send(self.wallet.unconfirmed_spend_requests(), verify_store)
+            .send(
+                self.wallet.unconfirmed_spend_requests().iter(),
+                verify_store,
+            )
             .await
             .is_ok()
         {
@@ -263,7 +272,7 @@ impl Client {
     /// This can optionally verify the spend has been correctly stored before returning
     pub async fn send(
         &self,
-        spend_requests: &BTreeSet<SignedSpend>,
+        spend_requests: impl Iterator<Item = &SignedSpend>,
         verify_store: bool,
     ) -> WalletResult<()> {
         let mut tasks = Vec::new();
@@ -295,25 +304,6 @@ impl Client {
             .map_err(|e| WalletError::CouldNotReceiveMoney(format!("{e:?}")))
             .await?;
         Ok(cashnotes)
-    }
-
-    /// Send a spend request to the network.
-    /// This does _not_ verify the spend has been put to the network correctly
-    pub async fn send_without_verify(&self, transfer: OfflineTransfer) -> WalletResult<()> {
-        let mut tasks = Vec::new();
-        for spend_request in &transfer.all_spend_requests {
-            trace!(
-                "sending spend request to the network: {:?}: {spend_request:#?}",
-                spend_request.unique_pubkey()
-            );
-            tasks.push(self.network_store_spend(spend_request.clone(), false));
-        }
-
-        for spend_attempt_result in join_all(tasks).await {
-            spend_attempt_result.map_err(|err| WalletError::CouldNotSendMoney(err.to_string()))?;
-        }
-
-        Ok(())
     }
 
     pub async fn verify(&self, cash_note: &CashNote) -> WalletResult<()> {

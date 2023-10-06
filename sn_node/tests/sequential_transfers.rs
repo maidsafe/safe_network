@@ -97,9 +97,13 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     // send both transfers to the network
     // upload won't error out, only error out during verification.
     println!("Sending both transfers to the network...");
-    let res = client.send_without_verify(transfer_to_2.clone()).await;
+    let res = client
+        .send(transfer_to_2.all_spend_requests.iter(), false)
+        .await;
     assert!(res.is_ok());
-    let res = client.send_without_verify(transfer_to_3.clone()).await;
+    let res = client
+        .send(transfer_to_3.all_spend_requests.iter(), false)
+        .await;
     assert!(res.is_ok());
 
     // check the CashNotes, it should fail

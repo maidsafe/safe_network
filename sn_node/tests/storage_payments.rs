@@ -252,7 +252,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
 
     // invalid spends
     client
-        .send(wallet_client.unconfirmed_spend_requests(), true)
+        .send(wallet_client.unconfirmed_spend_requests().iter(), true)
         .await?;
 
     sleep(Duration::from_secs(5)).await;
