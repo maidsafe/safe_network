@@ -453,10 +453,7 @@ impl Node {
 
         // deposit the CashNotes in our wallet
         wallet
-            .deposit(&cash_notes)
-            .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
-        wallet
-            .store(vec![])
+            .deposit_and_store_to_disk(&cash_notes)
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
         #[cfg(feature = "open-metrics")]
         let _ = self

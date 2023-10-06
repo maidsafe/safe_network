@@ -213,7 +213,7 @@ fn deposit(root_dir: &Path, read_from_stdin: bool, cash_note: Option<String>) ->
         return deposit_from_cash_note_hex(root_dir, cash_note_hex);
     }
 
-    let wallet = LocalWallet::load_from(root_dir)?;
+    let mut wallet = LocalWallet::load_from(root_dir)?;
 
     let previous_balance = wallet.balance();
 
@@ -221,7 +221,7 @@ fn deposit(root_dir: &Path, read_from_stdin: bool, cash_note: Option<String>) ->
         sn_transfers::NanoTokens::from(wallet.balance().as_nano() - previous_balance.as_nano());
     if deposited.is_zero() {
         println!("Nothing deposited.");
-    } else if let Err(err) = wallet.store(vec![]) {
+    } else if let Err(err) = wallet.deposit_and_store_to_disk(&vec![]) {
         println!("Failed to store deposited ({deposited}) amount: {:?}", err);
     } else {
         println!("Deposited {deposited}.");
@@ -242,9 +242,8 @@ fn deposit_from_cash_note_hex(root_dir: &Path, input: String) -> Result<()> {
     let cash_note = sn_transfers::CashNote::from_hex(input.trim())?;
 
     let old_balance = wallet.balance();
-    wallet.deposit(&vec![cash_note])?;
+    wallet.deposit_and_store_to_disk(&vec![cash_note])?;
     let new_balance = wallet.balance();
-    wallet.store(vec![])?;
     println!("Successfully stored cash_note to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
 
     Ok(())
@@ -336,7 +335,7 @@ async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Pa
     println!("Successfully verified transfer.");
 
     let old_balance = wallet.balance();
-    wallet.deposit(&cashnotes)?;
+    wallet.deposit_and_store_to_disk(&cashnotes)?;
     let new_balance = wallet.balance();
 
     println!("Successfully stored cash_note to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");

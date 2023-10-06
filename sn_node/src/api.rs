@@ -121,9 +121,9 @@ impl Node {
         let reward_key = MainSecretKey::random();
         let reward_address = reward_key.main_pubkey();
 
-        let wallet = LocalWallet::load_from_main_key(&root_dir, reward_key)?;
+        let mut wallet = LocalWallet::load_from_main_key(&root_dir, reward_key)?;
         // store in case it's a fresh wallet created if none was found
-        wallet.store(vec![])?;
+        wallet.deposit_and_store_to_disk(&vec![])?;
 
         #[cfg(feature = "open-metrics")]
         let (metrics_registry, node_metrics) = {
