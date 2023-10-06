@@ -71,6 +71,12 @@ impl LocalWallet {
         store_unconfirmed_spend_requests(&self.wallet_dir, self.unconfirmed_spend_requests())
     }
 
+    /// Remove CashNote from available_cash_notes and add it to spent_cash_notes.
+    pub fn mark_note_as_spent(&mut self, cash_note_id: UniquePubkey) {
+        self.wallet.available_cash_notes.remove(&cash_note_id);
+        self.wallet.spent_cash_notes.insert(cash_note_id);
+    }
+
     pub fn unconfirmed_spend_requests_exist(&self) -> bool {
         !self.unconfirmed_spend_requests.is_empty()
     }
@@ -130,6 +136,12 @@ impl LocalWallet {
 
     pub fn unconfirmed_spend_requests(&self) -> &BTreeSet<SignedSpend> {
         &self.unconfirmed_spend_requests
+    }
+
+    /// To remove a specific spend from the requests, if eg, we see one spend is _bad_
+    pub fn clear_specific_spend_request(&mut self, unique_pub_key: UniquePubkey) {
+        self.unconfirmed_spend_requests
+            .retain(|signed_spend| signed_spend.spend.unique_pubkey.ne(&unique_pub_key))
     }
 
     pub fn clear_unconfirmed_spend_requests(&mut self) {
