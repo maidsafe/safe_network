@@ -6,23 +6,21 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use futures::TryFutureExt;
-use sn_transfers::{SignedSpend, Transfer};
-use xor_name::XorName;
+use crate::Error;
 
-use super::Client;
-
+use super::{error::Result, Client};
+use futures::{future::join_all, TryFutureExt};
 use sn_protocol::NetworkAddress;
-use sn_transfers::{CashNote, MainPubkey, NanoTokens};
-use sn_transfers::{LocalWallet, WalletError, WalletResult};
-
-use futures::future::join_all;
+use sn_transfers::{
+    CashNote, LocalWallet, MainPubkey, NanoTokens, SignedSpend, Transfer, WalletError, WalletResult,
+};
 use std::{
     collections::{BTreeMap, BTreeSet},
     iter::Iterator,
     time::Duration,
 };
 use tokio::{task::JoinSet, time::sleep};
+use xor_name::XorName;
 
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
@@ -341,9 +339,9 @@ pub async fn send(
     to: MainPubkey,
     client: &Client,
     verify_store: bool,
-) -> WalletResult<CashNote> {
-    if amount.as_nano() == 0 {
-        panic!("Amount must be more than zero.");
+) -> Result<CashNote> {
+    if amount.is_zero() {
+        return Err(Error::AmountIsZero);
     }
 
     let mut wallet_client = WalletClient::new(client.clone(), from);
@@ -373,11 +371,10 @@ pub async fn send(
         }
     }
 
-    let wallet = wallet_client.into_wallet();
-    wallet.store(vec![&new_cash_note])?;
+    wallet_client.into_wallet().store(vec![&new_cash_note])?;
 
     if did_error {
-        return Err(WalletError::UnconfirmedTxAfterRetries);
+        return Err(WalletError::UnconfirmedTxAfterRetries.into());
     }
 
     Ok(new_cash_note)
