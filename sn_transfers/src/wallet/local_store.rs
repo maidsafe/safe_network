@@ -48,7 +48,7 @@ pub struct LocalWallet {
 
 impl LocalWallet {
     /// Stores the wallet to disk.
-    pub fn store(&self, new_cash_notes: Vec<&CashNote>) -> Result<()> {
+    fn store(&self, new_cash_notes: Vec<&CashNote>) -> Result<()> {
         self.store_cash_notes_to_disk(new_cash_notes)?;
         store_wallet(&self.wallet_dir, &self.wallet)
     }
@@ -307,7 +307,7 @@ impl LocalWallet {
         }
 
         if let Some(cash_note) = transfer.change_cash_note {
-            self.deposit(&vec![cash_note])?;
+            self.deposit_and_store_to_disk(&vec![cash_note])?;
         }
 
         for cash_note in &transfer.created_cash_notes {
@@ -325,7 +325,7 @@ impl LocalWallet {
     }
 
     /// Store the given cash_notes to the `received cash_notes dir` in the wallet dir.
-    pub fn deposit(&mut self, received_cash_notes: &Vec<CashNote>) -> Result<()> {
+    pub fn deposit_and_store_to_disk(&mut self, received_cash_notes: &Vec<CashNote>) -> Result<()> {
         if received_cash_notes.is_empty() {
             return Ok(());
         }
@@ -348,6 +348,8 @@ impl LocalWallet {
 
             self.store_cash_note(cash_note)?;
         }
+
+        self.store(vec![])?;
 
         Ok(())
     }
@@ -530,7 +532,7 @@ mod tests {
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        deposit_only.deposit(&vec![])?;
+        deposit_only.deposit_and_store_to_disk(&vec![])?;
 
         assert_eq!(NanoTokens::zero(), deposit_only.balance());
 
@@ -555,7 +557,7 @@ mod tests {
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        deposit_only.deposit(&vec![genesis])?;
+        deposit_only.deposit_and_store_to_disk(&vec![genesis])?;
 
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, deposit_only.balance().as_nano());
 
@@ -576,7 +578,7 @@ mod tests {
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        local_wallet.deposit(&vec![genesis])?;
+        local_wallet.deposit_and_store_to_disk(&vec![genesis])?;
 
         assert_eq!(NanoTokens::zero(), local_wallet.balance());
 
@@ -599,13 +601,13 @@ mod tests {
             wallet_dir: dir.path().to_path_buf(),
         };
 
-        deposit_only.deposit(&vec![genesis_0.clone()])?;
+        deposit_only.deposit_and_store_to_disk(&vec![genesis_0.clone()])?;
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, deposit_only.balance().as_nano());
 
-        deposit_only.deposit(&vec![genesis_0])?;
+        deposit_only.deposit_and_store_to_disk(&vec![genesis_0])?;
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, deposit_only.balance().as_nano());
 
-        deposit_only.deposit(&vec![genesis_1])?;
+        deposit_only.deposit_and_store_to_disk(&vec![genesis_1])?;
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, deposit_only.balance().as_nano());
 
         Ok(())
@@ -619,8 +621,7 @@ mod tests {
         let mut depositor = LocalWallet::load_from(&root_dir)?;
         let genesis =
             create_first_cash_note_from_key(&depositor.key).expect("Genesis creation to succeed.");
-        depositor.deposit(&vec![genesis])?;
-        depositor.store(vec![])?;
+        depositor.deposit_and_store_to_disk(&vec![genesis])?;
 
         let deserialized = LocalWallet::load_from(&root_dir)?;
 
@@ -665,7 +666,7 @@ mod tests {
         let mut sender = LocalWallet::load_from(&root_dir)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
-        sender.deposit(&vec![sender_cash_note])?;
+        sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
 
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, sender.balance().as_nano());
 
@@ -697,7 +698,7 @@ mod tests {
         let mut sender = LocalWallet::load_from(&root_dir)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
-        sender.deposit(&vec![sender_cash_note])?;
+        sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
 
         // We send to a new address.
         let send_amount = 100;
@@ -771,7 +772,7 @@ mod tests {
         let mut sender = LocalWallet::load_from(&sender_root_dir)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
-        sender.deposit(&vec![sender_cash_note])?;
+        sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
 
         let send_amount = 100;
 
@@ -830,7 +831,7 @@ mod tests {
         let mut sender = LocalWallet::load_from(&root_dir)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
-        sender.deposit(&vec![sender_cash_note])?;
+        sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
 
         let mut rng = bls::rand::thread_rng();
         let xor1 = XorName::random(&mut rng);
