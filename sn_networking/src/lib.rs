@@ -386,18 +386,15 @@ impl Network {
                 .put_record_once(record.clone(), verify_store.clone())
                 .await;
 
-            if matches!(res, Err(Error::RecordNotEnoughCopies(_)))
-                || matches!(res, Err(Error::RecordNotFound))
-            {
-                continue;
-            }
-
-            if !matches!(res, Err(Error::FailedToVerifyRecordWasStored(_))) {
+            // if we're not verifying a record, or it's fine we can return
+            if verify_store.is_none() || res.is_ok() {
                 return res;
             }
 
+            // otherwise try again
             retries += 1;
         }
+
         Err(Error::FailedToVerifyRecordWasStored(record.key.into()))
     }
 
