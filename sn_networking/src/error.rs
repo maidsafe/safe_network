@@ -41,6 +41,7 @@ pub enum Error {
     #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0}")]
     OutgoingResponseDropped(Response),
 
+    /// No put_record attempts were successfully verified.
     #[error("Could not retrieve the record after storing it: {0:}")]
     FailedToVerifyRecordWasStored(PrettyPrintRecordKey),
 
