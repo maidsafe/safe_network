@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.18](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.17...sn_networking-v0.8.18) - 2023-10-08
+
+### Fixed
+- *(sn_networking)* actually retry PUTs
+
+### Other
+- *(sn_networking)* ensure we return on put_record
+
 ## [0.8.17](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.16...sn_networking-v0.8.17) - 2023-10-06
 
 ### Other
