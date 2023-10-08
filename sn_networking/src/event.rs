@@ -190,7 +190,7 @@ impl Debug for NetworkEvent {
 }
 
 impl SwarmDriver {
-    // Handle `SwarmEvents`
+    /// Handle `SwarmEvents`
     pub(super) fn handle_swarm_events<EventError: std::error::Error>(
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
@@ -225,24 +225,24 @@ impl SwarmDriver {
                                 .agent_version
                                 .starts_with(truncate_patch_version(IDENTIFY_AGENT_STR))
                         {
-                            let addrs = match self.local {
-                                true => info.listen_addrs,
+                            // Strip the `/p2p/...` part of the multiaddresses
+                            // And deduplicate the list
+                            let addrs: HashSet<Multiaddr> = match self.local {
+                                true => info.listen_addrs.into_iter()
+                                .map(|addr| multiaddr_strip_p2p(&addr))
+                                .collect()
+,
                                 // If we're not in local mode, only add globally reachable addresses
                                 false => info
                                     .listen_addrs
                                     .into_iter()
                                     .filter(multiaddr_is_global)
+                                    .map(|addr| multiaddr_strip_p2p(&addr))
+
                                     .collect(),
                             };
-                            // Strip the `/p2p/...` part of the multiaddresses
-                            let addrs: Vec<_> = addrs
-                                .into_iter()
-                                .map(|addr| multiaddr_strip_p2p(&addr))
-                                // And deduplicate the list
-                                .unique()
-                                .collect();
 
-                            for multiaddr in addrs.clone() {
+                            for multiaddr in &addrs {
                                 // If the peer was unroutable, we dial it.
                                 if !self.dialed_peers.contains(&peer_id)
                                     && self.unroutable_peers.contains(&peer_id)
@@ -274,7 +274,7 @@ impl SwarmDriver {
                                         .swarm
                                         .behaviour_mut()
                                         .kademlia
-                                        .add_address(&peer_id, multiaddr);
+                                        .add_address(&peer_id, multiaddr.clone());
                                 }
                             }
 
