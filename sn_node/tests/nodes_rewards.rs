@@ -33,7 +33,7 @@ use xor_name::XorName;
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_chunks() -> Result<()> {
-    let _log_appender_guard = init_logging();
+    let _log_appender_guard = init_logging("nodes_rewards");
     trace!("Running test: nodes_rewards_for_storing_chunks");
 
     let paying_wallet_balance = 10_000_000_000_333;
@@ -75,7 +75,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_registers() -> Result<()> {
-    let _log_appender_guard = init_logging();
+    let _log_appender_guard = init_logging("nodes_rewards");
     trace!("Running test: nodes_rewards_for_storing_registers");
 
     let paying_wallet_balance = 10_000_000_000_444;

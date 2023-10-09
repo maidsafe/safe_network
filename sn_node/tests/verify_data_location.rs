@@ -63,7 +63,7 @@ type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_data_location() -> Result<()> {
-    let _log_appender_guard = init_logging();
+    let _log_appender_guard = init_logging("verify_data_location");
 
     let churn_count = if let Ok(str) = std::env::var("CHURN_COUNT") {
         str.parse::<u8>()?
