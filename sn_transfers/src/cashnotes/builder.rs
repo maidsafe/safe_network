@@ -85,14 +85,13 @@ impl TransactionBuilder {
     /// Build the Transaction by signing the inputs. Return a CashNoteBuilder.
     pub fn build(self, reason: Hash) -> Result<CashNoteBuilder> {
         let spent_tx = Transaction {
-            inputs: self.inputs.clone(),
-            outputs: self.outputs.clone(),
+            inputs: self.inputs,
+            outputs: self.outputs,
         };
-        let signed_spends: BTreeSet<_> = self
-            .inputs
-            .iter()
-            .flat_map(|input| {
-                let (derived_key, input_src_tx) = self.input_details.get(&input.unique_pubkey)?;
+        let mut signed_spends = BTreeSet::new();
+        for input in &spent_tx.inputs {
+            if let Some((derived_key, input_src_tx)) = self.input_details.get(&input.unique_pubkey)
+            {
                 let spend = Spend {
                     unique_pubkey: input.unique_pubkey(),
                     spent_tx: spent_tx.clone(),
@@ -101,12 +100,12 @@ impl TransactionBuilder {
                     cashnote_creation_tx: input_src_tx.clone(),
                 };
                 let derived_key_sig = derived_key.sign(&spend.to_bytes());
-                Some(SignedSpend {
+                signed_spends.insert(SignedSpend {
                     spend,
                     derived_key_sig,
-                })
-            })
-            .collect();
+                });
+            }
+        }
 
         Ok(CashNoteBuilder::new(
             spent_tx,
