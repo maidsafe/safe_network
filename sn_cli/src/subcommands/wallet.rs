@@ -17,6 +17,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
+use tempfile::tempdir;
 use url::Url;
 use xor_name::XorName;
 
@@ -145,7 +146,11 @@ pub(crate) async fn wallet_cmds(
             batch_size: _,
         } => {
             let file_api: Files = Files::new(client.clone(), wallet_dir_path.to_path_buf());
-            let chunked_files = chunk_path(&file_api, &path).await?;
+
+            // Temp folder to hold SE chunks, which is cleaned up automatically once out of scope.
+            let temp_dir = tempdir()?;
+
+            let chunked_files = chunk_path(&file_api, &path, temp_dir.path()).await?;
 
             let all_chunks: Vec<_> = chunked_files
                 .values()
