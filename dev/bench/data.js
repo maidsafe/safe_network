@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696860009926,
+  "lastUpdate": 1696864223375,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -10564,6 +10564,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 29.202785931123344,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6887c4505b8e86c0447a4d99f285baaaf6140d8d",
+          "message": "chore(networking): minor tweaks to reduce mem allocations on Identify",
+          "timestamp": "2023-10-09T16:50:13+02:00",
+          "tree_id": "582c7748f5aa29acf8709ca59a84b7da72905410",
+          "url": "https://github.com/maidsafe/safe_network/commit/6887c4505b8e86c0447a4d99f285baaaf6140d8d"
+        },
+        "date": 1696864221864,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10322811402699282,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6051865100175984,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 30.56792219134901,
             "unit": "MiB/s"
           }
         ]
