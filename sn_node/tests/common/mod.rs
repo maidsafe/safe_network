@@ -37,6 +37,7 @@ use std::{
 };
 use tokio::sync::Mutex;
 use tonic::Request;
+use tracing::info;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::dispatcher::DefaultGuard;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
@@ -55,6 +56,10 @@ pub fn init_logging_single_threaded_tokio(
     let log_guard = tracing_subscriber::registry()
         .with(layers.layers)
         .set_default();
+    // this is the test_name and not the test_file_name; TODO: should try passing as logging's target filter
+    if let Some(test_name) = std::thread::current().name() {
+        info!("Running test: {test_name}");
+    }
     (layers.guard, log_guard)
 }
 
