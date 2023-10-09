@@ -27,30 +27,51 @@ use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
-use sn_logging::{LogFormat, LogOutputDest};
+use sn_logging::{LogFormat, LogOutputDest, TracingLayers};
 use sn_transfers::NanoTokens;
 use std::{
     fs::File,
     io::Write,
     net::SocketAddr,
     path::{Path, PathBuf},
-    sync::Once,
 };
 use tokio::sync::Mutex;
 use tonic::Request;
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_core::Level;
+use tracing_core::dispatcher::DefaultGuard;
+use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use xor_name::XorName;
-
-static TEST_INIT_LOGGER: Once = Once::new();
 
 type ResultRandomContent = Result<(Files, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
 
 pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
 
-/// Logs to the data_dir
-/// Provide the test file name to capture tracings from the test
-pub fn init_logging(test_file_name: &str) -> Option<WorkerGuard> {
+/// Logs to the data_dir. Should be called from a single threaded tokio/non-tokio context.
+/// Provide the test file name to capture tracings from the test.
+pub fn init_logging_single_threaded_tokio(
+    test_file_name: &str,
+) -> (Option<WorkerGuard>, DefaultGuard) {
+    let layers = get_tracing_layers(test_file_name);
+    let log_guard = tracing_subscriber::registry()
+        .with(layers.layers)
+        .set_default();
+    (layers.guard, log_guard)
+}
+
+/// Logs to the data_dir. Should be called from a multi threaded tokio context. Refer sn_logging::get_test_layers docs
+/// for more info.
+/// Provide the test file name to capture tracings from the test.
+pub fn init_logging_multi_threaded_tokio(test_file_name: &str) -> Option<WorkerGuard> {
+    let layers = get_tracing_layers(test_file_name);
+    tracing_subscriber::registry()
+        .with(layers.layers)
+        .try_init()
+        .expect("You have tried to init multi_threaded tokio logging twice\nRefer sn_logging::get_test_layers docs for more.");
+
+    layers.guard
+}
+
+fn get_tracing_layers(test_file_name: &str) -> TracingLayers {
     // overwrite SN_LOG
     std::env::set_var("SN_LOG", format!("{test_file_name}=TRACE,all"));
 
@@ -67,21 +88,8 @@ pub fn init_logging(test_file_name: &str) -> Option<WorkerGuard> {
         }
         None => LogOutputDest::Stdout,
     };
-
-    let mut log_appender_guard = None;
-    TEST_INIT_LOGGER.call_once(|| {
-        let logging_targets = vec![
-            ("safenode".to_string(), Level::INFO),
-            ("sn_client".to_string(), Level::TRACE),
-            ("sn_transfers".to_string(), Level::INFO),
-            ("sn_networking".to_string(), Level::INFO),
-            ("sn_node".to_string(), Level::INFO),
-        ];
-        log_appender_guard =
-            sn_logging::init_logging(logging_targets, output_dest, LogFormat::Default)
-                .expect("Failed to init logging");
-    });
-    log_appender_guard
+    sn_logging::get_test_layers(vec![], output_dest, LogFormat::Default)
+        .expect("Failed to get TracingLayers")
 }
 
 lazy_static! {

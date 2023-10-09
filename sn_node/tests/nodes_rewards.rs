@@ -9,7 +9,7 @@
 mod common;
 
 use crate::common::{
-    get_client_and_wallet, init_logging, random_content,
+    get_client_and_wallet, init_logging_single_threaded_tokio, random_content,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest},
 };
 use assert_fs::TempDir;
@@ -33,7 +33,7 @@ use xor_name::XorName;
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_chunks() -> Result<()> {
-    let _log_appender_guard = init_logging("nodes_rewards");
+    let _log_guards = init_logging_single_threaded_tokio("nodes_rewards");
     trace!("Running test: nodes_rewards_for_storing_chunks");
 
     let paying_wallet_balance = 10_000_000_000_333;
@@ -75,7 +75,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_registers() -> Result<()> {
-    let _log_appender_guard = init_logging("nodes_rewards");
+    let _log_guards = init_logging_single_threaded_tokio("nodes_rewards");
     trace!("Running test: nodes_rewards_for_storing_registers");
 
     let paying_wallet_balance = 10_000_000_000_444;

@@ -106,8 +106,8 @@ where
 /// The different Subscribers composed into a list of layers
 #[derive(Default)]
 pub struct TracingLayers {
-    layers: Vec<Box<dyn Layer<Registry> + Send + Sync>>,
-    guard: Option<WorkerGuard>,
+    pub layers: Vec<Box<dyn Layer<Registry> + Send + Sync>>,
+    pub guard: Option<WorkerGuard>,
 }
 
 impl TracingLayers {
@@ -215,7 +215,7 @@ impl TracingLayers {
     }
 }
 
-/// Inits node logging, returning the global node guard if required.
+/// Inits node logging, returning the NonBlocking guard if present.
 /// This guard should be held for the life of the program.
 ///
 /// Logging should be instantiated only once.
@@ -242,26 +242,33 @@ pub fn init_logging(
         }
     }
 
-    tracing_subscriber::registry().with(layers.layers).init();
+    if tracing_subscriber::registry()
+        .with(layers.layers)
+        .try_init()
+        .is_err()
+    {
+        println!("Tried to initialize and set global default subscriber more than once");
+    }
 
     Ok(layers.guard)
 }
 
-/// Initialize logger for tests, this is run only once, even if called multiple times.
-#[cfg(feature = "test-utils")]
-static TEST_INIT_LOGGER: std::sync::Once = std::sync::Once::new();
-#[cfg(feature = "test-utils")]
-pub fn init_test_logger() {
-    TEST_INIT_LOGGER.call_once(|| {
-        tracing_subscriber::fmt::fmt()
-            // NOTE: uncomment this line for pretty printed log output.
-            //.pretty()
-            .with_ansi(false)
-            .with_target(false)
-            .event_format(LogFormatter)
-            .try_init()
-            .unwrap_or_else(|_| println!("Error initializing logger"));
-    });
+/// Initialize fmt_layers for testing purposes.
+///
+/// subscriber.set_default() should be used if under a single threaded tokio / single threaded non-tokio context.
+/// Refer here for more details: <https://github.com/tokio-rs/tracing/discussions/1626>
+///
+/// subscriber.init() should be used under multi threaded tokio context. If you have 1+ multithreaded tokio tests under
+/// the same integration test, this might result in loss of logs. Hence use .init() (instead of .try_init()) to panic
+/// if called more than once.
+pub fn get_test_layers(
+    default_logging_targets: Vec<(String, Level)>,
+    output_dest: LogOutputDest,
+    format: LogFormat,
+) -> Result<TracingLayers> {
+    let mut layers = TracingLayers::default();
+    layers.fmt_layer(default_logging_targets, output_dest, format)?;
+    Ok(layers)
 }
 
 /// Parses the logging targets from the env variable (SN_LOG). The crates should be given as a CSV, for e.g.,
