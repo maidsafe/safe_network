@@ -210,10 +210,14 @@ impl SwarmDriver {
                 self.network_metrics.record(&(kad_event));
                 self.handle_kad_event(kad_event)?;
             }
+            // Handle the Identify event from the libp2p swarm.
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
+                // Record the Identify event for metrics if the feature is enabled.
                 #[cfg(feature = "open-metrics")]
                 self.network_metrics.record(&(*iden));
+                // Match on the Identify event.
                 match *iden {
+                    // If the event is a Received event, handle the received peer information.
                     libp2p::identify::Event::Received { peer_id, info } => {
                         trace!(%peer_id, ?info, "identify: received info");
 
@@ -224,23 +228,24 @@ impl SwarmDriver {
                                     .agent_version
                                     .starts_with(truncate_patch_version(IDENTIFY_AGENT_STR))
                         {
-                            // Strip the `/p2p/...` part of the multiaddresses
-                            // And deduplicate the list
+                            // If we're not in local mode, only add globally reachable addresses.
+                            // Strip the `/p2p/...` part of the multiaddresses.
+                            // Collect into a HashSet directly to avoid multiple allocations and handle deduplication.
                             let addrs: HashSet<Multiaddr> = match self.local {
-                                true => info.listen_addrs.into_iter()
-                                .map(|addr| multiaddr_strip_p2p(&addr))
-                                .collect()
-,
-                                // If we're not in local mode, only add globally reachable addresses
+                                true => info
+                                    .listen_addrs
+                                    .into_iter()
+                                    .map(|addr| multiaddr_strip_p2p(&addr))
+                                    .collect(),
                                 false => info
                                     .listen_addrs
                                     .into_iter()
                                     .filter(multiaddr_is_global)
                                     .map(|addr| multiaddr_strip_p2p(&addr))
-
                                     .collect(),
                             };
 
+                            // Attempt to add the addresses to the routing table.
                             for multiaddr in &addrs {
                                 trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
@@ -265,6 +270,7 @@ impl SwarmDriver {
                             }
                         }
                     }
+                    // Log the other Identify events.
                     libp2p::identify::Event::Sent { .. } => trace!("identify: {iden:?}"),
                     libp2p::identify::Event::Pushed { .. } => trace!("identify: {iden:?}"),
                     libp2p::identify::Event::Error { .. } => trace!("identify: {iden:?}"),
