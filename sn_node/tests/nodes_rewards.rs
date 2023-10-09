@@ -8,20 +8,26 @@
 
 mod common;
 
-use common::{get_client_and_wallet, random_content};
+use common::{
+    get_client_and_wallet, random_content,
+    safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest},
+};
 
 use sn_client::WalletClient;
+use sn_networking::CLOSE_GROUP_SIZE;
+use sn_node::NodeEvent;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress},
     NetworkAddress,
 };
-use sn_transfers::LocalWallet;
-use sn_transfers::NanoTokens;
+use sn_transfers::{LocalWallet, NanoTokens};
 use xor_name::XorName;
 
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
-use tokio::time::{sleep, Duration};
+use tokio::time::{sleep, timeout, Duration};
+use tokio_stream::StreamExt;
+use tonic::Request;
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_chunks() -> Result<()> {
@@ -62,22 +68,6 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     Ok(())
 }
 
-async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
-    let mut iteration = 0;
-    let mut cur_rewards_history = Vec::new();
-
-    while iteration < 10 {
-        iteration += 1;
-        let new_rewards_balance = current_rewards_balance()?;
-        if expected_rewards_balance == new_rewards_balance {
-            return Ok(());
-        }
-        cur_rewards_history.push(new_rewards_balance);
-        sleep(Duration::from_secs(1)).await;
-    }
-    panic!("Network doesn't get expected reward {expected_rewards_balance:?} after {iteration} iterations, history is {cur_rewards_history:?}");
-}
-
 #[tokio::test]
 async fn nodes_rewards_for_storing_registers() -> Result<()> {
     let paying_wallet_balance = 10_000_000_000_444;
@@ -114,6 +104,86 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
     verify_rewards(expected_rewards_balance).await?;
 
     Ok(())
+}
+
+#[tokio::test]
+async fn nodes_rewards_notifs_over_gossipsub() -> Result<()> {
+    let paying_wallet_balance = 10_000_000_111_000;
+    let paying_wallet_dir = TempDir::new()?;
+    let chunks_dir = TempDir::new()?;
+
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    let (files_api, content_bytes, _content_addr, chunks) = random_content(
+        &client,
+        paying_wallet_dir.to_path_buf(),
+        chunks_dir.path().to_path_buf(),
+    )?;
+
+    println!("Paying for {} random addresses...", chunks.len());
+    let _cost = wallet_client
+        .pay_for_storage(
+            chunks
+                .into_iter()
+                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(name))),
+            true,
+        )
+        .await?;
+
+    let handle = tokio::spawn(async move {
+        let endpoint = "https://127.0.0.1:12001".to_string();
+        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let response = rpc_client
+            .node_events(Request::new(NodeEventsRequest {}))
+            .await?;
+
+        let mut count = 0;
+        let mut stream = response.into_inner();
+        while let Some(Ok(e)) = stream.next().await {
+            match NodeEvent::from_bytes(&e.event) {
+                Ok(NodeEvent::TransferNotif { key, transfer: _ }) => {
+                    println!("Transfer notif received for key {key:?}");
+                    count += 1;
+                    if count == CLOSE_GROUP_SIZE {
+                        break;
+                    }
+                }
+                Ok(_) => { /* ignored */ }
+                Err(_) => {
+                    println!("Error while parsing received NodeEvent");
+                }
+            }
+        }
+
+        Ok::<usize, eyre::Error>(count)
+    });
+
+    files_api.upload_with_payments(content_bytes, true).await?;
+
+    let count = timeout(Duration::from_millis(5000), async { handle.await? }).await??;
+    println!("Number of notifications received by node: {count}");
+    assert_eq!(count, CLOSE_GROUP_SIZE, "Not enough notifications received");
+
+    Ok(())
+}
+
+async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
+    let mut iteration = 0;
+    let mut cur_rewards_history = Vec::new();
+
+    while iteration < 10 {
+        iteration += 1;
+        let new_rewards_balance = current_rewards_balance()?;
+        if expected_rewards_balance == new_rewards_balance {
+            return Ok(());
+        }
+        cur_rewards_history.push(new_rewards_balance);
+        sleep(Duration::from_secs(1)).await;
+    }
+
+    Err(eyre!("Network doesn't get expected reward {expected_rewards_balance:?} after {iteration} iterations, history is {cur_rewards_history:?}"))
 }
 
 // Helper which reads all nodes local wallets returning the total balance
