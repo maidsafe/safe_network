@@ -8,15 +8,11 @@
 
 mod common;
 
-use common::{get_client_and_wallet, get_wallet, init_logging};
-
-use sn_client::send;
-
-use sn_transfers::create_offline_transfer;
-use sn_transfers::{rng, Hash, NanoTokens, UniquePubkey};
-
 use assert_fs::TempDir;
+use common::{get_client_and_wallet, get_wallet, init_logging};
 use eyre::Result;
+use sn_client::send;
+use sn_transfers::{create_offline_transfer, rng, Hash, NanoTokens, UniquePubkey};
 
 #[tokio::test]
 async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {

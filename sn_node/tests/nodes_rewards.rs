@@ -8,11 +8,12 @@
 
 mod common;
 
-use common::{
-    get_client_and_wallet, random_content,
+use crate::common::{
+    get_client_and_wallet, init_logging, random_content,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest},
 };
-
+use assert_fs::TempDir;
+use eyre::{eyre, Result};
 use sn_client::WalletClient;
 use sn_networking::CLOSE_GROUP_SIZE;
 use sn_node::NodeEvent;
@@ -21,19 +22,18 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_transfers::{LocalWallet, NanoTokens};
-use xor_name::XorName;
-
-use assert_fs::TempDir;
-use eyre::{eyre, Result};
 use tokio::{
     task::JoinHandle,
     time::{sleep, Duration},
 };
 use tokio_stream::StreamExt;
 use tonic::Request;
+use xor_name::XorName;
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_chunks() -> Result<()> {
+    init_logging();
+
     let paying_wallet_balance = 10_000_000_000_333;
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
@@ -73,6 +73,8 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_registers() -> Result<()> {
+    init_logging();
+
     let paying_wallet_balance = 10_000_000_000_444;
     let paying_wallet_dir = TempDir::new()?;
 

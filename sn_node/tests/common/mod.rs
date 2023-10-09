@@ -47,7 +47,23 @@ type ResultRandomContent = Result<(Files, Bytes, ChunkAddress, Vec<(XorName, Pat
 
 pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
 
+/// Logs to the data_dir
+/// The logging_targets are overridden by sn_logging if `SN_LOG` env var is provided.
 pub fn init_logging() {
+    let output_dest = match dirs_next::data_dir() {
+        Some(dir) => {
+            // Get the current timestamp and format it to be human readable
+            let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+            let path = dir
+                .join("safe")
+                .join("client")
+                .join("logs")
+                .join(format!("log_{}", timestamp));
+            LogOutputDest::Path(path)
+        }
+        None => LogOutputDest::Stdout,
+    };
+
     TEST_INIT_LOGGER.call_once(|| {
         let logging_targets = vec![
             ("safenode".to_string(), Level::INFO),
@@ -57,7 +73,7 @@ pub fn init_logging() {
             ("sn_node".to_string(), Level::INFO),
         ];
         let _log_appender_guard =
-            sn_logging::init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)
+            sn_logging::init_logging(logging_targets, output_dest, LogFormat::Default)
                 .expect("Failed to init logging");
     });
 }
