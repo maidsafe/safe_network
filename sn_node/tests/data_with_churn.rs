@@ -8,6 +8,7 @@
 
 mod common;
 
+use crate::common::init_logging;
 use assert_fs::TempDir;
 use bytes::Bytes;
 use common::{
@@ -17,7 +18,6 @@ use common::{
 use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files, WalletClient};
-use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_protocol::{
     storage::{Chunk, ChunkAddress, RegisterAddress, SpendAddress},
     NetworkAddress,
@@ -37,7 +37,6 @@ use std::{
 use tempfile::tempdir;
 use tokio::{sync::RwLock, time::sleep};
 use tracing::{debug, trace};
-use tracing_core::Level;
 use xor_name::XorName;
 
 const NODE_COUNT: u32 = 25;
@@ -82,6 +81,8 @@ type ContentErredList = Arc<RwLock<BTreeMap<NetworkAddress, ContentError>>>;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn data_availability_during_churn() -> Result<()> {
+    init_logging();
+
     let test_duration = if let Ok(str) = std::env::var("TEST_DURATION_MINS") {
         Duration::from_secs(60 * str.parse::<u64>()?)
     } else {
@@ -109,20 +110,6 @@ async fn data_availability_during_churn() -> Result<()> {
         "Running this test for {test_duration:?}{}...",
         if chunks_only { " (Chunks only)" } else { "" }
     );
-
-    let tmp_dir = std::env::temp_dir();
-    let logging_targets = vec![
-        ("safenode".to_string(), Level::TRACE),
-        ("sn_transfers".to_string(), Level::TRACE),
-        ("sn_networking".to_string(), Level::TRACE),
-        ("sn_node".to_string(), Level::TRACE),
-        ("data_with_churn".to_string(), Level::TRACE),
-    ];
-    let log_appender_guard = init_logging(
-        logging_targets,
-        LogOutputDest::Path(tmp_dir.join("safe-client")),
-        LogFormat::Default,
-    )?;
 
     // The testnet will create a `faucet` at last. To avoid mess up with that,
     // wait for a while to ensure the spends of that got settled.
@@ -298,7 +285,6 @@ async fn data_availability_during_churn() -> Result<()> {
     }
 
     println!("Test passed after running for {:?}.", start_time.elapsed());
-    drop(log_appender_guard);
     Ok(())
 }
 
