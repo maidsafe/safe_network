@@ -7,9 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::error::{Error, Result};
+use bls::PublicKey;
 use serde::{Deserialize, Serialize};
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
-use sn_transfers::UniquePubkey;
+use sn_transfers::{Transfer, UniquePubkey};
 use tokio::sync::broadcast;
 
 const NODE_EVENT_CHANNEL_SIZE: usize = 10_000;
@@ -65,6 +66,13 @@ pub enum NodeEvent {
         topic: String,
         /// The raw bytes of the received message
         msg: Vec<u8>,
+    },
+    /// Transfer notification message received for a public key
+    TransferNotif {
+        /// Public key the transfer notification is about
+        key: PublicKey,
+        /// The encrypted transfer
+        transfer: Transfer,
     },
 }
 

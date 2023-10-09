@@ -362,7 +362,7 @@ impl LocalWallet {
         Ok(())
     }
 
-    pub fn unwrap_transfer(&self, transfer: Transfer) -> Result<Vec<CashNoteRedemption>> {
+    pub fn unwrap_transfer(&self, transfer: &Transfer) -> Result<Vec<CashNoteRedemption>> {
         transfer
             .cashnote_redemptions(&self.key)
             .map_err(|_| Error::FailedToDecypherTransfer)

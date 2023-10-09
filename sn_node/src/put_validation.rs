@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    api::TRANSFER_NOTIF_TOPIC,
     spends::{aggregate_spends, check_parent_spends},
     Marker, Node,
 };
@@ -380,10 +381,10 @@ impl Node {
     /// Gets CashNotes out of a Payment, this includes network verifications of the Transfer
     async fn cash_notes_from_payment(
         &self,
-        payment: Vec<Transfer>,
+        payment: &Vec<Transfer>,
         wallet: &LocalWallet,
         pretty_key: PrettyPrintRecordKey,
-    ) -> Result<Vec<CashNote>, ProtocolError> {
+    ) -> Result<(Vec<CashNote>, Transfer), ProtocolError> {
         for transfer in payment {
             match self
                 .network
@@ -395,7 +396,7 @@ impl Node {
                 // transfer invalid
                 Err(e) => return Err(e),
                 // transfer ok
-                Ok(cash_notes) => return Ok(cash_notes),
+                Ok(cash_notes) => return Ok((cash_notes, transfer.clone())),
             };
         }
 
@@ -417,8 +418,8 @@ impl Node {
 
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key:?}");
-        let cash_notes = self
-            .cash_notes_from_payment(payment, &wallet, pretty_key.clone())
+        let (cash_notes, transfer_for_us) = self
+            .cash_notes_from_payment(&payment, &wallet, pretty_key.clone())
             .await?;
 
         // check payment is sufficient
@@ -450,6 +451,22 @@ impl Node {
             });
         }
         trace!("Payment sufficient for record {pretty_key:?}");
+
+        // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for each cash-note received.
+        match transfer_for_us.to_hex() {
+            Ok(transfer_hex) => {
+                let topic = TRANSFER_NOTIF_TOPIC.to_string();
+                for cash_note in cash_notes.iter() {
+                    let pk = cash_note.unique_pubkey().to_bytes();
+                    let mut msg: Vec<u8> = pk.to_vec();
+                    msg.extend(transfer_hex.as_bytes());
+                    if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
+                        warn!("Failed to publish a transfer notification over gossipsub: {err:?}");
+                    }
+                }
+            }
+            Err(err) => warn!("Failed to serialise transfer data to publish a notification over gossipsub: {err:?}"),
+        }
 
         // deposit the CashNotes in our wallet
         wallet
