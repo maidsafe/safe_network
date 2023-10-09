@@ -313,7 +313,7 @@ jobs:
         timeout-minutes: 25
 
       - name: execute the spend tests
-        run: cargo test --release -p sn_node --features="local-discovery,network-royalties-notif" --test sequential_transfers -- --nocapture
+        run: cargo test --release -p sn_node --features="local-discovery,network-royalties-notif" --test sequential_transfers -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
         timeout-minutes: 25
