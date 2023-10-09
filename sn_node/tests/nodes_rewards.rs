@@ -25,7 +25,10 @@ use xor_name::XorName;
 
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
-use tokio::time::{sleep, timeout, Duration};
+use tokio::{
+    task::JoinHandle,
+    time::{sleep, timeout, Duration},
+};
 use tokio_stream::StreamExt;
 use tonic::Request;
 
@@ -107,7 +110,7 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
 }
 
 #[tokio::test]
-async fn nodes_rewards_notifs_over_gossipsub() -> Result<()> {
+async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     let paying_wallet_balance = 10_000_000_111_000;
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
@@ -132,35 +135,46 @@ async fn nodes_rewards_notifs_over_gossipsub() -> Result<()> {
         )
         .await?;
 
-    let handle = tokio::spawn(async move {
-        let endpoint = "https://127.0.0.1:12001".to_string();
-        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
-        let response = rpc_client
-            .node_events(Request::new(NodeEventsRequest {}))
-            .await?;
-
-        let mut count = 0;
-        let mut stream = response.into_inner();
-        while let Some(Ok(e)) = stream.next().await {
-            match NodeEvent::from_bytes(&e.event) {
-                Ok(NodeEvent::TransferNotif { key, transfer: _ }) => {
-                    println!("Transfer notif received for key {key:?}");
-                    count += 1;
-                    if count == CLOSE_GROUP_SIZE {
-                        break;
-                    }
-                }
-                Ok(_) => { /* ignored */ }
-                Err(_) => {
-                    println!("Error while parsing received NodeEvent");
-                }
-            }
-        }
-
-        Ok::<usize, eyre::Error>(count)
-    });
+    let handle = spawn_transfer_notifs_listener("https://127.0.0.1:12001".to_string());
 
     files_api.upload_with_payments(content_bytes, true).await?;
+
+    let count = timeout(Duration::from_millis(5000), async { handle.await? }).await??;
+    println!("Number of notifications received by node: {count}");
+    assert_eq!(count, CLOSE_GROUP_SIZE, "Not enough notifications received");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
+    let paying_wallet_balance = 10_000_000_222_000;
+    let paying_wallet_dir = TempDir::new()?;
+
+    let (client, paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    let mut rng = rand::thread_rng();
+    let owner_pk = client.signer_pk();
+    let register_addr = XorName::random(&mut rng);
+
+    println!("Paying for random Register address...");
+    let _cost = wallet_client
+        .pay_for_storage(
+            std::iter::once(NetworkAddress::RegisterAddress(RegisterAddress::new(
+                register_addr,
+                owner_pk,
+            ))),
+            true,
+        )
+        .await?;
+
+    let handle = spawn_transfer_notifs_listener("https://127.0.0.1:12001".to_string());
+
+    let _register = client
+        .create_register(register_addr, &mut wallet_client, false)
+        .await?;
 
     let count = timeout(Duration::from_millis(5000), async { handle.await? }).await??;
     println!("Number of notifications received by node: {count}");
@@ -204,4 +218,33 @@ fn current_rewards_balance() -> Result<NanoTokens> {
     }
 
     Ok(total_rewards)
+}
+
+fn spawn_transfer_notifs_listener(endpoint: String) -> JoinHandle<Result<usize, eyre::Report>> {
+    tokio::spawn(async move {
+        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let response = rpc_client
+            .node_events(Request::new(NodeEventsRequest {}))
+            .await?;
+
+        let mut count = 0;
+        let mut stream = response.into_inner();
+        while let Some(Ok(e)) = stream.next().await {
+            match NodeEvent::from_bytes(&e.event) {
+                Ok(NodeEvent::TransferNotif { key, transfer: _ }) => {
+                    println!("Transfer notif received for key {key:?}");
+                    count += 1;
+                    if count == CLOSE_GROUP_SIZE {
+                        break;
+                    }
+                }
+                Ok(_) => { /* ignored */ }
+                Err(_) => {
+                    println!("Error while parsing received NodeEvent");
+                }
+            }
+        }
+
+        Ok(count)
+    })
 }
