@@ -9,7 +9,7 @@
 mod common;
 
 use assert_fs::TempDir;
-use common::{get_client_and_wallet, get_wallet, init_logging};
+use common::{get_client_and_wallet, get_wallet, init_logging_single_threaded_tokio};
 use eyre::Result;
 use sn_client::send;
 use sn_transfers::{create_offline_transfer, rng, Hash, NanoTokens, UniquePubkey};
@@ -17,7 +17,7 @@ use tracing::trace;
 
 #[tokio::test]
 async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
-    let _log_appender_guard = init_logging("sequential_transfer");
+    let _log_guards = init_logging_single_threaded_tokio("sequential_transfer");
     trace!("Running test: cash_note_transfer_multiple_sequential_succeed");
 
     let first_wallet_balance = 1_000_000_000;
@@ -55,7 +55,7 @@ async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
 
 #[tokio::test]
 async fn cash_note_transfer_double_spend_fail() -> Result<()> {
-    let _log_appender_guard = init_logging("sequential_transfer");
+    let _log_guards = init_logging_single_threaded_tokio("sequential_transfer");
     trace!("Running test: cash_note_transfer_double_spend_fail");
 
     // create 1 wallet add money from faucet
