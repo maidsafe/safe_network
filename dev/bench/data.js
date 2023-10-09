@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696864424157,
+  "lastUpdate": 1696864425849,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -25342,6 +25342,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 39,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6887c4505b8e86c0447a4d99f285baaaf6140d8d",
+          "message": "chore(networking): minor tweaks to reduce mem allocations on Identify",
+          "timestamp": "2023-10-09T16:50:13+02:00",
+          "tree_id": "582c7748f5aa29acf8709ca59a84b7da72905410",
+          "url": "https://github.com/maidsafe/safe_network/commit/6887c4505b8e86c0447a4d99f285baaaf6140d8d"
+        },
+        "date": 1696864425403,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 152,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 36,
             "unit": "MB"
           }
         ]
