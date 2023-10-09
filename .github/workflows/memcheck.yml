@@ -90,15 +90,16 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 15
 
+      - name: Download 95mb file to be uploaded with the safe client
+        shell: bash
+        run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
+
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
       - name: Start a client to upload files
         run: |
-          ls -l ./target/release
-          cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/faucet"
-          cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/safe"
-          cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/safenode"
-          cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./target/release/testnet"
+          ls -l
+          cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./the-test-data.zip"
         env:
           SN_LOG: "all"
         timeout-minutes: 25
@@ -161,8 +162,28 @@ jobs:
           cargo run --bin safe --release -- --log-output-dest=data-dir files download
           ls -l $CLIENT_DATA_PATH/downloaded_files
           downloaded_files=$(ls $CLIENT_DATA_PATH/downloaded_files | wc -l)
-          if [ $downloaded_files -lt 4 ]; then
-            echo "Only downloaded $downloaded_files files, less than the 4 files uploaded"
+          if [ $downloaded_files -lt 1 ]; then
+            echo "Only downloaded $downloaded_files files, less than the 1 file uploaded"
+            exit 1
+          fi
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      # Download the same files again to ensure files won't get corrupted.
+      - name: Start a client to download the same files again
+        run: |
+          cargo run --bin safe --release -- --log-output-dest=data-dir files download
+          ls -l $CLIENT_DATA_PATH/downloaded_files
+          downloaded_files=$(ls $CLIENT_DATA_PATH/downloaded_files | wc -l)
+          if [ $downloaded_files -lt 1 ]; then
+            echo "Only downloaded $downloaded_files files, less than the 1 file uploaded"
+            exit 1
+          fi
+          file_size1=$(stat -c "%s" ./the-test-data.zip)
+          file_size2=$(stat -c "%s" $CLIENT_DATA_PATH/downloaded_files/the-test-data.zip)
+          if [ $file_size1 != $file_size2 ]; then
+            echo "The downloaded file has a different size $file_size2 to the original $file_size1."
             exit 1
           fi
         env:
