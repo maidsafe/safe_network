@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.19](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.18...sn_networking-v0.8.19) - 2023-10-09
+
+### Added
+- feat!(sn_networking): remove unroutable peers
+
+### Other
+- *(networking)* minor tweaks to reduce mem allocations on Identify
+- *(networking)* remove identify clone and collect
+
 ## [0.8.18](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.17...sn_networking-v0.8.18) - 2023-10-08
 
 ### Fixed
