@@ -49,8 +49,11 @@ type ResultRandomContent = Result<(Files, Bytes, ChunkAddress, Vec<(XorName, Pat
 pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
 
 /// Logs to the data_dir
-/// The logging_targets are overridden by sn_logging if `SN_LOG` env var is provided.
-pub fn init_logging() -> Option<WorkerGuard> {
+/// Provide the test file name to capture tracings from the test
+pub fn init_logging(test_file_name: &str) -> Option<WorkerGuard> {
+    // overwrite SN_LOG
+    std::env::set_var("SN_LOG", format!("{test_file_name}=TRACE,all"));
+
     let output_dest = match dirs_next::data_dir() {
         Some(dir) => {
             // Get the current timestamp and format it to be human readable

@@ -12,8 +12,8 @@ pub mod error;
 pub mod metrics;
 
 use self::error::{Error, Result};
-use std::fmt;
 use std::path::PathBuf;
+use std::{collections::BTreeMap, fmt};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::{Event, Level, Subscriber};
 use tracing_subscriber::{
@@ -264,47 +264,65 @@ pub fn init_test_logger() {
     });
 }
 
+/// Parses the logging targets from the env variable (SN_LOG). The crates should be given as a CSV, for e.g.,
+/// `export SN_LOG = libp2p=DEBUG, tokio=INFO, all, sn_client=ERROR`
+/// If any custom keyword is encountered in the CSV, for e.g., VERBOSE_SN_LOGS ('all'), then they might override some
+/// of the value that you might have provided, `sn_client=ERROR` in the above example will be ignored and
+/// instead will be set to `TRACE` since `all` keyword is provided.
 fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> {
-    let mut targets = Vec::new();
-    let crates = logging_env_value.split(',');
-    for c in crates {
-        let networking_log_level = if c == ALL_SN_LOGS {
-            ("sn_networking".to_string(), Level::TRACE)
-        } else {
-            ("sn_networking".to_string(), Level::DEBUG)
-        };
+    let mut targets = BTreeMap::new();
+    let mut contains_keyword_all_sn_logs = false;
+    let mut contains_keyword_verbose_sn_logs = false;
 
+    for crate_log_level in logging_env_value.split(',') {
         // TODO: are there other default short-circuits wanted?
         // Could we have a default set if NOT on a release commit?
-        if c == ALL_SN_LOGS || c == VERBOSE_SN_LOGS {
-            // short-circuit to get all logs
-            return Ok(vec![
-                networking_log_level,
-                ("safenode".to_string(), Level::TRACE),
-                ("safe".to_string(), Level::TRACE),
-                ("sn_build_info".to_string(), Level::TRACE),
-                ("sn_cli".to_string(), Level::TRACE),
-                ("sn_client".to_string(), Level::TRACE),
-                ("sn_logging".to_string(), Level::TRACE),
-                ("sn_node".to_string(), Level::TRACE),
-                ("sn_peers_acquisition".to_string(), Level::TRACE),
-                ("sn_protocol".to_string(), Level::TRACE),
-                ("sn_registers".to_string(), Level::TRACE),
-                ("sn_testnet".to_string(), Level::TRACE),
-                ("sn_transfers".to_string(), Level::TRACE),
-            ]);
+        if crate_log_level == ALL_SN_LOGS {
+            contains_keyword_all_sn_logs = true;
+            continue;
+        } else if crate_log_level == VERBOSE_SN_LOGS {
+            contains_keyword_verbose_sn_logs = true;
+            continue;
         }
 
-        let mut split = c.split('=');
+        let mut split = crate_log_level.split('=');
         let crate_name = split.next().ok_or_else(|| {
             Error::LoggingConfigurationError(
                 "Could not obtain crate name in logging string".to_string(),
             )
         })?;
         let log_level = split.next().unwrap_or("trace");
-        targets.push((crate_name.to_string(), get_log_level_from_str(log_level)?));
+        targets.insert(crate_name.to_string(), get_log_level_from_str(log_level)?);
     }
-    Ok(targets)
+
+    // dealing with keywords
+    let networking_log_level = if contains_keyword_all_sn_logs {
+        ("sn_networking".to_string(), Level::TRACE)
+    } else {
+        ("sn_networking".to_string(), Level::DEBUG)
+    };
+    if contains_keyword_all_sn_logs || contains_keyword_verbose_sn_logs {
+        // extend will overwrite values inside `targets`
+        targets.extend(vec![
+            networking_log_level,
+            ("safenode".to_string(), Level::TRACE),
+            ("safe".to_string(), Level::TRACE),
+            ("sn_build_info".to_string(), Level::TRACE),
+            ("sn_cli".to_string(), Level::TRACE),
+            ("sn_client".to_string(), Level::TRACE),
+            ("sn_logging".to_string(), Level::TRACE),
+            ("sn_node".to_string(), Level::TRACE),
+            ("sn_peers_acquisition".to_string(), Level::TRACE),
+            ("sn_protocol".to_string(), Level::TRACE),
+            ("sn_registers".to_string(), Level::TRACE),
+            ("sn_testnet".to_string(), Level::TRACE),
+            ("sn_transfers".to_string(), Level::TRACE),
+        ]);
+    }
+    Ok(targets
+        .into_iter()
+        .map(|(crate_name, level)| (crate_name, level))
+        .collect())
 }
 
 fn get_log_level_from_str(log_level: &str) -> Result<Level> {
