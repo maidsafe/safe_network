@@ -87,9 +87,6 @@ pub enum Error {
     #[error("SnProtocol Error")]
     ProtocolError(#[from] sn_protocol::error::Error),
 
-    #[error("No SwarmCmd channel capacity")]
-    NoSwarmCmdChannelCapacity,
-
     #[error("Failed to sign the message with the PeerId keypair")]
     SigningFailed(#[from] libp2p::identity::SigningError),
 

@@ -84,7 +84,7 @@ const REQ_RESPONSE_VERSION_STR: &str = concat!("/safe/node/", env!("CARGO_PKG_VE
 const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PKG_VERSION"));
 const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
-const NETWORKING_CHANNEL_SIZE: usize = 10_000;
+const NETWORKING_CHANNEL_SIZE: usize = 10;
 
 // Protocol support shall be downward compatible for patch only version update.
 // i.e. versions of `A.B.X` shall be considered as a same protocol of `A.B`
@@ -519,13 +519,10 @@ impl SwarmDriver {
         let capacity = event_sender.capacity();
 
         if capacity == 0 {
-            warn!(
-                "NetworkEvent channel is full. Dropping NetworkEvent: {:?}",
+            debug!(
+                "NetworkEvent channel is full. Awaiting to send NetworkEvent: {:?}",
                 event
             );
-
-            // Lets error out just now.
-            return;
         }
 
         // push the event off thread so as to be non-blocking

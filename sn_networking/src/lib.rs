@@ -524,10 +524,10 @@ impl Network {
         let capacity = self.swarm_cmd_sender.capacity();
 
         if capacity == 0 {
-            error!("SwarmCmd channel is full. Dropping SwarmCmd: {:?}", cmd);
-
-            // Lets error out just now.
-            return Err(Error::NoSwarmCmdChannelCapacity);
+            debug!(
+                "SwarmCmd channel is full. Awaiting to send SwarmCmd: {:?}",
+                cmd
+            );
         }
         let cmd_sender = self.swarm_cmd_sender.clone();
 
