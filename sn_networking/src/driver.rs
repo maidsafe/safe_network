@@ -86,6 +86,9 @@ const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
+/// Time before a Kad query timesout if no response is received
+const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(25);
+
 // Protocol support shall be downward compatible for patch only version update.
 // i.e. versions of `A.B.X` shall be considered as a same protocol of `A.B`
 pub(crate) fn truncate_patch_version(full_str: &str) -> &str {
@@ -185,7 +188,7 @@ impl NetworkBuilder {
             .set_replication_factor(
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
             )
-            .set_query_timeout(Duration::from_secs(5 * 60))
+            .set_query_timeout(KAD_QUERY_TIMEOUT_S)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
             // Records never expire
