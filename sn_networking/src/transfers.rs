@@ -70,7 +70,7 @@ impl Network {
     /// Else returns a list of CashNotes that can be deposited to our wallet and spent
     pub async fn verify_and_unpack_transfer(
         &self,
-        transfer: Transfer,
+        transfer: &Transfer,
         wallet: &LocalWallet,
     ) -> Result<Vec<CashNote>> {
         // get CashNoteRedemptions from encrypted Transfer

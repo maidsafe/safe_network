@@ -35,6 +35,11 @@ use std::{
 };
 use tokio::task::spawn;
 
+/// Expected topic name where notifications of transfers are sent on.
+/// The notification msg is expected to contain the serialised public key, followed by the
+/// serialised transfer info encrypted against the referenced public key.
+pub(super) const TRANSFER_NOTIF_TOPIC: &str = "TRANSFER_NOTIFICATION";
+
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
 #[derive(Clone)]
@@ -202,10 +207,15 @@ impl Node {
             }
         });
 
-        Ok(RunningNode {
+        let running_node = RunningNode {
             network,
             node_events_channel,
-        })
+        };
+
+        // subscribe to receive transfer notifications over gossipsub topic TRANSFER_NOTIF_TOPIC
+        running_node.subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())?;
+
+        Ok(running_node)
     }
 
     /// Calls Marker::log() to insert the marker into the log files.
@@ -327,6 +337,14 @@ impl Node {
                 }
             }
             NetworkEvent::GossipsubMsg { topic, msg } => {
+                if topic == TRANSFER_NOTIF_TOPIC {
+                    // this is expected to be a notification of a transfer which we treat specially
+                    match try_decode_transfer_notif(&msg) {
+                        Ok(notif_event) => return self.events_channel.broadcast(notif_event),
+                        Err(err) => warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {:?}", err),
+                    }
+                }
+
                 self.events_channel
                     .broadcast(NodeEvent::GossipsubMsg { topic, msg });
             }
@@ -425,4 +443,18 @@ impl Node {
             warn!("Error while sending response: {err:?}");
         }
     }
+}
+
+fn try_decode_transfer_notif(msg: &[u8]) -> eyre::Result<NodeEvent> {
+    let mut key_bytes = [0u8; bls::PK_SIZE];
+    key_bytes.copy_from_slice(
+        msg.get(0..bls::PK_SIZE)
+            .ok_or_else(|| eyre::eyre!("msg doesn't have enough bytes"))?,
+    );
+    let key = bls::PublicKey::from_bytes(key_bytes)?;
+
+    let transfer =
+        sn_transfers::Transfer::from_hex(&String::from_utf8(msg[bls::PK_SIZE..].to_vec())?)?;
+
+    Ok(NodeEvent::TransferNotif { key, transfer })
 }
