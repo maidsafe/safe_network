@@ -330,7 +330,7 @@ async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Pa
 
     println!("Verifying transfer with the Network...");
     let mut wallet = LocalWallet::load_from(root_dir)?;
-    let cashnotes = match client.receive(transfer, &wallet).await {
+    let cashnotes = match client.receive(&transfer, &wallet).await {
         Ok(cashnotes) => cashnotes,
         Err(err) => {
             println!("Failed to verify and redeem transfer: {err:?}");

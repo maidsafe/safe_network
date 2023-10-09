@@ -290,7 +290,7 @@ impl Client {
     /// Receive a Transfer, verify and redeem CashNotes from the Network.
     pub async fn receive(
         &self,
-        transfer: Transfer,
+        transfer: &Transfer,
         wallet: &LocalWallet,
     ) -> WalletResult<Vec<CashNote>> {
         let cashnotes = self

@@ -50,6 +50,10 @@ enum Cmd {
     /// Note this blocks the app and it will print events as they are broadcasted by the node
     #[clap(name = "events")]
     Events,
+    /// Start listening for transfers events.
+    /// Note this blocks the app and it will print events as they are broadcasted by the node
+    #[clap(name = "transfers")]
+    TransfersEvents,
     /// Subscribe to a given Gossipsub topic
     #[clap(name = "subscribe")]
     Subscribe {
@@ -111,7 +115,8 @@ async fn main() -> Result<()> {
     match opt.cmd {
         Cmd::Info => node_info(addr).await,
         Cmd::Netinfo => network_info(addr).await,
-        Cmd::Events => node_events(addr).await,
+        Cmd::Events => node_events(addr, false).await,
+        Cmd::TransfersEvents => node_events(addr, true).await,
         Cmd::Subscribe { topic } => gossipsub_subscribe(addr, topic).await,
         Cmd::Unsubscribe { topic } => gossipsub_unsubscribe(addr, topic).await,
         Cmd::Publish { topic, msg } => gossipsub_publish(addr, topic, msg).await,
@@ -169,24 +174,34 @@ pub async fn network_info(addr: SocketAddr) -> Result<()> {
     Ok(())
 }
 
-pub async fn node_events(addr: SocketAddr) -> Result<()> {
+pub async fn node_events(addr: SocketAddr, only_transfers: bool) -> Result<()> {
     let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint).await?;
     let response = client
         .node_events(Request::new(NodeEventsRequest {}))
         .await?;
 
-    println!("Listening to node events... (press Ctrl+C to exit)");
+    if only_transfers {
+        println!("Listening to transfers notifications... (press Ctrl+C to exit)");
+    } else {
+        println!("Listening to node events... (press Ctrl+C to exit)");
+    }
+
     let mut stream = response.into_inner();
     while let Some(Ok(e)) = stream.next().await {
-        let event = match NodeEvent::from_bytes(&e.event) {
-            Ok(event) => event,
+        match NodeEvent::from_bytes(&e.event) {
+            Ok(NodeEvent::TransferNotif { key, transfer }) if only_transfers => {
+                println!(
+                    "New transfer notification received: {key:?} {}",
+                    transfer.to_hex()?
+                );
+            }
+            Ok(_) if only_transfers => continue,
+            Ok(event) => println!("New event received: {event:?}"),
             Err(_) => {
                 println!("Error while parsing received NodeEvent");
-                continue;
             }
-        };
-        println!("New event received: {event:?}");
+        }
     }
 
     Ok(())
