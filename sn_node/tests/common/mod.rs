@@ -38,6 +38,7 @@ use std::{
 };
 use tokio::sync::Mutex;
 use tonic::Request;
+use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::Level;
 use xor_name::XorName;
 
@@ -49,7 +50,7 @@ pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
 
 /// Logs to the data_dir
 /// The logging_targets are overridden by sn_logging if `SN_LOG` env var is provided.
-pub fn init_logging() {
+pub fn init_logging() -> Option<WorkerGuard> {
     let output_dest = match dirs_next::data_dir() {
         Some(dir) => {
             // Get the current timestamp and format it to be human readable
@@ -64,6 +65,7 @@ pub fn init_logging() {
         None => LogOutputDest::Stdout,
     };
 
+    let mut log_appender_guard = None;
     TEST_INIT_LOGGER.call_once(|| {
         let logging_targets = vec![
             ("safenode".to_string(), Level::INFO),
@@ -72,10 +74,11 @@ pub fn init_logging() {
             ("sn_networking".to_string(), Level::INFO),
             ("sn_node".to_string(), Level::INFO),
         ];
-        let _log_appender_guard =
+        log_appender_guard =
             sn_logging::init_logging(logging_targets, output_dest, LogFormat::Default)
                 .expect("Failed to init logging");
     });
+    log_appender_guard
 }
 
 lazy_static! {

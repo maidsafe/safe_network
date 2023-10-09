@@ -13,10 +13,12 @@ use common::{get_client_and_wallet, get_wallet, init_logging};
 use eyre::Result;
 use sn_client::send;
 use sn_transfers::{create_offline_transfer, rng, Hash, NanoTokens, UniquePubkey};
+use tracing::trace;
 
 #[tokio::test]
 async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
-    init_logging();
+    let _log_appender_guard = init_logging();
+    trace!("Running test: cash_note_transfer_multiple_sequential_succeed");
 
     let first_wallet_balance = 1_000_000_000;
     let first_wallet_dir = TempDir::new()?;
@@ -53,7 +55,8 @@ async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
 
 #[tokio::test]
 async fn cash_note_transfer_double_spend_fail() -> Result<()> {
-    init_logging();
+    let _log_appender_guard = init_logging();
+    trace!("Running test: cash_note_transfer_double_spend_fail");
 
     // create 1 wallet add money from faucet
     let first_wallet_balance = 1_000_000_000;

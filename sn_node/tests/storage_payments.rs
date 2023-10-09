@@ -22,11 +22,13 @@ use sn_protocol::{
 use sn_transfers::{MainPubkey, NanoTokens};
 use std::collections::BTreeMap;
 use tokio::time::{sleep, Duration};
+use tracing::trace;
 use xor_name::XorName;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_succeeds() -> Result<()> {
-    init_logging();
+    let _log_appender_guard = init_logging();
+    trace!("Running test: storage_payment_succeeds");
 
     let paying_wallet_balance = 50_000_000_000_000_001;
     let paying_wallet_dir = TempDir::new()?;
@@ -66,7 +68,8 @@ async fn storage_payment_succeeds() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
-    init_logging();
+    let _log_appender_guard = init_logging();
+    trace!("Running test: storage_payment_fails_with_insufficient_money");
 
     let wallet_original_balance = 100_000_000_000;
     let paying_wallet_dir: TempDir = TempDir::new()?;
@@ -110,7 +113,8 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
 #[ignore = "Currently we do not cache the proofs in the wallet"]
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
-    init_logging();
+    let _log_appender_guard = init_logging();
+    trace!("Running test: storage_payment_proofs_cached_in_wallet");
 
     let wallet_original_balance = 100_000_000_000_000_000;
     let paying_wallet_dir: TempDir = TempDir::new()?;
@@ -175,7 +179,8 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
-    init_logging();
+    let _log_appender_guard = init_logging();
+    trace!("Running test: storage_payment_chunk_upload_succeeds");
 
     let paying_wallet_balance = 50_000_000_000_002;
     let paying_wallet_dir = TempDir::new()?;
@@ -211,7 +216,8 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_chunk_upload_fails() -> Result<()> {
-    init_logging();
+    let _log_appender_guard = init_logging();
+    trace!("Running test: storage_payment_chunk_upload_fails");
 
     let paying_wallet_balance = 50_000_000_000_003;
     let paying_wallet_dir = TempDir::new()?;
@@ -275,7 +281,8 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_register_creation_succeeds() -> Result<()> {
-    init_logging();
+    let _log_appender_guard = init_logging();
+    trace!("Running test: storage_payment_register_creation_succeeds");
 
     let paying_wallet_balance = 65_000_000_000;
     let paying_wallet_dir = TempDir::new()?;
@@ -316,7 +323,8 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
-    init_logging();
+    let _log_appender_guard = init_logging();
+    trace!("Running test: storage_payment_register_creation_and_mutation_fails");
 
     let paying_wallet_balance = 55_000_000_005;
     let paying_wallet_dir = TempDir::new()?;
