@@ -8,10 +8,10 @@
 
 mod common;
 
-use std::collections::BTreeMap;
-
-use common::{get_client_and_wallet, init_logging, random_content};
-
+use crate::common::{get_client_and_wallet, init_logging, random_content};
+use assert_fs::TempDir;
+use eyre::Result;
+use rand::Rng;
 use sn_client::{Error as ClientError, WalletClient};
 use sn_networking::Error as NetworkError;
 use sn_protocol::{
@@ -20,10 +20,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_transfers::{MainPubkey, NanoTokens};
-
-use assert_fs::TempDir;
-use eyre::Result;
-use rand::Rng;
+use std::collections::BTreeMap;
 use tokio::time::{sleep, Duration};
 use xor_name::XorName;
 
@@ -70,8 +67,8 @@ async fn storage_payment_succeeds() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
     init_logging();
-    let wallet_original_balance = 100_000_000_000;
 
+    let wallet_original_balance = 100_000_000_000;
     let paying_wallet_dir: TempDir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
 
@@ -113,6 +110,8 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
 #[ignore = "Currently we do not cache the proofs in the wallet"]
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
+    init_logging();
+
     let wallet_original_balance = 100_000_000_000_000_000;
     let paying_wallet_dir: TempDir = TempDir::new()?;
 
@@ -176,6 +175,8 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
+    init_logging();
+
     let paying_wallet_balance = 50_000_000_000_002;
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
@@ -210,6 +211,8 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_chunk_upload_fails() -> Result<()> {
+    init_logging();
+
     let paying_wallet_balance = 50_000_000_000_003;
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
@@ -272,6 +275,8 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_register_creation_succeeds() -> Result<()> {
+    init_logging();
+
     let paying_wallet_balance = 65_000_000_000;
     let paying_wallet_dir = TempDir::new()?;
 
@@ -311,6 +316,8 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
+    init_logging();
+
     let paying_wallet_balance = 55_000_000_005;
     let paying_wallet_dir = TempDir::new()?;
 

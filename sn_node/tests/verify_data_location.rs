@@ -9,12 +9,12 @@
 #![allow(clippy::mutable_key_type)]
 mod common;
 
-use assert_fs::TempDir;
-use common::{
-    get_client_and_wallet, node_restart,
+use crate::common::{
+    get_client_and_wallet, init_logging, node_restart,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
     PAYING_WALLET_INITIAL_BALANCE,
 };
+use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use libp2p::{
     kad::{KBucketKey, RecordKey},
@@ -22,7 +22,6 @@ use libp2p::{
 };
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Files, WalletClient};
-use sn_logging::{init_logging, LogFormat, LogOutputDest};
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{storage::ChunkAddress, NetworkAddress, PrettyPrintRecordKey};
 use sn_transfers::LocalWallet;
@@ -36,7 +35,6 @@ use std::{
 };
 use tonic::Request;
 use tracing::error;
-use tracing_core::Level;
 
 const NODE_COUNT: u8 = 25;
 const CHUNK_SIZE: usize = 1024;
@@ -65,18 +63,7 @@ type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_data_location() -> Result<()> {
-    let tmp_dir = std::env::temp_dir();
-    let logging_targets = vec![
-        ("safenode".to_string(), Level::TRACE),
-        ("sn_transfers".to_string(), Level::TRACE),
-        ("sn_networking".to_string(), Level::TRACE),
-        ("sn_node".to_string(), Level::TRACE),
-    ];
-    let _log_appender_guard = init_logging(
-        logging_targets,
-        LogOutputDest::Path(tmp_dir.to_path_buf()),
-        LogFormat::Default,
-    )?;
+    init_logging();
 
     let churn_count = if let Ok(str) = std::env::var("CHURN_COUNT") {
         str.parse::<u8>()?
