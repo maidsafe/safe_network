@@ -25,7 +25,7 @@ use libp2p::{
     },
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
-    swarm::{dial_opts::DialOpts, SwarmEvent},
+    swarm::SwarmEvent,
     Multiaddr, PeerId,
 };
 #[cfg(feature = "open-metrics")]
@@ -190,7 +190,7 @@ impl Debug for NetworkEvent {
 }
 
 impl SwarmDriver {
-    // Handle `SwarmEvents`
+    /// Handle `SwarmEvents`
     pub(super) fn handle_swarm_events<EventError: std::error::Error>(
         &mut self,
         event: SwarmEvent<NodeEvent, EventError>,
@@ -210,72 +210,50 @@ impl SwarmDriver {
                 self.network_metrics.record(&(kad_event));
                 self.handle_kad_event(kad_event)?;
             }
+            // Handle the Identify event from the libp2p swarm.
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
+                // Record the Identify event for metrics if the feature is enabled.
                 #[cfg(feature = "open-metrics")]
                 self.network_metrics.record(&(*iden));
+                // Match on the Identify event.
                 match *iden {
+                    // If the event is a Received event, handle the received peer information.
                     libp2p::identify::Event::Received { peer_id, info } => {
                         trace!(%peer_id, ?info, "identify: received info");
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
-                        if (self.local
+                        if self.local
                             || self.dialed_peers.contains(&peer_id)
-                            || self.unroutable_peers.contains(&peer_id))
-                            && info
-                                .agent_version
-                                .starts_with(truncate_patch_version(IDENTIFY_AGENT_STR))
+                                && info
+                                    .agent_version
+                                    .starts_with(truncate_patch_version(IDENTIFY_AGENT_STR))
                         {
-                            let addrs = match self.local {
-                                true => info.listen_addrs,
-                                // If we're not in local mode, only add globally reachable addresses
+                            // If we're not in local mode, only add globally reachable addresses.
+                            // Strip the `/p2p/...` part of the multiaddresses.
+                            // Collect into a HashSet directly to avoid multiple allocations and handle deduplication.
+                            let addrs: HashSet<Multiaddr> = match self.local {
+                                true => info
+                                    .listen_addrs
+                                    .into_iter()
+                                    .map(|addr| multiaddr_strip_p2p(&addr))
+                                    .collect(),
                                 false => info
                                     .listen_addrs
                                     .into_iter()
                                     .filter(multiaddr_is_global)
+                                    .map(|addr| multiaddr_strip_p2p(&addr))
                                     .collect(),
                             };
-                            // Strip the `/p2p/...` part of the multiaddresses
-                            let addrs: Vec<_> = addrs
-                                .into_iter()
-                                .map(|addr| multiaddr_strip_p2p(&addr))
-                                // And deduplicate the list
-                                .unique()
-                                .collect();
 
-                            for multiaddr in addrs.clone() {
-                                // If the peer was unroutable, we dial it.
-                                if !self.dialed_peers.contains(&peer_id)
-                                    && self.unroutable_peers.contains(&peer_id)
-                                {
-                                    debug!("identify: dialing unroutable peer by its announced listen address: {peer_id:?}");
-                                    if let Err(err) = self.dial_with_opts(
-                                        DialOpts::peer_id(peer_id)
-                                            // By default the condition is 'Disconnected'. But we still want to establish an outbound connection,
-                                            // even if there already is an inbound connection
-                                            .condition(
-                                                libp2p::swarm::dial_opts::PeerCondition::NotDialing,
-                                            )
-                                            .build(),
-                                    ) {
-                                        match err {
-                                            // If we are already dialing the peer, that's fine, otherwise report error.
-                                            libp2p::swarm::DialError::DialPeerConditionFalse(
-                                                libp2p::swarm::dial_opts::PeerCondition::NotDialing,
-                                            ) => {}
-                                            _ => {
-                                                error!(%peer_id, "identify: dial attempt error: {err:?}");
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
+                            // Attempt to add the addresses to the routing table.
+                            for multiaddr in &addrs {
+                                trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
-                                    let _routing_update = self
-                                        .swarm
-                                        .behaviour_mut()
-                                        .kademlia
-                                        .add_address(&peer_id, multiaddr);
-                                }
+                                let _routing_update = self
+                                    .swarm
+                                    .behaviour_mut()
+                                    .kademlia
+                                    .add_address(&peer_id, multiaddr.clone());
                             }
 
                             // If the peer supports AutoNAT, add it as server
@@ -292,6 +270,7 @@ impl SwarmDriver {
                             }
                         }
                     }
+                    // Log the other Identify events.
                     libp2p::identify::Event::Sent { .. } => trace!("identify: {iden:?}"),
                     libp2p::identify::Event::Pushed { .. } => trace!("identify: {iden:?}"),
                     libp2p::identify::Event::Error { .. } => trace!("identify: {iden:?}"),
@@ -728,7 +707,6 @@ impl SwarmDriver {
             }
             KademliaEvent::UnroutablePeer { peer } => {
                 trace!(peer_id = %peer, "KademliaEvent: UnroutablePeer");
-                let _ = self.unroutable_peers.push(peer);
             }
             other => {
                 trace!("KademliaEvent ignored: {other:?}");

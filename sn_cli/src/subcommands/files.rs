@@ -27,6 +27,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
+use tempfile::tempdir;
 use tokio::task::JoinHandle;
 use walkdir::WalkDir;
 use xor_name::XorName;
@@ -117,6 +118,7 @@ pub(crate) async fn files_cmds(
 pub(super) async fn chunk_path(
     file_api: &Files,
     files_path: &Path,
+    chunks_dir: &Path,
 ) -> Result<BTreeMap<XorName, ChunkedFile>> {
     trace!("Starting to chunk {files_path:?} now.");
 
@@ -129,7 +131,6 @@ pub(super) async fn chunk_path(
     progress_bar.println(format!("Chunking {total_files} files..."));
 
     // Get the list of Chunks addresses from the files found at 'files_path'
-    let chunks_dir = std::env::temp_dir();
     let mut chunked_files = BTreeMap::new();
     for entry in WalkDir::new(files_path).into_iter().flatten() {
         if entry.file_type().is_file() {
@@ -143,8 +144,20 @@ pub(super) async fn chunk_path(
                 continue;
             };
 
+            // Each file using individual dir for temp SE chunks.
+            let file_chunks_dir = {
+                let file_chunks_dir = chunks_dir.join(file_name.clone());
+                match fs::create_dir_all(file_chunks_dir.clone()) {
+                    Ok(_) => file_chunks_dir,
+                    Err(err) => {
+                        trace!("Failed to create temp folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
+                        chunks_dir.to_path_buf()
+                    }
+                }
+            };
+
             let (file_addr, _size, chunks) =
-                match file_api.chunk_file(entry.path(), chunks_dir.as_path()) {
+                match file_api.chunk_file(entry.path(), &file_chunks_dir) {
                     Ok((file_addr, size, chunks)) => (file_addr, size, chunks),
                     Err(err) => {
                         println!(
@@ -185,8 +198,11 @@ async fn upload_files(
 
     let file_api: Files = Files::new(client.clone(), wallet_dir_path.to_path_buf());
 
+    // Temp folder to hold SE chunks, which is cleaned up automatically once out of scope.
+    let temp_dir = tempdir()?;
+
     // Payment shall always be verified.
-    let chunked_files = chunk_path(&file_api, &files_path).await?;
+    let chunked_files = chunk_path(&file_api, &files_path, temp_dir.path()).await?;
 
     let uploaded_file_info = chunked_files
         .iter()
