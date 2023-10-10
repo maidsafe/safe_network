@@ -59,7 +59,7 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let first_wallet_balance = 1_000_000_000;
     let first_wallet_dir = TempDir::new()?;
 
-    let (client, first_wallet) =
+    let (client, mut first_wallet) =
         get_client_and_wallet(first_wallet_dir.path(), first_wallet_balance).await?;
 
     // create wallet 2 and 3 to receive money from 1
@@ -76,7 +76,7 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let to2 = second_wallet.address();
     let to3 = third_wallet.address();
 
-    let some_cash_notes = first_wallet.available_cash_notes();
+    let (some_cash_notes, _exclusive_access) = first_wallet.available_cash_notes().unwrap();
     let same_cash_notes = some_cash_notes.clone();
 
     let mut rng = rng::thread_rng();
