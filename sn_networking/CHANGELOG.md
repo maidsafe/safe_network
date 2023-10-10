@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.22](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.21...sn_networking-v0.8.22) - 2023-10-10
+
+### Added
+- *(transfer)* special event for transfer notifs over gossipsub
+
+### Other
+- feature-gating subscription to gossipsub payments notifications
+
 ## [0.8.21](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.20...sn_networking-v0.8.21) - 2023-10-10
 
 ### Fixed

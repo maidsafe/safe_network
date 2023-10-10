@@ -1624,6 +1624,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.92.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.92.7...sn_node-v0.92.8) - 2023-10-10
+
+### Added
+- *(transfer)* special event for transfer notifs over gossipsub
+
+### Other
+- minor improvements to some log msgs
+- feature-gating subscription to gossipsub payments notifications
+- *(transfer)* add verification for register payment notification to e2e test
+- *(transfer)* CI test to verify storage payment notifications are sent by each of storage node
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
