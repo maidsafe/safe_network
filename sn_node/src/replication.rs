@@ -161,7 +161,13 @@ impl Node {
                         "Can not fetch record {pretty_key:?} from node {holder:?}, fetching from the network"
                     );
                     node.network
-                        .get_record_from_network(key, None, GetQuorum::Majority, false)
+                        .get_record_from_network(
+                            key,
+                            None,
+                            GetQuorum::Majority,
+                            false,
+                            Default::default(),
+                        )
                         .await?
                 };
 

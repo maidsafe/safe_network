@@ -33,7 +33,7 @@ pub use self::{
     record_store::NodeRecordStore,
 };
 
-use self::{cmd::SwarmCmd, error::Result};
+use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
 use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{
@@ -245,6 +245,7 @@ impl Network {
         target_record: Option<Record>,
         quorum: GetQuorum,
         re_attempt: bool,
+        expected_holders: ExpectedHoldersList,
     ) -> Result<Record> {
         let total_attempts = if re_attempt { VERIFICATION_ATTEMPTS } else { 1 };
 
@@ -262,6 +263,7 @@ impl Network {
                 key: key.clone(),
                 sender,
                 quorum,
+                expected_holders: expected_holders.clone(),
             })?;
 
             match receiver
@@ -372,7 +374,12 @@ impl Network {
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
     /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
-    pub async fn put_record(&self, record: Record, verify_store: Option<Record>) -> Result<()> {
+    pub async fn put_record(
+        &self,
+        record: Record,
+        verify_store: Option<Record>,
+        expected_holders: ExpectedHoldersList,
+    ) -> Result<()> {
         let mut retries = 0;
 
         // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
@@ -383,7 +390,11 @@ impl Network {
             );
 
             let res = self
-                .put_record_once(record.clone(), verify_store.clone())
+                .put_record_once(
+                    record.clone(),
+                    verify_store.clone(),
+                    expected_holders.clone(),
+                )
                 .await;
 
             // if we're not verifying a record, or it's fine we can return
@@ -398,7 +409,12 @@ impl Network {
         Err(Error::FailedToVerifyRecordWasStored(record.key.into()))
     }
 
-    async fn put_record_once(&self, record: Record, verify_store: Option<Record>) -> Result<()> {
+    async fn put_record_once(
+        &self,
+        record: Record,
+        verify_store: Option<Record>,
+        expected_holders: ExpectedHoldersList,
+    ) -> Result<()> {
         let record_key = record.key.clone();
         let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
         info!(
@@ -425,8 +441,14 @@ impl Network {
             trace!("attempting to verify {pretty_key:?}");
 
             // Verify the record is stored, requiring re-attempts
-            self.get_record_from_network(record_key, verify_store, GetQuorum::All, true)
-                .await?;
+            self.get_record_from_network(
+                record_key,
+                verify_store,
+                GetQuorum::All,
+                true,
+                expected_holders,
+            )
+            .await?;
         }
 
         response

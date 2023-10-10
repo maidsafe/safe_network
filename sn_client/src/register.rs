@@ -19,7 +19,7 @@ use sn_protocol::{
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
 use sn_transfers::Transfer;
 
-use std::collections::{BTreeSet, LinkedList};
+use std::collections::{BTreeSet, HashSet, LinkedList};
 use xor_name::XorName;
 
 /// Ops made to an offline Register instance are applied locally only,
@@ -323,7 +323,8 @@ impl ClientRegister {
             }
         };
 
-        let key = NetworkAddress::from_register_address(*register.address()).to_record_key();
+        let network_address = NetworkAddress::from_register_address(*register.address());
+        let key = network_address.to_record_key();
         let record = Record {
             key: key.clone(),
             value: try_serialize_record(&(payment, &register), RecordKind::RegisterWithPayment)?,
@@ -331,22 +332,33 @@ impl ClientRegister {
             expires: None,
         };
 
-        let record_to_verify = if verify_store {
-            Some(Record {
-                key,
-                value: try_serialize_record(&register, RecordKind::Register)?,
-                publisher: None,
-                expires: None,
-            })
+        let (record_to_verify, expected_holders) = if verify_store {
+            let expected_holders: HashSet<_> = self
+                .client
+                .network
+                .get_closest_peers(&network_address, true)
+                .await?
+                .iter()
+                .cloned()
+                .collect();
+            (
+                Some(Record {
+                    key,
+                    value: try_serialize_record(&register, RecordKind::Register)?,
+                    publisher: None,
+                    expires: None,
+                }),
+                expected_holders,
+            )
         } else {
-            None
+            (None, Default::default())
         };
 
         // Register edits might exist so we cannot be sure that just because we get a record back that this should fail
         Ok(self
             .client
             .network
-            .put_record(record, record_to_verify)
+            .put_record(record, record_to_verify, expected_holders)
             .await?)
     }
 
