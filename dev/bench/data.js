@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696924353940,
+  "lastUpdate": 1696924554723,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -17933,6 +17933,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 55,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a4763310514cadbb7128dee70fe989db2f4be0a0",
+          "message": "fix(sn_networking): reduce kad query timeout\n\n5 mins was impractically long",
+          "timestamp": "2023-10-10T09:31:44+02:00",
+          "tree_id": "b2266ee9be42fdc7aadd440a4c8248b9dc9e1b9a",
+          "url": "https://github.com/maidsafe/safe_network/commit/a4763310514cadbb7128dee70fe989db2f4be0a0"
+        },
+        "date": 1696924554373,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
