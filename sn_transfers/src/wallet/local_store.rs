@@ -23,15 +23,20 @@ use crate::{
     CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
     UniquePubkey,
 };
+use fs2::FileExt;
 use itertools::Itertools;
 use xor_name::XorName;
 
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fs::File,
     path::{Path, PathBuf},
 };
 
 const WALLET_DIR_NAME: &str = "wallet";
+
+/// A locked file handle, that when dropped releases the lock.
+pub type WalletExclusiveAccess = File;
 
 /// A wallet that can only receive tokens.
 pub struct LocalWallet {
@@ -49,9 +54,29 @@ pub struct LocalWallet {
 
 impl LocalWallet {
     /// Stores the wallet to disk.
-    fn store(&self, new_cash_notes: Vec<&CashNote>) -> Result<()> {
-        self.store_cash_notes_to_disk(new_cash_notes)?;
+    fn store(&self) -> Result<()> {
         store_wallet(&self.wallet_dir, &self.wallet)
+    }
+
+    /// reloads the wallet from disk.
+    fn reload(&mut self) -> Result<()> {
+        let (key, wallet, unconfirmed_spend_requests) =
+            load_from_path(&self.wallet_dir, Some(self.key.clone()))?;
+        *self = Self {
+            key,
+            wallet,
+            wallet_dir: self.wallet_dir.to_path_buf(),
+            unconfirmed_spend_requests,
+        };
+        Ok(())
+    }
+
+    /// Locks the wallet dir and returns exclusive access to the wallet
+    /// This lock prevents any other process from locking the wallet dir, effectively acts as a mutex for the wallet
+    pub fn lock(&self) -> Result<WalletExclusiveAccess> {
+        let file = File::open(&self.wallet_dir)?;
+        file.lock_exclusive()?;
+        Ok(file)
     }
 
     /// Stores the given cash_notes to the `created cash_notes dir` in the wallet dir.
@@ -150,9 +175,20 @@ impl LocalWallet {
         self.key.sign(msg)
     }
 
-    pub fn available_cash_notes(&self) -> Vec<(CashNote, DerivedSecretKey)> {
-        let mut available_cash_notes = vec![];
+    /// Returns all available cash_notes and an exclusive access to the wallet so no concurrent processes can
+    /// get available cash_notes while we're modifying the wallet
+    /// once the updated wallet is stored to disk it is safe to drop the WalletExclusiveAccess
+    pub fn available_cash_notes(
+        &mut self,
+    ) -> Result<(Vec<(CashNote, DerivedSecretKey)>, WalletExclusiveAccess)> {
+        trace!("Trying to lock wallet to get available cash_notes...");
+        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
+        let exclusive_access = self.lock()?;
+        self.reload()?;
+        trace!("Wallet locked and loaded!");
 
+        // get the available cash_notes
+        let mut available_cash_notes = vec![];
         for (id, _token) in self.wallet.available_cash_notes.iter() {
             let held_cash_note = load_created_cash_note(id, &self.wallet_dir);
             if let Some(cash_note) = held_cash_note {
@@ -168,7 +204,8 @@ impl LocalWallet {
                 warn!("Skipping CashNote {:?} because we don't have it", id);
             }
         }
-        available_cash_notes
+
+        Ok((available_cash_notes, exclusive_access))
     }
 
     /// Return the payment cash_note ids for the given content address name if cached.
@@ -212,7 +249,7 @@ impl LocalWallet {
             })
             .collect();
 
-        let available_cash_notes = self.available_cash_notes();
+        let (available_cash_notes, _exclusive_access) = self.available_cash_notes()?;
         debug!(
             "Available CashNotes for local send: {:#?}",
             available_cash_notes
@@ -231,6 +268,7 @@ impl LocalWallet {
 
         self.update_local_wallet(transfer)?;
 
+        trace!("Releasing wallet lock"); // by dropping _exclusive_access
         Ok(created_cash_notes)
     }
 
@@ -259,9 +297,9 @@ impl LocalWallet {
 
         let reason_hash = reason_hash.unwrap_or_default();
 
-        let available_cash_notes = self.available_cash_notes();
+        let (available_cash_notes, _exclusive_access) = self.available_cash_notes()?;
         debug!("Available CashNotes: {:#?}", available_cash_notes);
-        let transfer_outputs = create_offline_transfer(
+        let offline_transfer = create_offline_transfer(
             available_cash_notes,
             all_payees_only,
             self.address(),
@@ -275,7 +313,7 @@ impl LocalWallet {
         for (content_addr, payees) in all_data_payments {
             for (payee, _token) in payees {
                 if let Some(cash_note) =
-                    &transfer_outputs
+                    &offline_transfer
                         .created_cash_notes
                         .iter()
                         .find(|cash_note| {
@@ -291,15 +329,16 @@ impl LocalWallet {
             }
         }
 
-        self.update_local_wallet(transfer_outputs)?;
+        self.update_local_wallet(offline_transfer)?;
 
         self.wallet
             .payment_transactions
             .extend(all_transfers_per_address);
 
         // get the content payment map stored
-        store_wallet(&self.wallet_dir, &self.wallet)?;
+        self.store()?;
 
+        trace!("Releasing wallet lock"); // by dropping _exclusive_access
         Ok(())
     }
 
@@ -335,6 +374,9 @@ impl LocalWallet {
         for request in transfer.all_spend_requests {
             self.unconfirmed_spend_requests.insert(request);
         }
+
+        // store wallet to disk
+        self.store()?;
         Ok(())
     }
 
@@ -363,7 +405,7 @@ impl LocalWallet {
             self.store_cash_notes_to_disk(vec![cash_note])?;
         }
 
-        self.store(vec![])?;
+        self.store()?;
 
         Ok(())
     }
@@ -721,7 +763,7 @@ mod tests {
         let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
         let _created_cash_notes = sender.local_send(to, None)?;
 
-        sender.store(vec![])?;
+        sender.store()?;
 
         let deserialized = LocalWallet::load_from(&root_dir)?;
 
