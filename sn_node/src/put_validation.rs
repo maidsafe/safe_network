@@ -410,14 +410,14 @@ impl Node {
         payment: Vec<Transfer>,
     ) -> Result<(), ProtocolError> {
         let pretty_key = PrettyPrintRecordKey::from(address.to_record_key());
-        trace!("Validating record payment for {pretty_key:?}");
+        trace!("Validating record payment for {pretty_key}");
 
         // load wallet
         let mut wallet = LocalWallet::load_from(&self.network.root_dir_path)
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
 
         // unpack transfer
-        trace!("Unpacking incoming Transfers for record {pretty_key:?}");
+        trace!("Unpacking incoming Transfers for record {pretty_key}");
         let (cash_notes, transfer_for_us) = self
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone())
             .await?;
@@ -444,28 +444,28 @@ impl Node {
                     ))?;
         }
         if received_fee < current_store_cost {
-            trace!("Payment insufficient for record {pretty_key:?}");
+            trace!("Payment insufficient for record {pretty_key}");
             return Err(ProtocolError::PaymentProofInsufficientAmount {
                 paid: received_fee,
                 expected: current_store_cost,
             });
         }
-        trace!("Payment sufficient for record {pretty_key:?}");
+        trace!("Payment sufficient for record {pretty_key}");
 
         // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for each cash-note received.
         match transfer_for_us.to_hex() {
             Ok(transfer_hex) => {
                 let topic = TRANSFER_NOTIF_TOPIC.to_string();
                 for cash_note in cash_notes.iter() {
-                    let pk = cash_note.unique_pubkey().to_bytes();
-                    let mut msg: Vec<u8> = pk.to_vec();
+                    let pk = cash_note.unique_pubkey();
+                    let mut msg: Vec<u8> = pk.to_bytes().to_vec();
                     msg.extend(transfer_hex.as_bytes());
                     if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
-                        debug!("Failed to publish a transfer notification over gossipsub: {err:?}");
+                        debug!("Failed to publish a transfer notification over gossipsub for record {pretty_key} and beneficiary {pk:?}: {err:?}");
                     }
                 }
             }
-            Err(err) => debug!("Failed to serialise transfer data to publish a notification over gossipsub: {err:?}"),
+            Err(err) => debug!("Failed to serialise transfer data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
         }
 
         // deposit the CashNotes in our wallet
@@ -478,7 +478,7 @@ impl Node {
             .reward_wallet_balance
             .set(wallet.balance().as_nano() as i64);
 
-        info!("Payment of {received_fee:?} nanos accepted for record {pretty_key:?}");
+        info!("Payment of {received_fee:?} nanos accepted for record {pretty_key}");
 
         Ok(())
     }

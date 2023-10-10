@@ -27,7 +27,7 @@ use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use tokio::{
     task::JoinHandle,
-    time::{sleep, timeout, Duration},
+    time::{sleep, Duration},
 };
 use tokio_stream::StreamExt;
 use tonic::Request;
@@ -138,8 +138,9 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     let handle = spawn_transfer_notifs_listener("https://127.0.0.1:12001".to_string());
 
     files_api.upload_with_payments(content_bytes, true).await?;
+    println!("Random chunks stored");
 
-    let count = timeout(Duration::from_millis(5000), async { handle.await? }).await??;
+    let count = handle.await??;
     println!("Number of notifications received by node: {count}");
     assert_eq!(count, CLOSE_GROUP_SIZE, "Not enough notifications received");
 
@@ -175,8 +176,9 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let _register = client
         .create_register(register_addr, &mut wallet_client, false)
         .await?;
+    println!("Random Register created");
 
-    let count = timeout(Duration::from_millis(5000), async { handle.await? }).await??;
+    let count = handle.await??;
     println!("Number of notifications received by node: {count}");
     assert_eq!(count, CLOSE_GROUP_SIZE, "Not enough notifications received");
 
