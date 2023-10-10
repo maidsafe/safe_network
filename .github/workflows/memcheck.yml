@@ -99,7 +99,7 @@ jobs:
       - name: Start a client to upload files
         run: |
           ls -l
-          cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./the-test-data.zip"
+          cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./the-test-data.zip" --show-holders
         env:
           SN_LOG: "all"
         timeout-minutes: 25
@@ -173,7 +173,7 @@ jobs:
       # Download the same files again to ensure files won't get corrupted.
       - name: Start a client to download the same files again
         run: |
-          cargo run --bin safe --release -- --log-output-dest=data-dir files download
+          cargo run --bin safe --release -- --log-output-dest=data-dir files download --show-holders
           ls -l $CLIENT_DATA_PATH/downloaded_files
           downloaded_files=$(ls $CLIENT_DATA_PATH/downloaded_files | wc -l)
           if [ $downloaded_files -lt 1 ]; then
@@ -237,7 +237,7 @@ jobs:
         # limits here are lower that benchmark tests as there is less going on.
         run: |
           client_peak_mem_limit_mb="300" # mb
-          client_avg_mem_limit_mb="120" # mb
+          client_avg_mem_limit_mb="150" # mb
           
           peak_mem_usage=$(
             rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename | 

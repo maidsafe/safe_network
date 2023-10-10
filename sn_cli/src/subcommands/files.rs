@@ -44,6 +44,10 @@ pub enum FilesCmds {
         /// during payment and upload processing.
         #[clap(long, default_value_t = BATCH_SIZE)]
         batch_size: usize,
+        /// Flagging whether to show the holders of the uploaded chunks.
+        /// Default to be not showing.
+        #[clap(long, name = "show_holders", default_value = "false")]
+        show_holders: bool,
     },
     Download {
         /// The name to apply to the downloaded file.
@@ -60,6 +64,10 @@ pub enum FilesCmds {
         /// If neither are, all the files uploaded by the current user will be downloaded again.
         #[clap(name = "address")]
         file_addr: Option<String>,
+        /// Flagging whether to show the holders of the uploaded chunks.
+        /// Default to be not showing.
+        #[clap(long, name = "show_holders", default_value = "false")]
+        show_holders: bool,
     },
 }
 
@@ -70,12 +78,25 @@ pub(crate) async fn files_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        FilesCmds::Upload { path, batch_size } => {
-            upload_files(path, client, wallet_dir_path, verify_store, batch_size).await?
+        FilesCmds::Upload {
+            path,
+            batch_size,
+            show_holders,
+        } => {
+            upload_files(
+                path,
+                client,
+                wallet_dir_path,
+                verify_store,
+                batch_size,
+                show_holders,
+            )
+            .await?
         }
         FilesCmds::Download {
             file_name,
             file_addr,
+            show_holders,
         } => {
             if (file_name.is_some() && file_addr.is_none())
                 || (file_addr.is_some() && file_name.is_none())
@@ -102,12 +123,13 @@ pub(crate) async fn files_cmds(
                         ),
                         &name,
                         wallet_dir_path,
+                        show_holders,
                     )
                     .await
                 }
                 _ => {
                     println!("Attempting to download all files uploaded by the current user...");
-                    download_files(&file_api, wallet_dir_path).await?
+                    download_files(&file_api, wallet_dir_path, show_holders).await?
                 }
             }
         }
@@ -190,6 +212,7 @@ async fn upload_files(
     wallet_dir_path: &Path,
     verify_store: bool,
     batch_size: usize,
+    show_holders: bool,
 ) -> Result<()> {
     debug!(
         "Uploading file(s) from {:?}, will verify?: {verify_store}",
@@ -239,6 +262,7 @@ async fn upload_files(
             chunks_batch.to_vec(),
             false,
             progress_bar.clone(),
+            show_holders,
         ))
         .await
         {
@@ -281,9 +305,13 @@ async fn upload_files(
                 "Verifying and potentially topping up payment of {:?} chunks",
                 data_to_verify_or_repay.len()
             );
-            data_to_verify_or_repay =
-                verify_and_repay_if_needed(file_api.clone(), data_to_verify_or_repay, batch_size)
-                    .await?;
+            data_to_verify_or_repay = verify_and_repay_if_needed(
+                file_api.clone(),
+                data_to_verify_or_repay,
+                batch_size,
+                show_holders,
+            )
+            .await?;
         }
     }
 
@@ -318,6 +346,7 @@ fn upload_chunks_in_parallel(
     chunks_paths: Vec<(XorName, PathBuf)>,
     verify_store: bool,
     progress_bar: Arc<ProgressBar>,
+    show_holders: bool,
 ) -> Vec<JoinHandle<Result<()>>> {
     let mut upload_handles = Vec::new();
     for (name, path) in chunks_paths.into_iter() {
@@ -330,6 +359,7 @@ fn upload_chunks_in_parallel(
             (name, path),
             verify_store,
             progress_bar,
+            show_holders,
         ));
         upload_handles.push(handle);
     }
@@ -345,11 +375,12 @@ async fn upload_chunk(
     chunk: (XorName, PathBuf),
     verify_store: bool,
     progress_bar: Arc<ProgressBar>,
+    show_holders: bool,
 ) -> Result<()> {
     let (_, path) = chunk;
     let chunk = Chunk::new(Bytes::from(fs::read(path)?));
     file_api
-        .get_local_payment_and_upload_chunk(chunk, verify_store)
+        .get_local_payment_and_upload_chunk(chunk, verify_store, show_holders)
         .await?;
     progress_bar.inc(1);
     Ok(())
@@ -362,6 +393,7 @@ async fn verify_and_repay_if_needed(
     file_api: Files,
     chunks_paths: Vec<(XorName, PathBuf)>,
     batch_size: usize,
+    show_holders: bool,
 ) -> Result<Vec<(XorName, PathBuf)>> {
     let total_chunks = chunks_paths.len();
 
@@ -456,6 +488,7 @@ async fn verify_and_repay_if_needed(
                 .collect(),
             false,
             progress_bar.clone(),
+            show_holders,
         );
 
         // Now we've batched all payments, we can await all uploads to happen in parallel
@@ -475,7 +508,7 @@ async fn verify_and_repay_if_needed(
     Ok(total_failed_chunks)
 }
 
-async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
+async fn download_files(file_api: &Files, root_dir: &Path, show_holders: bool) -> Result<()> {
     let uploaded_files_path = root_dir.join("uploaded_files");
     let download_path = root_dir.join("downloaded_files");
     std::fs::create_dir_all(download_path.as_path())?;
@@ -504,7 +537,7 @@ async fn download_files(file_api: &Files, root_dir: &Path) -> Result<()> {
     }
 
     for (xorname, file_name) in uploaded_files.iter() {
-        download_file(file_api, xorname, file_name, &download_path).await;
+        download_file(file_api, xorname, file_name, &download_path, show_holders).await;
     }
 
     Ok(())
@@ -526,6 +559,7 @@ async fn download_file(
     xorname: &XorName,
     file_name: &String,
     download_path: &Path,
+    show_holders: bool,
 ) {
     println!("Downloading {file_name} from {:64x}", xorname);
     debug!("Downloading {file_name} from {:64x}", xorname);
@@ -534,6 +568,7 @@ async fn download_file(
         .read_bytes(
             ChunkAddress::new(*xorname),
             Some(downloaded_file_path.clone()),
+            show_holders,
         )
         .await
     {

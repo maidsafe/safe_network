@@ -430,7 +430,7 @@ fn store_chunks_task(
                     }
                 };
                 match file_api
-                    .get_local_payment_and_upload_chunk(chunk, true)
+                    .get_local_payment_and_upload_chunk(chunk, true, false)
                     .await
                 {
                     Ok(()) => content
@@ -649,7 +649,7 @@ async fn query_content(
         }
         NetworkAddress::ChunkAddress(addr) => {
             let file_api = Files::new(client.clone(), wallet_dir.to_path_buf());
-            let _ = file_api.read_bytes(*addr, None).await?;
+            let _ = file_api.read_bytes(*addr, None, false).await?;
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet
