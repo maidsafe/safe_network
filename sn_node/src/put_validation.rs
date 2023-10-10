@@ -461,11 +461,11 @@ impl Node {
                     let mut msg: Vec<u8> = pk.to_vec();
                     msg.extend(transfer_hex.as_bytes());
                     if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
-                        warn!("Failed to publish a transfer notification over gossipsub: {err:?}");
+                        debug!("Failed to publish a transfer notification over gossipsub: {err:?}");
                     }
                 }
             }
-            Err(err) => warn!("Failed to serialise transfer data to publish a notification over gossipsub: {err:?}"),
+            Err(err) => debug!("Failed to serialise transfer data to publish a notification over gossipsub: {err:?}"),
         }
 
         // deposit the CashNotes in our wallet

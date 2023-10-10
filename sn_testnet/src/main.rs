@@ -280,6 +280,9 @@ fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
     if cfg!(feature = "open-metrics") {
         args.extend(["--features", "open-metrics"]);
     }
+    if cfg!(feature = "network-royalties-notif") {
+        args.extend(["--features", "network-royalties-notif"]);
+    }
 
     let bins_string = binaries_to_build.join(", ");
     info!("Building the following binaries: {bins_string}");

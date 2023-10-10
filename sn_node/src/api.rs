@@ -213,7 +213,10 @@ impl Node {
         };
 
         // subscribe to receive transfer notifications over gossipsub topic TRANSFER_NOTIF_TOPIC
-        running_node.subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())?;
+        #[cfg(feature = "network-royalties-notif")]
+        running_node
+            .subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())
+            .map(|()| info!("Node has been subscribed to gossipsub topic '{TRANSFER_NOTIF_TOPIC}' to receive network royalties payments notifications."))?;
 
         Ok(running_node)
     }

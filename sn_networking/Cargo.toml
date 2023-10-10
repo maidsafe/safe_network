@@ -15,6 +15,7 @@ default=[]
 local-discovery=["libp2p/mdns"]
 quic=["libp2p-quic"]
 open-metrics=["libp2p-metrics", "prometheus-client", "hyper", "sysinfo"]
+network-royalties-notif=[] # wether to subscribe to network royalties payments notifications on gossipsub
 
 [dependencies]
 async-trait = "0.1"
