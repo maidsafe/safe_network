@@ -35,7 +35,6 @@ pub use self::{
 
 use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
 use futures::future::select_all;
-use itertools::Itertools;
 use libp2p::{
     identity::Keypair,
     kad::{KBucketKey, Record, RecordKey},
@@ -177,19 +176,9 @@ impl Network {
         &self,
         record_address: NetworkAddress,
     ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
-        let (sender, receiver) = oneshot::channel();
-        trace!("Attempting to get store cost");
-        // first we need to get CLOSE_GROUP of the unique_pubkey
-        self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
-            key: record_address.clone(),
-            sender,
-        })?;
-
-        let close_nodes = receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)?
-            .into_iter()
-            .collect_vec();
+        // The requirement of having at least CLOSE_GROUP_SIZE
+        // close nodes will be checked internally automatically.
+        let close_nodes = self.get_closest_peers(&record_address, true).await?;
 
         let request = Request::Query(Query::GetStoreCost(record_address.clone()));
         let responses = self
