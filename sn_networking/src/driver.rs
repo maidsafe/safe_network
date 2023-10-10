@@ -55,6 +55,9 @@ use std::{
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
+/// List of expected record holders to be verified.
+pub(super) type ExpectedHoldersList = HashSet<PeerId>;
+
 type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
 type PendingGetRecord = HashMap<
     QueryId,
@@ -62,6 +65,7 @@ type PendingGetRecord = HashMap<
         oneshot::Sender<Result<Record>>,
         GetRecordResultMap,
         GetQuorum,
+        ExpectedHoldersList,
     ),
 >;
 

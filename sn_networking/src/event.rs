@@ -32,6 +32,7 @@ use libp2p::{
 use libp2p_metrics::Recorder;
 use sn_protocol::{
     messages::{Request, Response},
+    storage::{try_deserialize_record, Chunk},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -580,12 +581,15 @@ impl SwarmDriver {
                 step,
             } => {
                 trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?} - {cache_candidates:?}");
-                if let Some((sender, result_map, _quorum)) = self.pending_get_record.remove(&id) {
+                if let Some((sender, result_map, _quorum, expected_holders)) =
+                    self.pending_get_record.remove(&id)
+                {
                     if let Some((record, _)) = result_map.values().next() {
                         debug!(
-                            "Getting record {:?} early completed with {:?} copies received",
+                            "Getting record {:?} early completed with {:?} copies received, and {:?} expected holders not responded",
                             PrettyPrintRecordKey::from(record.key.clone()),
-                            usize::from(step.count) - 1
+                            usize::from(step.count) - 1,
+                            expected_holders
                         );
                         // Consider any early completion as Putting in progress or split.
                         // Just send back the first record (for put verification only),
@@ -594,6 +598,11 @@ impl SwarmDriver {
                             .send(Err(Error::RecordNotEnoughCopies(record.clone())))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
                     } else {
+                        debug!(
+                            "Getting record task {id:?} completed with step count {:?} copies received, and {:?} expected holders not responded",
+                            step.count,
+                            expected_holders
+                        );
                         sender
                             .send(Err(Error::RecordNotFound))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
@@ -631,7 +640,10 @@ impl SwarmDriver {
                     }
                 }
 
-                if let Some((sender, _, _)) = self.pending_get_record.remove(&id) {
+                if let Some((sender, _, _, expected_holders)) = self.pending_get_record.remove(&id)
+                {
+                    info!(
+                            "Get record task {id:?} failed with {expected_holders:?} expected holders not responded");
                     sender
                         .send(Err(Error::RecordNotFound))
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
@@ -794,14 +806,27 @@ impl SwarmDriver {
         peer_record: PeerRecord,
         count: NonZeroUsize,
     ) {
+        if self.try_early_completion_for_chunk(&query_id, &peer_record) {
+            return;
+        }
+
         let peer_id = if let Some(peer_id) = peer_record.peer {
             peer_id
         } else {
             self.self_peer_id
         };
-        let record_content_hash = XorName::from_content(&peer_record.record.value);
 
-        if let Some((sender, mut result_map, quorum)) = self.pending_get_record.remove(&query_id) {
+        if let Some((sender, mut result_map, quorum, mut expected_holders)) =
+            self.pending_get_record.remove(&query_id)
+        {
+            let pretty_key = PrettyPrintRecordKey::from(peer_record.record.key.clone());
+            if expected_holders.contains(&peer_id) {
+                info!("For record {pretty_key:?}, received a copy from an expected holder {peer_id:?}");
+                let _ = expected_holders.remove(&peer_id);
+            } else {
+                info!("For record {pretty_key:?}, received a copy from an unexpected holder {peer_id:?}");
+            }
+            let record_content_hash = XorName::from_content(&peer_record.record.value);
             let peer_list =
                 if let Some((_, mut peer_list)) = result_map.remove(&record_content_hash) {
                     let _ = peer_list.insert(peer_id);
@@ -834,9 +859,47 @@ impl SwarmDriver {
             } else {
                 let _ = self
                     .pending_get_record
-                    .insert(query_id, (sender, result_map, quorum));
+                    .insert(query_id, (sender, result_map, quorum, expected_holders));
             }
         }
+    }
+
+    // For chunk record which can be self-verifiable,
+    // complete the flow with the first copy that fetched.
+    // Return `true` if early completed, otherwise return `false`.
+    // Situations that can be early completed:
+    // 1, Not finding an entry within pending_get_record, i.e. no more further action required
+    // 2, For a `Chunk` that not required to verify expected holders,
+    //    whenever fetched a first copy that passed the self-verification.
+    fn try_early_completion_for_chunk(
+        &mut self,
+        query_id: &QueryId,
+        peer_record: &PeerRecord,
+    ) -> bool {
+        if let Some((sender, result_map, qurom, expected_holders)) =
+            self.pending_get_record.remove(query_id)
+        {
+            if expected_holders.is_empty() {
+                if let Ok(chunk) = try_deserialize_record::<Chunk>(&peer_record.record) {
+                    if chunk.network_address().to_record_key() == peer_record.record.key {
+                        trace!(
+                            "Early completion with the first copy of chunk {:?}",
+                            chunk.name()
+                        );
+                        let _ = sender.send(Ok(peer_record.record.clone()));
+                        return true;
+                    }
+                }
+            }
+            let _ = self
+                .pending_get_record
+                .insert(*query_id, (sender, result_map, qurom, expected_holders));
+        } else {
+            // A non-existing pending entry does not need to undertake any further action.
+            return true;
+        }
+
+        false
     }
 
     // Split resolvement policy:
