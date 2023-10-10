@@ -20,8 +20,8 @@ use libp2p::mdns;
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{
-        GetRecordError, GetRecordOk, InboundRequest, KademliaEvent, PeerRecord, QueryId,
-        QueryResult, Record, RecordKey, K_VALUE,
+        GetClosestPeersError, GetRecordError, GetRecordOk, InboundRequest, KademliaEvent,
+        PeerRecord, QueryId, QueryResult, Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
@@ -536,6 +536,35 @@ impl SwarmDriver {
                         .pending_get_closest_peers
                         .insert(id, (sender, current_closest));
                 }
+            }
+            ref event @ KademliaEvent::OutboundQueryProgressed {
+                id,
+                result: QueryResult::GetClosestPeers(Err(ref err)),
+                ref stats,
+                ref step,
+            } => {
+                error!("GetClosest Query task {id:?} errored with {err:?}, {stats:?} - {step:?}");
+
+                let (sender, mut current_closest) =
+                    self.pending_get_closest_peers.remove(&id).ok_or_else(|| {
+                        trace!(
+                            "Can't locate query task {id:?}, it has likely been completed already."
+                        );
+                        Error::ReceivedKademliaEventDropped(event.clone())
+                    })?;
+
+                // We have `current_closest` from previous progress,
+                // and `peers` from `GetClosestPeersError`.
+                // Trust them and leave for the caller to check whether they are enough.
+                match err {
+                    GetClosestPeersError::Timeout { ref peers, .. } => {
+                        current_closest.extend(peers);
+                    }
+                }
+
+                sender
+                    .send(current_closest)
+                    .map_err(|_| Error::InternalMsgChannelDropped)?;
             }
             // For `get_record` returning behaviour:
             //   1, targeting a non-existing entry
