@@ -10,7 +10,7 @@ use super::{
     wallet_file::{
         get_unconfirmed_spend_requests, get_wallet, load_cash_notes_from_disk,
         load_created_cash_note, store_created_cash_notes, store_unconfirmed_spend_requests,
-        store_wallet,
+        store_wallet, wallet_file_name,
     },
     Error, KeyLessWallet, Result,
 };
@@ -74,7 +74,7 @@ impl LocalWallet {
     /// Locks the wallet dir and returns exclusive access to the wallet
     /// This lock prevents any other process from locking the wallet dir, effectively acts as a mutex for the wallet
     pub fn lock(&self) -> Result<WalletExclusiveAccess> {
-        let file = File::open(&self.wallet_dir)?;
+        let file = File::open(wallet_file_name(&self.wallet_dir))?;
         file.lock_exclusive()?;
         Ok(file)
     }
