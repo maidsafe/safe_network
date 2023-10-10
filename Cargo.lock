@@ -4129,9 +4129,9 @@ dependencies = [
 
 [[package]]
 name = "self_encryption"
-version = "0.28.4"
+version = "0.28.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7bac286bd8d3a00fd0855a986b7675bbbdd66b048404f4d691a13f2770e456d"
+checksum = "d268195cad848bbbbf36c78d5ec77d0f5b0403c3b77bc33b4a6ea31d5de026c7"
 dependencies = [
  "aes 0.8.3",
  "bincode",
@@ -4273,7 +4273,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.83.35"
+version = "0.83.36"
 dependencies = [
  "bincode",
  "blsttc",
@@ -4304,7 +4304,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.93.4"
+version = "0.93.5"
 dependencies = [
  "async-trait",
  "bincode",
@@ -4355,7 +4355,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.8.20"
+version = "0.8.21"
 dependencies = [
  "async-trait",
  "blsttc",
@@ -4384,7 +4384,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.92.5"
+version = "0.92.6"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4452,7 +4452,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.7.16"
+version = "0.7.17"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4471,7 +4471,7 @@ dependencies = [
 
 [[package]]
 name = "sn_registers"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "bincode",
  "blsttc",
@@ -4489,7 +4489,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.2.197"
+version = "0.2.198"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",
