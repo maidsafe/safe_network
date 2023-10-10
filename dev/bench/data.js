@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696923258272,
+  "lastUpdate": 1696924353940,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -10642,6 +10642,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 31.508501811727378,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a4763310514cadbb7128dee70fe989db2f4be0a0",
+          "message": "fix(sn_networking): reduce kad query timeout\n\n5 mins was impractically long",
+          "timestamp": "2023-10-10T09:31:44+02:00",
+          "tree_id": "b2266ee9be42fdc7aadd440a4c8248b9dc9e1b9a",
+          "url": "https://github.com/maidsafe/safe_network/commit/a4763310514cadbb7128dee70fe989db2f4be0a0"
+        },
+        "date": 1696924351728,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.09815583996035532,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6079895354137884,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 32.15844600038478,
             "unit": "MiB/s"
           }
         ]
