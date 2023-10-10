@@ -28,7 +28,7 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{MainPubkey, NanoTokens, SignedSpend, Transfer, UniquePubkey};
-use std::time::Duration;
+use std::{collections::HashSet, time::Duration};
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
@@ -253,7 +253,7 @@ impl Client {
 
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::Majority, false)
+            .get_record_from_network(key, None, GetQuorum::Majority, false, Default::default())
             .await
             .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
         debug!(
@@ -309,21 +309,34 @@ impl Client {
             expires: None,
         };
 
-        let record_to_verify = if verify_store {
+        let (record_to_verify, expected_holders) = if verify_store {
+            let expected_holders: HashSet<_> = self
+                .network
+                .get_closest_peers(&chunk.network_address(), true)
+                .await?
+                .iter()
+                .cloned()
+                .collect();
             // The `ChunkWithPayment` is only used to send out via PutRecord.
             // The holders shall only hold the `Chunk` copies.
-            // Hence the fetched record shall only be a `Chunk`
-            Some(Record {
-                key,
-                value: try_serialize_record(&chunk, RecordKind::Chunk)?,
-                publisher: None,
-                expires: None,
-            })
+            // Hence the fetched copies shall only be a `Chunk`
+            (
+                Some(Record {
+                    key,
+                    value: try_serialize_record(&chunk, RecordKind::Chunk)?,
+                    publisher: None,
+                    expires: None,
+                }),
+                expected_holders,
+            )
         } else {
-            None
+            (None, Default::default())
         };
 
-        Ok(self.network.put_record(record, record_to_verify).await?)
+        Ok(self
+            .network
+            .put_record(record, record_to_verify, expected_holders)
+            .await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.
@@ -332,7 +345,7 @@ impl Client {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::One, true)
+            .get_record_from_network(key, None, GetQuorum::One, true, Default::default())
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
@@ -349,7 +362,7 @@ impl Client {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::All, true)
+            .get_record_from_network(key, None, GetQuorum::All, true, Default::default())
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
@@ -368,9 +381,10 @@ impl Client {
     ) -> Result<()> {
         let unique_pubkey = *spend.unique_pubkey();
         let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
+        let network_address = NetworkAddress::from_cash_note_address(cash_note_addr);
 
         trace!("Sending spend {unique_pubkey:?} to the network via put_record, with addr of {cash_note_addr:?}");
-        let key = NetworkAddress::from_cash_note_address(cash_note_addr).to_record_key();
+        let key = network_address.to_record_key();
         let record = Record {
             key,
             value: try_serialize_record(&[spend], RecordKind::Spend)?,
@@ -378,13 +392,23 @@ impl Client {
             expires: None,
         };
 
-        let record_to_verify = if verify_store {
-            Some(record.clone())
+        let (record_to_verify, expected_holders) = if verify_store {
+            let expected_holders: HashSet<_> = self
+                .network
+                .get_closest_peers(&network_address, true)
+                .await?
+                .iter()
+                .cloned()
+                .collect();
+            (Some(record.clone()), expected_holders)
         } else {
-            None
+            (None, Default::default())
         };
 
-        Ok(self.network.put_record(record, record_to_verify).await?)
+        Ok(self
+            .network
+            .put_record(record, record_to_verify, expected_holders)
+            .await?)
     }
 
     /// Get a cash_note spend from network
@@ -401,7 +425,7 @@ impl Client {
         );
         let record = self
             .network
-            .get_record_from_network(key.clone(), None, GetQuorum::All, true)
+            .get_record_from_network(key.clone(), None, GetQuorum::All, true, Default::default())
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!(

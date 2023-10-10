@@ -87,10 +87,13 @@ pub enum SwarmCmd {
         sender: oneshot::Sender<HashSet<NetworkAddress>>,
     },
     /// Get Record from the Kad network
+    /// Passing a non empty expected_holders list means to
+    /// carry out a verification that those holders do respond with a copy.
     GetNetworkRecord {
         key: RecordKey,
         sender: oneshot::Sender<Result<Record>>,
         quorum: GetQuorum,
+        expected_holders: HashSet<PeerId>,
     },
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
@@ -176,11 +179,15 @@ impl SwarmDriver {
                 key,
                 sender,
                 quorum,
+                expected_holders,
             } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key);
                 if self
                     .pending_get_record
-                    .insert(query_id, (sender, Default::default(), quorum))
+                    .insert(
+                        query_id,
+                        (sender, Default::default(), quorum, expected_holders),
+                    )
                     .is_some()
                 {
                     warn!("An existing get_record task {query_id:?} got replaced");
@@ -190,7 +197,7 @@ impl SwarmDriver {
                 let total_records: usize = self
                     .pending_get_record
                     .iter()
-                    .map(|(_, (_, result_map, _quorum))| result_map.len())
+                    .map(|(_, (_, result_map, _quorum, _expected_holders))| result_map.len())
                     .sum();
                 info!("We now have {} pending get record attempts and cached {total_records} fetched copies",
                       self.pending_get_record.len());
