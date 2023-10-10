@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1696923037764,
+  "lastUpdate": 1696923255605,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -17865,6 +17865,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a2cfe092306dd320ad4610bd76907c6d40197e40",
+          "message": "chore(sn_transfers): improve transaction build mem perf",
+          "timestamp": "2023-10-10T09:09:32+02:00",
+          "tree_id": "c1f1c661cc76a1a7f6c79ae67d98cbc0930374be",
+          "url": "https://github.com/maidsafe/safe_network/commit/a2cfe092306dd320ad4610bd76907c6d40197e40"
+        },
+        "date": 1696923254701,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
