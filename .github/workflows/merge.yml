@@ -279,11 +279,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build safe bins
-        run: cargo build --release --features local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features local-discovery,network-royalties-notif --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test nodes_rewards --no-run
+        run: cargo test --release -p sn_node --features=local-discovery,network-royalties-notif --test sequential_transfers --test storage_payments --test nodes_rewards --no-run
         timeout-minutes: 30
 
       - name: Start a local network
@@ -307,19 +307,19 @@ jobs:
         
       # This should be first to avoid slow reward acceptance etc
       - name: execute the nodes rewards tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture --test-threads=1
+        run: cargo test --release -p sn_node --features="local-discovery,network-royalties-notif" --test nodes_rewards -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
         timeout-minutes: 25
 
       - name: execute the spend tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture
+        run: cargo test --release -p sn_node --features="local-discovery,network-royalties-notif" --test sequential_transfers -- --nocapture
         env:
           SN_LOG: "all"
         timeout-minutes: 25
 
       - name: execute the storage payment tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
+        run: cargo test --release -p sn_node --features="local-discovery,network-royalties-notif" --test storage_payments -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
         timeout-minutes: 25
