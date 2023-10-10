@@ -584,28 +584,33 @@ impl SwarmDriver {
                 if let Some((sender, result_map, _quorum, expected_holders)) =
                     self.pending_get_record.remove(&id)
                 {
-                    if let Some((record, _)) = result_map.values().next() {
-                        debug!(
-                            "Getting record {:?} early completed with {:?} copies received, and {:?} expected holders not responded",
-                            PrettyPrintRecordKey::from(record.key.clone()),
-                            usize::from(step.count) - 1,
-                            expected_holders
-                        );
+                    let log_string = if let Some((record, _)) = result_map.values().next() {
                         // Consider any early completion as Putting in progress or split.
                         // Just send back the first record (for put verification only),
                         // and not to update self
                         sender
                             .send(Err(Error::RecordNotEnoughCopies(record.clone())))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        format!(
+                            "Getting record {:?} early completed with {:?} copies received",
+                            PrettyPrintRecordKey::from(record.key.clone()),
+                            usize::from(step.count) - 1
+                        )
                     } else {
-                        debug!(
-                            "Getting record task {id:?} completed with step count {:?} copies received, and {:?} expected holders not responded",
-                            step.count,
-                            expected_holders
-                        );
                         sender
                             .send(Err(Error::RecordNotFound))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        format!(
+                            "Getting record task {id:?} completed with step count {:?} copies received",
+                            step.count
+                        )
+                    };
+                    if expected_holders.is_empty() {
+                        debug!("{log_string}");
+                    } else {
+                        println!(
+                            "{log_string}, and {expected_holders:?} expected holders not responded"
+                        );
                     }
                 }
             }
@@ -615,7 +620,7 @@ impl SwarmDriver {
                 stats,
                 step,
             } => {
-                match err {
+                match err.clone() {
                     GetRecordError::NotFound { key, closest_peers } => {
                         info!("Query task {id:?} NotFound record {:?} among peers {closest_peers:?}, {stats:?} - {step:?}",
                             PrettyPrintRecordKey::from(key.clone()));
@@ -642,8 +647,11 @@ impl SwarmDriver {
 
                 if let Some((sender, _, _, expected_holders)) = self.pending_get_record.remove(&id)
                 {
-                    info!(
-                            "Get record task {id:?} failed with {expected_holders:?} expected holders not responded");
+                    if expected_holders.is_empty() {
+                        info!("Get record task {id:?} failed with error {err:?}");
+                    } else {
+                        println!("Get record task {id:?} failed with {expected_holders:?} expected holders not responded, error {err:?}");
+                    }
                     sender
                         .send(Err(Error::RecordNotFound))
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
@@ -820,12 +828,16 @@ impl SwarmDriver {
             self.pending_get_record.remove(&query_id)
         {
             let pretty_key = PrettyPrintRecordKey::from(peer_record.record.key.clone());
-            if expected_holders.contains(&peer_id) {
-                info!("For record {pretty_key:?}, received a copy from an expected holder {peer_id:?}");
-                let _ = expected_holders.remove(&peer_id);
-            } else {
-                info!("For record {pretty_key:?}, received a copy from an unexpected holder {peer_id:?}");
+
+            if !expected_holders.is_empty() {
+                if expected_holders.remove(&peer_id) {
+                    trace!("For record {pretty_key:?} task {query_id:?}, received a copy from an expected holder {peer_id:?}");
+                } else {
+                    trace!("For record {pretty_key:?} task {query_id:?}, received a copy from an unexpected holder {peer_id:?}");
+                    println!("For record {pretty_key:?} task {query_id:?}, received a copy from an unexpected holder {peer_id:?}");
+                }
             }
+
             let record_content_hash = XorName::from_content(&peer_record.record.value);
             let peer_list =
                 if let Some((_, mut peer_list)) = result_map.remove(&record_content_hash) {
@@ -854,6 +866,10 @@ impl SwarmDriver {
             let _ = result_map.insert(record_content_hash, (peer_record.record, peer_list));
 
             if let Some(result) = result {
+                if !expected_holders.is_empty() {
+                    println!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {expected_holders:?}");
+                }
+
                 let _ = sender.send(result);
                 self.try_update_self_for_split_record(result_map);
             } else {
@@ -876,7 +892,7 @@ impl SwarmDriver {
         query_id: &QueryId,
         peer_record: &PeerRecord,
     ) -> bool {
-        if let Some((sender, result_map, qurom, expected_holders)) =
+        if let Some((sender, result_map, quorum, expected_holders)) =
             self.pending_get_record.remove(query_id)
         {
             if expected_holders.is_empty() {
@@ -893,7 +909,7 @@ impl SwarmDriver {
             }
             let _ = self
                 .pending_get_record
-                .insert(*query_id, (sender, result_map, qurom, expected_holders));
+                .insert(*query_id, (sender, result_map, quorum, expected_holders));
         } else {
             // A non-existing pending entry does not need to undertake any further action.
             return true;

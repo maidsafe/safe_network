@@ -431,7 +431,7 @@ impl Network {
         })?;
         let response = receiver.await?;
 
-        if verify_store.is_some() {
+        if verify_store.is_some() || !expected_holders.is_empty() {
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
             tokio::time::sleep(std::time::Duration::from_millis(

@@ -204,7 +204,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 
     files_api.upload_with_payments(content_bytes, true).await?;
 
-    files_api.read_bytes(content_addr, None).await?;
+    files_api.read_bytes(content_addr, None, false).await?;
 
     Ok(())
 }
@@ -266,7 +266,7 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         .await?;
 
     assert!(matches!(
-        files_api.read_bytes(content_addr, None).await,
+        files_api.read_bytes(content_addr, None, false).await,
         Err(ClientError::Network(NetworkError::RecordNotFound))
     ));
 

@@ -67,12 +67,14 @@ impl Files {
         &self,
         address: ChunkAddress,
         downloaded_file_path: Option<PathBuf>,
+        show_holders: bool,
     ) -> Result<Option<Bytes>> {
-        let chunk = self.client.get_chunk(address).await?;
+        let chunk = self.client.get_chunk(address, show_holders).await?;
 
         // first try to deserialize a LargeFile, if it works, we go and seek it
         if let Ok(data_map) = self.unpack_chunk(chunk.clone()).await {
-            self.read_all(data_map, downloaded_file_path).await
+            self.read_all(data_map, downloaded_file_path, show_holders)
+                .await
         } else {
             // if an error occurs, we assume it's a SmallFile
             if let Some(path) = downloaded_file_path {
@@ -99,7 +101,7 @@ impl Files {
         length: usize,
     ) -> Result<Bytes> {
         trace!("Reading {length} bytes at: {address:?}, starting from position: {position}");
-        let chunk = self.client.get_chunk(address).await?;
+        let chunk = self.client.get_chunk(address, false).await?;
 
         // First try to deserialize a LargeFile, if it works, we go and seek it.
         // If an error occurs, we consider it to be a SmallFile.
@@ -160,6 +162,7 @@ impl Files {
         &self,
         chunk: Chunk,
         verify_store: bool,
+        show_holders: bool,
     ) -> Result<()> {
         let chunk_addr = chunk.network_address();
         trace!("Client upload started for chunk: {chunk_addr:?}");
@@ -179,7 +182,7 @@ impl Files {
             payment.len()
         );
         self.client
-            .store_chunk(chunk, payment, verify_store)
+            .store_chunk(chunk, payment, verify_store, show_holders)
             .await?;
 
         trace!("Client upload completed for chunk: {chunk_addr:?}");
@@ -229,7 +232,7 @@ impl Files {
 
         for (_chunk_name, chunk_path) in chunks_paths {
             let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
-            self.get_local_payment_and_upload_chunk(chunk, verify)
+            self.get_local_payment_and_upload_chunk(chunk, verify, false)
                 .await?;
         }
 
@@ -246,6 +249,7 @@ impl Files {
         &self,
         data_map: DataMap,
         decrypted_file_path: Option<PathBuf>,
+        show_holders: bool,
     ) -> Result<Option<Bytes>> {
         let mut decryptor = if let Some(path) = decrypted_file_path {
             StreamSelfDecryptor::decrypt_to_file(Box::new(path), &data_map)?
@@ -266,7 +270,9 @@ impl Files {
             ordered_read_futures.push_back(async move {
                 (
                     dst_hash,
-                    self.client.get_chunk(ChunkAddress::new(dst_hash)).await,
+                    self.client
+                        .get_chunk(ChunkAddress::new(dst_hash), show_holders)
+                        .await,
                 )
             })
         }
@@ -305,7 +311,7 @@ impl Files {
                     return Ok(data_map);
                 }
                 DataMapLevel::Additional(data_map) => {
-                    let serialized_chunk = self.read_all(data_map, None).await?.unwrap();
+                    let serialized_chunk = self.read_all(data_map, None, false).await?.unwrap();
                     chunk = deserialize(&serialized_chunk).map_err(Error::Serialisation)?;
                 }
             }
@@ -343,7 +349,7 @@ impl Files {
             let client = self.client.clone();
             let task = task::spawn(async move {
                 let chunk = client
-                    .get_chunk(ChunkAddress::new(chunk_info.dst_hash))
+                    .get_chunk(ChunkAddress::new(chunk_info.dst_hash), false)
                     .await
                     .map_err(|error| {
                         error!("Chunk missing {:?} with {error:?}", chunk_info.dst_hash);

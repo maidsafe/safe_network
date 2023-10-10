@@ -298,6 +298,7 @@ impl Client {
         chunk: Chunk,
         payment: Vec<Transfer>,
         verify_store: bool,
+        show_holders: bool,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
@@ -309,28 +310,29 @@ impl Client {
             expires: None,
         };
 
-        let (record_to_verify, expected_holders) = if verify_store {
-            let expected_holders: HashSet<_> = self
-                .network
+        let expected_holders: HashSet<_> = if show_holders {
+            self.network
                 .get_closest_peers(&chunk.network_address(), true)
                 .await?
                 .iter()
                 .cloned()
-                .collect();
+                .collect()
+        } else {
+            Default::default()
+        };
+
+        let record_to_verify = if verify_store {
             // The `ChunkWithPayment` is only used to send out via PutRecord.
             // The holders shall only hold the `Chunk` copies.
             // Hence the fetched copies shall only be a `Chunk`
-            (
-                Some(Record {
-                    key,
-                    value: try_serialize_record(&chunk, RecordKind::Chunk)?,
-                    publisher: None,
-                    expires: None,
-                }),
-                expected_holders,
-            )
+            Some(Record {
+                key,
+                value: try_serialize_record(&chunk, RecordKind::Chunk)?,
+                publisher: None,
+                expires: None,
+            })
         } else {
-            (None, Default::default())
+            None
         };
 
         Ok(self
@@ -340,12 +342,26 @@ impl Client {
     }
 
     /// Retrieve a `Chunk` from the kad network.
-    pub async fn get_chunk(&self, address: ChunkAddress) -> Result<Chunk> {
+    pub async fn get_chunk(&self, address: ChunkAddress, show_holders: bool) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
+
+        let expected_holders = if show_holders {
+            let result: HashSet<_> = self
+                .network
+                .get_closest_peers(&NetworkAddress::from_chunk_address(address), true)
+                .await?
+                .iter()
+                .cloned()
+                .collect();
+            result
+        } else {
+            Default::default()
+        };
+
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::One, true, Default::default())
+            .get_record_from_network(key, None, GetQuorum::One, true, expected_holders)
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
