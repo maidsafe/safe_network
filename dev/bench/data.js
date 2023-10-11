@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697021356776,
+  "lastUpdate": 1697021359369,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -26362,6 +26362,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 35,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c2bae8ab28013d0ecd1365dc2fa0047e490466fe",
+          "message": "chore(transfers): add somre more clarity around DoubleSpendAttemptedForCashNotes",
+          "timestamp": "2023-10-11T12:22:07+02:00",
+          "tree_id": "f2a818af70c4d9de27227bc90eccc2dca6f6af16",
+          "url": "https://github.com/maidsafe/safe_network/commit/c2bae8ab28013d0ecd1365dc2fa0047e490466fe"
+        },
+        "date": 1697021358431,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 156,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 36,
             "unit": "MB"
           }
         ]
