@@ -537,6 +537,7 @@ impl SwarmDriver {
                         .insert(id, (sender, current_closest));
                 }
             }
+            // Handle GetClosestPeers timeouts
             ref event @ KademliaEvent::OutboundQueryProgressed {
                 id,
                 result: QueryResult::GetClosestPeers(Err(ref err)),
@@ -566,6 +567,7 @@ impl SwarmDriver {
                     .send(current_closest)
                     .map_err(|_| Error::InternalMsgChannelDropped)?;
             }
+
             // For `get_record` returning behaviour:
             //   1, targeting a non-existing entry
             //     there will only be one event of `KademliaEvent::OutboundQueryProgressed`
@@ -671,6 +673,23 @@ impl SwarmDriver {
                             "Query task {id:?} timed out when looking for record {:?}",
                             PrettyPrintRecordKey::from(key.clone())
                         );
+
+                        let (sender, _result_map, _quorum, _expected_holders) =
+                            self.pending_get_record.remove(&id).ok_or_else(|| {
+                                trace!(
+                                    "Can't locate query task {id:?}, it has likely been completed already."
+                                );
+                                Error::ReceivedKademliaEventDropped( KademliaEvent::OutboundQueryProgressed {
+                                    id,
+                                    result: QueryResult::GetRecord(Err(err.clone())),
+                                    stats,
+                                    step,
+                                })
+                            })?;
+
+                        sender
+                            .send(Err(Error::QueryTimeout))
+                            .map_err(|_| Error::InternalMsgChannelDropped)?;
                     }
                 }
 
