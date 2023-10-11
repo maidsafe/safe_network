@@ -54,8 +54,12 @@ pub struct LocalWallet {
 
 impl LocalWallet {
     /// Stores the wallet to disk.
-    fn store(&self) -> Result<()> {
-        store_wallet(&self.wallet_dir, &self.wallet)
+    /// This requires having exclusive access to the wallet to prevent concurrent processes from writing to it
+    fn store(&self, exclusive_access: WalletExclusiveAccess) -> Result<()> {
+        store_wallet(&self.wallet_dir, &self.wallet)?;
+        trace!("Releasing wallet lock");
+        std::mem::drop(exclusive_access);
+        Ok(())
     }
 
     /// reloads the wallet from disk.
@@ -254,7 +258,7 @@ impl LocalWallet {
             })
             .collect();
 
-        let (available_cash_notes, _exclusive_access) = self.available_cash_notes()?;
+        let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
         debug!(
             "Available CashNotes for local send: {:#?}",
             available_cash_notes
@@ -271,7 +275,7 @@ impl LocalWallet {
 
         let created_cash_notes = transfer.created_cash_notes.clone();
 
-        self.update_local_wallet(transfer)?;
+        self.update_local_wallet(transfer, exclusive_access)?;
 
         trace!("Releasing wallet lock"); // by dropping _exclusive_access
         Ok(created_cash_notes)
@@ -302,7 +306,7 @@ impl LocalWallet {
 
         let reason_hash = reason_hash.unwrap_or_default();
 
-        let (available_cash_notes, _exclusive_access) = self.available_cash_notes()?;
+        let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
         debug!("Available CashNotes: {:#?}", available_cash_notes);
         let offline_transfer = create_offline_transfer(
             available_cash_notes,
@@ -334,20 +338,19 @@ impl LocalWallet {
             }
         }
 
-        self.update_local_wallet(offline_transfer)?;
-
         self.wallet
             .payment_transactions
             .extend(all_transfers_per_address);
 
-        // get the content payment map stored
-        self.store()?;
-
-        trace!("Releasing wallet lock"); // by dropping _exclusive_access
+        self.update_local_wallet(offline_transfer, exclusive_access)?;
         Ok(())
     }
 
-    fn update_local_wallet(&mut self, transfer: OfflineTransfer) -> Result<()> {
+    fn update_local_wallet(
+        &mut self,
+        transfer: OfflineTransfer,
+        exclusive_access: WalletExclusiveAccess,
+    ) -> Result<()> {
         // First of all, update client local state.
         let spent_unique_pubkeys: BTreeSet<_> = transfer
             .tx
@@ -381,7 +384,7 @@ impl LocalWallet {
         }
 
         // store wallet to disk
-        self.store()?;
+        self.store(exclusive_access)?;
         Ok(())
     }
 
@@ -390,6 +393,11 @@ impl LocalWallet {
         if received_cash_notes.is_empty() {
             return Ok(());
         }
+
+        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
+        let exclusive_access = self.lock()?;
+        self.reload()?;
+        trace!("Wallet locked and loaded!");
 
         for cash_note in received_cash_notes {
             let id = cash_note.unique_pubkey();
@@ -410,7 +418,7 @@ impl LocalWallet {
             self.store_cash_notes_to_disk(vec![cash_note])?;
         }
 
-        self.store()?;
+        self.store(exclusive_access)?;
 
         Ok(())
     }
@@ -767,8 +775,6 @@ mod tests {
         let recipient_main_pubkey = recipient_key.main_pubkey();
         let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
         let _created_cash_notes = sender.local_send(to, None)?;
-
-        sender.store()?;
 
         let deserialized = LocalWallet::load_from(&root_dir)?;
 
