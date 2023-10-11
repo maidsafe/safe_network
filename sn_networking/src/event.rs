@@ -654,30 +654,31 @@ impl SwarmDriver {
                 match err.clone() {
                     GetRecordError::NotFound { key, closest_peers } => {
                         info!("Query task {id:?} NotFound record {:?} among peers {closest_peers:?}, {stats:?} - {step:?}",
-                            PrettyPrintRecordKey::from(key.clone()));
+                        PrettyPrintRecordKey::from(key.clone()));
                     }
                     GetRecordError::QuorumFailed {
                         key,
                         records,
                         quorum,
                     } => {
+                        let pretty_key = PrettyPrintRecordKey::from(key.clone());
                         let peers = records
                             .iter()
                             .map(|peer_record| peer_record.peer)
                             .collect_vec();
-                        info!("Query task {id:?} QuorumFailed record {:?} among peers {peers:?} with quorum {quorum:?}, {stats:?} - {step:?}",
-                            PrettyPrintRecordKey::from(key.clone()));
+                        info!("Query task {id:?} QuorumFailed record {pretty_key:?} among peers {peers:?} with quorum {quorum:?}, {stats:?} - {step:?}");
                     }
                     GetRecordError::Timeout { key } => {
-                        info!(
-                            "Query task {id:?} timed out when looking for record {:?}",
-                            PrettyPrintRecordKey::from(key.clone())
+                        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+
+                        debug!(
+                            "Query task {id:?} timed out when looking for record {pretty_key:?}"
                         );
 
-                        let (sender, _result_map, _quorum, _expected_holders) =
+                        let (sender, result_map, quorum, expected_holders) =
                             self.pending_get_record.remove(&id).ok_or_else(|| {
                                 trace!(
-                                    "Can't locate query task {id:?}, it has likely been completed already."
+                                    "Can't locate query task {id:?} for {pretty_key:?}, it has likely been completed already."
                                 );
                                 Error::ReceivedKademliaEventDropped( KademliaEvent::OutboundQueryProgressed {
                                     id,
@@ -687,9 +688,39 @@ impl SwarmDriver {
                                 })
                             })?;
 
+                        let required_response_count = match quorum {
+                            GetQuorum::Majority => close_group_majority(),
+                            GetQuorum::All => CLOSE_GROUP_SIZE,
+                            GetQuorum::One => 1,
+                        };
+
+                        // if we've a split over the result xorname, then we don't attempt to resolve this here.
+                        // Retry and resolve through normal flows without a timeout.
+                        if result_map.len() > 1 {
+                            warn!("Get record task {id:?} for {pretty_key:?} timed out with split result map");
+                            sender
+                                .send(Err(Error::QueryTimeout))
+                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                            return Ok(());
+                        }
+
+                        // if we have enough responses here, we can return the record
+                        if let Some((record, peers)) = result_map.values().next() {
+                            if peers.len() >= required_response_count {
+                                sender
+                                    .send(Ok(record.clone()))
+                                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                                return Ok(());
+                            }
+                        }
+
+                        warn!("Get record task {id:?} for {pretty_key:?} returned insufficient responses. {expected_holders:?} did not return record");
+                        // Otherwise report the timeout
                         sender
                             .send(Err(Error::QueryTimeout))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
+
+                        return Ok(());
                     }
                 }
 
