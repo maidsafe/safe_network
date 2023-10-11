@@ -179,6 +179,10 @@ impl LocalWallet {
         if let Some(ids) = ids {
             for id in ids {
                 if let Some(cash_note) = load_created_cash_note(id, &self.wallet_dir) {
+                    trace!(
+                        "Current cash_note of chunk {name:?} is paying {:?} tokens.",
+                        cash_note.value()
+                    );
                     cash_notes.push(cash_note);
                 }
             }
@@ -267,7 +271,7 @@ impl LocalWallet {
         let mut used_cash_notes = std::collections::HashSet::new();
 
         for (content_addr, payees) in all_data_payments {
-            for (payee, _token) in payees {
+            for (payee, token) in payees {
                 if let Some(cash_note) =
                     &transfer_outputs
                         .created_cash_notes
@@ -277,6 +281,8 @@ impl LocalWallet {
                                 && !used_cash_notes.contains(&cash_note.unique_pubkey().to_bytes())
                         })
                 {
+                    trace!("Created transaction regarding {content_addr:?} paying {:?}(origin {token:?}) to payee {payee:?}.",
+                        cash_note.value());
                     used_cash_notes.insert(cash_note.unique_pubkey().to_bytes());
                     let cash_notes_for_content: &mut Vec<UniquePubkey> =
                         all_transfers_per_address.entry(content_addr).or_default();
