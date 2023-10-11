@@ -618,7 +618,7 @@ fn get_fees_from_store_cost_responses(
 ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
     // TODO: we should make this configurable based upon data type
     // or user requirements for resilience.
-    let desired_quote_count = CLOSE_GROUP_SIZE;
+    let desired_quote_count = close_group_majority();
 
     // sort all costs by fee, lowest to highest
     all_costs.sort_by(|(_, cost_a), (_, cost_b)| {
@@ -627,7 +627,7 @@ fn get_fees_from_store_cost_responses(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    // get the first desired_quote_count of all_costs
+    // get the lowest desired_quote_counts of all_costs
     all_costs.truncate(desired_quote_count);
 
     if all_costs.len() < desired_quote_count {
@@ -699,8 +699,8 @@ mod tests {
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
 
-        // sum all the numbers from 0 to CLOSE_GROUP_SIZE
-        let expected_price = CLOSE_GROUP_SIZE * (CLOSE_GROUP_SIZE - 1) / 2;
+        // sum all the numbers from 0 to close_group_majority()
+        let expected_price = close_group_majority() * (close_group_majority() - 1) / 2;
 
         assert_eq!(
             total_price, expected_price as u64,
@@ -711,7 +711,6 @@ mod tests {
         Ok(())
     }
     #[test]
-    #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
     fn test_get_any_fee_from_store_cost_responses_errs_if_insufficient_responses(
     ) -> eyre::Result<()> {
         // for a vec of different costs of CLOSE_GROUP size
@@ -729,8 +728,8 @@ mod tests {
         Ok(())
     }
     #[test]
-    #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
-    fn test_get_some_fee_from_store_cost_responses_errs_if_sufficient() -> eyre::Result<()> {
+    fn test_get_some_fee_from_store_cost_responses_even_if_one_errs_and_sufficient(
+    ) -> eyre::Result<()> {
         // for a vec of different costs of CLOSE_GROUP size
         let responses_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
@@ -751,7 +750,7 @@ mod tests {
             .fold(0, |acc, (_, price)| acc + price.as_nano());
 
         // sum all the numbers from 0 to CLOSE_GROUP_SIZE / 2 + 1
-        let expected_price = (CLOSE_GROUP_SIZE / 2) * (CLOSE_GROUP_SIZE / 2 + 1) / 2;
+        let expected_price = close_group_majority() * (close_group_majority() - 1) / 2;
 
         assert_eq!(
             total_price, expected_price as u64,
