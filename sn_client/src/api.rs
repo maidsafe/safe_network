@@ -29,7 +29,10 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{SignedSpend, Transfer, UniquePubkey};
-use std::{collections::{HashMap, HashSet}, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Duration,
+};
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
