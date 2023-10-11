@@ -9,7 +9,7 @@
 use crate::{Client, Error, Result, WalletClient};
 
 use bls::PublicKey;
-use libp2p::kad::Record;
+use libp2p::kad::{Quorum, Record};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::RegisterCmd,
@@ -383,7 +383,7 @@ impl ClientRegister {
         Ok(self
             .client
             .network
-            .put_record(record, record_to_verify, expected_holders)
+            .put_record(record, record_to_verify, expected_holders, Quorum::Majority)
             .await?)
     }
 

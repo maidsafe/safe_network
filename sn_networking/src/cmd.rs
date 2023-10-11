@@ -117,6 +117,7 @@ pub enum SwarmCmd {
     PutRecord {
         record: Record,
         sender: oneshot::Sender<Result<()>>,
+        quorum: Quorum,
     },
     /// Put record to the local RecordStore
     PutLocalRecord {
@@ -345,7 +346,11 @@ impl SwarmDriver {
                     .map(|rec| rec.into_owned());
                 let _ = sender.send(record);
             }
-            SwarmCmd::PutRecord { record, sender } => {
+            SwarmCmd::PutRecord {
+                record,
+                sender,
+                quorum,
+            } => {
                 let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
                 trace!(
                     "Putting record sized: {:?} to network {:?}",
@@ -356,7 +361,7 @@ impl SwarmDriver {
                     .swarm
                     .behaviour_mut()
                     .kademlia
-                    .put_record(record, Quorum::All)
+                    .put_record(record, quorum)
                 {
                     Ok(request_id) => {
                         trace!("Sent record {record_key:?} to network. Request id: {request_id:?} to network");
