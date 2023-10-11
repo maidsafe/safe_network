@@ -120,7 +120,6 @@ impl MainPubkey {
 /// The secret MainSecretKey has a static MainPubkey, which
 /// is shared with others in order to receive payments.
 /// With this MainSecretKey, new DerivedSecretKey:UniquePubkey pairs can be generated.
-#[derive(Clone)]
 pub struct MainSecretKey(SerdeSecret<SecretKey>);
 
 impl MainSecretKey {
