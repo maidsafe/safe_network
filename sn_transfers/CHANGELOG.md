@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.12](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.11...sn_transfers-v0.13.12) - 2023-10-11
+
+### Fixed
+- expose RecordMismatch errors and cleanup wallet if we hit that
+
+### Other
+- *(transfers)* add somre more clarity around DoubleSpendAttemptedForCashNotes
+- *(docs)* cleanup comments and docs
+- *(transfers)* remove pointless api
+
 ## [0.13.11](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.10...sn_transfers-v0.13.11) - 2023-10-10
 
 ### Added
