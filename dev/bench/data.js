@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697008806730,
+  "lastUpdate": 1697009017024,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -18273,6 +18273,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2de49182d7b81d949ed89c0e6d19cf694ae95cad",
+          "message": "fix: make client handle payment error",
+          "timestamp": "2023-10-11T08:59:30+02:00",
+          "tree_id": "27b9fec2ce5a3b328c51122be46a0e21366cd9b0",
+          "url": "https://github.com/maidsafe/safe_network/commit/2de49182d7b81d949ed89c0e6d19cf694ae95cad"
+        },
+        "date": 1697009016625,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
