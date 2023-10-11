@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697008499868,
+  "lastUpdate": 1697008806730,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -10837,6 +10837,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 36.24316230367097,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2de49182d7b81d949ed89c0e6d19cf694ae95cad",
+          "message": "fix: make client handle payment error",
+          "timestamp": "2023-10-11T08:59:30+02:00",
+          "tree_id": "27b9fec2ce5a3b328c51122be46a0e21366cd9b0",
+          "url": "https://github.com/maidsafe/safe_network/commit/2de49182d7b81d949ed89c0e6d19cf694ae95cad"
+        },
+        "date": 1697008805213,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.09563174376645839,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5626749221301471,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 33.64531558286661,
             "unit": "MiB/s"
           }
         ]
