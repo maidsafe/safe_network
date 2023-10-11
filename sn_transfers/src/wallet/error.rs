@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::collections::BTreeSet;
 use thiserror::Error;
 
 use crate::UniquePubkey;
@@ -16,9 +17,9 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 /// Transfer errors.
 #[derive(Debug, Error)]
 pub enum Error {
-    /// The cashnote that was attempted to be spent has already been spent and is not the same
-    #[error("Double spend attempted")]
-    DoubleSpendAttempted(Vec<UniquePubkey>),
+    /// The cashnotes that were attempted to be spent have already been spent to another address
+    #[error("Double spend attempted with cashnotes: {0:?}")]
+    DoubleSpendAttemptedForCashNotes(BTreeSet<UniquePubkey>),
 
     /// Address provided is of the wrong type
     #[error("Invalid address type")]
