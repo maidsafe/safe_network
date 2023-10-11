@@ -24,6 +24,9 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
+    #[error("Netowrk query timed out")]
+    QueryTimeout,
+
     #[error(
         "Not enough store cost prices returned from the network to ensure a valid fee is paid"
     )]
