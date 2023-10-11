@@ -368,7 +368,10 @@ impl LocalWallet {
         }
 
         if let Some(cash_note) = transfer.change_cash_note {
-            self.deposit_and_store_to_disk(&vec![cash_note])?;
+            let id = cash_note.unique_pubkey();
+            let value = cash_note.value()?;
+            self.wallet.available_cash_notes.insert(id, value);
+            self.store_cash_notes_to_disk(vec![&cash_note])?;
         }
 
         for cash_note in &transfer.created_cash_notes {
@@ -389,6 +392,8 @@ impl LocalWallet {
     }
 
     /// Store the given cash_notes to the `cash_notes` dir in the wallet dir.
+    /// Update and store the updated wallet to disk
+    /// This function locks the wallet to prevent concurrent processes from writing to it
     pub fn deposit_and_store_to_disk(&mut self, received_cash_notes: &Vec<CashNote>) -> Result<()> {
         if received_cash_notes.is_empty() {
             return Ok(());
@@ -403,12 +408,12 @@ impl LocalWallet {
             let id = cash_note.unique_pubkey();
 
             if self.wallet.spent_cash_notes.contains(&id) {
-                debug!("cash_note is spent");
-                return Ok(());
+                debug!("skipping: cash_note is spent");
+                continue;
             }
 
             if cash_note.derived_key(&self.key).is_err() {
-                debug!("cash_note is not our key");
+                debug!("skipping: cash_note is not our key");
                 continue;
             }
 
