@@ -13,27 +13,31 @@ pub mod safenode_proto {
     tonic::include_proto!("safenode_proto");
 }
 
-use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
-use self_encryption::MIN_ENCRYPTABLE_BYTES;
-use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client, Files};
-use sn_peers_acquisition::parse_peer_addr;
-use sn_protocol::storage::ChunkAddress;
-use sn_transfers::LocalWallet;
-
 use bytes::Bytes;
 use eyre::{eyre, Result};
 use lazy_static::lazy_static;
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
+use safenode_proto::{
+    safe_node_client::SafeNodeClient, NetworkInfoRequest, NodeInfoRequest, RestartRequest,
+};
+use self_encryption::MIN_ENCRYPTABLE_BYTES;
+use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client, Files};
 use sn_logging::{LogFormat, LogOutputDest, TracingLayers};
+use sn_peers_acquisition::parse_peer_addr;
+use sn_protocol::storage::ChunkAddress;
+use sn_transfers::LocalWallet;
 use sn_transfers::NanoTokens;
 use std::{
     fs::File,
     io::Write,
     net::SocketAddr,
     path::{Path, PathBuf},
+    process::{Command, Stdio},
+    str::FromStr,
 };
 use tokio::sync::Mutex;
 use tonic::Request;
@@ -224,4 +228,63 @@ pub async fn node_restart(addr: SocketAddr) -> Result<()> {
     );
 
     Ok(())
+}
+
+// uses the testnet bin to add n_nodes to an existing local network
+pub fn node_start(n_nodes: usize, genesis_multi_addrs: &Multiaddr) -> Result<()> {
+    let mut working_dir = std::env::current_dir()?;
+    if working_dir.ends_with("sn_node") {
+        working_dir.pop();
+    }
+    println!("working dir {working_dir:?}");
+
+    let mut build_result = Command::new("cargo");
+    build_result
+        .arg("run")
+        .arg("--release")
+        .arg("--bin")
+        .arg("testnet")
+        .arg("--")
+        .arg("-c")
+        .arg(format!("{n_nodes}"))
+        .arg("-j")
+        .arg("--build-node")
+        .arg("--")
+        .arg("--peer")
+        .arg(format!("{genesis_multi_addrs}"))
+        .current_dir(&working_dir)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .output()?;
+
+    Ok(())
+}
+
+pub async fn get_genesis_multiaddrs() -> Result<Vec<Multiaddr>> {
+    let genesis_rpc_endpoint: SocketAddr = "127.0.0.1:12001".parse()?;
+    let genesis_rpc_endpoint = format!("https://{genesis_rpc_endpoint}");
+    println!("Connecting to node's RPC service at {genesis_rpc_endpoint} ...");
+    let mut client = SafeNodeClient::connect(genesis_rpc_endpoint).await?;
+
+    let request = Request::new(NodeInfoRequest {});
+    let response = client.node_info(request).await?;
+    let node_info = response.get_ref();
+    let peer_id = PeerId::from_bytes(&node_info.peer_id)?;
+
+    let request = Request::new(NetworkInfoRequest {});
+    let response = client.network_info(request).await?;
+    let net_info = response.get_ref();
+
+    let listeners = net_info
+        .listeners
+        .iter()
+        .map(|multiaddr| {
+            // let's add the peer id to the addr since that's how it's logged
+            let mut multiaddr = Multiaddr::from_str(multiaddr)
+                .expect("Failed to deserialise Multiaddr from RPC response");
+            multiaddr.push(Protocol::P2p(peer_id));
+            multiaddr
+        })
+        .collect::<Vec<_>>();
+    Ok(listeners)
 }

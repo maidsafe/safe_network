@@ -10,7 +10,8 @@
 mod common;
 
 use crate::common::{
-    get_client_and_wallet, init_logging_multi_threaded_tokio, node_restart,
+    get_client_and_wallet, get_genesis_multiaddrs, init_logging_multi_threaded_tokio, node_restart,
+    node_start,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
     PAYING_WALLET_INITIAL_BALANCE,
 };
@@ -36,7 +37,7 @@ use std::{
 use tonic::Request;
 use tracing::error;
 
-const NODE_COUNT: u8 = 25;
+const NODE_COUNT: u8 = 30;
 const CHUNK_SIZE: usize = 1024;
 
 // VERIFICATION_DELAY is set based on the dead peer detection interval
@@ -64,6 +65,9 @@ type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_data_location() -> Result<()> {
     let _log_appender_guard = init_logging_multi_threaded_tokio("verify_data_location");
+
+    let genesis_mulitaddrs = get_genesis_multiaddrs().await?;
+    node_start(5, &genesis_mulitaddrs[0])?;
 
     let churn_count = if let Ok(str) = std::env::var("CHURN_COUNT") {
         str.parse::<u8>()?
