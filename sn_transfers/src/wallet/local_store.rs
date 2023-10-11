@@ -338,7 +338,7 @@ impl LocalWallet {
         Ok(())
     }
 
-    /// Store the given cash_notes to the `received cash_notes dir` in the wallet dir.
+    /// Store the given cash_notes to the `cash_notes` dir in the wallet dir.
     pub fn deposit_and_store_to_disk(&mut self, received_cash_notes: &Vec<CashNote>) -> Result<()> {
         if received_cash_notes.is_empty() {
             return Ok(());

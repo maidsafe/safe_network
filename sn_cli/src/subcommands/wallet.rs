@@ -44,9 +44,9 @@ pub enum WalletCmds {
     /// Or Read a hex encoded CashNote from stdin.
     ///
     /// The default received directory is platform specific:
-    ///  - Linux: $HOME/.local/share/safe/wallet/received_cash_notes
-    ///  - macOS: $HOME/Library/Application Support/safe/wallet/received_cash_notes
-    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\wallet\received_cash_notes
+    ///  - Linux: $HOME/.local/share/safe/wallet/cash_notes
+    ///  - macOS: $HOME/Library/Application Support/safe/wallet/cash_notes
+    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\wallet\cash_notes
     ///
     /// If you find the default path unwieldy, you can also set the RECEIVED_CASHNOTES_PATH environment
     /// variable to a path you would prefer to work with.
