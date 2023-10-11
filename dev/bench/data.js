@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697009018693,
+  "lastUpdate": 1697010383895,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -10876,6 +10876,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 33.64531558286661,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9472d9a54c375135c5ac8bbcd536a311db01651f",
+          "message": "ci: prevent concurrent release and version bumping\n\nThis can lead to unreleased versions and some crates.io hassle",
+          "timestamp": "2023-10-11T09:26:09+02:00",
+          "tree_id": "f88f702f26d4acc337316a451c0f1a3a89de156c",
+          "url": "https://github.com/maidsafe/safe_network/commit/9472d9a54c375135c5ac8bbcd536a311db01651f"
+        },
+        "date": 1697010382514,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10382661471584993,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6383609484305668,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 30.002969147137858,
             "unit": "MiB/s"
           }
         ]
