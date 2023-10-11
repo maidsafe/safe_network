@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.24](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.23...sn_networking-v0.8.24) - 2023-10-11
+
+### Fixed
+- handling GetClosestPeers query error branch
+
 ## [0.8.23](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.22...sn_networking-v0.8.23) - 2023-10-11
 
 ### Added
