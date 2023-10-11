@@ -1,8 +1,8 @@
 name: Version Bump
 
-# prevent concurrent version bumps
+# prevent concurrent version bumps + releases from running at the same time
 concurrency:
-  group: "version-bumping"
+  group: "version-bump-release"
 
 on:
   push:

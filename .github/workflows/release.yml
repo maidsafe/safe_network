@@ -1,5 +1,9 @@
 name: release
 
+# prevent concurrent version bumps + releases from running at the same time
+concurrency:
+  group: "version-bump-release"
+
 on:
   push:
     branches:
