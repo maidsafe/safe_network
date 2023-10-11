@@ -56,12 +56,6 @@ impl LocalWallet {
 
     /// Stores the given cash_notes to the `created cash_notes dir` in the wallet dir.
     /// These can then be sent to the recipients out of band, over any channel preferred.
-    pub fn store_cash_note(&mut self, cash_note: &CashNote) -> Result<()> {
-        store_created_cash_notes(vec![cash_note], &self.wallet_dir)
-    }
-
-    /// Stores the given cash_notes to the `created cash_notes dir` in the wallet dir.
-    /// These can then be sent to the recipients out of band, over any channel preferred.
     pub fn store_cash_notes_to_disk(&self, cash_note: Vec<&CashNote>) -> Result<()> {
         store_created_cash_notes(cash_note, &self.wallet_dir)
     }
@@ -366,7 +360,7 @@ impl LocalWallet {
             let value = cash_note.value()?;
             self.wallet.available_cash_notes.insert(id, value);
 
-            self.store_cash_note(cash_note)?;
+            self.store_cash_notes_to_disk(vec![cash_note])?;
         }
 
         self.store(vec![])?;
@@ -806,7 +800,7 @@ mod tests {
         let created_cash_notes = sender.local_send(to, None)?;
         let cash_note = created_cash_notes[0].clone();
         let unique_pubkey = cash_note.unique_pubkey();
-        sender.store_cash_note(&cash_note)?;
+        sender.store_cash_notes_to_disk(vec![&cash_note])?;
 
         let unique_pubkey_name = *SpendAddress::from_unique_pubkey(&unique_pubkey).xorname();
         let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
