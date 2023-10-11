@@ -178,7 +178,20 @@ impl Network {
     ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
-        let close_nodes = self.get_closest_peers(&record_address, true).await?;
+        let mut close_nodes = self.get_closest_peers(&record_address, true).await?;
+
+        // Sometimes we can get too many close node responses here.
+        // (Seemingly libp2p can return more than expected)
+        // We only want CLOSE_GROUP_SIZE peers at most
+        close_nodes.sort_by(|a, b| {
+            let a = NetworkAddress::from_peer(*a);
+            let b = NetworkAddress::from_peer(*b);
+            record_address
+                .distance(&a)
+                .cmp(&record_address.distance(&b))
+        });
+
+        close_nodes.truncate(CLOSE_GROUP_SIZE);
 
         let request = Request::Query(Query::GetStoreCost(record_address.clone()));
         let responses = self
