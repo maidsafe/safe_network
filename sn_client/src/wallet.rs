@@ -309,7 +309,8 @@ impl Client {
 
         let mut spent_cash_notes = Vec::new();
         for (cash_note_key, spend_attempt_result) in join_all(tasks).await {
-            // if this is a record mismatch on spend, we need to clean up and remove the spent CashNote from the wallet
+            // This is a record mismatch on spend, we need to clean up and remove the spent CashNote from the wallet
+            // This only happens if we're verifying the store
             if let Err(Error::Network(sn_networking::Error::ReturnedRecordDoesNotMatch(
                 record_key,
             ))) = spend_attempt_result
