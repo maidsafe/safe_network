@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697008295875,
+  "lastUpdate": 1697008498407,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -18205,6 +18205,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 45,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f5cfd0eb33b2cc6c95ec186954050c980cb270c2",
+          "message": "feat: showing expected holders to CLI when required",
+          "timestamp": "2023-10-11T08:51:36+02:00",
+          "tree_id": "642f4b2c83a1287089d89482a8933d9dd5ab32cc",
+          "url": "https://github.com/maidsafe/safe_network/commit/f5cfd0eb33b2cc6c95ec186954050c980cb270c2"
+        },
+        "date": 1697008498055,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 47,
             "unit": "MB"
           }
         ]
