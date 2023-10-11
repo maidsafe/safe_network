@@ -10,7 +10,7 @@ use super::{
     wallet_file::{
         get_unconfirmed_spend_requests, get_wallet, load_cash_notes_from_disk,
         load_created_cash_note, store_created_cash_notes, store_unconfirmed_spend_requests,
-        store_wallet, wallet_file_name,
+        store_wallet, wallet_lockfile_name,
     },
     Error, KeyLessWallet, Result,
 };
@@ -29,7 +29,7 @@ use xor_name::XorName;
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fs::File,
+    fs::{File, OpenOptions},
     path::{Path, PathBuf},
 };
 
@@ -71,10 +71,15 @@ impl LocalWallet {
         Ok(())
     }
 
-    /// Locks the wallet dir and returns exclusive access to the wallet
+    /// Locks the wallet and returns exclusive access to the wallet
     /// This lock prevents any other process from locking the wallet dir, effectively acts as a mutex for the wallet
     pub fn lock(&self) -> Result<WalletExclusiveAccess> {
-        let file = File::open(wallet_file_name(&self.wallet_dir))?;
+        let lock = wallet_lockfile_name(&self.wallet_dir);
+        let file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(lock)?;
         file.lock_exclusive()?;
         Ok(file)
     }
