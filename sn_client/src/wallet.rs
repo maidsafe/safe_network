@@ -158,9 +158,9 @@ impl WalletClient {
             // just skip it as it will then get verification failure,
             // and repay/re-upload will be triggered correspondently.
             match res {
-                Ok((content_addr, Ok(cost))) => {
+                Ok((content_addr, Ok(costs))) => {
                     if let Some(xorname) = content_addr.as_xorname() {
-                        let _ = payment_map.insert(xorname, cost);
+                        let _ = payment_map.insert(xorname, costs);
                         debug!("Storecosts inserted into payment map for {content_addr:?}");
                     } else {
                         warn!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
