@@ -8,7 +8,7 @@
 
 use super::{
     chunks::{to_chunk, DataMapLevel, Error as ChunksError, SmallFile},
-    error::Result,
+    error::{Error, Result},
     Client, WalletClient,
 };
 use bincode::deserialize;
@@ -123,17 +123,6 @@ impl Files {
         Ok(bytes)
     }
 
-    /// Directly writes [`Bytes`] to the network in the
-    /// form of immutable chunks, without any batching.
-    pub async fn upload_with_payments(
-        &self,
-        bytes: Bytes,
-        // content_payments_map: ContentPaymentsMap,
-        verify_store: bool,
-    ) -> Result<NetworkAddress> {
-        self.upload_bytes(bytes, verify_store).await
-    }
-
     /// Tries to chunk the file, returning `(head_address, file_size, chunk_names)`
     /// and writes encrypted chunks to disk.
     pub fn chunk_file(&self, file_path: &Path, chunk_dir: &Path) -> ChunkFileResult {
@@ -222,12 +211,55 @@ impl Files {
         Ok((cost, new_balance))
     }
 
+    /// Verify that chunks were uploaded
+    ///
+    /// Returns a vec of any chunks that could not be verified
+    pub async fn verify_uploaded_chunks(
+        &self,
+        chunks_paths: Vec<(XorName, PathBuf)>,
+        batch_size: usize,
+    ) -> Result<Vec<(XorName, PathBuf)>> {
+        let mut failed_chunks = Vec::new();
+
+        for chunks_batch in chunks_paths.chunks(batch_size) {
+            // now we try and get batched chunks, keep track of any that fail
+            // Iterate over each uploaded chunk
+            let mut verify_handles = Vec::new();
+            for (name, path) in chunks_batch.iter().cloned() {
+                let client = self.client().clone();
+                // Spawn a new task to fetch each chunk concurrently
+                let handle = tokio::spawn(async move {
+                    let chunk_address: ChunkAddress = ChunkAddress::new(name);
+                    // make sure the chunk is stored
+                    let res = client.verify_chunk_stored(chunk_address).await;
+
+                    Ok::<_, ChunksError>(((name, path), res.is_err()))
+                });
+                verify_handles.push(handle);
+            }
+
+            // Await all fetch tasks and collect the results
+            let verify_results = join_all(verify_handles).await;
+
+            // Check for any errors during fetch
+            for result in verify_results {
+                if let ((chunk_addr, path), true) = result?? {
+                    warn!("Failed to fetch a chunk {chunk_addr:?}");
+                    // This needs to be NetAddr to allow for repayment
+                    failed_chunks.push((chunk_addr, path));
+                }
+            }
+        }
+
+        Ok(failed_chunks)
+    }
+
     // --------------------------------------------
     // ---------- Private helpers -----------------
     // --------------------------------------------
 
     /// Used for testing
-    async fn upload_bytes(&self, bytes: Bytes, verify: bool) -> Result<NetworkAddress> {
+    pub async fn upload_test_bytes(&self, bytes: Bytes, verify: bool) -> Result<NetworkAddress> {
         let temp_dir = tempdir()?;
         let file_path = temp_dir.path().join("tempfile");
         let mut file = File::create(&file_path)?;
@@ -247,6 +279,74 @@ impl Files {
         Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
             head_address,
         )))
+    }
+
+    /// Used for testing
+    /// Uploads bytes, loops over verification and repays if needed.
+    pub async fn pay_and_upload_bytes_test(
+        &self,
+        file_addr: XorName,
+        chunks: Vec<(XorName, PathBuf)>,
+        // verify: bool,
+    ) -> Result<(NetworkAddress, NanoTokens)> {
+        // initial payment
+        let mut cost = self
+            .wallet()?
+            .pay_for_storage(
+                chunks
+                    .iter()
+                    .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
+                true,
+            )
+            .await
+            .expect("Failed to pay for storage for new file at {file_addr:?}");
+
+        // upload chunks
+        for (_chunk_name, chunk_path) in &chunks {
+            let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
+            self.get_local_payment_and_upload_chunk(chunk, false, false)
+                .await?;
+        }
+
+        let mut failed_chunks = self.verify_uploaded_chunks(chunks, BATCH_SIZE).await?;
+        warn!("Failed chunks: {:?}", failed_chunks.len());
+
+        while !failed_chunks.is_empty() {
+            info!("Repaying for {:?} chunks", failed_chunks.len());
+
+            // Now we pay again or top up, depending on the new current store cost is
+            let new_cost = self
+                .wallet()?
+                .pay_for_storage(
+                    failed_chunks.iter().map(|(addr, _path)| {
+                        sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*addr))
+                    }),
+                    true,
+                )
+                .await?;
+
+            cost = cost.checked_add(new_cost).ok_or(Error::Transfers(
+                sn_transfers::WalletError::from(sn_transfers::Error::ExcessiveNanoValue),
+            ))?;
+
+            // now upload all those failed chunks again
+            for (_chunk_addr, chunk_path) in &failed_chunks {
+                let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
+                self.get_local_payment_and_upload_chunk(chunk, false, false)
+                    .await?;
+            }
+
+            trace!("Chunks uploaded again....");
+
+            failed_chunks = self
+                .verify_uploaded_chunks(failed_chunks, BATCH_SIZE)
+                .await?;
+        }
+
+        Ok((
+            NetworkAddress::ChunkAddress(ChunkAddress::new(file_addr)),
+            cost,
+        ))
     }
 
     // Gets and decrypts chunks from the network using nothing else but the data map.
