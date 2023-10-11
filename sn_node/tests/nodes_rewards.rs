@@ -301,6 +301,9 @@ fn spawn_royalties_payment_listener(
                         println!("Transfer notif received for key {key:?}");
                         if key == royalties_pk {
                             count += 1;
+                            // if count == 1 {
+                            //     break;
+                            // }
                         }
                     }
                     Ok(_) => { /* ignored */ }
