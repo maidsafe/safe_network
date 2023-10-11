@@ -15,7 +15,7 @@ use bytes::Bytes;
 use indicatif::ProgressBar;
 use libp2p::{
     identity::Keypair,
-    kad::{Record, K_VALUE},
+    kad::{Quorum, Record, K_VALUE},
     Multiaddr, PeerId,
 };
 #[cfg(feature = "open-metrics")]
@@ -389,7 +389,7 @@ impl Client {
 
         Ok(self
             .network
-            .put_record(record, record_to_verify, expected_holders)
+            .put_record(record, record_to_verify, expected_holders, Quorum::One)
             .await?)
     }
 
@@ -430,7 +430,7 @@ impl Client {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::All, false, Default::default())
+            .get_record_from_network(key, None, GetQuorum::One, false, Default::default())
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
@@ -481,7 +481,7 @@ impl Client {
 
         Ok(self
             .network
-            .put_record(record, record_to_verify, expected_holders)
+            .put_record(record, record_to_verify, expected_holders, Quorum::Majority)
             .await?)
     }
 

@@ -40,7 +40,7 @@ use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketKey, Record, RecordKey},
+    kad::{KBucketKey, Quorum, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
@@ -431,6 +431,7 @@ impl Network {
         record: Record,
         verify_store: Option<Record>,
         expected_holders: ExpectedHoldersList,
+        quorum: Quorum,
     ) -> Result<()> {
         let mut retries = 0;
 
@@ -446,6 +447,7 @@ impl Network {
                     record.clone(),
                     verify_store.clone(),
                     expected_holders.clone(),
+                    quorum,
                 )
                 .await;
 
@@ -468,6 +470,7 @@ impl Network {
         record: Record,
         verify_store: Option<Record>,
         expected_holders: ExpectedHoldersList,
+        quorum: Quorum,
     ) -> Result<()> {
         let record_key = record.key.clone();
         let pretty_key = PrettyPrintRecordKey::from(&record_key);
@@ -482,6 +485,7 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::PutRecord {
             record: record.clone(),
             sender,
+            quorum,
         })?;
         let response = receiver.await?;
 
@@ -494,11 +498,21 @@ impl Network {
             tokio::time::sleep(wait_duration).await;
             trace!("attempting to verify {pretty_key:?}");
 
+            let get_quorum = match quorum {
+                Quorum::One => GetQuorum::One,
+                Quorum::Majority => GetQuorum::Majority,
+                Quorum::All => GetQuorum::All,
+                // we dont use this so should not be an issue
+                Quorum::N(_) => {
+                    warn!("libp2p Quroum:N being used unuexpectedly, defaulting to GetQuorum::All");
+                    GetQuorum::All
+                }
+            };
             // Verify the record is stored, requiring re-attempts
             self.get_record_from_network(
                 record_key,
                 verify_store,
-                GetQuorum::All,
+                get_quorum,
                 true,
                 expected_holders,
             )
@@ -702,7 +716,9 @@ fn get_fees_from_store_cost_responses(
 ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
     // TODO: we should make this configurable based upon data type
     // or user requirements for resilience.
-    let desired_quote_count = CLOSE_GROUP_SIZE;
+
+    // Rigth now we only take one quote and pay one node.
+    let desired_quote_count = 1;
 
     // sort all costs by fee, lowest to highest
     // if there's a tie in cost, sort by pubkey
@@ -713,7 +729,7 @@ fn get_fees_from_store_cost_responses(
         }
     });
 
-    // get the first desired_quote_count of all_costs
+    // get the lowest desired_quote_counts of all_costs
     all_costs.truncate(desired_quote_count);
 
     info!(
@@ -772,56 +788,40 @@ mod tests {
         // for a vec of different costs of CLOSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
-        for i in 0..CLOSE_GROUP_SIZE {
+        for i in 1..CLOSE_GROUP_SIZE {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
             costs.push((addr, NanoTokens::from(i as u64)));
         }
+        let expected_price = costs[0].1.as_nano();
         let prices = get_fees_from_store_cost_responses(costs)?;
         let total_price: u64 = prices
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
 
-        // sum all the numbers from 0 to CLOSE_GROUP_SIZE
-        let expected_price = CLOSE_GROUP_SIZE * (CLOSE_GROUP_SIZE - 1) / 2;
-
         assert_eq!(
-            total_price, expected_price as u64,
+            total_price, expected_price,
             "price should be {}",
             expected_price
         );
 
         Ok(())
     }
+
     #[test]
-    #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
-    fn test_get_any_fee_from_store_cost_responses_errs_if_insufficient_responses(
+    fn test_get_some_fee_from_store_cost_responses_even_if_one_errs_and_sufficient(
     ) -> eyre::Result<()> {
-        // for a vec of different costs of CLOSE_GROUP size
-        // ensure we return the CLOSE_GROUP / 2 indexed price
-        let mut costs = vec![];
-        for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
-            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
-            costs.push((addr, NanoTokens::from(i as u64)));
-        }
-
-        if get_fees_from_store_cost_responses(costs).is_ok() {
-            bail!("Should have errored as we have too few responses")
-        }
-
-        Ok(())
-    }
-    #[test]
-    #[ignore = "we want to pay the entire CLOSE_GROUP for now"]
-    fn test_get_some_fee_from_store_cost_responses_errs_if_sufficient() -> eyre::Result<()> {
         // for a vec of different costs of CLOSE_GROUP size
         let responses_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
-        for i in 0..responses_count {
+        for i in 1..responses_count {
             // push random MainPubkey and Nano
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
             costs.push((addr, NanoTokens::from(i)));
             println!("price added {}", i);
         }
+
+        // this should be the lowest price
+        let expected_price = costs[0].1.as_nano();
 
         let prices = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),
@@ -832,11 +832,8 @@ mod tests {
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
 
-        // sum all the numbers from 0 to CLOSE_GROUP_SIZE / 2 + 1
-        let expected_price = (CLOSE_GROUP_SIZE / 2) * (CLOSE_GROUP_SIZE / 2 + 1) / 2;
-
         assert_eq!(
-            total_price, expected_price as u64,
+            total_price, expected_price,
             "price should be {}",
             total_price
         );
