@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697011193877,
+  "lastUpdate": 1697021111560,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -10954,6 +10954,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 28.536161496912413,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c2bae8ab28013d0ecd1365dc2fa0047e490466fe",
+          "message": "chore(transfers): add somre more clarity around DoubleSpendAttemptedForCashNotes",
+          "timestamp": "2023-10-11T12:22:07+02:00",
+          "tree_id": "f2a818af70c4d9de27227bc90eccc2dca6f6af16",
+          "url": "https://github.com/maidsafe/safe_network/commit/c2bae8ab28013d0ecd1365dc2fa0047e490466fe"
+        },
+        "date": 1697021109257,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.09336983326998873,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5874952631654068,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 31.507984864394682,
             "unit": "MiB/s"
           }
         ]
