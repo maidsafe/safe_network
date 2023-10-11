@@ -230,7 +230,7 @@ impl WalletClient {
             warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
 
             // if we have a DoubleSpend error, lets remove the CashNote from the wallet
-            if let WalletError::DoubleSpendAttempted(spent_cash_notes) = &error {
+            if let WalletError::DoubleSpendAttemptedForCashNotes(spent_cash_notes) = &error {
                 for cash_note_key in spent_cash_notes {
                     warn!("Removing CashNote from wallet: {cash_note_key:?}");
                     self.wallet.mark_note_as_spent(*cash_note_key);
@@ -307,7 +307,7 @@ impl Client {
             tasks.push(the_task);
         }
 
-        let mut spent_cash_notes = Vec::new();
+        let mut spent_cash_notes = BTreeSet::default();
         for (cash_note_key, spend_attempt_result) in join_all(tasks).await {
             // This is a record mismatch on spend, we need to clean up and remove the spent CashNote from the wallet
             // This only happens if we're verifying the store
@@ -316,7 +316,7 @@ impl Client {
             ))) = spend_attempt_result
             {
                 warn!("Record mismatch on spend, removing CashNote from wallet: {record_key:?}");
-                spent_cash_notes.push(*cash_note_key);
+                spent_cash_notes.insert(*cash_note_key);
             } else {
                 return spend_attempt_result
                     .map_err(|err| WalletError::CouldNotSendMoney(err.to_string()));
@@ -326,7 +326,9 @@ impl Client {
         if spent_cash_notes.is_empty() {
             Ok(())
         } else {
-            Err(WalletError::DoubleSpendAttempted(spent_cash_notes))
+            Err(WalletError::DoubleSpendAttemptedForCashNotes(
+                spent_cash_notes,
+            ))
         }
     }
 
