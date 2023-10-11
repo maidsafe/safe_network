@@ -15,7 +15,7 @@ use crate::common::{
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use sn_client::WalletClient;
-use sn_networking::CLOSE_GROUP_SIZE;
+use sn_networking::{close_group_majority, CLOSE_GROUP_SIZE};
 use sn_node::NodeEvent;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress},
@@ -238,7 +238,7 @@ fn spawn_transfer_notifs_listener(endpoint: String) -> JoinHandle<Result<usize, 
                 Ok(NodeEvent::TransferNotif { key, transfer: _ }) => {
                     println!("Transfer notif received for key {key:?}");
                     count += 1;
-                    if count == CLOSE_GROUP_SIZE {
+                    if count == close_group_majority() {
                         break;
                     }
                 }
