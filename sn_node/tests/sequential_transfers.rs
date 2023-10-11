@@ -76,7 +76,7 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let to2 = second_wallet.address();
     let to3 = third_wallet.address();
 
-    let (some_cash_notes, _exclusive_access) = first_wallet.available_cash_notes().unwrap();
+    let (some_cash_notes, _exclusive_access) = first_wallet.available_cash_notes()?;
     let same_cash_notes = some_cash_notes.clone();
 
     let mut rng = rng::thread_rng();
