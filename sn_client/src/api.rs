@@ -28,11 +28,8 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::{MainPubkey, NanoTokens, SignedSpend, Transfer, UniquePubkey};
-use std::{
-    collections::{HashMap, HashSet},
-    time::Duration,
-};
+use sn_transfers::{SignedSpend, Transfer, UniquePubkey};
+use std::{collections::{HashMap, HashSet}, time::Duration};
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
@@ -517,32 +514,6 @@ impl Client {
             error!("RecordKind mismatch while trying to retrieve a cash_note spend");
             Err(ProtocolError::RecordKindMismatch(RecordKind::Spend).into())
         }
-    }
-
-    /// Get the store cost at a given address
-    pub async fn get_store_costs_at_address(
-        &self,
-        address: &NetworkAddress,
-    ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
-        let tolerance = 1.5;
-        trace!("Getting store cost at {address:?}, with tolerance of {tolerance} times the cost");
-
-        // Get the store costs from the network and map each token to `tolerance` * the token itself
-        let costs = self
-            .network
-            .get_store_costs_from_network(address.clone())
-            .await?;
-        let adjusted_costs: Vec<(MainPubkey, NanoTokens)> = costs
-            .into_iter()
-            .map(|(address, token)| {
-                (
-                    address,
-                    NanoTokens::from((token.as_nano() as f64 * tolerance) as u64),
-                )
-            })
-            .collect();
-
-        Ok(adjusted_costs)
     }
 
     /// Subscribe to given gossipsub topic
