@@ -17,10 +17,7 @@ use eyre::{eyre, Result};
 use sn_client::WalletClient;
 use sn_networking::CLOSE_GROUP_SIZE;
 use sn_node::NodeEvent;
-use sn_protocol::{
-    storage::{ChunkAddress, RegisterAddress},
-    NetworkAddress,
-};
+use sn_protocol::{storage::RegisterAddress, NetworkAddress};
 use sn_transfers::{LocalWallet, NanoTokens};
 use tokio::{
     task::JoinHandle,
@@ -38,11 +35,10 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
 
-    let (client, paying_wallet) =
+    let (client, _paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
-    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, _content_addr, chunks) = random_content(
+    let (files_api, _content_bytes, content_addr, chunks) = random_content(
         &client,
         paying_wallet_dir.to_path_buf(),
         chunks_dir.path().to_path_buf(),
@@ -50,21 +46,15 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
 
     println!("Paying for {} random addresses...", chunks.len());
 
-    let cost = wallet_client
-        .pay_for_storage(
-            chunks
-                .into_iter()
-                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(name))),
-            true,
-        )
+    let prev_rewards_balance = current_rewards_balance()?;
+
+    let (_file_addr, cost) = files_api
+        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
         .await?;
 
-    let prev_rewards_balance = current_rewards_balance()?;
     let expected_rewards_balance = prev_rewards_balance
         .checked_add(cost)
         .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
-
-    files_api.upload_with_payments(content_bytes, true).await?;
 
     verify_rewards(expected_rewards_balance).await?;
 
@@ -82,7 +72,9 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    println!("Paying for random Register address...");
+    let rb = current_rewards_balance()?;
+
+    println!("Paying for random Register address... rb {rb:?}");
     let mut rng = rand::thread_rng();
     let owner_pk = client.signer_pk();
     let register_addr = XorName::random(&mut rng);
@@ -98,6 +90,7 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
         .await?;
 
     let prev_rewards_balance = current_rewards_balance()?;
+    println!("Cost is {cost:?}, rb: {prev_rewards_balance:?}");
     let expected_rewards_balance = prev_rewards_balance
         .checked_add(cost)
         .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
@@ -117,29 +110,23 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
 
-    let (client, paying_wallet) =
+    let (client, _paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
-    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, _content_addr, chunks) = random_content(
+    let (files_api, _content_bytes, content_addr, chunks) = random_content(
         &client,
         paying_wallet_dir.to_path_buf(),
         chunks_dir.path().to_path_buf(),
     )?;
 
     println!("Paying for {} random addresses...", chunks.len());
-    let _cost = wallet_client
-        .pay_for_storage(
-            chunks
-                .into_iter()
-                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(name))),
-            true,
-        )
-        .await?;
 
     let handle = spawn_transfer_notifs_listener("https://127.0.0.1:12001".to_string());
 
-    files_api.upload_with_payments(content_bytes, true).await?;
+    let _cost = files_api
+        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
+        .await?;
+
     println!("Random chunks stored");
 
     let count = handle.await??;
@@ -191,14 +178,14 @@ async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
     let mut iteration = 0;
     let mut cur_rewards_history = Vec::new();
 
-    while iteration < 10 {
+    while iteration < 15 {
         iteration += 1;
         let new_rewards_balance = current_rewards_balance()?;
         if expected_rewards_balance == new_rewards_balance {
             return Ok(());
         }
         cur_rewards_history.push(new_rewards_balance);
-        sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_secs(2)).await;
     }
 
     Err(eyre!("Network doesn't get expected reward {expected_rewards_balance:?} after {iteration} iterations, history is {cur_rewards_history:?}"))

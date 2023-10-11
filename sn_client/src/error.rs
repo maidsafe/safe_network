@@ -47,6 +47,9 @@ pub enum Error {
     #[error("Events sender error {0}.")]
     EventsSender(#[from] tokio::sync::broadcast::error::SendError<ClientEvent>),
 
+    #[error(transparent)]
+    JoinError(#[from] tokio::task::JoinError),
+
     /// A general error when verifying a transfer validity in the network.
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),

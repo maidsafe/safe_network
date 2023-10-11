@@ -471,6 +471,7 @@ impl Node {
             Err(err) => debug!("Failed to serialise transfer data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
         }
 
+        info!("Storing CNs of {received_fee:?} total nanos for record {pretty_key}");
         // deposit the CashNotes in our wallet
         wallet
             .deposit_and_store_to_disk(&cash_notes)
@@ -691,7 +692,7 @@ impl Node {
                     }
                     // Q: Should we not aggregate the double spends instead of using vec![]
                     Err(err) => {
-                        debug!("Got error while fetching spend for the same unique_pubkey {err:?}");
+                        debug!("fetching spend for the same unique_pubkey returned: {err:?}");
                         vec![]
                     }
                 };

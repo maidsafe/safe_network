@@ -440,7 +440,7 @@ async fn verify_and_repay_if_needed(
         // Check for any errors during fetch
         for result in verify_results {
             if let ((chunk_addr, path), true) = result?? {
-                println!("Failed to fetch a chunk {chunk_addr:?}");
+                warn!("Failed to fetch a chunk {chunk_addr:?}");
                 // This needs to be NetAddr to allow for repayment
                 failed_chunks.push((chunk_addr, path));
             }
@@ -476,7 +476,7 @@ async fn verify_and_repay_if_needed(
         let mut wallet = file_api.wallet()?;
 
         // Now we pay again or top up, depending on the new current store cost is
-        wallet
+        let _new_cost = wallet
             .pay_for_storage(
                 failed_chunks_batch
                     .iter()
