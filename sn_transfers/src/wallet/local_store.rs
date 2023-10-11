@@ -64,8 +64,12 @@ impl LocalWallet {
 
     /// reloads the wallet from disk.
     fn reload(&mut self) -> Result<()> {
+        // placeholder random MainSecretKey to take it out
+        let current_key = std::mem::replace(&mut self.key, MainSecretKey::random());
         let (key, wallet, unconfirmed_spend_requests) =
-            load_from_path(&self.wallet_dir, Some(self.key.clone()))?;
+            load_from_path(&self.wallet_dir, Some(current_key))?;
+
+        // and move the original back in
         *self = Self {
             key,
             wallet,
