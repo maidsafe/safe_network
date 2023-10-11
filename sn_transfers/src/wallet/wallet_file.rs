@@ -21,6 +21,7 @@ use std::{
 
 // Filename for storing a wallet.
 const WALLET_FILE_NAME: &str = "wallet";
+const WALLET_LOCK_FILE_NAME: &str = "wallet.lock";
 const CASHNOTES_DIR_NAME: &str = "cash_notes";
 const UNCONFRIMED_TX_NAME: &str = "unconfirmed_spend_requests";
 
@@ -35,6 +36,11 @@ pub(super) fn store_wallet(wallet_dir: &Path, wallet: &KeyLessWallet) -> Result<
 /// Returns the wallet filename
 pub(super) fn wallet_file_name(wallet_dir: &Path) -> PathBuf {
     wallet_dir.join(WALLET_FILE_NAME)
+}
+
+/// Returns the wallet lockfile filename
+pub(super) fn wallet_lockfile_name(wallet_dir: &Path) -> PathBuf {
+    wallet_dir.join(WALLET_LOCK_FILE_NAME)
 }
 
 /// Returns `Some(KeyLessWallet)` or None if file doesn't exist.
