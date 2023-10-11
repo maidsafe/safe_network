@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.93.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.93.6...sn_client-v0.93.7) - 2023-10-11
+
+### Added
+- showing expected holders to CLI when required
+- verify put_record with expected_holders
+
 ## [0.93.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.93.5...sn_client-v0.93.6) - 2023-10-10
 
 ### Added

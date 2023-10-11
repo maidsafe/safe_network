@@ -1646,6 +1646,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(log)* log the running test's name
 
+## [0.92.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.92.9...sn_node-v0.92.10) - 2023-10-11
+
+### Added
+- showing expected holders to CLI when required
+- verify put_record with expected_holders
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
