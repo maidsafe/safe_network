@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697010591941,
+  "lastUpdate": 1697010593506,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -26153,6 +26153,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 157,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 34,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9472d9a54c375135c5ac8bbcd536a311db01651f",
+          "message": "ci: prevent concurrent release and version bumping\n\nThis can lead to unreleased versions and some crates.io hassle",
+          "timestamp": "2023-10-11T09:26:09+02:00",
+          "tree_id": "f88f702f26d4acc337316a451c0f1a3a89de156c",
+          "url": "https://github.com/maidsafe/safe_network/commit/9472d9a54c375135c5ac8bbcd536a311db01651f"
+        },
+        "date": 1697010593026,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 135,
             "unit": "MB"
           },
           {
