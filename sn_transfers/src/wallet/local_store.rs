@@ -16,7 +16,7 @@ use super::{
 };
 
 use crate::{
-    transfers::{create_offline_transfer, ContentPaymentsIdMap, OfflineTransfer},
+    transfers::{create_offline_transfer, ContentPaymentsIdMap, OfflineTransfer, PaymentDetails},
     CashNoteRedemption, SignedSpend, Transfer,
 };
 use crate::{
@@ -222,18 +222,21 @@ impl LocalWallet {
     }
 
     /// Return the payment cash_note ids for the given content address name if cached.
-    pub fn get_payment_unique_pubkeys(&self, name: &XorName) -> Option<&Vec<UniquePubkey>> {
+    pub fn get_payment_unique_pubkeys_and_values(
+        &self,
+        name: &XorName,
+    ) -> Option<&Vec<PaymentDetails>> {
         self.wallet.payment_transactions.get(name)
     }
 
     /// Return the payment cash_note ids for the given content address name if cached.
     pub fn get_payment_cash_notes(&self, name: &XorName) -> Vec<CashNote> {
-        let ids = self.get_payment_unique_pubkeys(name);
+        let ids = self.get_payment_unique_pubkeys_and_values(name);
         // now grab all those cash_notes
         let mut cash_notes: Vec<CashNote> = vec![];
 
         if let Some(ids) = ids {
-            for id in ids {
+            for (id, _main_pub_key, _value) in ids {
                 if let Some(cash_note) = load_created_cash_note(id, &self.wallet_dir) {
                     trace!(
                         "Current cash_note of chunk {name:?} is paying {:?} tokens.",
@@ -341,9 +344,13 @@ impl LocalWallet {
                     trace!("Created transaction regarding {content_addr:?} paying {:?}(origin {token:?}) to payee {payee:?}.",
                         cash_note.value());
                     used_cash_notes.insert(cash_note.unique_pubkey().to_bytes());
-                    let cash_notes_for_content: &mut Vec<UniquePubkey> =
+                    let cash_notes_for_content: &mut Vec<PaymentDetails> =
                         all_transfers_per_address.entry(content_addr).or_default();
-                    cash_notes_for_content.push(cash_note.unique_pubkey());
+                    cash_notes_for_content.push((
+                        cash_note.unique_pubkey(),
+                        *cash_note.main_pubkey(),
+                        cash_note.value()?,
+                    ));
                 }
             }
         }
@@ -457,23 +464,24 @@ impl LocalWallet {
         // For each target address
         for (xor, payments) in payment_map.iter_mut() {
             // All payments done for an address, should be multiple nodes.
-            let notes = self.get_payment_cash_notes(xor);
-            for note in notes {
-                // Find payment to a node, for which we have a cashnote already
-                if let Some(payment) = payments
-                    .iter_mut()
-                    .find(|(pubkey, _)| pubkey == note.main_pubkey())
-                {
-                    if let Ok(value) = note.value() {
+            if let Some(notes) = self.get_payment_unique_pubkeys_and_values(xor) {
+                for (_note_main_key, main_pub_key, note_value) in notes {
+                    // Find new payment to a node, for which we have a cashnote already
+                    if let Some((_main_pub_key, payment_tokens)) = payments
+                        .iter_mut()
+                        .find(|(pubkey, _)| pubkey.public_key() == main_pub_key.public_key())
+                    {
                         // Subtract what we already paid from what we're about to pay.
                         // `checked_sub` overflows if would be negative, so we set it to 0.
-                        payment.1 = payment.1.checked_sub(value).unwrap_or(0.into());
+                        *payment_tokens = payment_tokens
+                            .checked_sub(*note_value)
+                            .unwrap_or(NanoTokens::zero());
                     }
                 }
             }
 
             // Remove all payments that are 0.
-            payments.retain(|payment| payment.1 > 0.into());
+            payments.retain(|(_mainpk, payment_tokens)| payment_tokens > &NanoTokens::zero());
         }
 
         // Remove entries that do not have payments associated anymore.
@@ -952,7 +960,8 @@ mod tests {
             BTreeMap::from([
                 (xor2, vec![(key2a, 10.into())]),
                 (xor4, vec![(key4b, 9.into())]),
-            ])
+            ]),
+            "payment map should only have the adjusted prices"
         );
 
         Ok(())

@@ -36,7 +36,11 @@ pub struct OfflineTransfer {
     pub all_spend_requests: Vec<SignedSpend>,
 }
 
-pub type ContentPaymentsIdMap = BTreeMap<XorName, Vec<UniquePubkey>>;
+pub type PaymentDetails = (UniquePubkey, MainPubkey, NanoTokens);
+
+/// Xorname of data from which the content was fetched, mapping to the CashNote UniquePubkey (its id on disk)
+/// the main key for that CashNote and the value
+pub type ContentPaymentsIdMap = BTreeMap<XorName, Vec<PaymentDetails>>;
 
 /// The input details necessary to
 /// carry out a transfer of tokens.
