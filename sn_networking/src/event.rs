@@ -639,7 +639,7 @@ impl SwarmDriver {
                     if expected_holders.is_empty() {
                         debug!("{log_string}");
                     } else {
-                        println!(
+                        debug!(
                             "{log_string}, and {expected_holders:?} expected holders not responded"
                         );
                     }
