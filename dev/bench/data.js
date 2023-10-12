@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697115456209,
+  "lastUpdate": 1697115675895,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -18817,6 +18817,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c71050f56c4fb6320e78a21ccf10e0782405d5f6",
+          "message": "chore: remove some low level println",
+          "timestamp": "2023-10-12T14:36:57+02:00",
+          "tree_id": "96d966dba76c688dc771b1b260d1ea927a3fc9a0",
+          "url": "https://github.com/maidsafe/safe_network/commit/c71050f56c4fb6320e78a21ccf10e0782405d5f6"
+        },
+        "date": 1697115675451,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
