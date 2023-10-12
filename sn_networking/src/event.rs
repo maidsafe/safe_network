@@ -913,7 +913,6 @@ impl SwarmDriver {
                     trace!("For record {pretty_key:?} task {query_id:?}, received a copy from an expected holder {peer_id:?}");
                 } else {
                     trace!("For record {pretty_key:?} task {query_id:?}, received a copy from an unexpected holder {peer_id:?}");
-                    println!("For record {pretty_key:?} task {query_id:?}, received a copy from an unexpected holder {peer_id:?}");
                 }
             }
 
