@@ -90,8 +90,15 @@ const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
-/// Time before a Kad query timesout if no response is received
+/// Time before a Kad query times out if no response is received
 const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(25);
+
+/// The interval in which kad.bootstrap is called
+const BOOTSTRAP_INTERVAL: Duration = Duration::from_secs(5);
+
+/// Every BOOTSTRAP_CONNECTED_PEERS_STEP connected peer, we step up the BOOTSTRAP_INTERVAL to slow down bootstrapping
+/// process
+const BOOTSTRAP_CONNECTED_PEERS_STEP: u32 = 50;
 
 // Protocol support shall be downward compatible for patch only version update.
 // i.e. versions of `A.B.X` shall be considered as a same protocol of `A.B`
@@ -494,6 +501,7 @@ impl SwarmDriver {
     /// and command receiver messages, ensuring efficient handling of multiple
     /// asynchronous tasks.
     pub async fn run(mut self) {
+        let mut bootstrap_interval = tokio::time::interval(BOOTSTRAP_INTERVAL);
         loop {
             tokio::select! {
                 swarm_event = self.swarm.select_next_some() => {
@@ -509,6 +517,34 @@ impl SwarmDriver {
                     },
                     None =>  continue,
                 },
+                // runs every bootstrap_interval time
+                _ = bootstrap_interval.tick() => {
+
+                    // kad bootstrap process needs at least one peer in the RT be carried out.
+                    let connected_peers = self.swarm.connected_peers().count() as u32;
+                    if !self.bootstrap_ongoing && connected_peers>=1 {
+                        debug!("Trying to initiate bootstrap. Current bootstrap_interval {:?}", bootstrap_interval.period());
+                        match self.swarm.behaviour_mut().kademlia.bootstrap() {
+                            Ok(query_id) => {
+                                debug!(
+                                    "Initiated kad bootstrap process with query id {query_id:?}"
+                                );
+                                self.bootstrap_ongoing = true;
+                            }
+                            Err(err) => {
+                                error!("Failed to initiate kad bootstrap with error: {err:?}")
+                            }
+                        };
+                    }
+                    // increment bootstrap_interval in steps of INITIAL_BOOTSTRAP_INTERVAL every BOOTSTRAP_CONNECTED_PEERS_STEP
+                    let step = connected_peers / BOOTSTRAP_CONNECTED_PEERS_STEP;
+                    let step = std::cmp::max(1, step);
+                    let new_interval = BOOTSTRAP_INTERVAL * step;
+                    if new_interval > bootstrap_interval.period() {
+                        bootstrap_interval = tokio::time::interval(new_interval);
+                        bootstrap_interval.tick().await; // the first tick completes immediately
+                    }
+                }
             }
         }
     }
