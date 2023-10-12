@@ -759,25 +759,10 @@ impl SwarmDriver {
                 if is_new_peer {
                     self.log_kbuckets(&peer);
                     self.send_event(NetworkEvent::PeerAdded(peer));
+                    // todo: do we need this log here? O(n) to calculate .count();
                     let connected_peers = self.swarm.connected_peers().count();
 
                     info!("New peer added to routing table: {peer:?}, now we have #{connected_peers} connected peers");
-                    // kad bootstrap process needs at least one peer in the RT be carried out.
-                    // Carry out bootstrap until we have at least CLOSE_GROUP_SIZE peers
-                    if connected_peers <= CLOSE_GROUP_SIZE && !self.bootstrap_ongoing {
-                        debug!("Trying to initiate bootstrap as we have less than {CLOSE_GROUP_SIZE} peers");
-                        match self.swarm.behaviour_mut().kademlia.bootstrap() {
-                            Ok(query_id) => {
-                                debug!(
-                                    "Initiated kad bootstrap process with query id {query_id:?}"
-                                );
-                                self.bootstrap_ongoing = true;
-                            }
-                            Err(err) => {
-                                error!("Failed to initiate kad bootstrap with error: {err:?}")
-                            }
-                        };
-                    }
                 }
 
                 if old_peer.is_some() {
@@ -792,6 +777,11 @@ impl SwarmDriver {
             } => {
                 // Ignored to reduce logging. When `Record filtering` is enabled,
                 // the `record` variable will contain the content for further validation before put.
+            }
+            KademliaEvent::InboundRequest {
+                request: InboundRequest::FindNode { .. },
+            } => {
+                // Ignored to reduce logging. With continuous bootstrap, this is triggered often.
             }
             KademliaEvent::InboundRequest {
                 request:
