@@ -17,6 +17,7 @@ use eyre::{eyre, Result};
 use sn_client::WalletClient;
 use sn_logging::LogBuilder;
 use sn_networking::{close_group_majority, CLOSE_GROUP_SIZE};
+
 use sn_node::NodeEvent;
 use sn_transfers::{LocalWallet, NanoTokens};
 use tokio::{
@@ -122,7 +123,11 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
 
     let count = handle.await??;
     println!("Number of notifications received by node: {count}");
-    assert_eq!(count, CLOSE_GROUP_SIZE, "Not enough notifications received");
+    assert_eq!(
+        count,
+        close_group_majority(),
+        "Not enough notifications received"
+    );
 
     Ok(())
 }
@@ -152,7 +157,11 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
 
     let count = handle.await??;
     println!("Number of notifications received by node: {count}");
-    assert_eq!(count, CLOSE_GROUP_SIZE, "Not enough notifications received");
+    assert_eq!(
+        count,
+        close_group_majority(),
+        "Not enough notifications received"
+    );
 
     Ok(())
 }
