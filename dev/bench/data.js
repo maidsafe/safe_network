@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697095629851,
+  "lastUpdate": 1697095835189,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -18681,6 +18681,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a75d15343a836765fbfab9c260f43e838c6b8933",
+          "message": "chore: more detailed logging when client creating store cash_note",
+          "timestamp": "2023-10-12T09:06:42+02:00",
+          "tree_id": "c5b233bec62c293587fced83553d1d06093aa398",
+          "url": "https://github.com/maidsafe/safe_network/commit/a75d15343a836765fbfab9c260f43e838c6b8933"
+        },
+        "date": 1697095834402,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
