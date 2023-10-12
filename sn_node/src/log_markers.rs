@@ -29,6 +29,9 @@ pub enum Marker<'a> {
     /// No network activity in some time
     NoNetworkActivity(Duration),
 
+    /// Forced Replication by simulating a churned out node within close range.
+    ForcedReplication(PeerId),
+
     /// Network Cmd message received
     NodeCmdReceived(&'a Cmd),
 
