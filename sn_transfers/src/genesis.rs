@@ -9,8 +9,8 @@
 use super::wallet::LocalWallet;
 
 use crate::{
-    CashNote, Error as CashNoteError, Hash, Input, MainSecretKey, NanoTokens, Transaction,
-    TransactionBuilder,
+    CashNote, Error as CashNoteError, Hash, Input, MainPubkey, MainSecretKey, NanoTokens,
+    Transaction, TransactionBuilder,
 };
 
 use bls::SecretKey;
@@ -34,7 +34,7 @@ pub const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
 ///
 /// This key is public for auditing purposes. Hard coding its value means all nodes will be able to
 /// validate it.
-const GENESIS_CASHNOTE_SK: &str =
+pub const GENESIS_CASHNOTE_SK: &str =
     "5f15ae2ea589007e1474e049bbc32904d583265f12ce1f8153f955076a9af49b";
 
 /// Main error type for the crate.
@@ -66,6 +66,9 @@ lazy_static! {
             Err(err) => panic!("Failed to create genesis CashNote: {err:?}"),
         }
     };
+
+    /// Public key where network royalties payments are expectd to be made to.
+    pub static ref NETWORK_ROYALTIES_PK: MainPubkey = *GENESIS_CASHNOTE.main_pubkey();
 }
 
 /// Return if provided Transaction is genesis parent tx.

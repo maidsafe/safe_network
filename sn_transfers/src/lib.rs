@@ -30,7 +30,9 @@ pub use genesis::{
     create_faucet_wallet, create_first_cash_note_from_key, is_genesis_parent_tx,
     load_genesis_wallet,
 };
-pub use genesis::{Error as GenesisError, GENESIS_CASHNOTE};
+pub use genesis::{
+    Error as GenesisError, GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK, NETWORK_ROYALTIES_PK,
+};
 pub use transfers::create_offline_transfer;
 pub use wallet::{bls_secret_from_hex, parse_main_pubkey};
 pub use wallet::{Error as WalletError, LocalWallet, Result as WalletResult};

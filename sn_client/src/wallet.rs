@@ -65,7 +65,7 @@ impl WalletClient {
                     "Payment cash notes retrieved from wallet: {:?}",
                     cash_notes.len()
                 );
-                Ok(Transfer::transfers_from_cash_notes(cash_notes)?)
+                Ok(Transfer::storage_transfers_from_cash_notes(cash_notes)?)
             }
             None => Err(WalletError::InvalidAddressType),
         }

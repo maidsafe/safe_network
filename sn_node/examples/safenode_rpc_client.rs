@@ -194,6 +194,17 @@ pub async fn node_events(addr: SocketAddr, only_transfers: bool) -> Result<()> {
                     "New transfer notification received: {key:?} {}",
                     transfer.to_hex()?
                 );
+
+                let royalties_sk = match bls::SecretKey::from_hex(sn_transfers::GENESIS_CASHNOTE_SK)
+                {
+                    Ok(sk) => sn_transfers::MainSecretKey::new(sk),
+                    Err(err) => panic!("Failed to parse hard-coded genesis CashNote SK: {err:?}"),
+                };
+
+                let cash_notes = transfer.cashnote_redemptions(&royalties_sk)?;
+                for cn in cash_notes {
+                    println!("CASH NOTE received: {cn:?}");
+                }
             }
             Ok(_) if only_transfers => continue,
             Ok(event) => println!("New event received: {event:?}"),
