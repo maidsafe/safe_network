@@ -70,6 +70,9 @@ pub enum Error {
         "Payment proof received with record:{0:?}. No payment for our node in its transaction"
     )]
     NoPaymentToOurNode(PrettyPrintRecordKey<'static>),
+    /// Missing network royalties payment
+    #[error("Missing network royalties payment in proof received with record: {0:?}.")]
+    NoNetworkRoyaltiesPayment(PrettyPrintRecordKey<'static>),
     /// Payments received could not be stored on node's local wallet
     #[error("Payments received could not be stored on node's local wallet: {0}")]
     FailedToStorePaymentIntoNodeWallet(String),
