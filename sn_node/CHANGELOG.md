@@ -1667,6 +1667,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.93.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.92.13...sn_node-v0.93.0) - 2023-10-12
+
+### Added
+- *(sn_transfers)* dont load Cns from disk, store value along w/ pubkey in wallet
+
+### Fixed
+- wallet concurrent access bugs
+
+### Other
+- remove nasty unwrap
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

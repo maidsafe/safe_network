@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.26](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.25...sn_networking-v0.8.26) - 2023-10-12
+
+### Added
+- *(networking)* return valid result if one found during a timeout
+
+### Other
+- remove some low level println
+- *(networking)* handle GetRecord kad timeouts
+
 ## [0.8.25](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.24...sn_networking-v0.8.25) - 2023-10-11
 
 ### Other
