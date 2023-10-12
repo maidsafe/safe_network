@@ -38,6 +38,10 @@ impl UniquePubkey {
         rng.fill_bytes(&mut bytes);
         bytes
     }
+
+    pub fn public_key(&self) -> PublicKey {
+        self.0
+    }
 }
 
 /// This is the key that unlocks the value of a CashNote.
@@ -110,6 +114,11 @@ impl MainPubkey {
 
     pub fn to_bytes(self) -> [u8; PK_SIZE] {
         self.0.to_bytes()
+    }
+
+    // Get the underlying PublicKey
+    pub fn public_key(&self) -> PublicKey {
+        self.0
     }
 }
 
