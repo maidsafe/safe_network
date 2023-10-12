@@ -31,7 +31,7 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tokio::task::spawn;
 
@@ -167,6 +167,8 @@ impl Node {
             let inactivity_timeout: i32 = rng.gen_range(20..40);
             let inactivity_timeout = Duration::from_secs(inactivity_timeout as u64);
 
+            let mut replication_time = Instant::now();
+
             loop {
                 let peers_connected = peers_connected.clone();
 
@@ -187,7 +189,6 @@ impl Node {
                     }
                     _ = tokio::time::sleep(inactivity_timeout) => {
                         trace!("NetworkEvent inactivity timeout hit");
-
                         let network_clone = network_clone.clone();
 
                         Marker::NoNetworkActivity( inactivity_timeout ).log();
@@ -203,6 +204,38 @@ impl Node {
                             }
                         });
                     }
+                }
+
+                if replication_time.elapsed() > inactivity_timeout {
+                    let stateless_node_copy = node.clone();
+
+                    let _handle = spawn(async move {
+                        let closest_peers = match stateless_node_copy
+                            .network
+                            .get_closest_local_peers(&NetworkAddress::from_peer(
+                                stateless_node_copy.network.peer_id,
+                            ))
+                            .await
+                        {
+                            Ok(closest_peers) => closest_peers,
+                            Err(err) => {
+                                error!("During forced replication cann't fetch local closest_peers {err:?}");
+                                return;
+                            }
+                        };
+
+                        let peer_id =
+                            closest_peers[rand::thread_rng().gen_range(0..closest_peers.len())];
+                        Marker::ForcedReplication(peer_id).log();
+
+                        if let Err(err) = stateless_node_copy
+                            .try_trigger_replication(peer_id, true)
+                            .await
+                        {
+                            error!("During forced replication simulating lost of {peer_id:?}, error while triggering replication {err:?}");
+                        }
+                    });
+                    replication_time = Instant::now();
                 }
             }
         });
