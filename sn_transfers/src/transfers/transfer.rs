@@ -22,6 +22,10 @@ pub struct Transfer {
     /// List of encrypted CashNoteRedemptions from which a recipient can verify and get money
     /// Only the recipient can decrypt these CashNoteRedemptions
     encrypted_cashnote_redemptions: Vec<Ciphertext>,
+    /// Recipient's main public key. It's optional, however, the network, end user, or some application,
+    /// may require it for some purpose. E.g. the network requires the network royalties main public key
+    /// in a storage payment transfer.
+    recipient: Option<MainPubkey>,
 }
 
 impl Transfer {
@@ -63,6 +67,47 @@ impl Transfer {
         Ok(transfers)
     }
 
+    /// Creates Transfers from the given cash_notes, making sure the network royalties transfer
+    /// has the recipient specified so these transfers can be sent to the network andd it can verify
+    /// and accept them as a valid storage payment.
+    pub fn storage_transfers_from_cash_notes(cash_notes: Vec<CashNote>) -> Result<Vec<Transfer>> {
+        let mut cashnote_redemptions_map: BTreeMap<MainPubkey, Vec<CashNoteRedemption>> =
+            BTreeMap::new();
+        for cash_note in cash_notes {
+            let recipient = cash_note.main_pubkey;
+            let derivation_index = cash_note.derivation_index();
+            let parent_spend_addr = match cash_note.signed_spends.iter().next() {
+                Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
+                None => {
+                    warn!(
+                        "Skipping CashNote {cash_note:?} while creating Transfer as it has no parent spends."
+                    );
+                    continue;
+                }
+            };
+
+            let u = CashNoteRedemption::new(derivation_index, parent_spend_addr);
+            cashnote_redemptions_map
+                .entry(recipient)
+                .or_default()
+                .push(u);
+        }
+
+        let mut transfers = Vec::new();
+        for (recipient, cashnote_redemptions) in cashnote_redemptions_map {
+            let mut t = Transfer::create(cashnote_redemptions, recipient)
+                .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
+
+            if recipient == *crate::NETWORK_ROYALTIES_PK {
+                // set network royalties payment pk
+                t.recipient = Some(recipient);
+            }
+
+            transfers.push(t)
+        }
+        Ok(transfers)
+    }
+
     /// This function is used to create a Transfer from a CashNote, can be done offline, and sent to the recipient.
     /// Creates a Transfer from the given cash_note
     /// This Transfer can be sent safely to the recipients as all data in it is encrypted
@@ -95,8 +140,9 @@ impl Transfer {
             .into_iter()
             .map(|cashnote_redemption| cashnote_redemption.encrypt(recipient))
             .collect::<Result<Vec<Ciphertext>>>()?;
-        Ok(Transfer {
+        Ok(Self {
             encrypted_cashnote_redemptions,
+            recipient: None,
         })
     }
 
@@ -127,6 +173,11 @@ impl Transfer {
             bincode::serialize(&self).map_err(|_| Error::TransferSerializationFailed)?;
         serialized.reverse();
         Ok(hex::encode(serialized))
+    }
+
+    /// Return the recipient of this transfer, if set/specified.
+    pub fn recipient(&self) -> Option<&MainPubkey> {
+        self.recipient.as_ref()
     }
 }
 

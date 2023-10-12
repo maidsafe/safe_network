@@ -300,8 +300,13 @@ impl LocalWallet {
     ) -> Result<()> {
         // create a unique key for each output
         let mut all_payees_only = vec![];
+        let mut rng = &mut rand::thread_rng();
+
+        // add network royalties payment as payee
+        let royalties_pk = *crate::NETWORK_ROYALTIES_PK;
+        println!(">>> PAYING ROYALTIES PK {royalties_pk:?}",);
+
         for (_content_addr, payees) in all_data_payments.clone().into_iter() {
-            let mut rng = &mut rand::thread_rng();
             let unique_key_vec: Vec<(NanoTokens, MainPubkey, [u8; 32])> = payees
                 .into_iter()
                 .map(|(address, amount)| {
@@ -313,6 +318,12 @@ impl LocalWallet {
                 })
                 .collect_vec();
             all_payees_only.extend(unique_key_vec.clone());
+            let royalties_payee = (
+                NanoTokens::from(1),
+                royalties_pk,
+                UniquePubkey::random_derivation_index(&mut rng),
+            );
+            all_payees_only.push(royalties_payee);
         }
 
         let reason_hash = reason_hash.unwrap_or_default();
@@ -330,13 +341,20 @@ impl LocalWallet {
 
         let mut used_cash_notes = std::collections::HashSet::new();
 
-        for (content_addr, payees) in all_data_payments {
+        for (content_addr, mut payees) in all_data_payments {
+            payees.push((royalties_pk, NanoTokens::from(1)));
+            println!(">>> PAYEES {}", payees.len());
             for (payee, token) in payees {
                 if let Some(cash_note) =
                     &offline_transfer
                         .created_cash_notes
                         .iter()
                         .find(|cash_note| {
+                            println!(
+                                ">>> CHECKING CASH NOTE {:?} == {:?} ??",
+                                payee,
+                                cash_note.main_pubkey()
+                            );
                             cash_note.main_pubkey() == &payee
                                 && !used_cash_notes.contains(&cash_note.unique_pubkey().to_bytes())
                         })
@@ -351,9 +369,18 @@ impl LocalWallet {
                         *cash_note.main_pubkey(),
                         cash_note.value()?,
                     ));
+                    println!(
+                        ">>> CASH NOTES for content {}",
+                        cash_notes_for_content.len()
+                    );
+                    println!(
+                        ">>> CASH NOTES for content PK {:?}",
+                        cash_note.main_pubkey()
+                    );
                 }
             }
         }
+        println!(">>> USED CASH NOTES {}", used_cash_notes.len());
 
         // Add new payments to the existing map if present
         // Use entry API to avoid multiple lookups in the BTreeMap
