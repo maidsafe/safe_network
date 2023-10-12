@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697033630679,
+  "lastUpdate": 1697088741282,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11032,6 +11032,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 26.617522879653755,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "98cf8288b06efb60d7577e0747a4c21cf5fa7b23",
+          "message": "fix: remove uneeded hideous key Clone trait",
+          "timestamp": "2023-10-12T04:47:44Z",
+          "tree_id": "33ffa078e8d885dedfb04f28df6fe47ede1fbce7",
+          "url": "https://github.com/maidsafe/safe_network/commit/98cf8288b06efb60d7577e0747a4c21cf5fa7b23"
+        },
+        "date": 1697088739778,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.09868608613069577,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5974073728977589,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 29.264105803189263,
             "unit": "MiB/s"
           }
         ]
