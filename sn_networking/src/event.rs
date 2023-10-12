@@ -729,7 +729,7 @@ impl SwarmDriver {
                     if expected_holders.is_empty() {
                         info!("Get record task {id:?} failed with error {err:?}");
                     } else {
-                        println!("Get record task {id:?} failed with {expected_holders:?} expected holders not responded, error {err:?}");
+                        debug!("Get record task {id:?} failed with {expected_holders:?} expected holders not responded, error {err:?}");
                     }
                     sender
                         .send(Err(Error::RecordNotFound))

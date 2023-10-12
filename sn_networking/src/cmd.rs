@@ -186,7 +186,7 @@ impl SwarmDriver {
                 let quorum = if expected_holders.is_empty() {
                     quorum
                 } else {
-                    println!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(key));
+                    debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(key));
                     // Forcing the Quorum to ALL
                     GetQuorum::All
                 };
