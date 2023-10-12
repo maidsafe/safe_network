@@ -22,7 +22,9 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::{is_genesis_parent_tx, LocalWallet, Transfer, GENESIS_CASHNOTE};
+use sn_transfers::{
+    is_genesis_parent_tx, LocalWallet, Transfer, GENESIS_CASHNOTE, NETWORK_ROYALTIES_PK,
+};
 use sn_transfers::{CashNote, NanoTokens, SignedSpend, UniquePubkey};
 use std::collections::{BTreeSet, HashSet};
 
@@ -392,7 +394,7 @@ impl Node {
         payment: &Vec<Transfer>,
         wallet: &LocalWallet,
         pretty_key: PrettyPrintRecordKey,
-    ) -> Result<(Vec<CashNote>, Transfer), ProtocolError> {
+    ) -> Result<Vec<CashNote>, ProtocolError> {
         for transfer in payment {
             match self
                 .network
@@ -404,7 +406,7 @@ impl Node {
                 // transfer invalid
                 Err(e) => return Err(e),
                 // transfer ok
-                Ok(cash_notes) => return Ok((cash_notes, transfer.clone())),
+                Ok(cash_notes) => return Ok(cash_notes),
             };
         }
 
@@ -426,12 +428,22 @@ impl Node {
 
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key}");
-        let (cash_notes, transfer_for_us) = self
+        let cash_notes = self
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone())
             .await?;
 
         info!("{:?} cash notes are for us", cash_notes.len());
+        // now let's find out which is the network royalties payment/transfer
+        // FIXME: find the network royalties transfer in a different and valid way
+        let royalties_pk = *NETWORK_ROYALTIES_PK;
+        info!(">>>>>> ROYALTIES CHECK for {pretty_key}: ROYALTIES PK {royalties_pk:?}");
+        let royalties_transfer = payment
+            .iter()
+            .find(|transfer| transfer.recipient() == Some(&royalties_pk))
+            .ok_or(ProtocolError::NoNetworkRoyaltiesPayment(pretty_key.clone()))?;
+        info!(">>>>>> ROYALTIES CHECKED OK!! for {pretty_key}");
 
+        // check payment is sufficient
         let mut received_fee = NanoTokens::zero();
         for cash_note in cash_notes.iter() {
             let amount = cash_note.value().map_err(|_| {
@@ -451,21 +463,20 @@ impl Node {
             info!("Adding to received fee, which is now: {received_fee:?}");
         }
 
-        // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for each cash-note received.
-        match transfer_for_us.to_hex() {
+        // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for the network royalties payment.
+        match royalties_transfer.to_hex() {
             Ok(transfer_hex) => {
-                trace!("Publishing a gossipsub msgs for transfer_for_us: {transfer_for_us:?}");
+                trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
                 let topic = TRANSFER_NOTIF_TOPIC.to_string();
-                for cash_note in cash_notes.iter() {
-                    let pk = cash_note.unique_pubkey();
-                    let mut msg: Vec<u8> = pk.to_bytes().to_vec();
-                    msg.extend(transfer_hex.as_bytes());
-                    if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
-                        debug!("Failed to publish a transfer notification over gossipsub for record {pretty_key} and beneficiary {pk:?}: {err:?}");
-                    }
+                let mut msg: Vec<u8> = royalties_pk.to_bytes().to_vec();
+                msg.extend(transfer_hex.as_bytes());
+                if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
+                    debug!("Failed to publish a network royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
+                } else {
+                    info!(">>>>>> PUBLISHED for {pretty_key}");
                 }
             }
-            Err(err) => debug!("Failed to serialise transfer data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
+            Err(err) => debug!(">>>>>> Failed to serialise network royalties transfer data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
         }
 
         // deposit the CashNotes in our wallet
