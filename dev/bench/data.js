@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697095837471,
+  "lastUpdate": 1697100426958,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11110,6 +11110,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 33.153816947160784,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a0e374084c646318f7478ddcfcfad851492c6916",
+          "message": "feat(sn_transfers): dont load Cns from disk, store value along w/ pubkey in wallet\n\nBREAKING CHANGE: updates wallet file to also store value of CN in payment map",
+          "timestamp": "2023-10-12T10:24:45+02:00",
+          "tree_id": "1b9a3d13ad9fdbe8a98528488c05203e61ebd99c",
+          "url": "https://github.com/maidsafe/safe_network/commit/a0e374084c646318f7478ddcfcfad851492c6916"
+        },
+        "date": 1697100424420,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10247798976853159,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5869608173509432,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 27.70412374829237,
             "unit": "MiB/s"
           }
         ]
