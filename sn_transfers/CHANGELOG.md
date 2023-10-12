@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.12...sn_transfers-v0.14.0) - 2023-10-12
+
+### Added
+- *(sn_transfers)* dont load Cns from disk, store value along w/ pubkey in wallet
+- include protection for deposits
+
+### Fixed
+- remove uneeded hideous key Clone trait
+- deadlock
+- place lock on another file to prevent windows lock issue
+- lock wallet file instead of dir
+- wallet concurrent access bugs
+
+### Other
+- more detailed logging when client creating store cash_note
+
 ## [0.13.12](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.13.11...sn_transfers-v0.13.12) - 2023-10-11
 
 ### Fixed
