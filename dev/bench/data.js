@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697234426018,
+  "lastUpdate": 1697234693069,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -19089,6 +19089,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 46,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "871b69e9e0972743e0eaea26355c7e6e93ff3b56",
+          "message": "fix(network): check `RecordHeader` during chunk early completion\n- this would prevent deserializing the whole Record every time we\n  encounter a `GetRecord::FoundRecord`",
+          "timestamp": "2023-10-13T20:58:46Z",
+          "tree_id": "89610f3e5c3349df8ad3087c9e4065b730be737e",
+          "url": "https://github.com/maidsafe/safe_network/commit/871b69e9e0972743e0eaea26355c7e6e93ff3b56"
+        },
+        "date": 1697234692212,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 47,
             "unit": "MB"
           }
         ]
