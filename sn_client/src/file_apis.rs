@@ -43,6 +43,9 @@ pub struct Files {
 
 type ChunkFileResult = Result<(XorName, u64, Vec<(XorName, PathBuf)>)>;
 
+// Defines the size of batch for the parallel downloading of chunks.
+const BATCH_SIZE: usize = 20;
+
 impl Files {
     /// Create file apis instance.
     pub fn new(client: Client, wallet_dir: PathBuf) -> Self {
@@ -265,8 +268,12 @@ impl Files {
         let mut ordered_read_futures = FuturesOrdered::new();
         let now = Instant::now();
 
+        let mut index = 0;
+
         for chunk_info in data_map.infos().iter() {
             let dst_hash = chunk_info.dst_hash;
+            // The futures are executed concurrently,
+            // but the result is returned in the order in which they were inserted.
             ordered_read_futures.push_back(async move {
                 (
                     dst_hash,
@@ -274,25 +281,25 @@ impl Files {
                         .get_chunk(ChunkAddress::new(dst_hash), show_holders)
                         .await,
                 )
-            })
-        }
+            });
 
-        // The futures are executed concurrently, but the result is returned in the order in which they were inserted.
-        let mut index = 0;
-        while let Some((dst_hash, result)) = ordered_read_futures.next().await {
-            let chunk = result.map_err(|error| {
-                error!("Chunk missing {dst_hash:?} with {error:?}");
-                Error::ChunkMissing(dst_hash)
-            })?;
-            let encrypted_chunk = EncryptedChunk {
-                index,
-                content: chunk.value().clone(),
-            };
-            let _ = decryptor.next_encrypted(encrypted_chunk)?;
+            if ordered_read_futures.len() >= BATCH_SIZE || index + BATCH_SIZE > expected_count {
+                while let Some((dst_hash, result)) = ordered_read_futures.next().await {
+                    let chunk = result.map_err(|error| {
+                        error!("Chunk missing {dst_hash:?} with {error:?}");
+                        Error::ChunkMissing(dst_hash)
+                    })?;
+                    let encrypted_chunk = EncryptedChunk {
+                        index,
+                        content: chunk.value().clone(),
+                    };
+                    let _ = decryptor.next_encrypted(encrypted_chunk)?;
 
-            index += 1;
-            info!("Client (read all) download progress {index:?}/{expected_count:?}");
-            println!("Client (read all) download progress {index:?}/{expected_count:?}");
+                    index += 1;
+                    info!("Client (read all) download progress {index:?}/{expected_count:?}");
+                    println!("Client (read all) download progress {index:?}/{expected_count:?}");
+                }
+            }
         }
 
         let elapsed = now.elapsed();
