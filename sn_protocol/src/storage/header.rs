@@ -88,6 +88,11 @@ impl RecordHeader {
         }
         Self::try_deserialize(&record.value[..RecordHeader::SIZE + 1])
     }
+
+    pub fn is_record_of_type_chunk(record: &Record) -> Result<bool, Error> {
+        let kind = Self::from_record(record)?.kind;
+        Ok(kind == RecordKind::Chunk)
+    }
 }
 
 /// Utility to deserialize a `KAD::Record` into any type.
