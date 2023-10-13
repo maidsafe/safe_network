@@ -32,7 +32,7 @@ use libp2p::{
 use libp2p_metrics::Recorder;
 use sn_protocol::{
     messages::{Request, Response},
-    storage::{try_deserialize_record, Chunk},
+    storage::{try_deserialize_record, Chunk, RecordHeader},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -973,7 +973,10 @@ impl SwarmDriver {
         if let Some((sender, result_map, quorum, expected_holders)) =
             self.pending_get_record.remove(query_id)
         {
-            if expected_holders.is_empty() {
+            if let (true, Ok(true)) = (
+                expected_holders.is_empty(),
+                RecordHeader::is_record_of_type_chunk(&peer_record.record),
+            ) {
                 if let Ok(chunk) = try_deserialize_record::<Chunk>(&peer_record.record) {
                     if chunk.network_address().to_record_key() == peer_record.record.key {
                         trace!(
@@ -985,6 +988,7 @@ impl SwarmDriver {
                     }
                 }
             }
+
             let _ = self
                 .pending_get_record
                 .insert(*query_id, (sender, result_map, quorum, expected_holders));
