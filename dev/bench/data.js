@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697224864134,
+  "lastUpdate": 1697224865850,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -27173,6 +27173,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 162,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 37,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "d86c575212a4dffa39fc1c2f4542cbbac66933bf",
+          "message": "fix: batch download process",
+          "timestamp": "2023-10-13T18:25:43Z",
+          "tree_id": "6e8482f5966b993acf0fd5977baae0861357f134",
+          "url": "https://github.com/maidsafe/safe_network/commit/d86c575212a4dffa39fc1c2f4542cbbac66933bf"
+        },
+        "date": 1697224865357,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 151,
             "unit": "MB"
           },
           {
