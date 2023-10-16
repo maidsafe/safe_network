@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    chunks::{to_chunk, DataMapLevel, Error, SmallFile},
+    chunks::{to_chunk, DataMapLevel, Error as ChunksError, SmallFile},
     error::Result,
     Client, WalletClient,
 };
@@ -173,9 +173,14 @@ impl Files {
         let wallet_client = self.wallet()?;
         let payment = wallet_client.get_payment_transfers(&chunk_addr)?;
 
+        println!(
+            "Payment for chunk: {chunk_addr:?} is #{:?} {payment:?}",
+            payment.len()
+        );
+
         if payment.is_empty() {
             warn!("Failed to get payment proof for chunk: {chunk_addr:?} it was not found in the local wallet");
-            return Err(Error::NoPaymentForRecord(PrettyPrintRecordKey::from(
+            return Err(ChunksError::NoPaymentForRecord(PrettyPrintRecordKey::from(
                 chunk_addr.to_record_key(),
             )))?;
         }
@@ -258,8 +263,8 @@ impl Files {
             StreamSelfDecryptor::decrypt_to_file(Box::new(path), &data_map)?
         } else {
             let encrypted_chunks = self.try_get_chunks(data_map.infos()).await?;
-            let bytes =
-                decrypt_full_set(&data_map, &encrypted_chunks).map_err(Error::SelfEncryption)?;
+            let bytes = decrypt_full_set(&data_map, &encrypted_chunks)
+                .map_err(ChunksError::SelfEncryption)?;
             return Ok(Some(bytes));
         };
 
@@ -287,7 +292,7 @@ impl Files {
                 while let Some((dst_hash, result)) = ordered_read_futures.next().await {
                     let chunk = result.map_err(|error| {
                         error!("Chunk missing {dst_hash:?} with {error:?}");
-                        Error::ChunkMissing(dst_hash)
+                        ChunksError::ChunkMissing(dst_hash)
                     })?;
                     let encrypted_chunk = EncryptedChunk {
                         index,
@@ -313,13 +318,13 @@ impl Files {
     /// the process repeats itself until it obtains the first level DataMapLevel.
     async fn unpack_chunk(&self, mut chunk: Chunk) -> Result<DataMap> {
         loop {
-            match deserialize(chunk.value()).map_err(Error::Serialisation)? {
+            match deserialize(chunk.value()).map_err(ChunksError::Serialisation)? {
                 DataMapLevel::First(data_map) => {
                     return Ok(data_map);
                 }
                 DataMapLevel::Additional(data_map) => {
                     let serialized_chunk = self.read_all(data_map, None, false).await?.unwrap();
-                    chunk = deserialize(&serialized_chunk).map_err(Error::Serialisation)?;
+                    chunk = deserialize(&serialized_chunk).map_err(ChunksError::Serialisation)?;
                 }
             }
         }
@@ -342,7 +347,7 @@ impl Files {
 
         let bytes =
             self_encryption::decrypt_range(&data_map, &encrypted_chunks, info.relative_pos, len)
-                .map_err(Error::SelfEncryption)?;
+                .map_err(ChunksError::SelfEncryption)?;
 
         Ok(bytes)
     }
@@ -360,9 +365,9 @@ impl Files {
                     .await
                     .map_err(|error| {
                         error!("Chunk missing {:?} with {error:?}", chunk_info.dst_hash);
-                        Error::ChunkMissing(chunk_info.dst_hash)
+                        ChunksError::ChunkMissing(chunk_info.dst_hash)
                     })?;
-                Ok::<EncryptedChunk, Error>(EncryptedChunk {
+                Ok::<EncryptedChunk, ChunksError>(EncryptedChunk {
                     index: chunk_info.index,
                     content: chunk.value().clone(),
                 })
@@ -396,7 +401,7 @@ impl Files {
                     }
                 })
                 .collect();
-            Err(Error::NotEnoughChunksRetrieved {
+            Err(ChunksError::NotEnoughChunksRetrieved {
                 expected: expected_count,
                 retrieved: retrieved_chunks.len(),
                 missing_chunks,
@@ -422,7 +427,7 @@ fn encrypt_large(
 fn package_small(file: SmallFile) -> Result<Chunk> {
     let chunk = to_chunk(file.bytes());
     if chunk.value().len() >= self_encryption::MIN_ENCRYPTABLE_BYTES {
-        return Err(Error::SmallFilePaddingNeeded(chunk.value().len()).into());
+        return Err(ChunksError::SmallFilePaddingNeeded(chunk.value().len()).into());
     }
     Ok(chunk)
 }

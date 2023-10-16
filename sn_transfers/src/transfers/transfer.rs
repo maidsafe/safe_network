@@ -43,6 +43,7 @@ impl Transfer {
                 }
             };
 
+            info!("Creating Transfer for CashNote {cash_note:?} with recipient {recipient:?} of value {:?}", cash_note.value()?);
             let u = CashNoteRedemption::new(derivation_index, parent_spend_addr);
             cashnote_redemptions_map
                 .entry(recipient)
