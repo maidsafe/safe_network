@@ -60,6 +60,11 @@ impl WalletClient {
         match &address.as_xorname() {
             Some(xorname) => {
                 let cash_notes = self.wallet.get_payment_cash_notes(xorname);
+
+                info!(
+                    "Payment cash notes retrieved from wallet: {:?}",
+                    cash_notes.len()
+                );
                 Ok(Transfer::transfers_from_cash_notes(cash_notes)?)
             }
             None => Err(WalletError::InvalidAddressType),
@@ -147,7 +152,7 @@ impl WalletClient {
                     .await
                     .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()));
 
-                debug!("Storecosts retrieved for {content_addr:?}");
+                debug!("Storecosts retrieved for {content_addr:?} {costs:?}");
                 (content_addr, costs)
             });
         }
