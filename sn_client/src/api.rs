@@ -265,7 +265,8 @@ impl Client {
                 return merge_split_register_records(address, &map)
             }
             Err(e) => {
-                return Err(e.into());
+                warn!("Failed to get record at {address:?} from the network: {e:?}");
+                return Err(ProtocolError::RegisterNotFound(Box::new(address)).into());
             }
         };
 
