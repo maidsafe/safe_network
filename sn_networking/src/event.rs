@@ -595,7 +595,7 @@ impl SwarmDriver {
                 step,
             } => {
                 let content_hash = XorName::from_content(&peer_record.record.value);
-                trace!(
+                println!(
                     "Query task {id:?} returned with record {:?}(content {content_hash:?}) from peer {:?}, {stats:?} - {step:?}",
                     PrettyPrintRecordKey::from(peer_record.record.key.clone()),
                     peer_record.peer
@@ -623,7 +623,7 @@ impl SwarmDriver {
                             .send(Err(Error::RecordNotEnoughCopies(record.clone())))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
                         format!(
-                            "Getting record {:?} early completed with {:?} copies received",
+                            "Getting record {:?} completed with only {:?} copies received",
                             PrettyPrintRecordKey::from(record.key.clone()),
                             usize::from(step.count) - 1
                         )
@@ -923,6 +923,7 @@ impl SwarmDriver {
                 GetQuorum::One => 1,
             };
 
+            println!("Expecting {expected_answers:?} answers for record {pretty_key:?} task {query_id:?}, received {} so far", peer_list.len());
             let result = if peer_list.len() >= expected_answers {
                 Some(Ok(peer_record.record.clone()))
             } else if usize::from(count) >= CLOSE_GROUP_SIZE {
@@ -967,9 +968,10 @@ impl SwarmDriver {
         if let Some((sender, result_map, quorum, expected_holders)) =
             self.pending_get_record.remove(query_id)
         {
-            if let (true, Ok(true)) = (
+            if let (true, Ok(true), true) = (
                 expected_holders.is_empty(),
                 RecordHeader::is_record_of_type_chunk(&peer_record.record),
+                matches!(quorum, GetQuorum::One),
             ) {
                 if let Ok(chunk) = try_deserialize_record::<Chunk>(&peer_record.record) {
                     if chunk.network_address().to_record_key() == peer_record.record.key {
