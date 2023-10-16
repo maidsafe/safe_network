@@ -188,7 +188,7 @@ impl SwarmDriver {
                 } else {
                     debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(key));
                     // Forcing the Quorum to ALL
-                    GetQuorum::All
+                    quorum
                 };
 
                 if self
@@ -208,7 +208,7 @@ impl SwarmDriver {
                     .iter()
                     .map(|(_, (_, result_map, _quorum, _expected_holders))| result_map.len())
                     .sum();
-                info!("We now have {} pending get record attempts and cached {total_records} fetched copies",
+                trace!("We now have {} pending get record attempts and cached {total_records} fetched copies",
                       self.pending_get_record.len());
             }
             SwarmCmd::GetLocalStoreCost { sender } => {

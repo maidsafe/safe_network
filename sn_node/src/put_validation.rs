@@ -422,6 +422,7 @@ impl Node {
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone())
             .await?;
 
+        info!("{:?} cash notes are for us", cash_notes.len());
         // check payment is sufficient
         let current_store_cost =
             self.network.get_local_storecost().await.map_err(|e| {
@@ -442,9 +443,11 @@ impl Node {
                         pretty_key.clone(),
                         "CashNote value overflow".to_string(),
                     ))?;
+
+            info!("Adding to received fee, which is now: {received_fee:?}");
         }
         if received_fee < current_store_cost {
-            trace!("Payment insufficient for record {pretty_key}");
+            trace!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {current_store_cost:?}");
             return Err(ProtocolError::PaymentProofInsufficientAmount {
                 paid: received_fee,
                 expected: current_store_cost,
