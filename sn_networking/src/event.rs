@@ -900,9 +900,9 @@ impl SwarmDriver {
 
             if !expected_holders.is_empty() {
                 if expected_holders.remove(&peer_id) {
-                    trace!("For record {pretty_key:?} task {query_id:?}, received a copy from an expected holder {peer_id:?}");
+                    debug!("For record {pretty_key:?} task {query_id:?}, received a copy from an expected holder {peer_id:?}");
                 } else {
-                    trace!("For record {pretty_key:?} task {query_id:?}, received a copy from an unexpected holder {peer_id:?}");
+                    debug!("For record {pretty_key:?} task {query_id:?}, received a copy from an unexpected holder {peer_id:?}");
                 }
             }
 
@@ -935,13 +935,13 @@ impl SwarmDriver {
 
             if let Some(result) = result {
                 if !expected_holders.is_empty() {
-                    println!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {expected_holders:?}");
+                    debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {expected_holders:?}");
                 }
 
                 if result_map.len() == 1 {
                     let _ = sender.send(result);
                 } else {
-                    println!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
+                    debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
                     let _ = sender.send(Err(Error::SplitRecord(result_map)));
                 }
             } else {
