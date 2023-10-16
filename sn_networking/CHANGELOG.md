@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.30](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.29...sn_networking-v0.8.30) - 2023-10-16
+
+### Fixed
+- *(network)* perfrom bootstrapping continuously to make it well connected
+
 ## [0.8.29](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.28...sn_networking-v0.8.29) - 2023-10-13
 
 ### Fixed
