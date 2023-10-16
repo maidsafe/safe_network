@@ -11,12 +11,17 @@ use libp2p::{
     kad::{self, Record},
     request_response::{OutboundFailure, RequestId},
     swarm::DialError,
-    TransportError,
+    PeerId, TransportError,
 };
 use sn_protocol::{messages::Response, PrettyPrintRecordKey};
-use std::{io, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    io,
+    path::PathBuf,
+};
 use thiserror::Error;
 use tokio::sync::oneshot;
+use xor_name::XorName;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -111,6 +116,9 @@ pub enum Error {
 
     #[error("Gossipsub subscribe Error: {0}")]
     GossipsubSubscriptionError(#[from] SubscriptionError),
+
+    #[error("Split Record: {0:?}")]
+    SplitRecord(HashMap<XorName, (Record, HashSet<PeerId>)>),
 }
 
 #[cfg(test)]
