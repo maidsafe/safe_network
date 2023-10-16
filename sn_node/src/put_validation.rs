@@ -25,7 +25,9 @@ use sn_registers::SignedRegister;
 use sn_transfers::{
     is_genesis_parent_tx, LocalWallet, Transfer, GENESIS_CASHNOTE, NETWORK_ROYALTIES_PK,
 };
-use sn_transfers::{CashNote, NanoTokens, SignedSpend, UniquePubkey};
+use sn_transfers::{
+    CashNote, NanoTokens, SignedSpend, UniquePubkey, NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
+};
 use std::collections::{BTreeSet, HashSet};
 
 impl Node {
@@ -385,29 +387,49 @@ impl Node {
         Ok(CmdOk::StoredSuccessfully)
     }
 
-    /// Gets CashNotes out of a Payment, this includes network verifications of the Transfer
+    /// Gets CashNotes out of a Payment, this includes network verifications of the Transfer.
+    /// Return the CashNotes corresponding to our wallet and the ones corresponding to network royalties payment.
     async fn cash_notes_from_payment(
         &self,
         payment: &Vec<Transfer>,
         wallet: &LocalWallet,
         pretty_key: PrettyPrintRecordKey<'static>,
-    ) -> Result<Vec<CashNote>, ProtocolError> {
+    ) -> Result<(Vec<CashNote>, Vec<CashNote>), ProtocolError> {
+        let royalties_pk = *NETWORK_ROYALTIES_PK;
+        let mut cash_notes = vec![];
+        let mut royalties_cash_notes = vec![];
+
         for transfer in payment {
-            match self
-                .network
-                .verify_and_unpack_transfer(transfer, wallet)
-                .await
-            {
-                // transfer not for us
-                Err(ProtocolError::FailedToDecypherTransfer) => continue,
-                // transfer invalid
-                Err(e) => return Err(e),
-                // transfer ok
-                Ok(cash_notes) => return Ok(cash_notes),
-            };
+            match transfer {
+                Transfer::Encrypted(_) => match self
+                    .network
+                    .verify_and_unpack_transfer(transfer, wallet)
+                    .await
+                {
+                    // transfer not for us
+                    Err(ProtocolError::FailedToDecypherTransfer) => continue,
+                    // transfer invalid
+                    Err(e) => return Err(e),
+                    // transfer ok
+                    Ok(cn) => cash_notes = cn,
+                },
+                Transfer::NetworkRoyalties(cashnote_redemptions) => {
+                    if let Ok(cash_notes) = self
+                        .network
+                        .verify_cash_notes_redemptions(royalties_pk, cashnote_redemptions)
+                        .await
+                    {
+                        royalties_cash_notes.extend(cash_notes);
+                    }
+                }
+            }
         }
 
-        Err(ProtocolError::NoPaymentToOurNode(pretty_key))
+        if cash_notes.is_empty() {
+            Err(ProtocolError::NoPaymentToOurNode(pretty_key))
+        } else {
+            Ok((cash_notes, royalties_cash_notes))
+        }
     }
 
     /// Perform validations on the provided `Record`.
@@ -426,22 +448,12 @@ impl Node {
 
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key}");
-        let cash_notes = self
+        let (cash_notes, royalties_cash_notes) = self
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone().into_owned())
             .await?;
 
         info!("{:?} cash notes are for us", cash_notes.len());
-        // now let's find out which is the network royalties payment/transfer
-        // FIXME: find the network royalties transfer in a different and valid way
-        let royalties_pk = *NETWORK_ROYALTIES_PK;
-        info!(">>>>>> ROYALTIES CHECK for {pretty_key}: ROYALTIES PK {royalties_pk:?}");
-        let royalties_transfer = payment
-            .iter()
-            .find(|transfer| transfer.recipient() == Some(&royalties_pk))
-            .ok_or(ProtocolError::NoNetworkRoyaltiesPayment(pretty_key.clone()))?;
-        info!(">>>>>> ROYALTIES CHECKED OK!! for {pretty_key}");
 
-        // check payment is sufficient
         let mut received_fee = NanoTokens::zero();
         for cash_note in cash_notes.iter() {
             let amount = cash_note.value().map_err(|_| {
@@ -461,22 +473,6 @@ impl Node {
             info!("Adding to received fee, which is now: {received_fee:?}");
         }
 
-        // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for the network royalties payment.
-        match royalties_transfer.to_hex() {
-            Ok(transfer_hex) => {
-                trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
-                let topic = TRANSFER_NOTIF_TOPIC.to_string();
-                let mut msg: Vec<u8> = royalties_pk.to_bytes().to_vec();
-                msg.extend(transfer_hex.as_bytes());
-                if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
-                    debug!("Failed to publish a network royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
-                } else {
-                    info!(">>>>>> PUBLISHED for {pretty_key}");
-                }
-            }
-            Err(err) => debug!(">>>>>> Failed to serialise network royalties transfer data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
-        }
-
         // deposit the CashNotes in our wallet
         wallet
             .deposit_and_store_to_disk(&cash_notes)
@@ -487,17 +483,45 @@ impl Node {
             .reward_wallet_balance
             .set(wallet.balance().as_nano() as i64);
 
-        // check payment is sufficient
-        let current_store_cost = self.network.get_local_storecost().await.map_err(|e| {
-            ProtocolError::RecordNotStored(pretty_key.clone().into_owned(), format!("{e:?}"))
-        })?;
+        if royalties_cash_notes.is_empty() {
+            return Err(ProtocolError::NoNetworkRoyaltiesPayment(
+                pretty_key.into_owned(),
+            ));
+        }
+
+        // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for the network royalties payment.
+        match bincode::serialize(&royalties_cash_notes) {
+            Ok(serialised) => {
+                let royalties_pk = *NETWORK_ROYALTIES_PK;
+                trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
+                let topic = TRANSFER_NOTIF_TOPIC.to_string();
+                let mut msg: Vec<u8> = royalties_pk.to_bytes().to_vec();
+                msg.extend(serialised);
+                if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
+                    debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
+                }
+            }
+            Err(err) => debug!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
+        }
+
+        // check payment is sufficient both for our store cost and for network royalties
+        let expected_fee = self
+            .network
+            .get_local_storecost()
+            .await
+            .map_err(|e| ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}")))?
+            .checked_add(NETWORK_ROYALTIES_AMOUNT_PER_ADDR)
+            .ok_or(ProtocolError::RecordNotStored(
+                pretty_key.clone(),
+                "CashNote value overflow".to_string(),
+            ))?;
         // finally, (after we accept any payments to us as they are ours now anyway)
         // lets check they actually paid enough
-        if received_fee < current_store_cost {
-            trace!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {current_store_cost:?}");
+        if received_fee < expected_fee {
+            trace!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {expected_fee:?}");
             return Err(ProtocolError::PaymentProofInsufficientAmount {
                 paid: received_fee,
-                expected: current_store_cost,
+                expected: expected_fee,
             });
         }
         info!("Total payment of {received_fee:?} nanos accepted for record {pretty_key}");

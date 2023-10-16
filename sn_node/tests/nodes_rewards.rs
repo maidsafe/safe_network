@@ -205,7 +205,7 @@ fn spawn_transfer_notifs_listener(endpoint: String) -> JoinHandle<Result<usize, 
         let mut stream = response.into_inner();
         while let Some(Ok(e)) = stream.next().await {
             match NodeEvent::from_bytes(&e.event) {
-                Ok(NodeEvent::TransferNotif { key, transfer: _ }) => {
+                Ok(NodeEvent::TransferNotif { key, cash_notes: _ }) => {
                     println!("Transfer notif received for key {key:?}");
                     count += 1;
                     if count == CLOSE_GROUP_SIZE {
