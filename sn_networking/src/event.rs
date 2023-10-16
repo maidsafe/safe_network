@@ -36,7 +36,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     fmt::{Debug, Formatter},
     num::NonZeroUsize,
 };
@@ -938,8 +938,12 @@ impl SwarmDriver {
                     println!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {expected_holders:?}");
                 }
 
-                let _ = sender.send(result);
-                self.try_update_self_for_split_record(result_map);
+                if result_map.len() == 1 {
+                    let _ = sender.send(result);
+                } else {
+                    println!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
+                    let _ = sender.send(Err(Error::SplitRecord(result_map)));
+                }
             } else {
                 let _ = self
                     .pending_get_record
@@ -988,44 +992,6 @@ impl SwarmDriver {
         }
 
         false
-    }
-
-    // Split resolvement policy:
-    // 1, Always choose the copy having the highest votes
-    // 2, If multiple having same votes, chose the lowest XorName one
-    //
-    // Only update self when is among the `non-majority list`.
-    // Trying to update other peers is un-necessary and may introduce extra holes.
-    fn try_update_self_for_split_record(&mut self, result_map: GetRecordResultMap) {
-        if result_map.len() == 1 {
-            // Do nothing as there is no split votes
-            return;
-        }
-
-        let mut highest_count = 0;
-        let mut highest_records = BTreeMap::new();
-        for (xor_name, (record, peer_list)) in &result_map {
-            if peer_list.len() > highest_count {
-                // Cleanup whenever there is a record got more votes
-                highest_records = BTreeMap::new();
-            }
-            if peer_list.len() >= highest_count {
-                highest_count = peer_list.len();
-                let _ = highest_records.insert(xor_name, (record, peer_list));
-            }
-        }
-
-        if let Some((_, (record, peer_list))) = highest_records.pop_first() {
-            if !peer_list.contains(&self.self_peer_id) {
-                warn!("Update self regarding a split record {:?}", record.key);
-                let _ = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .put_verified(record.clone());
-            }
-        }
     }
 }
 

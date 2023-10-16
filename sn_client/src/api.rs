@@ -12,11 +12,12 @@ use super::{
 };
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
-use libp2p::{identity::Keypair, kad::Record, Multiaddr};
+use libp2p::{identity::Keypair, kad::Record, Multiaddr, PeerId};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_networking::{
-    multiaddr_is_global, GetQuorum, NetworkBuilder, NetworkEvent, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, Error as NetworkError, GetQuorum, NetworkBuilder, NetworkEvent,
+    CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -28,7 +29,10 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{MainPubkey, NanoTokens, SignedSpend, Transfer, UniquePubkey};
-use std::{collections::HashSet, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Duration,
+};
 use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
@@ -251,28 +255,28 @@ impl Client {
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
 
-        let record = self
+        let maybe_record = self
             .network
             .get_record_from_network(key, None, GetQuorum::Majority, false, Default::default())
-            .await
-            .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
+            .await;
+        let record = match maybe_record {
+            Ok(r) => r,
+            Err(NetworkError::SplitRecord(map)) => {
+                return merge_split_register_records(address, &map)
+            }
+            Err(e) => {
+                return Err(e.into());
+            }
+        };
+
         debug!(
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(record.key.clone())
         );
-        let header = RecordHeader::from_record(&record)
-            .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
 
-        if let RecordKind::Register = header.kind {
-            let register = try_deserialize_record::<SignedRegister>(&record)
-                .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
-            Ok(register)
-        } else {
-            error!("RecordKind mismatch while trying to retrieve a signed register");
-            Err(Error::Protocol(ProtocolError::RecordKindMismatch(
-                RecordKind::Register,
-            )))
-        }
+        let register = get_register_from_record(record)
+            .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
+        Ok(register)
     }
 
     /// Retrieve a Register from the network.
@@ -558,6 +562,154 @@ impl Client {
     pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
         info!("Publishing msg on topic id: {topic_id}");
         self.network.publish_on_topic(topic_id, msg)?;
+        Ok(())
+    }
+}
+
+fn get_register_from_record(record: Record) -> Result<SignedRegister> {
+    let header = RecordHeader::from_record(&record)?;
+
+    if let RecordKind::Register = header.kind {
+        let register = try_deserialize_record::<SignedRegister>(&record)?;
+        Ok(register)
+    } else {
+        error!("RecordKind mismatch while trying to retrieve a signed register");
+        Err(Error::Protocol(ProtocolError::RecordKindMismatch(
+            RecordKind::Register,
+        )))
+    }
+}
+
+/// if multiple register records where found for a given key, merge them into a single register
+fn merge_split_register_records(
+    address: RegisterAddress,
+    map: &HashMap<XorName, (Record, HashSet<PeerId>)>,
+) -> Result<SignedRegister> {
+    let key =
+        PrettyPrintRecordKey::from(NetworkAddress::from_register_address(address).to_record_key());
+    debug!("Got multiple records from the network for key: {key:?}");
+    let mut all_registers = vec![];
+    for (record, peers) in map.values() {
+        match get_register_from_record(record.clone()) {
+            Ok(r) => all_registers.push(r),
+            Err(e) => {
+                warn!("Ignoring invalid register record found for {key:?} received from {peers:?}: {:?}", e);
+                continue;
+            }
+        }
+    }
+
+    // get the first valid register
+    let one_valid_reg = if let Some(r) = all_registers.clone().iter().find(|r| r.verify().is_ok()) {
+        r.clone()
+    } else {
+        error!("No valid register records found for {key:?}");
+        return Err(Error::Protocol(ProtocolError::RegisterNotFound(Box::new(
+            address,
+        ))));
+    };
+
+    // merge it with the others if they are valid
+    let register: SignedRegister = all_registers.into_iter().fold(one_valid_reg, |mut acc, r| {
+        if acc.verified_merge(r).is_err() {
+            warn!("Skipping register that failed to merge. Entry found for {key:?}");
+        }
+        acc
+    });
+
+    Ok(register)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeSet;
+
+    use sn_registers::Register;
+
+    use super::*;
+
+    #[test]
+    fn test_merge_split_register_records() -> eyre::Result<()> {
+        let mut rng = rand::thread_rng();
+        let meta = XorName::random(&mut rng);
+        let owner_sk = SecretKey::random();
+        let owner_pk = owner_sk.public_key();
+        let address = RegisterAddress::new(meta, owner_pk);
+        let peers1 = HashSet::from_iter(vec![PeerId::random(), PeerId::random()]);
+        let peers2 = HashSet::from_iter(vec![PeerId::random(), PeerId::random()]);
+
+        // prepare registers
+        let mut register_root = Register::new(owner_pk, meta, Default::default());
+        let (root_hash, _) =
+            register_root.write(b"root_entry".to_vec(), Default::default(), &owner_sk)?;
+        let root = BTreeSet::from_iter(vec![root_hash]);
+        let signed_root = register_root.clone().into_signed(&owner_sk)?;
+
+        let mut register1 = register_root.clone();
+        let (_hash, op1) = register1.write(b"entry1".to_vec(), root.clone(), &owner_sk)?;
+        let mut signed_register1 = signed_root.clone();
+        signed_register1.add_op(op1)?;
+
+        let mut register2 = register_root.clone();
+        let (_hash, op2) = register2.write(b"entry2".to_vec(), root.clone(), &owner_sk)?;
+        let mut signed_register2 = signed_root.clone();
+        signed_register2.add_op(op2)?;
+
+        let mut register_bad = Register::new(owner_pk, meta, Default::default());
+        let (_hash, _op_bad) =
+            register_bad.write(b"bad_root".to_vec(), Default::default(), &owner_sk)?;
+        let invalid_sig = register2.sign(&owner_sk)?; // steal sig from something else
+        let signed_register_bad = SignedRegister::new(register_bad, invalid_sig);
+
+        // prepare records
+        let record1 = Record {
+            key: NetworkAddress::from_register_address(address).to_record_key(),
+            value: try_serialize_record(&signed_register1, RecordKind::Register)?,
+            publisher: None,
+            expires: None,
+        };
+        let xorname1 = XorName::from_content(&record1.value);
+        let record2 = Record {
+            key: NetworkAddress::from_register_address(address).to_record_key(),
+            value: try_serialize_record(&signed_register2, RecordKind::Register)?,
+            publisher: None,
+            expires: None,
+        };
+        let xorname2 = XorName::from_content(&record2.value);
+        let record_bad = Record {
+            key: NetworkAddress::from_register_address(address).to_record_key(),
+            value: try_serialize_record(&signed_register_bad, RecordKind::Register)?,
+            publisher: None,
+            expires: None,
+        };
+        let xorname_bad = XorName::from_content(&record_bad.value);
+
+        // test with 2 valid records: should return the two merged
+        let mut expected_merge = signed_register1.clone();
+        expected_merge.merge(signed_register2)?;
+        let map = HashMap::from_iter(vec![
+            (xorname1, (record1.clone(), peers1.clone())),
+            (xorname2, (record2, peers2.clone())),
+        ]);
+        let reg = merge_split_register_records(address, &map)?; // Ok
+        assert_eq!(reg, expected_merge);
+
+        // test with 1 valid record and 1 invalid record: should return the valid one
+        let map = HashMap::from_iter(vec![
+            (xorname1, (record1, peers1.clone())),
+            (xorname2, (record_bad.clone(), peers2.clone())),
+        ]);
+        let reg = merge_split_register_records(address, &map)?; // Ok
+        assert_eq!(reg, signed_register1);
+
+        // test with 2 invalid records: should error out
+        let map = HashMap::from_iter(vec![
+            (xorname_bad, (record_bad.clone(), peers1)),
+            (xorname_bad, (record_bad, peers2)),
+        ]);
+        let res = merge_split_register_records(address, &map); // Err
+        assert!(res.is_err());
+
         Ok(())
     }
 }
