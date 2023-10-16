@@ -252,7 +252,7 @@ impl Network {
         let total_attempts = if re_attempt { VERIFICATION_ATTEMPTS } else { 1 };
 
         let mut verification_attempts = 0;
-
+        let pretty_key = PrettyPrintRecordKey::from(key.clone());
         while verification_attempts < total_attempts {
             verification_attempts += 1;
             info!(
@@ -301,9 +301,10 @@ impl Network {
                     }
                 }
                 Err(Error::RecordNotEnoughCopies(returned_record)) => {
+                    println!("Not enough copies found yet... for {pretty_key:?}");
                     debug!("Not enough copies found yet...");
                     // Only return when completed all attempts
-                    if verification_attempts >= total_attempts {
+                    if verification_attempts >= total_attempts && matches!(quorum, GetQuorum::One) {
                         if target_record.is_none()
                             || (target_record.is_some()
                                 && target_record == Some(returned_record.clone()))
