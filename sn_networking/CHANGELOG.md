@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.31](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.30...sn_networking-v0.8.31) - 2023-10-16
+
+### Fixed
+- consider record split an error, handle it for regs
+
+### Other
+- use proper logging funcs
+
 ## [0.8.30](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.29...sn_networking-v0.8.30) - 2023-10-16
 
 ### Fixed
