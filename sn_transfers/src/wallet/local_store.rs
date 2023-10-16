@@ -355,9 +355,11 @@ impl LocalWallet {
             }
         }
 
-        self.wallet
-            .payment_transactions
-            .extend(all_transfers_per_address);
+        // Use entry API to avoid multiple lookups in the BTreeMap
+        for (xorname, payment_details) in all_transfers_per_address {
+            let existing_payments = self.wallet.payment_transactions.entry(xorname).or_default();
+            existing_payments.extend(payment_details);
+        }
 
         self.update_local_wallet(offline_transfer, exclusive_access)?;
         Ok(())
