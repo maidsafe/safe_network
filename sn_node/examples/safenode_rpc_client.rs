@@ -189,21 +189,18 @@ pub async fn node_events(addr: SocketAddr, only_transfers: bool) -> Result<()> {
     let mut stream = response.into_inner();
     while let Some(Ok(e)) = stream.next().await {
         match NodeEvent::from_bytes(&e.event) {
-            Ok(NodeEvent::TransferNotif { key, transfer }) if only_transfers => {
+            Ok(NodeEvent::TransferNotif { key, cash_notes }) if only_transfers => {
                 println!(
-                    "New transfer notification received: {key:?} {}",
-                    transfer.to_hex()?
+                    "New transfer notification received for pk {key:?}, containing {} cash notes.",
+                    cash_notes.len()
                 );
 
-                let royalties_sk = match bls::SecretKey::from_hex(sn_transfers::GENESIS_CASHNOTE_SK)
-                {
-                    Ok(sk) => sn_transfers::MainSecretKey::new(sk),
-                    Err(err) => panic!("Failed to parse hard-coded genesis CashNote SK: {err:?}"),
-                };
-
-                let cash_notes = transfer.cashnote_redemptions(&royalties_sk)?;
                 for cn in cash_notes {
-                    println!("CASH NOTE received: {cn:?}");
+                    println!(
+                        "CashNote received with unique pk {:?}, value: {}",
+                        cn.unique_pubkey(),
+                        cn.value()?
+                    );
                 }
             }
             Ok(_) if only_transfers => continue,

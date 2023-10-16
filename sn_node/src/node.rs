@@ -10,6 +10,7 @@ use super::{error::Result, event::NodeEventsChannel, Marker, NodeEvent};
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetrics;
 use crate::RunningNode;
+use bls::{PublicKey, PK_SIZE};
 use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
@@ -22,7 +23,7 @@ use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{LocalWallet, MainPubkey, MainSecretKey};
+use sn_transfers::{CashNote, LocalWallet, MainPubkey, MainSecretKey};
 use std::{
     net::SocketAddr,
     path::PathBuf,
@@ -506,15 +507,14 @@ impl Node {
 }
 
 fn try_decode_transfer_notif(msg: &[u8]) -> eyre::Result<NodeEvent> {
-    let mut key_bytes = [0u8; bls::PK_SIZE];
+    let mut key_bytes = [0u8; PK_SIZE];
     key_bytes.copy_from_slice(
-        msg.get(0..bls::PK_SIZE)
+        msg.get(0..PK_SIZE)
             .ok_or_else(|| eyre::eyre!("msg doesn't have enough bytes"))?,
     );
-    let key = bls::PublicKey::from_bytes(key_bytes)?;
+    let key = PublicKey::from_bytes(key_bytes)?;
 
-    let transfer =
-        sn_transfers::Transfer::from_hex(&String::from_utf8(msg[bls::PK_SIZE..].to_vec())?)?;
+    let cash_notes: Vec<CashNote> = bincode::deserialize(&msg[PK_SIZE..])?;
 
-    Ok(NodeEvent::TransferNotif { key, transfer })
+    Ok(NodeEvent::TransferNotif { key, cash_notes })
 }

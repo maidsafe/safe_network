@@ -24,6 +24,9 @@ use thiserror::Error;
 /// thus creating a total of 1,288,490,189,000,000,000 available units.
 pub(super) const GENESIS_CASHNOTE_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
 
+/// Expected amount to be paid as network royalties for each record to be stored.
+pub const NETWORK_ROYALTIES_AMOUNT_PER_ADDR: NanoTokens = NanoTokens::from(1);
+
 /// A specialised `Result` type for genesis crate.
 pub(super) type GenesisResult<T> = Result<T, Error>;
 
@@ -34,7 +37,7 @@ pub const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
 ///
 /// This key is public for auditing purposes. Hard coding its value means all nodes will be able to
 /// validate it.
-pub const GENESIS_CASHNOTE_SK: &str =
+const GENESIS_CASHNOTE_SK: &str =
     "5f15ae2ea589007e1474e049bbc32904d583265f12ce1f8153f955076a9af49b";
 
 /// Main error type for the crate.
@@ -67,7 +70,7 @@ lazy_static! {
         }
     };
 
-    /// Public key where network royalties payments are expectd to be made to.
+    /// Public key where network royalties payments are expected to be made to.
     pub static ref NETWORK_ROYALTIES_PK: MainPubkey = *GENESIS_CASHNOTE.main_pubkey();
 }
 

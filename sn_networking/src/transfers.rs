@@ -16,7 +16,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{CashNote, DerivationIndex, SignedSpend, Transaction, UniquePubkey};
-use sn_transfers::{LocalWallet, Transfer};
+use sn_transfers::{CashNoteRedemption, LocalWallet, MainPubkey, Transfer};
 use tokio::task::JoinSet;
 
 impl Network {
@@ -78,8 +78,21 @@ impl Network {
         let cashnote_redemptions = wallet
             .unwrap_transfer(transfer)
             .map_err(|_| Error::FailedToDecypherTransfer)?;
-        let main_pubkey = wallet.address();
 
+        self.verify_cash_notes_redemptions(wallet.address(), &cashnote_redemptions)
+            .await
+    }
+
+    /// This function is used to receive a list of CashNoteRedemptions and turn it back into spendable CashNotes.
+    /// Needs Network connection.
+    /// Verify CashNoteRedemptions and rebuild spendable currency from them.
+    /// Returns an `Error::InvalidTransfer` if any CashNoteRedemption is not valid
+    /// Else returns a list of CashNotes that can be spent by the owner.
+    pub async fn verify_cash_notes_redemptions(
+        &self,
+        main_pubkey: MainPubkey,
+        cashnote_redemptions: &[CashNoteRedemption],
+    ) -> Result<Vec<CashNote>> {
         // get the parent transactions
         trace!("Getting parent Tx for validation");
         let parent_addrs: BTreeSet<SpendAddress> = cashnote_redemptions
@@ -104,10 +117,13 @@ impl Network {
         // get our outputs from Tx
         let our_output_unique_pubkeys: Vec<(UniquePubkey, DerivationIndex)> = cashnote_redemptions
             .iter()
-            .map(|u| (wallet.derive_key(&u.derivation_index), u.derivation_index))
-            .map(|(k, d)| (k.unique_pubkey(), d))
+            .map(|u| {
+                let unique_pubkey = main_pubkey.new_unique_pubkey(&u.derivation_index);
+                (unique_pubkey, u.derivation_index)
+            })
             .collect();
         let mut our_output_cash_notes = Vec::new();
+
         for (id, derivation_index) in our_output_unique_pubkeys.into_iter() {
             let src_tx = parent_txs
                 .iter()

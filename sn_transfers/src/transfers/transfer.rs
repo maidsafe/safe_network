@@ -18,14 +18,13 @@ use crate::error::{Error, Result};
 
 /// Transfer sent to a recipient
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
-pub struct Transfer {
+pub enum Transfer {
     /// List of encrypted CashNoteRedemptions from which a recipient can verify and get money
     /// Only the recipient can decrypt these CashNoteRedemptions
-    encrypted_cashnote_redemptions: Vec<Ciphertext>,
-    /// Recipient's main public key. It's optional, however, the network, end user, or some application,
-    /// may require it for some purpose. E.g. the network requires the network royalties main public key
-    /// in a storage payment transfer.
-    recipient: Option<MainPubkey>,
+    Encrypted(Vec<Ciphertext>),
+    /// The network requires a payment as network royalties for storage which nodes can validate
+    /// and verify, these CashNoteRedemptions need to be sent to storage nodes as payment proof as well.
+    NetworkRoyalties(Vec<CashNoteRedemption>),
 }
 
 impl Transfer {
@@ -60,50 +59,15 @@ impl Transfer {
 
         let mut transfers = Vec::new();
         for (recipient, cashnote_redemptions) in cashnote_redemptions_map {
-            let t = Transfer::create(cashnote_redemptions, recipient)
-                .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
-            transfers.push(t)
-        }
-        Ok(transfers)
-    }
-
-    /// Creates Transfers from the given cash_notes, making sure the network royalties transfer
-    /// has the recipient specified so these transfers can be sent to the network andd it can verify
-    /// and accept them as a valid storage payment.
-    pub fn storage_transfers_from_cash_notes(cash_notes: Vec<CashNote>) -> Result<Vec<Transfer>> {
-        let mut cashnote_redemptions_map: BTreeMap<MainPubkey, Vec<CashNoteRedemption>> =
-            BTreeMap::new();
-        for cash_note in cash_notes {
-            let recipient = cash_note.main_pubkey;
-            let derivation_index = cash_note.derivation_index();
-            let parent_spend_addr = match cash_note.signed_spends.iter().next() {
-                Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
-                None => {
-                    warn!(
-                        "Skipping CashNote {cash_note:?} while creating Transfer as it has no parent spends."
-                    );
-                    continue;
-                }
+            let t = if recipient == *crate::NETWORK_ROYALTIES_PK {
+                // create a network royalties transfer type
+                Self::NetworkRoyalties(cashnote_redemptions.clone())
+            } else {
+                Self::create(cashnote_redemptions, recipient)
+                    .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?
             };
 
-            let u = CashNoteRedemption::new(derivation_index, parent_spend_addr);
-            cashnote_redemptions_map
-                .entry(recipient)
-                .or_default()
-                .push(u);
-        }
-
-        let mut transfers = Vec::new();
-        for (recipient, cashnote_redemptions) in cashnote_redemptions_map {
-            let mut t = Transfer::create(cashnote_redemptions, recipient)
-                .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
-
-            if recipient == *crate::NETWORK_ROYALTIES_PK {
-                // set network royalties payment pk
-                t.recipient = Some(recipient);
-            }
-
-            transfers.push(t)
+            transfers.push(t);
         }
         Ok(transfers)
     }
@@ -140,22 +104,23 @@ impl Transfer {
             .into_iter()
             .map(|cashnote_redemption| cashnote_redemption.encrypt(recipient))
             .collect::<Result<Vec<Ciphertext>>>()?;
-        Ok(Self {
-            encrypted_cashnote_redemptions,
-            recipient: None,
-        })
+        Ok(Self::Encrypted(encrypted_cashnote_redemptions))
     }
 
     /// Get the CashNoteRedemptions from the Payment
     /// This is used by the recipient of a payment to decrypt the cashnote_redemptions in a payment
     pub fn cashnote_redemptions(&self, sk: &MainSecretKey) -> Result<Vec<CashNoteRedemption>> {
-        let cashnote_redemptions: Result<Vec<_>> = self
-            .encrypted_cashnote_redemptions
-            .par_iter() // Use Rayon's par_iter for parallel processing
-            .map(|cypher| CashNoteRedemption::decrypt(cypher, sk)) // Decrypt each CashNoteRedemption
-            .collect(); // Collect results into a vector
-        let cashnote_redemptions = cashnote_redemptions?; // Propagate error if any
-        Ok(cashnote_redemptions)
+        match self {
+            Self::Encrypted(cyphers) => {
+                let cashnote_redemptions: Result<Vec<_>> = cyphers
+                    .par_iter() // Use Rayon's par_iter for parallel processing
+                    .map(|cypher| CashNoteRedemption::decrypt(cypher, sk)) // Decrypt each CashNoteRedemption
+                    .collect(); // Collect results into a vector
+                let cashnote_redemptions = cashnote_redemptions?; // Propagate error if any
+                Ok(cashnote_redemptions)
+            }
+            Self::NetworkRoyalties(cnr) => Ok(cnr.clone()),
+        }
     }
 
     /// Deserializes a `Transfer` represented as a hex string to a `Transfer`.
@@ -173,11 +138,6 @@ impl Transfer {
             bincode::serialize(&self).map_err(|_| Error::TransferSerializationFailed)?;
         serialized.reverse();
         Ok(hex::encode(serialized))
-    }
-
-    /// Return the recipient of this transfer, if set/specified.
-    pub fn recipient(&self) -> Option<&MainPubkey> {
-        self.recipient.as_ref()
     }
 }
 
