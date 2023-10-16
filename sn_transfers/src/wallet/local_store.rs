@@ -17,7 +17,7 @@ use super::{
 
 use crate::{
     transfers::{create_offline_transfer, ContentPaymentsIdMap, OfflineTransfer, PaymentDetails},
-    CashNoteRedemption, SignedSpend, Transfer,
+    CashNoteRedemption, SignedSpend, Transfer, NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
 };
 use crate::{
     CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
@@ -295,19 +295,22 @@ impl LocalWallet {
     /// Performs a CashNote payment for each content address, returning outputs for each.
     pub fn local_send_storage_payment(
         &mut self,
-        all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
+        mut all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
         reason_hash: Option<Hash>,
     ) -> Result<()> {
         // create a unique key for each output
         let mut all_payees_only = vec![];
         let mut rng = &mut rand::thread_rng();
 
-        // add network royalties payment as payee
+        // we currently pay 1 nano per address as network royalties.
         let royalties_pk = *crate::NETWORK_ROYALTIES_PK;
-        println!(">>> PAYING ROYALTIES PK {royalties_pk:?}",);
 
-        for (_content_addr, payees) in all_data_payments.clone().into_iter() {
+        for (_content_addr, payees) in all_data_payments.iter_mut() {
+            // add network royalties payment as payee for each address being payed
+            payees.push((royalties_pk, NETWORK_ROYALTIES_AMOUNT_PER_ADDR));
+
             let unique_key_vec: Vec<(NanoTokens, MainPubkey, [u8; 32])> = payees
+                .clone()
                 .into_iter()
                 .map(|(address, amount)| {
                     (
@@ -317,13 +320,7 @@ impl LocalWallet {
                     )
                 })
                 .collect_vec();
-            all_payees_only.extend(unique_key_vec.clone());
-            let royalties_payee = (
-                NanoTokens::from(1),
-                royalties_pk,
-                UniquePubkey::random_derivation_index(&mut rng),
-            );
-            all_payees_only.push(royalties_payee);
+            all_payees_only.extend(unique_key_vec);
         }
 
         let reason_hash = reason_hash.unwrap_or_default();
@@ -341,20 +338,13 @@ impl LocalWallet {
 
         let mut used_cash_notes = std::collections::HashSet::new();
 
-        for (content_addr, mut payees) in all_data_payments {
-            payees.push((royalties_pk, NanoTokens::from(1)));
-            println!(">>> PAYEES {}", payees.len());
+        for (content_addr, payees) in all_data_payments {
             for (payee, token) in payees {
                 if let Some(cash_note) =
                     &offline_transfer
                         .created_cash_notes
                         .iter()
                         .find(|cash_note| {
-                            println!(
-                                ">>> CHECKING CASH NOTE {:?} == {:?} ??",
-                                payee,
-                                cash_note.main_pubkey()
-                            );
                             cash_note.main_pubkey() == &payee
                                 && !used_cash_notes.contains(&cash_note.unique_pubkey().to_bytes())
                         })
@@ -369,18 +359,9 @@ impl LocalWallet {
                         *cash_note.main_pubkey(),
                         cash_note.value()?,
                     ));
-                    println!(
-                        ">>> CASH NOTES for content {}",
-                        cash_notes_for_content.len()
-                    );
-                    println!(
-                        ">>> CASH NOTES for content PK {:?}",
-                        cash_note.main_pubkey()
-                    );
                 }
             }
         }
-        println!(">>> USED CASH NOTES {}", used_cash_notes.len());
 
         // Add new payments to the existing map if present
         // Use entry API to avoid multiple lookups in the BTreeMap
