@@ -476,8 +476,6 @@ impl Node {
             .reward_wallet_balance
             .set(wallet.balance().as_nano() as i64);
 
-        info!("Total payment of {received_fee:?} nanos accepted for record {pretty_key}");
-
         // check payment is sufficient
         let current_store_cost =
             self.network.get_local_storecost().await.map_err(|e| {
@@ -492,7 +490,7 @@ impl Node {
                 expected: current_store_cost,
             });
         }
-        trace!("Payment sufficient for record {pretty_key}");
+        info!("Total payment of {received_fee:?} nanos accepted for record {pretty_key}");
 
         Ok(())
     }
