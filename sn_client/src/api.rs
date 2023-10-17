@@ -257,7 +257,7 @@ impl Client {
 
         let maybe_record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::Majority, false, Default::default())
+            .get_record_from_network(key, None, GetQuorum::All, false, Default::default())
             .await;
         let record = match maybe_record {
             Ok(r) => r,
@@ -297,14 +297,18 @@ impl Client {
         info!("Instantiating a new Register replica with address {address:?}");
         let (reg, mut total_cost) =
             ClientRegister::create_online(self.clone(), address, wallet_client, false).await?;
+
+        debug!("{address:?} Created in theorryyyyy");
         let reg_address = reg.address();
         if verify_store {
+            debug!("WE SHOULD VERRRRIFYING");
             let mut stored = self.verify_register_stored(*reg_address).await.is_ok();
 
             while !stored {
                 info!("Register not completely stored on the network yet. Retrying...");
+                // this verify store call here ensures we get the record from Quorum::all
                 let (reg, top_up_cost) =
-                    ClientRegister::create_online(self.clone(), address, wallet_client, false)
+                    ClientRegister::create_online(self.clone(), address, wallet_client, true)
                         .await?;
                 let reg_address = reg.address();
 

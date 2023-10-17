@@ -176,8 +176,22 @@ impl ClientRegister {
         let addr = *self.address();
         debug!("Syncing Register at {addr:?}!");
         let mut cost = NanoTokens::zero();
-        let remote_replica = match Self::get_register_from_network(&self.client, addr).await {
+        let reg_result = if verify_store {
+            debug!("VERIFYING REGISTER STORED {:?}", self.address());
+            let res = self.client.verify_register_stored(*self.address()).await;
+            // we need to keep the error here if verifying so we can retry and pay for storage
+            // once more below
+            match res {
+                Ok(r) => Ok(r.register()?),
+                Err(error) => Err(error),
+            }
+        } else {
+            Self::get_register_from_network(&self.client, addr).await
+        };
+        let remote_replica = match reg_result {
             Ok(r) => r,
+            // any error here will result in a repayment of the register
+            // TODO: be smart about this and only pay for storage if we need to
             Err(err) => {
                 debug!("Failed to fetch register: {err:?}");
                 debug!("Creating Register as it doesn't exist at {addr:?}!");
@@ -190,15 +204,21 @@ impl ClientRegister {
                 let net_addr = sn_protocol::NetworkAddress::RegisterAddress(addr);
                 // Let's make the storage payment
                 cost = wallet_client
-                    .pay_for_storage(std::iter::once(net_addr.clone()), verify_store)
+                    .pay_for_storage(std::iter::once(net_addr.clone()), true)
                     .await?;
 
                 println!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
+                info!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
 
                 if let Err(err) = wallet_client.store_local_wallet() {
+                    warn!("Failed to store wallet with cached payment proofs: {err:?}");
                     println!("Failed to store wallet with cached payment proofs: {err:?}");
                 } else {
                     println!(
+                    "Successfully stored wallet with cached payment proofs, and new balance {}.",
+                    wallet_client.balance()
+                );
+                    info!(
                     "Successfully stored wallet with cached payment proofs, and new balance {}.",
                     wallet_client.balance()
                 );
@@ -207,6 +227,7 @@ impl ClientRegister {
                 // Get payment proofs needed to publish the Register
                 let payment = wallet_client.get_payment_transfers(&net_addr)?;
 
+                debug!("payments found: {payment:?}");
                 self.publish_register(cmd, payment, verify_store).await?;
                 self.register.clone()
             }
@@ -312,7 +333,6 @@ impl ClientRegister {
                     if existing_reg.owner() != register.owner() {
                         return Err(ProtocolError::RegisterAlreadyClaimed(existing_reg.owner()))?;
                     }
-                    return Ok(()); // no op, since already created
                 }
                 SignedRegister::new(register, signature)
             }
