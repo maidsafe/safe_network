@@ -28,7 +28,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::{SignedSpend, Transfer, UniquePubkey};
+use sn_transfers::{NanoTokens, SignedSpend, Transfer, UniquePubkey};
 use std::{
     collections::{HashMap, HashSet},
     time::Duration,
@@ -287,14 +287,35 @@ impl Client {
     }
 
     /// Create a new Register on the Network.
-    pub async fn create_register(
+    /// Tops up payments and retries if necessary and verification failed
+    pub async fn create_and_pay_for_register(
         &self,
-        meta: XorName,
+        address: XorName,
         wallet_client: &mut WalletClient,
         verify_store: bool,
-    ) -> Result<ClientRegister> {
-        info!("Instantiating a new Register replica with meta {meta:?}");
-        ClientRegister::create_online(self.clone(), meta, wallet_client, verify_store).await
+    ) -> Result<(ClientRegister, NanoTokens)> {
+        info!("Instantiating a new Register replica with address {address:?}");
+        let (reg, mut total_cost) =
+            ClientRegister::create_online(self.clone(), address, wallet_client, false).await?;
+        let reg_address = reg.address();
+        if verify_store {
+            let mut stored = self.verify_register_stored(*reg_address).await.is_ok();
+
+            while !stored {
+                info!("Register not completely stored on the network yet. Retrying...");
+                let (reg, top_up_cost) =
+                    ClientRegister::create_online(self.clone(), address, wallet_client, false)
+                        .await?;
+                let reg_address = reg.address();
+
+                total_cost = total_cost.checked_add(top_up_cost).ok_or(Error::Transfers(
+                    sn_transfers::WalletError::from(sn_transfers::Error::ExcessiveNanoValue),
+                ))?;
+                stored = self.verify_register_stored(*reg_address).await.is_ok();
+            }
+        }
+
+        Ok((reg, total_cost))
     }
 
     /// Store `Chunk` as a record.
@@ -379,7 +400,7 @@ impl Client {
 
     /// Verify if a `Chunk` is stored by expected nodes on the network.
     pub async fn verify_chunk_stored(&self, address: ChunkAddress) -> Result<Chunk> {
-        info!("Getting chunk: {address:?}");
+        info!("Verifying chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
@@ -391,6 +412,24 @@ impl Client {
             Ok(chunk)
         } else {
             Err(ProtocolError::RecordKindMismatch(RecordKind::Chunk).into())
+        }
+    }
+
+    /// Verify if a `Register` is stored by expected nodes on the network.
+    pub async fn verify_register_stored(&self, address: RegisterAddress) -> Result<SignedRegister> {
+        info!("Verifying register: {address:?}");
+        let key = NetworkAddress::from_register_address(address).to_record_key();
+        let record = self
+            .network
+            .get_record_from_network(key, None, GetQuorum::All, true, Default::default())
+            .await?;
+
+        let header = RecordHeader::from_record(&record)?;
+        if let RecordKind::Register = header.kind {
+            let register = get_register_from_record(record)?;
+            Ok(register)
+        } else {
+            Err(ProtocolError::RecordKindMismatch(RecordKind::Register).into())
         }
     }
 
