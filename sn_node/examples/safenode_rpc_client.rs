@@ -185,23 +185,25 @@ pub async fn node_events(addr: SocketAddr, only_transfers: bool) -> Result<()> {
     } else {
         println!("Listening to node events... (press Ctrl+C to exit)");
     }
+    println!();
 
     let mut stream = response.into_inner();
     while let Some(Ok(e)) = stream.next().await {
         match NodeEvent::from_bytes(&e.event) {
             Ok(NodeEvent::TransferNotif { key, cash_notes }) if only_transfers => {
                 println!(
-                    "New transfer notification received for pk {key:?}, containing {} cash notes.",
+                    "New transfer notification received for {key:?}, containing {} cash note/s.",
                     cash_notes.len()
                 );
 
                 for cn in cash_notes {
                     println!(
-                        "CashNote received with unique pk {:?}, value: {}",
+                        "CashNote received with {:?}, value: {}",
                         cn.unique_pubkey(),
                         cn.value()?
                     );
                 }
+                println!();
             }
             Ok(_) if only_transfers => continue,
             Ok(event) => println!("New event received: {event:?}"),
