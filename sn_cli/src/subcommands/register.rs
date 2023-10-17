@@ -9,7 +9,7 @@
 use bls::PublicKey;
 use clap::Subcommand;
 use color_eyre::{eyre::WrapErr, Result, Section};
-use sn_client::{Client, ClientRegister, Error as ClientError, WalletClient};
+use sn_client::{Client, Error as ClientError, WalletClient};
 use sn_protocol::storage::RegisterAddress;
 use sn_transfers::LocalWallet;
 use std::path::Path;
@@ -88,13 +88,21 @@ async fn create_register(
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
 
     let meta = XorName::from_content(name.as_bytes());
-    let register =
-        ClientRegister::create_online(client.clone(), meta, &mut wallet_client, verify_store)
-            .await?;
-    println!(
-        "Successfully created register '{name}' at {}!",
-        register.address()
-    );
+    let (register, cost) = client
+        .create_and_pay_for_register(meta, &mut wallet_client, verify_store)
+        .await?;
+
+    if cost.is_zero() {
+        println!(
+            "Register '{name}' already exists at {}!",
+            register.address()
+        );
+    } else {
+        println!(
+            "Successfully created register '{name}' at {} for {cost:?}!",
+            register.address()
+        );
+    }
     Ok(())
 }
 

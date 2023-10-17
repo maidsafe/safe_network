@@ -291,8 +291,8 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
         .pay_for_storage(std::iter::once(net_addr), true)
         .await?;
 
-    let mut register = client
-        .create_register(xor_name, &mut wallet_client, true)
+    let (mut register, _cost) = client
+        .create_and_pay_for_register(xor_name, &mut wallet_client, true)
         .await?;
 
     let retrieved_reg = client.get_register(address).await?;
@@ -344,8 +344,8 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
         .local_send_storage_payment(no_data_payments, None)?;
 
     // this should fail to store as the amount paid is not enough
-    let mut register = client
-        .create_register(xor_name, &mut wallet_client, false)
+    let (mut register, _cost) = client
+        .create_and_pay_for_register(xor_name, &mut wallet_client, false)
         .await?;
 
     sleep(Duration::from_secs(5)).await;

@@ -17,7 +17,6 @@ use eyre::{eyre, Result};
 use sn_client::WalletClient;
 use sn_networking::CLOSE_GROUP_SIZE;
 use sn_node::NodeEvent;
-use sn_protocol::{storage::RegisterAddress, NetworkAddress};
 use sn_transfers::{LocalWallet, NanoTokens};
 use tokio::{
     task::JoinHandle,
@@ -76,28 +75,17 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
 
     println!("Paying for random Register address... rb {rb:?}");
     let mut rng = rand::thread_rng();
-    let owner_pk = client.signer_pk();
     let register_addr = XorName::random(&mut rng);
 
-    let cost = wallet_client
-        .pay_for_storage(
-            std::iter::once(NetworkAddress::RegisterAddress(RegisterAddress::new(
-                register_addr,
-                owner_pk,
-            ))),
-            true,
-        )
-        .await?;
-
     let prev_rewards_balance = current_rewards_balance()?;
-    println!("Cost is {cost:?}, rb: {prev_rewards_balance:?}");
+
+    let (_register, cost) = client
+        .create_and_pay_for_register(register_addr, &mut wallet_client, false)
+        .await?;
+    println!("Cost is {cost:?}: {prev_rewards_balance:?}");
     let expected_rewards_balance = prev_rewards_balance
         .checked_add(cost)
         .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
-
-    let _register = client
-        .create_register(register_addr, &mut wallet_client, false)
-        .await?;
 
     verify_rewards(expected_rewards_balance).await?;
 
@@ -146,24 +134,14 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let mut rng = rand::thread_rng();
-    let owner_pk = client.signer_pk();
     let register_addr = XorName::random(&mut rng);
 
     println!("Paying for random Register address...");
-    let _cost = wallet_client
-        .pay_for_storage(
-            std::iter::once(NetworkAddress::RegisterAddress(RegisterAddress::new(
-                register_addr,
-                owner_pk,
-            ))),
-            true,
-        )
-        .await?;
 
     let handle = spawn_transfer_notifs_listener("https://127.0.0.1:12001".to_string());
 
     let _register = client
-        .create_register(register_addr, &mut wallet_client, false)
+        .create_and_pay_for_register(register_addr, &mut wallet_client, false)
         .await?;
     println!("Random Register created");
 

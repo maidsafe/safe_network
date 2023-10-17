@@ -17,7 +17,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
-use sn_transfers::Transfer;
+use sn_transfers::{NanoTokens, Transfer};
 
 use std::collections::{BTreeSet, HashSet, LinkedList};
 use xor_name::XorName;
@@ -70,10 +70,10 @@ impl ClientRegister {
         meta: XorName,
         wallet_client: &mut WalletClient,
         verify_store: bool,
-    ) -> Result<Self> {
+    ) -> Result<(Self, NanoTokens)> {
         let mut reg = Self::create_register(client, meta, Permissions::new_owner_only())?;
-        reg.sync(wallet_client, verify_store).await?;
-        Ok(reg)
+        let cost = reg.sync(wallet_client, verify_store).await?;
+        Ok((reg, cost))
     }
 
     /// Retrieve a Register from the network to work on it offline.
@@ -172,9 +172,10 @@ impl ClientRegister {
         &mut self,
         wallet_client: &mut WalletClient,
         verify_store: bool,
-    ) -> Result<()> {
+    ) -> Result<NanoTokens> {
         let addr = *self.address();
         debug!("Syncing Register at {addr:?}!");
+        let mut cost = NanoTokens::zero();
         let remote_replica = match Self::get_register_from_network(&self.client, addr).await {
             Ok(r) => r,
             Err(err) => {
@@ -187,34 +188,33 @@ impl ClientRegister {
 
                 // Let's check if the user has already paid for this address first
                 let net_addr = sn_protocol::NetworkAddress::RegisterAddress(addr);
-                let mut payment = wallet_client.get_payment_transfers(&net_addr)?;
-                if payment.is_empty() {
-                    // Let's make the storage payment
-                    let cost = wallet_client
-                        .pay_for_storage(std::iter::once(net_addr.clone()), verify_store)
-                        .await?;
+                // Let's make the storage payment
+                cost = wallet_client
+                    .pay_for_storage(std::iter::once(net_addr.clone()), verify_store)
+                    .await?;
 
-                    println!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
+                println!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
 
-                    if let Err(err) = wallet_client.store_local_wallet() {
-                        println!("Failed to store wallet with cached payment proofs: {err:?}");
-                    } else {
-                        println!(
-                        "Successfully stored wallet with cached payment proofs, and new balance {}.",
-                        wallet_client.balance()
-                    );
-                    }
-
-                    // Get payment proofs needed to publish the Register
-                    payment = wallet_client.get_payment_transfers(&net_addr)?;
+                if let Err(err) = wallet_client.store_local_wallet() {
+                    println!("Failed to store wallet with cached payment proofs: {err:?}");
+                } else {
+                    println!(
+                    "Successfully stored wallet with cached payment proofs, and new balance {}.",
+                    wallet_client.balance()
+                );
                 }
+
+                // Get payment proofs needed to publish the Register
+                let payment = wallet_client.get_payment_transfers(&net_addr)?;
 
                 self.publish_register(cmd, payment, verify_store).await?;
                 self.register.clone()
             }
         };
         self.register.merge(remote_replica);
-        self.push(verify_store).await
+        self.push(verify_store).await?;
+
+        Ok(cost)
     }
 
     /// Push all operations made locally to the replicas of this Register on the network.
