@@ -19,7 +19,6 @@ local-discovery = []
 quic = []
 network-contacts = []
 open-metrics = []
-network-royalties-notif = []
 
 [[bin]]
 path="src/main.rs"
