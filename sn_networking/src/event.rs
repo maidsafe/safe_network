@@ -755,9 +755,9 @@ impl SwarmDriver {
                 // here BootstrapOk::num_remaining refers to the remaining random peer IDs to query, one per
                 // bucket that still needs refreshing.
                 trace!("Kademlia Bootstrap with {id:?} progressed with {bootstrap_result:?} and step {step:?}");
-                // set to false to enable another bootstrap step to be started if required.
                 if step.last {
-                    self.bootstrap_ongoing = false;
+                    // inform the bootstrap process about the completion.
+                    self.bootstrap.completed();
                 }
             }
             KademliaEvent::RoutingUpdated {
@@ -767,12 +767,11 @@ impl SwarmDriver {
                 ..
             } => {
                 if is_new_peer {
+                    info!("New peer added to routing table: {peer:?}");
                     self.log_kbuckets(&peer);
-                    self.send_event(NetworkEvent::PeerAdded(peer));
-                    // todo: do we need this log here? O(n) to calculate .count();
-                    let connected_peers = self.swarm.connected_peers().count();
 
-                    info!("New peer added to routing table: {peer:?}, now we have #{connected_peers} connected peers");
+                    self.bootstrap.notify_new_peer();
+                    self.send_event(NetworkEvent::PeerAdded(peer));
                 }
 
                 if old_peer.is_some() {

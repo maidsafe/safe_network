@@ -11,7 +11,7 @@ use crate::metrics::NetworkMetrics;
 #[cfg(feature = "open-metrics")]
 use crate::metrics_service::run_metrics_server;
 use crate::{
-    bootstrap::BOOTSTRAP_INTERVAL,
+    bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
     cmd::SwarmCmd,
     error::{Error, Result},
@@ -440,7 +440,7 @@ impl NetworkBuilder {
             self_peer_id: peer_id,
             local: self.local,
             is_client,
-            bootstrap_ongoing: false,
+            bootstrap: ContinuousBootstrap::new(),
             close_group: Default::default(),
             replication_fetcher: Default::default(),
             #[cfg(feature = "open-metrics")]
@@ -475,7 +475,7 @@ pub struct SwarmDriver {
     pub(crate) self_peer_id: PeerId,
     pub(crate) local: bool,
     pub(crate) is_client: bool,
-    pub(crate) bootstrap_ongoing: bool,
+    pub(crate) bootstrap: ContinuousBootstrap,
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
@@ -520,7 +520,9 @@ impl SwarmDriver {
                 },
                 // runs every bootstrap_interval time
                 _ = bootstrap_interval.tick() => {
-                    bootstrap_interval = self.run_bootstrap_continuously(bootstrap_interval).await;
+                    if let Some(new_interval) = self.run_bootstrap_continuously(bootstrap_interval.period()).await {
+                        bootstrap_interval = new_interval;
+                    }
                 }
             }
         }
