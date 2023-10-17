@@ -183,13 +183,9 @@ impl SwarmDriver {
             } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
 
-                let quorum = if expected_holders.is_empty() {
-                    quorum
-                } else {
+                if !expected_holders.is_empty() {
                     debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(key));
-                    // Forcing the Quorum to ALL
-                    quorum
-                };
+                }
 
                 if self
                     .pending_get_record
