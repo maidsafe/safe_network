@@ -20,9 +20,6 @@ use strum::Display;
 /// Changing these log markers is a breaking change.
 #[derive(Debug, Clone, Display)]
 pub enum Marker<'a> {
-    /// An operation failed after timing out due to a period of no network activity
-    OperationFailedAfterNetworkInactivityTimeout,
-
     /// The node has started
     NodeConnectedToNetwork,
 
