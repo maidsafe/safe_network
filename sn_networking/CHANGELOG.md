@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.32](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.31...sn_networking-v0.8.32) - 2023-10-17
+
+### Fixed
+- *(transfers)* dont overwrite existing payment transactions when we top up
+
+### Other
+- remove needless quorum reassignment
+- refactor away clunky if statement
+- adding comments and cleanup around quorum / payment fixes
+- ensure quorum is taken into account for early chunk reads
+- *(client)* ensure we only use CLOSE_GROUP closest nodes for pricing
+
 ## [0.8.31](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.30...sn_networking-v0.8.31) - 2023-10-16
 
 ### Fixed
