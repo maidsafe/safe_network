@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.93.17](https://github.com/maidsafe/safe_network/compare/sn_client-v0.93.16...sn_client-v0.93.17) - 2023-10-17
+
+### Fixed
+- *(transfers)* dont overwrite existing payment transactions when we top up
+
+### Other
+- adding comments and cleanup around quorum / payment fixes
+
 ## [0.93.16](https://github.com/maidsafe/safe_network/compare/sn_client-v0.93.15...sn_client-v0.93.16) - 2023-10-16
 
 ### Fixed
