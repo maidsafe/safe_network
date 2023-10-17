@@ -123,11 +123,7 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
 
     let count = handle.await??;
     println!("Number of notifications received by node: {count}");
-    assert_eq!(
-        count,
-        close_group_majority(),
-        "Not enough notifications received"
-    );
+    assert_eq!(count, 1, "Not enough notifications received");
 
     Ok(())
 }
@@ -157,11 +153,7 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
 
     let count = handle.await??;
     println!("Number of notifications received by node: {count}");
-    assert_eq!(
-        count,
-        close_group_majority(),
-        "Not enough notifications received"
-    );
+    assert_eq!(count, 1, "Not enough notifications received");
 
     Ok(())
 }
@@ -217,7 +209,8 @@ fn spawn_transfer_notifs_listener(endpoint: String) -> JoinHandle<Result<usize, 
                 Ok(NodeEvent::TransferNotif { key, transfer: _ }) => {
                     println!("Transfer notif received for key {key:?}");
                     count += 1;
-                    if count == close_group_majority() {
+                    // we're not only paying 1 node each time, so one notification only
+                    if count == 1 {
                         break;
                     }
                 }

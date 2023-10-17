@@ -683,7 +683,9 @@ fn get_fees_from_store_cost_responses(
 ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
     // TODO: we should make this configurable based upon data type
     // or user requirements for resilience.
-    let desired_quote_count = close_group_majority();
+
+    // Rigth now we only take one quote and pay one node.
+    let desired_quote_count = 1;
 
     // sort all costs by fee, lowest to highest
     all_costs.sort_by(|(_, cost_a), (_, cost_b)| {
@@ -751,7 +753,7 @@ mod tests {
         // for a vec of different costs of CLOSE_GROUP size
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
-        for i in 0..CLOSE_GROUP_SIZE {
+        for i in 1..CLOSE_GROUP_SIZE {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
             costs.push((addr, NanoTokens::from(i as u64)));
         }
@@ -760,8 +762,7 @@ mod tests {
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
 
-        // sum all the numbers from 0 to close_group_majority()
-        let expected_price = close_group_majority() * (close_group_majority() - 1) / 2;
+        let expected_price = costs[0];
 
         assert_eq!(
             total_price, expected_price as u64,
@@ -771,30 +772,14 @@ mod tests {
 
         Ok(())
     }
-    #[test]
-    fn test_get_any_fee_from_store_cost_responses_errs_if_insufficient_responses(
-    ) -> eyre::Result<()> {
-        // for a vec of different costs of CLOSE_GROUP size
-        // ensure we return the CLOSE_GROUP / 2 indexed price
-        let mut costs = vec![];
-        for i in 0..(CLOSE_GROUP_SIZE / 2) - 1 {
-            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
-            costs.push((addr, NanoTokens::from(i as u64)));
-        }
 
-        if get_fees_from_store_cost_responses(costs).is_ok() {
-            bail!("Should have errored as we have too few responses")
-        }
-
-        Ok(())
-    }
     #[test]
     fn test_get_some_fee_from_store_cost_responses_even_if_one_errs_and_sufficient(
     ) -> eyre::Result<()> {
         // for a vec of different costs of CLOSE_GROUP size
         let responses_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
-        for i in 0..responses_count {
+        for i in 1..responses_count {
             // push random MainPubkey and Nano
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
             costs.push((addr, NanoTokens::from(i)));
@@ -810,8 +795,8 @@ mod tests {
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
 
-        // sum all the numbers from 0 to CLOSE_GROUP_SIZE / 2 + 1
-        let expected_price = close_group_majority() * (close_group_majority() - 1) / 2;
+        // this should be the lowest price
+        let expected_price = costs[0];
 
         assert_eq!(
             total_price, expected_price as u64,
