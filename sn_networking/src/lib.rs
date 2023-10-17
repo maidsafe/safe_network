@@ -301,8 +301,7 @@ impl Network {
                     }
                 }
                 Err(Error::RecordNotEnoughCopies(returned_record)) => {
-                    println!("Not enough copies found yet... for {pretty_key:?}");
-                    debug!("Not enough copies found yet...");
+                    debug!("Not enough copies found yet for {pretty_key:?}");
                     // Only return when completed all attempts
                     if verification_attempts >= total_attempts && matches!(quorum, GetQuorum::One) {
                         if target_record.is_none()

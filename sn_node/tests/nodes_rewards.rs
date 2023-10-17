@@ -191,7 +191,7 @@ async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
     let mut iteration = 0;
     let mut cur_rewards_history = Vec::new();
 
-    while iteration < 15 {
+    while iteration < 10 {
         iteration += 1;
         let new_rewards_balance = current_rewards_balance()?;
         if expected_rewards_balance == new_rewards_balance {
