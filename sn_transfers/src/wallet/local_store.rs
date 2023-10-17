@@ -17,16 +17,13 @@ use super::{
 
 use crate::{
     transfers::{create_offline_transfer, ContentPaymentsIdMap, OfflineTransfer, PaymentDetails},
-    CashNoteRedemption, SignedSpend, Transfer, NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
+    CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
+    MainSecretKey, NanoTokens, SignedSpend, Transfer, UniquePubkey, WalletError,
+    NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
 };
-use crate::{
-    CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
-    UniquePubkey,
-};
-use fs2::FileExt;
-use itertools::Itertools;
 use xor_name::XorName;
 
+use fs2::FileExt;
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{File, OpenOptions},
@@ -292,12 +289,13 @@ impl LocalWallet {
         Ok(created_cash_notes)
     }
 
-    /// Performs a CashNote payment for each content address, returning outputs for each.
+    /// Performs a CashNote payment for each content address.
+    /// Returns the amount paid for storage, including the network royalties fee paid.
     pub fn local_send_storage_payment(
         &mut self,
         mut all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
         reason_hash: Option<Hash>,
-    ) -> Result<()> {
+    ) -> Result<NanoTokens> {
         // create a unique key for each output
         let mut all_payees_only = vec![];
         let mut rng = &mut rand::thread_rng();
@@ -305,21 +303,25 @@ impl LocalWallet {
         // we currently pay 1 nano per address as network royalties.
         let royalties_pk = *crate::NETWORK_ROYALTIES_PK;
 
+        let mut total_cost = NanoTokens::zero();
+
         for (_content_addr, payees) in all_data_payments.iter_mut() {
             // add network royalties payment as payee for each address being payed
             payees.push((royalties_pk, NETWORK_ROYALTIES_AMOUNT_PER_ADDR));
 
-            let unique_key_vec: Vec<(NanoTokens, MainPubkey, [u8; 32])> = payees
-                .clone()
-                .into_iter()
-                .map(|(address, amount)| {
-                    (
-                        amount,
-                        address,
-                        UniquePubkey::random_derivation_index(&mut rng),
-                    )
-                })
-                .collect_vec();
+            let mut unique_key_vec = Vec::<(NanoTokens, MainPubkey, [u8; 32])>::new();
+            for (address, amount) in payees.clone().into_iter() {
+                total_cost = total_cost
+                    .checked_add(amount)
+                    .ok_or(WalletError::TotalPriceTooHigh)?;
+
+                unique_key_vec.push((
+                    amount,
+                    address,
+                    UniquePubkey::random_derivation_index(&mut rng),
+                ));
+            }
+
             all_payees_only.extend(unique_key_vec);
         }
 
@@ -371,7 +373,7 @@ impl LocalWallet {
         }
 
         self.update_local_wallet(offline_transfer, exclusive_access)?;
-        Ok(())
+        Ok(total_cost)
     }
 
     fn update_local_wallet(
@@ -956,7 +958,7 @@ mod tests {
             (xor4, vec![(key4a, 400.into()), (key4b, 401.into())]),
         ]);
 
-        sender.local_send_storage_payment(map.clone(), None)?;
+        let _ = sender.local_send_storage_payment(map.clone(), None)?;
 
         map.get_mut(&xor2).expect("to have value")[0].1 = 210.into(); // increase: 200 -> 210
         map.get_mut(&xor3).expect("to have value")[0].1 = 290.into(); // decrease: 300 -> 290
