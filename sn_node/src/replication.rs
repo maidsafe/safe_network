@@ -67,9 +67,20 @@ impl Node {
         for key in all_records {
             let sorted_based_on_key =
                 sort_peers_by_address(all_peers.clone(), &key, CLOSE_GROUP_SIZE + 1)?;
+            let sorted_peers_pretty_print: Vec<_> = sorted_based_on_key
+                .iter()
+                .map(|peer_id| {
+                    format!(
+                        "{peer_id:?}({:?})",
+                        PrettyPrintRecordKey::from(
+                            NetworkAddress::from_peer(*peer_id).to_record_key()
+                        )
+                    )
+                })
+                .collect();
 
             if sorted_based_on_key.contains(&peer_id) {
-                trace!("replication: close for {key:?} are: {sorted_based_on_key:?}");
+                trace!("replication: close for {key:?} are: {sorted_peers_pretty_print:?}");
                 let target_peer = if is_removal {
                     // For dead peer, only replicate to farthest close_group peer,
                     // when the dead peer was one of the close_group peers to the record.

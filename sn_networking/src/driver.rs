@@ -44,7 +44,10 @@ use libp2p::{
 use libp2p_quic as quic;
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
-use sn_protocol::messages::{Request, Response};
+use sn_protocol::{
+    messages::{Request, Response},
+    NetworkAddress, PrettyPrintRecordKey,
+};
 use std::{
     collections::{HashMap, HashSet},
     net::SocketAddr,
@@ -292,6 +295,10 @@ impl NetworkBuilder {
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let peer_id = PeerId::from(self.keypair.public());
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
+        info!(
+            "Self PeerID {peer_id} is represented as record_key {:?}",
+            PrettyPrintRecordKey::from(NetworkAddress::from_peer(peer_id).to_record_key())
+        );
 
         #[cfg(feature = "open-metrics")]
         let network_metrics = {
