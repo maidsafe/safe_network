@@ -923,7 +923,7 @@ impl SwarmDriver {
                 GetQuorum::One => 1,
             };
 
-            println!("Expecting {expected_answers:?} answers for record {pretty_key:?} task {query_id:?}, received {} so far", peer_list.len());
+            trace!("Expecting {expected_answers:?} answers for record {pretty_key:?} task {query_id:?}, received {} so far", peer_list.len());
             let result = if peer_list.len() >= expected_answers {
                 Some(Ok(peer_record.record.clone()))
             } else if usize::from(count) >= CLOSE_GROUP_SIZE {
@@ -971,6 +971,7 @@ impl SwarmDriver {
             if let (true, Ok(true), true) = (
                 expected_holders.is_empty(),
                 RecordHeader::is_record_of_type_chunk(&peer_record.record),
+                // Ensure that we only exit early if quorum is indeed for only one match
                 matches!(quorum, GetQuorum::One),
             ) {
                 if let Ok(chunk) = try_deserialize_record::<Chunk>(&peer_record.record) {
