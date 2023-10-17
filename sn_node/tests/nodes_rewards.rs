@@ -12,19 +12,22 @@ use crate::common::{
     get_client_and_wallet, init_logging_single_threaded_tokio, random_content,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest},
 };
-use assert_fs::TempDir;
-use eyre::{eyre, Result};
 use sn_client::WalletClient;
 use sn_networking::CLOSE_GROUP_SIZE;
 use sn_node::NodeEvent;
-use sn_transfers::{LocalWallet, NanoTokens};
+use sn_transfers::{
+    LocalWallet, NanoTokens, NETWORK_ROYALTIES_AMOUNT_PER_ADDR, NETWORK_ROYALTIES_PK,
+};
+use xor_name::XorName;
+
+use assert_fs::TempDir;
+use eyre::{eyre, Result};
 use tokio::{
     task::JoinHandle,
     time::{sleep, Duration},
 };
 use tokio_stream::StreamExt;
 use tonic::Request;
-use xor_name::XorName;
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_chunks() -> Result<()> {
@@ -44,6 +47,8 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     )?;
 
     println!("Paying for {} random addresses...", chunks.len());
+    let expected_royalties_fees =
+        NanoTokens::from(chunks.len() as u64 * NETWORK_ROYALTIES_AMOUNT_PER_ADDR.as_nano());
 
     let prev_rewards_balance = current_rewards_balance()?;
 
@@ -51,8 +56,12 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
         .await?;
 
+    let rewards_paid = cost
+        .checked_sub(expected_royalties_fees)
+        .ok_or_else(|| eyre!("Failed to substract rewards balance"))?;
+
     let expected_rewards_balance = prev_rewards_balance
-        .checked_add(cost)
+        .checked_add(rewards_paid)
         .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
 
     verify_rewards(expected_rewards_balance).await?;
@@ -76,6 +85,7 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
     println!("Paying for random Register address... rb {rb:?}");
     let mut rng = rand::thread_rng();
     let register_addr = XorName::random(&mut rng);
+    let expected_royalties_fees = NETWORK_ROYALTIES_AMOUNT_PER_ADDR; // fee for a single address
 
     let prev_rewards_balance = current_rewards_balance()?;
 
@@ -83,8 +93,12 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
         .create_and_pay_for_register(register_addr, &mut wallet_client, false)
         .await?;
     println!("Cost is {cost:?}: {prev_rewards_balance:?}");
+    let rewards_paid = cost
+        .checked_sub(expected_royalties_fees)
+        .ok_or_else(|| eyre!("Failed to substract rewards balance"))?;
+
     let expected_rewards_balance = prev_rewards_balance
-        .checked_add(cost)
+        .checked_add(rewards_paid)
         .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
 
     verify_rewards(expected_rewards_balance).await?;
@@ -111,7 +125,7 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
 
     println!("Paying for {} random addresses...", chunks.len());
 
-    let handle = spawn_transfer_notifs_listener("https://127.0.0.1:12001".to_string());
+    let handle = spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string());
 
     let _cost = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
@@ -142,7 +156,7 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
 
     println!("Paying for random Register address...");
 
-    let handle = spawn_transfer_notifs_listener("https://127.0.0.1:12001".to_string());
+    let handle = spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string());
 
     let _register = client
         .create_and_pay_for_register(register_addr, &mut wallet_client, true)
@@ -193,7 +207,7 @@ fn current_rewards_balance() -> Result<NanoTokens> {
     Ok(total_rewards)
 }
 
-fn spawn_transfer_notifs_listener(endpoint: String) -> JoinHandle<Result<usize, eyre::Report>> {
+fn spawn_royalties_payment_listener(endpoint: String) -> JoinHandle<Result<usize, eyre::Report>> {
     tokio::spawn(async move {
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
         let response = rpc_client
@@ -202,13 +216,17 @@ fn spawn_transfer_notifs_listener(endpoint: String) -> JoinHandle<Result<usize, 
 
         let mut count = 0;
         let mut stream = response.into_inner();
+        let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
+
         while let Some(Ok(e)) = stream.next().await {
             match NodeEvent::from_bytes(&e.event) {
                 Ok(NodeEvent::TransferNotif { key, cash_notes: _ }) => {
                     println!("Transfer notif received for key {key:?}");
-                    count += 1;
-                    if count == CLOSE_GROUP_SIZE {
-                        break;
+                    if key == royalties_pk {
+                        count += 1;
+                        if count == CLOSE_GROUP_SIZE {
+                            break;
+                        }
                     }
                 }
                 Ok(_) => { /* ignored */ }

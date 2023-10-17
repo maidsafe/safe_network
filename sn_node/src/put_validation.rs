@@ -422,6 +422,10 @@ impl Node {
                         .verify_cash_notes_redemptions(royalties_pk, cashnote_redemptions)
                         .await
                     {
+                        trace!(
+                            "{} network royalties payment cash notes found for record {pretty_key}",
+                            cash_notes.len()
+                        );
                         royalties_cash_notes.extend(cash_notes);
                     }
                 }
@@ -454,7 +458,10 @@ impl Node {
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone())
             .await?;
 
-        info!("{:?} cash notes are for us", cash_notes.len());
+        info!(
+            "{} cash notes are for us for {pretty_key}",
+            cash_notes.len()
+        );
 
         let mut received_fee = NanoTokens::zero();
         for cash_note in cash_notes.iter() {
