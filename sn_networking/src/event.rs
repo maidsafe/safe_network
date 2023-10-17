@@ -968,12 +968,11 @@ impl SwarmDriver {
         if let Some((sender, result_map, quorum, expected_holders)) =
             self.pending_get_record.remove(query_id)
         {
-            if let (true, Ok(true), true) = (
-                expected_holders.is_empty(),
-                RecordHeader::is_record_of_type_chunk(&peer_record.record),
-                // Ensure that we only exit early if quorum is indeed for only one match
-                matches!(quorum, GetQuorum::One),
-            ) {
+            if expected_holders.is_empty() &&
+               RecordHeader::is_record_of_type_chunk(&peer_record.record).unwrap_or(false) &&
+               // Ensure that we only exit early if quorum is indeed for only one match
+               matches!(quorum, GetQuorum::One)
+            {
                 if let Ok(chunk) = try_deserialize_record::<Chunk>(&peer_record.record) {
                     if chunk.network_address().to_record_key() == peer_record.record.key {
                         trace!(
