@@ -41,13 +41,20 @@ impl Node {
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
 
+                // Validate the payment and that we received what we asked.
+                // This stores any payments to disk
+                let payment_res = self
+                    .payment_for_us_exists_and_is_still_valid(&chunk.network_address(), payment)
+                    .await;
+
+                // Now that we've taken any money passed to us, regardless of the payment's validity,
+                // if we already have the data we can return early
                 if already_exists {
                     return Ok(CmdOk::DataAlreadyPresent);
                 }
 
-                // Validate the payment and that we received what we asked.
-                self.payment_for_us_exists_and_is_still_valid(&chunk.network_address(), payment)
-                    .await?;
+                // Finally before we store, lets bail for any payment issues
+                payment_res?;
 
                 self.store_chunk(chunk)
             }
@@ -423,11 +430,7 @@ impl Node {
             .await?;
 
         info!("{:?} cash notes are for us", cash_notes.len());
-        // check payment is sufficient
-        let current_store_cost =
-            self.network.get_local_storecost().await.map_err(|e| {
-                ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
-            })?;
+
         let mut received_fee = NanoTokens::zero();
         for cash_note in cash_notes.iter() {
             let amount = cash_note.value().map_err(|_| {
@@ -446,14 +449,6 @@ impl Node {
 
             info!("Adding to received fee, which is now: {received_fee:?}");
         }
-        if received_fee < current_store_cost {
-            trace!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {current_store_cost:?}");
-            return Err(ProtocolError::PaymentProofInsufficientAmount {
-                paid: received_fee,
-                expected: current_store_cost,
-            });
-        }
-        trace!("Payment sufficient for record {pretty_key}");
 
         // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for each cash-note received.
         match transfer_for_us.to_hex() {
@@ -471,7 +466,6 @@ impl Node {
             Err(err) => debug!("Failed to serialise transfer data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
         }
 
-        info!("Storing CNs of {received_fee:?} total nanos for record {pretty_key}");
         // deposit the CashNotes in our wallet
         wallet
             .deposit_and_store_to_disk(&cash_notes)
@@ -482,7 +476,23 @@ impl Node {
             .reward_wallet_balance
             .set(wallet.balance().as_nano() as i64);
 
-        info!("Payment of {received_fee:?} nanos accepted for record {pretty_key}");
+        info!("Total payment of {received_fee:?} nanos accepted for record {pretty_key}");
+
+        // check payment is sufficient
+        let current_store_cost =
+            self.network.get_local_storecost().await.map_err(|e| {
+                ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
+            })?;
+        // finally, (after we accept any payments to us as they are ours now anyway)
+        // lets check they actually paid enough
+        if received_fee < current_store_cost {
+            trace!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {current_store_cost:?}");
+            return Err(ProtocolError::PaymentProofInsufficientAmount {
+                paid: received_fee,
+                expected: current_store_cost,
+            });
+        }
+        trace!("Payment sufficient for record {pretty_key}");
 
         Ok(())
     }
