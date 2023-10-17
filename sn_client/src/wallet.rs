@@ -139,8 +139,6 @@ impl WalletClient {
         content_addrs: impl Iterator<Item = NetworkAddress>,
     ) -> WalletResult<NanoTokens> {
         let verify_store = true;
-        let mut total_cost = NanoTokens::zero();
-
         let mut payment_map = BTreeMap::default();
 
         let mut tasks = JoinSet::new();
@@ -184,22 +182,17 @@ impl WalletClient {
 
         info!("Storecosts retrieved");
 
-        if !payment_map.is_empty() {
+        if payment_map.is_empty() {
+            Ok(NanoTokens::zero())
+        } else {
             self.wallet.adjust_payment_map(&mut payment_map);
-
-            let cost = self.pay_for_records(payment_map, verify_store).await?;
-
-            if let Some(cost) = total_cost.checked_add(cost) {
-                total_cost = cost;
-            }
+            self.pay_for_records(payment_map, verify_store).await
         }
-
-        Ok(total_cost)
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     ///
-    /// Returns the total amount paid.
+    /// Returns the amount paid for storage, including the network royalties fee paid.
     ///
     /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
     pub async fn pay_for_records(
@@ -209,18 +202,9 @@ impl WalletClient {
     ) -> WalletResult<NanoTokens> {
         // TODO:
         // Check for any existing payment CashNotes, and use them if they exist, only topping up if needs be
-        let mut total_cost = NanoTokens::zero();
-        for (_data, costs) in all_data_payments.iter() {
-            for (_target, cost) in costs {
-                if let Some(new_cost) = total_cost.checked_add(*cost) {
-                    total_cost = new_cost;
-                } else {
-                    return Err(WalletError::TotalPriceTooHigh);
-                }
-            }
-        }
 
-        self.wallet
+        let total_cost = self
+            .wallet
             .local_send_storage_payment(all_data_payments, None)?;
 
         // send to network

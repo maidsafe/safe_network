@@ -225,8 +225,6 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
         chunks_dir.path().to_path_buf(),
     )?;
 
-    println!("Paying for {} random addresses...", chunks.len());
-
     let mut no_data_payments = BTreeMap::default();
     for (chunk_name, _) in chunks.iter() {
         no_data_payments.insert(
@@ -238,18 +236,12 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
         );
     }
 
-    wallet_client
+    let _ = wallet_client
         .mut_wallet()
         .local_send_storage_payment(no_data_payments, None)?;
 
-    // invalid spends
-    client
-        .send(wallet_client.unconfirmed_spend_requests().iter(), true)
-        .await?;
-
     sleep(Duration::from_secs(5)).await;
 
-    // this should fail to store as the amount paid is not enough
     files_api
         .upload_test_bytes(content_bytes.clone(), false)
         .await?;
@@ -337,7 +329,7 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
         )],
     );
 
-    wallet_client
+    let _ = wallet_client
         .mut_wallet()
         .local_send_storage_payment(no_data_payments, None)?;
 
