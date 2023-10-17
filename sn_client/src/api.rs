@@ -12,7 +12,11 @@ use super::{
 };
 use bls::{PublicKey, SecretKey, Signature};
 use indicatif::ProgressBar;
-use libp2p::{identity::Keypair, kad::Record, Multiaddr, PeerId};
+use libp2p::{
+    identity::Keypair,
+    kad::{Record, K_VALUE},
+    Multiaddr, PeerId,
+};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_networking::{
@@ -206,16 +210,23 @@ impl Client {
                         .broadcast(ClientEvent::ConnectedToNetwork)?;
                 } else {
                     debug!(
-                        "{}/{} initial peers found.",
-                        self.peers_added, CLOSE_GROUP_SIZE
+                        "{}/{CLOSE_GROUP_SIZE} initial peers found.",
+                        self.peers_added
                     );
 
                     if let Some(progress) = &self.progress {
                         progress.set_message(format!(
-                            "{}/{} initial peers found.",
-                            self.peers_added, CLOSE_GROUP_SIZE
+                            "{}/{CLOSE_GROUP_SIZE} initial peers found.",
+                            self.peers_added
                         ));
                     }
+                }
+
+                let k_value = K_VALUE.into();
+                if self.peers_added >= k_value {
+                    trace!("Stopping further bootstrapping as we have {k_value:?} peers");
+                    // stop further bootstrapping
+                    self.network.stop_bootstrapping()?;
                 }
             }
             NetworkEvent::GossipsubMsgReceived { topic, msg }
