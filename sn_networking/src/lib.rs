@@ -156,9 +156,30 @@ impl Network {
             sender,
         })?;
 
-        receiver
-            .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+        match receiver.await {
+            Ok(close_peers) => {
+                let close_peers_pretty_print: Vec<_> = close_peers
+                    .iter()
+                    .map(|peer_id| {
+                        format!(
+                            "{peer_id:?}({:?})",
+                            PrettyPrintRecordKey::from(
+                                NetworkAddress::from_peer(*peer_id).to_record_key()
+                            )
+                        )
+                    })
+                    .collect();
+
+                trace!(
+                    "Local knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}"
+                );
+                Ok(close_peers)
+            }
+            Err(err) => {
+                error!("When getting local knowledge of close peers to {key:?}, failed with error {err:?}");
+                Err(Error::InternalMsgChannelDropped)
+            }
+        }
     }
 
     /// Returns all the PeerId from all the KBuckets from our local Routing Table
@@ -585,6 +606,19 @@ impl Network {
         if !client {
             closest_peers.push(self.peer_id);
         }
+
+        let close_peers_pretty_print: Vec<_> = closest_peers
+            .iter()
+            .map(|peer_id| {
+                format!(
+                    "{peer_id:?}({:?})",
+                    PrettyPrintRecordKey::from(NetworkAddress::from_peer(*peer_id).to_record_key())
+                )
+            })
+            .collect();
+
+        trace!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
+
         sort_peers_by_address(closest_peers, key, CLOSE_GROUP_SIZE)
     }
 
