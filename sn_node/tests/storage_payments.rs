@@ -212,7 +212,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 }
 
 #[tokio::test]
-async fn storage_payment_chunk_upload_fails() -> Result<()> {
+async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
     let _log_guards = init_logging_single_threaded_tokio("storage_payments");
 
     let paying_wallet_balance = 50_000_000_000_003;
@@ -230,15 +230,6 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
     )?;
 
     println!("Paying for {} random addresses...", chunks.len());
-
-    let _cost = wallet_client
-        .pay_for_storage(
-            chunks
-                .iter()
-                .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
-            true,
-        )
-        .await?;
 
     let mut no_data_payments = BTreeMap::default();
     for (chunk_name, _) in chunks.iter() {
@@ -267,10 +258,14 @@ async fn storage_payment_chunk_upload_fails() -> Result<()> {
         .upload_test_bytes(content_bytes.clone(), false)
         .await?;
 
-    assert!(matches!(
-        files_api.read_bytes(content_addr, None, false).await,
-        Err(ClientError::Network(NetworkError::RecordNotFound))
-    ));
+    println!("Reading {content_addr:?} expected to fail");
+    assert!(
+        matches!(
+            files_api.read_bytes(content_addr, None, false).await,
+            Err(ClientError::Network(NetworkError::RecordNotFound))
+        ),
+        "read bytes should fail as we didn't store them"
+    );
 
     Ok(())
 }
