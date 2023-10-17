@@ -40,6 +40,8 @@ pub enum SwarmCmd {
         opts: DialOpts,
         sender: oneshot::Sender<Result<()>>,
     },
+    // Stop the continuous Kademlia Bootstrap process.
+    StopBootstrapping,
     // Get closest peers from the network
     GetClosestPeers {
         key: NetworkAddress,
@@ -306,6 +308,9 @@ impl SwarmDriver {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(e.into())),
                 };
+            }
+            SwarmCmd::StopBootstrapping => {
+                self.bootstrap.stop_bootstrapping();
             }
             SwarmCmd::GetClosestPeers { key, sender } => {
                 let query_id = self

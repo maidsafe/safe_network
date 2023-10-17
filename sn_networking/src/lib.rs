@@ -134,6 +134,11 @@ impl Network {
         receiver.await?
     }
 
+    /// Stop the continuous Kademlia Bootstrapping process
+    pub fn stop_bootstrapping(&self) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::StopBootstrapping)
+    }
+
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// Excludes the client's `PeerId` while calculating the closest peers.
     pub async fn client_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {

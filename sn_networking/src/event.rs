@@ -770,7 +770,10 @@ impl SwarmDriver {
                     info!("New peer added to routing table: {peer:?}");
                     self.log_kbuckets(&peer);
 
-                    self.bootstrap.notify_new_peer();
+                    if self.bootstrap.notify_new_peer() {
+                        info!("Performing the first bootstrap");
+                        self.initiate_bootstrap();
+                    }
                     self.send_event(NetworkEvent::PeerAdded(peer));
                 }
 
