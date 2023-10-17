@@ -10,7 +10,6 @@ mod common;
 
 use crate::common::init_logging_multi_threaded_tokio;
 use assert_fs::TempDir;
-use bytes::Bytes;
 use common::{
     get_client_and_wallet, get_funded_wallet, get_wallet, node_restart,
     PAYING_WALLET_INITIAL_BALANCE,
@@ -19,7 +18,7 @@ use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files, WalletClient};
 use sn_protocol::{
-    storage::{Chunk, ChunkAddress, RegisterAddress, SpendAddress},
+    storage::{ChunkAddress, RegisterAddress, SpendAddress},
     NetworkAddress,
 };
 use sn_transfers::LocalWallet;
@@ -27,7 +26,7 @@ use sn_transfers::{CashNote, MainSecretKey, NanoTokens};
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
-    fs::{self, create_dir_all, File},
+    fs::{create_dir_all, File},
     io::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
@@ -35,7 +34,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tempfile::tempdir;
-use tokio::{sync::RwLock, time::sleep};
+use tokio::{sync::RwLock, task::JoinHandle, time::sleep};
 use tracing::{debug, trace};
 use xor_name::XorName;
 
@@ -361,7 +360,7 @@ fn store_chunks_task(
     churn_period: Duration,
     paying_wallet_dir: PathBuf,
 ) {
-    let _handle = tokio::spawn(async move {
+    let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
         let temp_dir = tempdir().expect("Can not create a temp directory for store_chunks_task!");
         let output_dir = temp_dir.path().join("chunk_path");
         create_dir_all(output_dir.clone())
@@ -369,10 +368,6 @@ fn store_chunks_task(
 
         // Store Chunks at a higher frequency than the churning events
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
-
-        let paying_wallet = get_wallet(&paying_wallet_dir).await;
-
-        let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
         let file_api = Files::new(client, paying_wallet_dir);
         let mut rng = OsRng;
@@ -404,50 +399,30 @@ fn store_chunks_task(
             );
             sleep(delay).await;
 
-            let cost = wallet_client
-                .pay_for_storage(
-                    chunks.iter().map(|(name, _)| {
-                        NetworkAddress::from_chunk_address(ChunkAddress::new(*name))
-                    }),
-                    true,
-                )
+            let chunks_len = chunks.len();
+
+            let (addr, cost) = match file_api
+                .pay_and_upload_bytes_test(chunk_name, chunks.clone())
                 .await
-                .expect("Failed to pay for storage for new file at {addr:?}");
+            {
+                Ok((addr, cost)) => (addr, cost),
+                Err(err) => {
+                    bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
+                }
+            };
 
             println!(
                 "Storing ({}) Chunk/s at cost: {cost:?} of file ({} bytes) at {addr:?} in {delay:?}",
-                chunks.len(),
+                chunks_len,
                 chunk_size
             );
             sleep(delay).await;
 
-            for (chunk_name, chunk_path) in chunks {
-                let chunk = match fs::read(chunk_path) {
-                    Ok(bytes) => Chunk::new(Bytes::from(bytes)),
-                    Err(err) => {
-                        println!("Discarding new Chunk ({chunk_name:?}) due to error: {err:?} during read back");
-                        continue;
-                    }
-                };
-                match file_api
-                    .get_local_payment_and_upload_chunk(chunk, true, false)
+            for (chunk_name, _chunk_path) in chunks {
+                content
+                    .write()
                     .await
-                {
-                    Ok(()) => content
-                        .write()
-                        .await
-                        .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(addr))),
-                    Err(err) => {
-                        let net_addr = NetworkAddress::ChunkAddress(ChunkAddress::new(addr));
-                        let mut content_write = content.write().await;
-                        let index = content_write.iter().position(|x| *x == net_addr);
-                        if let Some(index) = index {
-                            content_write.remove(index);
-                        }
-
-                        println!("Discarding new Chunk ({addr:?}) due to error: {err:?}")
-                    }
-                }
+                    .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(chunk_name)));
             }
         }
     });
