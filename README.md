@@ -139,6 +139,19 @@ $ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 update 70
 Node successfully received the request to try to update in 7s
 ```
 
+- Listening to network royalties payments events
+```
+$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 transfers
+Listening to transfers notifications... (press Ctrl+C to exit)
+
+New transfer notification received for PublicKey(0c54..5952), containing 1 cash note/s.
+CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
+
+New transfer notification received for PublicKey(0c54..5952), containing 1 cash note/s.
+CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
+
+```
+
 # Metrics Dashboard
 
 Use the `open-metrics` feature flag on the node / client to start an [OpenMetrics](https://github.com/OpenObservability/OpenMetrics/) exporter. The metrics are served via a webserver started at a random port. Check the log file / stdout to find the webserver URL, `Metrics server on http://127.0.0.1:xxxx/metrics`
