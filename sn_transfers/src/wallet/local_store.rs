@@ -355,6 +355,7 @@ impl LocalWallet {
             }
         }
 
+        // Add new payments to the existing map if present
         // Use entry API to avoid multiple lookups in the BTreeMap
         for (xorname, payment_details) in all_transfers_per_address {
             let existing_payments = self.wallet.payment_transactions.entry(xorname).or_default();
