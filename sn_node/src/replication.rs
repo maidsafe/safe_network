@@ -183,7 +183,7 @@ impl Node {
                         .get_record_from_network(
                             key,
                             None,
-                            GetQuorum::Majority,
+                            GetQuorum::One,
                             false,
                             Default::default(),
                         )

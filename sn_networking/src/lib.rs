@@ -39,7 +39,7 @@ use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketKey, Record, RecordKey},
+    kad::{KBucketKey, Quorum, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
@@ -414,6 +414,7 @@ impl Network {
         record: Record,
         verify_store: Option<Record>,
         expected_holders: ExpectedHoldersList,
+        quorum: Quorum,
     ) -> Result<()> {
         let mut retries = 0;
 
@@ -429,6 +430,7 @@ impl Network {
                     record.clone(),
                     verify_store.clone(),
                     expected_holders.clone(),
+                    quorum,
                 )
                 .await;
 
@@ -451,6 +453,7 @@ impl Network {
         record: Record,
         verify_store: Option<Record>,
         expected_holders: ExpectedHoldersList,
+        quorum: Quorum,
     ) -> Result<()> {
         let record_key = record.key.clone();
         let pretty_key = PrettyPrintRecordKey::from(&record_key);
@@ -465,6 +468,7 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::PutRecord {
             record: record.clone(),
             sender,
+            quorum,
         })?;
         let response = receiver.await?;
 
@@ -477,11 +481,21 @@ impl Network {
             .await;
             trace!("attempting to verify {pretty_key:?}");
 
+            let get_quorum = match quorum {
+                Quorum::One => GetQuorum::One,
+                Quorum::Majority => GetQuorum::Majority,
+                Quorum::All => GetQuorum::All,
+                // we dont use this so should not be an issue
+                Quorum::N(_) => {
+                    warn!("libp2p Quroum:N being used unuexpectedly, defaulting to GetQuorum::All");
+                    GetQuorum::All
+                }
+            };
             // Verify the record is stored, requiring re-attempts
             self.get_record_from_network(
                 record_key,
                 verify_store,
-                GetQuorum::All,
+                get_quorum,
                 true,
                 expected_holders,
             )
@@ -757,15 +771,14 @@ mod tests {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
             costs.push((addr, NanoTokens::from(i as u64)));
         }
+        let expected_price = costs[0].1.as_nano();
         let prices = get_fees_from_store_cost_responses(costs)?;
         let total_price: u64 = prices
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
 
-        let expected_price = costs[0];
-
         assert_eq!(
-            total_price, expected_price as u64,
+            total_price, expected_price,
             "price should be {}",
             expected_price
         );
@@ -786,6 +799,9 @@ mod tests {
             println!("price added {}", i);
         }
 
+        // this should be the lowest price
+        let expected_price = costs[0].1.as_nano();
+
         let prices = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),
             Ok(cost) => cost,
@@ -795,11 +811,8 @@ mod tests {
             .iter()
             .fold(0, |acc, (_, price)| acc + price.as_nano());
 
-        // this should be the lowest price
-        let expected_price = costs[0];
-
         assert_eq!(
-            total_price, expected_price as u64,
+            total_price, expected_price,
             "price should be {}",
             total_price
         );

@@ -16,7 +16,6 @@ use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use sn_client::WalletClient;
 use sn_logging::LogBuilder;
-use sn_networking::{close_group_majority, CLOSE_GROUP_SIZE};
 
 use sn_node::NodeEvent;
 use sn_transfers::{LocalWallet, NanoTokens};
