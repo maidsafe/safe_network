@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697534544286,
+  "lastUpdate": 1697534546978,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -27586,6 +27586,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 35,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "1594851a125dbe727f5037535f93004b78a2f832",
+          "message": "chore: remove needless quorum reassignment",
+          "timestamp": "2023-10-17T08:19:42Z",
+          "tree_id": "c8dc4a108e05b1f9f99f612876ca908521c31fe0",
+          "url": "https://github.com/maidsafe/safe_network/commit/1594851a125dbe727f5037535f93004b78a2f832"
+        },
+        "date": 1697534546011,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 153,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 36,
             "unit": "MB"
           }
         ]
