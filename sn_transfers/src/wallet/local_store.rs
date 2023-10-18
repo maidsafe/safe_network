@@ -230,24 +230,17 @@ impl LocalWallet {
     }
 
     /// Return the payment cash_note ids for the given content address name if cached.
-    pub fn get_payment_cash_notes(&self, name: &XorName) -> Vec<CashNote> {
-        let ids = self.get_payment_unique_pubkeys_and_values(name);
-        // now grab all those cash_notes
-        let mut cash_notes: Vec<CashNote> = vec![];
+    pub fn get_payment_transfers(&self, name: &XorName) -> Vec<Transfer> {
+        let mut transfers: Vec<Transfer> = vec![];
 
-        if let Some(ids) = ids {
-            for (id, _main_pub_key, _value) in ids {
-                if let Some(cash_note) = load_created_cash_note(id, &self.wallet_dir) {
-                    trace!(
-                        "Current cash_note of chunk {name:?} is paying {:?} tokens.",
-                        cash_note.value()
-                    );
-                    cash_notes.push(cash_note);
-                }
+        if let Some(payment) = self.get_payment_unique_pubkeys_and_values(name) {
+            for (trans, _main_pub_key, value) in payment {
+                trace!("Current transfer for chunk {name:?} is of {value:?} tokens.");
+                transfers.push(trans.to_owned());
             }
         }
 
-        cash_notes
+        transfers
     }
 
     /// Make a transfer and return all created cash_notes
@@ -333,7 +326,7 @@ impl LocalWallet {
         for (content_addr, payees) in all_data_payments {
             for (payee, token) in payees {
                 if let Some(cash_note) =
-                    &offline_transfer
+                    offline_transfer
                         .created_cash_notes
                         .iter()
                         .find(|cash_note| {
@@ -347,7 +340,7 @@ impl LocalWallet {
                     let cash_notes_for_content: &mut Vec<PaymentDetails> =
                         all_transfers_per_address.entry(content_addr).or_default();
                     cash_notes_for_content.push((
-                        cash_note.unique_pubkey(),
+                        Transfer::transfers_from_cash_note(cash_note.to_owned())?,
                         *cash_note.main_pubkey(),
                         cash_note.value()?,
                     ));
