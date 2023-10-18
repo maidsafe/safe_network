@@ -105,7 +105,7 @@ impl RunningNode {
 impl Node {
     /// Asynchronously runs a new node instance, setting up the swarm driver,
     /// creating a data storage, and handling network events. Returns the
-    /// created `RunningNode` which contians a `NodeEventsChannel` for listening
+    /// created `RunningNode` which contains a `NodeEventsChannel` for listening
     /// to node-related events.
     ///
     /// # Returns

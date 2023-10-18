@@ -133,6 +133,8 @@ pub struct NetworkBuilder {
     concurrency_limit: Option<usize>,
     #[cfg(feature = "open-metrics")]
     metrics_registry: Option<Registry>,
+    #[cfg(feature = "open-metrics")]
+    metrics_server_port: u16,
 }
 
 impl NetworkBuilder {
@@ -146,6 +148,8 @@ impl NetworkBuilder {
             concurrency_limit: None,
             #[cfg(feature = "open-metrics")]
             metrics_registry: None,
+            #[cfg(feature = "open-metrics")]
+            metrics_server_port: 0,
         }
     }
 
@@ -164,6 +168,11 @@ impl NetworkBuilder {
     #[cfg(feature = "open-metrics")]
     pub fn metrics_registry(&mut self, metrics_registry: Registry) {
         self.metrics_registry = Some(metrics_registry);
+    }
+
+    #[cfg(feature = "open-metrics")]
+    pub fn metrics_server_port(&mut self, port: u16) {
+        self.metrics_server_port = port;
     }
 
     /// Creates a new `SwarmDriver` instance, along with a `Network` handle
@@ -298,7 +307,7 @@ impl NetworkBuilder {
         let network_metrics = {
             let mut metrics_registry = self.metrics_registry.unwrap_or_default();
             let metrics = NetworkMetrics::new(&mut metrics_registry);
-            run_metrics_server(metrics_registry);
+            run_metrics_server(metrics_registry, self.metrics_server_port);
             metrics
         };
 
