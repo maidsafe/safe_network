@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697630429368,
+  "lastUpdate": 1697631451640,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -19429,6 +19429,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "72a41ea645b6edb624eb69a3a3f3488a1f283281",
+          "message": "Revert \"feat: keep transfers in mem instead of mem and i/o heavy cashnotes\"\n\nThis reverts commit 9eb32bbf632b32233ad9d7e17126f5e2bbea1d5c.",
+          "timestamp": "2023-10-18T13:37:13+02:00",
+          "tree_id": "597b189ae9de00f6afecc1b805ffcfea420e41aa",
+          "url": "https://github.com/maidsafe/safe_network/commit/72a41ea645b6edb624eb69a3a3f3488a1f283281"
+        },
+        "date": 1697631450675,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 72,
             "unit": "MB"
           }
         ]
