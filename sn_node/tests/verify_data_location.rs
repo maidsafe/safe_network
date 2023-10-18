@@ -343,7 +343,6 @@ async fn store_chunks(
                 chunks
                     .iter()
                     .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
-                true,
             )
             .await
             .expect("Failed to pay for storage for new file at {file_addr:?}");
