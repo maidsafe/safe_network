@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697617001793,
+  "lastUpdate": 1697617006038,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -27688,6 +27688,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 36,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "9eb32bbf632b32233ad9d7e17126f5e2bbea1d5c",
+          "message": "feat: keep transfers in mem instead of mem and i/o heavy cashnotes",
+          "timestamp": "2023-10-18T07:11:03Z",
+          "tree_id": "b214a8318fafb5108671a887f51d7388545922de",
+          "url": "https://github.com/maidsafe/safe_network/commit/9eb32bbf632b32233ad9d7e17126f5e2bbea1d5c"
+        },
+        "date": 1697617005139,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 158,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 33,
             "unit": "MB"
           }
         ]
