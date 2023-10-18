@@ -59,13 +59,13 @@ impl WalletClient {
     pub fn get_payment_transfers(&self, address: &NetworkAddress) -> WalletResult<Vec<Transfer>> {
         match &address.as_xorname() {
             Some(xorname) => {
-                let cash_notes = self.wallet.get_payment_cash_notes(xorname);
+                let transfers = self.wallet.get_payment_transfers(xorname);
 
                 info!(
-                    "Payment cash notes retrieved from wallet: {:?}",
-                    cash_notes.len()
+                    "Payment transfers retrieved for {xorname:?} from wallet: {:?}",
+                    transfers.len()
                 );
-                Ok(Transfer::transfers_from_cash_notes(cash_notes)?)
+                Ok(transfers)
             }
             None => Err(WalletError::InvalidAddressType),
         }
@@ -205,8 +205,6 @@ impl WalletClient {
         all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
         verify_store: bool,
     ) -> WalletResult<NanoTokens> {
-        // TODO:
-        // Check for any existing payment CashNotes, and use them if they exist, only topping up if needs be
         let mut total_cost = NanoTokens::zero();
         for (_data, costs) in all_data_payments.iter() {
             for (_target, cost) in costs {
