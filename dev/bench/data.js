@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697534546978,
+  "lastUpdate": 1697616710366,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11461,6 +11461,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 17.355674139768137,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "9eb32bbf632b32233ad9d7e17126f5e2bbea1d5c",
+          "message": "feat: keep transfers in mem instead of mem and i/o heavy cashnotes",
+          "timestamp": "2023-10-18T07:11:03Z",
+          "tree_id": "b214a8318fafb5108671a887f51d7388545922de",
+          "url": "https://github.com/maidsafe/safe_network/commit/9eb32bbf632b32233ad9d7e17126f5e2bbea1d5c"
+        },
+        "date": 1697616707842,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11558742785607337,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.7057774167351069,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 17.417302371516488,
             "unit": "MiB/s"
           }
         ]
