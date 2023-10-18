@@ -420,8 +420,8 @@ impl Node {
                         .await
                     {
                         trace!(
-                            "{} network royalties payment cash notes found for record {pretty_key}",
-                            cash_notes.len()
+                            "{} network royalties payment cash notes found for record {pretty_key} for a total value of {:?}",
+                            cash_notes.len(), total_cash_notes_amount(&cash_notes, pretty_key.clone())?
                         );
                         royalties_cash_notes.extend(cash_notes);
                     }
@@ -456,29 +456,11 @@ impl Node {
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone().into_owned())
             .await?;
 
+        let received_fee = total_cash_notes_amount(&cash_notes, pretty_key.clone().into_owned())?;
         info!(
-            "{} cash notes are for us for {pretty_key}",
+            "{} cash notes (for a total of {received_fee:?}) are for us for {pretty_key}",
             cash_notes.len()
         );
-
-        let mut received_fee = NanoTokens::zero();
-        for cash_note in cash_notes.iter() {
-            let amount = cash_note.value().map_err(|_| {
-                ProtocolError::RecordNotStored(
-                    pretty_key.clone().into_owned(),
-                    "Failed to get CashNote value".to_string(),
-                )
-            })?;
-            received_fee =
-                received_fee
-                    .checked_add(amount)
-                    .ok_or(ProtocolError::RecordNotStored(
-                        pretty_key.clone().into_owned(),
-                        "CashNote value overflow".to_string(),
-                    ))?;
-
-            info!("Adding to received fee, which is now: {received_fee:?}");
-        }
 
         // deposit the CashNotes in our wallet
         wallet
@@ -761,4 +743,28 @@ impl Node {
 
         Ok(Some(signed_spends))
     }
+}
+
+// Helper to calculate total amout of tokens received in a given set of CashNotes
+fn total_cash_notes_amount(
+    cash_notes: &[CashNote],
+    pretty_key: PrettyPrintRecordKey,
+) -> Result<NanoTokens, ProtocolError> {
+    let mut received_fee = NanoTokens::zero();
+    for cash_note in cash_notes.iter() {
+        let amount = cash_note.value().map_err(|_| {
+            ProtocolError::RecordNotStored(
+                pretty_key.clone().into_owned(),
+                "Failed to get CashNote value".to_string(),
+            )
+        })?;
+        received_fee = received_fee
+            .checked_add(amount)
+            .ok_or(ProtocolError::RecordNotStored(
+                pretty_key.clone().into_owned(),
+                "CashNote value overflow".to_string(),
+            ))?;
+    }
+
+    Ok(received_fee)
 }
