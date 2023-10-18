@@ -120,10 +120,11 @@ impl WalletClient {
     /// Returns a Vec of proofs
     pub async fn get_store_cost_at_address(
         &self,
-        address: &NetworkAddress,
+        address: NetworkAddress,
     ) -> WalletResult<Vec<(MainPubkey, NanoTokens)>> {
         self.client
-            .get_store_costs_at_address(address)
+            .network
+            .get_store_costs_from_network(address)
             .await
             .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()))
     }
@@ -136,8 +137,8 @@ impl WalletClient {
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
-        verify_store: bool,
     ) -> WalletResult<NanoTokens> {
+        let verify_store = true;
         let mut total_cost = NanoTokens::zero();
 
         let mut payment_map = BTreeMap::default();
@@ -148,7 +149,8 @@ impl WalletClient {
             let client = self.client.clone();
             tasks.spawn(async move {
                 let costs = client
-                    .get_store_costs_at_address(&content_addr)
+                    .network
+                    .get_store_costs_from_network(content_addr.clone())
                     .await
                     .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()));
 

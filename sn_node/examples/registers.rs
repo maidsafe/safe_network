@@ -76,9 +76,11 @@ async fn main() -> Result<()> {
         }
         Err(_) => {
             println!("Register '{reg_nickname}' not found, creating it at {address}");
-            client
-                .create_register(meta, &mut wallet_client, true)
-                .await?
+            let (register, _cost) = client
+                .create_and_pay_for_register(meta, &mut wallet_client, true)
+                .await?;
+
+            register
         }
     };
     println!("Register owned by: {:?}", reg_replica.owner());

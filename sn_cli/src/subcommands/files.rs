@@ -247,7 +247,7 @@ async fn upload_files(
     for chunks_batch in chunks_to_upload.chunks(batch_size) {
         // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
         let (cost, new_balance) = match file_api
-            .pay_for_chunks(chunks_batch.iter().map(|(name, _)| *name).collect(), true)
+            .pay_for_chunks(chunks_batch.iter().map(|(name, _)| *name).collect())
             .await
         {
             Ok((cost, new_balance)) => (cost, new_balance),
@@ -440,7 +440,7 @@ async fn verify_and_repay_if_needed(
         // Check for any errors during fetch
         for result in verify_results {
             if let ((chunk_addr, path), true) = result?? {
-                println!("Failed to fetch a chunk {chunk_addr:?}");
+                warn!("Failed to fetch a chunk {chunk_addr:?}");
                 // This needs to be NetAddr to allow for repayment
                 failed_chunks.push((chunk_addr, path));
             }
@@ -476,12 +476,11 @@ async fn verify_and_repay_if_needed(
         let mut wallet = file_api.wallet()?;
 
         // Now we pay again or top up, depending on the new current store cost is
-        wallet
+        let _new_cost = wallet
             .pay_for_storage(
                 failed_chunks_batch
                     .iter()
                     .map(|(addr, _path)| sn_protocol::NetworkAddress::ChunkAddress(*addr)),
-                true,
             )
             .await
             .wrap_err("Failed to repay for record storage for {failed_chunks_batch:?}.")?;
