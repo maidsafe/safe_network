@@ -6,25 +6,25 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{error::Result, event::NodeEventsChannel, Marker, Network, Node, NodeEvent};
+use super::{error::Result, event::NodeEventsChannel, Marker, NodeEvent};
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetrics;
-use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr, PeerId};
+use crate::RunningNode;
+use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_networking::{
-    MsgResponder, NetworkBuilder, NetworkEvent, SwarmLocalState, CLOSE_GROUP_SIZE,
+    MsgResponder, Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::LocalWallet;
 use sn_transfers::MainSecretKey;
+use sn_transfers::{LocalWallet, MainPubkey};
 use std::{
-    collections::HashSet,
     net::SocketAddr,
     path::PathBuf,
     sync::{
@@ -33,76 +33,50 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use tokio::task::spawn;
+use tokio::{sync::mpsc::Receiver, task::spawn};
 
 /// Expected topic name where notifications of transfers are sent on.
 /// The notification msg is expected to contain the serialised public key, followed by the
 /// serialised transfer info encrypted against the referenced public key.
 pub(super) const TRANSFER_NOTIF_TOPIC: &str = "TRANSFER_NOTIFICATION";
 
-/// Once a node is started and running, the user obtains
-/// a `NodeRunning` object which can be used to interact with it.
-#[derive(Clone)]
-pub struct RunningNode {
-    network: Network,
-    node_events_channel: NodeEventsChannel,
+/// Helper to build and run a Node
+pub struct NodeBuilder {
+    keypair: Keypair,
+    addr: SocketAddr,
+    initial_peers: Vec<Multiaddr>,
+    local: bool,
+    root_dir: PathBuf,
+    #[cfg(feature = "open-metrics")]
+    metrics_server_port: u16,
 }
 
-impl RunningNode {
-    /// Returns this node's `PeerId`
-    pub fn peer_id(&self) -> PeerId {
-        self.network.peer_id
+impl NodeBuilder {
+    /// Instantiate the builder
+    pub fn new(
+        keypair: Keypair,
+        addr: SocketAddr,
+        initial_peers: Vec<Multiaddr>,
+        local: bool,
+        root_dir: PathBuf,
+    ) -> Self {
+        Self {
+            keypair,
+            addr,
+            initial_peers,
+            local,
+            root_dir,
+            #[cfg(feature = "open-metrics")]
+            metrics_server_port: 0,
+        }
     }
 
-    /// Returns the root directory path for the node.
-    ///
-    /// This will either be a value defined by the user, or a default location, plus the peer ID
-    /// appended. The default location is platform specific:
-    ///  - Linux: $HOME/.local/share/safe/node/<peer-id>
-    ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>
-    ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>
-    #[allow(rustdoc::invalid_html_tags)]
-    pub fn root_dir_path(&self) -> PathBuf {
-        self.network.root_dir_path.clone()
+    #[cfg(feature = "open-metrics")]
+    /// Set the port for the OpenMetrics server. Defaults to a random port if not set
+    pub fn metrics_server_port(&mut self, port: u16) {
+        self.metrics_server_port = port;
     }
 
-    /// Returns a `SwarmLocalState` with some information obtained from swarm's local state.
-    pub async fn get_swarm_local_state(&self) -> Result<SwarmLocalState> {
-        let state = self.network.get_swarm_local_state().await?;
-        Ok(state)
-    }
-
-    /// Returns the node events channel where to subscribe to receive `NodeEvent`s
-    pub fn node_events_channel(&self) -> &NodeEventsChannel {
-        &self.node_events_channel
-    }
-
-    /// Returns the list of all the RecordKeys held by the node
-    pub async fn get_all_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
-        let addresses = self.network.get_all_local_record_addresses().await?;
-        Ok(addresses)
-    }
-
-    /// Subscribe to given gossipsub topic
-    pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
-        self.network.subscribe_to_topic(topic_id)?;
-        Ok(())
-    }
-
-    /// Unsubscribe from given gossipsub topic
-    pub fn unsubscribe_from_topic(&self, topic_id: String) -> Result<()> {
-        self.network.unsubscribe_from_topic(topic_id)?;
-        Ok(())
-    }
-
-    /// Publish a message on a given gossipsub topic
-    pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
-        self.network.publish_on_topic(topic_id, msg)?;
-        Ok(())
-    }
-}
-
-impl Node {
     /// Asynchronously runs a new node instance, setting up the swarm driver,
     /// creating a data storage, and handling network events. Returns the
     /// created `RunningNode` which contains a `NodeEventsChannel` for listening
@@ -115,18 +89,12 @@ impl Node {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
-    pub fn run(
-        keypair: Keypair,
-        addr: SocketAddr,
-        initial_peers: Vec<Multiaddr>,
-        local: bool,
-        root_dir: PathBuf,
-    ) -> Result<RunningNode> {
+    pub fn build_and_run(self) -> Result<RunningNode> {
         // TODO: Make this key settable, and accessible via API
         let reward_key = MainSecretKey::random();
         let reward_address = reward_key.main_pubkey();
 
-        let mut wallet = LocalWallet::load_from_main_key(&root_dir, reward_key)?;
+        let mut wallet = LocalWallet::load_from_main_key(&self.root_dir, reward_key)?;
         // store in case it's a fresh wallet created if none was found
         wallet.deposit_and_store_to_disk(&vec![])?;
 
@@ -137,24 +105,58 @@ impl Node {
             (metrics_registry, node_metrics)
         };
 
-        let mut network_builder = NetworkBuilder::new(keypair, local, root_dir);
-        network_builder.listen_addr(addr);
+        let mut network_builder = NetworkBuilder::new(self.keypair, self.local, self.root_dir);
+        network_builder.listen_addr(self.addr);
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_registry(metrics_registry);
+        #[cfg(feature = "open-metrics")]
+        network_builder.metrics_server_port(self.metrics_server_port);
 
-        let (network, mut network_event_receiver, swarm_driver) = network_builder.build_node()?;
+        let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
 
-        let node = Self {
+        let node = Node {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
-            initial_peers,
+            initial_peers: self.initial_peers,
             reward_address,
             #[cfg(feature = "open-metrics")]
             node_metrics,
         };
+        let running_node = RunningNode {
+            network,
+            node_events_channel,
+        };
 
-        let node_event_sender = node_events_channel.clone();
+        // Run the node
+        node.run(swarm_driver, network_event_receiver);
+        // subscribe to receive transfer notifications over gossipsub topic TRANSFER_NOTIF_TOPIC
+        #[cfg(feature = "network-royalties-notif")]
+        running_node
+            .subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())
+            .map(|()| info!("Node has been subscribed to gossipsub topic '{TRANSFER_NOTIF_TOPIC}' to receive network royalties payments notifications."))?;
+
+        Ok(running_node)
+    }
+}
+
+/// `Node` represents a single node in the distributed network. It handles
+/// network events, processes incoming requests, interacts with the data
+/// storage, and broadcasts node-related events.
+#[derive(Clone)]
+pub(crate) struct Node {
+    pub(crate) network: Network,
+    pub(crate) events_channel: NodeEventsChannel,
+    /// Peers that are dialed at startup of node.
+    initial_peers: Vec<Multiaddr>,
+    reward_address: MainPubkey,
+    #[cfg(feature = "open-metrics")]
+    pub(crate) node_metrics: NodeMetrics,
+}
+
+impl Node {
+    /// Runs the provided `SwarmDriver` and spawns a task to process for `NetworkEvents`
+    fn run(self, swarm_driver: SwarmDriver, mut network_event_receiver: Receiver<NetworkEvent>) {
         let mut rng = StdRng::from_entropy();
 
         let peers_connected = Arc::new(AtomicUsize::new(0));
@@ -175,13 +177,13 @@ impl Node {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
                             Some(event) => {
-                                let stateless_node_copy = node.clone();
+                                let stateless_node_copy = self.clone();
                                 let _handle =
                                     spawn(async move { stateless_node_copy.handle_network_event(event, peers_connected).await });
                             }
                             None => {
                                 error!("The `NetworkEvent` channel is closed");
-                                node_event_sender.broadcast(NodeEvent::ChannelClosed);
+                                self.events_channel.broadcast(NodeEvent::ChannelClosed);
                                 break;
                             }
                         }
@@ -193,7 +195,7 @@ impl Node {
                 }
 
                 if replication_time.elapsed() > inactivity_timeout {
-                    let stateless_node_copy = node.clone();
+                    let stateless_node_copy = self.clone();
 
                     let _handle = spawn(async move {
                         let closest_peers = match stateless_node_copy
@@ -225,19 +227,6 @@ impl Node {
                 }
             }
         });
-
-        let running_node = RunningNode {
-            network,
-            node_events_channel,
-        };
-
-        // subscribe to receive transfer notifications over gossipsub topic TRANSFER_NOTIF_TOPIC
-        #[cfg(feature = "network-royalties-notif")]
-        running_node
-            .subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())
-            .map(|()| info!("Node has been subscribed to gossipsub topic '{TRANSFER_NOTIF_TOPIC}' to receive network royalties payments notifications."))?;
-
-        Ok(running_node)
     }
 
     /// Calls Marker::log() to insert the marker into the log files.
@@ -408,7 +397,13 @@ impl Node {
             Query::GetStoreCost(_address) => {
                 trace!("Got GetStoreCost");
                 let payment_address = self.reward_address;
-                let store_cost = self.current_storecost().await;
+
+                let store_cost = self
+                    .network
+                    .get_local_storecost()
+                    .await
+                    .map_err(|_| ProtocolError::GetStoreCostFailed);
+
                 QueryResponse::GetStoreCost {
                     store_cost,
                     payment_address,
