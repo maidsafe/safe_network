@@ -59,13 +59,13 @@ impl WalletClient {
     pub fn get_payment_transfers(&self, address: &NetworkAddress) -> WalletResult<Vec<Transfer>> {
         match &address.as_xorname() {
             Some(xorname) => {
-                let transfers = self.wallet.get_payment_transfers(xorname);
+                let cash_notes = self.wallet.get_payment_cash_notes(xorname);
 
                 info!(
-                    "Payment transfers retrieved for {xorname:?} from wallet: {:?}",
-                    transfers.len()
+                    "Payment cash notes retrieved from wallet: {:?}",
+                    cash_notes.len()
                 );
-                Ok(transfers)
+                Ok(Transfer::transfers_from_cash_notes(cash_notes)?)
             }
             None => Err(WalletError::InvalidAddressType),
         }
@@ -120,10 +120,11 @@ impl WalletClient {
     /// Returns a Vec of proofs
     pub async fn get_store_cost_at_address(
         &self,
-        address: &NetworkAddress,
+        address: NetworkAddress,
     ) -> WalletResult<Vec<(MainPubkey, NanoTokens)>> {
         self.client
-            .get_store_costs_at_address(address)
+            .network
+            .get_store_costs_from_network(address)
             .await
             .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()))
     }
@@ -136,8 +137,8 @@ impl WalletClient {
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
-        verify_store: bool,
     ) -> WalletResult<NanoTokens> {
+        let verify_store = true;
         let mut total_cost = NanoTokens::zero();
 
         let mut payment_map = BTreeMap::default();
@@ -148,7 +149,8 @@ impl WalletClient {
             let client = self.client.clone();
             tasks.spawn(async move {
                 let costs = client
-                    .get_store_costs_at_address(&content_addr)
+                    .network
+                    .get_store_costs_from_network(content_addr.clone())
                     .await
                     .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()));
 
@@ -205,6 +207,8 @@ impl WalletClient {
         all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
         verify_store: bool,
     ) -> WalletResult<NanoTokens> {
+        // TODO:
+        // Check for any existing payment CashNotes, and use them if they exist, only topping up if needs be
         let mut total_cost = NanoTokens::zero();
         for (_data, costs) in all_data_payments.iter() {
             for (_target, cost) in costs {

@@ -975,7 +975,7 @@ impl SwarmDriver {
             {
                 if let Ok(chunk) = try_deserialize_record::<Chunk>(&peer_record.record) {
                     if chunk.network_address().to_record_key() == peer_record.record.key {
-                        trace!(
+                        debug!(
                             "Early completion with the first copy of chunk {:?}",
                             chunk.name()
                         );
