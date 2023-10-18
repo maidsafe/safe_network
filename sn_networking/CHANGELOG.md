@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.35](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.34...sn_networking-v0.8.35) - 2023-10-18
+
+### Other
+- logging a node's representitive record_key address
+
 ## [0.8.34](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.33...sn_networking-v0.8.34) - 2023-10-18
 
 ### Other
