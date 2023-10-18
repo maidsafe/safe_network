@@ -125,6 +125,12 @@ struct Opt {
     /// When this flag is set, we will not filter out local addresses that we observe.
     #[clap(long)]
     local: bool,
+
+    /// Specify the port to start the OpenMetrics Server in.
+    ///
+    /// The special value `0` will cause the OS to assign a random port.
+    #[clap(long, default_value_t = 0)]
+    metrics_server_port: u16,
 }
 
 #[derive(Debug)]
