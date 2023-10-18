@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697631454116,
+  "lastUpdate": 1697638149986,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "31c4e717fa22d96a1956fc48e83aa990739ce6c8",
-          "message": "ci: fix escaping on benchmark prs",
-          "timestamp": "2023-06-19T13:54:13+09:00",
-          "tree_id": "47aacf3288cc89b4a6160c58a6c3aedb556ae590",
-          "url": "https://github.com/maidsafe/safe_network/commit/31c4e717fa22d96a1956fc48e83aa990739ce6c8"
-        },
-        "date": 1687151490105,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5436252522185475,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 2.88777892701517,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11539,6 +11505,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 18.234459138883583,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "1188fba93877f61405bac9ad736c15e77b323b13",
+          "message": "test: retry and verify reg upload during reward test",
+          "timestamp": "2023-10-18T15:44:49+02:00",
+          "tree_id": "ecbaad4545da41cfb2129deb376f41fd4bec0542",
+          "url": "https://github.com/maidsafe/safe_network/commit/1188fba93877f61405bac9ad736c15e77b323b13"
+        },
+        "date": 1697638146895,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11501388905021344,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.61645064550215,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 19.93531376522122,
             "unit": "MiB/s"
           }
         ]
