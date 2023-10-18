@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.94.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.93.18...sn_client-v0.94.0) - 2023-10-18
+
+### Added
+- *(client)* verify register sync, and repay if not stored on all nodes
+- *(client)* verify register uploads and retry and repay if failed
+
+### Other
+- Revert "feat: keep transfers in mem instead of mem and i/o heavy cashnotes"
+- *(client)* always validate storage payments
+- repay for data in node rewards tests
+- *(client)* remove price tolerance at the client
+
 ## [0.93.18](https://github.com/maidsafe/safe_network/compare/sn_client-v0.93.17...sn_client-v0.93.18) - 2023-10-18
 
 ### Added

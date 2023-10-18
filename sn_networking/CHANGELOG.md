@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.34](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.33...sn_networking-v0.8.34) - 2023-10-18
+
+### Other
+- repay for data in node rewards tests
+
 ## [0.8.33](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.32...sn_networking-v0.8.33) - 2023-10-18
 
 ### Other

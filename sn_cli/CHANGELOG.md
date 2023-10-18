@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.84.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.52...sn_cli-v0.84.0) - 2023-10-18
+
+### Added
+- *(client)* verify register uploads and retry and repay if failed
+
+### Other
+- *(client)* always validate storage payments
+- repay for data in node rewards tests
+
 ## [0.83.52](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.83.51...sn_cli-v0.83.52) - 2023-10-18
 
 ### Other

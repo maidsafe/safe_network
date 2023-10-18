@@ -1722,6 +1722,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.94.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.93.8...sn_node-v0.94.0) - 2023-10-18
+
+### Added
+- *(client)* verify register uploads and retry and repay if failed
+
+### Fixed
+- *(node)* ensure we bank any money sent to us as payment
+
+### Other
+- update verify_data_location to use the test pay for chunks only
+- *(node)* ignore potentially irrelevant test
+- *(client)* always validate storage payments
+- update churn test to retry puts if price changes
+- fixup chunk_fail no payment test.
+- repay for data in node rewards tests
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
