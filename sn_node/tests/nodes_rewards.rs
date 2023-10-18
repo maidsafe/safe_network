@@ -141,7 +141,7 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let handle = spawn_transfer_notifs_listener("https://127.0.0.1:12001".to_string());
 
     let _register = client
-        .create_and_pay_for_register(register_addr, &mut wallet_client, false)
+        .create_and_pay_for_register(register_addr, &mut wallet_client, true)
         .await?;
     println!("Random Register created");
 
