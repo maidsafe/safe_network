@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697639061788,
+  "lastUpdate": 1697642872089,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ccc4cea83798d4db399c89e70c3880ad8653aa12",
-          "message": "fix: ci chart generation using non-linux cmd",
-          "timestamp": "2023-06-19T14:28:54+09:00",
-          "tree_id": "88bef75649cc4dd225bfbcc42ffc1fa70d1f0127",
-          "url": "https://github.com/maidsafe/safe_network/commit/ccc4cea83798d4db399c89e70c3880ad8653aa12"
-        },
-        "date": 1687153483927,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5929951380245495,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.1350951604772725,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11544,6 +11510,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 19.93531376522122,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "d7124b366003c7a043b1d63b2ddf10fb51a1ecbe",
+          "message": "feat: forced replication after fixed interval",
+          "timestamp": "2023-10-18T13:47:06Z",
+          "tree_id": "668197e34ccc0995eb22f8fc201c0cafa1986385",
+          "url": "https://github.com/maidsafe/safe_network/commit/d7124b366003c7a043b1d63b2ddf10fb51a1ecbe"
+        },
+        "date": 1697642870212,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11529943263939157,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6603597257430303,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 17.497416483228793,
             "unit": "MiB/s"
           }
         ]
