@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::Node;
+use crate::node::Node;
 use crate::{error::Result, log_markers::Marker};
 use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
