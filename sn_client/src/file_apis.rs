@@ -189,22 +189,16 @@ impl Files {
     /// Pay for a given set of chunks.
     ///
     /// Returns the cost and the resulting new balance of the local wallet.
-    pub async fn pay_for_chunks(
-        &self,
-        chunks: Vec<XorName>,
-        verify_store: bool,
-    ) -> Result<(NanoTokens, NanoTokens)> {
+    pub async fn pay_for_chunks(&self, chunks: Vec<XorName>) -> Result<(NanoTokens, NanoTokens)> {
         let mut wallet_client = self.wallet()?;
         info!("Paying for and uploading {:?} chunks", chunks.len());
 
-        let cost = wallet_client
-            .pay_for_storage(
-                chunks.iter().map(|name| {
+        let cost =
+            wallet_client
+                .pay_for_storage(chunks.iter().map(|name| {
                     sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
-                }),
-                verify_store,
-            )
-            .await?;
+                }))
+                .await?;
 
         wallet_client.store_local_wallet()?;
         let new_balance = wallet_client.balance();
@@ -296,7 +290,6 @@ impl Files {
                 chunks
                     .iter()
                     .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
-                true,
             )
             .await
             .expect("Failed to pay for storage for new file at {file_addr:?}");
@@ -317,12 +310,9 @@ impl Files {
             // Now we pay again or top up, depending on the new current store cost is
             let new_cost = self
                 .wallet()?
-                .pay_for_storage(
-                    failed_chunks.iter().map(|(addr, _path)| {
-                        sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*addr))
-                    }),
-                    true,
-                )
+                .pay_for_storage(failed_chunks.iter().map(|(addr, _path)| {
+                    sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*addr))
+                }))
                 .await?;
 
             cost = cost.checked_add(new_cost).ok_or(Error::Transfers(

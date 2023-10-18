@@ -137,8 +137,8 @@ impl WalletClient {
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
-        verify_store: bool,
     ) -> WalletResult<NanoTokens> {
+        let verify_store = true;
         let mut total_cost = NanoTokens::zero();
 
         let mut payment_map = BTreeMap::default();

@@ -50,7 +50,7 @@ async fn storage_payment_succeeds() -> Result<()> {
     );
 
     let _cost = wallet_client
-        .pay_for_storage(random_content_addrs.clone().into_iter(), true)
+        .pay_for_storage(random_content_addrs.clone().into_iter())
         .await?;
 
     println!("Verifying balance has been paid from the wallet...");
@@ -90,7 +90,6 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
                 .into_iter()
                 .take(subset_len)
                 .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(name))),
-            true,
         )
         .await?;
 
@@ -131,10 +130,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     let subset_len = random_content_addrs.len() / 3;
     println!("Paying for {subset_len} random addresses...",);
     let storage_cost = wallet_client
-        .pay_for_storage(
-            random_content_addrs.clone().into_iter().take(subset_len),
-            true,
-        )
+        .pay_for_storage(random_content_addrs.clone().into_iter().take(subset_len))
         .await?;
 
     // check we've paid only for the subset of addresses, 1 nano per addr
@@ -154,7 +150,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     // now let's request to pay for all addresses, even that we've already paid for a subset of them
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
     let storage_cost = wallet_client
-        .pay_for_storage(random_content_addrs.clone().into_iter(), false)
+        .pay_for_storage(random_content_addrs.clone().into_iter())
         .await?;
 
     // check we've paid only for addresses we haven't previously paid for, 1 nano per addr
@@ -198,7 +194,6 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
             chunks
                 .iter()
                 .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
-            true,
         )
         .await?;
 
@@ -288,7 +283,7 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
     let net_addr = NetworkAddress::from_register_address(address);
 
     let _cost = wallet_client
-        .pay_for_storage(std::iter::once(net_addr), true)
+        .pay_for_storage(std::iter::once(net_addr))
         .await?;
 
     let (mut register, _cost) = client

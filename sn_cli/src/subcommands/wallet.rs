@@ -158,8 +158,7 @@ pub(crate) async fn wallet_cmds(
                 .map(|(n, _)| *n)
                 .collect();
 
-            // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
-            file_api.pay_for_chunks(all_chunks, verify_store).await?;
+            file_api.pay_for_chunks(all_chunks).await?;
         }
         cmd => {
             return Err(eyre!(
