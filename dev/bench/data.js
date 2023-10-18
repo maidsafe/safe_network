@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697643931566,
+  "lastUpdate": 1697646497534,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "93f9b3e4019f6acd31ca096c672f72a9f08c3ee6",
-          "message": "fix: unit for client chart",
-          "timestamp": "2023-06-19T15:19:57+09:00",
-          "tree_id": "aec68c8f6a2176adf213840249ac5c6726d1e61e",
-          "url": "https://github.com/maidsafe/safe_network/commit/93f9b3e4019f6acd31ca096c672f72a9f08c3ee6"
-        },
-        "date": 1687156543530,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5834937720422131,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.078326451029672,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11549,6 +11515,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 17.497416483228793,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d45112b5cf399e74055f2366d4dde10eeeb6d018",
+          "message": "chore: logging a node's representitive record_key address",
+          "timestamp": "2023-10-18T18:04:56+02:00",
+          "tree_id": "ab1a0a4a9aa946a6b517e87d630f37f9c0031042",
+          "url": "https://github.com/maidsafe/safe_network/commit/d45112b5cf399e74055f2366d4dde10eeeb6d018"
+        },
+        "date": 1697646494694,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11439258137921177,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6624119334083823,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 19.29391314260621,
             "unit": "MiB/s"
           }
         ]
