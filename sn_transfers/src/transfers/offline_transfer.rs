@@ -8,7 +8,7 @@
 
 use crate::{
     rng, CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens,
-    SignedSpend, Transaction, TransactionBuilder, Transfer, UniquePubkey,
+    SignedSpend, Transaction, TransactionBuilder, UniquePubkey,
 };
 use crate::{Error, Result};
 
@@ -36,7 +36,7 @@ pub struct OfflineTransfer {
     pub all_spend_requests: Vec<SignedSpend>,
 }
 
-pub type PaymentDetails = (Transfer, MainPubkey, NanoTokens);
+pub type PaymentDetails = (UniquePubkey, MainPubkey, NanoTokens);
 
 /// Xorname of data from which the content was fetched, mapping to the CashNote UniquePubkey (its id on disk)
 /// the main key for that CashNote and the value
