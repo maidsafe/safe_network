@@ -7,9 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    api::TRANSFER_NOTIF_TOPIC,
+    node::Node,
+    node::TRANSFER_NOTIF_TOPIC,
     spends::{aggregate_spends, check_parent_spends},
-    Marker, Node,
+    Marker,
 };
 use libp2p::kad::{Record, RecordKey};
 use sn_protocol::{

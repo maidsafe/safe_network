@@ -13,11 +13,11 @@ mod rpc;
 
 use clap::Parser;
 use eyre::{eyre, Error, Result};
-use libp2p::{identity::Keypair, Multiaddr, PeerId};
+use libp2p::{identity::Keypair, PeerId};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
-use sn_node::{Marker, Node, NodeEvent, NodeEventsReceiver};
+use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
 use std::{
     env,
@@ -126,6 +126,7 @@ struct Opt {
     #[clap(long)]
     local: bool,
 
+    #[cfg(feature = "open-metrics")]
     /// Specify the port to start the OpenMetrics Server in.
     ///
     /// The special value `0` will cause the OS to assign a random port.
@@ -171,20 +172,27 @@ fn main() -> Result<()> {
 
     info!("Node started with initial_peers {bootstrap_peers:?}");
 
-    // Create a tokio runtime per `start_node` attempt, this ensures
+    // Create a tokio runtime per `run_node` attempt, this ensures
     // any spawned tasks are closed before we would attempt to run
     // another process with these args.
     #[cfg(feature = "metrics")]
     rt.spawn(init_metrics(std::process::id()));
-    rt.block_on(start_node(
-        keypair,
-        node_socket_addr,
-        bootstrap_peers,
-        opt.rpc,
-        opt.local,
-        &log_output_dest,
-        root_dir,
-    ))?;
+    rt.block_on(async move {
+        let node_builder = NodeBuilder::new(
+            keypair,
+            node_socket_addr,
+            bootstrap_peers,
+            opt.local,
+            root_dir,
+        );
+        #[cfg(feature = "open-metrics")]
+        let mut node_builder = node_builder;
+        #[cfg(feature = "open-metrics")]
+        node_builder.metrics_server_port(opt.metrics_server_port);
+        run_node(node_builder, opt.rpc, &log_output_dest).await?;
+
+        Ok::<(), eyre::Report>(())
+    })?;
 
     // actively shut down the runtime
     rt.shutdown_timeout(Duration::from_secs(2));
@@ -199,19 +207,15 @@ fn main() -> Result<()> {
 }
 
 /// Start a node with the given configuration.
-async fn start_node(
-    keypair: Keypair,
-    node_socket_addr: SocketAddr,
-    peers: Vec<Multiaddr>,
+async fn run_node(
+    node_builder: NodeBuilder,
     rpc: Option<SocketAddr>,
-    local: bool,
     log_output_dest: &str,
-    root_dir: PathBuf,
 ) -> Result<()> {
     let started_instant = std::time::Instant::now();
 
     info!("Starting node ...");
-    let running_node = Node::run(keypair, node_socket_addr, peers, local, root_dir)?;
+    let running_node = node_builder.build_and_run()?;
 
     println!(
         "
