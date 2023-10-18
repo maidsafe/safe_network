@@ -21,10 +21,9 @@ use libp2p::{
     PeerId,
 };
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Files, WalletClient};
+use sn_client::{Client, Files};
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
-use sn_protocol::{storage::ChunkAddress, NetworkAddress, PrettyPrintRecordKey};
-use sn_transfers::LocalWallet;
+use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     fs::File,
@@ -86,16 +85,10 @@ async fn verify_data_location() -> Result<()> {
     println!("Creating a client and paying wallet...");
     let paying_wallet_dir = TempDir::new()?;
 
-    let (client, paying_wallet) =
+    let (client, _paying_wallet) =
         get_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE).await?;
 
-    store_chunks(
-        client,
-        paying_wallet,
-        chunk_count,
-        paying_wallet_dir.to_path_buf(),
-    )
-    .await?;
+    store_chunks(client, chunk_count, paying_wallet_dir.to_path_buf()).await?;
 
     // set of all the node indexes that stores a record key
     let record_holders = get_records_and_holders().await?;
@@ -302,15 +295,9 @@ async fn get_all_peer_ids() -> Result<Vec<PeerId>> {
 }
 
 // Generate random Chunks and store them to the Network
-async fn store_chunks(
-    client: Client,
-    paying_wallet: LocalWallet,
-    chunk_count: usize,
-    wallet_dir: PathBuf,
-) -> Result<()> {
+async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -> Result<()> {
     let start = Instant::now();
     let mut rng = OsRng;
-    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
     let file_api = Files::new(client, wallet_dir);
 
     let mut uploaded_chunks_count = 0;
@@ -334,21 +321,6 @@ async fn store_chunks(
 
         println!(
             "Paying storage for ({}) new Chunk/s of file ({} bytes) at {file_addr:?}",
-            chunks.len(),
-            random_bytes.len()
-        );
-
-        let _cost = wallet_client
-            .pay_for_storage(
-                chunks
-                    .iter()
-                    .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
-            )
-            .await
-            .expect("Failed to pay for storage for new file at {file_addr:?}");
-
-        println!(
-            "Storing ({}) Chunk/s of file ({} bytes) at {file_addr:?}",
             chunks.len(),
             random_bytes.len()
         );
