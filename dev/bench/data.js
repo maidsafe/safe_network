@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697707067788,
+  "lastUpdate": 1697717831478,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d6223ee3453a70c26e74fbdb948d1fb6beb65fa4",
-          "message": "fix(CI): correct client mem usage in the graph",
-          "timestamp": "2023-06-19T22:10:48+09:00",
-          "tree_id": "d889ce0fd14dee415c3dd3ca279e96c67a5e9803",
-          "url": "https://github.com/maidsafe/safe_network/commit/d6223ee3453a70c26e74fbdb948d1fb6beb65fa4"
-        },
-        "date": 1687181326348,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5418745092670142,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 2.9514069795635898,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11559,6 +11525,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 18.815256291508945,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0a4c7ef39d357631d2db5c3393ffa99342aae3ce",
+          "message": "fix(network): emit NetworkEvent when we publish a gossipsub msg\n- should fix the reward test failures\n- they were cuased because the `genesis_node` that we used to monitor\n  the gossipsub messages from was the one who published the message\n- Hence it would not emit and `NodeEvent` that we were listening for",
+          "timestamp": "2023-10-19T13:53:16+02:00",
+          "tree_id": "76a89d181f7f0f8947500a629d65a47f406e069e",
+          "url": "https://github.com/maidsafe/safe_network/commit/0a4c7ef39d357631d2db5c3393ffa99342aae3ce"
+        },
+        "date": 1697717828951,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11453154321936201,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.578754823471092,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 18.788275330291214,
             "unit": "MiB/s"
           }
         ]
