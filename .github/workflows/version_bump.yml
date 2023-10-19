@@ -26,13 +26,13 @@ jobs:
           token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
       - name: Get the SHA of the last release commit
         id: get-sha
-        run: echo "::set-output name=sha::$(git log --grep='chore(release):' -n 1 --pretty=format:"%H")"
+        run: echo "sha=$(git log --grep='chore(release):' -n 1 --pretty=format:"%H")" >> $GITHUB_ENV
       - name: Wait for release workflow to complete
         uses: fountainhead/action-wait-for-check@v1.0.0
-        id: wait-for-release
+        id: wait-for-releasegit 
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ steps.get-sha.outputs.sha }}
+          ref: ${{ env.sha }}
           checkName: release
           timeoutSeconds: 3600 # 1 hour
 
