@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697722209249,
+  "lastUpdate": 1697724682571,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d85556c948073a533ae7783af1d061f51c5ea2c1",
-          "message": "ci: readd nohup for node.\n\nUps, That was removed thinking it was the client. That was wrong, and this would now hold up\nci",
-          "timestamp": "2023-06-20T11:10:56+09:00",
-          "tree_id": "55d48324cf1a850d368030c1c2e14d3da5adda60",
-          "url": "https://github.com/maidsafe/safe_network/commit/d85556c948073a533ae7783af1d061f51c5ea2c1"
-        },
-        "date": 1687228013881,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.595654015898579,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.0563393995717476,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11569,6 +11535,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 18.20841639406196,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6d4e07557132ddcc0ca650011e58f0b2d2e6c130",
+          "message": "ci: prevent concurrent version bumps, and await on release before we complete the bump\n\nThe git commit is pushed earlier, and should trigger a release run which we then check for",
+          "timestamp": "2023-10-19T15:50:40+02:00",
+          "tree_id": "44fc05f382e590734e6846f3c9536aa4cf53411d",
+          "url": "https://github.com/maidsafe/safe_network/commit/6d4e07557132ddcc0ca650011e58f0b2d2e6c130"
+        },
+        "date": 1697724680467,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11570323827396248,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6772567786031497,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 19.265251446031616,
             "unit": "MiB/s"
           }
         ]
