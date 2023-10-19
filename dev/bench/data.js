@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697647541627,
+  "lastUpdate": 1697705912652,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f81acd200128e520dbe643d051da39211b32dc22",
-          "message": "ci: fix missing mb->kb change for client mem measurements",
-          "timestamp": "2023-06-19T20:48:01+09:00",
-          "tree_id": "40192d2d04a315192f3f1bc21ac6b5b431a49c59",
-          "url": "https://github.com/maidsafe/safe_network/commit/f81acd200128e520dbe643d051da39211b32dc22"
-        },
-        "date": 1687176589501,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5829100360585217,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.1337843815001385,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11554,6 +11520,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 19.29391314260621,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e050c49847d189cab94af558ff4e4a0978479b6a",
+          "message": "fix(test): enable logging for gossip tests",
+          "timestamp": "2023-10-19T10:33:37+02:00",
+          "tree_id": "7759e1ffbf43895ace2180a4f539cc37ce6d9a80",
+          "url": "https://github.com/maidsafe/safe_network/commit/e050c49847d189cab94af558ff4e4a0978479b6a"
+        },
+        "date": 1697705909843,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11406512407598571,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5658773943105402,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 18.815256291508945,
             "unit": "MiB/s"
           }
         ]
