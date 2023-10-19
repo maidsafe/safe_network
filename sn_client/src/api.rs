@@ -218,7 +218,8 @@ impl Client {
                     }
                 }
             }
-            NetworkEvent::GossipsubMsg { topic, msg } => {
+            NetworkEvent::GossipsubMsgReceived { topic, msg }
+            | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
                 self.events_channel
                     .broadcast(ClientEvent::GossipsubMsg { topic, msg })?;
             }

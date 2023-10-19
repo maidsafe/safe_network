@@ -407,6 +407,12 @@ impl SwarmDriver {
                     .unsubscribe(&topic_id)?;
             }
             SwarmCmd::GossipsubPublish { topic_id, msg } => {
+                // If we publish a Gossipsub message, we might not receive the same message on our side.
+                // Hence push an event to notify that we've published a message
+                self.send_event(NetworkEvent::GossipsubMsgPublished {
+                    topic: topic_id.clone(),
+                    msg: msg.clone(),
+                });
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
                 self.swarm
                     .behaviour_mut()

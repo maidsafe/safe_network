@@ -453,6 +453,7 @@ impl Node {
         // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for each cash-note received.
         match transfer_for_us.to_hex() {
             Ok(transfer_hex) => {
+                trace!("Publishing a gossipsub msgs for transfer_for_us: {transfer_for_us:?}");
                 let topic = TRANSFER_NOTIF_TOPIC.to_string();
                 for cash_note in cash_notes.iter() {
                     let pk = cash_note.unique_pubkey();
