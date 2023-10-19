@@ -20,6 +20,10 @@ jobs:
       !startsWith(github.event.head_commit.message, 'chore(release):')
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: "0"
+          token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
       - name: Get the SHA of the last release commit
         id: get-sha
         run: echo "::set-output name=sha::$(git log --grep='chore(release):' -n 1 --pretty=format:"%H")"
@@ -32,10 +36,6 @@ jobs:
           checkName: release
           timeoutSeconds: 3600 # 1 hour
 
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: "0"
-          token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
