@@ -138,10 +138,17 @@ pub enum NetworkEvent {
     /// Report failed write to cleanup record store
     FailedToWrite(RecordKey),
     /// Gossipsub message received
-    GossipsubMsg {
+    GossipsubMsgReceived {
         /// Topic the message was published on
         topic: String,
         /// The raw bytes of the received message
+        msg: Vec<u8>,
+    },
+    /// The Gossipsub message that we published
+    GossipsubMsgPublished {
+        /// Topic the message was published on
+        topic: String,
+        /// The raw bytes of the sent message
         msg: Vec<u8>,
     },
 }
@@ -183,8 +190,11 @@ impl Debug for NetworkEvent {
                 let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
                 write!(f, "NetworkEvent::FailedToWrite({pretty_key:?})")
             }
-            NetworkEvent::GossipsubMsg { topic, .. } => {
-                write!(f, "NetworkEvent::GossipsubMsg({topic})")
+            NetworkEvent::GossipsubMsgReceived { topic, .. } => {
+                write!(f, "NetworkEvent::GossipsubMsgReceived({topic})")
+            }
+            NetworkEvent::GossipsubMsgPublished { topic, .. } => {
+                write!(f, "NetworkEvent::GossipsubMsgPublished({topic})")
             }
         }
     }
@@ -326,7 +336,7 @@ impl SwarmDriver {
                     libp2p::gossipsub::Event::Message { message, .. } => {
                         let topic = message.topic.into_string();
                         let msg = message.data;
-                        self.send_event(NetworkEvent::GossipsubMsg { topic, msg });
+                        self.send_event(NetworkEvent::GossipsubMsgReceived { topic, msg });
                     }
                     other => trace!("Gossipsub Event has been ignored: {other:?}"),
                 }
