@@ -388,8 +388,7 @@ impl Node {
         Ok(CmdOk::StoredSuccessfully)
     }
 
-    /// Gets CashNotes out of a Payment, this includes network verifications of the Transfer.
-    /// Return the CashNotes corresponding to our wallet and the trasfers corresponding to network royalties payment.
+    /// Gets CashNotes out of a Payment, this includes network verifications of the Transfers
     async fn cash_notes_from_payment(
         &self,
         payment: &Vec<Transfer>,
@@ -413,7 +412,7 @@ impl Node {
                     // transfer invalid
                     Err(e) => return Err(e),
                     // transfer ok
-                    Ok(cns) => cash_notes = cns,
+                    Ok(cns) => cash_notes.extend(cns),
                 },
                 Transfer::NetworkRoyalties(cashnote_redemptions) => {
                     if let Ok(cash_notes) = self
