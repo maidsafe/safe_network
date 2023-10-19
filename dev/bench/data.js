@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697724682571,
+  "lastUpdate": 1697725383478,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f356c09f241fee248d154e3573d84382a71e5f61",
-          "message": "fix: missing quote",
-          "timestamp": "2023-06-20T11:29:33+09:00",
-          "tree_id": "a8b5feddff665055ef151e298211c7c8d0f4ab11",
-          "url": "https://github.com/maidsafe/safe_network/commit/f356c09f241fee248d154e3573d84382a71e5f61"
-        },
-        "date": 1687229216472,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5600705757720061,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.022620648997998,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11574,6 +11540,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 19.265251446031616,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "aa93ce92962cd1516bec69dc5f03291665991f81",
+          "message": "ci: wait on the specific last bumped version to release, not this commit",
+          "timestamp": "2023-10-19T16:02:13+02:00",
+          "tree_id": "0bac2a42295738033d6e0a1a21f8e062825b67a3",
+          "url": "https://github.com/maidsafe/safe_network/commit/aa93ce92962cd1516bec69dc5f03291665991f81"
+        },
+        "date": 1697725381565,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11552992118163902,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6899138944444981,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 19.521340302225372,
             "unit": "MiB/s"
           }
         ]
