@@ -456,7 +456,14 @@ impl Node {
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone().into_owned())
             .await?;
 
-        let received_fee = total_cash_notes_amount(&cash_notes, pretty_key.clone().into_owned())?;
+        let received_fee_to_our_node =
+            total_cash_notes_amount(&cash_notes, pretty_key.clone().into_owned())?;
+        let received_royalties =
+            total_cash_notes_amount(&cash_notes, pretty_key.clone().into_owned())?;
+
+        let received_fee = received_fee_to_our_node
+            .checked_add(received_royalties)
+            .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
         info!(
             "{} cash notes (for a total of {received_fee:?}) are for us for {pretty_key}",
             cash_notes.len()
