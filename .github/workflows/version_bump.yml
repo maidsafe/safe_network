@@ -1,8 +1,8 @@
 name: Version Bump
 
-# prevent concurrent version bumps + releases from running at the same time
+# prevent concurrent version bumps
 concurrency:
-  group: "version-bump-release"
+  group: "version-bump"
 
 on:
   push:
@@ -20,6 +20,14 @@ jobs:
       !startsWith(github.event.head_commit.message, 'chore(release):')
     runs-on: ubuntu-22.04
     steps:
+      - name: Wait for release workflow to complete
+        uses: fountainhead/action-wait-for-check@v1.0.0
+        id: wait-for-release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: release
+          timeoutSeconds: 3600 # 1 hour
+
       - uses: actions/checkout@v3
         with:
           fetch-depth: "0"
