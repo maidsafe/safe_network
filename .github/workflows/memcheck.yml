@@ -285,3 +285,11 @@ jobs:
           path: /home/runner/.local/share/safe/test_faucet
         continue-on-error: true
         if: always()
+
+      - name: Upload bootstrap node logging folder
+        uses: actions/upload-artifact@main
+        with:
+          name: bootstrap_node_folder
+          path: /home/runner/.local/share/safe/bootstrap_node
+        continue-on-error: true
+        if: always()
