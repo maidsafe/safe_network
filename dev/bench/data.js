@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697725383478,
+  "lastUpdate": 1697725551291,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "129f4ca8e2831f46dc42ef1507e5afcd5cdef7e0",
-          "message": "fix: update the safe files upload cmd",
-          "timestamp": "2023-06-20T12:04:43+09:00",
-          "tree_id": "acf16367d20038f0eadabe7822d075017b342284",
-          "url": "https://github.com/maidsafe/safe_network/commit/129f4ca8e2831f46dc42ef1507e5afcd5cdef7e0"
-        },
-        "date": 1687231258785,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5709446625100263,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.0048798848448857,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11579,6 +11545,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 19.521340302225372,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "95ab36554707cfe7bb00c3b04efc699e898f7c48",
+          "message": "ci: find the sha before the wait step",
+          "timestamp": "2023-10-19T16:04:33+02:00",
+          "tree_id": "7c5b55da24b4f6e23a9d95e6c831c24878403b28",
+          "url": "https://github.com/maidsafe/safe_network/commit/95ab36554707cfe7bb00c3b04efc699e898f7c48"
+        },
+        "date": 1697725549467,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11572894414053637,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.647947954091378,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 20.023284043415476,
             "unit": "MiB/s"
           }
         ]
