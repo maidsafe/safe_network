@@ -9,12 +9,12 @@
 use crate::node::Node;
 use crate::{error::Result, log_markers::Marker};
 use libp2p::{
-    kad::{Record, RecordKey, K_VALUE},
+    kad::{RecordKey, K_VALUE},
     PeerId,
 };
 use sn_networking::{sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE};
 use sn_protocol::{
-    messages::{Cmd, Query, QueryResponse, Request, Response},
+    messages::{Cmd, Request},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::collections::{BTreeMap, HashSet};
@@ -167,51 +167,22 @@ impl Node {
         &self,
         keys_to_fetch: Vec<(PeerId, RecordKey)>,
     ) -> Result<()> {
-        for (holder, key) in keys_to_fetch {
+        for (_holder, key) in keys_to_fetch {
             let node = self.clone();
-            let requester = NetworkAddress::from_peer(self.network.peer_id);
             let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
                 let pretty_key = PrettyPrintRecordKey::from(key.clone());
-                trace!("Fetching record {pretty_key:?} from node {holder:?}");
-                let req = Request::Query(Query::GetReplicatedRecord {
-                    requester,
-                    key: NetworkAddress::from_record_key(key.clone()),
-                });
-                let record_opt = if let Ok(resp) = node.network.send_request(req, holder).await {
-                    match resp {
-                        Response::Query(QueryResponse::GetReplicatedRecord(result)) => match result
-                        {
-                            Ok((_holder, record_content)) => Some(record_content),
-                            Err(err) => {
-                                trace!("Failed fetch record {pretty_key:?} from node {holder:?}, with error {err:?}");
-                                None
-                            }
-                        },
-                        other => {
-                            trace!("Cannot fetch record {pretty_key:?} from node {holder:?}, with response {other:?}");
-                            None
-                        }
-                    }
-                } else {
-                    None
-                };
+                trace!("Replication: Fetching record {pretty_key:?} from network ");
 
-                let record = if let Some(record_content) = record_opt {
-                    Record::new(key, record_content)
-                } else {
-                    trace!(
-                        "Can not fetch record {pretty_key:?} from node {holder:?}, fetching from the network"
-                    );
-                    node.network
-                        .get_record_from_network(
-                            key,
-                            None,
-                            GetQuorum::Majority,
-                            false,
-                            Default::default(),
-                        )
-                        .await?
-                };
+                let record = node
+                    .network
+                    .get_record_from_network(
+                        key,
+                        None,
+                        GetQuorum::Majority,
+                        false,
+                        Default::default(),
+                    )
+                    .await?;
 
                 trace!(
                     "Got Replication Record {pretty_key:?} from network, validating and storing it"
