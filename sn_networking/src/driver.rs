@@ -32,7 +32,7 @@ use libp2p::mdns;
 use libp2p::{
     autonat,
     identity::Keypair,
-    kad::{Kademlia, KademliaCaching, KademliaConfig, QueryId, Record, RecordKey},
+    kad::{KBucketDistance, Kademlia, KademliaCaching, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{
@@ -51,7 +51,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintKBucketKey,
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
@@ -73,6 +73,7 @@ type PendingGetRecord = HashMap<
         ExpectedHoldersList,
     ),
 >;
+type CacheCandidate = BTreeMap<KBucketDistance, PeerId>;
 
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
@@ -505,7 +506,8 @@ pub struct SwarmDriver {
     pub(crate) pending_get_closest_peers: PendingGetClosest,
     pub(crate) pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
     pub(crate) pending_get_record: PendingGetRecord,
-    pub(crate) pending_get_record_for_cache_candidates: HashMap<QueryId, RecordKey>,
+    pub(crate) pending_get_record_for_cache_candidates:
+        HashMap<QueryId, (RecordKey, CacheCandidate)>,
     /// A list of the most recent peers we have dialed ourselves.
     pub(crate) dialed_peers: CircularVec<PeerId>,
 }

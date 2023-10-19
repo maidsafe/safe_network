@@ -201,7 +201,7 @@ impl SwarmDriver {
                 }
                 if self
                     .pending_get_record_for_cache_candidates
-                    .insert(query_id, key)
+                    .insert(query_id, (key, Default::default()))
                     .is_some()
                 {
                     warn!("An existing pending_get_record_for_cache_candidates task {query_id:?} got replaced");

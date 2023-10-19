@@ -21,7 +21,7 @@ use libp2p::{
     autonat::{self, NatStatus},
     kad::{
         GetClosestPeersError, GetRecordError, GetRecordOk, InboundRequest, KademliaEvent,
-        PeerRecord, QueryId, QueryResult, Record, RecordKey, K_VALUE,
+        PeerRecord, QueryId, QueryInfo, QueryResult, Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
@@ -620,6 +620,24 @@ impl SwarmDriver {
                     peer_record.peer
                 );
                 self.accumulate_get_record_ok(id, peer_record, step.count);
+
+                // accumulate cache candidates
+                if let Some(query) = self.swarm.behaviour_mut().kademlia.query(&id) {
+                    if let QueryInfo::GetRecord {
+                        cache_candidates, ..
+                    } = query.info()
+                    {
+                        // append the cache_candidate
+                        self.pending_get_record_for_cache_candidates
+                            .entry(id)
+                            .and_modify(|(_key, stored_cache_candidates)| {
+                                stored_cache_candidates.extend(cache_candidates)
+                            });
+                    }
+                } else {
+                    // since step!=last, the query should still live within kademlia behaviour and can be accessed.
+                    warn!("Could not find {id:?} to accumulate cache_candidates");
+                }
             }
             KademliaEvent::OutboundQueryProgressed {
                 id,
@@ -664,7 +682,9 @@ impl SwarmDriver {
                     }
                 }
 
-                if let Some(record_key) = self.pending_get_record_for_cache_candidates.remove(&id) {
+                if let Some((record_key, mut stored_cache_candidates)) =
+                    self.pending_get_record_for_cache_candidates.remove(&id)
+                {
                     // log the pending_get_record* stats; get_record_for_cache should not explode and should always be
                     // greater or equal to get_record
                     debug!(
@@ -675,10 +695,11 @@ impl SwarmDriver {
                         "pending_get_record_for_cache_candidates has got {} entries",
                         self.pending_get_record_for_cache_candidates.len()
                     );
-                    let cache_candidates = cache_candidates.into_values().collect();
+                    // combine with the accumulated cache candidates
+                    stored_cache_candidates.extend(cache_candidates);
                     self.send_event(NetworkEvent::PotentialRecordHolders {
                         key: record_key,
-                        holders: cache_candidates,
+                        holders: stored_cache_candidates.into_values().collect(),
                     })
                 } else {
                     warn!("A query has been already removed from pending_get_record_for_cache_candidates {id:?}");
@@ -773,6 +794,28 @@ impl SwarmDriver {
                     sender
                         .send(Err(Error::RecordNotFound))
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
+                }
+
+                // return the accumulated cache candidates, if any
+                if let Some((record_key, stored_cache_candidates)) =
+                    self.pending_get_record_for_cache_candidates.remove(&id)
+                {
+                    // log the pending_get_record* stats; get_record_for_cache should not explode and should always be
+                    // greater or equal to get_record
+                    debug!(
+                        "pending_get_record has got {} entries",
+                        self.pending_get_record.len()
+                    );
+                    debug!(
+                        "pending_get_record_for_cache_candidates has got {} entries",
+                        self.pending_get_record_for_cache_candidates.len()
+                    );
+                    self.send_event(NetworkEvent::PotentialRecordHolders {
+                        key: record_key,
+                        holders: stored_cache_candidates.into_values().collect(),
+                    })
+                } else {
+                    warn!("A query has been already removed from pending_get_record_for_cache_candidates {id:?}");
                 }
             }
             KademliaEvent::OutboundQueryProgressed {
