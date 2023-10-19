@@ -10,11 +10,14 @@ use crate::error::{Error, Result};
 
 use bls::{PublicKey, PK_SIZE};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, hash::Hash};
+use std::{
+    fmt::{Debug, Display},
+    hash::Hash,
+};
 use xor_name::{XorName, XOR_NAME_LEN};
 
 /// Address of a Register on the SAFE Network
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub struct RegisterAddress {
     /// User chosen meta, can be anything, the register's name on the network will be the hash of this meta and the owner
     pub(crate) meta: XorName,
@@ -24,7 +27,19 @@ pub struct RegisterAddress {
 
 impl Display for RegisterAddress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_hex())
+        write!(f, "{}({:?})", self.to_hex(), self.xorname())
+    }
+}
+
+impl Debug for RegisterAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "RegisterAddress({:?}) {{ meta: {:?}, owner: {:?} }}",
+            self.xorname(),
+            self.meta,
+            self.owner
+        )
     }
 }
 
