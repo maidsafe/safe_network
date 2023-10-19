@@ -54,6 +54,8 @@ pub enum Error {
     SpendParentTxInvalid(String),
     #[error("CashNote Spend is empty")]
     SpendIsEmpty,
+    #[error("Total tokens exceeds what is possible on the network.")]
+    PaymentExceedsTotalTokens,
 
     // ---------- payment errors
     /// Failed to get the storecost from kademlia store
