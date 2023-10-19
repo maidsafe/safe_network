@@ -27,13 +27,17 @@ jobs:
       - name: Get the SHA of the last release commit
         id: get-sha
         run: echo "sha=$(git log --grep='chore(release):' -n 1 --pretty=format:"%H")" >> $GITHUB_ENV
+
       - name: Wait for release workflow to complete
-        uses: explorium-ai/wait-github-status-action@v1.0.2
+        uses: mostafahussein/workflow-watcher@v1.0.0
+        if: ${{ github.ref != 'refs/heads/develop' }}
         with:
-          name: release
-          token: ${{ secrets.GITHUB_TOKEN }}
-          sha: ${{ env.sha }}
-      
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          repository-name: ${{ github.repository }}
+          repository-owner: ${{ github.repository_owner }}
+          head-sha: ${{ env.sha }}
+          base-branch: "main"
+          polling-interval: 60
 
       - uses: actions-rs/toolchain@v1
         with:
