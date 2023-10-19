@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.36](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.35...sn_networking-v0.8.36) - 2023-10-19
+
+### Fixed
+- *(network)* emit NetworkEvent when we publish a gossipsub msg
+
 ## [0.8.35](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.34...sn_networking-v0.8.35) - 2023-10-18
 
 ### Other

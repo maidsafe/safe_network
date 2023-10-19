@@ -1748,6 +1748,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - *(test)* enable logging for gossip tests
 
+## [0.94.3](https://github.com/maidsafe/safe_network/compare/sn_node-v0.94.2...sn_node-v0.94.3) - 2023-10-19
+
+### Fixed
+- *(network)* emit NetworkEvent when we publish a gossipsub msg
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
