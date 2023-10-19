@@ -290,26 +290,23 @@ impl Client {
     /// Tops up payments and retries if necessary and verification failed
     pub async fn create_and_pay_for_register(
         &self,
-        address: XorName,
+        meta: XorName,
         wallet_client: &mut WalletClient,
         verify_store: bool,
     ) -> Result<(ClientRegister, NanoTokens)> {
-        info!("Instantiating a new Register replica with address {address:?}");
+        info!("Instantiating a new Register replica with address {meta:?}");
         let (reg, mut total_cost) =
-            ClientRegister::create_online(self.clone(), address, wallet_client, false).await?;
+            ClientRegister::create_online(self.clone(), meta, wallet_client, false).await?;
 
-        debug!("{address:?} Created in theorryyyyy");
         let reg_address = reg.address();
         if verify_store {
-            debug!("WE SHOULD VERRRRIFYING");
             let mut stored = self.verify_register_stored(*reg_address).await.is_ok();
 
             while !stored {
                 info!("Register not completely stored on the network yet. Retrying...");
                 // this verify store call here ensures we get the record from Quorum::all
                 let (reg, top_up_cost) =
-                    ClientRegister::create_online(self.clone(), address, wallet_client, true)
-                        .await?;
+                    ClientRegister::create_online(self.clone(), meta, wallet_client, true).await?;
                 let reg_address = reg.address();
 
                 total_cost = total_cost.checked_add(top_up_cost).ok_or(Error::Transfers(
