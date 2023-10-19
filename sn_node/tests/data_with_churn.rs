@@ -400,7 +400,6 @@ fn store_chunks_task(
                 chunks.len(),
                 chunk_size
             );
-            sleep(delay).await;
 
             let chunks_len = chunks.len();
 
@@ -531,7 +530,7 @@ fn retry_query_content_task(
     wallet_dir: PathBuf,
 ) {
     let _handle = tokio::spawn(async move {
-        let delay = 2 * churn_period;
+        let delay = 5 * churn_period;
         loop {
             sleep(delay).await;
 
@@ -587,7 +586,7 @@ async fn final_retry_query_content(
                 bail!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
             } else {
                 attempts += 1;
-                let delay = 2 * churn_period;
+                let delay = 10 * churn_period;
                 println!("Delaying last check for {delay:?} ...");
                 sleep(delay).await;
                 continue;
