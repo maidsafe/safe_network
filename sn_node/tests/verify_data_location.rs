@@ -257,7 +257,7 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
                 .for_each(|(idx, peer)| println!("{} : {peer:?}", idx + 1));
             verification_attempts += 1;
             println!("Sleeping before retrying verification");
-            tokio::time::sleep(Duration::from_secs(20)).await;
+            tokio::time::sleep(Duration::from_secs(60)).await;
         } else {
             // if successful, break out of the loop
             break;
@@ -340,7 +340,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
     );
 
     // to make sure the last chunk was stored
-    tokio::time::sleep(Duration::from_secs(10)).await;
+    tokio::time::sleep(Duration::from_secs(30)).await;
 
     Ok(())
 }
