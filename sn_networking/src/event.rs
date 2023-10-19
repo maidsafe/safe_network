@@ -781,10 +781,10 @@ impl SwarmDriver {
                 step,
                 ..
             } => {
-                // here BootstrapOk::num_remaining refers to the remaining random peer IDs to query, one per
-                // bucket that still needs refreshing.
-                trace!("Kademlia Bootstrap with {id:?} progressed with {bootstrap_result:?} and step {step:?}");
                 if step.last {
+                    // here BootstrapOk::num_remaining refers to the remaining random peer IDs to query, one per
+                    // bucket that still needs refreshing.
+                    trace!("Kademlia Bootstrap with {id:?} completed with {bootstrap_result:?} and step {step:?}");
                     // inform the bootstrap process about the completion.
                     self.bootstrap.completed();
                 }
