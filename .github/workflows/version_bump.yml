@@ -20,12 +20,15 @@ jobs:
       !startsWith(github.event.head_commit.message, 'chore(release):')
     runs-on: ubuntu-22.04
     steps:
+      - name: Get the SHA of the last release commit
+        id: get-sha
+        run: echo "::set-output name=sha::$(git log --grep='chore(release):' -n 1 --pretty=format:"%H")"
       - name: Wait for release workflow to complete
         uses: fountainhead/action-wait-for-check@v1.0.0
         id: wait-for-release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: git log --grep='chore(release):' -n 1 --pretty=format:"%H"
+          ref: ${{ steps.get-sha.outputs.sha }}
           checkName: release
           timeoutSeconds: 3600 # 1 hour
 
