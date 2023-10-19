@@ -382,7 +382,7 @@ impl ClientRegister {
         Ok(self
             .client
             .network
-            .put_record(record, record_to_verify, expected_holders, Quorum::Majority)
+            .put_record(record, record_to_verify, expected_holders, Quorum::One)
             .await?)
     }
 
