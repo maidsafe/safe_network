@@ -254,6 +254,7 @@ impl Node {
                 NetworkEvent::RequestReceived { .. }
                 | NetworkEvent::UnverifiedRecord(_)
                 | NetworkEvent::FailedToWrite(_)
+                | NetworkEvent::PotentialRecordHolders { .. }
                 | NetworkEvent::ResponseReceived { .. }
                 | NetworkEvent::KeysForReplication(_) => {
                     if log_when_not_enough_peers {
@@ -346,6 +347,11 @@ impl Node {
             NetworkEvent::FailedToWrite(key) => {
                 if let Err(e) = self.network.remove_failed_local_record(key) {
                     error!("Failed to remove local record: {e:?}");
+                }
+            }
+            NetworkEvent::PotentialRecordHolders { key, holders } => {
+                if let Err(err) = self.try_replicate_to_potential_holders(key, holders).await {
+                    error!("Error while trying replicate to potential holders {err:?}");
                 }
             }
             NetworkEvent::GossipsubMsgReceived { topic, msg }

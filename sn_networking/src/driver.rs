@@ -31,7 +31,7 @@ use libp2p::mdns;
 use libp2p::{
     autonat,
     identity::Keypair,
-    kad::{Kademlia, KademliaConfig, QueryId, Record},
+    kad::{Kademlia, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{
@@ -459,6 +459,7 @@ impl NetworkBuilder {
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
             pending_get_record: Default::default(),
+            pending_get_record_for_cache_candidates: Default::default(),
             // We use 63 here, as in practice the capacity will be rounded to the nearest 2^n-1.
             // Source: https://users.rust-lang.org/t/the-best-ring-buffer-library/58489/8
             // 63 will mean at least 63 most recent peers we have dialed, which should be allow for enough time for the
@@ -498,6 +499,7 @@ pub struct SwarmDriver {
     pub(crate) pending_get_closest_peers: PendingGetClosest,
     pub(crate) pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
     pub(crate) pending_get_record: PendingGetRecord,
+    pub(crate) pending_get_record_for_cache_candidates: HashMap<QueryId, RecordKey>,
     /// A list of the most recent peers we have dialed ourselves.
     pub(crate) dialed_peers: CircularVec<PeerId>,
 }

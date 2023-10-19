@@ -186,7 +186,7 @@ impl SwarmDriver {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
 
                 if !expected_holders.is_empty() {
-                    debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(key));
+                    debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(key.clone()));
                 }
 
                 if self
@@ -197,8 +197,16 @@ impl SwarmDriver {
                     )
                     .is_some()
                 {
-                    warn!("An existing get_record task {query_id:?} got replaced");
+                    warn!("An existing pending_get_record task {query_id:?} got replaced");
                 }
+                if self
+                    .pending_get_record_for_cache_candidates
+                    .insert(query_id, key)
+                    .is_some()
+                {
+                    warn!("An existing pending_get_record_for_cache_candidates task {query_id:?} got replaced");
+                }
+
                 // Logging the status of the `pending_get_record`.
                 // We also interested in the status of `result_map` (which contains record) inside.
                 let total_records: usize = self

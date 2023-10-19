@@ -137,6 +137,11 @@ pub enum NetworkEvent {
     UnverifiedRecord(Record),
     /// Report failed write to cleanup record store
     FailedToWrite(RecordKey),
+    /// Potential holders of a specific record but does not have them currently.
+    PotentialRecordHolders {
+        key: RecordKey,
+        holders: HashSet<PeerId>,
+    },
     /// Gossipsub message received
     GossipsubMsgReceived {
         /// Topic the message was published on
@@ -189,6 +194,10 @@ impl Debug for NetworkEvent {
             NetworkEvent::FailedToWrite(record_key) => {
                 let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
                 write!(f, "NetworkEvent::FailedToWrite({pretty_key:?})")
+            }
+            NetworkEvent::PotentialRecordHolders { key, holders } => {
+                let pretty_key = PrettyPrintRecordKey::from(key.clone());
+                write!(f, "NetworkEvent::PotentialRecordHolders( key: {pretty_key:?}, holders: {holders:?})")
             }
             NetworkEvent::GossipsubMsgReceived { topic, .. } => {
                 write!(f, "NetworkEvent::GossipsubMsgReceived({topic})")
@@ -653,6 +662,26 @@ impl SwarmDriver {
                             "{log_string}, and {expected_holders:?} expected holders not responded"
                         );
                     }
+                }
+
+                if let Some(record_key) = self.pending_get_record_for_cache_candidates.remove(&id) {
+                    // log the pending_get_record* stats; get_record_for_cache should not explode and should always be
+                    // greater or equal to get_record
+                    debug!(
+                        "pending_get_record has got {} entries",
+                        self.pending_get_record.len()
+                    );
+                    debug!(
+                        "pending_get_record_for_cache_candidates has got {} entries",
+                        self.pending_get_record_for_cache_candidates.len()
+                    );
+                    let cache_candidates = cache_candidates.into_values().collect();
+                    self.send_event(NetworkEvent::PotentialRecordHolders {
+                        key: record_key,
+                        holders: cache_candidates,
+                    })
+                } else {
+                    warn!("A query has been already removed from pending_get_record_for_cache_candidates {id:?}");
                 }
             }
             KademliaEvent::OutboundQueryProgressed {

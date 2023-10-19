@@ -44,6 +44,9 @@ pub enum Marker<'a> {
     /// Replication trigger was fired
     ReplicationTriggered,
 
+    /// Replication trigger was fired for cache candidates
+    ReplicationTriggeredForPotentialHolders,
+
     /// Keys of Records we are fetching to replicate locally
     FetchingKeysForReplication {
         /// fetching_keys_len: number of keys we are fetching from network

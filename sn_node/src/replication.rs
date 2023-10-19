@@ -17,7 +17,7 @@ use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use tokio::task::JoinHandle;
 
 // To reduce the number of messages exchanged, patch max 500 replication keys into one request.
@@ -114,6 +114,46 @@ impl Node {
             }
             self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())?;
         }
+
+        Ok(())
+    }
+
+    /// These candidates were not holding the RecordKey, but they were not.
+    /// Hence send a replication request if they're within our close group.
+    pub(crate) async fn try_replicate_to_potential_holders(
+        &self,
+        key: RecordKey,
+        potential_holders: HashSet<PeerId>,
+    ) -> Result<()> {
+        // Already contains self_peer_id
+        let mut all_peers: HashSet<PeerId> = self
+            .network
+            .get_all_local_peers()
+            .await?
+            .into_iter()
+            .collect();
+
+        // Do not carry out replication if not many peers present.
+        if all_peers.len() < K_VALUE.into() {
+            trace!(
+                "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
+                all_peers.len()
+            );
+            return Ok(());
+        }
+        self.record_metrics(Marker::ReplicationTriggeredForPotentialHolders);
+
+        let our_peer_id = self.network.peer_id;
+        let our_address = NetworkAddress::from_peer(our_peer_id);
+
+        let all_records = self.network.get_all_local_record_addresses().await?;
+
+        trace!(
+            "Replication triggered for cache_candidates {potential_holders:?}, for key {:?}",
+            PrettyPrintRecordKey::from(key)
+        );
+
+        let mut replicate_to: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
 
         Ok(())
     }
