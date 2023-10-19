@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697718889300,
+  "lastUpdate": 1697721342833,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8260565a50e20365d0718492282f4196299724a7",
-          "message": "feat(CI): check client average memory usage during upload large file",
-          "timestamp": "2023-06-20T09:11:32+09:00",
-          "tree_id": "ef5d96d98b1e3cf36e327c5d44f1e066e974746a",
-          "url": "https://github.com/maidsafe/safe_network/commit/8260565a50e20365d0718492282f4196299724a7"
-        },
-        "date": 1687220848476,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5459711400724478,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.0499356648393197,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11564,6 +11530,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 18.788275330291214,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "613d55a4a0922188b795bc76c2fdb985bcedd197",
+          "message": "fix: upload bootstrap node log as well",
+          "timestamp": "2023-10-19T14:53:32+02:00",
+          "tree_id": "84c48fc7a11a0f813cf155d2ecde23e36d7c97dc",
+          "url": "https://github.com/maidsafe/safe_network/commit/613d55a4a0922188b795bc76c2fdb985bcedd197"
+        },
+        "date": 1697721340501,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11549747054200724,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6419455085297173,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 18.20841639406196,
             "unit": "MiB/s"
           }
         ]
