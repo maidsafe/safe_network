@@ -28,13 +28,12 @@ jobs:
         id: get-sha
         run: echo "sha=$(git log --grep='chore(release):' -n 1 --pretty=format:"%H")" >> $GITHUB_ENV
       - name: Wait for release workflow to complete
-        uses: fountainhead/action-wait-for-check@v1.0.0
-        id: wait-for-releasegit 
+        uses: explorium-ai/wait-github-status-action@v1.0.2
         with:
+          name: release
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ env.sha }}
-          checkName: release
-          timeoutSeconds: 3600 # 1 hour
+          sha: ${{ env.sha }}
+      
 
       - uses: actions-rs/toolchain@v1
         with:
