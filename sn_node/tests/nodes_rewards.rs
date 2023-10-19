@@ -94,6 +94,8 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
 
 #[tokio::test]
 async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
+    let _log_guards = init_logging_single_threaded_tokio("nodes_rewards");
+
     let paying_wallet_balance = 10_000_000_111_000;
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
@@ -126,6 +128,8 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
 
 #[tokio::test]
 async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
+    let _log_guards = init_logging_single_threaded_tokio("nodes_rewards");
+
     let paying_wallet_balance = 10_000_000_222_000;
     let paying_wallet_dir = TempDir::new()?;
 
