@@ -12,7 +12,7 @@ use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE};
+use sn_networking::{close_group_majority, sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
@@ -65,8 +65,11 @@ impl Node {
         }
 
         for key in all_records {
-            let sorted_based_on_key =
-                sort_peers_by_address(all_peers.clone(), &key, CLOSE_GROUP_SIZE + 1)?;
+            let sorted_based_on_key = sort_peers_by_address(
+                all_peers.clone(),
+                &key,
+                CLOSE_GROUP_SIZE + close_group_majority(),
+            )?;
             let sorted_peers_pretty_print: Vec<_> = sorted_based_on_key
                 .iter()
                 .map(|peer_id| {
