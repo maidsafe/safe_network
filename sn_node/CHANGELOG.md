@@ -1743,6 +1743,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - retry and verify reg upload during reward test
 
+## [0.94.2](https://github.com/maidsafe/safe_network/compare/sn_node-v0.94.1...sn_node-v0.94.2) - 2023-10-19
+
+### Fixed
+- *(test)* enable logging for gossip tests
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
