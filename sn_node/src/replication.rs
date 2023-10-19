@@ -125,35 +125,28 @@ impl Node {
         key: RecordKey,
         potential_holders: HashSet<PeerId>,
     ) -> Result<()> {
-        // Already contains self_peer_id
-        let mut all_peers: HashSet<PeerId> = self
-            .network
-            .get_all_local_peers()
-            .await?
-            .into_iter()
-            .collect();
+        let key_addr = NetworkAddress::RecordKey(key.to_vec());
+        let close_group = self.network.get_close_group().await?;
 
-        // Do not carry out replication if not many peers present.
-        if all_peers.len() < K_VALUE.into() {
-            trace!(
-                "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                all_peers.len()
-            );
-            return Ok(());
-        }
         self.record_metrics(Marker::ReplicationTriggeredForPotentialHolders);
 
         let our_peer_id = self.network.peer_id;
         let our_address = NetworkAddress::from_peer(our_peer_id);
-
-        let all_records = self.network.get_all_local_record_addresses().await?;
 
         trace!(
             "Replication triggered for cache_candidates {potential_holders:?}, for key {:?}",
             PrettyPrintRecordKey::from(key)
         );
 
-        let mut replicate_to: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
+        for holder in potential_holders {
+            if close_group.contains(&holder) {
+                self.send_replicate_cmd_without_wait(
+                    &our_address,
+                    &holder,
+                    vec![key_addr.clone()],
+                )?;
+            }
+        }
 
         Ok(())
     }

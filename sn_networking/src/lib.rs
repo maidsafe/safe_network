@@ -215,6 +215,16 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
+    // Returns the peers that are closet to our PeerId.
+    pub async fn get_close_group(&self) -> Result<Vec<PeerId>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetOurCloseGroup { sender })?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
