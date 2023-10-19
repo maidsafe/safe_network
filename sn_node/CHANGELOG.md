@@ -1753,6 +1753,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - *(network)* emit NetworkEvent when we publish a gossipsub msg
 
+## [0.94.4](https://github.com/maidsafe/safe_network/compare/sn_node-v0.94.3...sn_node-v0.94.4) - 2023-10-19
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
