@@ -13,6 +13,7 @@ use crate::metrics_service::run_metrics_server;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
+    close_group_majority,
     cmd::SwarmCmd,
     error::{Error, Result},
     event::NetworkEvent,
@@ -31,7 +32,7 @@ use libp2p::mdns;
 use libp2p::{
     autonat,
     identity::Keypair,
-    kad::{Kademlia, KademliaConfig, QueryId, Record, RecordKey},
+    kad::{Kademlia, KademliaCaching, KademliaConfig, QueryId, Record, RecordKey},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{
@@ -205,6 +206,11 @@ impl NetworkBuilder {
             .set_replication_factor(
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
             )
+            // Does not perform any caching. But returns the peers who are not holding a piece of record that they're
+            // supposed to hold. Defaults is 1.
+            .set_caching(KademliaCaching::Enabled {
+                max_peers: close_group_majority() as u16,
+            })
             .set_query_timeout(KAD_QUERY_TIMEOUT_S)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
