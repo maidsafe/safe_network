@@ -25,6 +25,7 @@ jobs:
         id: wait-for-release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: git log --grep='chore(release):' -n 1 --pretty=format:"%H"
           checkName: release
           timeoutSeconds: 3600 # 1 hour
 
