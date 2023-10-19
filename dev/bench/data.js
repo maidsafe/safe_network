@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697718887179,
+  "lastUpdate": 1697718889300,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -28130,6 +28130,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 73,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0a4c7ef39d357631d2db5c3393ffa99342aae3ce",
+          "message": "fix(network): emit NetworkEvent when we publish a gossipsub msg\n- should fix the reward test failures\n- they were cuased because the `genesis_node` that we used to monitor\n  the gossipsub messages from was the one who published the message\n- Hence it would not emit and `NodeEvent` that we were listening for",
+          "timestamp": "2023-10-19T13:53:16+02:00",
+          "tree_id": "76a89d181f7f0f8947500a629d65a47f406e069e",
+          "url": "https://github.com/maidsafe/safe_network/commit/0a4c7ef39d357631d2db5c3393ffa99342aae3ce"
+        },
+        "date": 1697718888557,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 177,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 74,
             "unit": "MB"
           }
         ]
