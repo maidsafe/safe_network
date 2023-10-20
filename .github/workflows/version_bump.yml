@@ -24,6 +24,7 @@ jobs:
         with:
           fetch-depth: "0"
           token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+          
       - name: Get the SHA of the last release commit
         id: get-sha
         run: echo "sha=$(git log --grep='chore(release):' -n 1 --pretty=format:"%H")" >> $GITHUB_ENV
@@ -41,6 +42,9 @@ jobs:
           head-sha: ${{ env.sha }}
           base-branch: "main"
           polling-interval: 60
+
+      - name: Fetch the latest code from main
+        run: git pull origin main
 
       - uses: actions-rs/toolchain@v1
         with:
