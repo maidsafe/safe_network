@@ -215,10 +215,11 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
-    // Returns the peers that are closet to our PeerId.
-    pub async fn get_close_group(&self) -> Result<Vec<PeerId>> {
+    // Returns the K_VALUE number of peers that are closet to our PeerId. Contains self.
+    // The values are sorted by the distance from self.
+    pub async fn get_our_closest_k_value_peers(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetOurCloseGroup { sender })?;
+        self.send_swarm_cmd(SwarmCmd::GetOurClosestKValuePeers { sender })?;
 
         receiver
             .await

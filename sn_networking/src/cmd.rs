@@ -57,8 +57,8 @@ pub enum SwarmCmd {
     GetAllLocalPeers {
         sender: oneshot::Sender<Vec<PeerId>>,
     },
-    // Returns the peers that are closet to our PeerId.
-    GetOurCloseGroup {
+    // Returns the K_VALUE number of peers that are closet to our PeerId.
+    GetOurClosestKValuePeers {
         sender: oneshot::Sender<Vec<PeerId>>,
     },
     GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
@@ -349,8 +349,8 @@ impl SwarmDriver {
             SwarmCmd::GetAllLocalPeers { sender } => {
                 let _ = sender.send(self.get_all_local_peers());
             }
-            SwarmCmd::GetOurCloseGroup { sender } => {
-                let _ = sender.send(self.close_group.clone());
+            SwarmCmd::GetOurClosestKValuePeers { sender } => {
+                let _ = sender.send(self.close_k_value_peers.clone());
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 // If `self` is the recipient, forward the request directly to our upper layer to

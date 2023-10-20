@@ -126,7 +126,7 @@ impl Node {
         potential_holders: HashSet<PeerId>,
     ) -> Result<()> {
         let key_addr = NetworkAddress::RecordKey(key.to_vec());
-        let close_group = self.network.get_close_group().await?;
+        let closest_peers = self.network.get_our_closest_k_value_peers().await?;
 
         self.record_metrics(Marker::ReplicationTriggeredForPotentialHolders);
 
@@ -139,12 +139,14 @@ impl Node {
         );
 
         for holder in potential_holders {
-            if close_group.contains(&holder) {
+            if closest_peers.contains(&holder) {
                 self.send_replicate_cmd_without_wait(
                     &our_address,
                     &holder,
                     vec![key_addr.clone()],
                 )?;
+            } else {
+                trace!("cache_candidate {holder:?} is not part of our close group");
             }
         }
 

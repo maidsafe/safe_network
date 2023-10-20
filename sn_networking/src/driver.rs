@@ -457,7 +457,7 @@ impl NetworkBuilder {
             local: self.local,
             is_client,
             bootstrap: ContinuousBootstrap::new(),
-            close_group: Default::default(),
+            close_k_value_peers: Default::default(),
             replication_fetcher: Default::default(),
             #[cfg(feature = "open-metrics")]
             network_metrics,
@@ -493,8 +493,8 @@ pub struct SwarmDriver {
     pub(crate) local: bool,
     pub(crate) is_client: bool,
     pub(crate) bootstrap: ContinuousBootstrap,
-    /// The peers that are closer to our PeerId. Includes self.
-    pub(crate) close_group: Vec<PeerId>,
+    /// The K_VALUE number of peers that are closer to our PeerId. Includes self.
+    pub(crate) close_k_value_peers: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: NetworkMetrics,

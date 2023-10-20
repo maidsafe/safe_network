@@ -901,12 +901,16 @@ impl SwarmDriver {
             sort_peers_by_address(
                 &all_peers,
                 &NetworkAddress::from_peer(self.self_peer_id),
-                CLOSE_GROUP_SIZE,
+                K_VALUE.into(),
             )
             .ok()?
         };
 
-        let old = self.close_group.iter().cloned().collect::<HashSet<_>>();
+        let old = self
+            .close_k_value_peers
+            .iter()
+            .cloned()
+            .collect::<HashSet<_>>();
         let new_members = new_closest_peers
             .iter()
             .filter(|p| !old.contains(p))
@@ -915,7 +919,7 @@ impl SwarmDriver {
         if !new_members.is_empty() {
             debug!("The close group has been updated. The new members are {new_members:?}");
             debug!("New close group: {new_closest_peers:?}");
-            self.close_group = new_closest_peers.into_iter().cloned().collect();
+            self.close_k_value_peers = new_closest_peers.into_iter().cloned().collect();
             let _ = self.update_record_distance_range();
             Some(new_members.into_iter().cloned().collect())
         } else {
@@ -928,7 +932,7 @@ impl SwarmDriver {
     fn update_record_distance_range(&mut self) -> Option<()> {
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         let distance_range = self
-            .close_group
+            .close_k_value_peers
             .last()
             .map(|peer| NetworkAddress::from_peer(*peer).distance(&our_address))?;
 
