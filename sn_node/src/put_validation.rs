@@ -397,10 +397,11 @@ impl Node {
         payment: &Vec<Transfer>,
         wallet: &LocalWallet,
         pretty_key: PrettyPrintRecordKey,
-    ) -> Result<(Vec<CashNote>, Vec<CashNote>), ProtocolError> {
+    ) -> Result<(NanoTokens, Vec<CashNote>, Vec<CashNote>), ProtocolError> {
         let royalties_pk = *NETWORK_ROYALTIES_PK;
         let mut cash_notes = vec![];
         let mut royalties_cash_notes = vec![];
+        let mut received_fee = NanoTokens::zero();
 
         for transfer in payment {
             match transfer {
@@ -414,7 +415,7 @@ impl Node {
                     // transfer invalid
                     Err(e) => return Err(e),
                     // transfer ok
-                    Ok(cn) => cash_notes = cn,
+                    Ok(cns) => cash_notes = cns,
                 },
                 Transfer::NetworkRoyalties(cashnote_redemptions) => {
                     if let Ok(cash_notes) = self
@@ -422,11 +423,15 @@ impl Node {
                         .verify_cash_notes_redemptions(royalties_pk, cashnote_redemptions)
                         .await
                     {
+                        let received_royalties = total_cash_notes_amount(&cash_notes, &pretty_key)?;
                         trace!(
-                            "{} network royalties payment cash notes found for record {pretty_key} for a total value of {:?}",
-                            cash_notes.len(), total_cash_notes_amount(&cash_notes, &pretty_key)?
+                            "{} network royalties payment cash notes found for record {pretty_key} for a total value of {received_royalties:?}",
+                            cash_notes.len()
                         );
                         royalties_cash_notes.extend(cash_notes);
+                        received_fee = received_fee
+                            .checked_add(received_royalties)
+                            .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
                     }
                 }
             }
@@ -435,7 +440,16 @@ impl Node {
         if cash_notes.is_empty() {
             Err(ProtocolError::NoPaymentToOurNode(pretty_key))
         } else {
-            Ok((cash_notes, royalties_cash_notes))
+            let received_fee_to_our_node = total_cash_notes_amount(&cash_notes, &pretty_key)?;
+            info!(
+                "{} cash note/s (for a total of {received_fee_to_our_node:?}) are for us for {pretty_key}",
+                cash_notes.len()
+            );
+            received_fee = received_fee
+                .checked_add(received_fee_to_our_node)
+                .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
+
+            Ok((received_fee, cash_notes, royalties_cash_notes))
         }
     }
 
@@ -454,20 +468,9 @@ impl Node {
 
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key}");
-        let (cash_notes, royalties_cash_notes) = self
+        let (received_fee, cash_notes, royalties_cash_notes) = self
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone())
             .await?;
-
-        let received_fee_to_our_node = total_cash_notes_amount(&cash_notes, &pretty_key)?;
-        let received_royalties = total_cash_notes_amount(&cash_notes, &pretty_key)?;
-
-        let received_fee = received_fee_to_our_node
-            .checked_add(received_royalties)
-            .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
-        info!(
-            "{} cash notes (for a total of {received_fee:?}) are for us for {pretty_key}",
-            cash_notes.len()
-        );
 
         // deposit the CashNotes in our wallet
         wallet
@@ -751,12 +754,15 @@ impl Node {
 }
 
 // Helper to calculate total amout of tokens received in a given set of CashNotes
-fn total_cash_notes_amount(
-    cash_notes: &[CashNote],
+fn total_cash_notes_amount<'a, I>(
+    cash_notes: I,
     pretty_key: &PrettyPrintRecordKey,
-) -> Result<NanoTokens, ProtocolError> {
+) -> Result<NanoTokens, ProtocolError>
+where
+    I: IntoIterator<Item = &'a CashNote>,
+{
     let mut received_fee = NanoTokens::zero();
-    for cash_note in cash_notes.iter() {
+    for cash_note in cash_notes {
         let amount = cash_note.value().map_err(|_| {
             ProtocolError::RecordNotStored(
                 pretty_key.clone(),
