@@ -161,7 +161,13 @@ impl NetworkAddress {
 impl Debug for NetworkAddress {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let name_str = match self {
-            NetworkAddress::PeerId(_) => "NetworkAddress::PeerId(".to_string(),
+            NetworkAddress::PeerId(_) => {
+                if let Some(peer_id) = self.as_peer_id() {
+                    format!("NetworkAddress::PeerId({peer_id} - ")
+                } else {
+                    "NetworkAddress::PeerId(".to_string()
+                }
+            }
             NetworkAddress::ChunkAddress(chunk_address) => {
                 format!(
                     "NetworkAddress::ChunkAddress({:?} - ",
@@ -182,7 +188,7 @@ impl Debug for NetworkAddress {
         };
         write!(
             f,
-            "{name_str} - {:?})",
+            "{name_str}{:?})",
             PrettyPrintRecordKey::from(self.to_record_key()),
         )
     }
