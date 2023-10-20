@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697790676455,
+  "lastUpdate": 1697792617715,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "0e07e753bb9470b703969fcb83100a00f82b06a4",
-          "message": "fix(sn_transfers): hardcode new genesis DBC for tests",
-          "timestamp": "2023-06-21T09:21:08Z",
-          "tree_id": "653136b50154f8d1031b3b1359777ddfb4e89a7f",
-          "url": "https://github.com/maidsafe/safe_network/commit/0e07e753bb9470b703969fcb83100a00f82b06a4"
-        },
-        "date": 1687343138556,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5809306848326806,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.2260886010447813,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11614,6 +11580,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 21.37830769813899,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e8acd17d03bf817dd9c7afa8a375a54421ec518d",
+          "message": "ci: ensure we're on latest main before v bump\n\nAfter we wait, more commits could have gone in, so we proceed with\nlatest main only",
+          "timestamp": "2023-10-20T10:41:07+02:00",
+          "tree_id": "09de3195dedd9353b2303790c5fea551c192910f",
+          "url": "https://github.com/maidsafe/safe_network/commit/e8acd17d03bf817dd9c7afa8a375a54421ec518d"
+        },
+        "date": 1697792615814,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10416001951762362,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5157567486059901,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 21.23716150509576,
             "unit": "MiB/s"
           }
         ]
