@@ -229,8 +229,7 @@ impl Client {
                     self.network.stop_bootstrapping()?;
                 }
             }
-            NetworkEvent::GossipsubMsgReceived { topic, msg }
-            | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
+            NetworkEvent::GossipsubMsgReceived { topic, msg } => {
                 self.events_channel
                     .broadcast(ClientEvent::GossipsubMsg { topic, msg })?;
             }

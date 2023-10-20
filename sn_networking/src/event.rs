@@ -144,13 +144,6 @@ pub enum NetworkEvent {
         /// The raw bytes of the received message
         msg: Vec<u8>,
     },
-    /// The Gossipsub message that we published
-    GossipsubMsgPublished {
-        /// Topic the message was published on
-        topic: String,
-        /// The raw bytes of the sent message
-        msg: Vec<u8>,
-    },
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -192,9 +185,6 @@ impl Debug for NetworkEvent {
             }
             NetworkEvent::GossipsubMsgReceived { topic, .. } => {
                 write!(f, "NetworkEvent::GossipsubMsgReceived({topic})")
-            }
-            NetworkEvent::GossipsubMsgPublished { topic, .. } => {
-                write!(f, "NetworkEvent::GossipsubMsgPublished({topic})")
             }
         }
     }

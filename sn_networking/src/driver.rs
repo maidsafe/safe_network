@@ -392,9 +392,13 @@ impl NetworkBuilder {
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
 
-        // Gossipsub behaviour
-        // set default parameters for gossipsub
-        let gossipsub_config = libp2p::gossipsub::Config::default();
+        // Gossipsub behaviour.
+        // Set default parameters for gossipsub. By default gossipsub will reject messages that are sent to us
+        // that has the same message source as we have specified locally. We allow self-origin msgs in the config.
+        let gossipsub_config = libp2p::gossipsub::ConfigBuilder::default()
+            .allow_self_origin(true)
+            .build()
+            .expect("Failed to build Gossipsub config.");
 
         // Set the message authenticity - Here we expect the publisher
         // to sign the message with their key.
