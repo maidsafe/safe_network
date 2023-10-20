@@ -219,6 +219,7 @@ fn spawn_royalties_payment_listener(endpoint: String) -> JoinHandle<Result<usize
         let mut stream = response.into_inner();
         let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
 
+        println!("Awaiting transfers notifs...");
         while let Some(Ok(e)) = stream.next().await {
             match NodeEvent::from_bytes(&e.event) {
                 Ok(NodeEvent::TransferNotif { key, cash_notes: _ }) => {
