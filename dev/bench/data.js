@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697790220486,
+  "lastUpdate": 1697790222088,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -28369,6 +28369,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 75,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "859aed4b0cda5dab2cbf939aed319e20a1f915a7",
+          "message": "chore(ci): upload gossipsub e2e logs separately",
+          "timestamp": "2023-10-20T09:39:47+02:00",
+          "tree_id": "a050e5579913e0efc6aed22047d8028ee371f4a8",
+          "url": "https://github.com/maidsafe/safe_network/commit/859aed4b0cda5dab2cbf939aed319e20a1f915a7"
+        },
+        "date": 1697790221646,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 167,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 80,
             "unit": "MB"
           }
         ]
