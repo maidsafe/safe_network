@@ -12,7 +12,7 @@ use crate::{
     sort_peers_by_address, GetQuorum, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
 };
 use libp2p::{
-    kad::{store::RecordStore, Quorum, Record, RecordKey},
+    kad::{store::RecordStore, Quorum, Record, RecordKey, K_VALUE},
     swarm::dial_opts::DialOpts,
     Multiaddr, PeerId,
 };
@@ -270,7 +270,17 @@ impl SwarmDriver {
                 let all_peers = self.get_all_local_peers();
                 let keys_to_store = keys
                     .iter()
-                    .filter(|key| self.is_in_close_range(key, &all_peers))
+                    .filter(|key| {
+                        let range:usize = K_VALUE.into();
+                        let is_close =
+                            self.is_in_close_range(key, &all_peers, range);
+                        if !is_close {
+                            trace!(
+                                "AddKeysToReplicationFetcher: self not within {range} peers that are close to key {key:?}. Not adding key for replication."
+                            );
+                        }
+                        is_close
+                    })
                     .cloned()
                     .collect();
                 #[allow(clippy::mutable_key_type)]
@@ -553,13 +563,18 @@ impl SwarmDriver {
     // are none among target b011111's close range.
     // Hence, the ilog2 calculation based on close_range cannot cover such case.
     // And have to sort all nodes to figure out whether self is among the close_group to the target.
-    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &[PeerId]) -> bool {
-        if all_peers.len() <= CLOSE_GROUP_SIZE + 2 {
+    fn is_in_close_range(
+        &self,
+        target: &NetworkAddress,
+        all_peers: &[PeerId],
+        close_group_size: usize,
+    ) -> bool {
+        if all_peers.len() <= close_group_size {
             return true;
         }
 
         // Margin of 2 to allow our RT being bit lagging.
-        match sort_peers_by_address(all_peers, target, CLOSE_GROUP_SIZE + 2) {
+        match sort_peers_by_address(all_peers, target, close_group_size) {
             Ok(close_group) => close_group.contains(&&self.self_peer_id),
             Err(err) => {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");

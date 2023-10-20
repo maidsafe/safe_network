@@ -41,6 +41,7 @@ impl ReplicationFetcher {
         incoming_keys: Vec<NetworkAddress>,
         locally_stored_keys: &HashSet<RecordKey>,
     ) -> Vec<(PeerId, RecordKey)> {
+        trace!("Filtering and and adding {incoming_keys:?} to fetcher");
         self.remove_stored_keys(locally_stored_keys);
 
         // add non existing keys to the fetcher
@@ -138,12 +139,26 @@ impl ReplicationFetcher {
 
     /// Remove keys that we hold already and no longer need to be replicated.
     fn remove_stored_keys(&mut self, existing_keys: &HashSet<RecordKey>) {
+        let removed_keys = self
+            .to_be_fetched
+            .keys()
+            .filter(|(key, _)| existing_keys.contains(key))
+            .map(|(key, _)| PrettyPrintRecordKey::from(key.clone()))
+            .collect::<Vec<_>>();
+        if !removed_keys.is_empty() {
+            debug!("Removing already stored keys from replication fetcher, removed keys: {removed_keys:?}");
+        }
+
         self.to_be_fetched
             .retain(|(key, _), _| !existing_keys.contains(key));
     }
 
     /// Add the key if not present yet.
     fn add_key(&mut self, holder: PeerId, key: RecordKey) {
+        trace!(
+            "Addking key {:?} to replication fetcher",
+            PrettyPrintRecordKey::from(key.clone())
+        );
         let _ = self.to_be_fetched.entry((key, holder)).or_insert(None);
     }
 }
