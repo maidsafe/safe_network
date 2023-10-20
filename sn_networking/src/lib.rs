@@ -78,22 +78,22 @@ const PUT_RECORD_RETRIES: usize = 3;
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
-pub fn sort_peers_by_address(
-    peers: &[PeerId],
+pub fn sort_peers_by_address<'a>(
+    peers: &'a [PeerId],
     address: &NetworkAddress,
     expected_entries: usize,
-) -> Result<Vec<PeerId>> {
+) -> Result<Vec<&'a PeerId>> {
     sort_peers_by_key(peers, &address.as_kbucket_key(), expected_entries)
 }
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
-pub fn sort_peers_by_key<T>(
-    peers: &[PeerId],
+pub fn sort_peers_by_key<'a, T>(
+    peers: &'a [PeerId],
     key: &KBucketKey<T>,
     expected_entries: usize,
-) -> Result<Vec<PeerId>> {
+) -> Result<Vec<&'a PeerId>> {
     // Get the indices and sort them by indexing into the `peers` array.
     let mut indices: Vec<usize> = (0..peers.len()).collect();
     indices.sort_by(|&i, &j| {
@@ -112,10 +112,10 @@ pub fn sort_peers_by_key<T>(
         }
     });
 
-    let sorted_peers: Vec<PeerId> = indices
+    let sorted_peers: Vec<&PeerId> = indices
         .iter()
         .take(expected_entries)
-        .filter_map(|&i| peers.get(i).cloned())
+        .filter_map(|&i| peers.get(i))
         .collect();
 
     if CLOSE_GROUP_SIZE > sorted_peers.len() {
@@ -641,7 +641,11 @@ impl Network {
 
         trace!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
 
-        sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)
+        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?
+            .into_iter()
+            .cloned()
+            .collect();
+        Ok(closest_peers)
     }
 
     /// Send a `Request` to the provided set of peers and wait for their responses concurrently.
