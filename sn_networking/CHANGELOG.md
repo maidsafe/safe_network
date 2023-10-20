@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.37](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.36...sn_networking-v0.8.37) - 2023-10-20
+
+### Added
+- *(node)* allow user to set the metrics server port
+- *(client)* stop futher bootstrapping if the client has K_VALUE peers
+- *(network)* slow down continuous bootstrapping if no new peers have been discovered
+
+### Other
+- *(network)* move bootstrap process to its module
+
 ## [0.8.36](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.35...sn_networking-v0.8.36) - 2023-10-19
 
 ### Fixed

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.3.1...sn_registers-v0.3.2) - 2023-10-20
+
+### Fixed
+- RegisterAddress logging with correct network addressing
+
 ## [0.3.1](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.3.0...sn_registers-v0.3.1) - 2023-10-10
 
 ### Other

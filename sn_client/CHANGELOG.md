@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.94.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.94.2...sn_client-v0.94.3) - 2023-10-20
+
+### Added
+- *(client)* stop futher bootstrapping if the client has K_VALUE peers
+
 ## [0.94.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.94.1...sn_client-v0.94.2) - 2023-10-19
 
 ### Fixed

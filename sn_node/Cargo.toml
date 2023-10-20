@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Safe Node"
 name = "sn_node"
-version = "0.94.4"
+version = "0.95.0"
 edition = "2021"
 license = "GPL-3.0"
 homepage = "https://maidsafe.net"
@@ -56,11 +56,11 @@ self_encryption = "~0.28.5"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_build_info = { path="../sn_build_info", version = "0.1.2" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.1.7" }
-sn_client = { path = "../sn_client", version = "0.94.2" }
+sn_client = { path = "../sn_client", version = "0.94.3" }
 sn_logging = { path = "../sn_logging", version = "0.2.11" }
-sn_networking = { path = "../sn_networking", version = "0.8.36" }
-sn_protocol = { path = "../sn_protocol", version = "0.7.24" }
-sn_registers = { path = "../sn_registers", version = "0.3.1" }
+sn_networking = { path = "../sn_networking", version = "0.8.37" }
+sn_protocol = { path = "../sn_protocol", version = "0.7.25" }
+sn_registers = { path = "../sn_registers", version = "0.3.2" }
 sn_transfers = { path = "../sn_transfers", version = "0.14.3" }
 thiserror = "1.0.23"
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }

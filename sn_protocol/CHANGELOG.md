@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.25](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.7.24...sn_protocol-v0.7.25) - 2023-10-20
+
+### Other
+- print the PeerId along with the raw bytes
+
 ## [0.7.24](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.7.23...sn_protocol-v0.7.24) - 2023-10-18
 
 ### Other
