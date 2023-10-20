@@ -47,7 +47,7 @@ use libp2p_quic as quic;
 use prometheus_client::registry::Registry;
 use sn_protocol::{
     messages::{Request, Response},
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintKBucketKey,
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -299,8 +299,8 @@ impl NetworkBuilder {
         let peer_id = PeerId::from(self.keypair.public());
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
         info!(
-            "Self PeerID {peer_id} is represented as record_key {:?}",
-            PrettyPrintRecordKey::from(NetworkAddress::from_peer(peer_id).to_record_key())
+            "Self PeerID {peer_id} is represented as kbucket_key {:?}",
+            PrettyPrintKBucketKey(NetworkAddress::from_peer(peer_id).as_kbucket_key())
         );
 
         #[cfg(feature = "open-metrics")]

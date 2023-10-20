@@ -123,7 +123,7 @@ pub enum Error {
 
 #[cfg(test)]
 mod tests {
-    use sn_protocol::{storage::ChunkAddress, NetworkAddress};
+    use sn_protocol::{storage::ChunkAddress, NetworkAddress, PrettyPrintKBucketKey};
     use xor_name::XorName;
 
     use super::*;
@@ -133,10 +133,15 @@ mod tests {
         let mut rng = rand::thread_rng();
         let xor_name = XorName::random(&mut rng);
         let address = ChunkAddress::new(xor_name);
-        let record_key = NetworkAddress::from_chunk_address(address).to_record_key();
+        let network_address = NetworkAddress::from_chunk_address(address);
+        let record_key = network_address.to_record_key();
         let pretty_record: PrettyPrintRecordKey = record_key.into();
         let record_str = format!("{}", pretty_record);
-        let xor_name_str = format!("{:64x}", xor_name);
+        let xor_name_str = format!(
+            "{:64x}({:?})",
+            xor_name,
+            PrettyPrintKBucketKey(network_address.as_kbucket_key())
+        );
         println!("record_str: {}", record_str);
         println!("xor_name_str: {}", xor_name_str);
         assert_eq!(record_str, xor_name_str);
