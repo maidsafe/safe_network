@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697789093351,
+  "lastUpdate": 1697789183368,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "9fd5908d809199826b40cbf6e776c899ff27bb3a",
-          "message": "feat: provide option for log output in json\n\nSome users who had been interacting with the InstallNet testnet requested output in this form. It\ndoesn't give us any more elaborate data, like say what comes from an Open Telemetry trace, but might\nfunction as a starting point.",
-          "timestamp": "2023-06-21T01:03:54Z",
-          "tree_id": "4a305c262b77e2cd29286cea444566e4e230d936",
-          "url": "https://github.com/maidsafe/safe_network/commit/9fd5908d809199826b40cbf6e776c899ff27bb3a"
-        },
-        "date": 1687312853508,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5550441028712185,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.2839740215478743,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11609,6 +11575,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 20.435146823564846,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8bb2c13834d577a70f0ac434d94ee0a1bcaa500d",
+          "message": "chore: print the PeerId along with the raw bytes",
+          "timestamp": "2023-10-20T09:41:19+02:00",
+          "tree_id": "cd2e2ebeda994b3f911b787be0f5944ed7d8fa45",
+          "url": "https://github.com/maidsafe/safe_network/commit/8bb2c13834d577a70f0ac434d94ee0a1bcaa500d"
+        },
+        "date": 1697789180900,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.08574761930383722,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.4745591790509054,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 21.37830769813899,
             "unit": "MiB/s"
           }
         ]
