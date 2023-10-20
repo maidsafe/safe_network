@@ -79,7 +79,7 @@ const PUT_RECORD_RETRIES: usize = 3;
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
 pub fn sort_peers_by_address(
-    peers: Vec<PeerId>,
+    peers: &[PeerId],
     address: &NetworkAddress,
     expected_entries: usize,
 ) -> Result<Vec<PeerId>> {
@@ -90,26 +90,42 @@ pub fn sort_peers_by_address(
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
 pub fn sort_peers_by_key<T>(
-    mut peers: Vec<PeerId>,
+    peers: &[PeerId],
     key: &KBucketKey<T>,
     expected_entries: usize,
 ) -> Result<Vec<PeerId>> {
-    peers.sort_by(|a, b| {
-        let a = NetworkAddress::from_peer(*a);
-        let b = NetworkAddress::from_peer(*b);
-        key.distance(&a.as_kbucket_key())
-            .cmp(&key.distance(&b.as_kbucket_key()))
-    });
-    let peers: Vec<PeerId> = peers.iter().take(expected_entries).cloned().collect();
+    // Get the indices and sort them by indexing into the `peers` array.
+    let mut indices: Vec<usize> = (0..peers.len()).collect();
+    indices.sort_by(|&i, &j| {
+        let a = peers
+            .get(i)
+            .map(|&peer_id| NetworkAddress::from_peer(peer_id));
+        let b = peers
+            .get(j)
+            .map(|&peer_id| NetworkAddress::from_peer(peer_id));
 
-    if CLOSE_GROUP_SIZE > peers.len() {
+        match (a, b) {
+            (Some(a_addr), Some(b_addr)) => key
+                .distance(&a_addr.as_kbucket_key())
+                .cmp(&key.distance(&b_addr.as_kbucket_key())),
+            _ => std::cmp::Ordering::Equal,
+        }
+    });
+
+    let sorted_peers: Vec<PeerId> = indices
+        .iter()
+        .take(expected_entries)
+        .filter_map(|&i| peers.get(i).cloned())
+        .collect();
+
+    if CLOSE_GROUP_SIZE > sorted_peers.len() {
         warn!("Not enough peers in the k-bucket to satisfy the request");
         return Err(Error::NotEnoughPeers {
-            found: peers.len(),
+            found: sorted_peers.len(),
             required: CLOSE_GROUP_SIZE,
         });
     }
-    Ok(peers)
+    Ok(sorted_peers)
 }
 
 #[derive(Clone)]
@@ -625,7 +641,7 @@ impl Network {
 
         trace!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
 
-        sort_peers_by_address(closest_peers, key, CLOSE_GROUP_SIZE)
+        sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)
     }
 
     /// Send a `Request` to the provided set of peers and wait for their responses concurrently.

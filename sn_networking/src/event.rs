@@ -822,7 +822,7 @@ impl SwarmDriver {
         let new_closest_peers = {
             let all_peers = self.get_all_local_peers();
             sort_peers_by_address(
-                all_peers,
+                &all_peers,
                 &NetworkAddress::from_peer(self.self_peer_id),
                 CLOSE_GROUP_SIZE,
             )
