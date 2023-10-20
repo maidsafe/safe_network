@@ -4491,6 +4491,7 @@ dependencies = [
  "libp2p",
  "rmp-serde",
  "serde",
+ "sha2",
  "sn_registers",
  "sn_transfers",
  "thiserror",
