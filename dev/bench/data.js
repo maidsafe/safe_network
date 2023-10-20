@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697726892888,
+  "lastUpdate": 1697788876590,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "ba96bef407a89e4136b890e5ce9812d4773dbab9",
-          "message": "feat(sn_networking): Make it possible to pass in a keypair for PeerID\n\nmakes changes up the stack so nodes could restart and maintain peerId,\nclients simply ignore this and provide None as they have a separate Signer\nused for client ops. Their PeerId is not relevant or used in kad at all",
-          "timestamp": "2023-06-20T14:07:06Z",
-          "tree_id": "37262bc3fcb2f1ea40abf0b0919d5e685178e187",
-          "url": "https://github.com/maidsafe/safe_network/commit/ba96bef407a89e4136b890e5ce9812d4773dbab9"
-        },
-        "date": 1687274290581,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.4870454724407682,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 2.7185433357837496,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11599,6 +11565,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 21.040227033326172,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f645d9efce153a56936462c557b8f213c1bb6bd3",
+          "message": "fix: RegisterAddress logging with correct network addressing",
+          "timestamp": "2023-10-20T09:38:42+02:00",
+          "tree_id": "c42c497a3574c511e5eb16fea2d6cb5e29901e3a",
+          "url": "https://github.com/maidsafe/safe_network/commit/f645d9efce153a56936462c557b8f213c1bb6bd3"
+        },
+        "date": 1697788874263,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.11395496322694326,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5845972403596721,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 20.274586124124355,
             "unit": "MiB/s"
           }
         ]
