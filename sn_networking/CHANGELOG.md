@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.38](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.37...sn_networking-v0.8.38) - 2023-10-20
+
+### Added
+- log network address with KBucketKey
+
 ## [0.8.37](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.36...sn_networking-v0.8.37) - 2023-10-20
 
 ### Added
