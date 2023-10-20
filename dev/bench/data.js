@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697789183368,
+  "lastUpdate": 1697789879020,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -19707,6 +19707,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 73,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f645d9efce153a56936462c557b8f213c1bb6bd3",
+          "message": "fix: RegisterAddress logging with correct network addressing",
+          "timestamp": "2023-10-20T09:38:42+02:00",
+          "tree_id": "c42c497a3574c511e5eb16fea2d6cb5e29901e3a",
+          "url": "https://github.com/maidsafe/safe_network/commit/f645d9efce153a56936462c557b8f213c1bb6bd3"
+        },
+        "date": 1697789878016,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 75,
             "unit": "MB"
           }
         ]
