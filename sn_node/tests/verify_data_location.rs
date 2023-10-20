@@ -93,6 +93,7 @@ async fn verify_data_location() -> Result<()> {
     // set of all the node indexes that stores a record key
     let record_holders = get_records_and_holders().await?;
     // Verify data location initially
+    print_node_close_groups(&all_peers);
     verify_location(&record_holders, &all_peers).await?;
 
     // Churn nodes and verify the location of the data after VERIFICATION_DELAY
@@ -205,14 +206,14 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
                 actual_holders.len()
             );
 
-            if actual_holders != expected_holders {
-                // print any expect holders that are not in actual holders
-                let mut missing_peers = Vec::new();
-                expected_holders
-                    .iter()
-                    .filter(|expected| !actual_holders.contains(expected))
-                    .for_each(|expected| missing_peers.push(*expected));
+            // print any expect holders that are not in actual holders
+            let mut missing_peers = Vec::new();
+            expected_holders
+                .iter()
+                .filter(|expected| !actual_holders.contains(expected))
+                .for_each(|expected| missing_peers.push(*expected));
 
+            if !missing_peers.is_empty() {
                 error!(
                     "Record {:?} is not stored by {missing_peers:?}",
                     PrettyPrintRecordKey::from(key.clone()),
