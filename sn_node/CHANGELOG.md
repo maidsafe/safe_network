@@ -1758,6 +1758,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.95.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.94.4...sn_node-v0.95.0) - 2023-10-20
+
+### Added
+- *(node)* allow user to set the metrics server port
+
+### Other
+- *(node)* [**breaking**] use `NodeBuilder` to construct and run node
+- *(node)* remove random get_closest on inactivity
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
