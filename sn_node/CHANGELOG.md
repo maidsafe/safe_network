@@ -1767,6 +1767,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(node)* [**breaking**] use `NodeBuilder` to construct and run node
 - *(node)* remove random get_closest on inactivity
 
+## [0.95.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.95.0...sn_node-v0.95.1) - 2023-10-20
+
+### Added
+- log network address with KBucketKey
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
