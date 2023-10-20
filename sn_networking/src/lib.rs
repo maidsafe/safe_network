@@ -45,7 +45,7 @@ use libp2p::{
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
     storage::{RecordHeader, RecordKind},
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::MainPubkey;
 use sn_transfers::NanoTokens;
@@ -169,8 +169,8 @@ impl Network {
                     .map(|peer_id| {
                         format!(
                             "{peer_id:?}({:?})",
-                            PrettyPrintRecordKey::from(
-                                NetworkAddress::from_peer(*peer_id).to_record_key()
+                            PrettyPrintKBucketKey(
+                                NetworkAddress::from_peer(*peer_id).as_kbucket_key()
                             )
                         )
                     })
@@ -618,7 +618,7 @@ impl Network {
             .map(|peer_id| {
                 format!(
                     "{peer_id:?}({:?})",
-                    PrettyPrintRecordKey::from(NetworkAddress::from_peer(*peer_id).to_record_key())
+                    PrettyPrintKBucketKey(NetworkAddress::from_peer(*peer_id).as_kbucket_key())
                 )
             })
             .collect();

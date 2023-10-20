@@ -15,7 +15,7 @@ use libp2p::{
 use sn_networking::{sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::collections::BTreeMap;
 use tokio::task::JoinHandle;
@@ -72,9 +72,7 @@ impl Node {
                 .map(|peer_id| {
                     format!(
                         "{peer_id:?}({:?})",
-                        PrettyPrintRecordKey::from(
-                            NetworkAddress::from_peer(*peer_id).to_record_key()
-                        )
+                        PrettyPrintKBucketKey(NetworkAddress::from_peer(*peer_id).as_kbucket_key())
                     )
                 })
                 .collect();
