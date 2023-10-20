@@ -450,7 +450,7 @@ impl SwarmDriver {
 
         // Margin of 2 to allow our RT being bit lagging.
         match sort_peers_by_address(all_peers, target, CLOSE_GROUP_SIZE + 2) {
-            Ok(close_group) => close_group.contains(&self.self_peer_id),
+            Ok(close_group) => close_group.contains(&&self.self_peer_id),
             Err(err) => {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");
                 true

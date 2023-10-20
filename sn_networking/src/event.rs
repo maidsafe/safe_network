@@ -819,8 +819,9 @@ impl SwarmDriver {
 
     // Check for changes in our close group
     fn check_for_change_in_our_close_group(&mut self) -> Option<Vec<PeerId>> {
+        let all_peers = self.get_all_local_peers();
+
         let new_closest_peers = {
-            let all_peers = self.get_all_local_peers();
             sort_peers_by_address(
                 &all_peers,
                 &NetworkAddress::from_peer(self.self_peer_id),
@@ -838,9 +839,9 @@ impl SwarmDriver {
         if !new_members.is_empty() {
             debug!("The close group has been updated. The new members are {new_members:?}");
             debug!("New close group: {new_closest_peers:?}");
-            self.close_group = new_closest_peers;
+            self.close_group = new_closest_peers.into_iter().cloned().collect();
             let _ = self.update_record_distance_range();
-            Some(new_members)
+            Some(new_members.into_iter().cloned().collect())
         } else {
             None
         }
