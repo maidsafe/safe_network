@@ -148,7 +148,7 @@ fn print_node_close_groups(all_peers: &[PeerId]) {
             sort_peers_by_key(&all_peers, &key, CLOSE_GROUP_SIZE).expect("failed to sort peer");
         let closest_peers_idx = closest_peers
             .iter()
-            .map(|peer| all_peers.iter().position(|p| p == peer).unwrap() + 1)
+            .map(|&&peer| all_peers.iter().position(|&p| p == peer).unwrap() + 1)
             .collect::<Vec<_>>();
         println!("Close for {node_index}: {peer:?} are {closest_peers_idx:?}");
     }
@@ -188,6 +188,7 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
             let record_key = KBucketKey::from(key.to_vec());
             let expected_holders = sort_peers_by_key(all_peers, &record_key, CLOSE_GROUP_SIZE)?
                 .into_iter()
+                .cloned()
                 .collect::<BTreeSet<_>>();
 
             let actual_holders = actual_holders_idx
