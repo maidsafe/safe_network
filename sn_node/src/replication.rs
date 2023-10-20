@@ -66,7 +66,7 @@ impl Node {
 
         for key in all_records {
             let sorted_based_on_key =
-                sort_peers_by_address(all_peers.clone(), &key, CLOSE_GROUP_SIZE + 1)?;
+                sort_peers_by_address(&all_peers, &key, CLOSE_GROUP_SIZE + 1)?;
             let sorted_peers_pretty_print: Vec<_> = sorted_based_on_key
                 .iter()
                 .map(|peer_id| {

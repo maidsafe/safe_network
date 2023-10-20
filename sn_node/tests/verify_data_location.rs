@@ -144,8 +144,8 @@ fn print_node_close_groups(all_peers: &[PeerId]) {
     for (node_index, peer) in all_peers.iter().enumerate() {
         let node_index = node_index + 1;
         let key = NetworkAddress::from_peer(*peer).as_kbucket_key();
-        let closest_peers = sort_peers_by_key(all_peers.clone(), &key, CLOSE_GROUP_SIZE)
-            .expect("failed to sort peer");
+        let closest_peers =
+            sort_peers_by_key(&all_peers, &key, CLOSE_GROUP_SIZE).expect("failed to sort peer");
         let closest_peers_idx = closest_peers
             .iter()
             .map(|peer| all_peers.iter().position(|p| p == peer).unwrap() + 1)
@@ -186,10 +186,9 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
         for (key, actual_holders_idx) in record_holders.iter() {
             println!("Verifying {:?}", PrettyPrintRecordKey::from(key.clone()));
             let record_key = KBucketKey::from(key.to_vec());
-            let expected_holders =
-                sort_peers_by_key(all_peers.to_vec(), &record_key, CLOSE_GROUP_SIZE)?
-                    .into_iter()
-                    .collect::<BTreeSet<_>>();
+            let expected_holders = sort_peers_by_key(all_peers, &record_key, CLOSE_GROUP_SIZE)?
+                .into_iter()
+                .collect::<BTreeSet<_>>();
 
             let actual_holders = actual_holders_idx
                 .iter()
