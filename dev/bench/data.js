@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697793886123,
+  "lastUpdate": 1697814662259,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "879c64f0064327d632c9ffaf333e96a71acd577e",
-          "message": "feat(node): trigger replication when inactivity",
-          "timestamp": "2023-06-21T19:18:42Z",
-          "tree_id": "3eb2822f73ae1415c0807c05ab5e99c34a8f867b",
-          "url": "https://github.com/maidsafe/safe_network/commit/879c64f0064327d632c9ffaf333e96a71acd577e"
-        },
-        "date": 1687379184398,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.7268179520734555,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.187316728899634,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11624,6 +11590,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 21.209584307714877,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7ed5a9440c69243d658414f4c603c6959e5223ed",
+          "message": "feat: log network address with KBucketKey",
+          "timestamp": "2023-10-20T16:43:52+02:00",
+          "tree_id": "2c899e24d2d2a5ad0d1d9a101524ba60beee64cd",
+          "url": "https://github.com/maidsafe/safe_network/commit/7ed5a9440c69243d658414f4c603c6959e5223ed"
+        },
+        "date": 1697814659761,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.09147218297647482,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5064166804156197,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 18.186803107348226,
             "unit": "MiB/s"
           }
         ]
