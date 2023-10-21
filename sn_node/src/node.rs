@@ -216,11 +216,19 @@ impl Node {
                             closest_peers[rand::thread_rng().gen_range(0..closest_peers.len())];
                         Marker::ForcedReplication(peer_id).log();
 
+                        // simulate losing peer_id
                         if let Err(err) = stateless_node_copy
                             .try_trigger_replication(peer_id, true)
                             .await
                         {
                             error!("During forced replication simulating lost of {peer_id:?}, error while triggering replication {err:?}");
+                        }
+                        // simulate gain of peer_id
+                        if let Err(err) = stateless_node_copy
+                            .try_trigger_replication(peer_id, false)
+                            .await
+                        {
+                            error!("During forced replication simulating gain of {peer_id:?}, error while triggering replication {err:?}");
                         }
                     });
                     replication_time = Instant::now();
