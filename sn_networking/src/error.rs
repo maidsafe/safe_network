@@ -32,11 +32,6 @@ pub enum Error {
     #[error("Netowrk query timed out")]
     QueryTimeout,
 
-    #[error(
-        "Not enough store cost prices returned from the network to ensure a valid fee is paid"
-    )]
-    NotEnoughCostPricesReturned,
-
     #[error("Close group size must be a non-zero usize")]
     InvalidCloseGroupSize,
 
