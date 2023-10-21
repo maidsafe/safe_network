@@ -420,7 +420,7 @@ impl Client {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::All, true, Default::default())
+            .get_record_from_network(key, None, GetQuorum::Majority, true, Default::default())
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
