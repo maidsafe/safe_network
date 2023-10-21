@@ -165,7 +165,7 @@ impl Node {
         let _handle = spawn(async move {
             // use a random inactivity timeout to ensure that the nodes do not sync when messages
             // are being transmitted.
-            let inactivity_timeout: i32 = rng.gen_range(20..40);
+            let inactivity_timeout: i32 = rng.gen_range(5..15);
             let inactivity_timeout = Duration::from_secs(inactivity_timeout as u64);
 
             let mut replication_time = Instant::now();
