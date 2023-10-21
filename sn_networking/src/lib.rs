@@ -517,7 +517,7 @@ impl Network {
     }
 
     /// Returns true if a RecordKey is present locally in the RecordStore
-    pub async fn is_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
+    pub async fn is_record_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::RecordStoreHasKey {
             key: key.clone(),
@@ -702,10 +702,6 @@ fn get_fees_from_store_cost_responses(
 
     // get the first desired_quote_count of all_costs
     all_costs.truncate(desired_quote_count);
-
-    if all_costs.len() < desired_quote_count {
-        return Err(Error::NotEnoughCostPricesReturned);
-    }
 
     info!(
         "Final fees calculated as: {all_costs:?}, from: {:?}",

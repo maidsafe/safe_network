@@ -107,4 +107,7 @@ pub enum Error {
     // The RecordKind that was obtained did not match with the expected one
     #[error("The RecordKind obtained from the Record did not match with the expected kind: {0}")]
     RecordKindMismatch(RecordKind),
+    // The record already exists at this node
+    #[error("The record already exists, so do not charge for it: {0:?}")]
+    RecordExists(PrettyPrintRecordKey),
 }
