@@ -182,7 +182,7 @@ impl Node {
 
         let present_locally = self
             .network
-            .is_key_present_locally(&data_key)
+            .is_record_key_present_locally(&data_key)
             .await
             .map_err(|err| {
                 let msg = format!("Error while checking if Chunk's key is present locally {err}");
@@ -245,7 +245,7 @@ impl Node {
         let key = NetworkAddress::from_register_address(*reg_addr).to_record_key();
         let present_locally = self
             .network
-            .is_key_present_locally(&key)
+            .is_record_key_present_locally(&key)
             .await
             .map_err(|err| {
                 warn!("Error while checking if register's key is present locally {err}");
@@ -319,7 +319,7 @@ impl Node {
 
         let present_locally = self
             .network
-            .is_key_present_locally(&key)
+            .is_record_key_present_locally(&key)
             .await
             .map_err(|_err| {
                 let err = ProtocolError::SpendNotStored(format!(
