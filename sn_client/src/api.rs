@@ -269,7 +269,7 @@ impl Client {
 
         let maybe_record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::All, false, Default::default())
+            .get_record_from_network(key, None, GetQuorum::Majority, false, Default::default())
             .await;
         let record = match maybe_record {
             Ok(r) => r,
@@ -437,7 +437,7 @@ impl Client {
         let key = NetworkAddress::from_register_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::All, true, Default::default())
+            .get_record_from_network(key, None, GetQuorum::Majority, true, Default::default())
             .await?;
 
         let header = RecordHeader::from_record(&record)?;
