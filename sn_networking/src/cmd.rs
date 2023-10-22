@@ -160,7 +160,7 @@ impl SwarmDriver {
                 let all_peers = self.get_all_local_peers();
                 let keys_to_store = keys
                     .iter()
-                    .filter(|key| self.is_in_close_range(key, all_peers.clone()))
+                    .filter(|key| self.is_in_close_range(key, &all_peers))
                     .cloned()
                     .collect();
                 #[allow(clippy::mutable_key_type)]
@@ -443,14 +443,14 @@ impl SwarmDriver {
     // are none among target b011111's close range.
     // Hence, the ilog2 calculation based on close_range cannot cover such case.
     // And have to sort all nodes to figure out whether self is among the close_group to the target.
-    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: Vec<PeerId>) -> bool {
+    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &[PeerId]) -> bool {
         if all_peers.len() <= CLOSE_GROUP_SIZE + 2 {
             return true;
         }
 
         // Margin of 2 to allow our RT being bit lagging.
         match sort_peers_by_address(all_peers, target, CLOSE_GROUP_SIZE + 2) {
-            Ok(close_group) => close_group.contains(&self.self_peer_id),
+            Ok(close_group) => close_group.contains(&&self.self_peer_id),
             Err(err) => {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");
                 true

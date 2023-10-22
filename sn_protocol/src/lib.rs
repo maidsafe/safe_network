@@ -23,6 +23,7 @@ use libp2p::{
     PeerId,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use sha2::{Digest, Sha256};
 use std::fmt::{self, Debug, Display, Formatter};
 use xor_name::XorName;
 
@@ -184,12 +185,15 @@ impl Debug for NetworkAddress {
                 "NetworkAddress::RegisterAddress({:?} - ",
                 register_address.xorname()
             ),
-            NetworkAddress::RecordKey(_) => "NetworkAddress::RecordKey(".to_string(),
+            NetworkAddress::RecordKey(bytes) => format!(
+                "NetworkAddress::RecordKey({:?} - ",
+                PrettyPrintRecordKey::from(RecordKey::new(bytes))
+            ),
         };
         write!(
             f,
             "{name_str}{:?})",
-            PrettyPrintRecordKey::from(self.to_record_key()),
+            PrettyPrintKBucketKey(self.as_kbucket_key()),
         )
     }
 }
@@ -213,6 +217,26 @@ impl Display for NetworkAddress {
                 write!(f, "NetworkAddress::RecordKey({})", hex::encode(key))
             }
         }
+    }
+}
+
+/// Pretty print a `kad::KBucketKey` as a hex string.
+#[derive(Clone)]
+pub struct PrettyPrintKBucketKey(pub Key<Vec<u8>>);
+
+impl std::fmt::Display for PrettyPrintKBucketKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // The `KeyBytes` part of `KBucketKey` is private and no API to expose it.
+        // Hence here we have to carry out a hash manually to simulate its behaviour.
+        let generic_array = Sha256::digest(self.0.preimage());
+        let kbucket_key_b = Bytes::from(generic_array.to_vec());
+        write!(f, "{:64x}", kbucket_key_b)
+    }
+}
+
+impl std::fmt::Debug for PrettyPrintKBucketKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
@@ -258,7 +282,12 @@ impl std::fmt::Display for PrettyPrintRecordKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let b: Vec<u8> = self.0.as_ref().to_vec();
         let record_key_b = Bytes::from(b);
-        write!(f, "{:64x}", record_key_b)
+        write!(
+            f,
+            "{:64x}({:?})",
+            record_key_b,
+            PrettyPrintKBucketKey(NetworkAddress::from_record_key(self.0.clone()).as_kbucket_key())
+        )
     }
 }
 

@@ -45,7 +45,7 @@ use libp2p::{
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
     storage::{RecordHeader, RecordKind},
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::MainPubkey;
 use sn_transfers::NanoTokens;
@@ -78,38 +78,54 @@ const PUT_RECORD_RETRIES: usize = 3;
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
-pub fn sort_peers_by_address(
-    peers: Vec<PeerId>,
+pub fn sort_peers_by_address<'a>(
+    peers: &'a [PeerId],
     address: &NetworkAddress,
     expected_entries: usize,
-) -> Result<Vec<PeerId>> {
+) -> Result<Vec<&'a PeerId>> {
     sort_peers_by_key(peers, &address.as_kbucket_key(), expected_entries)
 }
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
-pub fn sort_peers_by_key<T>(
-    mut peers: Vec<PeerId>,
+pub fn sort_peers_by_key<'a, T>(
+    peers: &'a [PeerId],
     key: &KBucketKey<T>,
     expected_entries: usize,
-) -> Result<Vec<PeerId>> {
-    peers.sort_by(|a, b| {
-        let a = NetworkAddress::from_peer(*a);
-        let b = NetworkAddress::from_peer(*b);
-        key.distance(&a.as_kbucket_key())
-            .cmp(&key.distance(&b.as_kbucket_key()))
-    });
-    let peers: Vec<PeerId> = peers.iter().take(expected_entries).cloned().collect();
+) -> Result<Vec<&'a PeerId>> {
+    // Get the indices and sort them by indexing into the `peers` array.
+    let mut indices: Vec<usize> = (0..peers.len()).collect();
+    indices.sort_by(|&i, &j| {
+        let a = peers
+            .get(i)
+            .map(|&peer_id| NetworkAddress::from_peer(peer_id));
+        let b = peers
+            .get(j)
+            .map(|&peer_id| NetworkAddress::from_peer(peer_id));
 
-    if CLOSE_GROUP_SIZE > peers.len() {
+        match (a, b) {
+            (Some(a_addr), Some(b_addr)) => key
+                .distance(&a_addr.as_kbucket_key())
+                .cmp(&key.distance(&b_addr.as_kbucket_key())),
+            _ => std::cmp::Ordering::Equal,
+        }
+    });
+
+    let sorted_peers: Vec<&PeerId> = indices
+        .iter()
+        .take(expected_entries)
+        .filter_map(|&i| peers.get(i))
+        .collect();
+
+    if CLOSE_GROUP_SIZE > sorted_peers.len() {
         warn!("Not enough peers in the k-bucket to satisfy the request");
         return Err(Error::NotEnoughPeers {
-            found: peers.len(),
+            found: sorted_peers.len(),
             required: CLOSE_GROUP_SIZE,
         });
     }
-    Ok(peers)
+    Ok(sorted_peers)
 }
 
 #[derive(Clone)]
@@ -169,8 +185,8 @@ impl Network {
                     .map(|peer_id| {
                         format!(
                             "{peer_id:?}({:?})",
-                            PrettyPrintRecordKey::from(
-                                NetworkAddress::from_peer(*peer_id).to_record_key()
+                            PrettyPrintKBucketKey(
+                                NetworkAddress::from_peer(*peer_id).as_kbucket_key()
                             )
                         )
                     })
@@ -501,7 +517,7 @@ impl Network {
     }
 
     /// Returns true if a RecordKey is present locally in the RecordStore
-    pub async fn is_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
+    pub async fn is_record_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::RecordStoreHasKey {
             key: key.clone(),
@@ -618,14 +634,18 @@ impl Network {
             .map(|peer_id| {
                 format!(
                     "{peer_id:?}({:?})",
-                    PrettyPrintRecordKey::from(NetworkAddress::from_peer(*peer_id).to_record_key())
+                    PrettyPrintKBucketKey(NetworkAddress::from_peer(*peer_id).as_kbucket_key())
                 )
             })
             .collect();
 
         trace!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
 
-        sort_peers_by_address(closest_peers, key, CLOSE_GROUP_SIZE)
+        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?
+            .into_iter()
+            .cloned()
+            .collect();
+        Ok(closest_peers)
     }
 
     /// Send a `Request` to the provided set of peers and wait for their responses concurrently.
@@ -682,10 +702,6 @@ fn get_fees_from_store_cost_responses(
 
     // get the first desired_quote_count of all_costs
     all_costs.truncate(desired_quote_count);
-
-    if all_costs.len() < desired_quote_count {
-        return Err(Error::NotEnoughCostPricesReturned);
-    }
 
     info!(
         "Final fees calculated as: {all_costs:?}, from: {:?}",

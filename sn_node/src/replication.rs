@@ -15,7 +15,7 @@ use libp2p::{
 use sn_networking::{sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::collections::BTreeMap;
 use tokio::task::JoinHandle;
@@ -66,25 +66,23 @@ impl Node {
 
         for key in all_records {
             let sorted_based_on_key =
-                sort_peers_by_address(all_peers.clone(), &key, CLOSE_GROUP_SIZE + 1)?;
+                sort_peers_by_address(&all_peers, &key, CLOSE_GROUP_SIZE + 1)?;
             let sorted_peers_pretty_print: Vec<_> = sorted_based_on_key
                 .iter()
-                .map(|peer_id| {
+                .map(|&peer_id| {
                     format!(
                         "{peer_id:?}({:?})",
-                        PrettyPrintRecordKey::from(
-                            NetworkAddress::from_peer(*peer_id).to_record_key()
-                        )
+                        PrettyPrintKBucketKey(NetworkAddress::from_peer(*peer_id).as_kbucket_key())
                     )
                 })
                 .collect();
 
-            if sorted_based_on_key.contains(&peer_id) {
+            if sorted_based_on_key.contains(&&peer_id) {
                 trace!("replication: close for {key:?} are: {sorted_peers_pretty_print:?}");
                 let target_peer = if is_removal {
                     // For dead peer, only replicate to farthest close_group peer,
                     // when the dead peer was one of the close_group peers to the record.
-                    if let Some(farthest_peer) = sorted_based_on_key.last() {
+                    if let Some(&farthest_peer) = sorted_based_on_key.last() {
                         if *farthest_peer != peer_id {
                             *farthest_peer
                         } else {
@@ -95,7 +93,7 @@ impl Node {
                     }
                 } else {
                     // For new peer, always replicate to it when it is close_group of the record.
-                    if Some(&peer_id) != sorted_based_on_key.last() {
+                    if Some(&&peer_id) != sorted_based_on_key.last() {
                         peer_id
                     } else {
                         continue;

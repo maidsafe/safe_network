@@ -165,7 +165,7 @@ impl Node {
         let _handle = spawn(async move {
             // use a random inactivity timeout to ensure that the nodes do not sync when messages
             // are being transmitted.
-            let inactivity_timeout: i32 = rng.gen_range(20..40);
+            let inactivity_timeout: i32 = rng.gen_range(5..15);
             let inactivity_timeout = Duration::from_secs(inactivity_timeout as u64);
 
             let mut replication_time = Instant::now();
@@ -394,19 +394,42 @@ impl Node {
 
     async fn handle_query(&self, query: Query) -> Response {
         let resp: QueryResponse = match query {
-            Query::GetStoreCost(_address) => {
-                trace!("Got GetStoreCost");
+            Query::GetStoreCost(address) => {
+                trace!("Got GetStoreCost request for {address:?}");
                 let payment_address = self.reward_address;
 
-                let store_cost = self
-                    .network
-                    .get_local_storecost()
-                    .await
-                    .map_err(|_| ProtocolError::GetStoreCostFailed);
+                let record_exists = {
+                    if let Some(key) = address.as_record_key() {
+                        match self.network.is_record_key_present_locally(&key).await {
+                            Ok(res) => res,
+                            Err(error) => {
+                                error!("Problem getting record key's existence: {error:?}");
+                                false
+                            }
+                        }
+                    } else {
+                        false
+                    }
+                };
 
-                QueryResponse::GetStoreCost {
-                    store_cost,
-                    payment_address,
+                if record_exists {
+                    QueryResponse::GetStoreCost {
+                        store_cost: Err(ProtocolError::RecordExists(PrettyPrintRecordKey::from(
+                            address.to_record_key(),
+                        ))),
+                        payment_address,
+                    }
+                } else {
+                    let store_cost = self
+                        .network
+                        .get_local_storecost()
+                        .await
+                        .map_err(|_| ProtocolError::GetStoreCostFailed);
+
+                    QueryResponse::GetStoreCost {
+                        store_cost,
+                        payment_address,
+                    }
                 }
             }
             Query::GetReplicatedRecord { requester, key } => {
