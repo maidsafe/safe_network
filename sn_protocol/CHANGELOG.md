@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.27](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.7.26...sn_protocol-v0.7.27) - 2023-10-22
+
+### Added
+- *(protocol)* Nodes can error StoreCosts if they have data.
+
 ## [0.7.26](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.7.25...sn_protocol-v0.7.26) - 2023-10-20
 
 ### Added
