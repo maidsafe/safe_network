@@ -31,7 +31,7 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
-    time::{Duration, Instant},
+    time::Duration,
 };
 use tokio::{sync::mpsc::Receiver, task::spawn};
 
@@ -39,6 +39,9 @@ use tokio::{sync::mpsc::Receiver, task::spawn};
 /// The notification msg is expected to contain the serialised public key, followed by the
 /// serialised transfer info encrypted against the referenced public key.
 pub(super) const TRANSFER_NOTIF_TOPIC: &str = "TRANSFER_NOTIFICATION";
+
+/// Interval to trigger replication on a random close_group peer
+const PERIODIC_REPLICATION_INTERVAL: Duration = Duration::from_secs(10);
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
@@ -165,10 +168,11 @@ impl Node {
         let _handle = spawn(async move {
             // use a random inactivity timeout to ensure that the nodes do not sync when messages
             // are being transmitted.
-            let inactivity_timeout: i32 = rng.gen_range(5..15);
+            let inactivity_timeout: i32 = rng.gen_range(20..40);
             let inactivity_timeout = Duration::from_secs(inactivity_timeout as u64);
 
-            let mut replication_time = Instant::now();
+            let mut replication_interval = tokio::time::interval(PERIODIC_REPLICATION_INTERVAL);
+            let _ = replication_interval.tick().await; // first tick completes immediately
 
             loop {
                 let peers_connected = peers_connected.clone();
@@ -192,38 +196,36 @@ impl Node {
                         trace!("NetworkEvent inactivity timeout hit");
                         Marker::NoNetworkActivity( inactivity_timeout ).log();
                     }
-                }
+                    // runs every replication_interval time
+                    _ = replication_interval.tick() => {
+                        let stateless_node_copy = self.clone();
+                        let _handle = spawn(async move {
+                            let closest_peers = match stateless_node_copy
+                                .network
+                                .get_closest_local_peers(&NetworkAddress::from_peer(
+                                    stateless_node_copy.network.peer_id,
+                                ))
+                                .await
+                            {
+                                Ok(closest_peers) => closest_peers,
+                                Err(err) => {
+                                    error!("During forced replication cann't fetch local closest_peers {err:?}");
+                                    return;
+                                }
+                            };
 
-                if replication_time.elapsed() > inactivity_timeout {
-                    let stateless_node_copy = self.clone();
+                            let peer_id =
+                                closest_peers[rand::thread_rng().gen_range(0..closest_peers.len())];
+                            Marker::ForcedReplication(peer_id).log();
 
-                    let _handle = spawn(async move {
-                        let closest_peers = match stateless_node_copy
-                            .network
-                            .get_closest_local_peers(&NetworkAddress::from_peer(
-                                stateless_node_copy.network.peer_id,
-                            ))
-                            .await
-                        {
-                            Ok(closest_peers) => closest_peers,
-                            Err(err) => {
-                                error!("During forced replication cann't fetch local closest_peers {err:?}");
-                                return;
+                            if let Err(err) = stateless_node_copy
+                                .try_trigger_replication(peer_id, true)
+                                .await
+                            {
+                                error!("During forced replication simulating lost of {peer_id:?}, error while triggering replication {err:?}");
                             }
-                        };
-
-                        let peer_id =
-                            closest_peers[rand::thread_rng().gen_range(0..closest_peers.len())];
-                        Marker::ForcedReplication(peer_id).log();
-
-                        if let Err(err) = stateless_node_copy
-                            .try_trigger_replication(peer_id, true)
-                            .await
-                        {
-                            error!("During forced replication simulating lost of {peer_id:?}, error while triggering replication {err:?}");
-                        }
-                    });
-                    replication_time = Instant::now();
+                        });
+                    }
                 }
             }
         });
