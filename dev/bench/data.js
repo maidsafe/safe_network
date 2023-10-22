@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697979638950,
+  "lastUpdate": 1697980656258,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -19935,6 +19935,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 95,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "96b944d5e7a576b3c7740af39a1d18aa4df1398d",
+          "message": "chore(node): increase replication frequency",
+          "timestamp": "2023-10-22T14:29:41+02:00",
+          "tree_id": "c44b68130100a65cd50b363fdfcb32f56fbba752",
+          "url": "https://github.com/maidsafe/safe_network/commit/96b944d5e7a576b3c7740af39a1d18aa4df1398d"
+        },
+        "date": 1697980655656,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 94,
             "unit": "MB"
           }
         ]
