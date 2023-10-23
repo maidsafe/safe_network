@@ -200,12 +200,14 @@ mod tests {
     use eyre::Result;
     use libp2p::{kad::RecordKey, PeerId};
     use sn_protocol::{storage::RecordType, NetworkAddress};
-    use std::{collections::HashMap, time::Duration};
+    use std::{collections::HashSet, time::Duration};
 
     #[tokio::test]
     async fn verify_max_parallel_fetches() -> Result<()> {
-        let mut replication_fetcher = ReplicationFetcher::default();
-        let locally_stored_keys = HashMap::new();
+        //random peer_id
+        let peer_id = PeerId::random();
+        let mut replication_fetcher = ReplicationFetcher::new(peer_id);
+        let locally_stored_keys = HashSet::new();
 
         let mut incoming_keys = Vec::new();
         (0..MAX_PARALLEL_FETCH * 2).for_each(|_| {

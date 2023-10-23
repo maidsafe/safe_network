@@ -16,106 +16,39 @@ use sn_networking::{sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE, REPLICAT
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
-    NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintRecordKey,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::HashMap;
 use tokio::task::{spawn, JoinHandle};
 
-// To reduce the number of messages exchanged, patch max 500 replication keys into one request.
-const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
-
 impl Node {
-    /// When there is PeerAdded or PeerRemoved, trigger replication, and replication target to be:
-    /// 1, For PeerAdded(X), replicate any record that is now having X in its close_group
-    ///    (from our knowledge) to that X
-    /// 2, For PeerRemoved(X), replicate any record that previously having X in its close_group,
-    ///    to that record's new close_group's farthest peer
-    pub(crate) async fn try_trigger_targetted_replication(
-        &self,
-        peer_id: PeerId,
-        is_removal: bool,
-    ) -> Result<()> {
+    /// Sends _all_ record keys every interval to all peers.
+    pub(crate) async fn try_interval_replication(&self) -> Result<()> {
         let start = std::time::Instant::now();
-        info!("Try trigger start");
         // Already contains self_peer_id
-        let mut all_peers_set: BTreeSet<_> = self
-            .network
-            .get_all_local_peers()
-            .await?
-            .iter()
-            .cloned()
-            .collect();
+        let all_peers = self.network.get_all_local_peers().await?;
 
         // Do not carry out replication if not many peers present.
-        if all_peers_set.len() < K_VALUE.into() {
+        if all_peers.len() < K_VALUE.into() {
             trace!(
                 "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                all_peers_set.len()
+                all_peers.len()
             );
             return Ok(());
         }
 
-        self.record_metrics(Marker::ReplicationTriggered);
+        self.record_metrics(Marker::IntervalReplicationTriggered);
 
         let our_peer_id = self.network.peer_id;
         let our_address = NetworkAddress::from_peer(our_peer_id);
 
         let all_records = self.network.get_all_local_record_addresses().await?;
 
-        trace!(
-            "Replication triggered by the churning of {peer_id:?}, we have #{:?} records",
-            all_records.len()
-        );
-
-        let mut replicate_to: BTreeMap<PeerId, Vec<(NetworkAddress, RecordType)>> =
-            Default::default();
-
-        if is_removal {
-            let _ = all_peers_set.insert(peer_id);
-        }
-        let all_peers: Vec<_> = all_peers_set.iter().cloned().collect();
-
-        for (key, record_type) in all_records {
-            let mut sorted_based_on_key = sort_peers_by_address(&all_peers, &key, REPLICATE_RANGE)?;
-            let sorted_peers_pretty_print: Vec<_> = sorted_based_on_key
-                .iter()
-                .map(|&peer_id| {
-                    format!(
-                        "{peer_id:?}({:?})",
-                        PrettyPrintKBucketKey(NetworkAddress::from_peer(*peer_id).as_kbucket_key())
-                    )
-                })
-                .collect();
-
-            if sorted_based_on_key.contains(&&peer_id) {
-                trace!("replication: close for {key:?} are: {sorted_peers_pretty_print:?}");
-                let target_peers: Vec<_> = if is_removal {
-                    // For dead peer, replicate to close peers except the dead one.
-                    sorted_based_on_key.retain(|target| **target != peer_id);
-                    sorted_based_on_key.to_vec()
-                } else {
-                    // For new peer, always replicate to it when it is close_group of the record.
-                    vec![&peer_id]
-                };
-
-                for target_peer in target_peers {
-                    let keys_to_replicate = replicate_to.entry(*target_peer).or_default();
-                    keys_to_replicate.push((key.clone(), record_type.clone()));
-                }
-            }
+        for peer_id in all_peers {
+            self.send_replicate_cmd_without_wait(&our_address, &peer_id, all_records.clone())?;
         }
 
-        for (peer_id, keys) in replicate_to {
-            let (_left, mut remaining_keys) = keys.split_at(0);
-            while remaining_keys.len() > MAX_REPLICATION_KEYS_PER_REQUEST {
-                let (left, right) = remaining_keys.split_at(MAX_REPLICATION_KEYS_PER_REQUEST);
-                remaining_keys = right;
-                self.send_replicate_cmd_without_wait(&our_address, &peer_id, left.to_vec())?;
-            }
-            self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())?;
-        }
-
-        info!("Try trigger end, took {:?}", start.elapsed());
+        info!("Try trigger interval, took {:?}", start.elapsed());
         Ok(())
     }
 
@@ -124,7 +57,7 @@ impl Node {
     pub(crate) fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,
-        keys: Vec<(NetworkAddress, RecordType)>,
+        keys: HashMap<NetworkAddress, RecordType>,
     ) -> Result<()> {
         self.network.add_keys_to_replication_fetcher(holder, keys)?;
         Ok(())
@@ -261,7 +194,7 @@ impl Node {
         &self,
         our_address: &NetworkAddress,
         peer_id: &PeerId,
-        keys: Vec<(NetworkAddress, RecordType)>,
+        keys: HashMap<NetworkAddress, RecordType>,
     ) -> Result<()> {
         trace!(
             "Sending a replication list of {} keys to {peer_id:?} keys: {keys:?}",

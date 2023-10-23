@@ -571,7 +571,7 @@ impl Network {
     pub fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,
-        keys: Vec<(NetworkAddress, RecordType)>,
+        keys: HashMap<NetworkAddress, RecordType>,
     ) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { holder, keys })
     }
