@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.28](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.7.27...sn_protocol-v0.7.28) - 2023-10-23
+
+### Fixed
+- *(protocol)* add custom debug fmt for QueryResponse
+
+### Other
+- more custom debug and debug skips
+
 ## [0.7.27](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.7.26...sn_protocol-v0.7.27) - 2023-10-22
 
 ### Added
