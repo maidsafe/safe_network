@@ -23,11 +23,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     // ---------- record layer + payment errors
     #[error("Record was not stored as no payment supplied: {0:?}")]
-    InvalidPutWithoutPayment(PrettyPrintRecordKey),
+    InvalidPutWithoutPayment(PrettyPrintRecordKey<'static>),
 
     /// At this point in replication flows, payment is unimportant and should not be supplied
     #[error("Record should not be a `WithPayment` type: {0:?}")]
-    UnexpectedRecordWithPayment(PrettyPrintRecordKey),
+    UnexpectedRecordWithPayment(PrettyPrintRecordKey<'static>),
 
     // ---------- register errors
     #[error("Register was not stored: {0}")]
@@ -69,7 +69,7 @@ pub enum Error {
     #[error(
         "Payment proof received with record:{0:?}. No payment for our node in its transaction"
     )]
-    NoPaymentToOurNode(PrettyPrintRecordKey),
+    NoPaymentToOurNode(PrettyPrintRecordKey<'static>),
     /// Payments received could not be stored on node's local wallet
     #[error("Payments received could not be stored on node's local wallet: {0}")]
     FailedToStorePaymentIntoNodeWallet(String),
@@ -94,7 +94,7 @@ pub enum Error {
 
     // ---------- record errors
     #[error("Record was not stored: {0:?}: {1:?}")]
-    RecordNotStored(PrettyPrintRecordKey, String),
+    RecordNotStored(PrettyPrintRecordKey<'static>, String),
     // Could not Serialize/Deserialize RecordHeader from Record
     #[error("Could not Serialize/Deserialize RecordHeader to/from Record")]
     RecordHeaderParsingFailed,
@@ -109,5 +109,5 @@ pub enum Error {
     RecordKindMismatch(RecordKind),
     // The record already exists at this node
     #[error("The record already exists, so do not charge for it: {0:?}")]
-    RecordExists(PrettyPrintRecordKey),
+    RecordExists(PrettyPrintRecordKey<'static>),
 }
