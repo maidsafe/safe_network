@@ -29,7 +29,7 @@ impl Network {
             .map_err(|_| Error::SpendNotFound(address))?;
         debug!(
             "Got record from the network, {:?}",
-            PrettyPrintRecordKey::from(record.key.clone())
+            PrettyPrintRecordKey::from(&record.key)
         );
         let header =
             RecordHeader::from_record(&record).map_err(|_| Error::SpendNotFound(address))?;

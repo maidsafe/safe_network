@@ -46,10 +46,10 @@ pub enum Error {
 
     /// No put_record attempts were successfully verified.
     #[error("Could not retrieve the record after storing it: {0:}")]
-    FailedToVerifyRecordWasStored(PrettyPrintRecordKey),
+    FailedToVerifyRecordWasStored(PrettyPrintRecordKey<'static>),
 
     #[error("Record retrieved from the network does not match the one we attempted to store {0:}")]
-    ReturnedRecordDoesNotMatch(PrettyPrintRecordKey),
+    ReturnedRecordDoesNotMatch(PrettyPrintRecordKey<'static>),
 
     #[error("Could not create storage dir: {path:?}, error: {source}")]
     FailedToCreateRecordStoreDir {
@@ -130,8 +130,7 @@ mod tests {
         let address = ChunkAddress::new(xor_name);
         let network_address = NetworkAddress::from_chunk_address(address);
         let record_key = network_address.to_record_key();
-        let pretty_record: PrettyPrintRecordKey = record_key.into();
-        let record_str = format!("{}", pretty_record);
+        let record_str = format!("{}", PrettyPrintRecordKey::from(&record_key));
         let xor_name_str = format!(
             "{:64x}({:?})",
             xor_name,

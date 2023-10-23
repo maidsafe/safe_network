@@ -172,7 +172,7 @@ impl Debug for NetworkEvent {
             NetworkEvent::KeysForReplication(list) => {
                 let pretty_list: Vec<_> = list
                     .iter()
-                    .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key.clone())))
+                    .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key)))
                     .collect();
                 write!(f, "NetworkEvent::KeysForReplication({pretty_list:?})")
             }
@@ -183,11 +183,11 @@ impl Debug for NetworkEvent {
                 write!(f, "NetworkEvent::NatStatusChanged({nat_status:?})")
             }
             NetworkEvent::UnverifiedRecord(record) => {
-                let pretty_key = PrettyPrintRecordKey::from(record.key.clone());
+                let pretty_key = PrettyPrintRecordKey::from(&record.key);
                 write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
             }
             NetworkEvent::FailedToWrite(record_key) => {
-                let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
+                let pretty_key = PrettyPrintRecordKey::from(record_key);
                 write!(f, "NetworkEvent::FailedToWrite({pretty_key:?})")
             }
             NetworkEvent::GossipsubMsgReceived { topic, .. } => {
@@ -607,7 +607,7 @@ impl SwarmDriver {
                 let content_hash = XorName::from_content(&peer_record.record.value);
                 trace!(
                     "Query task {id:?} returned with record {:?}(content {content_hash:?}) from peer {:?}, {stats:?} - {step:?}",
-                    PrettyPrintRecordKey::from(peer_record.record.key.clone()),
+                    PrettyPrintRecordKey::from(&peer_record.record.key),
                     peer_record.peer
                 );
                 self.accumulate_get_record_ok(id, peer_record, step.count);
@@ -634,7 +634,7 @@ impl SwarmDriver {
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
                         format!(
                             "Getting record {:?} completed with only {:?} copies received",
-                            PrettyPrintRecordKey::from(record.key.clone()),
+                            PrettyPrintRecordKey::from(&record.key),
                             usize::from(step.count) - 1
                         )
                     } else {
@@ -664,14 +664,14 @@ impl SwarmDriver {
                 match err.clone() {
                     GetRecordError::NotFound { key, closest_peers } => {
                         info!("Query task {id:?} NotFound record {:?} among peers {closest_peers:?}, {stats:?} - {step:?}",
-                        PrettyPrintRecordKey::from(key.clone()));
+                        PrettyPrintRecordKey::from(&key));
                     }
                     GetRecordError::QuorumFailed {
                         key,
                         records,
                         quorum,
                     } => {
-                        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+                        let pretty_key = PrettyPrintRecordKey::from(&key);
                         let peers = records
                             .iter()
                             .map(|peer_record| peer_record.peer)
@@ -679,7 +679,7 @@ impl SwarmDriver {
                         info!("Query task {id:?} QuorumFailed record {pretty_key:?} among peers {peers:?} with quorum {quorum:?}, {stats:?} - {step:?}");
                     }
                     GetRecordError::Timeout { key } => {
-                        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+                        let pretty_key = PrettyPrintRecordKey::from(&key);
 
                         debug!(
                             "Query task {id:?} timed out when looking for record {pretty_key:?}"
@@ -909,7 +909,7 @@ impl SwarmDriver {
         if let Some((sender, mut result_map, quorum, mut expected_holders)) =
             self.pending_get_record.remove(&query_id)
         {
-            let pretty_key = PrettyPrintRecordKey::from(peer_record.record.key.clone());
+            let pretty_key = PrettyPrintRecordKey::from(&peer_record.record.key).into_owned();
 
             if !expected_holders.is_empty() {
                 if expected_holders.remove(&peer_id) {
