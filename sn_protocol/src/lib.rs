@@ -17,7 +17,6 @@ pub mod messages;
 pub mod storage;
 
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
-use bytes::Bytes;
 use libp2p::{
     kad::{KBucketDistance as Distance, KBucketKey as Key, RecordKey},
     PeerId,
@@ -232,8 +231,10 @@ impl std::fmt::Display for PrettyPrintKBucketKey {
         // The `KeyBytes` part of `KBucketKey` is private and no API to expose it.
         // Hence here we have to carry out a hash manually to simulate its behaviour.
         let generic_array = Sha256::digest(self.0.preimage());
-        let kbucket_key_b = Bytes::from(generic_array.to_vec());
-        write!(f, "{:64x}", kbucket_key_b)
+        for byte in generic_array {
+            f.write_fmt(format_args!("{:02x}", byte))?;
+        }
+        Ok(())
     }
 }
 
@@ -330,44 +331,62 @@ impl<'a> std::fmt::Debug for PrettyPrintRecordKey<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey};
+    use crate::{NetworkAddress, PrettyPrintRecordKey};
     use bls::rand::thread_rng;
-    use libp2p::kad::RecordKey;
+    use bytes::Bytes;
+    use libp2p::kad::{KBucketKey, RecordKey};
+    use sha2::{Digest, Sha256};
+
+    // A struct that implements hex representation of RecordKey using `bytes::Bytes`
+    struct OldRecordKeyPrint(RecordKey);
+
+    // old impl using Bytes
+    impl std::fmt::Display for OldRecordKeyPrint {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let b: Vec<u8> = self.0.as_ref().to_vec();
+            let record_key_b = Bytes::from(b);
+            write!(
+                f,
+                "{:64x}({:?})",
+                record_key_b,
+                OldKBucketKeyPrint(
+                    NetworkAddress::from_record_key(self.0.clone()).as_kbucket_key()
+                )
+            )
+        }
+    }
+
+    impl std::fmt::Debug for OldRecordKeyPrint {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self)
+        }
+    }
+
+    // A struct that implements hex representation of KBucketKey using `bytes::Bytes`
+    pub struct OldKBucketKeyPrint(KBucketKey<Vec<u8>>);
+
+    // old impl using Bytes
+    impl std::fmt::Display for OldKBucketKeyPrint {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let generic_array = Sha256::digest(self.0.preimage());
+            let kbucket_key_b = Bytes::from(generic_array.to_vec());
+            write!(f, "{:64x}", kbucket_key_b)
+        }
+    }
+
+    impl std::fmt::Debug for OldKBucketKeyPrint {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self)
+        }
+    }
 
     #[test]
-    fn verify_custom_record_key_hex_representation() {
+    fn verify_custom_hex_representation() {
         let random = xor_name::XorName::random(&mut thread_rng());
         let key = RecordKey::new(&random.0);
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
-        let old_impl_using_bytes = PrintUsingBytesImpl(key);
+        let old_record_key = OldRecordKeyPrint(key);
 
-        assert_eq!(
-            format!("{pretty_key:?}"),
-            format!("{old_impl_using_bytes:?}")
-        );
-
-        // A struct that implements hex representation of RecordKey using `bytes::Bytes`
-        struct PrintUsingBytesImpl(RecordKey);
-
-        impl std::fmt::Display for PrintUsingBytesImpl {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                let b: Vec<u8> = self.0.as_ref().to_vec();
-                let record_key_b = bytes::Bytes::from(b);
-                write!(
-                    f,
-                    "{:64x}({:?})",
-                    record_key_b,
-                    PrettyPrintKBucketKey(
-                        NetworkAddress::from_record_key(self.0.clone()).as_kbucket_key()
-                    )
-                )
-            }
-        }
-
-        impl std::fmt::Debug for PrintUsingBytesImpl {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                write!(f, "{}", self)
-            }
-        }
+        assert_eq!(format!("{pretty_key:?}"), format!("{old_record_key:?}"));
     }
 }
