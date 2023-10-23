@@ -307,9 +307,12 @@ async fn upload_files(
 
     // If we are not verifying, we can skip this
     if verify_store {
+        println!("**************************************");
+        println!("*            Verification            *");
+        println!("**************************************");
+
         let mut data_to_verify_or_repay = chunks_to_upload;
         while !data_to_verify_or_repay.is_empty() {
-            tokio::time::sleep(Duration::from_secs(3)).await;
             trace!(
                 "Verifying and potentially topping up payment of {:?} chunks",
                 data_to_verify_or_repay.len()
@@ -406,9 +409,6 @@ async fn verify_and_repay_if_needed(
 ) -> Result<Vec<(XorName, PathBuf)>> {
     let total_chunks = chunks_paths.len();
 
-    println!("**************************************");
-    println!("*            Verification            *");
-    println!("**************************************");
     println!("{total_chunks} chunks to be checked and repaid if required");
 
     let progress_bar = get_progress_bar(total_chunks as u64)?;
@@ -468,11 +468,6 @@ async fn verify_and_repay_if_needed(
 
     // If there were any failed chunks, we need to repay them
     for failed_chunks_batch in failed_chunks.chunks(batch_size) {
-        println!(
-            "Failed to fetch {} chunks. Attempting to repay them.",
-            failed_chunks_batch.len()
-        );
-
         let mut wallet = file_api.wallet()?;
 
         // Now we pay again or top up, depending on the new current store cost is
@@ -516,7 +511,11 @@ async fn verify_and_repay_if_needed(
     }
 
     let elapsed = now.elapsed();
-    println!("Repaid and re-uploaded {num_of_failed_chunks:?} chunks in {elapsed:?}");
+    println!(
+        "Repaid and re-uploaded {:?} chunks in {elapsed:?}",
+        chunks_paths.len()
+    );
+    println!("{total_failed_chunks:?} were not yet verified...");
 
     Ok(total_failed_chunks)
 }
