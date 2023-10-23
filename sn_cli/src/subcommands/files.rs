@@ -10,7 +10,7 @@ use super::wallet::{ChunkedFile, BATCH_SIZE};
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{
-    eyre::{bail, eyre, Context, Error},
+    eyre::{bail, eyre, Error},
     Help, Result,
 };
 use indicatif::{ProgressBar, ProgressStyle};
@@ -476,14 +476,19 @@ async fn verify_and_repay_if_needed(
         let mut wallet = file_api.wallet()?;
 
         // Now we pay again or top up, depending on the new current store cost is
-        let _new_cost = wallet
+        match wallet
             .pay_for_storage(
                 failed_chunks_batch
                     .iter()
                     .map(|(addr, _path)| sn_protocol::NetworkAddress::ChunkAddress(*addr)),
             )
             .await
-            .wrap_err("Failed to repay for record storage for {failed_chunks_batch:?}.")?;
+        {
+            Ok(_new_cost) => {}
+            Err(error) => {
+                error!("Failed to repay for record storage: {failed_chunks_batch:?}: {error:?}");
+            }
+        };
 
         // outcome here is not important as we'll verify this later
         let upload_file_api = file_api.clone();
