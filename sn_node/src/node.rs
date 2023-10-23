@@ -198,6 +198,8 @@ impl Node {
                     }
                     // runs every replication_interval time
                     _ = replication_interval.tick() => {
+                        let start = std::time::Instant::now();
+                        info!("Periodic replication triggered");
                         let stateless_node_copy = self.clone();
                         let _handle = spawn(async move {
                             let closest_peers = match stateless_node_copy
@@ -219,11 +221,13 @@ impl Node {
                             Marker::ForcedReplication(peer_id).log();
 
                             if let Err(err) = stateless_node_copy
-                                .try_trigger_replication(peer_id, true)
+                                .try_trigger_targetted_replication(peer_id, true)
                                 .await
                             {
                                 error!("During forced replication simulating lost of {peer_id:?}, error while triggering replication {err:?}");
                             }
+
+                            info!("Periodic replication took {:?}", start.elapsed());
                         });
                     }
                 }
@@ -294,7 +298,7 @@ impl Node {
 
                 self.record_metrics(Marker::PeerAddedToRoutingTable(peer_id));
 
-                if let Err(err) = self.try_trigger_replication(peer_id, false).await {
+                if let Err(err) = self.try_trigger_targetted_replication(peer_id, false).await {
                     error!("During CloseGroupUpdate, error while triggering replication {err:?}");
                 }
             }
@@ -305,7 +309,7 @@ impl Node {
                 // that being close to the old one won't got replicated during the CloseGroupUpdate
                 // of the new one, as the old one still sits in the local kBuckets.
                 // Hence, the replication attempts shall also be undertaken when PeerRemoved.
-                if let Err(err) = self.try_trigger_replication(peer_id, true).await {
+                if let Err(err) = self.try_trigger_targetted_replication(peer_id, true).await {
                     error!("During PeerRemoved, error while triggering replication {err:?}");
                 }
             }
