@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698045564768,
+  "lastUpdate": 1698046720258,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -19964,6 +19964,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/96b944d5e7a576b3c7740af39a1d18aa4df1398d"
         },
         "date": 1697980655656,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 94,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5c29160451714cf8e81336fce826193faec861bc",
+          "message": "fix(node): use tokio::Interval to trigger forced replication",
+          "timestamp": "2023-10-23T08:55:44+02:00",
+          "tree_id": "00efeadbb628189cf5895d25ce58167ab131fa7f",
+          "url": "https://github.com/maidsafe/safe_network/commit/5c29160451714cf8e81336fce826193faec861bc"
+        },
+        "date": 1698046719353,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
