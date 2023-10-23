@@ -154,27 +154,27 @@ impl Debug for SwarmCmd {
                 expected_holders,
                 ..
             } => {
-                write!(f, "SwarmCmd::GetNetworkRecord {{ key: {:?}, quorum: {:?}, expected_holders: {:?} }}", PrettyPrintRecordKey::from(key.clone()), quorum, expected_holders)
+                write!(f, "SwarmCmd::GetNetworkRecord {{ key: {:?}, quorum: {:?}, expected_holders: {:?} }}", PrettyPrintRecordKey::from(key), quorum, expected_holders)
             }
             SwarmCmd::PutRecord { record, .. } => {
                 write!(
                     f,
                     "SwarmCmd::PutRecord {{ key: {:?} }}",
-                    PrettyPrintRecordKey::from(record.key.clone())
+                    PrettyPrintRecordKey::from(&record.key)
                 )
             }
             SwarmCmd::PutLocalRecord { record } => {
                 write!(
                     f,
                     "SwarmCmd::PutLocalRecord {{ key: {:?} }}",
-                    PrettyPrintRecordKey::from(record.key.clone())
+                    PrettyPrintRecordKey::from(&record.key)
                 )
             }
             SwarmCmd::RemoveFailedLocalRecord { key } => {
                 write!(
                     f,
                     "SwarmCmd::RemoveFailedLocalRecord {{ key: {:?} }}",
-                    PrettyPrintRecordKey::from(key.clone())
+                    PrettyPrintRecordKey::from(key)
                 )
             }
             SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
@@ -218,7 +218,7 @@ impl Debug for SwarmCmd {
                 write!(
                     f,
                     "SwarmCmd::GetLocalRecord {{ key: {:?} }}",
-                    PrettyPrintRecordKey::from(key.clone())
+                    PrettyPrintRecordKey::from(key)
                 )
             }
             SwarmCmd::GetAllLocalRecordAddresses { .. } => {
@@ -237,7 +237,7 @@ impl Debug for SwarmCmd {
                 write!(
                     f,
                     "SwarmCmd::RecordStoreHasKey {:?}",
-                    PrettyPrintRecordKey::from(key.clone())
+                    PrettyPrintRecordKey::from(key)
                 )
             }
             SwarmCmd::SendResponse { resp, .. } => {

@@ -453,7 +453,7 @@ impl SwarmDriver {
                 trace!("SwarmEvent has been ignored: {other:?}")
             }
         }
-        debug!(
+        trace!(
             "SwarmEvent handled in {:?}: {event_string:?}",
             start.elapsed()
         );
@@ -544,6 +544,9 @@ impl SwarmDriver {
     fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
         #[cfg(feature = "open-metricss")]
         self.network_metrics.record(&kad_event);
+        let start = std::time::Instant::now();
+        let event_string;
+
         match kad_event {
             ref event @ KademliaEvent::OutboundQueryProgressed {
                 id,
@@ -551,6 +554,7 @@ impl SwarmDriver {
                 ref stats,
                 ref step,
             } => {
+                event_string = "kad_event::get_closest_peers";
                 trace!(
                     "Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}"
                 );
@@ -586,6 +590,7 @@ impl SwarmDriver {
                 ref stats,
                 ref step,
             } => {
+                event_string = "kad_event::get_closest_peers_err";
                 error!("GetClosest Query task {id:?} errored with {err:?}, {stats:?} - {step:?}");
 
                 let (sender, mut current_closest) =
@@ -636,9 +641,9 @@ impl SwarmDriver {
                 stats,
                 step,
             } => {
-                let content_hash = XorName::from_content(&peer_record.record.value);
+                event_string = "kad_event::get_record::found";
                 trace!(
-                    "Query task {id:?} returned with record {:?}(content {content_hash:?}) from peer {:?}, {stats:?} - {step:?}",
+                    "Query task {id:?} returned with record {:?} from peer {:?}, {stats:?} - {step:?}",
                     PrettyPrintRecordKey::from(&peer_record.record.key),
                     peer_record.peer
                 );
@@ -653,6 +658,7 @@ impl SwarmDriver {
                 stats,
                 step,
             } => {
+                event_string = "kad_event::get_record::finished_no_additional";
                 trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?} - {cache_candidates:?}");
                 if let Some((sender, result_map, _quorum, expected_holders)) =
                     self.pending_get_record.remove(&id)
@@ -695,6 +701,7 @@ impl SwarmDriver {
             } => {
                 match err.clone() {
                     GetRecordError::NotFound { key, closest_peers } => {
+                        event_string = "kad_event::GetRecordError::NotFound";
                         info!("Query task {id:?} NotFound record {:?} among peers {closest_peers:?}, {stats:?} - {step:?}",
                         PrettyPrintRecordKey::from(&key));
                     }
@@ -703,6 +710,7 @@ impl SwarmDriver {
                         records,
                         quorum,
                     } => {
+                        event_string = "kad_event::GetRecordError::QuorumFailed";
                         let pretty_key = PrettyPrintRecordKey::from(&key);
                         let peers = records
                             .iter()
@@ -711,6 +719,7 @@ impl SwarmDriver {
                         info!("Query task {id:?} QuorumFailed record {pretty_key:?} among peers {peers:?} with quorum {quorum:?}, {stats:?} - {step:?}");
                     }
                     GetRecordError::Timeout { key } => {
+                        event_string = "kad_event::GetRecordError::Timeout";
                         let pretty_key = PrettyPrintRecordKey::from(&key);
 
                         debug!(
@@ -743,6 +752,11 @@ impl SwarmDriver {
                             sender
                                 .send(Err(Error::QueryTimeout))
                                 .map_err(|_| Error::InternalMsgChannelDropped)?;
+                            debug!(
+                                "KadEvent {event_string:?} completed after {:?}",
+                                start.elapsed()
+                            );
+
                             return Ok(());
                         }
 
@@ -752,6 +766,12 @@ impl SwarmDriver {
                                 sender
                                     .send(Ok(record.clone()))
                                     .map_err(|_| Error::InternalMsgChannelDropped)?;
+
+                                debug!(
+                                    "KadEvent {event_string:?} completed after {:?}",
+                                    start.elapsed()
+                                );
+
                                 return Ok(());
                             }
                         }
@@ -762,6 +782,10 @@ impl SwarmDriver {
                             .send(Err(Error::QueryTimeout))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
 
+                        debug!(
+                            "KadEvent {event_string:?} completed after {:?}",
+                            start.elapsed()
+                        );
                         return Ok(());
                     }
                 }
@@ -784,6 +808,7 @@ impl SwarmDriver {
                 step,
                 ..
             } => {
+                event_string = "kad_event::OutboundQueryProgressed::Bootstrap";
                 // here BootstrapOk::num_remaining refers to the remaining random peer IDs to query, one per
                 // bucket that still needs refreshing.
                 trace!("Kademlia Bootstrap with {id:?} progressed with {bootstrap_result:?} and step {step:?}");
@@ -798,6 +823,7 @@ impl SwarmDriver {
                 old_peer,
                 ..
             } => {
+                event_string = "kad_event::RoutingUpdated";
                 if is_new_peer {
                     info!("New peer added to routing table: {peer:?}");
                     self.log_kbuckets(&peer);
@@ -819,12 +845,14 @@ impl SwarmDriver {
             KademliaEvent::InboundRequest {
                 request: InboundRequest::PutRecord { .. },
             } => {
+                event_string = "kad_event::InboundRequest::PutRecord";
                 // Ignored to reduce logging. When `Record filtering` is enabled,
                 // the `record` variable will contain the content for further validation before put.
             }
             KademliaEvent::InboundRequest {
                 request: InboundRequest::FindNode { .. },
             } => {
+                event_string = "kad_event::InboundRequest::FindNode";
                 // Ignored to reduce logging. With continuous bootstrap, this is triggered often.
             }
             KademliaEvent::InboundRequest {
@@ -834,17 +862,25 @@ impl SwarmDriver {
                         present_locally,
                     },
             } => {
+                event_string = "kad_event::InboundRequest::GetRecord";
                 if !present_locally && num_closer_peers < CLOSE_GROUP_SIZE {
                     trace!("InboundRequest::GetRecord doesn't have local record, with {num_closer_peers:?} closer_peers");
                 }
             }
             KademliaEvent::UnroutablePeer { peer } => {
+                event_string = "kad_event::UnroutablePeer";
                 trace!(peer_id = %peer, "KademliaEvent: UnroutablePeer");
             }
             other => {
+                event_string = "kad_event::Other";
                 trace!("KademliaEvent ignored: {other:?}");
             }
         }
+
+        trace!(
+            "KademliaEvent handled in {:?}: {event_string:?}",
+            start.elapsed()
+        );
 
         Ok(())
     }
