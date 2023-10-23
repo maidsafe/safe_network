@@ -1791,6 +1791,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - *(node)* use tokio::Interval to trigger forced replication
 
+## [0.95.5](https://github.com/maidsafe/safe_network/compare/sn_node-v0.95.4...sn_node-v0.95.5) - 2023-10-23
+
+### Other
+- more custom debug and debug skips
+- *(node)* repl timing logs
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
