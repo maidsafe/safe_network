@@ -115,26 +115,26 @@ impl Node {
     pub(crate) async fn try_interval_replication(&self) -> Result<()> {
         let start = std::time::Instant::now();
         // Already contains self_peer_id
-        let all_peers = self.network.get_all_local_peers().await?;
+        let our_peer_id = self.network.peer_id;
+        let our_address = NetworkAddress::from_peer(our_peer_id);
 
+        let all_peers = self.network.get_all_local_peers().await?;
+        let closest_to_us = sort_peers_by_address(&all_peers, &our_address, K_VALUE.get())?;
         // Do not carry out replication if not many peers present.
-        if all_peers.len() < K_VALUE.into() {
+        if closest_to_us.len() < K_VALUE.into() {
             trace!(
                 "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                all_peers.len()
+                closest_to_us.len()
             );
             return Ok(());
         }
 
         self.record_metrics(Marker::IntervalReplicationTriggered);
 
-        let our_peer_id = self.network.peer_id;
-        let our_address = NetworkAddress::from_peer(our_peer_id);
-
         let all_records = self.network.get_all_local_record_addresses().await?;
 
-        for peer_id in all_peers {
-            self.send_replicate_cmd_without_wait(&our_address, &peer_id, all_records.clone())?;
+        for peer_id in closest_to_us {
+            self.send_replicate_cmd_without_wait(&our_address, peer_id, all_records.clone())?;
         }
 
         info!("Try trigger interval, took {:?}", start.elapsed());

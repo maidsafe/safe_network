@@ -202,7 +202,7 @@ impl Node {
                         info!("Periodic replication triggered");
                         let stateless_node_copy = self.clone();
                         let _handle = spawn(async move {
-                      
+
                             Marker::ForcedReplication.log();
 
                             if let Err(err) = stateless_node_copy
