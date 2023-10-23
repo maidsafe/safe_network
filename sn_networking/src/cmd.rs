@@ -10,6 +10,7 @@ use crate::{
     driver::SwarmDriver,
     error::{Error, Result},
     sort_peers_by_address, GetQuorum, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
+    REPLICATE_RANGE,
 };
 use libp2p::{
     kad::{store::RecordStore, Quorum, Record, RecordKey},
@@ -555,12 +556,12 @@ impl SwarmDriver {
     // Hence, the ilog2 calculation based on close_range cannot cover such case.
     // And have to sort all nodes to figure out whether self is among the close_group to the target.
     fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &[PeerId]) -> bool {
-        if all_peers.len() <= CLOSE_GROUP_SIZE + 2 {
+        if all_peers.len() <= REPLICATE_RANGE {
             return true;
         }
 
         // Margin of 2 to allow our RT being bit lagging.
-        match sort_peers_by_address(all_peers, target, CLOSE_GROUP_SIZE + 2) {
+        match sort_peers_by_address(all_peers, target, REPLICATE_RANGE) {
             Ok(close_group) => close_group.contains(&&self.self_peer_id),
             Err(err) => {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");
