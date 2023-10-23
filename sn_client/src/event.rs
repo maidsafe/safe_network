@@ -36,7 +36,7 @@ impl ClientEventsChannel {
 }
 
 /// Type of events broadcasted by the client to the public API.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, custom_debug::Debug, Serialize)]
 pub enum ClientEvent {
     /// The client has been connected to the network
     ConnectedToNetwork,
@@ -48,6 +48,7 @@ pub enum ClientEvent {
         /// Topic the message was published on
         topic: String,
         /// The raw bytes of the received message
+        #[debug(skip)]
         msg: Vec<u8>,
     },
 }
