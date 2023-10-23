@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.84.11](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.10...sn_cli-v0.84.11) - 2023-10-23
+
+### Fixed
+- *(cli)* don't bail if a payment was not found during verify/repayment
+
 ## [0.84.10](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.9...sn_cli-v0.84.10) - 2023-10-23
 
 ### Other
