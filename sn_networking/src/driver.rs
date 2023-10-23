@@ -515,6 +515,8 @@ impl SwarmDriver {
         loop {
             tokio::select! {
                 swarm_event = self.swarm.select_next_some() => {
+                    // logging for handling events happens inside handle_swarm_events
+                    // otherwise we're rewriting match statements etc around this anwyay
                     if let Err(err) = self.handle_swarm_events(swarm_event) {
                         warn!("Error while handling swarm event: {err}");
                     }
