@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698064368888,
+  "lastUpdate": 1698066674876,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7ce6d64ab4635b89d233f07c548c679a5a3ae933",
-          "message": "feat(node): only add to routing table after Identify success\n\nKademliaBucketInserts::Manual",
-          "timestamp": "2023-06-23T11:57:40+09:00",
-          "tree_id": "208cf9f7a15b5c221379586efbc7ac089175c00d",
-          "url": "https://github.com/maidsafe/safe_network/commit/7ce6d64ab4635b89d233f07c548c679a5a3ae933"
-        },
-        "date": 1687489912781,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.7966384425735215,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.589247812473168,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11654,6 +11620,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 22.511932962515587,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "95e0ff7f899f5cb251782791dd6f5b3a98ff471f",
+          "message": "chore(networking): remove unused content hash\n\nThis could take a long time for larger records",
+          "timestamp": "2023-10-23T14:45:27+02:00",
+          "tree_id": "2ea152a4f4a9ca97b8647d37722eddc6c2879ba0",
+          "url": "https://github.com/maidsafe/safe_network/commit/95e0ff7f899f5cb251782791dd6f5b3a98ff471f"
+        },
+        "date": 1698066672557,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.0866650529811465,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.4616622984310678,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 20.61218550662877,
             "unit": "MiB/s"
           }
         ]
