@@ -100,7 +100,7 @@ impl ReplicationFetcher {
 
         let pretty_keys: Vec<_> = data_to_fetch
             .iter()
-            .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key.clone())))
+            .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key)))
             .collect();
 
         if !data_to_fetch.is_empty() {
@@ -123,7 +123,7 @@ impl ReplicationFetcher {
                     self.on_going_fetches.retain(|data, node| data != key || node != holder);
                     debug!(
                         "Prune record {:?} at {holder:?} from the replication_fetcher due to timeout.",
-                        PrettyPrintRecordKey::from(key.clone())
+                        PrettyPrintRecordKey::from(key)
                     );
                     true
                 } else {

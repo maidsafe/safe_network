@@ -106,7 +106,7 @@ pub fn try_deserialize_record<T: serde::de::DeserializeOwned>(record: &Record) -
     rmp_serde::from_slice(bytes).map_err(|err| {
         error!(
             "Failed to deserialized record {} with error: {err:?}",
-            PrettyPrintRecordKey::from(record.key.clone())
+            PrettyPrintRecordKey::from(&record.key)
         );
         Error::RecordParsingFailed
     })

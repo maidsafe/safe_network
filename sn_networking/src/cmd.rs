@@ -186,7 +186,7 @@ impl SwarmDriver {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
 
                 if !expected_holders.is_empty() {
-                    debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(key));
+                    debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(&key));
                 }
 
                 if self
@@ -225,7 +225,7 @@ impl SwarmDriver {
                 let _ = sender.send(record);
             }
             SwarmCmd::PutRecord { record, sender } => {
-                let record_key = PrettyPrintRecordKey::from(record.key.clone());
+                let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
                 trace!(
                     "Putting record sized: {:?} to network {:?}",
                     record.value.len(),

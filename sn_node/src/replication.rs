@@ -148,7 +148,7 @@ impl Node {
             let node = self.clone();
             let requester = NetworkAddress::from_peer(self.network.peer_id);
             let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
-                let pretty_key = PrettyPrintRecordKey::from(key.clone());
+                let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
                 trace!("Fetching record {pretty_key:?} from node {holder:?}");
                 let req = Request::Query(Query::GetReplicatedRecord {
                     requester,

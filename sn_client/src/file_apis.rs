@@ -169,9 +169,9 @@ impl Files {
 
         if payment.is_empty() {
             warn!("Failed to get payment proof for chunk: {chunk_addr:?} it was not found in the local wallet");
-            return Err(ChunksError::NoPaymentForRecord(PrettyPrintRecordKey::from(
-                chunk_addr.to_record_key(),
-            )))?;
+            return Err(ChunksError::NoPaymentForRecord(
+                PrettyPrintRecordKey::from(&chunk_addr.to_record_key()).into_owned(),
+            ))?;
         }
 
         trace!(

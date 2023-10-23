@@ -18,7 +18,7 @@ pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 #[allow(missing_docs)]
 pub enum Error {
     #[error("Failed to get find payment for record: {0:?}")]
-    NoPaymentForRecord(PrettyPrintRecordKey),
+    NoPaymentForRecord(PrettyPrintRecordKey<'static>),
 
     #[error("Failed to get chunk permit")]
     CouldNotGetChunkPermit,

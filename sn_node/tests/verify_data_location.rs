@@ -184,7 +184,7 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
     while verification_attempts < VERIFICATION_ATTEMPTS {
         failed.clear();
         for (key, actual_holders_idx) in record_holders.iter() {
-            println!("Verifying {:?}", PrettyPrintRecordKey::from(key.clone()));
+            println!("Verifying {:?}", PrettyPrintRecordKey::from(key));
             let record_key = KBucketKey::from(key.to_vec());
             let expected_holders = sort_peers_by_key(all_peers, &record_key, CLOSE_GROUP_SIZE)?
                 .into_iter()
@@ -215,11 +215,11 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
 
                 error!(
                     "Record {:?} is not stored by {missing_peers:?}",
-                    PrettyPrintRecordKey::from(key.clone()),
+                    PrettyPrintRecordKey::from(key),
                 );
                 println!(
                     "Record {:?} is not stored by {missing_peers:?}",
-                    PrettyPrintRecordKey::from(key.clone()),
+                    PrettyPrintRecordKey::from(key),
                 );
             }
 
@@ -230,7 +230,7 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
                 .for_each(|expected| failed_peers.push(*expected));
 
             if !failed_peers.is_empty() {
-                failed.insert(PrettyPrintRecordKey::from(key.clone()), failed_peers);
+                failed.insert(PrettyPrintRecordKey::from(key), failed_peers);
             }
         }
 
@@ -325,7 +325,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
             random_bytes.len()
         );
 
-        let key = PrettyPrintRecordKey::from(RecordKey::new(&file_addr));
+        let key = PrettyPrintRecordKey::from(&RecordKey::new(&file_addr)).into_owned();
         file_api
             .pay_and_upload_bytes_test(file_addr, chunks)
             .await?;

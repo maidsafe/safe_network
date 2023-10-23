@@ -51,14 +51,14 @@ pub enum Marker<'a> {
     },
 
     /// Valid non-existing Chunk record PUT from the network received and stored
-    ValidChunkRecordPutFromNetwork(&'a PrettyPrintRecordKey),
+    ValidChunkRecordPutFromNetwork(&'a PrettyPrintRecordKey<'a>),
     /// Valid non-existing Register record PUT from the network received and stored
-    ValidRegisterRecordPutFromNetwork(&'a PrettyPrintRecordKey),
+    ValidRegisterRecordPutFromNetwork(&'a PrettyPrintRecordKey<'a>),
     /// Valid non-existing Spend record PUT from the network received and stored
-    ValidSpendRecordPutFromNetwork(&'a PrettyPrintRecordKey),
+    ValidSpendRecordPutFromNetwork(&'a PrettyPrintRecordKey<'a>),
 
     /// Record rejected
-    RecordRejected(&'a PrettyPrintRecordKey),
+    RecordRejected(&'a PrettyPrintRecordKey<'a>),
 }
 
 impl<'a> Marker<'a> {

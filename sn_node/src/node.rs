@@ -340,7 +340,7 @@ impl Node {
                 }
             }
             NetworkEvent::UnverifiedRecord(record) => {
-                let key = PrettyPrintRecordKey::from(record.key.clone());
+                let key = PrettyPrintRecordKey::from(&record.key).into_owned();
                 match self.validate_and_store_record(record).await {
                     Ok(cmdok) => trace!("UnverifiedRecord {key} stored with {cmdok:?}."),
                     Err(err) => {
@@ -420,9 +420,9 @@ impl Node {
 
                 if record_exists {
                     QueryResponse::GetStoreCost {
-                        store_cost: Err(ProtocolError::RecordExists(PrettyPrintRecordKey::from(
-                            address.to_record_key(),
-                        ))),
+                        store_cost: Err(ProtocolError::RecordExists(
+                            PrettyPrintRecordKey::from(&address.to_record_key()).into_owned(),
+                        )),
                         payment_address,
                     }
                 } else {
