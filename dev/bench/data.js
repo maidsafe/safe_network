@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698053049867,
+  "lastUpdate": 1698063157567,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "c64408bda1c461c7208a5add09161c5d31d34db6",
-          "message": "fix(CI): correct client downloaded files folder",
-          "timestamp": "2023-06-23T09:21:58+09:00",
-          "tree_id": "4937e1290f905d8b2fd6dc055b16f622d50305a1",
-          "url": "https://github.com/maidsafe/safe_network/commit/c64408bda1c461c7208a5add09161c5d31d34db6"
-        },
-        "date": 1687480575185,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.7037761651761625,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.293427224852596,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11649,6 +11615,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 20.792669238804187,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "1f22221e561047247c87f7adde5692cc7868423d",
+          "message": "fix(cli): don't bail if a payment was not found during verify/repayment",
+          "timestamp": "2023-10-23T13:48:52+02:00",
+          "tree_id": "d25a5faa86773a8204c009cbded19d9499c96a0f",
+          "url": "https://github.com/maidsafe/safe_network/commit/1f22221e561047247c87f7adde5692cc7868423d"
+        },
+        "date": 1698063154666,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.08612212531690563,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.4824805446315886,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 22.511932962515587,
             "unit": "MiB/s"
           }
         ]
