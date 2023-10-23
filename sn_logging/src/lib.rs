@@ -70,7 +70,7 @@ const ALL_SN_LOGS: &str = "all";
 // Trace at nodes, clients, debug at networking layer
 const VERBOSE_SN_LOGS: &str = "v";
 
-#[derive(Default, Debug)]
+#[derive(Default)]
 /// Tracing log formatter setup for easier span viewing
 pub struct LogFormatter;
 
@@ -321,7 +321,7 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
             ("sn_node".to_string(), Level::TRACE),
             ("sn_peers_acquisition".to_string(), Level::TRACE),
             ("sn_protocol".to_string(), Level::TRACE),
-            ("sn_registers".to_string(), Level::TRACE),
+            ("sn_registers".to_string(), Level::INFO),
             ("sn_testnet".to_string(), Level::TRACE),
             ("sn_transfers".to_string(), Level::TRACE),
         ]);

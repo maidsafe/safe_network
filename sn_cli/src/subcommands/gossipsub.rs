@@ -10,7 +10,7 @@ use clap::Subcommand;
 use color_eyre::Result;
 use sn_client::{Client, ClientEvent};
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, custom_debug::Debug)]
 pub enum GossipsubCmds {
     /// Subscribe to a topic and listen for messages published on it
     Subscribe {
@@ -31,6 +31,7 @@ pub enum GossipsubCmds {
         topic: String,
         /// The message to publish.
         #[clap(name = "msg")]
+        #[debug(skip)]
         msg: String,
     },
 }
