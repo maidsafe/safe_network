@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1697980658204,
+  "lastUpdate": 1698045564768,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "e5227552887a7a2c9662926d8da0fe3de493fd74",
-          "message": "chore(client): initial refactor around uploads",
-          "timestamp": "2023-06-22T10:05:35+09:00",
-          "tree_id": "df74321ffbbd80d8ff308f5b14d278355277b2fc",
-          "url": "https://github.com/maidsafe/safe_network/commit/e5227552887a7a2c9662926d8da0fe3de493fd74"
-        },
-        "date": 1687396732428,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.7213006673711075,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.385606917980269,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11639,6 +11605,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 19.5595460909879,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5c29160451714cf8e81336fce826193faec861bc",
+          "message": "fix(node): use tokio::Interval to trigger forced replication",
+          "timestamp": "2023-10-23T08:55:44+02:00",
+          "tree_id": "00efeadbb628189cf5895d25ce58167ab131fa7f",
+          "url": "https://github.com/maidsafe/safe_network/commit/5c29160451714cf8e81336fce826193faec861bc"
+        },
+        "date": 1698045561907,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10395240265271752,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5884162306132912,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 18.612422540540365,
             "unit": "MiB/s"
           }
         ]
