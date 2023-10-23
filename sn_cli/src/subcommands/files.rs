@@ -356,7 +356,7 @@ async fn upload_files(
         .append(true)
         .open(file_names_path)?;
     for (addr, file_name) in uploaded_file_info.iter() {
-        println!("Uploaded {} to {:x}", file_name, addr);
+        println!("\"{}\" {:x}", file_name, addr);
         info!("Uploaded {} to {:x}", file_name, addr);
         writeln!(file, "{:x}: {}", addr, file_name)?;
     }
