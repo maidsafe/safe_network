@@ -29,11 +29,13 @@ impl Node {
     ///    (from our knowledge) to that X
     /// 2, For PeerRemoved(X), replicate any record that previously having X in its close_group,
     ///    to that record's new close_group's farthest peer
-    pub(crate) async fn try_trigger_replication(
+    pub(crate) async fn try_trigger_targetted_replication(
         &self,
         peer_id: PeerId,
         is_removal: bool,
     ) -> Result<()> {
+        let start = std::time::Instant::now();
+        info!("Try trigger start");
         // Already contains self_peer_id
         let mut all_peers = self.network.get_all_local_peers().await?;
 
@@ -115,6 +117,7 @@ impl Node {
             self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())?;
         }
 
+        info!("Try trigger end, took {:?}", start.elapsed());
         Ok(())
     }
 
