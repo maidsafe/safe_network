@@ -17,7 +17,7 @@ use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use tokio::task::JoinHandle;
 
 // To reduce the number of messages exchanged, patch max 500 replication keys into one request.
@@ -37,13 +37,19 @@ impl Node {
         let start = std::time::Instant::now();
         info!("Try trigger start");
         // Already contains self_peer_id
-        let mut all_peers = self.network.get_all_local_peers().await?;
+        let mut all_peers_set: BTreeSet<_> = self
+            .network
+            .get_all_local_peers()
+            .await?
+            .iter()
+            .cloned()
+            .collect();
 
         // Do not carry out replication if not many peers present.
-        if all_peers.len() < K_VALUE.into() {
+        if all_peers_set.len() < K_VALUE.into() {
             trace!(
                 "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                all_peers.len()
+                all_peers_set.len()
             );
             return Ok(());
         }
@@ -63,8 +69,9 @@ impl Node {
         let mut replicate_to: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
 
         if is_removal {
-            all_peers.push(peer_id);
+            let _ = all_peers_set.insert(peer_id);
         }
+        let all_peers: Vec<_> = all_peers_set.iter().cloned().collect();
 
         for key in all_records {
             let sorted_based_on_key =
