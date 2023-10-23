@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698053048229,
+  "lastUpdate": 1698053049867,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -28908,6 +28908,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "59239d904d7f98aac714ed1750560859b6f8ecbb",
+          "message": "chore: more custom debug and debug skips\n\nThis should help to avoid logging large types",
+          "timestamp": "2023-10-23T10:44:14+02:00",
+          "tree_id": "cba7b4d18bf72d9872155bd185b66d04ee597c70",
+          "url": "https://github.com/maidsafe/safe_network/commit/59239d904d7f98aac714ed1750560859b6f8ecbb"
+        },
+        "date": 1698053049428,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 168,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 71,
             "unit": "MB"
           }
         ]
