@@ -304,15 +304,19 @@ impl<'a> PrettyPrintRecordKey<'a> {
 
 impl<'a> std::fmt::Display for PrettyPrintRecordKey<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let b: Vec<u8> = self.key.as_ref().to_vec();
-        let record_key_b = Bytes::from(b);
+        let record_key_bytes = match &self.key {
+            Cow::Borrowed(borrowed_key) => borrowed_key.as_ref(),
+            Cow::Owned(owned_key) => owned_key.as_ref(),
+        };
+        for byte in record_key_bytes {
+            f.write_fmt(format_args!("{:02x}", byte))?;
+        }
+
         // to get the inner RecordKey
         let key = self.key.clone().into_owned();
-
         write!(
             f,
-            "{:64x}({:?})",
-            record_key_b,
+            "({:?})",
             PrettyPrintKBucketKey(NetworkAddress::from_record_key(key).as_kbucket_key())
         )
     }
@@ -321,5 +325,49 @@ impl<'a> std::fmt::Display for PrettyPrintRecordKey<'a> {
 impl<'a> std::fmt::Debug for PrettyPrintRecordKey<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey};
+    use bls::rand::thread_rng;
+    use libp2p::kad::RecordKey;
+
+    #[test]
+    fn verify_custom_record_key_hex_representation() {
+        let random = xor_name::XorName::random(&mut thread_rng());
+        let key = RecordKey::new(&random.0);
+        let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
+        let old_impl_using_bytes = PrintUsingBytesImpl(key);
+
+        assert_eq!(
+            format!("{pretty_key:?}"),
+            format!("{old_impl_using_bytes:?}")
+        );
+
+        // A struct that implements hex representation of RecordKey using `bytes::Bytes`
+        struct PrintUsingBytesImpl(RecordKey);
+
+        impl std::fmt::Display for PrintUsingBytesImpl {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let b: Vec<u8> = self.0.as_ref().to_vec();
+                let record_key_b = bytes::Bytes::from(b);
+                write!(
+                    f,
+                    "{:64x}({:?})",
+                    record_key_b,
+                    PrettyPrintKBucketKey(
+                        NetworkAddress::from_record_key(self.0.clone()).as_kbucket_key()
+                    )
+                )
+            }
+        }
+
+        impl std::fmt::Debug for PrintUsingBytesImpl {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", self)
+            }
+        }
     }
 }
