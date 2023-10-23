@@ -120,9 +120,17 @@ impl Client {
                                 continue;
                             }
                         };
+
+                        let start = std::time::Instant::now();
+                        let event_string = format!("{:?}", the_event);
                         if let Err(err) = client_clone.handle_network_event(the_event) {
                             warn!("Error handling network event: {err}");
                         }
+                        trace!(
+                            "Handled network event in {:?}: {:?}",
+                            start.elapsed(),
+                            event_string
+                        );
                     }
                     Err(_elapse_err) => {
                         debug!("Client inactivity... waiting for a network event");

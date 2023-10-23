@@ -183,7 +183,14 @@ impl Node {
                             Some(event) => {
                                 let stateless_node_copy = self.clone();
                                 let _handle =
-                                    spawn(async move { stateless_node_copy.handle_network_event(event, peers_connected).await });
+                                    spawn(async move {
+                                        let start = std::time::Instant::now();
+                                        let event_string = format!("{:?}", event);
+
+                                        stateless_node_copy.handle_network_event(event, peers_connected).await ;
+                                        info!("Handled network event in {:?}: {:?}", start.elapsed(), event_string);
+
+                                    });
                             }
                             None => {
                                 error!("The `NetworkEvent` channel is closed");
