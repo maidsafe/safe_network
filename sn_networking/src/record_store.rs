@@ -26,7 +26,6 @@ use std::{
     vec,
 };
 use tokio::sync::mpsc;
-use xor_name::XorName;
 
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
@@ -208,9 +207,8 @@ impl NodeRecordStore {
     /// Warning: PUTs a `Record` to the store without validation
     /// Should be used in context where the `Record` is trusted
     pub(crate) fn put_verified(&mut self, r: Record) -> Result<()> {
-        let content_hash = XorName::from_content(&r.value);
         let record_key = PrettyPrintRecordKey::from(r.key.clone());
-        trace!("PUT a verified Record: {record_key:?} (content_hash {content_hash:?})");
+        trace!("PUT a verified Record: {record_key:?}");
 
         self.prune_storage_if_needed_for_record(&r.key)?;
 
