@@ -523,9 +523,11 @@ impl SwarmDriver {
                 },
                 some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
+                        let start = std::time::Instant::now();
                         if let Err(err) = self.handle_cmd(cmd) {
                             warn!("Error while handling cmd: {err}");
                         }
+                        info!("Cmd  handled in {:?}", start.elapsed());
                     },
                     None =>  continue,
                 },
