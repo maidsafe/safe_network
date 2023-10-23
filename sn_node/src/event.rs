@@ -16,7 +16,7 @@ use tokio::sync::broadcast;
 const NODE_EVENT_CHANNEL_SIZE: usize = 10_000;
 
 /// Channel where users of the public API can listen to events broadcasted by the node.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct NodeEventsChannel(broadcast::Sender<NodeEvent>);
 
 /// Type of channel receiver where events are broadcasted to by the node.

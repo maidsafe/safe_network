@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 /// A register cmd that is sent over to the Network
 #[allow(clippy::large_enum_variant)]
-#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
+#[derive(Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum RegisterCmd {
     /// Create a new register on the network.
     Create {
@@ -23,6 +23,19 @@ pub enum RegisterCmd {
     },
     /// Edit the register
     Edit(RegisterOp),
+}
+
+/// Custom debug implementation to avoid printing the whole register
+/// instead we just print the address
+impl std::fmt::Debug for RegisterCmd {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RegisterCmd::Create { register, .. } => {
+                write!(f, "RegisterCmd::Create({:?})", register.address())
+            }
+            RegisterCmd::Edit(op) => write!(f, "RegisterCmd::Edit({:?})", op.address()),
+        }
+    }
 }
 
 impl RegisterCmd {
