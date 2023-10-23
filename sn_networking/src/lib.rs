@@ -36,6 +36,7 @@ pub use self::{
 
 use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
 use futures::future::select_all;
+use itertools::Itertools;
 use libp2p::{
     identity::Keypair,
     kad::{KBucketKey, Record, RecordKey},
@@ -94,30 +95,28 @@ pub fn sort_peers_by_key<'a, T>(
     key: &KBucketKey<T>,
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
-    // Get the indices and sort them by indexing into the `peers` array.
-    let mut indices: Vec<usize> = (0..peers.len()).collect();
-    indices.sort_by(|&i, &j| {
-        let a = peers
-            .get(i)
-            .map(|&peer_id| NetworkAddress::from_peer(peer_id));
-        let b = peers
-            .get(j)
-            .map(|&peer_id| NetworkAddress::from_peer(peer_id));
+    // Create a vector of tuples where each tuple is a reference to a peer and its distance to the key.
+    // This avoids multiple computations of the same distance in the sorting process.
+    let mut peer_distances = peers
+        .iter()
+        .map(|peer_id| {
+            let addr = NetworkAddress::from_peer(*peer_id);
+            let distance = key.distance(&addr.as_kbucket_key());
+            (peer_id, distance)
+        })
+        .collect_vec();
 
-        match (a, b) {
-            (Some(a_addr), Some(b_addr)) => key
-                .distance(&a_addr.as_kbucket_key())
-                .cmp(&key.distance(&b_addr.as_kbucket_key())),
-            _ => std::cmp::Ordering::Equal,
-        }
-    });
+    // Sort the vector of tuples by the distance.
+    peer_distances.sort_by(|a, b| a.1.cmp(&b.1));
 
-    let sorted_peers: Vec<&PeerId> = indices
+    // Collect the sorted peers into a new vector.
+    let sorted_peers: Vec<&PeerId> = peer_distances
         .iter()
         .take(expected_entries)
-        .filter_map(|&i| peers.get(i))
+        .map(|&(peer_id, _)| peer_id)
         .collect();
 
+    // Check if there are enough peers to satisfy the request.
     if CLOSE_GROUP_SIZE > sorted_peers.len() {
         warn!("Not enough peers in the k-bucket to satisfy the request");
         return Err(Error::NotEnoughPeers {
