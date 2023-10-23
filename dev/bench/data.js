@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698063157567,
+  "lastUpdate": 1698064366605,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20037,6 +20037,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 67,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "1f22221e561047247c87f7adde5692cc7868423d",
+          "message": "fix(cli): don't bail if a payment was not found during verify/repayment",
+          "timestamp": "2023-10-23T13:48:52+02:00",
+          "tree_id": "d25a5faa86773a8204c009cbded19d9499c96a0f",
+          "url": "https://github.com/maidsafe/safe_network/commit/1f22221e561047247c87f7adde5692cc7868423d"
+        },
+        "date": 1698064365825,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 73,
             "unit": "MB"
           }
         ]
