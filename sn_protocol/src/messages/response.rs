@@ -8,13 +8,14 @@
 
 use crate::{error::Result, NetworkAddress};
 
+use core::fmt;
 use serde::{Deserialize, Serialize};
 use sn_transfers::{MainPubkey, NanoTokens};
 use std::fmt::Debug;
 
 /// The response to a query, containing the query result.
 #[allow(clippy::large_enum_variant)]
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum QueryResponse {
     GetStoreCost {
         /// The store cost in nanos for storing the next record.
@@ -28,6 +29,37 @@ pub enum QueryResponse {
     ///
     /// [`GetReplicatedRecord`]: crate::messages::Query::GetReplicatedRecord
     GetReplicatedRecord(Result<(NetworkAddress, Vec<u8>)>),
+}
+
+// Debug implementation for QueryResponse, to avoid printing Vec<u8>
+impl Debug for QueryResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            QueryResponse::GetStoreCost {
+                store_cost,
+                payment_address,
+            } => {
+                write!(
+                    f,
+                    "GetStoreCost(store_cost: {:?}, payment_address: {:?})",
+                    store_cost, payment_address
+                )
+            }
+            QueryResponse::GetReplicatedRecord(result) => match result {
+                Ok((holder, data)) => {
+                    write!(
+                        f,
+                        "GetReplicatedRecord(Ok((holder: {:?}, datalen: {:?})))",
+                        holder,
+                        data.len()
+                    )
+                }
+                Err(err) => {
+                    write!(f, "GetReplicatedRecord(Err({:?}))", err)
+                }
+            },
+        }
+    }
 }
 
 /// The response to a Cmd, containing the query result.
