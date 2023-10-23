@@ -515,9 +515,11 @@ impl SwarmDriver {
         loop {
             tokio::select! {
                 swarm_event = self.swarm.select_next_some() => {
+                    let start = std::time::Instant::now();
                     if let Err(err) = self.handle_swarm_events(swarm_event) {
                         warn!("Error while handling swarm event: {err}");
                     }
+                    info!("Swarm event handled in {:?}", start.elapsed());
                 },
                 some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {

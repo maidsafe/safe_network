@@ -123,7 +123,7 @@ pub enum SwarmCmd {
     /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
         holder: PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: HashSet<NetworkAddress>,
     },
     /// Subscribe to a given Gossipsub topic
     GossipsubSubscribe(String),

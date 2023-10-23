@@ -27,7 +27,7 @@ pub enum Marker<'a> {
     NoNetworkActivity(Duration),
 
     /// Forced Replication by simulating a churned out node within close range.
-    ForcedReplication(PeerId),
+    ForcedReplication,
 
     /// Network Cmd message received
     NodeCmdReceived(&'a Cmd),
@@ -43,6 +43,8 @@ pub enum Marker<'a> {
 
     /// Replication trigger was fired
     ReplicationTriggered,
+    /// Interval based replication
+    IntervalReplicationTriggered,
 
     /// Keys of Records we are fetching to replicate locally
     FetchingKeysForReplication {

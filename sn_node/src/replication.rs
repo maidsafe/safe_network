@@ -17,11 +17,8 @@ use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use tokio::task::JoinHandle;
-
-// To reduce the number of messages exchanged, patch max 500 replication keys into one request.
-const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
 
 impl Node {
     /// When there is PeerAdded or PeerRemoved, trigger replication, and replication target to be:
@@ -35,7 +32,6 @@ impl Node {
         is_removal: bool,
     ) -> Result<()> {
         let start = std::time::Instant::now();
-        info!("Try trigger start");
         // Already contains self_peer_id
         let mut all_peers = self.network.get_all_local_peers().await?;
 
@@ -60,7 +56,7 @@ impl Node {
             all_records.len()
         );
 
-        let mut replicate_to: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
+        let mut replicate_to: BTreeMap<PeerId, HashSet<NetworkAddress>> = Default::default();
 
         if is_removal {
             all_peers.push(peer_id);
@@ -103,21 +99,45 @@ impl Node {
                 };
 
                 let keys_to_replicate = replicate_to.entry(target_peer).or_default();
-                keys_to_replicate.push(key.clone());
+                let _preexisting = keys_to_replicate.insert(key.clone());
             }
         }
 
         for (peer_id, keys) in replicate_to {
-            let (_left, mut remaining_keys) = keys.split_at(0);
-            while remaining_keys.len() > MAX_REPLICATION_KEYS_PER_REQUEST {
-                let (left, right) = remaining_keys.split_at(MAX_REPLICATION_KEYS_PER_REQUEST);
-                remaining_keys = right;
-                self.send_replicate_cmd_without_wait(&our_address, &peer_id, left.to_vec())?;
-            }
-            self.send_replicate_cmd_without_wait(&our_address, &peer_id, remaining_keys.to_vec())?;
+            self.send_replicate_cmd_without_wait(&our_address, &peer_id, keys)?;
         }
 
         info!("Try trigger end, took {:?}", start.elapsed());
+        Ok(())
+    }
+
+    /// Sends _all_ record keys every interval to all peers.
+    pub(crate) async fn try_interval_replication(&self) -> Result<()> {
+        let start = std::time::Instant::now();
+        // Already contains self_peer_id
+        let all_peers = self.network.get_all_local_peers().await?;
+
+        // Do not carry out replication if not many peers present.
+        if all_peers.len() < K_VALUE.into() {
+            trace!(
+                "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
+                all_peers.len()
+            );
+            return Ok(());
+        }
+
+        self.record_metrics(Marker::IntervalReplicationTriggered);
+
+        let our_peer_id = self.network.peer_id;
+        let our_address = NetworkAddress::from_peer(our_peer_id);
+
+        let all_records = self.network.get_all_local_record_addresses().await?;
+
+        for peer_id in all_peers {
+            self.send_replicate_cmd_without_wait(&our_address, &peer_id, all_records.clone())?;
+        }
+
+        info!("Try trigger interval, took {:?}", start.elapsed());
         Ok(())
     }
 
@@ -126,7 +146,7 @@ impl Node {
     pub(crate) fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: HashSet<NetworkAddress>,
     ) -> Result<()> {
         self.network.add_keys_to_replication_fetcher(holder, keys)?;
         Ok(())
@@ -199,7 +219,7 @@ impl Node {
         &self,
         our_address: &NetworkAddress,
         peer_id: &PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: HashSet<NetworkAddress>,
     ) -> Result<()> {
         trace!(
             "Sending a replication list of {} keys to {peer_id:?} keys: {keys:?}",

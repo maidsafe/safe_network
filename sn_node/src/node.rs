@@ -202,29 +202,14 @@ impl Node {
                         info!("Periodic replication triggered");
                         let stateless_node_copy = self.clone();
                         let _handle = spawn(async move {
-                            let closest_peers = match stateless_node_copy
-                                .network
-                                .get_closest_local_peers(&NetworkAddress::from_peer(
-                                    stateless_node_copy.network.peer_id,
-                                ))
-                                .await
-                            {
-                                Ok(closest_peers) => closest_peers,
-                                Err(err) => {
-                                    error!("During forced replication cann't fetch local closest_peers {err:?}");
-                                    return;
-                                }
-                            };
-
-                            let peer_id =
-                                closest_peers[rand::thread_rng().gen_range(0..closest_peers.len())];
-                            Marker::ForcedReplication(peer_id).log();
+                      
+                            Marker::ForcedReplication.log();
 
                             if let Err(err) = stateless_node_copy
-                                .try_trigger_targetted_replication(peer_id, true)
+                                .try_interval_replication()
                                 .await
                             {
-                                error!("During forced replication simulating lost of {peer_id:?}, error while triggering replication {err:?}");
+                                error!("Error while triggering replication {err:?}");
                             }
 
                             info!("Periodic replication took {:?}", start.elapsed());

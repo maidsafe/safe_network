@@ -543,7 +543,7 @@ impl Network {
     pub fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: HashSet<NetworkAddress>,
     ) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { holder, keys })
     }

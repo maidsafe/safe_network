@@ -10,6 +10,7 @@ use crate::NetworkAddress;
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
 pub use sn_transfers::{Hash, UniquePubkey};
+use std::collections::HashSet;
 
 /// Data and CashNote cmds - recording spends or creating, updating, and removing data.
 ///
@@ -28,7 +29,7 @@ pub enum Cmd {
         holder: NetworkAddress,
         /// Keys of copy that shall be replicated.
         #[debug(skip)]
-        keys: Vec<NetworkAddress>,
+        keys: HashSet<NetworkAddress>,
     },
 }
 
