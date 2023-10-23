@@ -252,7 +252,8 @@ impl Network {
                 payment_address,
             }) = response
             {
-                all_costs.push((payment_address, cost));
+                let cost_with_tolerance = NanoTokens::from((cost.as_nano() as f32 * 1.1) as u64);
+                all_costs.push((payment_address, cost_with_tolerance));
             } else {
                 error!("Non store cost response received,  was {:?}", response);
             }
