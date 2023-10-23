@@ -21,12 +21,11 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::NanoTokens;
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Debug};
 use tokio::sync::oneshot;
 
 /// Commands to send to the Swarm
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug)]
 pub enum SwarmCmd {
     StartListening {
         addr: Multiaddr,
@@ -138,6 +137,118 @@ pub enum SwarmCmd {
     },
 }
 
+/// Debug impl for SwarmCmd to avoid printing full Record, instead only RecodKey
+/// and RecordKind are printed.
+impl Debug for SwarmCmd {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SwarmCmd::StartListening { addr, .. } => {
+                write!(f, "SwarmCmd::StartListening {{ addr: {:?} }}", addr)
+            }
+            SwarmCmd::Dial { addr, .. } => {
+                write!(f, "SwarmCmd::Dial {{ addr: {:?} }}", addr)
+            }
+            SwarmCmd::GetNetworkRecord {
+                key,
+                quorum,
+                expected_holders,
+                ..
+            } => {
+                write!(f, "SwarmCmd::GetNetworkRecord {{ key: {:?}, quorum: {:?}, expected_holders: {:?} }}", PrettyPrintRecordKey::from(key.clone()), quorum, expected_holders)
+            }
+            SwarmCmd::PutRecord { record, .. } => {
+                write!(
+                    f,
+                    "SwarmCmd::PutRecord {{ key: {:?} }}",
+                    PrettyPrintRecordKey::from(record.key.clone())
+                )
+            }
+            SwarmCmd::PutLocalRecord { record } => {
+                write!(
+                    f,
+                    "SwarmCmd::PutLocalRecord {{ key: {:?} }}",
+                    PrettyPrintRecordKey::from(record.key.clone())
+                )
+            }
+            SwarmCmd::RemoveFailedLocalRecord { key } => {
+                write!(
+                    f,
+                    "SwarmCmd::RemoveFailedLocalRecord {{ key: {:?} }}",
+                    PrettyPrintRecordKey::from(key.clone())
+                )
+            }
+            SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
+                write!(
+                    f,
+                    "SwarmCmd::AddKeysToReplicationFetcher {{ holder: {:?}, keys_len: {:?} }}",
+                    holder,
+                    keys.len()
+                )
+            }
+            SwarmCmd::GossipsubSubscribe(topic) => {
+                write!(f, "SwarmCmd::GossipsubSubscribe({:?})", topic)
+            }
+            SwarmCmd::GossipsubUnsubscribe(topic) => {
+                write!(f, "SwarmCmd::GossipsubUnsubscribe({:?})", topic)
+            }
+            SwarmCmd::GossipsubPublish { topic_id, msg } => {
+                write!(
+                    f,
+                    "SwarmCmd::GossipsubPublish {{ topic_id: {:?}, msg len: {:?} }}",
+                    topic_id,
+                    msg.len()
+                )
+            }
+            SwarmCmd::DialWithOpts { opts, .. } => {
+                write!(f, "SwarmCmd::DialWithOpts {{ opts: {:?} }}", opts)
+            }
+            SwarmCmd::GetClosestPeers { key, .. } => {
+                write!(f, "SwarmCmd::GetClosestPeers {{ key: {:?} }}", key)
+            }
+            SwarmCmd::GetClosestLocalPeers { key, .. } => {
+                write!(f, "SwarmCmd::GetClosestLocalPeers {{ key: {:?} }}", key)
+            }
+            SwarmCmd::StopBootstrapping => {
+                write!(f, "SwarmCmd::StopBootstrapping")
+            }
+            SwarmCmd::GetLocalStoreCost { .. } => {
+                write!(f, "SwarmCmd::GetLocalStoreCost")
+            }
+            SwarmCmd::GetLocalRecord { key, .. } => {
+                write!(
+                    f,
+                    "SwarmCmd::GetLocalRecord {{ key: {:?} }}",
+                    PrettyPrintRecordKey::from(key.clone())
+                )
+            }
+            SwarmCmd::GetAllLocalRecordAddresses { .. } => {
+                write!(f, "SwarmCmd::GetAllLocalRecordAddresses")
+            }
+            SwarmCmd::GetAllLocalPeers { .. } => {
+                write!(f, "SwarmCmd::GetAllLocalPeers")
+            }
+            SwarmCmd::GetOurCloseGroup { .. } => {
+                write!(f, "SwarmCmd::GetOurCloseGroup")
+            }
+            SwarmCmd::GetSwarmLocalState { .. } => {
+                write!(f, "SwarmCmd::GetSwarmLocalState")
+            }
+            SwarmCmd::RecordStoreHasKey { key, .. } => {
+                write!(
+                    f,
+                    "SwarmCmd::RecordStoreHasKey {:?}",
+                    PrettyPrintRecordKey::from(key.clone())
+                )
+            }
+            SwarmCmd::SendResponse { resp, .. } => {
+                write!(f, "SwarmCmd::SendResponse resp: {:?}", resp)
+            }
+            SwarmCmd::SendRequest { req, peer, .. } => {
+                write!(f, "SwarmCmd::SendRequest req: {:?}, peer: {:?}", req, peer)
+            }
+        }
+    }
+}
 /// Snapshot of information kept in the Swarm's local state
 #[derive(Debug, Clone)]
 pub struct SwarmLocalState {
