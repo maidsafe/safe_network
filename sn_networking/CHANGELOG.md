@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.0...sn_networking-v0.9.1) - 2023-10-24
+
+### Added
+- *(networking)* readd a small tolerance to smoothout upload paths
+
+### Other
+- *(networking)* kad logging and another content_hash removed
+- *(networking)* add SwarmEvent logs
+- *(networking)* improve sort
+- log and debug SwarmCmd
+
 ## [0.9.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.42...sn_networking-v0.9.0) - 2023-10-24
 
 ### Added

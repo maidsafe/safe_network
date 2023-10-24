@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.84.15](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.14...sn_cli-v0.84.15) - 2023-10-24
+
+### Added
+- *(log)* use LogBuilder to initialize logging
+
+### Other
+- *(client)* log and wait tweaks
+
 ## [0.84.14](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.13...sn_cli-v0.84.14) - 2023-10-24
 
 ### Other

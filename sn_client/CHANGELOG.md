@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.95.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.0...sn_client-v0.95.1) - 2023-10-24
+
+### Added
+- *(client)* do not retry verification GETs
+
+### Other
+- log and debug SwarmCmd
+
 ## [0.95.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.94.8...sn_client-v0.95.0) - 2023-10-24
 
 ### Added

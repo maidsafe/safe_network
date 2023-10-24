@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.13](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.12...sn_logging-v0.2.13) - 2023-10-24
+
+### Added
+- *(log)* use LogBuilder to initialize logging
+
 ## [0.2.12](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.11...sn_logging-v0.2.12) - 2023-10-23
 
 ### Other
