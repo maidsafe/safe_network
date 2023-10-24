@@ -463,7 +463,7 @@ impl NetworkBuilder {
             connected_peers: 0,
             bootstrap: ContinuousBootstrap::new(),
             close_group: Default::default(),
-            replication_fetcher: Default::default(),
+            replication_fetcher: ReplicationFetcher::new(peer_id),
             #[cfg(feature = "open-metrics")]
             network_metrics,
             cmd_receiver: swarm_cmd_receiver,
