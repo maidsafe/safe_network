@@ -114,6 +114,9 @@ pub enum Error {
 
     #[error("Split Record: {0:?}")]
     SplitRecord(HashMap<XorName, (Record, HashSet<PeerId>)>),
+
+    #[error("Record header is incorrect")]
+    InCorrectRecordHeader,
 }
 
 #[cfg(test)]
