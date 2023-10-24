@@ -34,7 +34,7 @@ use libp2p_metrics::Recorder;
 
 use sn_protocol::{
     messages::{Request, Response},
-    storage::{try_deserialize_record, Chunk, RecordHeader},
+    storage::RecordHeader,
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -1006,24 +1006,18 @@ impl SwarmDriver {
                 GetQuorum::One => 1,
             };
 
-            trace!("Expecting {expected_answers:?} answers for record {pretty_key:?} task {query_id:?}, received {} so far", peer_list.len());
-            let result = if peer_list.len() >= expected_answers {
-                Some(Ok(peer_record.record.clone()))
-            } else if usize::from(count) >= CLOSE_GROUP_SIZE {
-                Some(Err(Error::RecordNotFound))
-            } else {
-                None
-            };
+            let responded_peers = peer_list.len();
+            trace!("Expecting {expected_answers:?} answers for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
 
-            let _ = result_map.insert(record_content_hash, (peer_record.record, peer_list));
+            let _ = result_map.insert(record_content_hash, (peer_record.record.clone(), peer_list));
 
-            if let Some(result) = result {
+            if responded_peers >= expected_answers {
                 if !expected_holders.is_empty() {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {expected_holders:?}");
                 }
 
                 if result_map.len() == 1 {
-                    let _ = sender.send(result);
+                    let _ = sender.send(Ok(peer_record.record));
                 } else {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
                     let _ = sender.send(Err(Error::SplitRecord { result_map }));
@@ -1034,6 +1028,11 @@ impl SwarmDriver {
                     query.finish();
                 }
             } else {
+                if usize::from(count) >= CLOSE_GROUP_SIZE {
+                    debug!("For record {pretty_key:?} task {query_id:?}, got {count:?} with {} versions so far.",
+                        result_map.len());
+                }
+
                 let _ = self
                     .pending_get_record
                     .insert(query_id, (sender, result_map, quorum, expected_holders));
@@ -1061,24 +1060,15 @@ impl SwarmDriver {
                // Ensure that we only exit early if quorum is indeed for only one match
                matches!(quorum, GetQuorum::One)
             {
-                if let Ok(chunk) = try_deserialize_record::<Chunk>(&peer_record.record) {
-                    if chunk.network_address().to_record_key() == peer_record.record.key {
-                        debug!(
-                            "Early completion with the first copy of chunk {:?}",
-                            chunk.name()
-                        );
-                        let _ = sender.send(Ok(peer_record.record.clone()));
-
-                        // Stop the query; possibly stops more nodes from being queried.
-                        if let Some(mut query) =
-                            self.swarm.behaviour_mut().kademlia.query_mut(query_id)
-                        {
-                            query.finish();
-                        }
-
-                        return true;
-                    }
+                // Stop the query; possibly stops more nodes from being queried.
+                if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(query_id) {
+                    query.finish();
                 }
+                // A claimed Chunk type record can be trusted.
+                // Punishment of peer that sending corrupted Chunk type record
+                // maybe carried out by other verification mechanism.
+                let _ = sender.send(Ok(peer_record.record.clone()));
+                return true;
             }
 
             let _ = self
