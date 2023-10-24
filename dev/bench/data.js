@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698125264644,
+  "lastUpdate": 1698125266967,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29248,6 +29248,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 63,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2f09bd34dc47c05c88fd9d5e0e973e51c53aafb1",
+          "message": "chore(networking): kad logging and another content_hash removed",
+          "timestamp": "2023-10-24T06:48:28+02:00",
+          "tree_id": "9300ad4b525fdb674ed15df176c0405a80d5a899",
+          "url": "https://github.com/maidsafe/safe_network/commit/2f09bd34dc47c05c88fd9d5e0e973e51c53aafb1"
+        },
+        "date": 1698125266118,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 159,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 69,
             "unit": "MB"
           }
         ]
