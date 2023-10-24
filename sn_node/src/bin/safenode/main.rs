@@ -16,7 +16,7 @@ use eyre::{eyre, Error, Result};
 use libp2p::{identity::Keypair, PeerId};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
-use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
+use sn_logging::{LogFormat, LogOutputDest};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
 use std::{
@@ -86,7 +86,7 @@ struct Opt {
     /// Valid values are "default" or "json".
     ///
     /// If the argument is not used, the default format will be applied.
-    #[clap(long, value_parser = parse_log_format, verbatim_doc_comment)]
+    #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
     log_format: Option<LogFormat>,
 
     /// Specify the node's data directory.
@@ -358,21 +358,22 @@ fn init_logging(
     };
 
     #[cfg(not(feature = "otlp"))]
-    let log_appender_guard = sn_logging::init_logging(
-        logging_targets,
-        output_dest.clone(),
-        format.unwrap_or(LogFormat::Default),
-    )?;
+    let log_appender_guard = {
+        let mut log_builder = sn_logging::LogBuilder::new(logging_targets);
+        log_builder.output_dest(output_dest.clone());
+        log_builder.format(format.unwrap_or(LogFormat::Default));
+        log_builder.initialize()?
+    };
+
     #[cfg(feature = "otlp")]
     let (_rt, log_appender_guard) = {
         // init logging in a separate runtime if we are sending traces to an opentelemetry server
         let rt = Runtime::new()?;
         let guard = rt.block_on(async {
-            sn_logging::init_logging(
-                logging_targets,
-                output_dest.clone(),
-                format.unwrap_or(LogFormat::Default),
-            )
+            let mut log_builder = sn_logging::LogBuilder::new(logging_targets);
+            log_builder.output_dest(output_dest.clone());
+            log_builder.format(format.unwrap_or(LogFormat::Default));
+            log_builder.initialize()
         })?;
         (rt, guard)
     };

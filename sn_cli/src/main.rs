@@ -27,7 +27,7 @@ use clap::Parser;
 use color_eyre::Result;
 use sn_client::Client;
 #[cfg(feature = "metrics")]
-use sn_logging::{init_logging, metrics::init_metrics, LogFormat};
+use sn_logging::{metrics::init_metrics, LogBuilder, LogFormat};
 use sn_peers_acquisition::parse_peers_args;
 use sn_transfers::bls_secret_from_hex;
 use std::path::PathBuf;
@@ -53,11 +53,10 @@ async fn main() -> Result<()> {
             ("sn_registers".to_string(), Level::TRACE),
             ("sn_transfers".to_string(), Level::TRACE),
         ];
-        init_logging(
-            logging_targets,
-            log_output_dest,
-            opt.log_format.unwrap_or(LogFormat::Default),
-        )?
+        let mut log_builder = LogBuilder::new(logging_targets);
+        log_builder.output_dest(log_output_dest);
+        log_builder.format(opt.log_format.unwrap_or(LogFormat::Default));
+        log_builder.initialize()?
     } else {
         None
     };
