@@ -89,6 +89,23 @@ struct Opt {
     #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
     log_format: Option<LogFormat>,
 
+    /// Specify the maximum number of uncompressed log files to store.
+    ///
+    /// This argument is ignored if `log_output_dest` is set to "stdout"
+    ///
+    /// After reaching this limit, the older files are archived to save space.
+    /// You can also specify the maximum number of archived log files to keep.
+    #[clap(long = "max_log_files", verbatim_doc_comment)]
+    max_uncompressed_log_files: Option<usize>,
+
+    /// Specify the maximum number of archived log files to store.
+    ///
+    /// This argument is ignored if `log_output_dest` is set to "stdout"
+    ///
+    /// After reaching this limit, the older archived files are deleted.
+    #[clap(long = "max_archived_log_files", verbatim_doc_comment)]
+    max_compressed_log_files: Option<usize>,
+
     /// Specify the node's data directory.
     ///
     /// If not provided, the default location is platform specific:
@@ -151,13 +168,9 @@ fn main() -> Result<()> {
     let opt = Opt::parse();
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
-    let (root_dir, keypair) = get_root_dir_and_keypair(opt.root_dir)?;
+    let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
 
-    let (log_output_dest, _log_appender_guard) = init_logging(
-        opt.log_output_dest,
-        keypair.public().to_peer_id(),
-        opt.log_format,
-    )?;
+    let (log_output_dest, _log_appender_guard) = init_logging(&opt, keypair.public().to_peer_id())?;
 
     let rt = Runtime::new()?;
     // bootstrap peers can be empty for the genesis node.
@@ -329,11 +342,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
     });
 }
 
-fn init_logging(
-    log_output_dest: LogOutputDestArg,
-    peer_id: PeerId,
-    format: Option<LogFormat>,
-) -> Result<(String, Option<WorkerGuard>)> {
+fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, Option<WorkerGuard>)> {
     let logging_targets = vec![
         // TODO: Reset to nice and clean defaults once we have a better idea of what we want
         ("sn_networking".to_string(), Level::DEBUG),
@@ -348,20 +357,27 @@ fn init_logging(
         ("sn_transfers".to_string(), Level::TRACE),
     ];
 
-    let output_dest = match log_output_dest {
+    let output_dest = match &opt.log_output_dest {
         LogOutputDestArg::Stdout => LogOutputDest::Stdout,
         LogOutputDestArg::DataDir => {
             let path = get_root_dir(peer_id)?.join("logs");
             LogOutputDest::Path(path)
         }
-        LogOutputDestArg::Path(path) => LogOutputDest::Path(path),
+        LogOutputDestArg::Path(path) => LogOutputDest::Path(path.clone()),
     };
 
     #[cfg(not(feature = "otlp"))]
     let log_appender_guard = {
         let mut log_builder = sn_logging::LogBuilder::new(logging_targets);
         log_builder.output_dest(output_dest.clone());
-        log_builder.format(format.unwrap_or(LogFormat::Default));
+        log_builder.format(opt.log_format.clone().unwrap_or(LogFormat::Default));
+        if let Some(files) = opt.max_uncompressed_log_files {
+            log_builder.max_uncompressed_log_files(files);
+        }
+        if let Some(files) = opt.max_compressed_log_files {
+            log_builder.max_compressed_log_files(files);
+        }
+
         log_builder.initialize()?
     };
 
@@ -372,7 +388,13 @@ fn init_logging(
         let guard = rt.block_on(async {
             let mut log_builder = sn_logging::LogBuilder::new(logging_targets);
             log_builder.output_dest(output_dest.clone());
-            log_builder.format(format.unwrap_or(LogFormat::Default));
+            log_builder.format(opt.log_format.clone().unwrap_or(LogFormat::Default));
+            if let Some(files) = opt.max_uncompressed_log_files {
+                log_builder.max_uncompressed_log_files(files);
+            }
+            if let Some(files) = opt.max_compressed_log_files {
+                log_builder.max_compressed_log_files(files);
+            }
             log_builder.initialize()
         })?;
         (rt, guard)
@@ -437,13 +459,13 @@ fn get_root_dir(peer_id: PeerId) -> Result<PathBuf> {
 
 /// The keypair is located inside the root directory. At the same time, when no dir is specified,
 /// the dir name is derived from the keypair used in the application: the peer ID is used as the directory name.
-fn get_root_dir_and_keypair(root_dir: Option<PathBuf>) -> Result<(PathBuf, Keypair)> {
+fn get_root_dir_and_keypair(root_dir: &Option<PathBuf>) -> Result<(PathBuf, Keypair)> {
     match root_dir {
         Some(dir) => {
-            std::fs::create_dir_all(&dir)?;
+            std::fs::create_dir_all(dir)?;
 
             let secret_key_path = dir.join("secret-key");
-            Ok((dir, keypair_from_path(secret_key_path)?))
+            Ok((dir.clone(), keypair_from_path(secret_key_path)?))
         }
         None => {
             let secret_key = libp2p::identity::ed25519::SecretKey::generate();
