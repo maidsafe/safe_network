@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.1...sn_protocol-v0.8.2) - 2023-10-24
+
+### Added
+- *(payments)* network royalties payment made when storing content
+
+### Fixed
+- *(node)* include network royalties in received fee calculation
+
 ## [0.8.1](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.0...sn_protocol-v0.8.1) - 2023-10-24
 
 ### Other
