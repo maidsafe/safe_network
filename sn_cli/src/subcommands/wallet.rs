@@ -6,11 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use bls::SecretKey;
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, Error as ClientError, Files};
 use sn_transfers::{
-    parse_main_pubkey, Error as TransferError, LocalWallet, NanoTokens, Transfer, WalletError,
+    parse_main_pubkey, Error as TransferError, LocalWallet, MainSecretKey, NanoTokens, Transfer,
+    WalletError,
 };
 use std::{
     io::Read,
@@ -58,6 +60,12 @@ pub enum WalletCmds {
         /// The hex encoded CashNote.
         #[clap(long)]
         cash_note: Option<String>,
+    },
+    /// Create a local wallet from the given (hex-encoded) Secret Key.
+    Create {
+        /// Hex-encoded main secret key
+        #[clap(name = "sk")]
+        sk: String,
     },
     /// Get tokens from a faucet.
     GetFaucet {
@@ -123,6 +131,18 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             Ok(())
         }
         WalletCmds::Deposit { stdin, cash_note } => deposit(root_dir, *stdin, cash_note.clone()),
+        WalletCmds::Create { sk } => {
+            let main_sk = match SecretKey::from_hex(sk) {
+                Ok(sk) => MainSecretKey::new(sk),
+                Err(err) => return Err(eyre!("Failed to parse hex-encoded SK: {err:?}")),
+            };
+            let main_pubkey = main_sk.main_pubkey();
+            let local_wallet = LocalWallet::load_from_main_key(root_dir, main_sk)?;
+            let balance = local_wallet.balance();
+            println!("Wallet created (balance {balance}) for main public key: {main_pubkey:?}.");
+
+            Ok(())
+        }
         cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
     }
 }
