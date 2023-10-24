@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698145945332,
+  "lastUpdate": 1698157761940,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "2c465f63b62c3b23d73dd1b70cbf45ffdda131af",
-          "message": "fix: get_closest_local shall only return CLOSE_GROUP_SIZE peers",
-          "timestamp": "2023-06-26T15:48:51Z",
-          "tree_id": "db66777a517d3f5a3a27ea1b6861f2d635fb2386",
-          "url": "https://github.com/maidsafe/safe_network/commit/2c465f63b62c3b23d73dd1b70cbf45ffdda131af"
-        },
-        "date": 1687798269024,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6601985742259732,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.425993559736622,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11694,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 20.839812640270704,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0ccc8d6371ce802af507d76a7a96a8fb5fe95228",
+          "message": "refactor(node): use iterator to calculate fees received in storage payment",
+          "timestamp": "2023-10-24T16:04:27+02:00",
+          "tree_id": "782d3e5f88f6532324e14ee0417fd0c9224c8062",
+          "url": "https://github.com/maidsafe/safe_network/commit/0ccc8d6371ce802af507d76a7a96a8fb5fe95228"
+        },
+        "date": 1698157759773,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.15383882563429122,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.3301167528070541,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 19.96161955388442,
             "unit": "MiB/s"
           }
         ]
