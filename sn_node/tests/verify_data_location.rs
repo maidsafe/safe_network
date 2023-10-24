@@ -44,7 +44,7 @@ const CHUNK_SIZE: usize = 1024;
 // for the old peer to be removed from the routing table.
 // Replication is then kicked off to distribute the data to the new closest
 // nodes, hence verification has to be performed after this.
-const VERIFICATION_DELAY: Duration = Duration::from_secs(90);
+const VERIFICATION_DELAY: Duration = Duration::from_secs(120);
 
 // Number of times to retry verification if it fails
 const VERIFICATION_ATTEMPTS: usize = 3;
@@ -113,7 +113,6 @@ async fn verify_data_location() -> Result<()> {
 
         // wait for the dead peer to be removed from the RT and the replication flow to finish
         println!("\nNode {node_index} has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
-
         tokio::time::sleep(VERIFICATION_DELAY).await;
 
         // get the new PeerId for the current NodeIndex
