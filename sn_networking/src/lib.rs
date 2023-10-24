@@ -45,12 +45,12 @@ use libp2p::{
 };
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
-    storage::{RecordHeader, RecordKind},
+    storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::MainPubkey;
 use sn_transfers::NanoTokens;
-use std::{collections::HashSet, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
@@ -526,7 +526,9 @@ impl Network {
     }
 
     /// Returns the Addresses of all the locally stored Records
-    pub async fn get_all_local_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
+    pub async fn get_all_local_record_addresses(
+        &self,
+    ) -> Result<HashMap<NetworkAddress, RecordType>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetAllLocalRecordAddresses { sender })?;
 
@@ -539,7 +541,7 @@ impl Network {
     pub fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: Vec<(NetworkAddress, RecordType)>,
     ) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { holder, keys })
     }

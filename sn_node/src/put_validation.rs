@@ -472,6 +472,8 @@ impl Node {
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone())
             .await?;
 
+        trace!("Received payment of {received_fee:?} for {pretty_key}");
+
         // deposit the CashNotes in our wallet
         wallet
             .deposit_and_store_to_disk(&cash_notes)
