@@ -241,6 +241,8 @@ fn deposit(root_dir: &Path, read_from_stdin: bool, cash_note: Option<String>) ->
 
     let previous_balance = wallet.balance();
 
+    wallet.try_load_cash_notes()?;
+
     let deposited =
         sn_transfers::NanoTokens::from(wallet.balance().as_nano() - previous_balance.as_nano());
     if deposited.is_zero() {
