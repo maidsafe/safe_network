@@ -18,7 +18,7 @@ use std::{
 };
 
 // Max parallel fetches that can be undertaken at the same time.
-const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
+const MAX_PARALLEL_FETCH: usize = K_VALUE.get() * 2;
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
@@ -27,14 +27,24 @@ const FETCH_TIMEOUT: Duration = Duration::from_secs(3);
 // The time at which the key was sent to be fetched from the peer.
 type ReplicationRequestSentTime = Instant;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub(crate) struct ReplicationFetcher {
+    self_peer_id: PeerId,
     to_be_fetched: HashMap<(RecordKey, RecordType, PeerId), Option<ReplicationRequestSentTime>>,
     // Avoid fetching same chunk from different nodes AND carry out too many parallel tasks.
     on_going_fetches: HashMap<(RecordKey, RecordType), PeerId>,
 }
 
 impl ReplicationFetcher {
+    /// Instantiate a new replication fetcher with passed PeerId.
+    pub(crate) fn new(self_peer_id: PeerId) -> Self {
+        Self {
+            self_peer_id,
+            to_be_fetched: HashMap::new(),
+            on_going_fetches: HashMap::new(),
+        }
+    }
+
     // Adds the non existing incoming keys from the peer to the fetcher. Returns the next set of keys that has to be
     // fetched from the peer/network.
     pub(crate) fn add_keys(
@@ -104,7 +114,18 @@ impl ReplicationFetcher {
         }
 
         let mut data_to_fetch = vec![];
-        for ((key, t, holder), is_fetching) in self.to_be_fetched.iter_mut() {
+        // Sort to_be_fetched by key closeness to our PeerId
+        let mut to_be_fetched_sorted: Vec<_> = self.to_be_fetched.iter_mut().collect();
+
+        let self_address = NetworkAddress::from_peer(self.self_peer_id);
+
+        to_be_fetched_sorted.sort_by(|((a, _, _), _), ((b, _, _), _)| {
+            let a = NetworkAddress::from_record_key(a);
+            let b = NetworkAddress::from_record_key(b);
+            self_address.distance(&a).cmp(&self_address.distance(&b))
+        });
+
+        for ((key, t, holder), is_fetching) in to_be_fetched_sorted {
             // Already carried out expiration pruning above.
             // Hence here only need to check whether is ongoing fetching.
             // Also avoid fetching same record from different nodes.
@@ -119,6 +140,11 @@ impl ReplicationFetcher {
                 let _ = self
                     .on_going_fetches
                     .insert((key.clone(), t.clone()), *holder);
+            }
+
+            // break out the loop early if we can do no more now
+            if self.on_going_fetches.len() >= MAX_PARALLEL_FETCH {
+                break;
             }
         }
 
@@ -194,8 +220,10 @@ mod tests {
 
     #[tokio::test]
     async fn verify_max_parallel_fetches() -> Result<()> {
-        let mut replication_fetcher = ReplicationFetcher::default();
-        let locally_stored_keys = HashMap::new();
+        //random peer_id
+        let peer_id = PeerId::random();
+        let mut replication_fetcher = ReplicationFetcher::new(peer_id);
+        let locally_stored_keys = HashSet::new();
 
         let mut incoming_keys = Vec::new();
         (0..MAX_PARALLEL_FETCH * 2).for_each(|_| {
