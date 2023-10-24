@@ -7,8 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)]
 
-use crate::CLOSE_GROUP_SIZE;
-use libp2p::{kad::RecordKey, PeerId};
+use libp2p::{
+    kad::{RecordKey, K_VALUE},
+    PeerId,
+};
 use sn_protocol::{storage::RecordType, NetworkAddress, PrettyPrintRecordKey};
 use std::{
     collections::HashMap,
@@ -16,11 +18,11 @@ use std::{
 };
 
 // Max parallel fetches that can be undertaken at the same time.
-const MAX_PARALLEL_FETCH: usize = CLOSE_GROUP_SIZE * 2;
+const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
-const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
+const FETCH_TIMEOUT: Duration = Duration::from_secs(3);
 
 // The time at which the key was sent to be fetched from the peer.
 type ReplicationRequestSentTime = Instant;
