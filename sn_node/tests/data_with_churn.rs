@@ -13,7 +13,7 @@ use common::{
     get_client_and_wallet, get_funded_wallet, get_wallet, node_restart,
     PAYING_WALLET_INITIAL_BALANCE,
 };
-use eyre::{bail, Result};
+use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files, WalletClient};
 use sn_logging::LogBuilder;
@@ -408,7 +408,13 @@ fn store_chunks_task(
                 .pay_and_upload_bytes_test(chunk_name, chunks.clone())
                 .await
             {
-                Ok((addr, cost)) => (addr, cost),
+                Ok((addr, storage_cost, royalties_fees)) => {
+                    let cost = storage_cost
+                        .checked_add(royalties_fees)
+                        .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
+
+                    (addr, cost)
+                }
                 Err(err) => {
                     bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
                 }

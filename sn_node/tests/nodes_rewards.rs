@@ -48,18 +48,11 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     )?;
 
     println!("Paying for {} random addresses...", chunks.len());
-    let expected_royalties_fees =
-        NanoTokens::from(chunks.len() as u64 * NETWORK_ROYALTIES_AMOUNT_PER_ADDR.as_nano());
-
     let prev_rewards_balance = current_rewards_balance()?;
 
-    let (_file_addr, cost) = files_api
+    let (_file_addr, rewards_paid, _royalties_fees) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
         .await?;
-
-    let rewards_paid = cost
-        .checked_sub(expected_royalties_fees)
-        .ok_or_else(|| eyre!("Failed to substract rewards balance"))?;
 
     let expected_rewards_balance = prev_rewards_balance
         .checked_add(rewards_paid)
