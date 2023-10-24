@@ -25,6 +25,7 @@ mod record_store_api;
 mod replication_fetcher;
 mod transfers;
 
+use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
 pub use self::{
     cmd::SwarmLocalState,
     driver::{NetworkBuilder, SwarmDriver},
@@ -34,7 +35,6 @@ pub use self::{
     record_store::NodeRecordStore,
 };
 
-use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
 use bytes::Bytes;
 use futures::future::select_all;
 use libp2p::{
@@ -407,7 +407,10 @@ impl Network {
 
             // wait for a bit before re-trying
             if re_attempt {
-                tokio::time::sleep(MAX_REVERIFICATION_WAIT_TIME_S).await;
+                // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
+                let wait_duration = rand::thread_rng()
+                    .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
+                tokio::time::sleep(wait_duration).await;
             }
         }
 
