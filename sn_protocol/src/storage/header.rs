@@ -11,6 +11,16 @@ use crate::PrettyPrintRecordKey;
 use libp2p::kad::Record;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use xor_name::XorName;
+
+/// Indicates the type of the record content.
+/// Note for `Spend` and `Register`, using its content_hash (in `XorName` format)
+/// to indicate different content body.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Hash)]
+pub enum RecordType {
+    Chunk,
+    NonChunk(XorName),
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RecordHeader {

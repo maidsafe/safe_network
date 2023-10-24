@@ -15,6 +15,7 @@ use libp2p::{
 use sn_networking::{sort_peers_by_address, GetQuorum, REPLICATE_RANGE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
+    storage::RecordType,
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -66,14 +67,15 @@ impl Node {
             all_records.len()
         );
 
-        let mut replicate_to: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
+        let mut replicate_to: BTreeMap<PeerId, Vec<(NetworkAddress, RecordType)>> =
+            Default::default();
 
         if is_removal {
             let _ = all_peers_set.insert(peer_id);
         }
         let all_peers: Vec<_> = all_peers_set.iter().cloned().collect();
 
-        for key in all_records {
+        for (key, record_type) in all_records {
             let mut sorted_based_on_key = sort_peers_by_address(&all_peers, &key, REPLICATE_RANGE)?;
             let sorted_peers_pretty_print: Vec<_> = sorted_based_on_key
                 .iter()
@@ -98,7 +100,7 @@ impl Node {
 
                 for target_peer in target_peers {
                     let keys_to_replicate = replicate_to.entry(*target_peer).or_default();
-                    keys_to_replicate.push(key.clone());
+                    keys_to_replicate.push((key.clone(), record_type.clone()));
                 }
             }
         }
@@ -122,7 +124,7 @@ impl Node {
     pub(crate) fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: Vec<(NetworkAddress, RecordType)>,
     ) -> Result<()> {
         self.network.add_keys_to_replication_fetcher(holder, keys)?;
         Ok(())
@@ -195,7 +197,7 @@ impl Node {
         &self,
         our_address: &NetworkAddress,
         peer_id: &PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: Vec<(NetworkAddress, RecordType)>,
     ) -> Result<()> {
         trace!(
             "Sending a replication list of {} keys to {peer_id:?} keys: {keys:?}",

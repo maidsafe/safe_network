@@ -103,7 +103,13 @@ impl RunningNode {
 
     /// Returns the list of all the RecordKeys held by the node
     pub async fn get_all_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
-        let addresses = self.network.get_all_local_record_addresses().await?;
+        let addresses: HashSet<_> = self
+            .network
+            .get_all_local_record_addresses()
+            .await?
+            .keys()
+            .cloned()
+            .collect();
         Ok(addresses)
     }
 

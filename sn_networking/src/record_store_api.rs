@@ -11,9 +11,9 @@ use libp2p::kad::{
     store::{RecordStore, Result},
     KBucketDistance as Distance, ProviderRecord, Record, RecordKey,
 };
-use sn_protocol::NetworkAddress;
+use sn_protocol::{storage::RecordType, NetworkAddress};
 use sn_transfers::NanoTokens;
-use std::{borrow::Cow, collections::HashSet};
+use std::{borrow::Cow, collections::HashMap};
 
 pub enum UnifiedRecordStore {
     Client(ClientRecordStore),
@@ -82,14 +82,14 @@ impl RecordStore for UnifiedRecordStore {
 }
 
 impl UnifiedRecordStore {
-    pub(crate) fn contains(&self, key: &RecordKey) -> bool {
+    pub(crate) fn contains(&self, key: &RecordKey) -> Option<&RecordType> {
         match self {
             Self::Client(store) => store.contains(key),
             Self::Node(store) => store.contains(key),
         }
     }
 
-    pub(crate) fn record_addresses(&self) -> HashSet<NetworkAddress> {
+    pub(crate) fn record_addresses(&self) -> HashMap<NetworkAddress, RecordType> {
         match self {
             Self::Client(store) => store.record_addresses(),
             Self::Node(store) => store.record_addresses(),
@@ -97,17 +97,17 @@ impl UnifiedRecordStore {
     }
 
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashSet<RecordKey> {
+    pub(crate) fn record_addresses_ref(&self) -> &HashMap<RecordKey, RecordType> {
         match self {
             Self::Client(store) => store.record_addresses_ref(),
             Self::Node(store) => store.record_addresses_ref(),
         }
     }
 
-    pub(crate) fn put_verified(&mut self, r: Record) -> Result<()> {
+    pub(crate) fn put_verified(&mut self, r: Record, record_type: RecordType) -> Result<()> {
         match self {
-            Self::Client(store) => store.put_verified(r),
-            Self::Node(store) => store.put_verified(r),
+            Self::Client(store) => store.put_verified(r, record_type),
+            Self::Node(store) => store.put_verified(r, record_type),
         }
     }
 
