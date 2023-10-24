@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698131713557,
+  "lastUpdate": 1698143435291,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "86b83b68d039330f666fc60db5bdcc6a605c8aa9",
-          "message": "feat: append peer id to node's default root dir\n\nBREAKING CHANGE: The default root directory for the node will now have the node's peer ID appended\nto its path.\n\nUsing the peer ID facilitates running multiple node processes on a single machine, without the need\nto explicitly use the `--root-dir` argument for each node to specify its own root directory.\nPreviously, if they didn't do that, all the nodes would share the same record store.",
-          "timestamp": "2023-06-26T05:58:26Z",
-          "tree_id": "7acfa33081dfdafe571bab388875ee7f6275e818",
-          "url": "https://github.com/maidsafe/safe_network/commit/86b83b68d039330f666fc60db5bdcc6a605c8aa9"
-        },
-        "date": 1687762495289,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6779067983208745,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.01535004002222,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11684,6 +11650,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 21.499798067006846,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "72e5a48eaa0d304ee52095d18929dc8b33a6cc7a",
+          "message": "fix(node): dont try and replicate to non existent peers",
+          "timestamp": "2023-10-24T12:01:10+02:00",
+          "tree_id": "660b96f8193c739fc59a47d1202f5ac713823023",
+          "url": "https://github.com/maidsafe/safe_network/commit/72e5a48eaa0d304ee52095d18929dc8b33a6cc7a"
+        },
+        "date": 1698143431384,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.166983008432685,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.7721498360310406,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 21.79779451273609,
             "unit": "MiB/s"
           }
         ]
