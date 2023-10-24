@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698125266967,
+  "lastUpdate": 1698125441761,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "1983c3dcae4fe777900d1a467d2b4feaffdb0ee6",
-          "message": "test: adding proptests for payment proofs merkletree utilities",
-          "timestamp": "2023-06-25T23:23:41Z",
-          "tree_id": "96d87cceef8a36402b635a9f296ebe94d3aead84",
-          "url": "https://github.com/maidsafe/safe_network/commit/1983c3dcae4fe777900d1a467d2b4feaffdb0ee6"
-        },
-        "date": 1687738850828,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6915687499413323,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.330697608359262,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11674,6 +11640,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 19.50713330467742,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9b8b7d4a8f2f22d59360308f2cd6d282dc0d3134",
+          "message": "chore(client): log and wait tweaks",
+          "timestamp": "2023-10-24T07:08:18+02:00",
+          "tree_id": "7ea1306cfea63e8f10078f3c76def692999c2511",
+          "url": "https://github.com/maidsafe/safe_network/commit/9b8b7d4a8f2f22d59360308f2cd6d282dc0d3134"
+        },
+        "date": 1698125439395,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.13999819259967383,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6679946413608145,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 19.813114943915085,
             "unit": "MiB/s"
           }
         ]
