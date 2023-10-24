@@ -6,6 +6,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.2...sn_networking-v0.9.3) - 2023-10-24
+
+### Added
+- *(payments)* adding unencrypted CashNotes for network royalties and verifying correct payment
+
+### Other
+- nodes to subscribe by default to network royalties payment notifs
+
+## [0.9.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.1...sn_networking-v0.9.2) - 2023-10-24
+
+### Fixed
+- *(networking)* only validate _our_ transfers at nodes
+
+### Other
+- *(networking)* dont retry get_spend validations for UnverifiedData
+
+## [0.9.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.0...sn_networking-v0.9.1) - 2023-10-24
+
+### Added
+- *(networking)* readd a small tolerance to smoothout upload paths
+
+### Other
+- *(networking)* kad logging and another content_hash removed
+- *(networking)* add SwarmEvent logs
+- *(networking)* improve sort
+- log and debug SwarmCmd
+
+## [0.9.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.42...sn_networking-v0.9.0) - 2023-10-24
+
+### Added
+- *(protocol)* [**breaking**] implement `PrettyPrintRecordKey` as a `Cow` type
+
 ## [0.8.42](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.41...sn_networking-v0.8.42) - 2023-10-23
 
 ### Other

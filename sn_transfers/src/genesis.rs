@@ -9,8 +9,8 @@
 use super::wallet::LocalWallet;
 
 use crate::{
-    CashNote, Error as CashNoteError, Hash, Input, MainSecretKey, NanoTokens, Transaction,
-    TransactionBuilder,
+    CashNote, Error as CashNoteError, Hash, Input, MainPubkey, MainSecretKey, NanoTokens,
+    Transaction, TransactionBuilder,
 };
 
 use bls::SecretKey;
@@ -23,6 +23,9 @@ use thiserror::Error;
 /// Each whole token can be subdivided 10^9 times,
 /// thus creating a total of 1,288,490,189,000,000,000 available units.
 pub(super) const GENESIS_CASHNOTE_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
+
+/// Expected amount to be paid as network royalties for each record to be stored.
+pub const NETWORK_ROYALTIES_AMOUNT_PER_ADDR: NanoTokens = NanoTokens::from(1);
 
 /// A specialised `Result` type for genesis crate.
 pub(super) type GenesisResult<T> = Result<T, Error>;
@@ -66,6 +69,9 @@ lazy_static! {
             Err(err) => panic!("Failed to create genesis CashNote: {err:?}"),
         }
     };
+
+    /// Public key where network royalties payments are expected to be made to.
+    pub static ref NETWORK_ROYALTIES_PK: MainPubkey = *GENESIS_CASHNOTE.main_pubkey();
 }
 
 /// Return if provided Transaction is genesis parent tx.

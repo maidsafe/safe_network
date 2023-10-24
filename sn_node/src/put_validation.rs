@@ -22,8 +22,12 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::{is_genesis_parent_tx, LocalWallet, Transfer, GENESIS_CASHNOTE};
-use sn_transfers::{CashNote, NanoTokens, SignedSpend, UniquePubkey};
+use sn_transfers::{
+    is_genesis_parent_tx, LocalWallet, Transfer, GENESIS_CASHNOTE, NETWORK_ROYALTIES_PK,
+};
+use sn_transfers::{
+    CashNote, NanoTokens, SignedSpend, UniquePubkey, NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
+};
 use std::collections::{BTreeSet, HashSet};
 
 impl Node {
@@ -62,14 +66,14 @@ impl Node {
             RecordKind::Chunk => {
                 error!("Chunk should not be validated at this point");
                 Err(ProtocolError::InvalidPutWithoutPayment(
-                    PrettyPrintRecordKey::from(record.key),
+                    PrettyPrintRecordKey::from(&record.key).into_owned(),
                 ))
             }
             RecordKind::Spend => self.validate_spend_record(record).await,
             RecordKind::Register => {
                 error!("Register should not be validated at this point");
                 Err(ProtocolError::InvalidPutWithoutPayment(
-                    PrettyPrintRecordKey::from(record.key),
+                    PrettyPrintRecordKey::from(&record.key).into_owned(),
                 ))
             }
             RecordKind::RegisterWithPayment => {
@@ -125,9 +129,11 @@ impl Node {
     ) -> Result<CmdOk, ProtocolError> {
         let record_header = RecordHeader::from_record(&record)?;
         match record_header.kind {
-            RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => Err(
-                ProtocolError::UnexpectedRecordWithPayment(PrettyPrintRecordKey::from(record.key)),
-            ),
+            RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
+                Err(ProtocolError::UnexpectedRecordWithPayment(
+                    PrettyPrintRecordKey::from(&record.key).into_owned(),
+                ))
+            }
             RecordKind::Chunk => {
                 let chunk = try_deserialize_record::<Chunk>(&record)?;
 
@@ -168,12 +174,12 @@ impl Node {
         expected_record_key: &RecordKey,
     ) -> Result<bool, ProtocolError> {
         let data_key = address.to_record_key();
-        let pretty_key = PrettyPrintRecordKey::from(data_key.clone());
+        let pretty_key = PrettyPrintRecordKey::from(&data_key);
 
         if expected_record_key != &data_key {
             warn!(
                 "record key: {:?}, key: {:?}",
-                PrettyPrintRecordKey::from(expected_record_key.clone()),
+                PrettyPrintRecordKey::from(expected_record_key),
                 pretty_key
             );
             warn!("Record's key does not match with the value's address, ignoring PUT.");
@@ -187,7 +193,7 @@ impl Node {
             .map_err(|err| {
                 let msg = format!("Error while checking if Chunk's key is present locally {err}");
                 warn!("{msg}");
-                ProtocolError::RecordNotStored(pretty_key, msg)
+                ProtocolError::RecordNotStored(pretty_key.into_owned(), msg)
             })?;
 
         if present_locally {
@@ -208,7 +214,7 @@ impl Node {
         let chunk_addr = *chunk.address();
 
         let key = NetworkAddress::from_chunk_address(*chunk.address()).to_record_key();
-        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+        let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
 
         let record = Record {
             key,
@@ -252,7 +258,7 @@ impl Node {
                 ProtocolError::RegisterNotStored(Box::new(*reg_addr))
             })?;
 
-        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+        let pretty_key = PrettyPrintRecordKey::from(&key);
 
         // check register and merge if needed
         let updated_register = match self.register_validation(&register, present_locally).await? {
@@ -264,7 +270,7 @@ impl Node {
 
         // store in kad
         let record = Record {
-            key,
+            key: key.clone(),
             value: try_serialize_record(&updated_register, RecordKind::Register)?,
             publisher: None,
             expires: None,
@@ -310,11 +316,10 @@ impl Node {
         let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
 
         let key = NetworkAddress::from_cash_note_address(cash_note_addr).to_record_key();
-        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+        let pretty_key = PrettyPrintRecordKey::from(&key);
         debug!(
-            "validating and storing spends {:?} - {:?}",
+            "validating and storing spends {:?} - {pretty_key:?}",
             cash_note_addr.xorname(),
-            pretty_key
         );
 
         let present_locally = self
@@ -337,10 +342,7 @@ impl Node {
             Some(spends) => spends,
             None => {
                 // we trust the replicated data
-                debug!(
-                    "Trust replicated spend for {:?}",
-                    PrettyPrintRecordKey::from(key.clone())
-                );
+                debug!("Trust replicated spend for {pretty_key:?}",);
                 // TODO: may need to tweak the `signed_spend_validation` function,
                 //       instead of trusting replicated spend directly
                 signed_spends
@@ -348,14 +350,13 @@ impl Node {
         };
 
         debug!(
-            "Got {} validated spends for {:?}",
+            "Got {} validated spends for {pretty_key:?}",
             validated_spends.len(),
-            PrettyPrintRecordKey::from(key.clone())
         );
 
         // store the record into the local storage
         let record = Record {
-            key,
+            key: key.clone(),
             value: try_serialize_record(&validated_spends, RecordKind::Spend)?,
             publisher: None,
             expires: None,
@@ -386,29 +387,69 @@ impl Node {
         Ok(CmdOk::StoredSuccessfully)
     }
 
-    /// Gets CashNotes out of a Payment, this includes network verifications of the Transfer
+    /// Gets CashNotes out of a Payment, this includes network verifications of the Transfer.
+    /// Return the CashNotes corresponding to our wallet and the ones corresponding to network royalties payment.
     async fn cash_notes_from_payment(
         &self,
         payment: &Vec<Transfer>,
         wallet: &LocalWallet,
-        pretty_key: PrettyPrintRecordKey,
-    ) -> Result<(Vec<CashNote>, Transfer), ProtocolError> {
+        pretty_key: PrettyPrintRecordKey<'static>,
+    ) -> Result<(NanoTokens, Vec<CashNote>, Vec<CashNote>), ProtocolError> {
+        let royalties_pk = *NETWORK_ROYALTIES_PK;
+        let mut cash_notes = vec![];
+        let mut royalties_cash_notes = vec![];
+        let mut received_fee = NanoTokens::zero();
+
         for transfer in payment {
-            match self
-                .network
-                .verify_and_unpack_transfer(transfer, wallet)
-                .await
-            {
-                // transfer not for us
-                Err(ProtocolError::FailedToDecypherTransfer) => continue,
-                // transfer invalid
-                Err(e) => return Err(e),
-                // transfer ok
-                Ok(cash_notes) => return Ok((cash_notes, transfer.clone())),
-            };
+            match transfer {
+                Transfer::Encrypted(_) => match self
+                    .network
+                    .verify_and_unpack_transfer(transfer, wallet)
+                    .await
+                {
+                    // transfer not for us
+                    Err(ProtocolError::FailedToDecypherTransfer) => continue,
+                    // transfer invalid
+                    Err(e) => return Err(e),
+                    // transfer ok
+                    Ok(cns) => cash_notes = cns,
+                },
+                Transfer::NetworkRoyalties(cashnote_redemptions) => {
+                    if let Ok(cash_notes) = self
+                        .network
+                        .verify_cash_notes_redemptions(royalties_pk, cashnote_redemptions)
+                        .await
+                    {
+                        let received_royalties =
+                            total_cash_notes_amount(&cash_notes, pretty_key.clone())?;
+                        trace!(
+                            "{} network royalties payment cash notes found for record {pretty_key} for a total value of {received_royalties:?}",
+                            cash_notes.len()
+                        );
+                        royalties_cash_notes.extend(cash_notes);
+                        received_fee = received_fee
+                            .checked_add(received_royalties)
+                            .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
+                    }
+                }
+            }
         }
 
-        Err(ProtocolError::NoPaymentToOurNode(pretty_key))
+        if cash_notes.is_empty() {
+            Err(ProtocolError::NoPaymentToOurNode(pretty_key))
+        } else {
+            let received_fee_to_our_node =
+                total_cash_notes_amount(&cash_notes, pretty_key.clone())?;
+            info!(
+                "{} cash note/s (for a total of {received_fee_to_our_node:?}) are for us for {pretty_key}",
+                cash_notes.len()
+            );
+            received_fee = received_fee
+                .checked_add(received_fee_to_our_node)
+                .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
+
+            Ok((received_fee, cash_notes, royalties_cash_notes))
+        }
     }
 
     /// Perform validations on the provided `Record`.
@@ -417,7 +458,8 @@ impl Node {
         address: &NetworkAddress,
         payment: Vec<Transfer>,
     ) -> Result<(), ProtocolError> {
-        let pretty_key = PrettyPrintRecordKey::from(address.to_record_key());
+        let key = address.to_record_key();
+        let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
         trace!("Validating record payment for {pretty_key}");
 
         // load wallet
@@ -426,47 +468,9 @@ impl Node {
 
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key}");
-        let (cash_notes, transfer_for_us) = self
+        let (received_fee, cash_notes, royalties_cash_notes) = self
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone())
             .await?;
-
-        info!("{:?} cash notes are for us", cash_notes.len());
-
-        let mut received_fee = NanoTokens::zero();
-        for cash_note in cash_notes.iter() {
-            let amount = cash_note.value().map_err(|_| {
-                ProtocolError::RecordNotStored(
-                    pretty_key.clone(),
-                    "Failed to get CashNote value".to_string(),
-                )
-            })?;
-            received_fee =
-                received_fee
-                    .checked_add(amount)
-                    .ok_or(ProtocolError::RecordNotStored(
-                        pretty_key.clone(),
-                        "CashNote value overflow".to_string(),
-                    ))?;
-
-            info!("Adding to received fee, which is now: {received_fee:?}");
-        }
-
-        // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for each cash-note received.
-        match transfer_for_us.to_hex() {
-            Ok(transfer_hex) => {
-                trace!("Publishing a gossipsub msgs for transfer_for_us: {transfer_for_us:?}");
-                let topic = TRANSFER_NOTIF_TOPIC.to_string();
-                for cash_note in cash_notes.iter() {
-                    let pk = cash_note.unique_pubkey();
-                    let mut msg: Vec<u8> = pk.to_bytes().to_vec();
-                    msg.extend(transfer_hex.as_bytes());
-                    if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
-                        debug!("Failed to publish a transfer notification over gossipsub for record {pretty_key} and beneficiary {pk:?}: {err:?}");
-                    }
-                }
-            }
-            Err(err) => debug!("Failed to serialise transfer data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
-        }
 
         // deposit the CashNotes in our wallet
         wallet
@@ -478,18 +482,45 @@ impl Node {
             .reward_wallet_balance
             .set(wallet.balance().as_nano() as i64);
 
-        // check payment is sufficient
-        let current_store_cost =
-            self.network.get_local_storecost().await.map_err(|e| {
-                ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
-            })?;
+        if royalties_cash_notes.is_empty() {
+            return Err(ProtocolError::NoNetworkRoyaltiesPayment(
+                pretty_key.into_owned(),
+            ));
+        }
+
+        // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for the network royalties payment.
+        match bincode::serialize(&royalties_cash_notes) {
+            Ok(serialised) => {
+                let royalties_pk = *NETWORK_ROYALTIES_PK;
+                trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
+                let topic = TRANSFER_NOTIF_TOPIC.to_string();
+                let mut msg: Vec<u8> = royalties_pk.to_bytes().to_vec();
+                msg.extend(serialised);
+                if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
+                    debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
+                }
+            }
+            Err(err) => debug!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
+        }
+
+        // check payment is sufficient both for our store cost and for network royalties
+        let expected_fee = self
+            .network
+            .get_local_storecost()
+            .await
+            .map_err(|e| ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}")))?
+            .checked_add(NETWORK_ROYALTIES_AMOUNT_PER_ADDR)
+            .ok_or(ProtocolError::RecordNotStored(
+                pretty_key.clone(),
+                "CashNote value overflow".to_string(),
+            ))?;
         // finally, (after we accept any payments to us as they are ours now anyway)
         // lets check they actually paid enough
-        if received_fee < current_store_cost {
-            trace!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {current_store_cost:?}");
+        if received_fee < expected_fee {
+            trace!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {expected_fee:?}");
             return Err(ProtocolError::PaymentProofInsufficientAmount {
                 paid: received_fee,
-                expected: current_store_cost,
+                expected: expected_fee,
             });
         }
         info!("Total payment of {received_fee:?} nanos accepted for record {pretty_key}");
@@ -722,4 +753,31 @@ impl Node {
 
         Ok(Some(signed_spends))
     }
+}
+
+// Helper to calculate total amout of tokens received in a given set of CashNotes
+fn total_cash_notes_amount<'a, I>(
+    cash_notes: I,
+    pretty_key: PrettyPrintRecordKey,
+) -> Result<NanoTokens, ProtocolError>
+where
+    I: IntoIterator<Item = &'a CashNote>,
+{
+    let mut received_fee = NanoTokens::zero();
+    for cash_note in cash_notes {
+        let amount = cash_note.value().map_err(|_| {
+            ProtocolError::RecordNotStored(
+                pretty_key.clone().into_owned(),
+                "Failed to get CashNote value".to_string(),
+            )
+        })?;
+        received_fee = received_fee
+            .checked_add(amount)
+            .ok_or(ProtocolError::RecordNotStored(
+                pretty_key.clone().into_owned(),
+                "CashNote value overflow".to_string(),
+            ))?;
+    }
+
+    Ok(received_fee)
 }

@@ -9,7 +9,7 @@
 use crate::subcommands::SubCmd;
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
-use sn_logging::{parse_log_format, LogFormat, LogOutputDest};
+use sn_logging::{LogFormat, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
 use std::{path::PathBuf, time::Duration};
 
@@ -59,7 +59,7 @@ pub(crate) struct Opt {
     /// Valid values are "default" or "json".
     ///
     /// If the argument is not used, the default format will be applied.
-    #[clap(long, value_parser = parse_log_format, verbatim_doc_comment)]
+    #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
     pub log_format: Option<LogFormat>,
 
     #[command(flatten)]

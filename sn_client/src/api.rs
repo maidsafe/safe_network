@@ -120,9 +120,17 @@ impl Client {
                                 continue;
                             }
                         };
+
+                        let start = std::time::Instant::now();
+                        let event_string = format!("{:?}", the_event);
                         if let Err(err) = client_clone.handle_network_event(the_event) {
                             warn!("Error handling network event: {err}");
                         }
+                        trace!(
+                            "Handled network event in {:?}: {:?}",
+                            start.elapsed(),
+                            event_string
+                        );
                     }
                     Err(_elapse_err) => {
                         debug!("Client inactivity... waiting for a network event");
@@ -284,7 +292,7 @@ impl Client {
 
         debug!(
             "Got record from the network, {:?}",
-            PrettyPrintRecordKey::from(record.key.clone())
+            PrettyPrintRecordKey::from(&record.key)
         );
 
         let register = get_register_from_record(record)
@@ -420,7 +428,7 @@ impl Client {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::All, true, Default::default())
+            .get_record_from_network(key, None, GetQuorum::All, false, Default::default())
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
@@ -437,7 +445,7 @@ impl Client {
         let key = NetworkAddress::from_register_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::All, true, Default::default())
+            .get_record_from_network(key, None, GetQuorum::All, false, Default::default())
             .await?;
 
         let header = RecordHeader::from_record(&record)?;
@@ -497,7 +505,7 @@ impl Client {
 
         trace!(
             "Getting spend {unique_pubkey:?} with record_key {:?}",
-            PrettyPrintRecordKey::from(key.clone())
+            PrettyPrintRecordKey::from(&key)
         );
         let record = self
             .network
@@ -510,7 +518,7 @@ impl Client {
             })?;
         debug!(
             "For spend {unique_pubkey:?} got record from the network, {:?}",
-            PrettyPrintRecordKey::from(record.key.clone())
+            PrettyPrintRecordKey::from(&record.key)
         );
 
         let header = RecordHeader::from_record(&record).map_err(|err| {
@@ -564,7 +572,7 @@ impl Client {
                     error!("Found double spend for {address:?}");
                     Err(Error::CouldNotVerifyTransfer(format!(
                 "Found double spend for the unique_pubkey {unique_pubkey:?} - {:?}: spend_one {:?} and spend_two {:?}",
-                PrettyPrintRecordKey::from(key), one.derived_key_sig, two.derived_key_sig
+                PrettyPrintRecordKey::from(&key), one.derived_key_sig, two.derived_key_sig
             )))
                 }
             }
@@ -615,15 +623,15 @@ fn merge_split_register_records(
     address: RegisterAddress,
     map: &HashMap<XorName, (Record, HashSet<PeerId>)>,
 ) -> Result<SignedRegister> {
-    let key =
-        PrettyPrintRecordKey::from(NetworkAddress::from_register_address(address).to_record_key());
-    debug!("Got multiple records from the network for key: {key:?}");
+    let key = NetworkAddress::from_register_address(address).to_record_key();
+    let pretty_key = PrettyPrintRecordKey::from(&key);
+    debug!("Got multiple records from the network for key: {pretty_key:?}");
     let mut all_registers = vec![];
     for (record, peers) in map.values() {
         match get_register_from_record(record.clone()) {
             Ok(r) => all_registers.push(r),
             Err(e) => {
-                warn!("Ignoring invalid register record found for {key:?} received from {peers:?}: {:?}", e);
+                warn!("Ignoring invalid register record found for {pretty_key:?} received from {peers:?}: {:?}", e);
                 continue;
             }
         }

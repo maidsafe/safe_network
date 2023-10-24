@@ -10,6 +10,7 @@ use super::{error::Result, event::NodeEventsChannel, Marker, NodeEvent};
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetrics;
 use crate::RunningNode;
+use bls::{PublicKey, PK_SIZE};
 use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
@@ -22,8 +23,7 @@ use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::MainSecretKey;
-use sn_transfers::{LocalWallet, MainPubkey};
+use sn_transfers::{CashNote, LocalWallet, MainPubkey, MainSecretKey};
 use std::{
     net::SocketAddr,
     path::PathBuf,
@@ -134,7 +134,6 @@ impl NodeBuilder {
         // Run the node
         node.run(swarm_driver, network_event_receiver);
         // subscribe to receive transfer notifications over gossipsub topic TRANSFER_NOTIF_TOPIC
-        #[cfg(feature = "network-royalties-notif")]
         running_node
             .subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())
             .map(|()| info!("Node has been subscribed to gossipsub topic '{TRANSFER_NOTIF_TOPIC}' to receive network royalties payments notifications."))?;
@@ -183,7 +182,14 @@ impl Node {
                             Some(event) => {
                                 let stateless_node_copy = self.clone();
                                 let _handle =
-                                    spawn(async move { stateless_node_copy.handle_network_event(event, peers_connected).await });
+                                    spawn(async move {
+                                        let start = std::time::Instant::now();
+                                        let event_string = format!("{:?}", event);
+
+                                        stateless_node_copy.handle_network_event(event, peers_connected).await ;
+                                        info!("Handled network event in {:?}: {:?}", start.elapsed(), event_string);
+
+                                    });
                             }
                             None => {
                                 error!("The `NetworkEvent` channel is closed");
@@ -215,6 +221,12 @@ impl Node {
                                     return;
                                 }
                             };
+
+                            // early return to avoid panic on gen_range
+                            if closest_peers.is_empty() {
+                                info!("No peers to replicate to");
+                                return;
+                            }
 
                             let peer_id =
                                 closest_peers[rand::thread_rng().gen_range(0..closest_peers.len())];
@@ -340,7 +352,7 @@ impl Node {
                 }
             }
             NetworkEvent::UnverifiedRecord(record) => {
-                let key = PrettyPrintRecordKey::from(record.key.clone());
+                let key = PrettyPrintRecordKey::from(&record.key).into_owned();
                 match self.validate_and_store_record(record).await {
                     Ok(cmdok) => trace!("UnverifiedRecord {key} stored with {cmdok:?}."),
                     Err(err) => {
@@ -420,9 +432,9 @@ impl Node {
 
                 if record_exists {
                     QueryResponse::GetStoreCost {
-                        store_cost: Err(ProtocolError::RecordExists(PrettyPrintRecordKey::from(
-                            address.to_record_key(),
-                        ))),
+                        store_cost: Err(ProtocolError::RecordExists(
+                            PrettyPrintRecordKey::from(&address.to_record_key()).into_owned(),
+                        )),
                         payment_address,
                     }
                 } else {
@@ -494,15 +506,14 @@ impl Node {
 }
 
 fn try_decode_transfer_notif(msg: &[u8]) -> eyre::Result<NodeEvent> {
-    let mut key_bytes = [0u8; bls::PK_SIZE];
+    let mut key_bytes = [0u8; PK_SIZE];
     key_bytes.copy_from_slice(
-        msg.get(0..bls::PK_SIZE)
+        msg.get(0..PK_SIZE)
             .ok_or_else(|| eyre::eyre!("msg doesn't have enough bytes"))?,
     );
-    let key = bls::PublicKey::from_bytes(key_bytes)?;
+    let key = PublicKey::from_bytes(key_bytes)?;
 
-    let transfer =
-        sn_transfers::Transfer::from_hex(&String::from_utf8(msg[bls::PK_SIZE..].to_vec())?)?;
+    let cash_notes: Vec<CashNote> = bincode::deserialize(&msg[PK_SIZE..])?;
 
-    Ok(NodeEvent::TransferNotif { key, transfer })
+    Ok(NodeEvent::TransferNotif { key, cash_notes })
 }

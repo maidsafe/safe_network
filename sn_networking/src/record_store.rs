@@ -160,8 +160,8 @@ impl NodeRecordStore {
             {
                 trace!(
                     "{:?} will be pruned to make space for new record: {:?}",
-                    PrettyPrintRecordKey::from(furthest_record.clone()),
-                    PrettyPrintRecordKey::from(r.clone())
+                    PrettyPrintRecordKey::from(&furthest_record),
+                    PrettyPrintRecordKey::from(r)
                 );
                 // we should prune and make space
                 self.remove(&furthest_record);
@@ -207,7 +207,7 @@ impl NodeRecordStore {
     /// Warning: PUTs a `Record` to the store without validation
     /// Should be used in context where the `Record` is trusted
     pub(crate) fn put_verified(&mut self, r: Record) -> Result<()> {
-        let record_key = PrettyPrintRecordKey::from(r.key.clone());
+        let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
 
         self.prune_storage_if_needed_for_record(&r.key)?;
@@ -301,7 +301,7 @@ impl RecordStore for NodeRecordStore {
         // When a client calls GET, the request is forwarded to the nodes until one node returns
         // with the record. Thus a node can be bombarded with GET reqs for random keys. These can be safely
         // ignored if we don't have the record locally.
-        let key = PrettyPrintRecordKey::from(k.clone());
+        let key = PrettyPrintRecordKey::from(k);
         if !self.records.contains(k) {
             trace!("Record not found locally: {key}");
             return None;
@@ -324,7 +324,7 @@ impl RecordStore for NodeRecordStore {
         if self.records.contains(&record.key) {
             trace!(
                 "Unverified Record {:?} already exists.",
-                PrettyPrintRecordKey::from(record.key.clone())
+                PrettyPrintRecordKey::from(&record.key)
             );
 
             // Blindly sent to validation to allow double spend can be detected.
@@ -332,7 +332,7 @@ impl RecordStore for NodeRecordStore {
         }
         trace!(
             "Unverified Record {:?} try to validate and store",
-            PrettyPrintRecordKey::from(record.key.clone())
+            PrettyPrintRecordKey::from(&record.key)
         );
         if let Some(event_sender) = self.event_sender.clone() {
             // push the event off thread so as to be non-blocking

@@ -12,7 +12,7 @@ use clap::{Parser, Subcommand};
 use eyre::{bail, eyre, Result};
 use faucet_server::run_faucet_server;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
-use sn_logging::{init_logging, LogFormat, LogOutputDest};
+use sn_logging::{LogBuilder, LogOutputDest};
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
 use sn_transfers::{parse_main_pubkey, NanoTokens, Transfer};
 use std::path::PathBuf;
@@ -45,7 +45,9 @@ async fn main() -> Result<()> {
             ("sn_testnet".to_string(), Level::TRACE),
             ("sn_transfers".to_string(), Level::TRACE),
         ];
-        init_logging(logging_targets, log_output_dest, LogFormat::Default)?
+        let mut log_builder = LogBuilder::new(logging_targets);
+        log_builder.output_dest(log_output_dest);
+        log_builder.initialize()?
     } else {
         None
     };

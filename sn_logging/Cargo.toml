@@ -8,9 +8,11 @@ license = "GPL-3.0"
 name = "sn_logging"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.2.12"
+version = "0.2.13"
 
 [dependencies]
+chrono = "~0.4.19"
+dirs-next = "~2.0.0"
 file-rotate = "0.7.3"
 opentelemetry = { version = "0.20", features = ["rt-tokio"], optional = true }
 opentelemetry-otlp = { version = "0.13", optional = true }

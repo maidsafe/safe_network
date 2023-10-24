@@ -172,7 +172,7 @@ impl Debug for NetworkEvent {
             NetworkEvent::KeysForReplication(list) => {
                 let pretty_list: Vec<_> = list
                     .iter()
-                    .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key.clone())))
+                    .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key)))
                     .collect();
                 write!(f, "NetworkEvent::KeysForReplication({pretty_list:?})")
             }
@@ -183,11 +183,11 @@ impl Debug for NetworkEvent {
                 write!(f, "NetworkEvent::NatStatusChanged({nat_status:?})")
             }
             NetworkEvent::UnverifiedRecord(record) => {
-                let pretty_key = PrettyPrintRecordKey::from(record.key.clone());
+                let pretty_key = PrettyPrintRecordKey::from(&record.key);
                 write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
             }
             NetworkEvent::FailedToWrite(record_key) => {
-                let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
+                let pretty_key = PrettyPrintRecordKey::from(record_key);
                 write!(f, "NetworkEvent::FailedToWrite({pretty_key:?})")
             }
             NetworkEvent::GossipsubMsgReceived { topic, .. } => {
@@ -210,19 +210,24 @@ impl SwarmDriver {
         // called individually on each behaviour.
         #[cfg(feature = "open-metrics")]
         self.network_metrics.record(&event);
+        let start = std::time::Instant::now();
+        let event_string;
         match event {
             SwarmEvent::Behaviour(NodeEvent::MsgReceived(event)) => {
+                event_string = "msg_received";
                 if let Err(e) = self.handle_msg(event) {
                     warn!("MsgReceivedError: {e:?}");
                 }
             }
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
+                event_string = "kad_event";
                 #[cfg(feature = "open-metrics")]
                 self.network_metrics.record(&(kad_event));
                 self.handle_kad_event(kad_event)?;
             }
             // Handle the Identify event from the libp2p swarm.
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
+                event_string = "identify";
                 // Record the Identify event for metrics if the feature is enabled.
                 #[cfg(feature = "open-metrics")]
                 self.network_metrics.record(&(*iden));
@@ -288,48 +293,56 @@ impl SwarmDriver {
                 }
             }
             #[cfg(feature = "local-discovery")]
-            SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => match *mdns_event {
-                mdns::Event::Discovered(list) => {
-                    if self.local {
-                        for (peer_id, addr) in list {
-                            // The multiaddr does not contain the peer ID, so add it.
-                            let addr = addr.with(Protocol::P2p(peer_id));
+            SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => {
+                event_string = "mdns";
+                match *mdns_event {
+                    mdns::Event::Discovered(list) => {
+                        if self.local {
+                            for (peer_id, addr) in list {
+                                // The multiaddr does not contain the peer ID, so add it.
+                                let addr = addr.with(Protocol::P2p(peer_id));
 
-                            info!(%addr, "mDNS node discovered and dialing");
+                                info!(%addr, "mDNS node discovered and dialing");
 
-                            if let Err(err) = self.dial(addr.clone()) {
-                                warn!(%addr, "mDNS node dial error: {err:?}");
+                                if let Err(err) = self.dial(addr.clone()) {
+                                    warn!(%addr, "mDNS node dial error: {err:?}");
+                                }
                             }
                         }
                     }
+                    mdns::Event::Expired(peer) => {
+                        trace!("mdns peer {peer:?} expired");
+                    }
                 }
-                mdns::Event::Expired(peer) => {
-                    trace!("mdns peer {peer:?} expired");
-                }
-            },
-            SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => match event {
-                autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
-                autonat::Event::OutboundProbe(e) => trace!("AutoNAT outbound probe: {e:?}"),
-                autonat::Event::StatusChanged { old, new } => {
-                    info!("AutoNAT status changed: {old:?} -> {new:?}");
-                    self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
+            }
+            SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => {
+                event_string = "autonat";
+                match event {
+                    autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
+                    autonat::Event::OutboundProbe(e) => trace!("AutoNAT outbound probe: {e:?}"),
+                    autonat::Event::StatusChanged { old, new } => {
+                        info!("AutoNAT status changed: {old:?} -> {new:?}");
+                        self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
 
-                    match new {
-                        NatStatus::Public(_addr) => {
-                            // In theory, we could actively push our address to our peers now. But, which peers? All of them?
-                            // Or, should we just wait and let Identify do it on its own? But, what if we are not connected
-                            // to any peers anymore? (E.g., our connections timed out etc)
-                            // let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
-                            // self.swarm.behaviour_mut().identify.push(all_peers);
-                        }
-                        NatStatus::Private => {
-                            // We could just straight out error here. In the future we might try to activate a relay mechanism.
-                        }
-                        NatStatus::Unknown => {}
-                    };
+                        match new {
+                            NatStatus::Public(_addr) => {
+                                // In theory, we could actively push our address to our peers now. But, which peers? All of them?
+                                // Or, should we just wait and let Identify do it on its own? But, what if we are not connected
+                                // to any peers anymore? (E.g., our connections timed out etc)
+                                // let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
+                                // self.swarm.behaviour_mut().identify.push(all_peers);
+                            }
+                            NatStatus::Private => {
+                                // We could just straight out error here. In the future we might try to activate a relay mechanism.
+                            }
+                            NatStatus::Unknown => {}
+                        };
+                    }
                 }
-            },
+            }
             SwarmEvent::Behaviour(NodeEvent::Gossipsub(event)) => {
+                event_string = "gossip";
+
                 #[cfg(feature = "open-metrics")]
                 self.network_metrics.record(&event);
                 match event {
@@ -342,6 +355,8 @@ impl SwarmDriver {
                 }
             }
             SwarmEvent::NewListenAddr { address, .. } => {
+                event_string = "new listen addr";
+
                 let local_peer_id = *self.swarm.local_peer_id();
                 let address = address.with(Protocol::P2p(local_peer_id));
 
@@ -368,6 +383,8 @@ impl SwarmDriver {
                 local_addr,
                 send_back_addr,
             } => {
+                event_string = "incoming";
+
                 trace!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
             }
             SwarmEvent::ConnectionEstablished {
@@ -377,6 +394,7 @@ impl SwarmDriver {
                 connection_id,
                 ..
             } => {
+                event_string = "ConnectionEstablished";
                 trace!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
 
                 if endpoint.is_dialer() {
@@ -392,6 +410,7 @@ impl SwarmDriver {
                 num_established,
                 connection_id,
             } => {
+                event_string = "ConnectionClosed";
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
             }
             SwarmEvent::OutgoingConnectionError {
@@ -399,6 +418,7 @@ impl SwarmDriver {
                 error,
                 connection_id,
             } => {
+                event_string = "Outgoing`ConnErr";
                 error!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
                 if let Some(dead_peer) = self
                     .swarm
@@ -417,14 +437,26 @@ impl SwarmDriver {
                 send_back_addr,
                 error,
             } => {
+                event_string = "Incoming ConnErr";
                 error!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
             }
             SwarmEvent::Dialing {
                 peer_id,
                 connection_id,
-            } => trace!("Dialing {peer_id:?} on {connection_id:?}"),
-            other => trace!("SwarmEvent has been ignored: {other:?}"),
+            } => {
+                event_string = "Dialing";
+                trace!("Dialing {peer_id:?} on {connection_id:?}");
+            }
+            other => {
+                event_string = "Other";
+
+                trace!("SwarmEvent has been ignored: {other:?}")
+            }
         }
+        trace!(
+            "SwarmEvent handled in {:?}: {event_string:?}",
+            start.elapsed()
+        );
         Ok(())
     }
 
@@ -512,6 +544,9 @@ impl SwarmDriver {
     fn handle_kad_event(&mut self, kad_event: KademliaEvent) -> Result<()> {
         #[cfg(feature = "open-metricss")]
         self.network_metrics.record(&kad_event);
+        let start = std::time::Instant::now();
+        let event_string;
+
         match kad_event {
             ref event @ KademliaEvent::OutboundQueryProgressed {
                 id,
@@ -519,6 +554,7 @@ impl SwarmDriver {
                 ref stats,
                 ref step,
             } => {
+                event_string = "kad_event::get_closest_peers";
                 trace!(
                     "Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}"
                 );
@@ -554,6 +590,7 @@ impl SwarmDriver {
                 ref stats,
                 ref step,
             } => {
+                event_string = "kad_event::get_closest_peers_err";
                 error!("GetClosest Query task {id:?} errored with {err:?}, {stats:?} - {step:?}");
 
                 let (sender, mut current_closest) =
@@ -604,10 +641,10 @@ impl SwarmDriver {
                 stats,
                 step,
             } => {
-                let content_hash = XorName::from_content(&peer_record.record.value);
+                event_string = "kad_event::get_record::found";
                 trace!(
-                    "Query task {id:?} returned with record {:?}(content {content_hash:?}) from peer {:?}, {stats:?} - {step:?}",
-                    PrettyPrintRecordKey::from(peer_record.record.key.clone()),
+                    "Query task {id:?} returned with record {:?} from peer {:?}, {stats:?} - {step:?}",
+                    PrettyPrintRecordKey::from(&peer_record.record.key),
                     peer_record.peer
                 );
                 self.accumulate_get_record_ok(id, peer_record, step.count);
@@ -621,6 +658,7 @@ impl SwarmDriver {
                 stats,
                 step,
             } => {
+                event_string = "kad_event::get_record::finished_no_additional";
                 trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?} - {cache_candidates:?}");
                 if let Some((sender, result_map, _quorum, expected_holders)) =
                     self.pending_get_record.remove(&id)
@@ -634,7 +672,7 @@ impl SwarmDriver {
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
                         format!(
                             "Getting record {:?} completed with only {:?} copies received",
-                            PrettyPrintRecordKey::from(record.key.clone()),
+                            PrettyPrintRecordKey::from(&record.key),
                             usize::from(step.count) - 1
                         )
                     } else {
@@ -663,15 +701,17 @@ impl SwarmDriver {
             } => {
                 match err.clone() {
                     GetRecordError::NotFound { key, closest_peers } => {
+                        event_string = "kad_event::GetRecordError::NotFound";
                         info!("Query task {id:?} NotFound record {:?} among peers {closest_peers:?}, {stats:?} - {step:?}",
-                        PrettyPrintRecordKey::from(key.clone()));
+                        PrettyPrintRecordKey::from(&key));
                     }
                     GetRecordError::QuorumFailed {
                         key,
                         records,
                         quorum,
                     } => {
-                        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+                        event_string = "kad_event::GetRecordError::QuorumFailed";
+                        let pretty_key = PrettyPrintRecordKey::from(&key);
                         let peers = records
                             .iter()
                             .map(|peer_record| peer_record.peer)
@@ -679,7 +719,8 @@ impl SwarmDriver {
                         info!("Query task {id:?} QuorumFailed record {pretty_key:?} among peers {peers:?} with quorum {quorum:?}, {stats:?} - {step:?}");
                     }
                     GetRecordError::Timeout { key } => {
-                        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+                        event_string = "kad_event::GetRecordError::Timeout";
+                        let pretty_key = PrettyPrintRecordKey::from(&key);
 
                         debug!(
                             "Query task {id:?} timed out when looking for record {pretty_key:?}"
@@ -711,6 +752,11 @@ impl SwarmDriver {
                             sender
                                 .send(Err(Error::QueryTimeout))
                                 .map_err(|_| Error::InternalMsgChannelDropped)?;
+                            debug!(
+                                "KadEvent {event_string:?} completed after {:?}",
+                                start.elapsed()
+                            );
+
                             return Ok(());
                         }
 
@@ -720,6 +766,12 @@ impl SwarmDriver {
                                 sender
                                     .send(Ok(record.clone()))
                                     .map_err(|_| Error::InternalMsgChannelDropped)?;
+
+                                debug!(
+                                    "KadEvent {event_string:?} completed after {:?}",
+                                    start.elapsed()
+                                );
+
                                 return Ok(());
                             }
                         }
@@ -730,6 +782,10 @@ impl SwarmDriver {
                             .send(Err(Error::QueryTimeout))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
 
+                        debug!(
+                            "KadEvent {event_string:?} completed after {:?}",
+                            start.elapsed()
+                        );
                         return Ok(());
                     }
                 }
@@ -752,6 +808,7 @@ impl SwarmDriver {
                 step,
                 ..
             } => {
+                event_string = "kad_event::OutboundQueryProgressed::Bootstrap";
                 // here BootstrapOk::num_remaining refers to the remaining random peer IDs to query, one per
                 // bucket that still needs refreshing.
                 trace!("Kademlia Bootstrap with {id:?} progressed with {bootstrap_result:?} and step {step:?}");
@@ -766,6 +823,7 @@ impl SwarmDriver {
                 old_peer,
                 ..
             } => {
+                event_string = "kad_event::RoutingUpdated";
                 if is_new_peer {
                     info!("New peer added to routing table: {peer:?}");
                     self.log_kbuckets(&peer);
@@ -787,12 +845,14 @@ impl SwarmDriver {
             KademliaEvent::InboundRequest {
                 request: InboundRequest::PutRecord { .. },
             } => {
+                event_string = "kad_event::InboundRequest::PutRecord";
                 // Ignored to reduce logging. When `Record filtering` is enabled,
                 // the `record` variable will contain the content for further validation before put.
             }
             KademliaEvent::InboundRequest {
                 request: InboundRequest::FindNode { .. },
             } => {
+                event_string = "kad_event::InboundRequest::FindNode";
                 // Ignored to reduce logging. With continuous bootstrap, this is triggered often.
             }
             KademliaEvent::InboundRequest {
@@ -802,17 +862,25 @@ impl SwarmDriver {
                         present_locally,
                     },
             } => {
+                event_string = "kad_event::InboundRequest::GetRecord";
                 if !present_locally && num_closer_peers < CLOSE_GROUP_SIZE {
                     trace!("InboundRequest::GetRecord doesn't have local record, with {num_closer_peers:?} closer_peers");
                 }
             }
             KademliaEvent::UnroutablePeer { peer } => {
+                event_string = "kad_event::UnroutablePeer";
                 trace!(peer_id = %peer, "KademliaEvent: UnroutablePeer");
             }
             other => {
+                event_string = "kad_event::Other";
                 trace!("KademliaEvent ignored: {other:?}");
             }
         }
+
+        trace!(
+            "KademliaEvent handled in {:?}: {event_string:?}",
+            start.elapsed()
+        );
 
         Ok(())
     }
@@ -909,7 +977,7 @@ impl SwarmDriver {
         if let Some((sender, mut result_map, quorum, mut expected_holders)) =
             self.pending_get_record.remove(&query_id)
         {
-            let pretty_key = PrettyPrintRecordKey::from(peer_record.record.key.clone());
+            let pretty_key = PrettyPrintRecordKey::from(&peer_record.record.key).into_owned();
 
             if !expected_holders.is_empty() {
                 if expected_holders.remove(&peer_id) {

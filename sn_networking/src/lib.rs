@@ -36,6 +36,7 @@ pub use self::{
 
 use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
 use futures::future::select_all;
+use itertools::Itertools;
 use libp2p::{
     identity::Keypair,
     kad::{KBucketKey, Record, RecordKey},
@@ -94,30 +95,28 @@ pub fn sort_peers_by_key<'a, T>(
     key: &KBucketKey<T>,
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
-    // Get the indices and sort them by indexing into the `peers` array.
-    let mut indices: Vec<usize> = (0..peers.len()).collect();
-    indices.sort_by(|&i, &j| {
-        let a = peers
-            .get(i)
-            .map(|&peer_id| NetworkAddress::from_peer(peer_id));
-        let b = peers
-            .get(j)
-            .map(|&peer_id| NetworkAddress::from_peer(peer_id));
+    // Create a vector of tuples where each tuple is a reference to a peer and its distance to the key.
+    // This avoids multiple computations of the same distance in the sorting process.
+    let mut peer_distances = peers
+        .iter()
+        .map(|peer_id| {
+            let addr = NetworkAddress::from_peer(*peer_id);
+            let distance = key.distance(&addr.as_kbucket_key());
+            (peer_id, distance)
+        })
+        .collect_vec();
 
-        match (a, b) {
-            (Some(a_addr), Some(b_addr)) => key
-                .distance(&a_addr.as_kbucket_key())
-                .cmp(&key.distance(&b_addr.as_kbucket_key())),
-            _ => std::cmp::Ordering::Equal,
-        }
-    });
+    // Sort the vector of tuples by the distance.
+    peer_distances.sort_by(|a, b| a.1.cmp(&b.1));
 
-    let sorted_peers: Vec<&PeerId> = indices
+    // Collect the sorted peers into a new vector.
+    let sorted_peers: Vec<&PeerId> = peer_distances
         .iter()
         .take(expected_entries)
-        .filter_map(|&i| peers.get(i))
+        .map(|&(peer_id, _)| peer_id)
         .collect();
 
+    // Check if there are enough peers to satisfy the request.
     if CLOSE_GROUP_SIZE > sorted_peers.len() {
         warn!("Not enough peers in the k-bucket to satisfy the request");
         return Err(Error::NotEnoughPeers {
@@ -253,7 +252,8 @@ impl Network {
                 payment_address,
             }) = response
             {
-                all_costs.push((payment_address, cost));
+                let cost_with_tolerance = NanoTokens::from((cost.as_nano() as f32 * 1.1) as u64);
+                all_costs.push((payment_address, cost_with_tolerance));
             } else {
                 error!("Non store cost response received,  was {:?}", response);
             }
@@ -295,12 +295,11 @@ impl Network {
         let total_attempts = if re_attempt { VERIFICATION_ATTEMPTS } else { 1 };
 
         let mut verification_attempts = 0;
-        let pretty_key = PrettyPrintRecordKey::from(key.clone());
+        let pretty_key = PrettyPrintRecordKey::from(&key);
         while verification_attempts < total_attempts {
             verification_attempts += 1;
             info!(
-                "Getting record of {:?} attempts {verification_attempts:?}/{total_attempts:?}",
-                PrettyPrintRecordKey::from(key.clone()),
+                "Getting record of {pretty_key:?} attempts {verification_attempts:?}/{total_attempts:?}",
             );
 
             let (sender, receiver) = oneshot::channel();
@@ -318,10 +317,7 @@ impl Network {
                 Ok(returned_record) => {
                     let header = RecordHeader::from_record(&returned_record)?;
                     let is_chunk = matches!(header.kind, RecordKind::Chunk);
-                    info!(
-                        "Record returned: {:?}",
-                        PrettyPrintRecordKey::from(key.clone())
-                    );
+                    info!("Record returned: {pretty_key:?}",);
 
                     // Returning OK whenever fulfill one of the followings:
                     // 1, No targeting record
@@ -339,7 +335,7 @@ impl Network {
                     } else if verification_attempts >= total_attempts {
                         info!("Error: Returned record does not match target");
                         return Err(Error::ReturnedRecordDoesNotMatch(
-                            returned_record.key.into(),
+                            PrettyPrintRecordKey::from(&returned_record.key).into_owned(),
                         ));
                     }
                 }
@@ -354,7 +350,7 @@ impl Network {
                             return Ok(returned_record);
                         } else {
                             return Err(Error::ReturnedRecordDoesNotMatch(
-                                returned_record.key.into(),
+                                PrettyPrintRecordKey::from(&returned_record.key).into_owned(),
                             ));
                         }
                     }
@@ -367,20 +363,14 @@ impl Network {
                         break;
                     }
 
-                    warn!(
-                        "No holder of record '{:?}' found. Retrying the fetch ...",
-                        PrettyPrintRecordKey::from(key.clone()),
-                    );
+                    warn!("No holder of record '{pretty_key:?}' found. Retrying the fetch ...",);
                 }
                 Err(error) => {
                     error!("{error:?}");
                     if verification_attempts >= total_attempts {
                         break;
                     }
-                    warn!(
-                        "Did not retrieve Record '{:?}' from network!. Retrying...",
-                        PrettyPrintRecordKey::from(key.clone()),
-                    );
+                    warn!("Did not retrieve Record '{pretty_key:?}' from network!. Retrying...",);
                 }
             }
 
@@ -431,7 +421,7 @@ impl Network {
         while retries < PUT_RECORD_RETRIES {
             info!(
                 "Attempting to PUT record of {:?} to network",
-                PrettyPrintRecordKey::from(record.key.clone())
+                PrettyPrintRecordKey::from(&record.key)
             );
 
             let res = self
@@ -451,7 +441,9 @@ impl Network {
             retries += 1;
         }
 
-        Err(Error::FailedToVerifyRecordWasStored(record.key.into()))
+        Err(Error::FailedToVerifyRecordWasStored(
+            PrettyPrintRecordKey::from(&record.key).into_owned(),
+        ))
     }
 
     async fn put_record_once(
@@ -461,7 +453,7 @@ impl Network {
         expected_holders: ExpectedHoldersList,
     ) -> Result<()> {
         let record_key = record.key.clone();
-        let pretty_key = PrettyPrintRecordKey::from(record_key.clone());
+        let pretty_key = PrettyPrintRecordKey::from(&record_key);
         info!(
             "Putting record of {} - length {:?} to network",
             pretty_key,
@@ -504,7 +496,7 @@ impl Network {
     pub fn put_local_record(&self, record: Record) -> Result<()> {
         trace!(
             "Writing Record locally, for {:?} - length {:?}",
-            PrettyPrintRecordKey::from(record.key.clone()),
+            PrettyPrintRecordKey::from(&record.key),
             record.value.len()
         );
         self.send_swarm_cmd(SwarmCmd::PutLocalRecord { record })

@@ -17,14 +17,16 @@ pub mod messages;
 pub mod storage;
 
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
-use bytes::Bytes;
 use libp2p::{
     kad::{KBucketDistance as Distance, KBucketKey as Key, RecordKey},
     PeerId,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
-use std::fmt::{self, Debug, Display, Formatter};
+use std::{
+    borrow::Cow,
+    fmt::{self, Debug, Display, Formatter},
+};
 use xor_name::XorName;
 
 /// This is the address in the network by which proximity/distance
@@ -187,7 +189,7 @@ impl Debug for NetworkAddress {
             ),
             NetworkAddress::RecordKey(bytes) => format!(
                 "NetworkAddress::RecordKey({:?} - ",
-                PrettyPrintRecordKey::from(RecordKey::new(bytes))
+                PrettyPrintRecordKey::from(&RecordKey::new(bytes))
             ),
         };
         write!(
@@ -229,8 +231,10 @@ impl std::fmt::Display for PrettyPrintKBucketKey {
         // The `KeyBytes` part of `KBucketKey` is private and no API to expose it.
         // Hence here we have to carry out a hash manually to simulate its behaviour.
         let generic_array = Sha256::digest(self.0.preimage());
-        let kbucket_key_b = Bytes::from(generic_array.to_vec());
-        write!(f, "{:64x}", kbucket_key_b)
+        for byte in generic_array {
+            f.write_fmt(format_args!("{:02x}", byte))?;
+        }
+        Ok(())
     }
 }
 
@@ -240,27 +244,30 @@ impl std::fmt::Debug for PrettyPrintKBucketKey {
     }
 }
 
-/// Pretty print a `kad::RecordKey` as a hex string.
-/// So clients can use the hex string for xorname and record keys interchangeably.
-/// This makes errors actionable for clients.
-/// The only cost is converting kad::RecordKey into it before sending it in errors: `record_key.into()`
+/// Provides a hex representation of a `kad::RecordKey`.
+///
+/// This internally stores the RecordKey as a `Cow` type. Use `PrettyPrintRecordKey::from(&RecordKey)` to create a
+/// borrowed version for printing/logging.
+/// To use in error messages, to pass to other functions, call `PrettyPrintRecordKey::from(&RecordKey).into_owned()` to
+///  obtain a cloned, non-referenced `RecordKey`.
 #[derive(Clone, Hash, Eq, PartialEq)]
-pub struct PrettyPrintRecordKey(RecordKey);
+pub struct PrettyPrintRecordKey<'a> {
+    key: Cow<'a, RecordKey>,
+}
 
-// Implementing Serialize for PrettyPrintRecordKey
-impl Serialize for PrettyPrintRecordKey {
+impl<'a> Serialize for PrettyPrintRecordKey<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         // Use the `to_vec` function of the inner RecordKey to get the bytes
         // and then serialize those bytes
-        self.0.to_vec().serialize(serializer)
+        self.key.to_vec().serialize(serializer)
     }
 }
 
 // Implementing Deserialize for PrettyPrintRecordKey
-impl<'de> Deserialize<'de> for PrettyPrintRecordKey {
+impl<'de> Deserialize<'de> for PrettyPrintRecordKey<'static> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -268,31 +275,118 @@ impl<'de> Deserialize<'de> for PrettyPrintRecordKey {
         // Deserialize to bytes first
         let bytes = Vec::<u8>::deserialize(deserializer)?;
         // Then use the bytes to create a RecordKey and wrap it in PrettyPrintRecordKey
-        Ok(PrettyPrintRecordKey(RecordKey::new(&bytes)))
+        Ok(PrettyPrintRecordKey {
+            key: Cow::Owned(RecordKey::new(&bytes)),
+        })
     }
 }
-// seamless conversion from `kad::RecordKey` to `PrettyPrintRecordKey`
-impl From<RecordKey> for PrettyPrintRecordKey {
-    fn from(key: RecordKey) -> Self {
-        PrettyPrintRecordKey(key)
+/// This is the only interface to create a PrettyPrintRecordKey.
+/// `.into_owned()` must be called explicitly if you want a Owned version to be used for errors/args.
+impl<'a> From<&'a RecordKey> for PrettyPrintRecordKey<'a> {
+    fn from(key: &'a RecordKey) -> Self {
+        PrettyPrintRecordKey {
+            key: Cow::Borrowed(key),
+        }
     }
 }
 
-impl std::fmt::Display for PrettyPrintRecordKey {
+impl<'a> PrettyPrintRecordKey<'a> {
+    /// Creates a owned version that can be then used to pass as error values.
+    /// Do not call this if you just want to print/log `PrettyPrintRecordKey`
+    pub fn into_owned(self) -> PrettyPrintRecordKey<'static> {
+        let cloned_key = match self.key {
+            Cow::Borrowed(key) => Cow::Owned(key.clone()),
+            Cow::Owned(key) => Cow::Owned(key),
+        };
+
+        PrettyPrintRecordKey { key: cloned_key }
+    }
+}
+
+impl<'a> std::fmt::Display for PrettyPrintRecordKey<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let b: Vec<u8> = self.0.as_ref().to_vec();
-        let record_key_b = Bytes::from(b);
+        let record_key_bytes = match &self.key {
+            Cow::Borrowed(borrowed_key) => borrowed_key.as_ref(),
+            Cow::Owned(owned_key) => owned_key.as_ref(),
+        };
+        for byte in record_key_bytes {
+            f.write_fmt(format_args!("{:02x}", byte))?;
+        }
+
+        // to get the inner RecordKey
+        let key = self.key.clone().into_owned();
         write!(
             f,
-            "{:64x}({:?})",
-            record_key_b,
-            PrettyPrintKBucketKey(NetworkAddress::from_record_key(self.0.clone()).as_kbucket_key())
+            "({:?})",
+            PrettyPrintKBucketKey(NetworkAddress::from_record_key(key).as_kbucket_key())
         )
     }
 }
 
-impl std::fmt::Debug for PrettyPrintRecordKey {
+impl<'a> std::fmt::Debug for PrettyPrintRecordKey<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{NetworkAddress, PrettyPrintRecordKey};
+    use bls::rand::thread_rng;
+    use bytes::Bytes;
+    use libp2p::kad::{KBucketKey, RecordKey};
+    use sha2::{Digest, Sha256};
+
+    // A struct that implements hex representation of RecordKey using `bytes::Bytes`
+    struct OldRecordKeyPrint(RecordKey);
+
+    // old impl using Bytes
+    impl std::fmt::Display for OldRecordKeyPrint {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let b: Vec<u8> = self.0.as_ref().to_vec();
+            let record_key_b = Bytes::from(b);
+            write!(
+                f,
+                "{:64x}({:?})",
+                record_key_b,
+                OldKBucketKeyPrint(
+                    NetworkAddress::from_record_key(self.0.clone()).as_kbucket_key()
+                )
+            )
+        }
+    }
+
+    impl std::fmt::Debug for OldRecordKeyPrint {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self)
+        }
+    }
+
+    // A struct that implements hex representation of KBucketKey using `bytes::Bytes`
+    pub struct OldKBucketKeyPrint(KBucketKey<Vec<u8>>);
+
+    // old impl using Bytes
+    impl std::fmt::Display for OldKBucketKeyPrint {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let generic_array = Sha256::digest(self.0.preimage());
+            let kbucket_key_b = Bytes::from(generic_array.to_vec());
+            write!(f, "{:64x}", kbucket_key_b)
+        }
+    }
+
+    impl std::fmt::Debug for OldKBucketKeyPrint {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self)
+        }
+    }
+
+    #[test]
+    fn verify_custom_hex_representation() {
+        let random = xor_name::XorName::random(&mut thread_rng());
+        let key = RecordKey::new(&random.0);
+        let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
+        let old_record_key = OldRecordKeyPrint(key);
+
+        assert_eq!(format!("{pretty_key:?}"), format!("{old_record_key:?}"));
     }
 }

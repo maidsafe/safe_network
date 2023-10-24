@@ -8,6 +8,9 @@
 
 use crate::{CashNote, Ciphertext, DerivationIndex, MainPubkey, MainSecretKey, SpendAddress};
 
+use rayon::iter::ParallelIterator;
+use rayon::prelude::IntoParallelRefIterator;
+
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -15,10 +18,13 @@ use crate::error::{Error, Result};
 
 /// Transfer sent to a recipient
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
-pub struct Transfer {
+pub enum Transfer {
     /// List of encrypted CashNoteRedemptions from which a recipient can verify and get money
     /// Only the recipient can decrypt these CashNoteRedemptions
-    encrypted_cashnote_redemptions: Vec<Ciphertext>,
+    Encrypted(Vec<Ciphertext>),
+    /// The network requires a payment as network royalties for storage which nodes can validate
+    /// and verify, these CashNoteRedemptions need to be sent to storage nodes as payment proof as well.
+    NetworkRoyalties(Vec<CashNoteRedemption>),
 }
 
 impl Transfer {
@@ -53,9 +59,15 @@ impl Transfer {
 
         let mut transfers = Vec::new();
         for (recipient, cashnote_redemptions) in cashnote_redemptions_map {
-            let t = Transfer::create(cashnote_redemptions, recipient)
-                .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
-            transfers.push(t)
+            let t = if recipient == *crate::NETWORK_ROYALTIES_PK {
+                // create a network royalties transfer type
+                Self::NetworkRoyalties(cashnote_redemptions.clone())
+            } else {
+                Self::create(cashnote_redemptions, recipient)
+                    .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?
+            };
+
+            transfers.push(t);
         }
         Ok(transfers)
     }
@@ -92,20 +104,23 @@ impl Transfer {
             .into_iter()
             .map(|cashnote_redemption| cashnote_redemption.encrypt(recipient))
             .collect::<Result<Vec<Ciphertext>>>()?;
-        Ok(Transfer {
-            encrypted_cashnote_redemptions,
-        })
+        Ok(Self::Encrypted(encrypted_cashnote_redemptions))
     }
 
     /// Get the CashNoteRedemptions from the Payment
     /// This is used by the recipient of a payment to decrypt the cashnote_redemptions in a payment
     pub fn cashnote_redemptions(&self, sk: &MainSecretKey) -> Result<Vec<CashNoteRedemption>> {
-        let mut cashnote_redemptions = Vec::new();
-        for cypher in &self.encrypted_cashnote_redemptions {
-            let cashnote_redemption = CashNoteRedemption::decrypt(cypher, sk)?;
-            cashnote_redemptions.push(cashnote_redemption);
+        match self {
+            Self::Encrypted(cyphers) => {
+                let cashnote_redemptions: Result<Vec<_>> = cyphers
+                    .par_iter() // Use Rayon's par_iter for parallel processing
+                    .map(|cypher| CashNoteRedemption::decrypt(cypher, sk)) // Decrypt each CashNoteRedemption
+                    .collect(); // Collect results into a vector
+                let cashnote_redemptions = cashnote_redemptions?; // Propagate error if any
+                Ok(cashnote_redemptions)
+            }
+            Self::NetworkRoyalties(cnr) => Ok(cnr.clone()),
         }
-        Ok(cashnote_redemptions)
     }
 
     /// Deserializes a `Transfer` represented as a hex string to a `Transfer`.
