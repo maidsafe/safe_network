@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698157761940,
+  "lastUpdate": 1698159009673,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20343,6 +20343,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0ccc8d6371ce802af507d76a7a96a8fb5fe95228",
+          "message": "refactor(node): use iterator to calculate fees received in storage payment",
+          "timestamp": "2023-10-24T16:04:27+02:00",
+          "tree_id": "782d3e5f88f6532324e14ee0417fd0c9224c8062",
+          "url": "https://github.com/maidsafe/safe_network/commit/0ccc8d6371ce802af507d76a7a96a8fb5fe95228"
+        },
+        "date": 1698159008603,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 86,
             "unit": "MB"
           }
         ]
