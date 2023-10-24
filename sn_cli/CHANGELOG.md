@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.84.19](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.18...sn_cli-v0.84.19) - 2023-10-24
+
+### Added
+- *(cli)* wallet deposit cmd with no arg was not reading cash notes from disk
+- *(cli)* new wallet create cmd allowing users to create a wallet from a given secret key
+
 ## [0.84.18](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.17...sn_cli-v0.84.18) - 2023-10-24
 
 ### Other
