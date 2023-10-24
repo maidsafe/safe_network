@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.42...sn_networking-v0.9.0) - 2023-10-24
+
+### Added
+- *(protocol)* [**breaking**] implement `PrettyPrintRecordKey` as a `Cow` type
+
 ## [0.8.42](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.8.41...sn_networking-v0.8.42) - 2023-10-23
 
 ### Other
