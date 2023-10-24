@@ -1812,6 +1812,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - filter duplicated peers when replication
 
+## [0.96.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.95.8...sn_node-v0.96.0) - 2023-10-24
+
+### Added
+- *(protocol)* [**breaking**] implement `PrettyPrintRecordKey` as a `Cow` type
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
