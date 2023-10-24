@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698145943766,
+  "lastUpdate": 1698145945332,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29520,6 +29520,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 39,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "df8b357f3cda843baabf505f95718eedb1787b9d",
+          "message": "ci: Register test negation\n\nIgnore reg storage test.\nCHUNKS_ONLY for data tests for now.\n\nRegister merges are unstable",
+          "timestamp": "2023-10-24T10:12:37Z",
+          "tree_id": "760d73b9a44a93256a62362408020bc25b1e9d08",
+          "url": "https://github.com/maidsafe/safe_network/commit/df8b357f3cda843baabf505f95718eedb1787b9d"
+        },
+        "date": 1698145944911,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 169,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 47,
             "unit": "MB"
           }
         ]
