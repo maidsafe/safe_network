@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.95.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.2...sn_client-v0.95.3) - 2023-10-24
+
+### Other
+- *(api)* wallet APIs to account for network royalties fees when returning total cost paid for storage
+
 ## [0.95.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.1...sn_client-v0.95.2) - 2023-10-24
 
 ### Other

@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.2...sn_networking-v0.9.3) - 2023-10-24
+
+### Added
+- *(payments)* adding unencrypted CashNotes for network royalties and verifying correct payment
+
+### Other
+- nodes to subscribe by default to network royalties payment notifs
+
 ## [0.9.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.1...sn_networking-v0.9.2) - 2023-10-24
 
 ### Fixed

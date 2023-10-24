@@ -1836,6 +1836,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - Register test negation
 
+## [0.96.4](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.3...sn_node-v0.96.4) - 2023-10-24
+
+### Added
+- *(payments)* adding unencrypted CashNotes for network royalties and verifying correct payment
+- *(payments)* network royalties payment made when storing content
+
+### Fixed
+- *(node)* include network royalties in received fee calculation
+
+### Other
+- *(node)* use iterator to calculate fees received in storage payment
+- *(node)* minor changes to log the total amount seen by a node for royalties payment
+- adding example cmd to docs for listening to network royalties payments notifs
+- *(api)* wallet APIs to account for network royalties fees when returning total cost paid for storage
+- nodes to subscribe by default to network royalties payment notifs
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
