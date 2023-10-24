@@ -25,6 +25,7 @@ mod record_store_api;
 mod replication_fetcher;
 mod transfers;
 
+use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
 pub use self::{
     cmd::SwarmLocalState,
     driver::{NetworkBuilder, SwarmDriver},
@@ -33,8 +34,6 @@ pub use self::{
     quorum::GetQuorum,
     record_store::NodeRecordStore,
 };
-
-use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
 use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{
@@ -43,6 +42,7 @@ use libp2p::{
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
+use rand::Rng;
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
     storage::{RecordHeader, RecordKind},
@@ -69,8 +69,10 @@ pub const fn close_group_majority() -> usize {
     CLOSE_GROUP_SIZE / 2 + 1
 }
 
-/// Duration to wait for verification
-const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
+/// Max duration to wait for verification
+const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
+/// Min duration to wait for verification
+const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(250);
 /// Number of attempts to verify a record
 const VERIFICATION_ATTEMPTS: usize = 3;
 /// Number of attempts to re-put a record
@@ -376,7 +378,10 @@ impl Network {
 
             // wait for a bit before re-trying
             if re_attempt {
-                tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+                // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
+                let wait_duration = rand::thread_rng()
+                    .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
+                tokio::time::sleep(wait_duration).await;
             }
         }
 
@@ -476,7 +481,7 @@ impl Network {
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
             tokio::time::sleep(std::time::Duration::from_millis(
-                REVERIFICATION_WAIT_TIME_S.as_millis() as u64 / 6,
+                MAX_REVERIFICATION_WAIT_TIME_S.as_millis() as u64 / 6,
             ))
             .await;
             trace!("attempting to verify {pretty_key:?}");
