@@ -51,19 +51,25 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let expected_royalties_fees =
         NanoTokens::from(chunks.len() as u64 * NETWORK_ROYALTIES_AMOUNT_PER_ADDR.as_nano());
 
+    println!("Expected royalties fees paid: {expected_royalties_fees}");
+
     let prev_rewards_balance = current_rewards_balance()?;
+    println!("Previous rewards in nodes: {prev_rewards_balance}");
 
     let (_file_addr, cost) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
         .await?;
+    println!("Total paid when uploading: {cost}");
 
     let rewards_paid = cost
         .checked_sub(expected_royalties_fees)
         .ok_or_else(|| eyre!("Failed to substract rewards balance"))?;
+    println!("Rewards paid: {rewards_paid}");
 
     let expected_rewards_balance = prev_rewards_balance
         .checked_add(rewards_paid)
         .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
+    println!("Expected new rewards balance in nodes: {expected_rewards_balance}");
 
     verify_rewards(expected_rewards_balance).await?;
 
@@ -171,6 +177,14 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn test_verify_rewards() -> Result<()> {
+    println!("Checking total rewards...");
+    verify_rewards(NanoTokens::zero()).await?;
+
+    Ok(())
+}
+
 async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
     let mut iteration = 0;
     let mut cur_rewards_history = Vec::new();
@@ -178,6 +192,7 @@ async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
     while iteration < 15 {
         iteration += 1;
         let new_rewards_balance = current_rewards_balance()?;
+        println!("Current value: {new_rewards_balance}");
         if expected_rewards_balance == new_rewards_balance {
             return Ok(());
         }

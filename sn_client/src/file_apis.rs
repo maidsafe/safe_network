@@ -305,7 +305,7 @@ impl Files {
         warn!("Failed chunks: {:?}", failed_chunks.len());
 
         while !failed_chunks.is_empty() {
-            info!("Repaying for {:?} chunks", failed_chunks.len());
+            println!("Repaying for {:?} chunks, so far paid {cost}", failed_chunks.len());
 
             // Now we pay again or top up, depending on the new current store cost is
             let new_cost = self
@@ -315,9 +315,13 @@ impl Files {
                 }))
                 .await?;
 
+            println!("NEW cost for {:?} chunks: {new_cost}", failed_chunks.len());
+
             cost = cost.checked_add(new_cost).ok_or(Error::Transfers(
                 sn_transfers::WalletError::from(sn_transfers::Error::ExcessiveNanoValue),
             ))?;
+
+            println!("NEW TOTAL cost: {cost}");
 
             // now upload all those failed chunks again
             for (_chunk_addr, chunk_path) in &failed_chunks {
