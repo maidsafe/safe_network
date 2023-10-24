@@ -101,28 +101,6 @@ impl Network {
         let parent_txs: BTreeSet<Transaction> =
             parent_spends.iter().map(|s| s.spent_tx()).collect();
 
-        // get all the other parent_spends from those Txs
-        trace!("Getting parent spends for validation");
-        let already_collected_parents = &parent_addrs;
-        let other_parent_cash_note_addr: BTreeSet<SpendAddress> = parent_txs
-            .clone()
-            .into_iter()
-            .flat_map(|tx| tx.inputs)
-            .map(|i| SpendAddress::from_unique_pubkey(&i.unique_pubkey()))
-            .filter(|addr| !already_collected_parents.contains(addr))
-            .collect();
-        let mut tasks = JoinSet::new();
-        for addr in other_parent_cash_note_addr {
-            let self_clone = self.clone();
-            let _ = tasks.spawn(async move { self_clone.get_spend(addr, true).await });
-        }
-        while let Some(result) = tasks.join_next().await {
-            let signed_spend = result
-                .map_err(|_| Error::FailedToGetTransferParentSpend)?
-                .map_err(|e| Error::InvalidTransfer(format!("{e}")))?;
-            let _ = parent_spends.insert(signed_spend.clone());
-        }
-
         // get our outputs from Tx
         let our_output_unique_pubkeys: Vec<(UniquePubkey, DerivationIndex)> = cashnote_redemptions
             .iter()

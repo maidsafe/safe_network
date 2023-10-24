@@ -8,6 +8,9 @@
 
 use crate::{CashNote, Ciphertext, DerivationIndex, MainPubkey, MainSecretKey, SpendAddress};
 
+use rayon::iter::ParallelIterator;
+use rayon::prelude::IntoParallelRefIterator;
+
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -100,11 +103,12 @@ impl Transfer {
     /// Get the CashNoteRedemptions from the Payment
     /// This is used by the recipient of a payment to decrypt the cashnote_redemptions in a payment
     pub fn cashnote_redemptions(&self, sk: &MainSecretKey) -> Result<Vec<CashNoteRedemption>> {
-        let mut cashnote_redemptions = Vec::new();
-        for cypher in &self.encrypted_cashnote_redemptions {
-            let cashnote_redemption = CashNoteRedemption::decrypt(cypher, sk)?;
-            cashnote_redemptions.push(cashnote_redemption);
-        }
+        let cashnote_redemptions: Result<Vec<_>> = self
+            .encrypted_cashnote_redemptions
+            .par_iter() // Use Rayon's par_iter for parallel processing
+            .map(|cypher| CashNoteRedemption::decrypt(cypher, sk)) // Decrypt each CashNoteRedemption
+            .collect(); // Collect results into a vector
+        let cashnote_redemptions = cashnote_redemptions?; // Propagate error if any
         Ok(cashnote_redemptions)
     }
 
