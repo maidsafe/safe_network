@@ -9,16 +9,15 @@
 use clap::Parser;
 use eyre::Result;
 use libp2p::{Multiaddr, PeerId};
-use safenode_proto::safe_node_client::SafeNodeClient;
 use safenode_proto::{
-    GossipsubPublishRequest, GossipsubSubscribeRequest, GossipsubUnsubscribeRequest,
-    NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RecordAddressesRequest, RestartRequest,
-    StopRequest, UpdateRequest,
+    safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
+    GossipsubUnsubscribeRequest, NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest,
+    RecordAddressesRequest, RestartRequest, StopRequest, UpdateRequest,
 };
 use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
-use std::str::FromStr;
-use std::{net::SocketAddr, time::Duration};
+use sn_protocol::storage::SpendAddress;
+use std::{fs, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
 use tokio_stream::StreamExt;
 use tonic::Request;
 use tracing_core::Level;
@@ -53,7 +52,14 @@ enum Cmd {
     /// Start listening for transfers events.
     /// Note this blocks the app and it will print events as they are broadcasted by the node
     #[clap(name = "transfers")]
-    TransfersEvents,
+    TransfersEvents {
+        /// Path where to store CashNotes received.
+        /// Each CashNote is written to a separate file in respective
+        /// recipient public address dir in the created cash_notes dir.
+        /// Each file is named after the CashNote id.
+        #[clap(name = "log-cash-notes")]
+        log_cash_notes: Option<PathBuf>,
+    },
     /// Subscribe to a given Gossipsub topic
     #[clap(name = "subscribe")]
     Subscribe {
@@ -114,8 +120,8 @@ async fn main() -> Result<()> {
     match opt.cmd {
         Cmd::Info => node_info(addr).await,
         Cmd::Netinfo => network_info(addr).await,
-        Cmd::Events => node_events(addr, false).await,
-        Cmd::TransfersEvents => node_events(addr, true).await,
+        Cmd::Events => node_events(addr, false, None).await,
+        Cmd::TransfersEvents { log_cash_notes } => node_events(addr, true, log_cash_notes).await,
         Cmd::Subscribe { topic } => gossipsub_subscribe(addr, topic).await,
         Cmd::Unsubscribe { topic } => gossipsub_unsubscribe(addr, topic).await,
         Cmd::Publish { topic, msg } => gossipsub_publish(addr, topic, msg).await,
@@ -173,7 +179,11 @@ pub async fn network_info(addr: SocketAddr) -> Result<()> {
     Ok(())
 }
 
-pub async fn node_events(addr: SocketAddr, only_transfers: bool) -> Result<()> {
+pub async fn node_events(
+    addr: SocketAddr,
+    only_transfers: bool,
+    log_cash_notes: Option<PathBuf>,
+) -> Result<()> {
     let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint).await?;
     let response = client
@@ -182,6 +192,11 @@ pub async fn node_events(addr: SocketAddr, only_transfers: bool) -> Result<()> {
 
     if only_transfers {
         println!("Listening to transfers notifications... (press Ctrl+C to exit)");
+        if let Some(ref path) = log_cash_notes {
+            // create cash_notes dir
+            fs::create_dir_all(path)?;
+            println!("Writing cash notes to: {}", path.display());
+        }
     } else {
         println!("Listening to node events... (press Ctrl+C to exit)");
     }
@@ -202,6 +217,20 @@ pub async fn node_events(addr: SocketAddr, only_transfers: bool) -> Result<()> {
                         cn.unique_pubkey(),
                         cn.value()?
                     );
+
+                    if let Some(ref path) = log_cash_notes {
+                        // create cash_notes dir
+                        let unique_pubkey_name =
+                            *SpendAddress::from_unique_pubkey(&cn.unique_pubkey()).xorname();
+                        let unique_pubkey_file_name =
+                            format!("{}.cash_note", hex::encode(unique_pubkey_name));
+
+                        let cash_note_file_path = path.join(unique_pubkey_file_name);
+                        println!("Writing cash note to: {}", cash_note_file_path.display());
+
+                        let hex = cn.to_hex()?;
+                        fs::write(cash_note_file_path, &hex)?;
+                    }
                 }
                 println!();
             }
