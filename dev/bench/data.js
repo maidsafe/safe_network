@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698124227082,
+  "lastUpdate": 1698124450761,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4d10bf30422453ca2aedd7f33706338f321d596e",
-          "message": "chore: log detailed peer distance and kBucketTable stats",
-          "timestamp": "2023-06-24T21:57:10Z",
-          "tree_id": "ffbc9a75a6d1c57837a7be973dc9ef22cf6b55bf",
-          "url": "https://github.com/maidsafe/safe_network/commit/4d10bf30422453ca2aedd7f33706338f321d596e"
-        },
-        "date": 1687646881996,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6529956272335624,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.216894149637318,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11669,6 +11635,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 19.347743376069655,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2f09bd34dc47c05c88fd9d5e0e973e51c53aafb1",
+          "message": "chore(networking): kad logging and another content_hash removed",
+          "timestamp": "2023-10-24T06:48:28+02:00",
+          "tree_id": "9300ad4b525fdb674ed15df176c0405a80d5a899",
+          "url": "https://github.com/maidsafe/safe_network/commit/2f09bd34dc47c05c88fd9d5e0e973e51c53aafb1"
+        },
+        "date": 1698124447915,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.09287640327116871,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5901071095213479,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 19.50713330467742,
             "unit": "MiB/s"
           }
         ]
