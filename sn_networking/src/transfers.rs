@@ -89,7 +89,7 @@ impl Network {
         let mut tasks = JoinSet::new();
         for addr in parent_addrs.clone() {
             let self_clone = self.clone();
-            let _ = tasks.spawn(async move { self_clone.get_spend(addr, true).await });
+            let _ = tasks.spawn(async move { self_clone.get_spend(addr, false).await });
         }
         let mut parent_spends = BTreeSet::new();
         while let Some(result) = tasks.join_next().await {
