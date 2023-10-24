@@ -280,7 +280,7 @@ impl Client {
 
         let maybe_record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::All, false, Default::default())
+            .get_record_from_network(key, None, GetQuorum::One, true, Default::default())
             .await;
         let record = match maybe_record {
             Ok(r) => r,
