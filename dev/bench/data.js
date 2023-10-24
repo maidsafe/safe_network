@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698070109744,
+  "lastUpdate": 1698123554252,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "8ac2b2811961e78e44cfca361916f682b3846cd9",
-          "message": "chore(networking): reduce some log levels to make 'info' more useful",
-          "timestamp": "2023-06-23T17:42:32Z",
-          "tree_id": "91bbcbc798eb589219fea7dd20127c52e42c1fe7",
-          "url": "https://github.com/maidsafe/safe_network/commit/8ac2b2811961e78e44cfca361916f682b3846cd9"
-        },
-        "date": 1687546016551,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6650849594346605,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.8680750646226825,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11664,6 +11630,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 19.47047255206026,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "696d57d8d858d4439c1981ae5f45f861caf040f2",
+          "message": "fix(protocol): use custom `Display` for `PrettyPrintKBucketKey`",
+          "timestamp": "2023-10-24T06:36:32+02:00",
+          "tree_id": "a4f34430ddade54647013f3776e364a8518383c4",
+          "url": "https://github.com/maidsafe/safe_network/commit/696d57d8d858d4439c1981ae5f45f861caf040f2"
+        },
+        "date": 1698123552226,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.10005510549693372,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.5412036153553079,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 19.347743376069655,
             "unit": "MiB/s"
           }
         ]
