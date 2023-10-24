@@ -8,11 +8,12 @@
 
 mod common;
 
-use crate::common::{get_client_and_wallet, init_logging_single_threaded_tokio, random_content};
+use crate::common::{get_client_and_wallet, random_content};
 use assert_fs::TempDir;
 use eyre::Result;
 use rand::Rng;
 use sn_client::{Error as ClientError, WalletClient};
+use sn_logging::LogBuilder;
 use sn_networking::Error as NetworkError;
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -26,7 +27,7 @@ use xor_name::XorName;
 
 #[tokio::test]
 async fn storage_payment_succeeds() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("storage_payments");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
     let paying_wallet_balance = 50_000_000_000_000_001;
     let paying_wallet_dir = TempDir::new()?;
@@ -66,7 +67,7 @@ async fn storage_payment_succeeds() -> Result<()> {
 
 #[tokio::test]
 async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("storage_payments");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
     let wallet_original_balance = 100_000_000_000;
     let paying_wallet_dir: TempDir = TempDir::new()?;
@@ -109,7 +110,7 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
 #[ignore = "Currently we do not cache the proofs in the wallet"]
 #[tokio::test]
 async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("storage_payments");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
     let wallet_original_balance = 100_000_000_000_000_000;
     let paying_wallet_dir: TempDir = TempDir::new()?;
@@ -171,7 +172,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 
 #[tokio::test]
 async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("storage_payments");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
     let paying_wallet_balance = 50_000_000_000_002;
     let paying_wallet_dir = TempDir::new()?;
@@ -208,7 +209,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 
 #[tokio::test]
 async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("storage_payments");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
     let paying_wallet_balance = 50_000_000_000_003;
     let paying_wallet_dir = TempDir::new()?;
@@ -267,7 +268,7 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
 
 #[tokio::test]
 async fn storage_payment_register_creation_succeeds() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("storage_payments");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
     let paying_wallet_balance = 65_000_000_000;
     let paying_wallet_dir = TempDir::new()?;
@@ -309,7 +310,7 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
 #[tokio::test]
 #[ignore = "Test currently invalid as we always try to pay and upload registers if none found... need to check if this test is valid"]
 async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("storage_payments");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
     let paying_wallet_balance = 55_000_000_005;
     let paying_wallet_dir = TempDir::new()?;

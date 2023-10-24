@@ -27,7 +27,6 @@ use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
-use sn_logging::{LogFormat, LogOutputDest, TracingLayers};
 use sn_transfers::NanoTokens;
 use std::{
     fs::File,
@@ -37,65 +36,11 @@ use std::{
 };
 use tokio::sync::Mutex;
 use tonic::Request;
-use tracing::info;
-use tracing_appender::non_blocking::WorkerGuard;
-use tracing_core::dispatcher::DefaultGuard;
-use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use xor_name::XorName;
 
 type ResultRandomContent = Result<(Files, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
 
 pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
-
-/// Logs to the data_dir. Should be called from a single threaded tokio/non-tokio context.
-/// Provide the test file name to capture tracings from the test.
-pub fn init_logging_single_threaded_tokio(
-    test_file_name: &str,
-) -> (Option<WorkerGuard>, DefaultGuard) {
-    let layers = get_tracing_layers(test_file_name);
-    let log_guard = tracing_subscriber::registry()
-        .with(layers.layers)
-        .set_default();
-    // this is the test_name and not the test_file_name; TODO: should try passing as logging's target filter
-    if let Some(test_name) = std::thread::current().name() {
-        info!("Running test: {test_name}");
-    }
-    (layers.guard, log_guard)
-}
-
-/// Logs to the data_dir. Should be called from a multi threaded tokio context. Refer sn_logging::get_test_layers docs
-/// for more info.
-/// Provide the test file name to capture tracings from the test.
-pub fn init_logging_multi_threaded_tokio(test_file_name: &str) -> Option<WorkerGuard> {
-    let layers = get_tracing_layers(test_file_name);
-    tracing_subscriber::registry()
-        .with(layers.layers)
-        .try_init()
-        .expect("You have tried to init multi_threaded tokio logging twice\nRefer sn_logging::get_test_layers docs for more.");
-
-    layers.guard
-}
-
-fn get_tracing_layers(test_file_name: &str) -> TracingLayers {
-    // overwrite SN_LOG
-    std::env::set_var("SN_LOG", format!("{test_file_name}=TRACE,all"));
-
-    let output_dest = match dirs_next::data_dir() {
-        Some(dir) => {
-            // Get the current timestamp and format it to be human readable
-            let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-            let path = dir
-                .join("safe")
-                .join("client")
-                .join("logs")
-                .join(format!("log_{}", timestamp));
-            LogOutputDest::Path(path)
-        }
-        None => LogOutputDest::Stdout,
-    };
-    sn_logging::get_test_layers(vec![], output_dest, LogFormat::Default)
-        .expect("Failed to get TracingLayers")
-}
 
 lazy_static! {
     // mutex to restrict access to faucet wallet from concurrent tests

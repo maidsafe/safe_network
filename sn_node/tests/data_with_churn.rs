@@ -8,7 +8,6 @@
 
 mod common;
 
-use crate::common::init_logging_multi_threaded_tokio;
 use assert_fs::TempDir;
 use common::{
     get_client_and_wallet, get_funded_wallet, get_wallet, node_restart,
@@ -17,6 +16,7 @@ use common::{
 use eyre::{bail, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, Files, WalletClient};
+use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
     NetworkAddress,
@@ -80,7 +80,7 @@ type ContentErredList = Arc<RwLock<BTreeMap<NetworkAddress, ContentError>>>;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn data_availability_during_churn() -> Result<()> {
-    let _log_appender_guard = init_logging_multi_threaded_tokio("data_with_churn");
+    let _log_appender_guard = LogBuilder::init_multi_threaded_tokio_test("data_with_churn");
 
     let test_duration = if let Ok(str) = std::env::var("TEST_DURATION_MINS") {
         Duration::from_secs(60 * str.parse::<u64>()?)

@@ -10,7 +10,7 @@
 mod common;
 
 use crate::common::{
-    get_client_and_wallet, init_logging_multi_threaded_tokio, node_restart,
+    get_client_and_wallet, node_restart,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
     PAYING_WALLET_INITIAL_BALANCE,
 };
@@ -22,6 +22,7 @@ use libp2p::{
 };
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Files};
+use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{
@@ -62,7 +63,7 @@ type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_data_location() -> Result<()> {
-    let _log_appender_guard = init_logging_multi_threaded_tokio("verify_data_location");
+    let _log_appender_guard = LogBuilder::init_multi_threaded_tokio_test("verify_data_location");
 
     let churn_count = if let Ok(str) = std::env::var("CHURN_COUNT") {
         str.parse::<u8>()?

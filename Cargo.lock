@@ -4367,6 +4367,8 @@ dependencies = [
 name = "sn_logging"
 version = "0.2.12"
 dependencies = [
+ "chrono",
+ "dirs-next",
  "file-rotate",
  "opentelemetry",
  "opentelemetry-otlp",
