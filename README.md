@@ -152,6 +152,15 @@ CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
 
 ```
 
+A path to local disk where to store royalties payments cash notes received can be provided as well, e.g.:
+```
+$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 transfers ./royalties-cash-notes
+Listening to transfers notifications... (press Ctrl+C to exit)
+Writing cash notes to: ./royalties-cash-notes
+
+```
+Each CashNote is written to a separate file in respective recipient public address dir in the created cash_notes dir. Each file is named after the CashNote id.
+
 # Metrics Dashboard
 
 Use the `open-metrics` feature flag on the node / client to start an [OpenMetrics](https://github.com/OpenObservability/OpenMetrics/) exporter. The metrics are served via a webserver started at a random port. Check the log file / stdout to find the webserver URL, `Metrics server on http://127.0.0.1:xxxx/metrics`
