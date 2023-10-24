@@ -4561,6 +4561,7 @@ dependencies = [
  "lazy_static",
  "pprof",
  "rand",
+ "rayon",
  "rmp-serde",
  "serde",
  "thiserror",
