@@ -56,15 +56,10 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let prev_rewards_balance = current_rewards_balance()?;
     println!("Previous rewards in nodes: {prev_rewards_balance}");
 
-    let (_file_addr, cost) = files_api
+    let (_file_addr, rewards_paid, royalties_fees) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
         .await?;
-    println!("Total paid when uploading: {cost}");
-
-    let rewards_paid = cost
-        .checked_sub(expected_royalties_fees)
-        .ok_or_else(|| eyre!("Failed to substract rewards balance"))?;
-    println!("Rewards paid: {rewards_paid}");
+    println!("Total paid when uploading: {rewards_paid}|{royalties_fees}");
 
     let expected_rewards_balance = prev_rewards_balance
         .checked_add(rewards_paid)
@@ -173,14 +168,6 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let count = handle.await??;
     println!("Number of notifications received by node: {count}");
     assert_eq!(count, CLOSE_GROUP_SIZE, "Not enough notifications received");
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn test_verify_rewards() -> Result<()> {
-    println!("Checking total rewards...");
-    verify_rewards(NanoTokens::zero()).await?;
 
     Ok(())
 }

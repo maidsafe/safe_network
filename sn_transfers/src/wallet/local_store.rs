@@ -295,7 +295,7 @@ impl LocalWallet {
         &mut self,
         mut all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
         reason_hash: Option<Hash>,
-    ) -> Result<NanoTokens> {
+    ) -> Result<(NanoTokens, NanoTokens)> {
         // create a unique key for each output
         let mut all_payees_only = vec![];
         let mut rng = &mut rand::thread_rng();
@@ -303,17 +303,25 @@ impl LocalWallet {
         // we currently pay 1 nano per address as network royalties.
         let royalties_pk = *crate::NETWORK_ROYALTIES_PK;
 
-        let mut total_cost = NanoTokens::zero();
+        let mut storage_cost = NanoTokens::zero();
+        let mut royalties_fees = NanoTokens::zero();
 
         for (_content_addr, payees) in all_data_payments.iter_mut() {
             // add network royalties payment as payee for each address being payed
             payees.push((royalties_pk, NETWORK_ROYALTIES_AMOUNT_PER_ADDR));
+            println!(">>> 1 MORE NANO FOR ROYALTIES FEE TO BE PAID");
 
             let mut unique_key_vec = Vec::<(NanoTokens, MainPubkey, [u8; 32])>::new();
             for (address, amount) in payees.clone().into_iter() {
-                total_cost = total_cost
-                    .checked_add(amount)
-                    .ok_or(WalletError::TotalPriceTooHigh)?;
+                if address == *crate::NETWORK_ROYALTIES_PK {
+                    royalties_fees = royalties_fees
+                        .checked_add(amount)
+                        .ok_or(WalletError::TotalPriceTooHigh)?;
+                } else {
+                    storage_cost = storage_cost
+                        .checked_add(amount)
+                        .ok_or(WalletError::TotalPriceTooHigh)?;
+                }
 
                 unique_key_vec.push((
                     amount,
@@ -373,7 +381,7 @@ impl LocalWallet {
         }
 
         self.update_local_wallet(offline_transfer, exclusive_access)?;
-        Ok(total_cost)
+        Ok((storage_cost, royalties_fees))
     }
 
     fn update_local_wallet(
