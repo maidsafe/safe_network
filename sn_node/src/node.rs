@@ -223,6 +223,12 @@ impl Node {
                                 }
                             };
 
+                            // early return to avoid panic on gen_range
+                            if closest_peers.is_empty() {
+                                info!("No peers to replicate to");
+                                return;
+                            }
+
                             let peer_id =
                                 closest_peers[rand::thread_rng().gen_range(0..closest_peers.len())];
                             Marker::ForcedReplication(peer_id).log();
