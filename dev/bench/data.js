@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698124225498,
+  "lastUpdate": 1698124227082,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29180,6 +29180,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 69,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "696d57d8d858d4439c1981ae5f45f861caf040f2",
+          "message": "fix(protocol): use custom `Display` for `PrettyPrintKBucketKey`",
+          "timestamp": "2023-10-24T06:36:32+02:00",
+          "tree_id": "a4f34430ddade54647013f3776e364a8518383c4",
+          "url": "https://github.com/maidsafe/safe_network/commit/696d57d8d858d4439c1981ae5f45f861caf040f2"
+        },
+        "date": 1698124226680,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 169,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 63,
             "unit": "MB"
           }
         ]
