@@ -15,7 +15,7 @@ use safenode_proto::{
     NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest, RecordAddressesRequest, RestartRequest,
     StopRequest, UpdateRequest,
 };
-use sn_logging::{init_logging, LogFormat, LogOutputDest};
+use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
 use std::str::FromStr;
 use std::{net::SocketAddr, time::Duration};
@@ -106,8 +106,7 @@ async fn main() -> Result<()> {
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];
-    let _log_appender_guard =
-        init_logging(logging_targets, LogOutputDest::Stdout, LogFormat::Default)?;
+    let _log_appender_guard = LogBuilder::new(logging_targets).initialize()?;
 
     let opt = Opt::parse();
     let addr = opt.addr;

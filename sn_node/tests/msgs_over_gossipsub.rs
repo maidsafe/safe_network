@@ -8,14 +8,12 @@
 
 mod common;
 
-use crate::common::{
-    init_logging_single_threaded_tokio,
-    safenode_proto::{
-        safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
-        GossipsubUnsubscribeRequest, NodeEventsRequest,
-    },
+use crate::common::safenode_proto::{
+    safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
+    GossipsubUnsubscribeRequest, NodeEventsRequest,
 };
 use eyre::Result;
+use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -31,7 +29,7 @@ const TEST_CYCLES: u8 = 20;
 
 #[tokio::test]
 async fn msgs_over_gossipsub() -> Result<()> {
-    let _guard = init_logging_single_threaded_tokio("msgs_over_gossipsub");
+    let _guard = LogBuilder::init_single_threaded_tokio_test("msgs_over_gossipsub");
     let all_nodes_addrs: Vec<_> = (0..NODE_COUNT)
         .map(|i| {
             (

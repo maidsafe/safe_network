@@ -9,12 +9,13 @@
 mod common;
 
 use crate::common::{
-    get_client_and_wallet, init_logging_single_threaded_tokio, random_content,
+    get_client_and_wallet, random_content,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest},
 };
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use sn_client::WalletClient;
+use sn_logging::LogBuilder;
 use sn_networking::CLOSE_GROUP_SIZE;
 use sn_node::NodeEvent;
 use sn_transfers::{LocalWallet, NanoTokens};
@@ -28,7 +29,7 @@ use xor_name::XorName;
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_chunks() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("nodes_rewards");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("nodes_rewards");
 
     let paying_wallet_balance = 10_000_000_000_333;
     let paying_wallet_dir = TempDir::new()?;
@@ -62,7 +63,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_registers() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("nodes_rewards");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("nodes_rewards");
 
     let paying_wallet_balance = 10_000_000_000_444;
     let paying_wallet_dir = TempDir::new()?;
@@ -94,7 +95,7 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
 
 #[tokio::test]
 async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("nodes_rewards");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("nodes_rewards");
 
     let paying_wallet_balance = 10_000_000_111_000;
     let paying_wallet_dir = TempDir::new()?;
@@ -128,7 +129,7 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
 
 #[tokio::test]
 async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
-    let _log_guards = init_logging_single_threaded_tokio("nodes_rewards");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("nodes_rewards");
 
     let paying_wallet_balance = 10_000_000_222_000;
     let paying_wallet_dir = TempDir::new()?;
