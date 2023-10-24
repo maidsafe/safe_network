@@ -72,7 +72,10 @@ async fn main() -> Result<()> {
     let client_data_dir_path = get_client_data_dir_path()?;
     // Perform actions that do not require us connecting to the network and return early
     if let SubCmd::Wallet(cmds) = &opt.cmd {
-        if let WalletCmds::Address | WalletCmds::Balance { .. } | WalletCmds::Deposit { .. } = cmds
+        if let WalletCmds::Address
+        | WalletCmds::Balance { .. }
+        | WalletCmds::Deposit { .. }
+        | WalletCmds::Create { .. } = cmds
         {
             wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
             return Ok(());
