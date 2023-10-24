@@ -137,7 +137,7 @@ impl WalletClient {
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
-    ) -> WalletResult<NanoTokens> {
+    ) -> WalletResult<(NanoTokens, NanoTokens)> {
         let verify_store = true;
         let mut payment_map = BTreeMap::default();
 
@@ -183,7 +183,7 @@ impl WalletClient {
         info!("Storecosts retrieved");
 
         if payment_map.is_empty() {
-            Ok(NanoTokens::zero())
+            Ok((NanoTokens::zero(), NanoTokens::zero()))
         } else {
             self.wallet.adjust_payment_map(&mut payment_map);
             self.pay_for_records(payment_map, verify_store).await
@@ -199,7 +199,7 @@ impl WalletClient {
         &mut self,
         all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
         verify_store: bool,
-    ) -> WalletResult<NanoTokens> {
+    ) -> WalletResult<(NanoTokens, NanoTokens)> {
         // TODO:
         // Check for any existing payment CashNotes, and use them if they exist, only topping up if needs be
 

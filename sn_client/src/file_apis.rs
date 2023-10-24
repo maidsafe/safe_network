@@ -193,12 +193,16 @@ impl Files {
         let mut wallet_client = self.wallet()?;
         info!("Paying for and uploading {:?} chunks", chunks.len());
 
-        let cost =
+        let (storage_cost, royalties_fees) =
             wallet_client
                 .pay_for_storage(chunks.iter().map(|name| {
                     sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
                 }))
                 .await?;
+
+        let cost = storage_cost
+            .checked_add(royalties_fees)
+            .ok_or(Error::TotalPriceTooHigh)?;
 
         wallet_client.store_local_wallet()?;
         let new_balance = wallet_client.balance();
@@ -282,9 +286,9 @@ impl Files {
         file_addr: XorName,
         chunks: Vec<(XorName, PathBuf)>,
         // verify: bool,
-    ) -> Result<(NetworkAddress, NanoTokens)> {
+    ) -> Result<(NetworkAddress, NanoTokens, NanoTokens)> {
         // initial payment
-        let mut cost = self
+        let (mut storage_cost, mut royalties_fees) = self
             .wallet()?
             .pay_for_storage(
                 chunks
@@ -305,19 +309,28 @@ impl Files {
         warn!("Failed chunks: {:?}", failed_chunks.len());
 
         while !failed_chunks.is_empty() {
-            info!("Repaying for {:?} chunks", failed_chunks.len());
+            info!("Repaying for {:?} chunks, so far paid {storage_cost} (royalties fees: {royalties_fees})", failed_chunks.len());
 
             // Now we pay again or top up, depending on the new current store cost is
-            let new_cost = self
+            let (new_storage_cost, new_royalties_fees) = self
                 .wallet()?
                 .pay_for_storage(failed_chunks.iter().map(|(addr, _path)| {
                     sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*addr))
                 }))
                 .await?;
 
-            cost = cost.checked_add(new_cost).ok_or(Error::Transfers(
-                sn_transfers::WalletError::from(sn_transfers::Error::ExcessiveNanoValue),
-            ))?;
+            storage_cost = storage_cost
+                .checked_add(new_storage_cost)
+                .ok_or(Error::Transfers(sn_transfers::WalletError::from(
+                    sn_transfers::Error::ExcessiveNanoValue,
+                )))?;
+
+            royalties_fees =
+                royalties_fees
+                    .checked_add(new_royalties_fees)
+                    .ok_or(Error::Transfers(sn_transfers::WalletError::from(
+                        sn_transfers::Error::ExcessiveNanoValue,
+                    )))?;
 
             // now upload all those failed chunks again
             for (_chunk_addr, chunk_path) in &failed_chunks {
@@ -335,7 +348,8 @@ impl Files {
 
         Ok((
             NetworkAddress::ChunkAddress(ChunkAddress::new(file_addr)),
-            cost,
+            storage_cost,
+            royalties_fees,
         ))
     }
 
