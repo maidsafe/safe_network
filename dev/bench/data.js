@@ -1,42 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698143706612,
+  "lastUpdate": 1698145641975,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "4d434cac0187417fbd174ff1259541ffb64b2d6b",
-          "message": "Revert \"feat: append peer id to node's default root dir\"\n\nThis reverts commit 86b83b68d039330f666fc60db5bdcc6a605c8aa9.",
-          "timestamp": "2023-06-26T10:01:57+01:00",
-          "tree_id": "56638e72faa74910e78e68392a8aa41a9a4b6389",
-          "url": "https://github.com/maidsafe/safe_network/commit/4d434cac0187417fbd174ff1259541ffb64b2d6b"
-        },
-        "date": 1687770977672,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6418443042359256,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.514438627976119,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11689,6 +11655,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 21.79779451273609,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "df8b357f3cda843baabf505f95718eedb1787b9d",
+          "message": "ci: Register test negation\n\nIgnore reg storage test.\nCHUNKS_ONLY for data tests for now.\n\nRegister merges are unstable",
+          "timestamp": "2023-10-24T10:12:37Z",
+          "tree_id": "760d73b9a44a93256a62362408020bc25b1e9d08",
+          "url": "https://github.com/maidsafe/safe_network/commit/df8b357f3cda843baabf505f95718eedb1787b9d"
+        },
+        "date": 1698145640140,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.16412618672031498,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.7497537766255218,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 20.839812640270704,
             "unit": "MiB/s"
           }
         ]
