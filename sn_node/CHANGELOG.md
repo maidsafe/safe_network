@@ -1831,6 +1831,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - *(node)* dont try and replicate to non existent peers
 
+## [0.96.3](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.2...sn_node-v0.96.3) - 2023-10-24
+
+### Other
+- Register test negation
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
