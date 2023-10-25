@@ -73,7 +73,7 @@ impl NetworkAddress {
     }
 
     /// Return a `NetworkAddress` representation of the `RecordKey` by encapsulating its bytes.
-    pub fn from_record_key(record_key: RecordKey) -> Self {
+    pub fn from_record_key(record_key: &RecordKey) -> Self {
         NetworkAddress::RecordKey(record_key.to_vec())
     }
 
@@ -313,12 +313,10 @@ impl<'a> std::fmt::Display for PrettyPrintRecordKey<'a> {
             f.write_fmt(format_args!("{:02x}", byte))?;
         }
 
-        // to get the inner RecordKey
-        let key = self.key.clone().into_owned();
         write!(
             f,
             "({:?})",
-            PrettyPrintKBucketKey(NetworkAddress::from_record_key(key).as_kbucket_key())
+            PrettyPrintKBucketKey(NetworkAddress::from_record_key(&self.key).as_kbucket_key())
         )
     }
 }
@@ -349,9 +347,7 @@ mod tests {
                 f,
                 "{:64x}({:?})",
                 record_key_b,
-                OldKBucketKeyPrint(
-                    NetworkAddress::from_record_key(self.0.clone()).as_kbucket_key()
-                )
+                OldKBucketKeyPrint(NetworkAddress::from_record_key(&self.0).as_kbucket_key())
             )
         }
     }

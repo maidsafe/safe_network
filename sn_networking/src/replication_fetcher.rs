@@ -164,7 +164,7 @@ mod tests {
         let mut incoming_keys = Vec::new();
         (0..MAX_PARALLEL_FETCH * 2).for_each(|_| {
             let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
-            let key = NetworkAddress::from_record_key(RecordKey::from(random_data));
+            let key = NetworkAddress::from_record_key(&RecordKey::from(random_data));
             incoming_keys.push(key);
         });
 
@@ -174,7 +174,7 @@ mod tests {
 
         // we should not fetch anymore keys
         let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
-        let key = NetworkAddress::from_record_key(RecordKey::from(random_data));
+        let key = NetworkAddress::from_record_key(&RecordKey::from(random_data));
         let keys_to_fetch =
             replication_fetcher.add_keys(PeerId::random(), vec![key], &locally_stored_keys);
         assert!(keys_to_fetch.is_empty());
