@@ -62,4 +62,7 @@ pub enum Error {
 
     #[error("The provided amount contains zero nanos")]
     AmountIsZero,
+    /// CashNote add would overflow
+    #[error("Total price exceed possible token amount")]
+    TotalPriceTooHigh,
 }

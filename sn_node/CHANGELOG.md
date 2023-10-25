@@ -1852,6 +1852,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(api)* wallet APIs to account for network royalties fees when returning total cost paid for storage
 - nodes to subscribe by default to network royalties payment notifs
 
+## [0.96.5](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.4...sn_node-v0.96.5) - 2023-10-24
+
+### Added
+- *(example)* new arg to store cash notes received through rpc events to disk
+
+### Fixed
+- *(tests)* nodes rewards tests to account for repayments amounts
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
