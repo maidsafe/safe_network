@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698187035573,
+  "lastUpdate": 1698242706869,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "ced30c89ed9bbd9534d61b7b3a18d88cd69d3fb9",
-          "message": "chore(networking): make some errors log properly",
-          "timestamp": "2023-06-27T12:43:36Z",
-          "tree_id": "add464ee9bf734ff1ff7ebde31972f28737fea70",
-          "url": "https://github.com/maidsafe/safe_network/commit/ced30c89ed9bbd9534d61b7b3a18d88cd69d3fb9"
-        },
-        "date": 1687874597067,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6806440080066762,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.879677742018528,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 23.94907227349557,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 20.911087824899496,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "f1c7614c42d2deb7deda6ef4a6ab9bdd41a6adff",
+          "message": "fix(cli): remove Arc from ProgressBar as it is Arc internally",
+          "timestamp": "2023-10-25T12:53:15Z",
+          "tree_id": "02df850858675658eed4fa540d34a799a40dfae6",
+          "url": "https://github.com/maidsafe/safe_network/commit/f1c7614c42d2deb7deda6ef4a6ab9bdd41a6adff"
+        },
+        "date": 1698242704286,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.1659280843792141,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.361948584121544,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 20.040530270683625,
             "unit": "MiB/s"
           }
         ]
