@@ -28,7 +28,7 @@ itertools = "~0.11.0"
 libp2p = { version="0.52", features = ["identify"] }
 prometheus-client = { version = "0.21.2", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
-rayon = "1.7.0"
+rayon = "1.8.0"
 self_encryption = "~0.28.5"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_networking = { path = "../sn_networking", version = "0.9.4" }
