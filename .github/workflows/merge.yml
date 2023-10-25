@@ -144,7 +144,30 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-cache-${{ hashFiles('**/Cargo.lock') }}
       - shell: bash
-        run: cargo test --release --package sn-node-manager
+        run: cargo test --release --bin safenode-manager
+
+  node-manager-integration-tests:
+    name: node manager integration tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, elevated: sudo env PATH="$PATH" }
+          - { os: macos-latest, elevated: sudo }
+          - { os: windows-latest }
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - shell: bash
+        run: |
+          ${{ matrix.elevated }} rustup default stable
+          ${{ matrix.elevated }} cargo test --package sn-node-manager --release --test e2e -- --nocapture
 
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
@@ -937,3 +960,4 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_heavy_replicate_bench
           platform: ubuntu-latest
+        run: cargo test --release
