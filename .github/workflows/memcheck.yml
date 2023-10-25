@@ -110,7 +110,6 @@ jobs:
           TEST_DURATION_MINS: 5
           TEST_TOTAL_CHURN_CYCLES: 15
           SN_LOG: "all"
-          CHUNKS_ONLY: true
         timeout-minutes: 30
 
       - name: Verify restart of nodes using rg
