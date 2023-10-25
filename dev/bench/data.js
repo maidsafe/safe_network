@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698242706869,
+  "lastUpdate": 1698243828834,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "31c4e717fa22d96a1956fc48e83aa990739ce6c8",
-          "message": "ci: fix escaping on benchmark prs",
-          "timestamp": "2023-06-19T13:54:13+09:00",
-          "tree_id": "47aacf3288cc89b4a6160c58a6c3aedb556ae590",
-          "url": "https://github.com/maidsafe/safe_network/commit/31c4e717fa22d96a1956fc48e83aa990739ce6c8"
-        },
-        "date": 1687151578044,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 10.16,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "ccc4cea83798d4db399c89e70c3880ad8653aa12",
           "message": "fix: ci chart generation using non-linux cmd",
           "timestamp": "2023-06-19T14:28:54+09:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 69,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "f1c7614c42d2deb7deda6ef4a6ab9bdd41a6adff",
+          "message": "fix(cli): remove Arc from ProgressBar as it is Arc internally",
+          "timestamp": "2023-10-25T12:53:15Z",
+          "tree_id": "02df850858675658eed4fa540d34a799a40dfae6",
+          "url": "https://github.com/maidsafe/safe_network/commit/f1c7614c42d2deb7deda6ef4a6ab9bdd41a6adff"
+        },
+        "date": 1698243828004,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 85,
             "unit": "MB"
           }
         ]
