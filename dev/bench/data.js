@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698243828834,
+  "lastUpdate": 1698243831192,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29685,6 +29685,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 89,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "f1c7614c42d2deb7deda6ef4a6ab9bdd41a6adff",
+          "message": "fix(cli): remove Arc from ProgressBar as it is Arc internally",
+          "timestamp": "2023-10-25T12:53:15Z",
+          "tree_id": "02df850858675658eed4fa540d34a799a40dfae6",
+          "url": "https://github.com/maidsafe/safe_network/commit/f1c7614c42d2deb7deda6ef4a6ab9bdd41a6adff"
+        },
+        "date": 1698243830261,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 183,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 79,
             "unit": "MB"
           }
         ]
