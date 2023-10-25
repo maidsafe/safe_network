@@ -25,7 +25,6 @@ use std::{
     io::prelude::*,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
-    sync::Arc,
     time::{Duration, Instant},
 };
 use tempfile::tempdir;
@@ -363,7 +362,7 @@ fn upload_chunks_in_parallel(
     file_api: Files,
     chunks_paths: Vec<(XorName, PathBuf)>,
     verify_store: bool,
-    progress_bar: Arc<ProgressBar>,
+    progress_bar: ProgressBar,
     show_holders: bool,
 ) -> Vec<JoinHandle<Result<()>>> {
     let mut upload_handles = Vec::new();
@@ -392,7 +391,7 @@ async fn upload_chunk(
     file_api: Files,
     chunk: (XorName, PathBuf),
     verify_store: bool,
-    progress_bar: Arc<ProgressBar>,
+    progress_bar: ProgressBar,
     show_holders: bool,
 ) -> Result<()> {
     let (_, path) = chunk;
@@ -607,9 +606,8 @@ async fn download_file(
     }
 }
 
-fn get_progress_bar(length: u64) -> Result<Arc<ProgressBar>> {
+fn get_progress_bar(length: u64) -> Result<ProgressBar> {
     let progress_bar = ProgressBar::new(length);
-    let progress_bar = Arc::new(progress_bar);
     progress_bar.set_style(
         ProgressStyle::default_bar()
             .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len}")?
