@@ -6,6 +6,7 @@ use crate::service::NodeServiceManager;
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Result};
 use sn_releases::SafeReleaseRepositoryInterface;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -25,6 +26,13 @@ pub enum SubCmd {
         /// The number of service instances
         #[clap(long)]
         count: Option<u16>,
+        /// The user the service should run as.
+        ///
+        /// If the account does not exist, it will be created.
+        ///
+        /// On Windows this argument will have no effect.
+        #[clap(long)]
+        user: Option<String>,
         /// The version of safenode
         #[clap(long)]
         version: Option<String>,
@@ -36,15 +44,20 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Cmd::parse();
     match args.cmd {
-        SubCmd::Install { count, version } => {
+        SubCmd::Install {
+            count,
+            user,
+            version,
+        } => {
             if !is_running_as_root() {
                 return Err(eyre!("The install command must run as the root user"));
             }
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
             install(
+                get_safenode_install_path()?,
                 count,
-                None,
+                user,
                 version,
                 &mut node_registry,
                 &NodeServiceManager {},
@@ -58,12 +71,26 @@ async fn main() -> Result<()> {
 }
 
 #[cfg(unix)]
-pub fn is_running_as_root() -> bool {
+fn is_running_as_root() -> bool {
     users::get_effective_uid() == 0
 }
 
 #[cfg(windows)]
-pub fn is_running_as_root() -> bool {
+fn is_running_as_root() -> bool {
     // The Windows implementation for this will be much more complex.
-    false
+    true
+}
+
+#[cfg(unix)]
+fn get_safenode_install_path() -> Result<PathBuf> {
+    Ok(PathBuf::from("/usr/local/bin"))
+}
+
+#[cfg(windows)]
+fn get_safenode_install_path() -> Result<PathBuf> {
+    let path = PathBuf::from("C:\\Program Files\\Maidsafe\\safenode");
+    if !path.exists() {
+        std::fs::create_dir_all(path.clone())?;
+    }
+    Ok(path)
 }
