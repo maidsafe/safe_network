@@ -22,7 +22,7 @@ const MAX_PARALLEL_FETCH: usize = K_VALUE.get() * 4;
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
-const FETCH_TIMEOUT: Duration = Duration::from_secs(3);
+const FETCH_TIMEOUT: Duration = Duration::from_secs(15);
 
 // The time at which the key was sent to be fetched from the peer.
 type ReplicationRequestSentTime = Instant;
