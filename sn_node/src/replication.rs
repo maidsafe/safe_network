@@ -152,7 +152,7 @@ impl Node {
                 trace!("Fetching record {pretty_key:?} from node {holder:?}");
                 let req = Request::Query(Query::GetReplicatedRecord {
                     requester,
-                    key: NetworkAddress::from_record_key(key.clone()),
+                    key: NetworkAddress::from_record_key(&key),
                 });
                 let record_opt = if let Ok(resp) = node.network.send_request(req, holder).await {
                     match resp {

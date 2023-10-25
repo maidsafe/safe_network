@@ -194,7 +194,7 @@ impl NodeRecordStore {
     pub(crate) fn record_addresses(&self) -> HashSet<NetworkAddress> {
         self.records
             .iter()
-            .map(|record_key| NetworkAddress::from_record_key(record_key.clone()))
+            .map(NetworkAddress::from_record_key)
             .collect()
     }
 
@@ -672,8 +672,8 @@ mod tests {
             } else {
                 // The list is already sorted by distance, hence always shall only prune the last one
                 let furthest_key = stored_records.remove(stored_records.len() - 1);
-                let furthest_addr = NetworkAddress::from_record_key(furthest_key.clone());
-                let record_addr = NetworkAddress::from_record_key(record_key.clone());
+                let furthest_addr = NetworkAddress::from_record_key(&furthest_key);
+                let record_addr = NetworkAddress::from_record_key(&record_key);
                 let (retained_key, pruned_key) = if self_address.distance(&furthest_addr)
                     > self_address.distance(&record_addr)
                 {
@@ -719,8 +719,8 @@ mod tests {
 
             stored_records.push(retained_key);
             stored_records.sort_by(|a, b| {
-                let a = NetworkAddress::from_record_key(a.clone());
-                let b = NetworkAddress::from_record_key(b.clone());
+                let a = NetworkAddress::from_record_key(a);
+                let b = NetworkAddress::from_record_key(b);
                 self_address.distance(&a).cmp(&self_address.distance(&b))
             });
         }
@@ -758,8 +758,8 @@ mod tests {
 
             stored_records.push(record_key);
             stored_records.sort_by(|a, b| {
-                let a = NetworkAddress::from_record_key(a.clone());
-                let b = NetworkAddress::from_record_key(b.clone());
+                let a = NetworkAddress::from_record_key(a);
+                let b = NetworkAddress::from_record_key(b);
                 self_address.distance(&a).cmp(&self_address.distance(&b))
             });
         }
@@ -768,8 +768,7 @@ mod tests {
         let halfway_record_address = NetworkAddress::from_record_key(
             stored_records
                 .get((stored_records.len() / 2) - 1)
-                .wrap_err("Could not parse record store key")?
-                .clone(),
+                .wrap_err("Could not parse record store key")?,
         );
         // get the distance to this record from our local key
         let distance = self_address.distance(&halfway_record_address);
