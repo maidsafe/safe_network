@@ -31,6 +31,11 @@ impl NodeRegistry {
     }
 
     pub fn load(path: &Path) -> Result<Self> {
+        if !path.exists() {
+            return Ok(NodeRegistry {
+                installed_nodes: vec![],
+            });
+        }
         let mut file = std::fs::File::open(path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -39,7 +44,18 @@ impl NodeRegistry {
     }
 }
 
+/// Install safenode as a service.
+///
+/// This only defines the service; it does not start it.
+///
+/// There are several arguments that probably seem like they could be handled within the function,
+/// but they enable more controlled unit testing.
+///
+/// In particular, the install path is one of these arguments. It should be a directory that exists
+/// before calling this function. Depending on the context we're running in, this path may need
+/// root access to be created.
 pub async fn install(
+    install_dir_path: PathBuf,
     count: Option<u16>,
     user: Option<String>,
     version: Option<String>,
@@ -77,8 +93,6 @@ pub async fn install(
         )
         .await?;
     pb.finish_with_message("Download complete");
-
-    let install_dir_path = get_safenode_install_path();
     let safenode_path = release_repo.extract_release_archive(&archive_path, &install_dir_path)?;
 
     let service_user = user.unwrap_or("safe".to_string());
@@ -116,29 +130,18 @@ pub async fn install(
 }
 
 #[cfg(unix)]
-pub fn get_safenode_install_path() -> PathBuf {
-    PathBuf::from("/usr/local/bin")
-}
-
-#[cfg(windows)]
-pub fn get_safenode_install_path() -> PathBuf {
-    PathBuf::from("C:\\Program Files\\safenode-manager")
-}
-
-#[cfg(unix)]
 pub fn get_node_registry_path() -> Result<PathBuf> {
     // This needs to be a system-wide location rather than a user directory because the `install`
     // command will run as the root user. However, it should be readable by non-root users, because
     // other commands, e.g., requesting status, shouldn't require root.
-    use std::fs;
     use std::os::unix::fs::PermissionsExt;
 
     let path = Path::new("/var/safenode-manager/");
     if !path.exists() {
-        fs::create_dir_all(path)?;
-        let mut perm = fs::metadata(path)?.permissions();
+        std::fs::create_dir_all(path)?;
+        let mut perm = std::fs::metadata(path)?.permissions();
         perm.set_mode(0o755); // set permissions to rwxr-xr-x
-        fs::set_permissions(path, perm)?;
+        std::fs::set_permissions(path, perm)?;
     }
 
     Ok(path.join("node_registry.json"))
@@ -166,7 +169,6 @@ fn create_temp_dir() -> Result<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::install::get_safenode_install_path;
     use crate::service::MockServiceControl;
     use async_trait::async_trait;
     use mockall::mock;
@@ -204,6 +206,7 @@ mod tests {
             installed_nodes: vec![],
         };
         let latest_version = "0.96.4";
+        let temp_dir = assert_fs::TempDir::new()?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -231,7 +234,7 @@ mod tests {
             })
             .in_sequence(&mut seq);
 
-        let safenode_install_dir_path = get_safenode_install_path();
+        let safenode_install_dir_path = temp_dir.to_path_buf();
         let safenode_install_path = safenode_install_dir_path.join("safenode");
         let safenode_install_path_clone = safenode_install_path.clone();
         mock_release_repo
@@ -279,6 +282,7 @@ mod tests {
             .in_sequence(&mut seq);
 
         install(
+            temp_dir.to_path_buf(),
             None,
             None,
             None,
@@ -310,6 +314,7 @@ mod tests {
         };
 
         let latest_version = "0.96.4";
+        let temp_dir = assert_fs::TempDir::new()?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -337,7 +342,7 @@ mod tests {
             })
             .in_sequence(&mut seq);
 
-        let safenode_install_dir_path = get_safenode_install_path();
+        let safenode_install_dir_path = temp_dir.to_path_buf();
         let safenode_install_path = safenode_install_dir_path.join("safenode");
         let safenode_install_path_clone = safenode_install_path.clone();
         mock_release_repo
@@ -436,6 +441,7 @@ mod tests {
             .in_sequence(&mut seq);
 
         install(
+            temp_dir.to_path_buf(),
             Some(3),
             None,
             None,
@@ -479,6 +485,7 @@ mod tests {
         };
 
         let specific_version = "0.95.0";
+        let temp_dir = assert_fs::TempDir::new()?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -500,7 +507,7 @@ mod tests {
             })
             .in_sequence(&mut seq);
 
-        let safenode_install_dir_path = get_safenode_install_path();
+        let safenode_install_dir_path = temp_dir.to_path_buf();
         let safenode_install_path = safenode_install_dir_path.join("safenode");
         let safenode_install_path_clone = safenode_install_path.clone();
         mock_release_repo
@@ -548,6 +555,7 @@ mod tests {
             .in_sequence(&mut seq);
 
         install(
+            temp_dir.to_path_buf(),
             None,
             None,
             Some(specific_version.to_string()),
@@ -576,8 +584,8 @@ mod tests {
         let mut node_registry = NodeRegistry {
             installed_nodes: vec![],
         };
-
         let latest_version = "0.96.4";
+        let temp_dir = assert_fs::TempDir::new()?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -599,7 +607,7 @@ mod tests {
             })
             .in_sequence(&mut seq);
 
-        let safenode_install_dir_path = get_safenode_install_path();
+        let safenode_install_dir_path = temp_dir.to_path_buf();
         let safenode_install_path = safenode_install_dir_path.join("safenode");
         let safenode_install_path_clone = safenode_install_path.clone();
         mock_release_repo
@@ -647,6 +655,7 @@ mod tests {
             .in_sequence(&mut seq);
 
         install(
+            temp_dir.to_path_buf(),
             None,
             Some("safe2".to_string()),
             Some(latest_version.to_string()),
@@ -683,6 +692,7 @@ mod tests {
                 version: latest_version.to_string(),
             }],
         };
+        let temp_dir = assert_fs::TempDir::new()?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -710,7 +720,7 @@ mod tests {
             })
             .in_sequence(&mut seq);
 
-        let safenode_install_dir_path = get_safenode_install_path();
+        let safenode_install_dir_path = temp_dir.to_path_buf();
         let safenode_install_path = safenode_install_dir_path.join("safenode");
         let safenode_install_path_clone = safenode_install_path.clone();
         mock_release_repo
@@ -758,6 +768,7 @@ mod tests {
             .in_sequence(&mut seq);
 
         install(
+            temp_dir.to_path_buf(),
             None,
             None,
             None,

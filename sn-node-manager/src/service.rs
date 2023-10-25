@@ -36,6 +36,7 @@ impl ServiceControl for NodeServiceManager {
         use std::process::Command;
 
         if Command::new("id").arg("-u").arg(username).output().is_ok() {
+            println!("The {username} user already exists");
             return Ok(());
         }
         let output = Command::new("useradd")
@@ -47,6 +48,7 @@ impl ServiceControl for NodeServiceManager {
         if !output.status.success() {
             return Err(eyre!("Failed to create user account"));
         }
+        println!("Created {username} user account for running the service");
         Ok(())
     }
 
