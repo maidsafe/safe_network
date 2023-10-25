@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.84.20](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.19...sn_cli-v0.84.20) - 2023-10-25
+
+### Added
+- *(cli)* chunk files in parallel
+
+### Fixed
+- *(cli)* remove Arc from ProgressBar as it is Arc internally
+
+### Other
+- *(cli)* add logs to indicate the time spent on chunking the files
+
 ## [0.84.19](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.18...sn_cli-v0.84.19) - 2023-10-24
 
 ### Added
