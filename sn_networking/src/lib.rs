@@ -370,7 +370,8 @@ impl Network {
                     warn!("No holder of record '{pretty_key:?}' found. Retrying the fetch ...",);
                 }
                 Err(error) => {
-                    error!("{error:?}");
+                    error!("Getting record {pretty_key:?} attempts #{verification_attempts}/{total_attempts} , encountered {error:?}");
+
                     if verification_attempts >= total_attempts {
                         break;
                     }

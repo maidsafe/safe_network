@@ -1025,7 +1025,7 @@ impl SwarmDriver {
                     let _ = sender.send(result);
                 } else {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
-                    let _ = sender.send(Err(Error::SplitRecord(result_map)));
+                    let _ = sender.send(Err(Error::SplitRecord { result_map }));
                 }
             } else {
                 let _ = self
