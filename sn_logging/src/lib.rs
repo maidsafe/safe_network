@@ -65,7 +65,7 @@ impl LogBuilder {
     /// Create a new builder
     /// Provide the default_logging_targets that are used if the `SN_LOG` env variable is not set.
     ///
-    /// By default, we use log to the StdOut with the defualt format.
+    /// By default, we use log to the StdOut with the default format.
     pub fn new(default_logging_targets: Vec<(String, Level)>) -> Self {
         Self {
             default_logging_targets,

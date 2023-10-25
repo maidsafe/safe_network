@@ -54,7 +54,7 @@ const VERIFICATION_ATTEMPTS: usize = 3;
 // It can be overridden by setting the 'CHURN_COUNT' env var.
 const CHURN_COUNT: u8 = 4;
 
-/// Default number of chunks that should be PUT to the netowrk.
+/// Default number of chunks that should be PUT to the network.
 // It can be overridden by setting the 'CHUNK_COUNT' env var.
 const CHUNK_COUNT: usize = 5;
 

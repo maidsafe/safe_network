@@ -85,7 +85,7 @@ impl RegisterCrdt {
         // Let's first check the op is validly signed.
         // Note: Perms and valid sig for the op are checked at the upper Register layer.
 
-        // Check the targetting address is correct
+        // Check the targeting address is correct
         if self.address != op.address {
             return Err(Error::RegisterAddrMismatch {
                 dst_addr: Box::new(op.address),
@@ -144,7 +144,7 @@ mod tests {
         assert!(entry_hash_1 == entry_hash_2);
 
         let entry_2 = vec![0x2, 0x2];
-        // RegisterCrdtImpl shall create differnt hashes for different entries from root
+        // RegisterCrdtImpl shall create different hashes for different entries from root
         let (entry_hash_1_2, _, _) = crdt_1.write(entry_2, parents.clone())?;
         assert!(entry_hash_1 != entry_hash_1_2);
 
