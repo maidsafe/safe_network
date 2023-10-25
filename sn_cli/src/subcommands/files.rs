@@ -143,6 +143,7 @@ pub(super) async fn chunk_path(
     chunks_dir: &Path,
 ) -> Result<BTreeMap<XorName, ChunkedFile>> {
     trace!("Starting to chunk {files_path:?} now.");
+    let now = Instant::now();
 
     let total_files = WalkDir::new(files_path)
         .into_iter()
@@ -200,6 +201,7 @@ pub(super) async fn chunk_path(
     }
 
     progress_bar.finish_and_clear();
+    debug!("It took {:?} to chunk all the files", now.elapsed());
 
     Ok(chunked_files)
 }
