@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698303020380,
+  "lastUpdate": 1698304419653,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "ccc4cea83798d4db399c89e70c3880ad8653aa12",
-          "message": "fix: ci chart generation using non-linux cmd",
-          "timestamp": "2023-06-19T14:28:54+09:00",
-          "tree_id": "88bef75649cc4dd225bfbcc42ffc1fa70d1f0127",
-          "url": "https://github.com/maidsafe/safe_network/commit/ccc4cea83798d4db399c89e70c3880ad8653aa12"
-        },
-        "date": 1687153573359,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 11.38,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "93f9b3e4019f6acd31ca096c672f72a9f08c3ee6",
           "message": "fix: unit for client chart",
           "timestamp": "2023-06-19T15:19:57+09:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "625c5a46d116129c1ecb561960a216e23f25bd5d",
+          "message": "refactor: pass RecordKey by reference\n\nThis prevents cloning in many places this is called, as the RecordKey is\ncopied into a Vec anyway.",
+          "timestamp": "2023-10-26T05:49:18Z",
+          "tree_id": "4bfd87522c9b4f5477c955d53c824ca29ac95af4",
+          "url": "https://github.com/maidsafe/safe_network/commit/625c5a46d116129c1ecb561960a216e23f25bd5d"
+        },
+        "date": 1698304418884,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 75,
             "unit": "MB"
           }
         ]
