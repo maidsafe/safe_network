@@ -15,6 +15,7 @@ use color_eyre::{
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use libp2p::futures::future::join_all;
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::{Client, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::NanoTokens;
@@ -24,7 +25,6 @@ use std::{
     io::prelude::*,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
-    sync::Arc,
     time::{Duration, Instant},
 };
 use tempfile::tempdir;
@@ -137,39 +137,47 @@ pub(crate) async fn files_cmds(
     Ok(())
 }
 
+/// Chunk all the files in the provided `files_path`
+/// `chunks_dir` is used to store the results of the self-encryption process
 pub(super) async fn chunk_path(
     file_api: &Files,
     files_path: &Path,
     chunks_dir: &Path,
 ) -> Result<BTreeMap<XorName, ChunkedFile>> {
     trace!("Starting to chunk {files_path:?} now.");
+    let now = Instant::now();
 
-    let total_files = WalkDir::new(files_path)
+    let files_to_chunk = WalkDir::new(files_path)
         .into_iter()
         .flatten()
-        .filter(|entry| entry.file_type().is_file())
-        .count();
-    let progress_bar = get_progress_bar(total_files as u64)?;
-    progress_bar.println(format!("Chunking {total_files} files..."));
+        .filter_map(|entry| {
+            if !entry.file_type().is_file() {
+                return None;
+            }
 
-    // Get the list of Chunks addresses from the files found at 'files_path'
-    let mut chunked_files = BTreeMap::new();
-    for entry in WalkDir::new(files_path).into_iter().flatten() {
-        if entry.file_type().is_file() {
-            let file_name = if let Some(file_name) = entry.file_name().to_str() {
-                file_name.to_string()
+            if let Some(file_name) = entry.file_name().to_str() {
+                Some((file_name.to_string(), entry.into_path()))
             } else {
                 println!(
                     "Skipping file {:?} as it is not valid UTF-8.",
                     entry.file_name()
                 );
-                continue;
-            };
+                None
+            }
+        })
+        .collect::<Vec<_>>();
 
+    let total_files = files_to_chunk.len();
+    let progress_bar = get_progress_bar(total_files as u64)?;
+    progress_bar.println(format!("Chunking {total_files} files..."));
+
+    let chunked_files = files_to_chunk
+        .par_iter()
+        .filter_map(|(file_name, path)| {
             // Each file using individual dir for temp SE chunks.
             let file_chunks_dir = {
-                let file_chunks_dir = chunks_dir.join(file_name.clone());
-                match fs::create_dir_all(file_chunks_dir.clone()) {
+                let file_chunks_dir = chunks_dir.join(file_name);
+                match fs::create_dir_all(&file_chunks_dir) {
                     Ok(_) => file_chunks_dir,
                     Err(err) => {
                         trace!("Failed to create temp folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
@@ -178,28 +186,25 @@ pub(super) async fn chunk_path(
                 }
             };
 
-            let (file_addr, _size, chunks) =
-                match file_api.chunk_file(entry.path(), &file_chunks_dir) {
-                    Ok((file_addr, size, chunks)) => (file_addr, size, chunks),
-                    Err(err) => {
-                        println!(
-                            "Skipping file {:?} as it could not be chunked: {:?}",
-                            entry.path(),
-                            err
-                        );
-                        continue;
-                    }
-                };
-            progress_bar.inc(1);
-            chunked_files.insert(file_addr, ChunkedFile { file_name, chunks });
-        }
-    }
+            match file_api.chunk_file(path, &file_chunks_dir) {
+                Ok((file_addr, _size, chunks)) => {
+                    progress_bar.clone().inc(1);
+                    Some((file_addr, ChunkedFile {file_name: file_name.clone(), chunks}))
+                }
+                Err(err) => {
+                    println!("Skipping file {path:?} as it could not be chunked: {err:?}");
+                    None
+                }
+            }
+        })
+        .collect::<BTreeMap<_, _>>();
 
     if chunked_files.is_empty() {
         bail!("The provided path does not contain any file. Please check your path!\nExiting...");
     }
 
     progress_bar.finish_and_clear();
+    debug!("It took {:?} to chunk all the files", now.elapsed());
 
     Ok(chunked_files)
 }
@@ -357,7 +362,7 @@ fn upload_chunks_in_parallel(
     file_api: Files,
     chunks_paths: Vec<(XorName, PathBuf)>,
     verify_store: bool,
-    progress_bar: Arc<ProgressBar>,
+    progress_bar: ProgressBar,
     show_holders: bool,
 ) -> Vec<JoinHandle<Result<()>>> {
     let mut upload_handles = Vec::new();
@@ -386,7 +391,7 @@ async fn upload_chunk(
     file_api: Files,
     chunk: (XorName, PathBuf),
     verify_store: bool,
-    progress_bar: Arc<ProgressBar>,
+    progress_bar: ProgressBar,
     show_holders: bool,
 ) -> Result<()> {
     let (_, path) = chunk;
@@ -601,9 +606,8 @@ async fn download_file(
     }
 }
 
-fn get_progress_bar(length: u64) -> Result<Arc<ProgressBar>> {
+fn get_progress_bar(length: u64) -> Result<ProgressBar> {
     let progress_bar = ProgressBar::new(length);
-    let progress_bar = Arc::new(progress_bar);
     progress_bar.set_style(
         ProgressStyle::default_bar()
             .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len}")?

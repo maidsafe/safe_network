@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Safe Node"
 name = "sn_node"
-version = "0.96.5"
+version = "0.96.6"
 edition = "2021"
 license = "GPL-3.0"
 homepage = "https://maidsafe.net"
@@ -54,12 +54,12 @@ prost = { version = "0.9" }
 tonic = { version = "0.6.2" }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
-rayon = "1.7.0"
+rayon = "1.8.0"
 self_encryption = "~0.28.5"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_build_info = { path="../sn_build_info", version = "0.1.2" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.1.7" }
-sn_client = { path = "../sn_client", version = "0.95.4" }
+sn_client = { path = "../sn_client", version = "0.95.5" }
 sn_logging = { path = "../sn_logging", version = "0.2.13" }
 sn_networking = { path = "../sn_networking", version = "0.9.4" }
 sn_protocol = { path = "../sn_protocol", version = "0.8.3" }
