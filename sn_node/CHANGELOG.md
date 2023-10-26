@@ -1880,6 +1880,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - add libp2p identity with rand dep for tests
 
+## [0.96.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.9...sn_node-v0.96.10) - 2023-10-26
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

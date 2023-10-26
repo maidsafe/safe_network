@@ -4304,7 +4304,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.84.23"
+version = "0.84.24"
 dependencies = [
  "bincode",
  "blsttc",
@@ -4423,7 +4423,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.96.9"
+version = "0.96.10"
 dependencies = [
  "assert_fs",
  "async-trait",
