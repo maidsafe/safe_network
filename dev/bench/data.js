@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698324747360,
+  "lastUpdate": 1698326059277,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f81acd200128e520dbe643d051da39211b32dc22",
-          "message": "ci: fix missing mb->kb change for client mem measurements",
-          "timestamp": "2023-06-19T20:48:01+09:00",
-          "tree_id": "40192d2d04a315192f3f1bc21ac6b5b431a49c59",
-          "url": "https://github.com/maidsafe/safe_network/commit/f81acd200128e520dbe643d051da39211b32dc22"
-        },
-        "date": 1687176675200,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 10.13,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4f4ae06d6dedba87e5b7a06430bba186da9ea4fc",
+          "message": "fix: add libp2p identity with rand dep for tests",
+          "timestamp": "2023-10-26T11:36:31Z",
+          "tree_id": "f177239e3b1b09d9c46dc9b0f1bdb63a3f5ab337",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f4ae06d6dedba87e5b7a06430bba186da9ea4fc"
+        },
+        "date": 1698326058860,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 78,
             "unit": "MB"
           }
         ]
