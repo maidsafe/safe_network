@@ -428,6 +428,28 @@ impl LocalWallet {
         Ok(())
     }
 
+    /// Store the given cash_notes on the wallet (without storing them to disk).
+    pub fn deposit(&mut self, received_cash_notes: &Vec<CashNote>) -> Result<()> {
+        for cash_note in received_cash_notes {
+            let id = cash_note.unique_pubkey();
+
+            if self.wallet.spent_cash_notes.contains(&id) {
+                debug!("skipping: cash_note is spent");
+                continue;
+            }
+
+            if cash_note.derived_key(&self.key).is_err() {
+                debug!("skipping: cash_note is not our key");
+                continue;
+            }
+
+            let value = cash_note.value()?;
+            self.wallet.available_cash_notes.insert(id, value);
+        }
+
+        Ok(())
+    }
+
     /// Store the given cash_notes to the `cash_notes` dir in the wallet dir.
     /// Update and store the updated wallet to disk
     /// This function locks the wallet to prevent concurrent processes from writing to it
