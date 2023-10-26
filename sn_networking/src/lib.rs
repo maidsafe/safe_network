@@ -43,6 +43,7 @@ use libp2p::{
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
+use rand::Rng;
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
     storage::{RecordHeader, RecordKind, RecordType},
@@ -73,8 +74,10 @@ pub const fn close_group_majority() -> usize {
     CLOSE_GROUP_SIZE / 2 + 1
 }
 
-/// Duration to wait for verification
-const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
+/// Max duration to wait for verification
+const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(2000);
+/// Min duration to wait for verification
+const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(500);
 /// Number of attempts to verify a record
 const VERIFICATION_ATTEMPTS: usize = 3;
 /// Number of attempts to re-put a record
@@ -389,7 +392,7 @@ impl Network {
 
             // wait for a bit before re-trying
             if re_attempt {
-                tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+                tokio::time::sleep(MAX_REVERIFICATION_WAIT_TIME_S).await;
             }
         }
 
@@ -482,12 +485,12 @@ impl Network {
         let response = receiver.await?;
 
         if verify_store.is_some() || !expected_holders.is_empty() {
+            // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
+            let wait_duration = rand::thread_rng()
+                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
-            tokio::time::sleep(std::time::Duration::from_millis(
-                REVERIFICATION_WAIT_TIME_S.as_millis() as u64 / 6,
-            ))
-            .await;
+            tokio::time::sleep(wait_duration).await;
             trace!("attempting to verify {pretty_key:?}");
 
             // Verify the record is stored, requiring re-attempts
