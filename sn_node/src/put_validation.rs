@@ -477,7 +477,7 @@ impl Node {
 
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key}");
-        let (received_fee, cash_notes, royalties_cash_notes) = self
+        let (received_fee, cash_notes, royalties_transfers) = self
             .cash_notes_from_payment(&payment, &wallet, pretty_key.clone())
             .await?;
 
@@ -493,14 +493,14 @@ impl Node {
             .reward_wallet_balance
             .set(wallet.balance().as_nano() as i64);
 
-        if royalties_cash_notes.is_empty() {
+        if royalties_transfers.is_empty() {
             return Err(ProtocolError::NoNetworkRoyaltiesPayment(
                 pretty_key.into_owned(),
             ));
         }
 
         // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for the network royalties payment.
-        match bincode::serialize(&royalties_cash_notes) {
+        match bincode::serialize(&royalties_transfers) {
             Ok(serialised) => {
                 let royalties_pk = *NETWORK_ROYALTIES_PK;
                 trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");

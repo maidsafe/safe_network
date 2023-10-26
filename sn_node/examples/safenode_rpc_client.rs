@@ -6,23 +6,26 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use assert_fs::TempDir;
+use bls::SecretKey;
 use clap::Parser;
-use eyre::Result;
+use eyre::{eyre, Result};
 use libp2p::{Multiaddr, PeerId};
 use safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
     GossipsubUnsubscribeRequest, NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest,
     RecordAddressesRequest, RestartRequest, StopRequest, UpdateRequest,
 };
+use sn_client::Client;
 use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
 use sn_protocol::storage::SpendAddress;
-use sn_transfers::Transfer;
+use sn_transfers::{LocalWallet, MainSecretKey, Transfer};
 use std::{fs, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
 use tokio_stream::StreamExt;
 use tonic::Request;
+use tracing::warn;
 use tracing_core::Level;
-use tracing::{warn, info};
 
 // this includes code generated from .proto files
 mod safenode_proto {
@@ -55,6 +58,9 @@ enum Cmd {
     /// Note this blocks the app and it will print events as they are broadcasted by the node
     #[clap(name = "transfers")]
     TransfersEvents {
+        /// The hex-encoded BLS secret key to decrypt the transfers received and convert
+        /// them into spendable CashNotes.
+        sk: String,
         /// Path where to store CashNotes received.
         /// Each CashNote is written to a separate file in respective
         /// recipient public address dir in the created cash_notes dir.
@@ -122,8 +128,10 @@ async fn main() -> Result<()> {
     match opt.cmd {
         Cmd::Info => node_info(addr).await,
         Cmd::Netinfo => network_info(addr).await,
-        Cmd::Events => node_events(addr, false, None).await,
-        Cmd::TransfersEvents { log_cash_notes } => node_events(addr, true, log_cash_notes).await,
+        Cmd::Events => node_events(addr).await,
+        Cmd::TransfersEvents { sk, log_cash_notes } => {
+            transfers_events(addr, sk, log_cash_notes).await
+        }
         Cmd::Subscribe { topic } => gossipsub_subscribe(addr, topic).await,
         Cmd::Unsubscribe { topic } => gossipsub_unsubscribe(addr, topic).await,
         Cmd::Publish { topic, msg } => gossipsub_publish(addr, topic, msg).await,
@@ -181,33 +189,61 @@ pub async fn network_info(addr: SocketAddr) -> Result<()> {
     Ok(())
 }
 
-pub async fn node_events(
-    addr: SocketAddr,
-    only_transfers: bool,
-    log_cash_notes: Option<PathBuf>,
-) -> Result<()> {
+pub async fn node_events(addr: SocketAddr) -> Result<()> {
     let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint).await?;
     let response = client
         .node_events(Request::new(NodeEventsRequest {}))
         .await?;
 
-    if only_transfers {
-        println!("Listening to transfers notifications... (press Ctrl+C to exit)");
-        if let Some(ref path) = log_cash_notes {
-            // create cash_notes dir
-            fs::create_dir_all(path)?;
-            println!("Writing cash notes to: {}", path.display());
-        }
-    } else {
-        println!("Listening to node events... (press Ctrl+C to exit)");
-    }
-    println!();
-    
+    println!("Listening to node events... (press Ctrl+C to exit)");
+
     let mut stream = response.into_inner();
     while let Some(Ok(e)) = stream.next().await {
         match NodeEvent::from_bytes(&e.event) {
-            Ok(NodeEvent::TransferNotif { key, transfers }) if only_transfers => {
+            Ok(event) => println!("New event received: {event:?}"),
+            Err(_) => {
+                println!("Error while parsing received NodeEvent");
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn transfers_events(
+    addr: SocketAddr,
+    sk: String,
+    log_cash_notes: Option<PathBuf>,
+) -> Result<()> {
+    let (client, wallet) = match SecretKey::from_hex(&sk) {
+        Ok(sk) => {
+            let client = Client::new(sk.clone(), None, None).await?;
+            let main_sk = MainSecretKey::new(sk);
+            let wallet_dir = TempDir::new()?;
+            let wallet = LocalWallet::load_from_main_key(wallet_dir.path(), main_sk)?;
+            (client, wallet)
+        }
+        Err(err) => return Err(eyre!("Failed to parse hex-encoded SK: {err:?}")),
+    };
+    let endpoint = format!("https://{addr}");
+    let mut node_client = SafeNodeClient::connect(endpoint).await?;
+    let response = node_client
+        .node_events(Request::new(NodeEventsRequest {}))
+        .await?;
+
+    println!("Listening to transfers notifications... (press Ctrl+C to exit)");
+    if let Some(ref path) = log_cash_notes {
+        // create cash_notes dir
+        fs::create_dir_all(path)?;
+        println!("Writing cash notes to: {}", path.display());
+    }
+    println!();
+
+    let mut stream = response.into_inner();
+    while let Some(Ok(e)) = stream.next().await {
+        match NodeEvent::from_bytes(&e.event) {
+            Ok(NodeEvent::TransferNotif { key, transfers }) => {
                 println!(
                     "New transfer notification received for {key:?}, containing {} transfer/s.",
                     transfers.len()
@@ -216,50 +252,48 @@ pub async fn node_events(
                 let mut cash_notes = vec![];
                 for transfer in transfers {
                     match transfer {
-                        Transfer::Encrypted(_) => match client
-                            .network
-                            .verify_and_unpack_transfer(transfer, wallet)
-                            .await
-                        {
-                            // transfer not for us
-                            Err(sn_protocol::Error::FailedToDecypherTransfer) => continue,
-                            // transfer invalid
-                            Err(e) => return Err(e),
-                            // transfer ok
-                            Ok(cns) => cash_notes = cns,
-                        },
+                        Transfer::Encrypted(_) => {
+                            match client.verify_and_unpack_transfer(&transfer, &wallet).await {
+                                // transfer not for us
+                                Err(err) => {
+                                    warn!("Transfer received is invalid or not for us. Ignoring it: {err:?}");
+                                    continue;
+                                }
+                                // transfer ok
+                                Ok(cns) => cash_notes.extend(cns),
+                            }
+                        }
                         Transfer::NetworkRoyalties(_) => {
-                            // we should always send transfers as they are lighter weight.
-                            warn!("Unencrypted NetworkRoyalty received via TransferNotification. Ignoring it.");
+                            // we should always send Transfers as they are lighter weight.
+                            warn!("Unencrypted network royalty received via TransferNotification. Ignoring it.");
                         }
                     }
                 }
 
-                // for cn in transfers {
-                //     println!(
-                //         "CashNote received with {:?}, value: {}",
-                //         cn.unique_pubkey(),
-                //         cn.value()?
-                //     );
+                for cn in cash_notes {
+                    println!(
+                        "CashNote received with {:?}, value: {}",
+                        cn.unique_pubkey(),
+                        cn.value()?
+                    );
 
-                //     if let Some(ref path) = log_cash_notes {
-                //         // create cash_notes dir
-                //         let unique_pubkey_name =
-                //             *SpendAddress::from_unique_pubkey(&cn.unique_pubkey()).xorname();
-                //         let unique_pubkey_file_name =
-                //             format!("{}.cash_note", hex::encode(unique_pubkey_name));
+                    if let Some(ref path) = log_cash_notes {
+                        // create cash_notes dir
+                        let unique_pubkey_name =
+                            *SpendAddress::from_unique_pubkey(&cn.unique_pubkey()).xorname();
+                        let unique_pubkey_file_name =
+                            format!("{}.cash_note", hex::encode(unique_pubkey_name));
 
-                //         let cash_note_file_path = path.join(unique_pubkey_file_name);
-                //         println!("Writing cash note to: {}", cash_note_file_path.display());
+                        let cash_note_file_path = path.join(unique_pubkey_file_name);
+                        println!("Writing cash note to: {}", cash_note_file_path.display());
 
-                //         let hex = cn.to_hex()?;
-                //         fs::write(cash_note_file_path, &hex)?;
-                //     }
-                // }
+                        let hex = cn.to_hex()?;
+                        fs::write(cash_note_file_path, &hex)?;
+                    }
+                }
                 println!();
             }
-            Ok(_) if only_transfers => continue,
-            Ok(event) => println!("New event received: {event:?}"),
+            Ok(_) => continue,
             Err(_) => {
                 println!("Error while parsing received NodeEvent");
             }
