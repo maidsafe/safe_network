@@ -106,6 +106,9 @@ pub enum Error {
     #[error("Network Metric error")]
     NetworkMetricError,
 
+    #[error("Gossipsub config Error: {0}")]
+    GossipsubConfigError(String),
+
     #[error("Gossipsub publish Error: {0}")]
     GossipsubPublishError(#[from] PublishError),
 
