@@ -6,7 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::wallet::{ChunkedFile, BATCH_SIZE};
+mod chunk_manager;
+
+pub(super) use chunk_manager::chunk_path;
+
+use super::wallet::BATCH_SIZE;
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{
@@ -15,21 +19,18 @@ use color_eyre::{
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use libp2p::futures::future::join_all;
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::{Client, Error as ClientError, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
 use std::{
-    collections::BTreeMap,
     fs,
     io::prelude::*,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
-use tempfile::tempdir;
 use tokio::task::JoinHandle;
-use walkdir::WalkDir;
+
 use xor_name::XorName;
 
 #[derive(Parser, Debug)]
@@ -74,7 +75,7 @@ pub enum FilesCmds {
 pub(crate) async fn files_cmds(
     cmds: FilesCmds,
     client: Client,
-    wallet_dir_path: &Path,
+    root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
@@ -86,7 +87,7 @@ pub(crate) async fn files_cmds(
             upload_files(
                 path,
                 client,
-                wallet_dir_path,
+                root_dir,
                 verify_store,
                 batch_size,
                 show_holders,
@@ -109,27 +110,21 @@ pub(crate) async fn files_cmds(
                 );
             }
 
-            let file_api: Files = Files::new(client, wallet_dir_path.to_path_buf());
+            let file_api: Files = Files::new(client, root_dir.to_path_buf());
 
             match (file_name, file_addr) {
                 (Some(name), Some(address)) => {
                     let bytes = hex::decode(address).expect("Input address is not a hex string");
-                    download_file(
-                        &file_api,
-                        &XorName(
-                            bytes
-                                .try_into()
-                                .expect("Failed to parse XorName from hex string"),
-                        ),
-                        &name,
-                        wallet_dir_path,
-                        show_holders,
-                    )
-                    .await
+                    let xor_name = XorName(
+                        bytes
+                            .try_into()
+                            .expect("Failed to parse XorName from hex string"),
+                    );
+                    download_file(&file_api, &xor_name, &name, root_dir, show_holders).await
                 }
                 _ => {
                     println!("Attempting to download all files uploaded by the current user...");
-                    download_files(&file_api, wallet_dir_path, show_holders).await?
+                    download_files(&file_api, root_dir, show_holders).await?
                 }
             }
         }
@@ -137,84 +132,12 @@ pub(crate) async fn files_cmds(
     Ok(())
 }
 
-/// Chunk all the files in the provided `files_path`
-/// `chunks_dir` is used to store the results of the self-encryption process
-pub(super) async fn chunk_path(
-    file_api: &Files,
-    files_path: &Path,
-    chunks_dir: &Path,
-) -> Result<BTreeMap<XorName, ChunkedFile>> {
-    trace!("Starting to chunk {files_path:?} now.");
-    let now = Instant::now();
-
-    let files_to_chunk = WalkDir::new(files_path)
-        .into_iter()
-        .flatten()
-        .filter_map(|entry| {
-            if !entry.file_type().is_file() {
-                return None;
-            }
-
-            if let Some(file_name) = entry.file_name().to_str() {
-                Some((file_name.to_string(), entry.into_path()))
-            } else {
-                println!(
-                    "Skipping file {:?} as it is not valid UTF-8.",
-                    entry.file_name()
-                );
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-
-    let total_files = files_to_chunk.len();
-    let progress_bar = get_progress_bar(total_files as u64)?;
-    progress_bar.println(format!("Chunking {total_files} files..."));
-
-    let chunked_files = files_to_chunk
-        .par_iter()
-        .filter_map(|(file_name, path)| {
-            // Each file using individual dir for temp SE chunks.
-            let file_chunks_dir = {
-                let file_chunks_dir = chunks_dir.join(file_name);
-                match fs::create_dir_all(&file_chunks_dir) {
-                    Ok(_) => file_chunks_dir,
-                    Err(err) => {
-                        trace!("Failed to create temp folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
-                        chunks_dir.to_path_buf()
-                    }
-                }
-            };
-
-            match file_api.chunk_file(path, &file_chunks_dir) {
-                Ok((file_addr, _size, chunks)) => {
-                    progress_bar.clone().inc(1);
-                    Some((file_addr, ChunkedFile {file_name: file_name.clone(), chunks}))
-                }
-                Err(err) => {
-                    println!("Skipping file {path:?} as it could not be chunked: {err:?}");
-                    None
-                }
-            }
-        })
-        .collect::<BTreeMap<_, _>>();
-
-    if chunked_files.is_empty() {
-        bail!("The provided path does not contain any file. Please check your path!\nExiting...");
-    }
-
-    progress_bar.finish_and_clear();
-    debug!("It took {:?} to chunk all the files", now.elapsed());
-
-    Ok(chunked_files)
-}
-
 /// Given a file or directory, upload either the file or all the files in the directory. Optionally
 /// verify if the data was stored successfully.
 async fn upload_files(
     files_path: PathBuf,
     client: Client,
-    wallet_dir_path: &Path,
+    root_dir: &Path,
     verify_store: bool,
     batch_size: usize,
     show_holders: bool,
@@ -224,16 +147,14 @@ async fn upload_files(
         files_path
     );
 
-    let file_api: Files = Files::new(client.clone(), wallet_dir_path.to_path_buf());
+    let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
     if file_api.wallet()?.balance().is_zero() {
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
 
-    // Temp folder to hold SE chunks, which is cleaned up automatically once out of scope.
-    let temp_dir = tempdir()?;
-
     // Payment shall always be verified.
-    let chunked_files = chunk_path(&file_api, &files_path, temp_dir.path()).await?;
+    let chunk_artifacts = root_dir.join("chunk_artifacts");
+    let chunked_files = chunk_path(&file_api, &files_path, &chunk_artifacts).await?;
 
     let uploaded_file_info = chunked_files
         .iter()
@@ -349,7 +270,7 @@ async fn upload_files(
     println!("**************************************");
     println!("*          Uploaded Files            *");
     println!("**************************************");
-    let file_names_path = wallet_dir_path.join("uploaded_files");
+    let file_names_path = root_dir.join("uploaded_files");
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
