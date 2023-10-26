@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698326059277,
+  "lastUpdate": 1698326060896,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29787,6 +29787,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 95,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4f4ae06d6dedba87e5b7a06430bba186da9ea4fc",
+          "message": "fix: add libp2p identity with rand dep for tests",
+          "timestamp": "2023-10-26T11:36:31Z",
+          "tree_id": "f177239e3b1b09d9c46dc9b0f1bdb63a3f5ab337",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f4ae06d6dedba87e5b7a06430bba186da9ea4fc"
+        },
+        "date": 1698326060463,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 191,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
