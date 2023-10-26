@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.7...sn_networking-v0.9.8) - 2023-10-26
+
+### Added
+- replicate Spend/Register with same key but different content
+
+### Fixed
+- throw out SplitRecord error for the later on merge
+- client carry out merge when verify register storage
+
+### Other
+- expand replication range
+
 ## [0.9.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.6...sn_networking-v0.9.7) - 2023-10-26
 
 ### Fixed
