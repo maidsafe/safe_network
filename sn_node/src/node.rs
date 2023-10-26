@@ -261,6 +261,7 @@ impl Node {
         // when the node has not been connected to enough peers, it should not perform activities
         // that might require peers in the RT to succeed.
         let mut log_when_not_enough_peers = true;
+        let start = std::time::Instant::now();
         loop {
             if peers_connected.load(Ordering::Relaxed) >= CLOSE_GROUP_SIZE {
                 break;
@@ -289,7 +290,8 @@ impl Node {
                 | NetworkEvent::GossipsubMsgPublished { .. } => break,
             }
         }
-        trace!("Handling NetworkEvent {event:?}");
+        let event_string = format!("{:?}", event);
+        trace!("Handling NetworkEvent {event_string:?}");
 
         match event {
             NetworkEvent::RequestReceived { req, channel } => {
@@ -380,6 +382,11 @@ impl Node {
                     .broadcast(NodeEvent::GossipsubMsg { topic, msg });
             }
         }
+
+        trace!(
+            "NetworkEvent handled in {:?} : {event_string:?}",
+            start.elapsed()
+        );
     }
 
     // Handle the response that was not awaited at the call site
