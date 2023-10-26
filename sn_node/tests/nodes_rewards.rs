@@ -215,7 +215,7 @@ fn spawn_royalties_payment_listener(endpoint: String) -> JoinHandle<Result<usize
         println!("Awaiting transfers notifs...");
         while let Some(Ok(e)) = stream.next().await {
             match NodeEvent::from_bytes(&e.event) {
-                Ok(NodeEvent::TransferNotif { key, cash_notes: _ }) => {
+                Ok(NodeEvent::TransferNotif { key, transfers: _ }) => {
                     println!("Transfer notif received for key {key:?}");
                     if key == royalties_pk {
                         count += 1;

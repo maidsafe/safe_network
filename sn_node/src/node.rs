@@ -513,7 +513,7 @@ fn try_decode_transfer_notif(msg: &[u8]) -> eyre::Result<NodeEvent> {
     );
     let key = PublicKey::from_bytes(key_bytes)?;
 
-    let cash_notes: Vec<Transfer> = bincode::deserialize(&msg[PK_SIZE..])?;
+    let transfers: Vec<Transfer> = bincode::deserialize(&msg[PK_SIZE..])?;
 
-    Ok(NodeEvent::TransferNotif { key, cash_notes })
+    Ok(NodeEvent::TransferNotif { key, transfers })
 }

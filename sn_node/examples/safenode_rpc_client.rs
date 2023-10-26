@@ -17,10 +17,12 @@ use safenode_proto::{
 use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
 use sn_protocol::storage::SpendAddress;
+use sn_transfers::Transfer;
 use std::{fs, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
 use tokio_stream::StreamExt;
 use tonic::Request;
 use tracing_core::Level;
+use tracing::{warn, info};
 
 // this includes code generated from .proto files
 mod safenode_proto {
@@ -201,37 +203,59 @@ pub async fn node_events(
         println!("Listening to node events... (press Ctrl+C to exit)");
     }
     println!();
-
+    
     let mut stream = response.into_inner();
     while let Some(Ok(e)) = stream.next().await {
         match NodeEvent::from_bytes(&e.event) {
-            Ok(NodeEvent::TransferNotif { key, cash_notes }) if only_transfers => {
+            Ok(NodeEvent::TransferNotif { key, transfers }) if only_transfers => {
                 println!(
-                    "New transfer notification received for {key:?}, containing {} cash note/s.",
-                    cash_notes.len()
+                    "New transfer notification received for {key:?}, containing {} transfer/s.",
+                    transfers.len()
                 );
 
-                for cn in cash_notes {
-                    println!(
-                        "CashNote received with {:?}, value: {}",
-                        cn.unique_pubkey(),
-                        cn.value()?
-                    );
-
-                    if let Some(ref path) = log_cash_notes {
-                        // create cash_notes dir
-                        let unique_pubkey_name =
-                            *SpendAddress::from_unique_pubkey(&cn.unique_pubkey()).xorname();
-                        let unique_pubkey_file_name =
-                            format!("{}.cash_note", hex::encode(unique_pubkey_name));
-
-                        let cash_note_file_path = path.join(unique_pubkey_file_name);
-                        println!("Writing cash note to: {}", cash_note_file_path.display());
-
-                        let hex = cn.to_hex()?;
-                        fs::write(cash_note_file_path, &hex)?;
+                let mut cash_notes = vec![];
+                for transfer in transfers {
+                    match transfer {
+                        Transfer::Encrypted(_) => match client
+                            .network
+                            .verify_and_unpack_transfer(transfer, wallet)
+                            .await
+                        {
+                            // transfer not for us
+                            Err(sn_protocol::Error::FailedToDecypherTransfer) => continue,
+                            // transfer invalid
+                            Err(e) => return Err(e),
+                            // transfer ok
+                            Ok(cns) => cash_notes = cns,
+                        },
+                        Transfer::NetworkRoyalties(_) => {
+                            // we should always send transfers as they are lighter weight.
+                            warn!("Unencrypted NetworkRoyalty received via TransferNotification. Ignoring it.");
+                        }
                     }
                 }
+
+                // for cn in transfers {
+                //     println!(
+                //         "CashNote received with {:?}, value: {}",
+                //         cn.unique_pubkey(),
+                //         cn.value()?
+                //     );
+
+                //     if let Some(ref path) = log_cash_notes {
+                //         // create cash_notes dir
+                //         let unique_pubkey_name =
+                //             *SpendAddress::from_unique_pubkey(&cn.unique_pubkey()).xorname();
+                //         let unique_pubkey_file_name =
+                //             format!("{}.cash_note", hex::encode(unique_pubkey_name));
+
+                //         let cash_note_file_path = path.join(unique_pubkey_file_name);
+                //         println!("Writing cash note to: {}", cash_note_file_path.display());
+
+                //         let hex = cn.to_hex()?;
+                //         fs::write(cash_note_file_path, &hex)?;
+                //     }
+                // }
                 println!();
             }
             Ok(_) if only_transfers => continue,
