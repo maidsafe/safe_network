@@ -46,6 +46,7 @@ use libp2p::{
 };
 use rand::Rng;
 use sn_protocol::{
+    error::Error as ProtocolError,
     messages::{Query, QueryResponse, Request, Response},
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
@@ -262,6 +263,12 @@ impl Network {
             {
                 let cost_with_tolerance = NanoTokens::from((cost.as_nano() as f32 * 1.1) as u64);
                 all_costs.push((payment_address, cost_with_tolerance));
+            } else if let Response::Query(QueryResponse::GetStoreCost {
+                store_cost: Err(ProtocolError::RecordExists(_)),
+                payment_address,
+            }) = response
+            {
+                all_costs.push((payment_address, NanoTokens::zero()));
             } else {
                 error!("Non store cost response received,  was {:?}", response);
             }
