@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698331129906,
+  "lastUpdate": 1698331870941,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8260565a50e20365d0718492282f4196299724a7",
-          "message": "feat(CI): check client average memory usage during upload large file",
-          "timestamp": "2023-06-20T09:11:32+09:00",
-          "tree_id": "ef5d96d98b1e3cf36e327c5d44f1e066e974746a",
-          "url": "https://github.com/maidsafe/safe_network/commit/8260565a50e20365d0718492282f4196299724a7"
-        },
-        "date": 1687220936505,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 11.24,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4dee4ef0b295187318dec1611620af1e2972a660",
+          "message": "fix: throw out SplitRecord error for the later on merge",
+          "timestamp": "2023-10-26T13:26:34Z",
+          "tree_id": "048d2e167431e753de8c9695f490350b64f41abb",
+          "url": "https://github.com/maidsafe/safe_network/commit/4dee4ef0b295187318dec1611620af1e2972a660"
+        },
+        "date": 1698331870486,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 79,
             "unit": "MB"
           }
         ]
