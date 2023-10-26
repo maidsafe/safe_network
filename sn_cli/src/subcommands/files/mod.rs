@@ -8,7 +8,7 @@
 
 mod chunk_manager;
 
-pub(super) use chunk_manager::chunk_path;
+pub(crate) use chunk_manager::ChunkManager;
 
 use super::wallet::BATCH_SIZE;
 use bytes::Bytes;
@@ -151,21 +151,15 @@ async fn upload_files(
     if file_api.wallet()?.balance().is_zero() {
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
+    let mut manager = ChunkManager::new(root_dir, file_api.clone());
+    manager.chunk_path(&files_path)?;
 
-    // Payment shall always be verified.
-    let chunk_artifacts = root_dir.join("chunk_artifacts");
-    let chunked_files = chunk_path(&file_api, &files_path, &chunk_artifacts).await?;
+    // let uploaded_file_info = chunked_files
+    //     .iter()
+    //     .map(|(file_addr, chunked_file)| (*file_addr, chunked_file.file_name.clone()))
+    //     .collect::<Vec<_>>();
 
-    let uploaded_file_info = chunked_files
-        .iter()
-        .map(|(file_addr, chunked_file)| (*file_addr, chunked_file.file_name.clone()))
-        .collect::<Vec<_>>();
-
-    let chunks_to_upload = chunked_files
-        .into_iter()
-        .flat_map(|(_, chunk)| chunk.chunks)
-        .collect::<Vec<_>>();
-
+    let chunks_to_upload = manager.get_chunks();
     let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
     println!("Input was split into {} chunks", chunks_to_upload.len());
     println!("Will now attempt to upload them...");
@@ -276,17 +270,17 @@ async fn upload_files(
         .write(true)
         .append(true)
         .open(file_names_path)?;
-    for (addr, file_name) in uploaded_file_info.iter() {
-        if let Some(file_name) = file_name.to_str() {
-            println!("\"{file_name}\" {addr:x}");
-            info!("Uploaded {file_name} to {addr:x}");
-            writeln!(file, "{addr:x}: {file_name}")?;
-        } else {
-            println!("\"{file_name}\" {addr:x}");
-            info!("Uploaded {file_name:?} to {addr:x}");
-            writeln!(file, "{addr:x}: {file_name:?}")?;
-        }
-    }
+    // for (addr, file_name) in uploaded_file_info.iter() {
+    //     if let Some(file_name) = file_name.to_str() {
+    //         println!("\"{file_name}\" {addr:x}");
+    //         info!("Uploaded {file_name} to {addr:x}");
+    //         writeln!(file, "{addr:x}: {file_name}")?;
+    //     } else {
+    //         println!("\"{file_name}\" {addr:x}");
+    //         info!("Uploaded {file_name:?} to {addr:x}");
+    //         writeln!(file, "{addr:x}: {file_name:?}")?;
+    //     }
+    // }
     file.flush()?;
 
     Ok(())

@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::files::ChunkManager;
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
@@ -20,8 +21,6 @@ use std::{
     str::FromStr,
 };
 use url::Url;
-
-use super::files::chunk_path;
 
 // Defines the size of batch for the parallel uploading of chunks and correspondent payments.
 pub(crate) const BATCH_SIZE: usize = 20;
@@ -161,13 +160,13 @@ pub(crate) async fn wallet_cmds(
         } => {
             let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
 
-            let chunk_artifacts = root_dir.join("chunk_artifacts");
-            let chunked_files = chunk_path(&file_api, &path, &chunk_artifacts).await?;
+            let mut manager = ChunkManager::new(root_dir, file_api.clone());
+            manager.chunk_path(&path)?;
 
-            let all_chunks: Vec<_> = chunked_files
-                .values()
-                .flat_map(|chunked_file| &chunked_file.chunks)
-                .map(|(n, _)| *n)
+            let all_chunks: Vec<_> = manager
+                .get_chunks()
+                .iter()
+                .map(|(xor_name, _)| *xor_name)
                 .collect();
 
             file_api.pay_for_chunks(all_chunks).await?;
