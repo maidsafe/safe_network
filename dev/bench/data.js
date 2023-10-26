@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698304419653,
+  "lastUpdate": 1698304421675,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29714,6 +29714,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 183,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 79,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "625c5a46d116129c1ecb561960a216e23f25bd5d",
+          "message": "refactor: pass RecordKey by reference\n\nThis prevents cloning in many places this is called, as the RecordKey is\ncopied into a Vec anyway.",
+          "timestamp": "2023-10-26T05:49:18Z",
+          "tree_id": "4bfd87522c9b4f5477c955d53c824ca29ac95af4",
+          "url": "https://github.com/maidsafe/safe_network/commit/625c5a46d116129c1ecb561960a216e23f25bd5d"
+        },
+        "date": 1698304421010,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 176,
             "unit": "MB"
           },
           {
