@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698243831192,
+  "lastUpdate": 1698303020380,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "f49082f6a0862436416fb1bdac6b5ff4847a5a60",
-          "message": "feat: append peer id to node's default root dir\n\nBREAKING CHANGE: The default root directory for the node will now have the node's peer ID appended\nto its path.\n\nUsing the peer ID facilitates running multiple node processes on a single machine, without the need\nto explicitly use the `--root-dir` argument for each node to specify its own root directory.\nPreviously, if they didn't do that, all the nodes would share the same record store.",
-          "timestamp": "2023-06-27T17:14:04Z",
-          "tree_id": "8fadc9f32127cb75d9c0de4cafd90b095c0fdc5f",
-          "url": "https://github.com/maidsafe/safe_network/commit/f49082f6a0862436416fb1bdac6b5ff4847a5a60"
-        },
-        "date": 1687889874472,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6660606549365365,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.511569997852373,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 23.98908131557219,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 20.040530270683625,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "625c5a46d116129c1ecb561960a216e23f25bd5d",
+          "message": "refactor: pass RecordKey by reference\n\nThis prevents cloning in many places this is called, as the RecordKey is\ncopied into a Vec anyway.",
+          "timestamp": "2023-10-26T05:49:18Z",
+          "tree_id": "4bfd87522c9b4f5477c955d53c824ca29ac95af4",
+          "url": "https://github.com/maidsafe/safe_network/commit/625c5a46d116129c1ecb561960a216e23f25bd5d"
+        },
+        "date": 1698303017846,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.14438885091061954,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.4131383807107058,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 18.635548565489874,
             "unit": "MiB/s"
           }
         ]
