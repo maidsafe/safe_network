@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.4](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.3...sn_protocol-v0.8.4) - 2023-10-26
+
+### Other
+- pass RecordKey by reference
+
 ## [0.8.3](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.2...sn_protocol-v0.8.3) - 2023-10-24
 
 ### Other
