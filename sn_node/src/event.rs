@@ -10,7 +10,7 @@ use crate::error::{Error, Result};
 use bls::PublicKey;
 use serde::{Deserialize, Serialize};
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
-use sn_transfers::{CashNote, UniquePubkey, Transfer};
+use sn_transfers::{Transfer, UniquePubkey};
 use tokio::sync::broadcast;
 
 const NODE_EVENT_CHANNEL_SIZE: usize = 10_000;

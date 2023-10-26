@@ -32,7 +32,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::{NanoTokens, SignedSpend, Transfer, UniquePubkey};
+use sn_transfers::{CashNote, LocalWallet, NanoTokens, SignedSpend, Transfer, UniquePubkey};
 use std::{
     collections::{HashMap, HashSet},
     time::Duration,
@@ -589,6 +589,25 @@ impl Client {
         info!("Publishing msg on topic id: {topic_id}");
         self.network.publish_on_topic(topic_id, msg)?;
         Ok(())
+    }
+
+    /// This function is used to receive a Transfer and turn it back into spendable CashNotes.
+    /// Needs Network connection.
+    /// Verify Transfer and rebuild spendable currency from it
+    /// Returns an `Error::FailedToDecypherTransfer` if the transfer cannot be decyphered
+    /// (This means the transfer is not for us as it was not encrypted to our key)
+    /// Returns an `Error::InvalidTransfer` if the transfer is not valid
+    /// Else returns a list of CashNotes that can be deposited to our wallet and spent
+    pub async fn verify_and_unpack_transfer(
+        &self,
+        transfer: &Transfer,
+        wallet: &LocalWallet,
+    ) -> Result<Vec<CashNote>> {
+        let cash_notes = self
+            .network
+            .verify_and_unpack_transfer(transfer, wallet)
+            .await?;
+        Ok(cash_notes)
     }
 }
 
