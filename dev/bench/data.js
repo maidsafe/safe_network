@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698309039905,
+  "lastUpdate": 1698324747360,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "dbf94c7ffc226bb900ee217875264dedf970bac9",
-          "message": "ci: check local-discovery is not a default feature in any crate",
-          "timestamp": "2023-06-28T12:52:29+09:00",
-          "tree_id": "16302ca77f4653b7ef6a4d0f6dcb95f4adfa1144",
-          "url": "https://github.com/maidsafe/safe_network/commit/dbf94c7ffc226bb900ee217875264dedf970bac9"
-        },
-        "date": 1687928700217,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06335063422959822,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6374162750915088,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 19.080125302666755,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 18.498489449924257,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4f4ae06d6dedba87e5b7a06430bba186da9ea4fc",
+          "message": "fix: add libp2p identity with rand dep for tests",
+          "timestamp": "2023-10-26T11:36:31Z",
+          "tree_id": "f177239e3b1b09d9c46dc9b0f1bdb63a3f5ab337",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f4ae06d6dedba87e5b7a06430bba186da9ea4fc"
+        },
+        "date": 1698324745132,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.14385694340412508,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.4026115682734076,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 20.77307096598554,
             "unit": "MiB/s"
           }
         ]
