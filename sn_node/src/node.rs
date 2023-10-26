@@ -23,7 +23,7 @@ use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{CashNote, LocalWallet, MainPubkey, MainSecretKey, Transfer};
+use sn_transfers::{LocalWallet, MainPubkey, MainSecretKey, Transfer};
 use std::{
     net::SocketAddr,
     path::PathBuf,
