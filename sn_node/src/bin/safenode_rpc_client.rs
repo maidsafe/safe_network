@@ -216,12 +216,12 @@ pub async fn transfers_events(
     sk: String,
     log_cash_notes: Option<PathBuf>,
 ) -> Result<()> {
-    let (client, wallet) = match SecretKey::from_hex(&sk) {
+    let (client, mut wallet) = match SecretKey::from_hex(&sk) {
         Ok(sk) => {
             let client = Client::new(sk.clone(), None, None).await?;
             let main_sk = MainSecretKey::new(sk);
             let wallet_dir = TempDir::new()?;
-            let wallet = LocalWallet::load_from_main_key(wallet_dir.path(), main_sk)?;
+            let wallet = LocalWallet::load_from_main_key(&wallet_dir, main_sk)?;
             (client, wallet)
         }
         Err(err) => return Err(eyre!("Failed to parse hex-encoded SK: {err:?}")),
@@ -270,6 +270,8 @@ pub async fn transfers_events(
                     }
                 }
 
+                wallet.deposit(&cash_notes)?;
+
                 for cn in cash_notes {
                     println!(
                         "CashNote received with {:?}, value: {}",
@@ -291,6 +293,10 @@ pub async fn transfers_events(
                         fs::write(cash_note_file_path, &hex)?;
                     }
                 }
+                println!(
+                    "New balance after depositing received CashNote/s: {}",
+                    wallet.balance()
+                );
                 println!();
             }
             Ok(_) => continue,
