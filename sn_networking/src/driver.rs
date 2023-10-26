@@ -393,14 +393,12 @@ impl NetworkBuilder {
 
         // Gossipsub behaviour
         // set default parameters for gossipsub
-        let gossipsub_config = libp2p::gossipsub::ConfigBuilder::default()
-            .validation_mode(libp2p::gossipsub::ValidationMode::Anonymous)
-            .build()
-            .map_err(|err| Error::GossipsubConfigError(err.to_string()))?;
+        let gossipsub_config = libp2p::gossipsub::Config::default();
 
         // Set the message authenticity - Here we expect the publisher
         // to sign the message with their key.
-        let message_authenticity = libp2p::gossipsub::MessageAuthenticity::Anonymous;
+        let message_authenticity =
+            libp2p::gossipsub::MessageAuthenticity::Signed(self.keypair.clone());
 
         // build a gossipsub network behaviour
         let gossipsub: libp2p::gossipsub::Behaviour =
