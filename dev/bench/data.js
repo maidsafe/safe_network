@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698328206446,
+  "lastUpdate": 1698330166385,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "d6223ee3453a70c26e74fbdb948d1fb6beb65fa4",
-          "message": "fix(CI): correct client mem usage in the graph",
-          "timestamp": "2023-06-19T22:10:48+09:00",
-          "tree_id": "d889ce0fd14dee415c3dd3ca279e96c67a5e9803",
-          "url": "https://github.com/maidsafe/safe_network/commit/d6223ee3453a70c26e74fbdb948d1fb6beb65fa4"
-        },
-        "date": 1687181431764,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 11.54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "8260565a50e20365d0718492282f4196299724a7",
           "message": "feat(CI): check client average memory usage during upload large file",
           "timestamp": "2023-06-20T09:11:32+09:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 78,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "13c5b36b84701f62317b38fd8109de3b49f45a9a",
+          "message": "fix: sn_testnet build check was missing rand dep",
+          "timestamp": "2023-10-26T15:10:19+02:00",
+          "tree_id": "2e63b206332b2a94701684e3ba139f3f5e796420",
+          "url": "https://github.com/maidsafe/safe_network/commit/13c5b36b84701f62317b38fd8109de3b49f45a9a"
+        },
+        "date": 1698330165583,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 81,
             "unit": "MB"
           }
         ]
