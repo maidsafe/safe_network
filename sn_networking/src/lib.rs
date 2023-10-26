@@ -701,10 +701,12 @@ fn get_fees_from_store_cost_responses(
     let desired_quote_count = CLOSE_GROUP_SIZE;
 
     // sort all costs by fee, lowest to highest
-    all_costs.sort_by(|(_, cost_a), (_, cost_b)| {
-        cost_a
-            .partial_cmp(cost_b)
-            .unwrap_or(std::cmp::Ordering::Equal)
+    // if there's a tie in cost, sort by pubkey
+    all_costs.sort_by(|(pub_key_a, cost_a), (pub_key_b, cost_b)| {
+        match cost_a.partial_cmp(cost_b) {
+            Some(std::cmp::Ordering::Equal) => pub_key_a.cmp(pub_key_b),
+            other => other.unwrap_or(std::cmp::Ordering::Equal),
+        }
     });
 
     // get the first desired_quote_count of all_costs
