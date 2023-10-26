@@ -23,7 +23,7 @@ use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{CashNote, LocalWallet, MainPubkey, MainSecretKey};
+use sn_transfers::{CashNote, LocalWallet, MainPubkey, MainSecretKey, Transfer};
 use std::{
     net::SocketAddr,
     path::PathBuf,
@@ -520,7 +520,7 @@ fn try_decode_transfer_notif(msg: &[u8]) -> eyre::Result<NodeEvent> {
     );
     let key = PublicKey::from_bytes(key_bytes)?;
 
-    let cash_notes: Vec<CashNote> = bincode::deserialize(&msg[PK_SIZE..])?;
+    let cash_notes: Vec<Transfer> = bincode::deserialize(&msg[PK_SIZE..])?;
 
     Ok(NodeEvent::TransferNotif { key, cash_notes })
 }
