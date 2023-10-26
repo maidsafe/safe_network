@@ -12,6 +12,7 @@ use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::Files;
 use std::{
     collections::BTreeMap,
+    ffi::OsString,
     fs,
     os::unix::prelude::OsStrExt,
     path::{Path, PathBuf},
@@ -21,7 +22,7 @@ use walkdir::WalkDir;
 use xor_name::XorName;
 
 pub(crate) struct ChunkedFile {
-    pub file_name: String,
+    pub file_name: OsString,
     pub chunks: Vec<(XorName, PathBuf)>,
 }
 
@@ -45,15 +46,7 @@ pub(crate) async fn chunk_path(
             let path_as_bytes = entry.path().as_os_str().as_bytes();
             let _path_xor = XorName::from_content(path_as_bytes);
 
-            if let Some(file_name) = entry.file_name().to_str() {
-                Some((file_name.to_string(), entry.into_path()))
-            } else {
-                println!(
-                    "Skipping file {:?} as it is not valid UTF-8.",
-                    entry.file_name()
-                );
-                None
-            }
+            Some((entry.file_name().to_owned(), entry.into_path()))
         })
         .collect::<Vec<_>>();
 
