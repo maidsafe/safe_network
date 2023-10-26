@@ -369,6 +369,14 @@ impl Network {
 
                     warn!("No holder of record '{pretty_key:?}' found. Retrying the fetch ...",);
                 }
+                Err(Error::SplitRecord { result_map }) => {
+                    error!("Getting record {pretty_key:?} attempts #{verification_attempts}/{total_attempts} , encountered split");
+
+                    if verification_attempts >= total_attempts {
+                        return Err(Error::SplitRecord { result_map });
+                    }
+                    warn!("Fetched split Record '{pretty_key:?}' from network!. Retrying...",);
+                }
                 Err(error) => {
                     error!("Getting record {pretty_key:?} attempts #{verification_attempts}/{total_attempts} , encountered {error:?}");
 
