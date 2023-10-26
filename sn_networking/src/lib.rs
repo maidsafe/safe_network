@@ -242,7 +242,7 @@ impl Network {
                 .cmp(&record_address.distance(&b))
         });
 
-        close_nodes.truncate(CLOSE_GROUP_SIZE);
+        close_nodes.truncate(close_group_majority());
 
         let request = Request::Query(Query::GetStoreCost(record_address.clone()));
         let responses = self
