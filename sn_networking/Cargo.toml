@@ -40,5 +40,7 @@ xor_name = "5.0.0"
 
 [dev-dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
+# add rand to libp2p
+libp2p-identity = { version="0.2.7", features = ["rand"] }
 quickcheck = "1.0.3"
 eyre = "0.6.8"

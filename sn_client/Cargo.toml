@@ -44,3 +44,5 @@ xor_name = "5.0.0"
 
 [dev-dependencies]
 eyre = "0.6.8"
+# add rand to libp2p
+libp2p-identity = { version="0.2.7", features = ["rand"] }
