@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698330166385,
+  "lastUpdate": 1698330168672,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29821,6 +29821,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "13c5b36b84701f62317b38fd8109de3b49f45a9a",
+          "message": "fix: sn_testnet build check was missing rand dep",
+          "timestamp": "2023-10-26T15:10:19+02:00",
+          "tree_id": "2e63b206332b2a94701684e3ba139f3f5e796420",
+          "url": "https://github.com/maidsafe/safe_network/commit/13c5b36b84701f62317b38fd8109de3b49f45a9a"
+        },
+        "date": 1698330167918,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 217,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 105,
             "unit": "MB"
           }
         ]
