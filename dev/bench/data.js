@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698326060896,
+  "lastUpdate": 1698328206446,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "43b062a0f43c765398f5d2ede773e4c52bea3280",
-          "message": "fix: rename UserRights to UserPermissions",
-          "timestamp": "2023-06-28T19:55:42+09:00",
-          "tree_id": "a4ca7508f40b62b2e0d55e443c9f9537d71b557f",
-          "url": "https://github.com/maidsafe/safe_network/commit/43b062a0f43c765398f5d2ede773e4c52bea3280"
-        },
-        "date": 1687954028903,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.07411997666473122,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6741016711683587,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 20.25093607434352,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 20.77307096598554,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "13c5b36b84701f62317b38fd8109de3b49f45a9a",
+          "message": "fix: sn_testnet build check was missing rand dep",
+          "timestamp": "2023-10-26T15:10:19+02:00",
+          "tree_id": "2e63b206332b2a94701684e3ba139f3f5e796420",
+          "url": "https://github.com/maidsafe/safe_network/commit/13c5b36b84701f62317b38fd8109de3b49f45a9a"
+        },
+        "date": 1698328203500,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.14277881309589202,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.29162603407226334,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 20.051558410402478,
             "unit": "MiB/s"
           }
         ]
