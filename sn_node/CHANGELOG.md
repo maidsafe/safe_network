@@ -1885,6 +1885,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.96.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.10...sn_node-v0.96.11) - 2023-10-26
+
+### Added
+- replicate Spend/Register with same key but different content
+
+### Other
+- Revert "ci: Register test negation"
+- expand replication range
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
