@@ -277,9 +277,15 @@ async fn upload_files(
         .append(true)
         .open(file_names_path)?;
     for (addr, file_name) in uploaded_file_info.iter() {
-        println!("\"{}\" {:x}", file_name, addr);
-        info!("Uploaded {} to {:x}", file_name, addr);
-        writeln!(file, "{:x}: {}", addr, file_name)?;
+        if let Some(file_name) = file_name.to_str() {
+            println!("\"{file_name}\" {addr:x}");
+            info!("Uploaded {file_name} to {addr:x}");
+            writeln!(file, "{addr:x}: {file_name}")?;
+        } else {
+            println!("\"{file_name}\" {addr:x}");
+            info!("Uploaded {file_name:?} to {addr:x}");
+            writeln!(file, "{addr:x}: {file_name:?}")?;
+        }
     }
     file.flush()?;
 
