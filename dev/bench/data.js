@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698331870941,
+  "lastUpdate": 1698331872913,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29855,6 +29855,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 105,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4dee4ef0b295187318dec1611620af1e2972a660",
+          "message": "fix: throw out SplitRecord error for the later on merge",
+          "timestamp": "2023-10-26T13:26:34Z",
+          "tree_id": "048d2e167431e753de8c9695f490350b64f41abb",
+          "url": "https://github.com/maidsafe/safe_network/commit/4dee4ef0b295187318dec1611620af1e2972a660"
+        },
+        "date": 1698331872484,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 153,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 61,
             "unit": "MB"
           }
         ]
