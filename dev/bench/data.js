@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698330168672,
+  "lastUpdate": 1698331129906,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "1788a54c5784a4887ae6baf855608b100329c5d9",
-          "message": "feat(node): add missing send_event calls",
-          "timestamp": "2023-06-29T08:22:11+09:00",
-          "tree_id": "ac50548760405b70f6180a0c40bc641ddda5865e",
-          "url": "https://github.com/maidsafe/safe_network/commit/1788a54c5784a4887ae6baf855608b100329c5d9"
-        },
-        "date": 1687998902824,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06350783459956434,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5973141362231279,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 19.27575544450177,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 20.051558410402478,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4dee4ef0b295187318dec1611620af1e2972a660",
+          "message": "fix: throw out SplitRecord error for the later on merge",
+          "timestamp": "2023-10-26T13:26:34Z",
+          "tree_id": "048d2e167431e753de8c9695f490350b64f41abb",
+          "url": "https://github.com/maidsafe/safe_network/commit/4dee4ef0b295187318dec1611620af1e2972a660"
+        },
+        "date": 1698331127878,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.16610257743857462,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.41838196490392787,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 21.52956275264833,
             "unit": "MiB/s"
           }
         ]
