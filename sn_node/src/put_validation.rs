@@ -388,16 +388,16 @@ impl Node {
     }
 
     /// Gets CashNotes out of a Payment, this includes network verifications of the Transfer.
-    /// Return the CashNotes corresponding to our wallet and the ones corresponding to network royalties payment.
+    /// Return the CashNotes corresponding to our wallet and the trasfers corresponding to network royalties payment.
     async fn cash_notes_from_payment(
         &self,
         payment: &Vec<Transfer>,
         wallet: &LocalWallet,
         pretty_key: PrettyPrintRecordKey<'static>,
-    ) -> Result<(NanoTokens, Vec<CashNote>, Vec<CashNote>), ProtocolError> {
+    ) -> Result<(NanoTokens, Vec<CashNote>, Vec<Transfer>), ProtocolError> {
         let royalties_pk = *NETWORK_ROYALTIES_PK;
         let mut cash_notes = vec![];
-        let mut royalties_cash_notes = vec![];
+        let mut royalties_transfers = vec![];
         let mut received_fee = NanoTokens::zero();
 
         for transfer in payment {
@@ -426,7 +426,16 @@ impl Node {
                             "{} network royalties payment cash notes found for record {pretty_key} for a total value of {received_royalties:?}",
                             cash_notes.len()
                         );
-                        royalties_cash_notes.extend(cash_notes);
+                        let encrypted_cashnote_redemptions = cash_notes
+                            .into_iter()
+                            .map(Transfer::transfers_from_cash_note)
+                            .collect::<Result<Vec<Transfer>, sn_transfers::Error>>()
+                            .map_err(|err| {
+                                error!("Error generating royalty transfer: {err:?}");
+                                ProtocolError::FailedToEncryptTransfer
+                            })?;
+
+                        royalties_transfers.extend(encrypted_cashnote_redemptions);
                         received_fee = received_fee
                             .checked_add(received_royalties)
                             .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
@@ -448,7 +457,7 @@ impl Node {
                 .checked_add(received_fee_to_our_node)
                 .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
 
-            Ok((received_fee, cash_notes, royalties_cash_notes))
+            Ok((received_fee, cash_notes, royalties_transfers))
         }
     }
 
