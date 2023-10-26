@@ -10,7 +10,7 @@ use crate::error::{Error, Result};
 use bls::PublicKey;
 use serde::{Deserialize, Serialize};
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
-use sn_transfers::{CashNote, UniquePubkey};
+use sn_transfers::{CashNote, UniquePubkey, Transfer};
 use tokio::sync::broadcast;
 
 const NODE_EVENT_CHANNEL_SIZE: usize = 10_000;
@@ -71,8 +71,8 @@ pub enum NodeEvent {
     TransferNotif {
         /// Public key the transfer notification is about
         key: PublicKey,
-        /// The cash notes
-        cash_notes: Vec<CashNote>,
+        /// The transfers
+        transfers: Vec<Transfer>,
     },
 }
 
