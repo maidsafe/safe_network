@@ -207,7 +207,7 @@ mod tests {
         //random peer_id
         let peer_id = PeerId::random();
         let mut replication_fetcher = ReplicationFetcher::new(peer_id);
-        let locally_stored_keys = HashSet::new();
+        let locally_stored_keys = HashMap::new();
 
         let mut incoming_keys = Vec::new();
         (0..MAX_PARALLEL_FETCH * 2).for_each(|_| {
