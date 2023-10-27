@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698391434983,
+  "lastUpdate": 1698391437067,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29889,6 +29889,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 61,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "16bbb9c84e4742ea2fef7587ed225f511723df00",
+          "message": "feat(networking): adjust reverification times\n\nIncrease the minimum, to increase the chance the data will actually be\nPUT on a node",
+          "timestamp": "2023-10-27T06:09:48Z",
+          "tree_id": "4f54fd2edb6b6451162ef84d698017bc0b47a962",
+          "url": "https://github.com/maidsafe/safe_network/commit/16bbb9c84e4742ea2fef7587ed225f511723df00"
+        },
+        "date": 1698391436291,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 172,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 70,
             "unit": "MB"
           }
         ]
