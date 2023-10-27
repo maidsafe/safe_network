@@ -4328,7 +4328,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.95.10"
+version = "0.95.11"
 dependencies = [
  "async-trait",
  "bincode",
@@ -4384,7 +4384,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.9.9"
+version = "0.9.10"
 dependencies = [
  "async-trait",
  "blsttc",
@@ -4482,7 +4482,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.8.6"
+version = "0.8.7"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4544,7 +4544,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.14.7"
+version = "0.14.8"
 dependencies = [
  "assert_fs",
  "bincode",

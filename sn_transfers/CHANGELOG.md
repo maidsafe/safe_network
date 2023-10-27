@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.8](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.7...sn_transfers-v0.14.8) - 2023-10-27
+
+### Added
+- *(rpc_client)* show total accumulated balance when decrypting transfers received
+
 ## [0.14.7](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.6...sn_transfers-v0.14.7) - 2023-10-26
 
 ### Fixed

@@ -60,12 +60,12 @@ self_encryption = "~0.28.5"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_build_info = { path="../sn_build_info", version = "0.1.2" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.1.8" }
-sn_client = { path = "../sn_client", version = "0.95.10" }
+sn_client = { path = "../sn_client", version = "0.95.11" }
 sn_logging = { path = "../sn_logging", version = "0.2.14" }
-sn_networking = { path = "../sn_networking", version = "0.9.9" }
-sn_protocol = { path = "../sn_protocol", version = "0.8.6" }
+sn_networking = { path = "../sn_networking", version = "0.9.10" }
+sn_protocol = { path = "../sn_protocol", version = "0.8.7" }
 sn_registers = { path = "../sn_registers", version = "0.3.3" }
-sn_transfers = { path = "../sn_transfers", version = "0.14.7" }
+sn_transfers = { path = "../sn_transfers", version = "0.14.8" }
 thiserror = "1.0.23"
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tokio-stream = { version = "~0.1.12" }
