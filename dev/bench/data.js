@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698406437363,
+  "lastUpdate": 1698406438984,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29991,6 +29991,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7bee9d98d25559fd84c00f6c930f35ffcb2a1098",
+          "message": "feat(rpc_client): show total accumulated balance when decrypting transfers received",
+          "timestamp": "2023-10-27T13:03:04+02:00",
+          "tree_id": "e33de2264bc2c628705eb506f9077c7818fbe0bb",
+          "url": "https://github.com/maidsafe/safe_network/commit/7bee9d98d25559fd84c00f6c930f35ffcb2a1098"
+        },
+        "date": 1698406438565,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 156,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 48,
             "unit": "MB"
           }
         ]
