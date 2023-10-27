@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698394070737,
+  "lastUpdate": 1698394072184,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -29923,6 +29923,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 70,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "d20fb55b73204c6a79a426f76cf6ffa6628f009c",
+          "message": "chore: update libp2p req/resp + autonat dep",
+          "timestamp": "2023-10-27T06:57:58Z",
+          "tree_id": "3688e90c0df5ef8ccb93b1e585c75b695a2932b1",
+          "url": "https://github.com/maidsafe/safe_network/commit/d20fb55b73204c6a79a426f76cf6ffa6628f009c"
+        },
+        "date": 1698394071800,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 161,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 64,
             "unit": "MB"
           }
         ]
