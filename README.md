@@ -94,7 +94,7 @@ cargo run --release --example registers -- --user bob --reg-nickname myregister
 
 - Query basic node info
 ```
-$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 info
+$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 info
 Node info:
 ===================
 RPC endpoint: http://127.0.0.1:12001
@@ -107,7 +107,7 @@ Time since last restart: 650s
 
 - Query info about node's connections to the network:
 ```
-$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 netinfo
+$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 netinfo
 Node's connections to the Network:
 
 Connected peers:
@@ -129,19 +129,19 @@ Listener: /ip4/172.17.0.1/udp/47117/quic-v1
 
 - Restarting/Updating/Stopping a node
 ```
-$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 restart 5000
+$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 restart 5000
 Node successfully received the request to restart in 5s
 
-$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 stop 6000
+$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 stop 6000
 Node successfully received the request to stop in 6s
 
-$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 update 7000
+$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 update 7000
 Node successfully received the request to try to update in 7s
 ```
 
 - Listening to network royalties payments events
 ```
-$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 transfers
+$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 transfers
 Listening to transfers notifications... (press Ctrl+C to exit)
 
 New transfer notification received for PublicKey(0c54..5952), containing 1 cash note/s.
@@ -154,7 +154,7 @@ CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
 
 A path to local disk where to store royalties payments cash notes received can be provided as well, e.g.:
 ```
-$ cargo run --release --example safenode_rpc_client -- 127.0.0.1:12001 transfers ./royalties-cash-notes
+$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 transfers ./royalties-cash-notes
 Listening to transfers notifications... (press Ctrl+C to exit)
 Writing cash notes to: ./royalties-cash-notes
 
