@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698390691008,
+  "lastUpdate": 1698391434983,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "f356c09f241fee248d154e3573d84382a71e5f61",
-          "message": "fix: missing quote",
-          "timestamp": "2023-06-20T11:29:33+09:00",
-          "tree_id": "a8b5feddff665055ef151e298211c7c8d0f4ab11",
-          "url": "https://github.com/maidsafe/safe_network/commit/f356c09f241fee248d154e3573d84382a71e5f61"
-        },
-        "date": 1687229325044,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 9.61,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "129f4ca8e2831f46dc42ef1507e5afcd5cdef7e0",
           "message": "fix: update the safe files upload cmd",
           "timestamp": "2023-06-20T12:04:43+09:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 79,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "16bbb9c84e4742ea2fef7587ed225f511723df00",
+          "message": "feat(networking): adjust reverification times\n\nIncrease the minimum, to increase the chance the data will actually be\nPUT on a node",
+          "timestamp": "2023-10-27T06:09:48Z",
+          "tree_id": "4f54fd2edb6b6451162ef84d698017bc0b47a962",
+          "url": "https://github.com/maidsafe/safe_network/commit/16bbb9c84e4742ea2fef7587ed225f511723df00"
+        },
+        "date": 1698391434210,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 87,
             "unit": "MB"
           }
         ]
