@@ -19,7 +19,7 @@ path = "src/bin/faucet/main.rs"
 
 [[bin]]
 name = "safenode_rpc_client"
-path = "examples/safenode_rpc_client.rs"
+path = "src/bin/safenode_rpc_client.rs"
 
 [features]
 default=["metrics"]
