@@ -13,7 +13,8 @@ use sn_client::Files;
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
-    fs,
+    fs::{self, File},
+    io::Write,
     os::unix::prelude::OsStrExt,
     path::{Path, PathBuf},
     time::Instant,
@@ -21,7 +22,9 @@ use std::{
 use walkdir::WalkDir;
 use xor_name::XorName;
 
-type PathXorName = String;
+// the hex encoded XorName of the entire path's bytes
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
+struct PathXorName(String);
 
 /// Info about a file that has been chunked
 pub(crate) struct ChunkedFile {
@@ -32,8 +35,8 @@ pub(crate) struct ChunkedFile {
 pub(crate) struct ChunkManager {
     files_api: Files,
     artifacts_dir: PathBuf,
-    // file_xor_addr, chunked_files
     chunked_files: BTreeMap<PathXorName, ChunkedFile>,
+    uploaded_files: Vec<(OsString, XorName)>,
 }
 
 impl ChunkManager {
@@ -42,6 +45,7 @@ impl ChunkManager {
             files_api,
             artifacts_dir: root_dir.join("chunk_artifacts"),
             chunked_files: Default::default(),
+            uploaded_files: Default::default(),
         }
     }
 
@@ -65,7 +69,11 @@ impl ChunkManager {
 
                 let _ = to_chunk_files.insert(path_xor.clone(), entry.clone().into_path());
 
-                Some((entry.file_name().to_owned(), path_xor, entry.into_path()))
+                Some((
+                    entry.file_name().to_owned(),
+                    PathXorName(path_xor),
+                    entry.into_path(),
+                ))
             })
             .collect::<Vec<_>>();
 
@@ -110,7 +118,7 @@ impl ChunkManager {
                         let original_file_name = files_path.file_name()?.to_owned();
 
                         Some((
-                            path_xor.clone(),
+                            PathXorName(path_xor.clone()),
                             ChunkedFile {
                                 file_name: original_file_name.clone(),
                                 file_xor_addr,
@@ -141,12 +149,12 @@ impl ChunkManager {
         let artifacts_dir = &self.artifacts_dir;
         let chunked_files = files_to_chunk
             .par_iter()
-            // filter all the resumed ones
+            // filter out all the resumed ones
             .filter(|(_,path_xor, _)| !to_filter.contains(path_xor))
             .filter_map(|(original_file_name, path_xor, path)| {
                 // Each file using individual dir for temp SE chunks.
             let file_chunks_dir = {
-                let file_chunks_dir = artifacts_dir.join(path_xor);
+                let file_chunks_dir = artifacts_dir.join(&path_xor.0);
                 match fs::create_dir_all(&file_chunks_dir) {
                     Ok(_) => file_chunks_dir,
                     Err(err) => {
@@ -157,7 +165,7 @@ impl ChunkManager {
                         artifacts_dir.clone()
                     }
                 }
-                };
+            };
 
                 match self.files_api.chunk_file(path, &file_chunks_dir) {
                     Ok((file_xor_addr, _size, chunks)) => {
@@ -171,6 +179,20 @@ impl ChunkManager {
                 }
             })
             .collect::<BTreeMap<_, _>>();
+        // write metadata
+        let _ = chunked_files
+            .par_iter()
+            .filter_map(|(path_xor, chunked_file)| {
+                let metadata_path = artifacts_dir.join(&path_xor.0).join("metadata");
+                let metadata = bincode::serialize(&chunked_file.file_xor_addr).ok()?;
+                let mut metadat_file = File::create(metadata_path).ok()?;
+                metadat_file.write_all(&metadata).ok()?;
+                error!(
+                    "Failed to write metadata for PathXorName: {path_xor:?}, file_xor_addr: {:?}",
+                    chunked_file.file_xor_addr
+                );
+                Some(())
+            });
 
         // todo: does this still work?
         if chunked_files.is_empty() {
@@ -194,13 +216,65 @@ impl ChunkManager {
             .collect()
     }
 
-    pub(crate) fn mark_finished(&mut self, finished_chunks: &[XorName]) {
-        let finished_chunks = finished_chunks.iter().collect::<BTreeSet<_>>();
-        self.chunked_files.values_mut().for_each(|chunked_files| {
-            chunked_files
-                .chunks
-                // if chunk is part of finished_chunk, return false to remove it
-                .retain(|(chunk, _)| !finished_chunks.contains(chunk))
-        });
+    pub(crate) fn mark_finished_all(&mut self) {
+        let all_chunks = self
+            .chunked_files
+            .values()
+            .flat_map(|chunked_file| &chunked_file.chunks)
+            .map(|(chunk, _)| *chunk)
+            .collect::<Vec<_>>();
+        self.mark_finished(all_chunks.into_iter());
+    }
+
+    pub(crate) fn mark_finished(&mut self, finished_chunks: impl Iterator<Item = XorName>) {
+        let finished_chunks = finished_chunks.collect::<BTreeSet<_>>();
+        // remove those files
+        let _ = self
+            .chunked_files
+            .par_iter()
+            .flat_map(|(_, chunked_file)| &chunked_file.chunks)
+            .filter_map(|(chunk_xor, chunk_path)| {
+                if finished_chunks.contains(chunk_xor) {
+                    fs::remove_file(chunk_path)
+                        .map_err(|_err| {
+                            error!("Failed to remove SE chunk {chunk_xor} from {chunk_path:?}");
+                        })
+                        .ok()?;
+                }
+                Some(())
+            });
+        let mut entire_file_is_done = BTreeSet::new();
+        // remove the entries from the struct
+        self.chunked_files
+            .iter_mut()
+            .for_each(|(path_xor, chunked_file)| {
+                chunked_file
+                    .chunks
+                    // if chunk is part of finished_chunk, return false to remove it
+                    .retain(|(chunk_xor, _)| !finished_chunks.contains(chunk_xor));
+                if chunked_file.chunks.is_empty() {
+                    entire_file_is_done.insert(path_xor.clone());
+                }
+            });
+
+        if !entire_file_is_done.is_empty() {
+            let artifacts_dir = &self.artifacts_dir;
+
+            for path_xor in &entire_file_is_done {
+                if let Some(chunked_file) = self.chunked_files.remove(path_xor) {
+                    self.uploaded_files
+                        .push((chunked_file.file_name, chunked_file.file_xor_addr));
+                }
+            }
+            entire_file_is_done.par_iter().for_each(|path_xor| {
+                let file_chunks_dir = artifacts_dir.join(&path_xor.0);
+                if let Err(err) = fs::remove_dir_all(&file_chunks_dir) {
+                    error!("Error while cleaning up {file_chunks_dir:?}, err: {err:?}");
+                }
+            })
+        }
+    }
+    pub(crate) fn completed_files(&self) -> &Vec<(OsString, XorName)> {
+        &self.uploaded_files
     }
 }
