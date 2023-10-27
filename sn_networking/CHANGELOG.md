@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.8...sn_networking-v0.9.9) - 2023-10-27
+
+### Added
+- *(networking)* adjust reverification times
+- *(sn_networking)* deterministic store cost order
+
 ## [0.9.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.7...sn_networking-v0.9.8) - 2023-10-26
 
 ### Added
