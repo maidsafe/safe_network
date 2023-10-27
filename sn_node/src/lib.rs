@@ -59,6 +59,7 @@ pub use self::{
 };
 
 use crate::error::Result;
+use bytes::Bytes;
 use libp2p::PeerId;
 use sn_networking::{Network, SwarmLocalState};
 use sn_protocol::NetworkAddress;
@@ -126,7 +127,7 @@ impl RunningNode {
     }
 
     /// Publish a message on a given gossipsub topic
-    pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
+    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) -> Result<()> {
         self.network.publish_on_topic(topic_id, msg)?;
         Ok(())
     }

@@ -12,6 +12,7 @@ use crate::{
     sort_peers_by_address, GetQuorum, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
     REPLICATE_RANGE,
 };
+use bytes::Bytes;
 use libp2p::{
     kad::{store::RecordStore, Quorum, Record, RecordKey},
     swarm::dial_opts::DialOpts,
@@ -139,7 +140,7 @@ pub enum SwarmCmd {
         /// Topic to publish on
         topic_id: String,
         /// Raw bytes of the message to publish
-        msg: Vec<u8>,
+        msg: Bytes,
     },
 }
 
