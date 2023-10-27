@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698393477542,
+  "lastUpdate": 1698394070737,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "129f4ca8e2831f46dc42ef1507e5afcd5cdef7e0",
-          "message": "fix: update the safe files upload cmd",
-          "timestamp": "2023-06-20T12:04:43+09:00",
-          "tree_id": "acf16367d20038f0eadabe7822d075017b342284",
-          "url": "https://github.com/maidsafe/safe_network/commit/129f4ca8e2831f46dc42ef1507e5afcd5cdef7e0"
-        },
-        "date": 1687231350231,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 11.11,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "6cca14f594d844bfe254132bc6d44cf4385209f9",
           "message": "fix: update the safe files upload cmd removing more nonsense",
           "timestamp": "2023-06-20T12:24:43+09:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "d20fb55b73204c6a79a426f76cf6ffa6628f009c",
+          "message": "chore: update libp2p req/resp + autonat dep",
+          "timestamp": "2023-10-27T06:57:58Z",
+          "tree_id": "3688e90c0df5ef8ccb93b1e585c75b695a2932b1",
+          "url": "https://github.com/maidsafe/safe_network/commit/d20fb55b73204c6a79a426f76cf6ffa6628f009c"
+        },
+        "date": 1698394070373,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 75,
             "unit": "MB"
           }
         ]
