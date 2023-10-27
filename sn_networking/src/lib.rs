@@ -46,12 +46,12 @@ use libp2p::{
 use rand::Rng;
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
-    storage::{RecordHeader, RecordKind},
+    storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::MainPubkey;
 use sn_transfers::NanoTokens;
-use std::{collections::HashSet, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
@@ -61,6 +61,10 @@ use tracing::warn;
 /// The peer should be present among the CLOSE_GROUP_SIZE if we're fetching the close_group(peer)
 /// The size has been set to 5 for improved performance.
 pub const CLOSE_GROUP_SIZE: usize = 5;
+
+/// The range of peers that will be considered as close to a record target,
+/// that a replication of the record shall be sent/accepted to/by the peer.
+pub const REPLICATE_RANGE: usize = CLOSE_GROUP_SIZE * 2;
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -368,8 +372,17 @@ impl Network {
 
                     warn!("No holder of record '{pretty_key:?}' found. Retrying the fetch ...",);
                 }
+                Err(Error::SplitRecord { result_map }) => {
+                    error!("Getting record {pretty_key:?} attempts #{verification_attempts}/{total_attempts} , encountered split");
+
+                    if verification_attempts >= total_attempts {
+                        return Err(Error::SplitRecord { result_map });
+                    }
+                    warn!("Fetched split Record '{pretty_key:?}' from network!. Retrying...",);
+                }
                 Err(error) => {
-                    error!("{error:?}");
+                    error!("Getting record {pretty_key:?} attempts #{verification_attempts}/{total_attempts} , encountered {error:?}");
+
                     if verification_attempts >= total_attempts {
                         break;
                     }
@@ -525,7 +538,9 @@ impl Network {
     }
 
     /// Returns the Addresses of all the locally stored Records
-    pub async fn get_all_local_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
+    pub async fn get_all_local_record_addresses(
+        &self,
+    ) -> Result<HashMap<NetworkAddress, RecordType>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetAllLocalRecordAddresses { sender })?;
 
@@ -538,7 +553,7 @@ impl Network {
     pub fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: Vec<(NetworkAddress, RecordType)>,
     ) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { holder, keys })
     }

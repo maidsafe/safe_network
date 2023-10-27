@@ -266,7 +266,6 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
 }
 
 #[tokio::test]
-#[ignore = "registers dont currentlyt merge well. Ignoring until stable"]
 async fn storage_payment_register_creation_succeeds() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 

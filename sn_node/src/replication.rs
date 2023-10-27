@@ -12,9 +12,10 @@ use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE};
+use sn_networking::{sort_peers_by_address, GetQuorum, REPLICATE_RANGE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
+    storage::RecordType,
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -66,16 +67,16 @@ impl Node {
             all_records.len()
         );
 
-        let mut replicate_to: BTreeMap<PeerId, Vec<NetworkAddress>> = Default::default();
+        let mut replicate_to: BTreeMap<PeerId, Vec<(NetworkAddress, RecordType)>> =
+            Default::default();
 
         if is_removal {
             let _ = all_peers_set.insert(peer_id);
         }
         let all_peers: Vec<_> = all_peers_set.iter().cloned().collect();
 
-        for key in all_records {
-            let sorted_based_on_key =
-                sort_peers_by_address(&all_peers, &key, CLOSE_GROUP_SIZE + 1)?;
+        for (key, record_type) in all_records {
+            let mut sorted_based_on_key = sort_peers_by_address(&all_peers, &key, REPLICATE_RANGE)?;
             let sorted_peers_pretty_print: Vec<_> = sorted_based_on_key
                 .iter()
                 .map(|&peer_id| {
@@ -88,29 +89,19 @@ impl Node {
 
             if sorted_based_on_key.contains(&&peer_id) {
                 trace!("replication: close for {key:?} are: {sorted_peers_pretty_print:?}");
-                let target_peer = if is_removal {
-                    // For dead peer, only replicate to farthest close_group peer,
-                    // when the dead peer was one of the close_group peers to the record.
-                    if let Some(&farthest_peer) = sorted_based_on_key.last() {
-                        if *farthest_peer != peer_id {
-                            *farthest_peer
-                        } else {
-                            continue;
-                        }
-                    } else {
-                        continue;
-                    }
+                let target_peers: Vec<_> = if is_removal {
+                    // For dead peer, replicate to close peers except the dead one.
+                    sorted_based_on_key.retain(|target| **target != peer_id);
+                    sorted_based_on_key.to_vec()
                 } else {
                     // For new peer, always replicate to it when it is close_group of the record.
-                    if Some(&&peer_id) != sorted_based_on_key.last() {
-                        peer_id
-                    } else {
-                        continue;
-                    }
+                    vec![&peer_id]
                 };
 
-                let keys_to_replicate = replicate_to.entry(target_peer).or_default();
-                keys_to_replicate.push(key.clone());
+                for target_peer in target_peers {
+                    let keys_to_replicate = replicate_to.entry(*target_peer).or_default();
+                    keys_to_replicate.push((key.clone(), record_type.clone()));
+                }
             }
         }
 
@@ -133,7 +124,7 @@ impl Node {
     pub(crate) fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: Vec<(NetworkAddress, RecordType)>,
     ) -> Result<()> {
         self.network.add_keys_to_replication_fetcher(holder, keys)?;
         Ok(())
@@ -206,7 +197,7 @@ impl Node {
         &self,
         our_address: &NetworkAddress,
         peer_id: &PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: Vec<(NetworkAddress, RecordType)>,
     ) -> Result<()> {
         trace!(
             "Sending a replication list of {} keys to {peer_id:?} keys: {keys:?}",

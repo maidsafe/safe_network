@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_networking"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.9.6"
+version = "0.9.8"
 
 [features]
 default=[]
@@ -30,7 +30,7 @@ prometheus-client = { version = "0.21.2", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_protocol = { path = "../sn_protocol", version = "0.8.5" }
+sn_protocol = { path = "../sn_protocol", version = "0.8.6" }
 sn_transfers = { path = "../sn_transfers", version = "0.14.7" }
 sysinfo = { version = "0.29.0", default-features = false, optional = true }
 thiserror = "1.0.23"
@@ -40,5 +40,7 @@ xor_name = "5.0.0"
 
 [dev-dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
+# add rand to libp2p
+libp2p-identity = { version="0.2.7", features = ["rand"] }
 quickcheck = "1.0.3"
 eyre = "0.6.8"

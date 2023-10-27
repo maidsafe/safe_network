@@ -47,12 +47,14 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
         chunks_dir.path().to_path_buf(),
     )?;
 
-    println!("Paying for {} random addresses...", chunks.len());
+    println!("Paying for {} random addresses... {chunks:?}", chunks.len());
     let prev_rewards_balance = current_rewards_balance()?;
 
     let (_file_addr, rewards_paid, _royalties_fees) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
         .await?;
+
+    println!("Paid {rewards_paid:?} total rewards for the chunks");
 
     let expected_rewards_balance = prev_rewards_balance
         .checked_add(rewards_paid)
@@ -170,6 +172,7 @@ async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
 
     while iteration < 15 {
         iteration += 1;
+        println!("Current iteration {iteration}");
         let new_rewards_balance = current_rewards_balance()?;
         if expected_rewards_balance == new_rewards_balance {
             return Ok(());
@@ -193,10 +196,13 @@ fn current_rewards_balance() -> Result<NanoTokens> {
         let path = entry?.path();
         let wallet = LocalWallet::try_load_from(&path)?;
         let balance = wallet.balance();
+        println!("Node's wallet {path:?} currentln have balance of {balance:?}");
         total_rewards = total_rewards
             .checked_add(balance)
             .ok_or_else(|| eyre!("Faied to sum up rewards balance"))?;
     }
+
+    println!("Current total balance is {total_rewards:?}");
 
     Ok(total_rewards)
 }

@@ -281,8 +281,8 @@ impl Client {
             .await;
         let record = match maybe_record {
             Ok(r) => r,
-            Err(NetworkError::SplitRecord(map)) => {
-                return merge_split_register_records(address, &map)
+            Err(NetworkError::SplitRecord { result_map }) => {
+                return merge_split_register_records(address, &result_map)
             }
             Err(e) => {
                 warn!("Failed to get record at {address:?} from the network: {e:?}");
@@ -442,19 +442,7 @@ impl Client {
     /// Verify if a `Register` is stored by expected nodes on the network.
     pub async fn verify_register_stored(&self, address: RegisterAddress) -> Result<SignedRegister> {
         info!("Verifying register: {address:?}");
-        let key = NetworkAddress::from_register_address(address).to_record_key();
-        let record = self
-            .network
-            .get_record_from_network(key, None, GetQuorum::All, false, Default::default())
-            .await?;
-
-        let header = RecordHeader::from_record(&record)?;
-        if let RecordKind::Register = header.kind {
-            let register = get_register_from_record(record)?;
-            Ok(register)
-        } else {
-            Err(ProtocolError::RecordKindMismatch(RecordKind::Register).into())
-        }
+        self.get_signed_register_from_network(address).await
     }
 
     /// Send a `SpendCashNote` request to the network
