@@ -264,9 +264,11 @@ impl<'a> Serialize for PrettyPrintRecordKey<'a> {
     where
         S: Serializer,
     {
-        // Use the `to_vec` function of the inner RecordKey to get the bytes
-        // and then serialize those bytes
-        self.key.to_vec().serialize(serializer)
+        let record_key_bytes = match &self.key {
+            Cow::Borrowed(borrowed_key) => borrowed_key.as_ref(),
+            Cow::Owned(owned_key) => owned_key.as_ref(),
+        };
+        record_key_bytes.serialize(serializer)
     }
 }
 
