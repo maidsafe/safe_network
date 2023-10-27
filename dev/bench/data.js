@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698406041098,
+  "lastUpdate": 1698406437363,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "80763c990efe5257fba9ec414008c457a7aa3fc4",
-          "message": "chore: reduce some log levels to make 'debug' more useful",
-          "timestamp": "2023-06-20T04:49:04Z",
-          "tree_id": "0485cc70acd1b07162723fcf639698cef9bc5448",
-          "url": "https://github.com/maidsafe/safe_network/commit/80763c990efe5257fba9ec414008c457a7aa3fc4"
-        },
-        "date": 1687240530489,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 75.06,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 77,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7bee9d98d25559fd84c00f6c930f35ffcb2a1098",
+          "message": "feat(rpc_client): show total accumulated balance when decrypting transfers received",
+          "timestamp": "2023-10-27T13:03:04+02:00",
+          "tree_id": "e33de2264bc2c628705eb506f9077c7818fbe0bb",
+          "url": "https://github.com/maidsafe/safe_network/commit/7bee9d98d25559fd84c00f6c930f35ffcb2a1098"
+        },
+        "date": 1698406436942,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 67,
             "unit": "MB"
           }
         ]
