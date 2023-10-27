@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698391437067,
+  "lastUpdate": 1698393477542,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "9efdfea08f0581c820bbc6f356c8292fb8a05de1",
-          "message": "feat(node): write secret key to disk and re-use",
-          "timestamp": "2023-06-29T15:45:30+01:00",
-          "tree_id": "3346b28f54b45fe9fd433cb7702ebfce65824676",
-          "url": "https://github.com/maidsafe/safe_network/commit/9efdfea08f0581c820bbc6f356c8292fb8a05de1"
-        },
-        "date": 1688054351875,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.07229263341098385,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7339117953024396,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 18.922025898685785,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 17.153725851663708,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "d20fb55b73204c6a79a426f76cf6ffa6628f009c",
+          "message": "chore: update libp2p req/resp + autonat dep",
+          "timestamp": "2023-10-27T06:57:58Z",
+          "tree_id": "3688e90c0df5ef8ccb93b1e585c75b695a2932b1",
+          "url": "https://github.com/maidsafe/safe_network/commit/d20fb55b73204c6a79a426f76cf6ffa6628f009c"
+        },
+        "date": 1698393475559,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.16854100492961765,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.57425393641424,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 17.804461152692934,
             "unit": "MiB/s"
           }
         ]
