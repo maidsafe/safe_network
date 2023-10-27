@@ -35,6 +35,7 @@ pub use self::{
 };
 
 use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
+use bytes::Bytes;
 use futures::future::select_all;
 use itertools::Itertools;
 use libp2p::{
@@ -282,7 +283,7 @@ impl Network {
     }
 
     /// Publish a msg on a given topic
-    pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
+    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::GossipsubPublish { topic_id, msg })?;
         Ok(())
     }

@@ -11,6 +11,7 @@ use super::{
     Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, ClientRegister, WalletClient,
 };
 use bls::{PublicKey, SecretKey, Signature};
+use bytes::Bytes;
 use indicatif::ProgressBar;
 use libp2p::{
     identity::Keypair,
@@ -585,7 +586,7 @@ impl Client {
     }
 
     /// Publish message on given topic
-    pub fn publish_on_topic(&self, topic_id: String, msg: Vec<u8>) -> Result<()> {
+    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) -> Result<()> {
         info!("Publishing msg on topic id: {topic_id}");
         self.network.publish_on_topic(topic_id, msg)?;
         Ok(())

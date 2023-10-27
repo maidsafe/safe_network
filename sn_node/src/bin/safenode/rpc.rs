@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use bytes::Bytes;
 use sn_node::RunningNode;
 
 use super::NodeCtrl;
@@ -208,7 +209,8 @@ impl SafeNode for SafeNodeRpcService {
         );
 
         let topic = &request.get_ref().topic;
-        let msg = &request.get_ref().msg;
+        // Convert the message from Vec<u8> to Bytes
+        let msg = Bytes::from(request.get_ref().msg.clone());
 
         match self
             .running_node

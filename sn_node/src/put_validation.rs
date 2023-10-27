@@ -12,6 +12,7 @@ use crate::{
     spends::{aggregate_spends, check_parent_spends},
     Marker,
 };
+use bytes::BytesMut;
 use libp2p::kad::{Record, RecordKey};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -505,8 +506,12 @@ impl Node {
                 let royalties_pk = *NETWORK_ROYALTIES_PK;
                 trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
                 let topic = TRANSFER_NOTIF_TOPIC.to_string();
-                let mut msg: Vec<u8> = royalties_pk.to_bytes().to_vec();
+                let royalties_pk_bytes = royalties_pk.to_bytes();
+                let mut msg = BytesMut::with_capacity(royalties_pk_bytes.len() + serialised.len());
+                msg.extend_from_slice(&royalties_pk_bytes);
                 msg.extend(serialised);
+
+                let msg = msg.freeze();
                 if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
                     debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
                 }
