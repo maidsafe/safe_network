@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698394072184,
+  "lastUpdate": 1698405021988,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "d4e88bfec5e40fdf8b8b596061dec6fd4081b407",
-          "message": "chore: various tidy up",
-          "timestamp": "2023-07-03T11:40:37+01:00",
-          "tree_id": "dcf1b29eb2f2822088c21154db2842c4ab0c500c",
-          "url": "https://github.com/maidsafe/safe_network/commit/d4e88bfec5e40fdf8b8b596061dec6fd4081b407"
-        },
-        "date": 1688383529034,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.07434509505499996,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7270209577535579,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 15.315259873720853,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 17.804461152692934,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "873469b2b743f77d49c262ece21ba75bf910c1fd",
+          "message": "refactor: make rpc client a bin",
+          "timestamp": "2023-10-27T10:12:59Z",
+          "tree_id": "cd19859e3c646059218aeb21397306397bef09a7",
+          "url": "https://github.com/maidsafe/safe_network/commit/873469b2b743f77d49c262ece21ba75bf910c1fd"
+        },
+        "date": 1698405019135,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.1675871128507379,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.6573464924995743,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 19.780982676491952,
             "unit": "MiB/s"
           }
         ]
