@@ -276,9 +276,8 @@ impl SwarmDriver {
                 // Only store record from Replication that close enough to us.
                 let all_peers = self.get_all_local_peers();
                 let keys_to_store = keys
-                    .iter()
+                    .into_iter()
                     .filter(|(key, _)| self.is_in_close_range(key, &all_peers))
-                    .cloned()
                     .collect();
                 #[allow(clippy::mutable_key_type)]
                 let all_keys = self
@@ -558,7 +557,6 @@ impl SwarmDriver {
                 // Hence push an event to notify that we've published a message
                 self.send_event(NetworkEvent::GossipsubMsgPublished {
                     topic: topic_id.clone(),
-                    msg: msg.clone(),
                 });
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
                 self.swarm
