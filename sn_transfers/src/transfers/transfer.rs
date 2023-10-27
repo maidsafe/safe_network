@@ -143,7 +143,7 @@ impl Transfer {
 
 /// Unspent Transaction (Tx) Output
 /// Information can be used by the Tx recipient of this output
-/// to check that they recieved money and to spend it
+/// to check that they received money and to spend it
 ///
 /// This struct contains sensitive information that should be kept secret
 /// so it should be encrypted to the recipient's public key (public address)

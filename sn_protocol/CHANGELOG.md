@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.6](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.5...sn_protocol-v0.8.6) - 2023-10-26
+
+### Added
+- replicate Spend/Register with same key but different content
+
+## [0.8.5](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.4...sn_protocol-v0.8.5) - 2023-10-26
+
+### Other
+- updated the following local packages: sn_registers, sn_transfers
+
+## [0.8.4](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.3...sn_protocol-v0.8.4) - 2023-10-26
+
+### Other
+- pass RecordKey by reference
+
 ## [0.8.3](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.2...sn_protocol-v0.8.3) - 2023-10-24
 
 ### Other

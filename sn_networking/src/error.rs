@@ -29,7 +29,7 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
-    #[error("Netowrk query timed out")]
+    #[error("Network query timed out")]
     QueryTimeout,
 
     #[error("Close group size must be a non-zero usize")]
@@ -73,7 +73,7 @@ pub enum Error {
     KademliaStoreError(#[from] kad::store::Error),
 
     #[error("A Kademlia event has been dropped: {0:?}")]
-    ReceivedKademliaEventDropped(kad::KademliaEvent),
+    ReceivedKademliaEventDropped(kad::Event),
 
     #[error("The oneshot::sender has been dropped")]
     SenderDropped(#[from] oneshot::error::RecvError),
@@ -112,8 +112,14 @@ pub enum Error {
     #[error("Gossipsub subscribe Error: {0}")]
     GossipsubSubscriptionError(#[from] SubscriptionError),
 
-    #[error("Split Record: {0:?}")]
-    SplitRecord(HashMap<XorName, (Record, HashSet<PeerId>)>),
+    // Avoid logging the whole `Record` content by accident
+    #[error("Split Record has {} different copies", result_map.len())]
+    SplitRecord {
+        result_map: HashMap<XorName, (Record, HashSet<PeerId>)>,
+    },
+
+    #[error("Record header is incorrect")]
+    InCorrectRecordHeader,
 }
 
 #[cfg(test)]

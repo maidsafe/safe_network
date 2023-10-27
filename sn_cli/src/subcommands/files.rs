@@ -249,7 +249,11 @@ async fn upload_files(
     let mut total_cost = NanoTokens::zero();
     let mut final_balance = file_api.wallet()?.balance();
     let now = Instant::now();
-    for chunks_batch in chunks_to_upload.chunks(batch_size) {
+
+    let chunks_batches = chunks_to_upload.chunks(batch_size);
+    let verify_as_we_upload = verify_store && chunks_batches.len() == 1;
+
+    for chunks_batch in chunks_batches {
         // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
         let (cost, new_balance) = match file_api
             .pay_for_chunks(chunks_batch.iter().map(|(name, _)| *name).collect())
@@ -274,7 +278,7 @@ async fn upload_files(
         for result in join_all(upload_chunks_in_parallel(
             file_api.clone(),
             chunks_batch.to_vec(),
-            false,
+            verify_as_we_upload,
             progress_bar.clone(),
             show_holders,
         ))
@@ -311,7 +315,7 @@ async fn upload_files(
     info!("New wallet balance: {final_balance}");
 
     // If we are not verifying, we can skip this
-    if verify_store {
+    if verify_store && !verify_as_we_upload {
         println!("**************************************");
         println!("*            Verification            *");
         println!("**************************************");

@@ -38,7 +38,7 @@ pub struct PeersArgs {
     /// Peers can also be provided by an environment variable (see below), but the
     /// command-line argument (`--peer`) takes precedence. To pass multiple peers with the
     /// environment variable, separate them with commas.
-    #[clap(long = "peer", value_name = "multiaddr", env = SAFE_PEERS_ENV, value_delimiter = ',', value_parser = parse_peer_addr)]
+    #[clap(long = "peer", value_name = "multiaddr", value_delimiter = ',', value_parser = parse_peer_addr)]
     pub peers: Vec<Multiaddr>,
 
     /// Specify the URL to fetch the network contacts from.
@@ -55,42 +55,61 @@ pub struct PeersArgs {
 /// The order of precedence for the bootstrap peers are `--peer` arg, `SAFE_PEERS` env variable, `local-discovery` flag
 /// and `network-contacts` flag respectively. The later ones are ignored if one of the prior option is used.
 pub async fn parse_peers_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
-    if !args.peers.is_empty() {
+    let mut peers = if !args.peers.is_empty() {
         info!("Using passed peers or SAFE_PEERS env variable");
-        Ok(args.peers)
+        args.peers
     } else if cfg!(feature = "local-discovery") {
         info!("No peers given. As `local-discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
-        Ok(vec![])
+        return Ok(vec![]);
     } else if cfg!(feature = "network-contacts") {
-        #[cfg(feature = "network-contacts")]
-        let peers = {
-            info!("Trying to fetch the bootstrap peers from {NETWORK_CONTACTS_URL}");
-            println!("Trying to fetch the bootstrap peers from {NETWORK_CONTACTS_URL}");
-            let url = args
-                .network_contacts_url
-                .unwrap_or(Url::parse(NETWORK_CONTACTS_URL)?);
-            let peers = get_bootstrap_peers_from_url(url)
-                .await
-                .wrap_err("Error while fetching bootstrap peers from Network contacts URL")?;
-
-            if peers.is_empty() {
-                return Err(color_eyre::eyre::eyre!(
-                    "Could not obtain a single valid multi-addr from URL {NETWORK_CONTACTS_URL}"
-                ));
-            } else {
-                Ok(peers)
+        match get_network_contacts(&args).await {
+            Ok(peers) => peers,
+            Err(err) => {
+                println!("Error {err:?} while fetching bootstrap peers from Network contacts URL");
+                vec![]
             }
-        };
-        // should not be reachable, but needed for the compiler to be happy.
-        #[cfg(not(feature = "network-contacts"))]
-        let peers = Ok(vec![]);
-
-        peers
+        }
     } else {
+        vec![]
+    };
+
+    if let Ok(safe_peers_str) = std::env::var(SAFE_PEERS_ENV) {
+        let peers_str = safe_peers_str.split(',');
+        for peer_str in peers_str {
+            match parse_peer_addr(peer_str) {
+                Ok(safe_peer) => peers.push(safe_peer),
+                Err(_) => println!("Failed to parse safe_peer from {peer_str:?}"),
+            }
+        }
+    }
+
+    if peers.is_empty() {
         let err_str = "No peers given, 'local-discovery' and 'network-contacts' feature flags are disabled. We cannot connect to the network.";
         error!("{err_str}");
         return Err(color_eyre::eyre::eyre!("{err_str}"));
-    }
+    };
+
+    Ok(peers)
+}
+
+// should not be reachable, but needed for the compiler to be happy.
+#[cfg(not(feature = "network-contacts"))]
+async fn get_network_contacts(_args: &PeersArgs) -> Result<Vec<Multiaddr>> {
+    Ok(vec![])
+}
+
+#[cfg(feature = "network-contacts")]
+async fn get_network_contacts(args: &PeersArgs) -> Result<Vec<Multiaddr>> {
+    info!("Trying to fetch the bootstrap peers from {NETWORK_CONTACTS_URL}");
+    println!("Trying to fetch the bootstrap peers from {NETWORK_CONTACTS_URL}");
+
+    let url = args
+        .network_contacts_url
+        .clone()
+        .unwrap_or(Url::parse(NETWORK_CONTACTS_URL)?);
+    get_bootstrap_peers_from_url(url)
+        .await
+        .wrap_err("Error while fetching bootstrap peers from Network contacts URL")
 }
 
 /// Parse strings like `1.2.3.4:1234` and `/ip4/1.2.3.4/tcp/1234` into a (TCP) multiaddr.

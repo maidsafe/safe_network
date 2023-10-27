@@ -43,14 +43,15 @@ use libp2p::{
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
+use rand::Rng;
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
-    storage::{RecordHeader, RecordKind},
+    storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::MainPubkey;
 use sn_transfers::NanoTokens;
-use std::{collections::HashSet, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
@@ -61,6 +62,10 @@ use tracing::warn;
 /// The size has been set to 5 for improved performance.
 pub const CLOSE_GROUP_SIZE: usize = 5;
 
+/// The range of peers that will be considered as close to a record target,
+/// that a replication of the record shall be sent/accepted to/by the peer.
+pub const REPLICATE_RANGE: usize = CLOSE_GROUP_SIZE * 2;
+
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
 pub const fn close_group_majority() -> usize {
@@ -69,8 +74,10 @@ pub const fn close_group_majority() -> usize {
     CLOSE_GROUP_SIZE / 2 + 1
 }
 
-/// Duration to wait for verification
-const REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_secs(3);
+/// Max duration to wait for verification
+const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(2000);
+/// Min duration to wait for verification
+const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(500);
 /// Number of attempts to verify a record
 const VERIFICATION_ATTEMPTS: usize = 3;
 /// Number of attempts to re-put a record
@@ -365,8 +372,17 @@ impl Network {
 
                     warn!("No holder of record '{pretty_key:?}' found. Retrying the fetch ...",);
                 }
+                Err(Error::SplitRecord { result_map }) => {
+                    error!("Getting record {pretty_key:?} attempts #{verification_attempts}/{total_attempts} , encountered split");
+
+                    if verification_attempts >= total_attempts {
+                        return Err(Error::SplitRecord { result_map });
+                    }
+                    warn!("Fetched split Record '{pretty_key:?}' from network!. Retrying...",);
+                }
                 Err(error) => {
-                    error!("{error:?}");
+                    error!("Getting record {pretty_key:?} attempts #{verification_attempts}/{total_attempts} , encountered {error:?}");
+
                     if verification_attempts >= total_attempts {
                         break;
                     }
@@ -376,7 +392,7 @@ impl Network {
 
             // wait for a bit before re-trying
             if re_attempt {
-                tokio::time::sleep(REVERIFICATION_WAIT_TIME_S).await;
+                tokio::time::sleep(MAX_REVERIFICATION_WAIT_TIME_S).await;
             }
         }
 
@@ -469,12 +485,12 @@ impl Network {
         let response = receiver.await?;
 
         if verify_store.is_some() || !expected_holders.is_empty() {
+            // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
+            let wait_duration = rand::thread_rng()
+                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
-            tokio::time::sleep(std::time::Duration::from_millis(
-                REVERIFICATION_WAIT_TIME_S.as_millis() as u64 / 6,
-            ))
-            .await;
+            tokio::time::sleep(wait_duration).await;
             trace!("attempting to verify {pretty_key:?}");
 
             // Verify the record is stored, requiring re-attempts
@@ -522,7 +538,9 @@ impl Network {
     }
 
     /// Returns the Addresses of all the locally stored Records
-    pub async fn get_all_local_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
+    pub async fn get_all_local_record_addresses(
+        &self,
+    ) -> Result<HashMap<NetworkAddress, RecordType>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetAllLocalRecordAddresses { sender })?;
 
@@ -535,7 +553,7 @@ impl Network {
     pub fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: Vec<(NetworkAddress, RecordType)>,
     ) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { holder, keys })
     }
@@ -686,10 +704,12 @@ fn get_fees_from_store_cost_responses(
     let desired_quote_count = CLOSE_GROUP_SIZE;
 
     // sort all costs by fee, lowest to highest
-    all_costs.sort_by(|(_, cost_a), (_, cost_b)| {
-        cost_a
-            .partial_cmp(cost_b)
-            .unwrap_or(std::cmp::Ordering::Equal)
+    // if there's a tie in cost, sort by pubkey
+    all_costs.sort_by(|(pub_key_a, cost_a), (pub_key_b, cost_b)| {
+        match cost_a.partial_cmp(cost_b) {
+            Some(std::cmp::Ordering::Equal) => pub_key_a.cmp(pub_key_b),
+            other => other.unwrap_or(std::cmp::Ordering::Equal),
+        }
     });
 
     // get the first desired_quote_count of all_costs

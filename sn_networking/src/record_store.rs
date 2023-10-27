@@ -16,16 +16,20 @@ use libp2p::{
 };
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::gauge::Gauge;
-use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
+use sn_protocol::{
+    storage::{RecordHeader, RecordKind, RecordType},
+    NetworkAddress, PrettyPrintRecordKey,
+};
 use sn_transfers::NanoTokens;
 use std::{
     borrow::Cow,
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
     vec,
 };
 use tokio::sync::mpsc;
+use xor_name::XorName;
 
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
@@ -37,7 +41,7 @@ pub struct NodeRecordStore {
     /// The configuration of the store.
     config: NodeRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
-    records: HashSet<Key>,
+    records: HashMap<Key, RecordType>,
     /// Currently only used to notify the record received via network put to be validated.
     event_sender: Option<mpsc::Sender<NetworkEvent>>,
     /// Distance range specify the acceptable range of record entry.
@@ -142,7 +146,7 @@ impl NodeRecordStore {
         // sort records by distance to our local key
         let furthest = self
             .records
-            .iter()
+            .keys()
             .max_by_key(|k| {
                 let kbucket_key = KBucketKey::from(k.to_vec());
                 self.local_key.distance(&kbucket_key)
@@ -185,28 +189,33 @@ impl NodeRecordStore {
 
 impl NodeRecordStore {
     /// Returns `true` if the `Key` is present locally
-    pub(crate) fn contains(&self, key: &Key) -> bool {
-        self.records.contains(key)
+    pub(crate) fn contains(&self, key: &Key) -> Option<&RecordType> {
+        self.records.get(key)
     }
 
     /// Returns the set of `NetworkAddress::RecordKey` held by the store
     /// Use `record_addresses_ref` to get a borrowed type
-    pub(crate) fn record_addresses(&self) -> HashSet<NetworkAddress> {
+    pub(crate) fn record_addresses(&self) -> HashMap<NetworkAddress, RecordType> {
         self.records
             .iter()
-            .map(|record_key| NetworkAddress::from_record_key(record_key.clone()))
+            .map(|(record_key, record_type)| {
+                (
+                    NetworkAddress::from_record_key(record_key),
+                    record_type.clone(),
+                )
+            })
             .collect()
     }
 
     /// Returns the reference to the set of `NetworkAddress::RecordKey` held by the store
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashSet<Key> {
+    pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, RecordType> {
         &self.records
     }
 
     /// Warning: PUTs a `Record` to the store without validation
     /// Should be used in context where the `Record` is trusted
-    pub(crate) fn put_verified(&mut self, r: Record) -> Result<()> {
+    pub(crate) fn put_verified(&mut self, r: Record, record_type: RecordType) -> Result<()> {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
 
@@ -214,7 +223,7 @@ impl NodeRecordStore {
 
         let filename = Self::key_to_hex(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
-        let _ = self.records.insert(r.key.clone());
+        let _ = self.records.insert(r.key.clone(), record_type);
         #[cfg(feature = "open-metrics")]
         if let Some(metric) = &self.record_count_metric {
             let _ = metric.set(self.records.len() as i64);
@@ -249,9 +258,11 @@ impl NodeRecordStore {
     }
 
     /// Calculate the cost to store data for our current store state
+    #[allow(clippy::mutable_key_type)]
     pub(crate) fn store_cost(&self) -> NanoTokens {
         let relevant_records_len = if let Some(distance_range) = self.distance_range {
-            self.get_records_within_distance_range(&self.records, distance_range)
+            let record_keys: HashSet<_> = self.records.keys().cloned().collect();
+            self.get_records_within_distance_range(&record_keys, distance_range)
         } else {
             warn!("No distance range set on record store. Returning MAX_RECORDS_COUNT for relevant records in store cost calculation.");
             MAX_RECORDS_COUNT
@@ -302,7 +313,7 @@ impl RecordStore for NodeRecordStore {
         // with the record. Thus a node can be bombarded with GET reqs for random keys. These can be safely
         // ignored if we don't have the record locally.
         let key = PrettyPrintRecordKey::from(k);
-        if !self.records.contains(k) {
+        if !self.records.contains_key(k) {
             trace!("Record not found locally: {key}");
             return None;
         }
@@ -321,19 +332,45 @@ impl RecordStore for NodeRecordStore {
             return Err(Error::ValueTooLarge);
         }
 
-        if self.records.contains(&record.key) {
-            trace!(
-                "Unverified Record {:?} already exists.",
-                PrettyPrintRecordKey::from(&record.key)
-            );
+        let record_key = PrettyPrintRecordKey::from(&record.key);
 
-            // Blindly sent to validation to allow double spend can be detected.
-            // TODO: consider avoid throw duplicated chunk to validation.
+        // Record with payment shall always get passed further
+        // to allow the payment to be taken and credit into own wallet.
+        match RecordHeader::from_record(&record) {
+            Ok(record_header) => {
+                match record_header.kind {
+                    RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
+                        trace!("Record {record_key:?} with payment shall always be processed.");
+                    }
+                    _ => {
+                        // Chunk with existing key do not to be stored again.
+                        // `Spend` or `Register` with same content_hash do not to be stored again,
+                        // otherwise shall be passed further to allow
+                        // double spend to be detected or register op update.
+                        match self.records.get(&record.key) {
+                            Some(RecordType::Chunk) => {
+                                trace!("Chunk {record_key:?} already exists.");
+                                return Ok(());
+                            }
+                            Some(RecordType::NonChunk(existing_content_hash)) => {
+                                let content_hash = XorName::from_content(&record.value);
+                                if content_hash == *existing_content_hash {
+                                    trace!("A non-chunk record {record_key:?} with same content_hash {content_hash:?} already exists.");
+                                    return Ok(());
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+            Err(err) => {
+                error!("For record {record_key:?}, failed to parse record_header {err:?}");
+                return Ok(());
+            }
         }
-        trace!(
-            "Unverified Record {:?} try to validate and store",
-            PrettyPrintRecordKey::from(&record.key)
-        );
+
+        trace!("Unverified Record {record_key:?} try to validate and store");
         if let Some(event_sender) = self.event_sender.clone() {
             // push the event off thread so as to be non-blocking
             let _handle = tokio::spawn(async move {
@@ -400,24 +437,24 @@ impl RecordStore for NodeRecordStore {
 /// A place holder RecordStore impl for the client that does nothing
 #[derive(Default, Debug)]
 pub struct ClientRecordStore {
-    empty_record_addresses: HashSet<Key>,
+    empty_record_addresses: HashMap<Key, RecordType>,
 }
 
 impl ClientRecordStore {
-    pub(crate) fn contains(&self, _key: &Key) -> bool {
-        false
+    pub(crate) fn contains(&self, _key: &Key) -> Option<&RecordType> {
+        None
     }
 
-    pub(crate) fn record_addresses(&self) -> HashSet<NetworkAddress> {
-        HashSet::new()
+    pub(crate) fn record_addresses(&self) -> HashMap<NetworkAddress, RecordType> {
+        HashMap::new()
     }
 
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashSet<Key> {
+    pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, RecordType> {
         &self.empty_record_addresses
     }
 
-    pub(crate) fn put_verified(&mut self, _r: Record) -> Result<()> {
+    pub(crate) fn put_verified(&mut self, _r: Record, _record_type: RecordType) -> Result<()> {
         Ok(())
     }
 
@@ -501,6 +538,7 @@ mod tests {
         kad::{KBucketKey, RecordKey},
     };
     use quickcheck::*;
+    use sn_protocol::storage::try_serialize_record;
     use tokio::runtime::Runtime;
 
     const MULITHASH_CODE: u64 = 0x12;
@@ -544,9 +582,16 @@ mod tests {
 
     impl Arbitrary for ArbitraryRecord {
         fn arbitrary(g: &mut Gen) -> ArbitraryRecord {
+            let value: Vec<u8> = match try_serialize_record(
+                &(0..50).map(|_| rand::random::<u8>()).collect::<Vec<_>>(),
+                RecordKind::Chunk,
+            ) {
+                Ok(value) => value,
+                Err(err) => panic!("Cannot generate record value {:?}", err),
+            };
             let record = Record {
                 key: ArbitraryKey::arbitrary(g).0,
-                value: Vec::arbitrary(g),
+                value,
                 publisher: None,
                 expires: None,
             };
@@ -609,7 +654,9 @@ mod tests {
             panic!("Failed recevied the record for further verification");
         };
 
-        assert!(store.put_verified(returned_record).is_ok());
+        assert!(store
+            .put_verified(returned_record, RecordType::Chunk)
+            .is_ok());
 
         // loop over store.get max_iterations times to ensure async disk write had time to complete.
         let max_iterations = 10;
@@ -655,34 +702,40 @@ mod tests {
         };
         let self_id = PeerId::random();
         let mut store = NodeRecordStore::with_config(self_id, store_config.clone(), None);
-
         let mut stored_records: Vec<RecordKey> = vec![];
         let self_address = NetworkAddress::from_peer(self_id);
         for i in 0..100 {
             let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
+            let value: Vec<u8> = match try_serialize_record(
+                &(0..50).map(|_| rand::random::<u8>()).collect::<Vec<_>>(),
+                RecordKind::Chunk,
+            ) {
+                Ok(value) => value,
+                Err(err) => panic!("Cannot generate record value {:?}", err),
+            };
             let record = Record {
                 key: record_key.clone(),
-                value: (0..50).map(|_| rand::random::<u8>()).collect(),
+                value,
                 publisher: None,
                 expires: None,
             };
             let retained_key = if i < max_records {
-                assert!(store.put_verified(record).is_ok());
+                assert!(store.put_verified(record, RecordType::Chunk).is_ok());
                 record_key
             } else {
                 // The list is already sorted by distance, hence always shall only prune the last one
                 let furthest_key = stored_records.remove(stored_records.len() - 1);
-                let furthest_addr = NetworkAddress::from_record_key(furthest_key.clone());
-                let record_addr = NetworkAddress::from_record_key(record_key.clone());
+                let furthest_addr = NetworkAddress::from_record_key(&furthest_key);
+                let record_addr = NetworkAddress::from_record_key(&record_key);
                 let (retained_key, pruned_key) = if self_address.distance(&furthest_addr)
                     > self_address.distance(&record_addr)
                 {
                     // The new entry is closer, it shall replace the existing one
-                    assert!(store.put_verified(record).is_ok());
+                    assert!(store.put_verified(record, RecordType::Chunk).is_ok());
                     (record_key, furthest_key)
                 } else {
                     // The new entry is farther away, it shall not replace the existing one
-                    assert!(store.put_verified(record).is_err());
+                    assert!(store.put_verified(record, RecordType::Chunk).is_err());
                     (furthest_key, record_key)
                 };
 
@@ -719,8 +772,8 @@ mod tests {
 
             stored_records.push(retained_key);
             stored_records.sort_by(|a, b| {
-                let a = NetworkAddress::from_record_key(a.clone());
-                let b = NetworkAddress::from_record_key(b.clone());
+                let a = NetworkAddress::from_record_key(a);
+                let b = NetworkAddress::from_record_key(b);
                 self_address.distance(&a).cmp(&self_address.distance(&b))
             });
         }
@@ -729,6 +782,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::mutable_key_type)]
     async fn get_records_within_distance_range() -> eyre::Result<()> {
         let max_records = 50;
 
@@ -747,19 +801,26 @@ mod tests {
         // minus one here as if we hit max, the store will fail
         for _ in 0..max_records - 1 {
             let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
+            let value: Vec<u8> = match try_serialize_record(
+                &(0..50).map(|_| rand::random::<u8>()).collect::<Vec<_>>(),
+                RecordKind::Chunk,
+            ) {
+                Ok(value) => value,
+                Err(err) => panic!("Cannot generate record value {:?}", err),
+            };
             let record = Record {
                 key: record_key.clone(),
-                value: (0..50).map(|_| rand::random::<u8>()).collect(),
+                value,
                 publisher: None,
                 expires: None,
             };
             // The new entry is closer, it shall replace the existing one
-            assert!(store.put_verified(record).is_ok());
+            assert!(store.put_verified(record, RecordType::Chunk).is_ok());
 
             stored_records.push(record_key);
             stored_records.sort_by(|a, b| {
-                let a = NetworkAddress::from_record_key(a.clone());
-                let b = NetworkAddress::from_record_key(b.clone());
+                let a = NetworkAddress::from_record_key(a);
+                let b = NetworkAddress::from_record_key(b);
                 self_address.distance(&a).cmp(&self_address.distance(&b))
             });
         }
@@ -768,17 +829,18 @@ mod tests {
         let halfway_record_address = NetworkAddress::from_record_key(
             stored_records
                 .get((stored_records.len() / 2) - 1)
-                .wrap_err("Could not parse record store key")?
-                .clone(),
+                .wrap_err("Could not parse record store key")?,
         );
         // get the distance to this record from our local key
         let distance = self_address.distance(&halfway_record_address);
 
         store.set_distance_range(distance);
 
+        let record_keys: HashSet<_> = store.records.keys().cloned().collect();
+
         // check that the number of records returned is correct
         assert_eq!(
-            store.get_records_within_distance_range(&store.records, distance),
+            store.get_records_within_distance_range(&record_keys, distance),
             stored_records.len() / 2
         );
 

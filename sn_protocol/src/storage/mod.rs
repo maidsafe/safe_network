@@ -13,5 +13,5 @@ mod header;
 pub use self::{
     address::{ChunkAddress, RegisterAddress, SpendAddress},
     chunks::Chunk,
-    header::{try_deserialize_record, try_serialize_record, RecordHeader, RecordKind},
+    header::{try_deserialize_record, try_serialize_record, RecordHeader, RecordKind, RecordType},
 };

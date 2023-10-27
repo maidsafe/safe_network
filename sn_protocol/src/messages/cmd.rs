@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::NetworkAddress;
+use crate::{storage::RecordType, NetworkAddress};
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
 pub use sn_transfers::{Hash, UniquePubkey};
@@ -28,7 +28,7 @@ pub enum Cmd {
         holder: NetworkAddress,
         /// Keys of copy that shall be replicated.
         #[debug(skip)]
-        keys: Vec<NetworkAddress>,
+        keys: Vec<(NetworkAddress, RecordType)>,
     },
 }
 

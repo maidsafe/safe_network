@@ -10,6 +10,7 @@ use crate::{
     driver::SwarmDriver,
     error::{Error, Result},
     sort_peers_by_address, GetQuorum, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
+    REPLICATE_RANGE,
 };
 use libp2p::{
     kad::{store::RecordStore, Quorum, Record, RecordKey},
@@ -18,11 +19,16 @@ use libp2p::{
 };
 use sn_protocol::{
     messages::{Request, Response},
+    storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::NanoTokens;
-use std::{collections::HashSet, fmt::Debug};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+};
 use tokio::sync::oneshot;
+use xor_name::XorName;
 
 /// Commands to send to the Swarm
 #[allow(clippy::large_enum_variant)]
@@ -85,7 +91,7 @@ pub enum SwarmCmd {
     },
     /// Get the Addresses of all the Records held locally
     GetAllLocalRecordAddresses {
-        sender: oneshot::Sender<HashSet<NetworkAddress>>,
+        sender: oneshot::Sender<HashMap<NetworkAddress, RecordType>>,
     },
     /// Get Record from the Kad network
     /// Passing a non empty expected_holders list means to
@@ -122,7 +128,7 @@ pub enum SwarmCmd {
     /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
         holder: PeerId,
-        keys: Vec<NetworkAddress>,
+        keys: Vec<(NetworkAddress, RecordType)>,
     },
     /// Subscribe to a given Gossipsub topic
     GossipsubSubscribe(String),
@@ -271,7 +277,7 @@ impl SwarmDriver {
                 let all_peers = self.get_all_local_peers();
                 let keys_to_store = keys
                     .iter()
-                    .filter(|key| self.is_in_close_range(key, &all_peers))
+                    .filter(|(key, _)| self.is_in_close_range(key, &all_peers))
                     .cloned()
                     .collect();
                 #[allow(clippy::mutable_key_type)]
@@ -364,15 +370,39 @@ impl SwarmDriver {
             }
             SwarmCmd::PutLocalRecord { record } => {
                 let key = record.key.clone();
+                let record_key = PrettyPrintRecordKey::from(&key);
+
+                let record_type = match RecordHeader::from_record(&record) {
+                    Ok(record_header) => {
+                        match record_header.kind {
+                            RecordKind::Chunk => RecordType::Chunk,
+                            RecordKind::Spend | RecordKind::Register => {
+                                let content_hash = XorName::from_content(&record.value);
+                                RecordType::NonChunk(content_hash)
+                            }
+                            RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
+                                error!("Record {record_key:?} with payment shall not be stored locally.");
+                                return Err(Error::InCorrectRecordHeader);
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        error!("For record {record_key:?}, failed to parse record_header {err:?}");
+                        return Err(Error::InCorrectRecordHeader);
+                    }
+                };
+
                 match self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .put_verified(record)
+                    .put_verified(record, record_type.clone())
                 {
                     Ok(_) => {
-                        let new_keys_to_fetch = self.replication_fetcher.notify_about_new_put(&key);
+                        let new_keys_to_fetch = self
+                            .replication_fetcher
+                            .notify_about_new_put(key, record_type);
                         if !new_keys_to_fetch.is_empty() {
                             self.send_event(NetworkEvent::KeysForReplication(new_keys_to_fetch));
                         }
@@ -389,7 +419,8 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .contains(&key);
+                    .contains(&key)
+                    .is_some();
                 let _ = sender.send(has_key);
             }
             SwarmCmd::GetAllLocalRecordAddresses { sender } => {
@@ -555,12 +586,12 @@ impl SwarmDriver {
     // Hence, the ilog2 calculation based on close_range cannot cover such case.
     // And have to sort all nodes to figure out whether self is among the close_group to the target.
     fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &[PeerId]) -> bool {
-        if all_peers.len() <= CLOSE_GROUP_SIZE + 2 {
+        if all_peers.len() <= REPLICATE_RANGE {
             return true;
         }
 
         // Margin of 2 to allow our RT being bit lagging.
-        match sort_peers_by_address(all_peers, target, CLOSE_GROUP_SIZE + 2) {
+        match sort_peers_by_address(all_peers, target, REPLICATE_RANGE) {
             Ok(close_group) => close_group.contains(&&self.self_peer_id),
             Err(err) => {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");

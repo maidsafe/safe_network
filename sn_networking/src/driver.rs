@@ -31,13 +31,13 @@ use libp2p::mdns;
 use libp2p::{
     autonat,
     identity::Keypair,
-    kad::{Kademlia, KademliaConfig, QueryId, Record},
+    kad::{self, QueryId, Record},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{
         behaviour::toggle::Toggle,
         dial_opts::{DialOpts, PeerCondition},
-        DialError, NetworkBehaviour, StreamProtocol, Swarm, SwarmBuilder,
+        DialError, NetworkBehaviour, StreamProtocol, Swarm,
     },
     Multiaddr, PeerId, Transport,
 };
@@ -115,7 +115,7 @@ pub(crate) fn truncate_patch_version(full_str: &str) -> &str {
 #[behaviour(to_swarm = "NodeEvent")]
 pub(super) struct NodeBehaviour {
     pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
-    pub(super) kademlia: Kademlia<UnifiedRecordStore>,
+    pub(super) kademlia: kad::Behaviour<UnifiedRecordStore>,
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
@@ -189,9 +189,9 @@ impl NetworkBuilder {
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
     pub fn build_node(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
-        let mut kad_cfg = KademliaConfig::default();
+        let mut kad_cfg = kad::Config::default();
         let _ = kad_cfg
-            .set_kbucket_inserts(libp2p::kad::KademliaBucketInserts::Manual)
+            .set_kbucket_inserts(libp2p::kad::BucketInserts::Manual)
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
             // this is a heavier operation than publication, so it is done less frequently
             // Set to `None` to ensure periodic replication disabled.
@@ -264,7 +264,7 @@ impl NetworkBuilder {
     pub fn build_client(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
-        let mut kad_cfg = KademliaConfig::default(); // default query timeout is 60 secs
+        let mut kad_cfg = kad::Config::default(); // default query timeout is 60 secs
 
         // 1mb packet size
         let _ = kad_cfg
@@ -290,7 +290,7 @@ impl NetworkBuilder {
     /// Private helper to create the network components with the provided config and req/res behaviour
     fn build(
         self,
-        kad_cfg: KademliaConfig,
+        kad_cfg: kad::Config,
         record_store_cfg: Option<NodeRecordStoreConfig>,
         is_client: bool,
         req_res_protocol: ProtocolSupport,
@@ -314,9 +314,8 @@ impl NetworkBuilder {
         // RequestResponse Behaviour
         let request_response = {
             let mut cfg = RequestResponseConfig::default();
-            let _ = cfg
-                .set_request_timeout(self.request_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S))
-                .set_connection_keep_alive(CONNECTION_KEEP_ALIVE_TIMEOUT);
+            let _ =
+                cfg.set_request_timeout(self.request_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S));
 
             request_response::cbor::Behaviour::new(
                 [(
@@ -343,13 +342,13 @@ impl NetworkBuilder {
                         .set_record_count_metric(network_metrics.records_stored.clone());
                     let store = UnifiedRecordStore::Node(node_record_store);
                     debug!("Using Kademlia with NodeRecordStore!");
-                    Kademlia::with_config(peer_id, store, kad_cfg)
+                    kad::Behaviour::with_config(peer_id, store, kad_cfg)
                 }
                 // no cfg provided for client
                 None => {
                     let store = UnifiedRecordStore::Client(ClientRecordStore::default());
                     debug!("Using Kademlia with ClientRecordStore!");
-                    Kademlia::with_config(peer_id, store, kad_cfg)
+                    kad::Behaviour::with_config(peer_id, store, kad_cfg)
                 }
             }
         };
@@ -441,7 +440,10 @@ impl NetworkBuilder {
             autonat,
             gossipsub,
         };
-        let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, peer_id).build();
+        let swarm_config = libp2p::swarm::Config::with_tokio_executor()
+            .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
+
+        let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
 
         let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
         let swarm_driver = SwarmDriver {
