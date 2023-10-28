@@ -12,6 +12,7 @@ use crate::{
     error::{Error, Result},
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE,
 };
+use bytes::Bytes;
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
 use itertools::Itertools;
@@ -143,14 +144,14 @@ pub enum NetworkEvent {
         /// Topic the message was published on
         topic: String,
         /// The raw bytes of the received message
-        msg: Vec<u8>,
+        msg: Bytes,
     },
     /// The Gossipsub message that we published
     GossipsubMsgPublished {
         /// Topic the message was published on
         topic: String,
         /// The raw bytes of the sent message
-        msg: Vec<u8>,
+        msg: Bytes,
     },
 }
 
@@ -349,7 +350,7 @@ impl SwarmDriver {
                 match event {
                     libp2p::gossipsub::Event::Message { message, .. } => {
                         let topic = message.topic.into_string();
-                        let msg = message.data;
+                        let msg = Bytes::from(message.data);
                         self.send_event(NetworkEvent::GossipsubMsgReceived { topic, msg });
                     }
                     other => trace!("Gossipsub Event has been ignored: {other:?}"),

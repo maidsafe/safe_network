@@ -44,7 +44,7 @@ pub(crate) async fn gossipsub_cmds(cmds: GossipsubCmds, client: &Client) -> Resu
             let mut events_channel = client.events_channel();
             while let Ok(event) = events_channel.recv().await {
                 if let ClientEvent::GossipsubMsg { msg, .. } = event {
-                    let msg = String::from_utf8(msg)?;
+                    let msg = String::from_utf8(msg.to_vec())?;
                     println!("New message published: {msg}");
                 }
             }

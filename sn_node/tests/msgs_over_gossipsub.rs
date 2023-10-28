@@ -74,7 +74,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
                             Ok(NodeEvent::GossipsubMsg { topic, msg }) => {
                                 println!(
                                     "Msg received on node #{node_index} '{topic}': {}",
-                                    String::from_utf8(msg).unwrap()
+                                    String::from_utf8(msg.to_vec()).unwrap()
                                 );
                                 count += 1;
                                 if count == NODE_COUNT - NODES_SUBSCRIBED {

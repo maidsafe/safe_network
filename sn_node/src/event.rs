@@ -8,6 +8,7 @@
 
 use crate::error::{Error, Result};
 use bls::PublicKey;
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
 use sn_transfers::{Transfer, UniquePubkey};
@@ -65,7 +66,7 @@ pub enum NodeEvent {
         /// Topic the message was published on
         topic: String,
         /// The raw bytes of the received message
-        msg: Vec<u8>,
+        msg: Bytes,
     },
     /// Transfer notification message received for a public key
     TransferNotif {
