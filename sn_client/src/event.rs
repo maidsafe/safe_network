@@ -8,6 +8,7 @@
 
 use super::error::Result;
 
+use bytes::Bytes;
 use serde::Serialize;
 use tokio::sync::broadcast;
 
@@ -49,7 +50,7 @@ pub enum ClientEvent {
         topic: String,
         /// The raw bytes of the received message
         #[debug(skip)]
-        msg: Vec<u8>,
+        msg: Bytes,
     },
 }
 

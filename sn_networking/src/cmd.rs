@@ -558,6 +558,7 @@ impl SwarmDriver {
                 // Hence push an event to notify that we've published a message
                 self.send_event(NetworkEvent::GossipsubMsgPublished {
                     topic: topic_id.clone(),
+                    msg: msg.clone(),
                 });
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
                 self.swarm
