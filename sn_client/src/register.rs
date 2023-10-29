@@ -350,7 +350,8 @@ impl ClientRegister {
         let key = network_address.to_record_key();
         let record = Record {
             key: key.clone(),
-            value: try_serialize_record(&(payment, &register), RecordKind::RegisterWithPayment)?,
+            value: try_serialize_record(&(payment, &register), RecordKind::RegisterWithPayment)?
+                .to_vec(),
             publisher: None,
             expires: None,
         };
@@ -367,7 +368,7 @@ impl ClientRegister {
             (
                 Some(Record {
                     key,
-                    value: try_serialize_record(&register, RecordKind::Register)?,
+                    value: try_serialize_record(&register, RecordKind::Register)?.to_vec(),
                     publisher: None,
                     expires: None,
                 }),

@@ -8,7 +8,9 @@
 
 use crate::error::Error;
 use crate::PrettyPrintRecordKey;
+use bytes::{BufMut, Bytes, BytesMut};
 use libp2p::kad::Record;
+use rmp_serde::Serializer;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use xor_name::XorName;
@@ -78,11 +80,19 @@ impl Display for RecordKind {
 impl RecordHeader {
     pub const SIZE: usize = 2;
 
-    pub fn try_serialize(self) -> Result<Vec<u8>, Error> {
-        rmp_serde::to_vec(&self).map_err(|err| {
-            error!("Failed to serialized RecordHeader {self:?} with error: {err:?}");
-            Error::RecordHeaderParsingFailed
-        })
+    pub fn try_serialize(self) -> Result<BytesMut, Error> {
+        let bytes = BytesMut::new();
+        let mut buf = bytes.writer();
+
+        self.serialize(&mut Serializer::new(&mut buf))
+            .map_err(|err| {
+                error!("Failed to serialized RecordHeader {self:?} with error: {err:?}");
+                Error::RecordHeaderParsingFailed
+            })?;
+
+        let b = buf.into_inner();
+
+        Ok(b)
     }
 
     pub fn try_deserialize(bytes: &[u8]) -> Result<Self, Error> {
@@ -123,19 +133,19 @@ pub fn try_deserialize_record<T: serde::de::DeserializeOwned>(record: &Record) -
 }
 
 /// Utility to serialize the provided data along with the RecordKind to be stored as Record::value
+/// Returns Bytes to avoid accidental clone allocations
 pub fn try_serialize_record<T: serde::Serialize>(
     data: &T,
     record_kind: RecordKind,
-) -> Result<Vec<u8>, Error> {
-    let payload = rmp_serde::to_vec(data).map_err(|err| {
-        error!("Failed to serialized Records with error: {err:?}");
-        Error::RecordParsingFailed
-    })?;
-
-    let mut record_value = RecordHeader { kind: record_kind }.try_serialize()?;
-    record_value.extend(payload);
-
-    Ok(record_value)
+) -> Result<Bytes, Error> {
+    let mut buf = RecordHeader { kind: record_kind }.try_serialize()?.writer();
+    data.serialize(&mut Serializer::new(&mut buf))
+        .map_err(|err| {
+            error!("Failed to serialized Records with error: {err:?}");
+            Error::RecordParsingFailed
+        })?;
+    let bytes = buf.into_inner();
+    Ok(bytes.freeze())
 }
 
 #[cfg(test)]
