@@ -532,6 +532,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+    use bytes::Bytes;
     use eyre::ContextCompat;
     use libp2p::{
         core::multihash::Multihash,
@@ -582,11 +583,11 @@ mod tests {
 
     impl Arbitrary for ArbitraryRecord {
         fn arbitrary(g: &mut Gen) -> ArbitraryRecord {
-            let value: Vec<u8> = match try_serialize_record(
-                &(0..50).map(|_| rand::random::<u8>()).collect::<Vec<_>>(),
+            let value = match try_serialize_record(
+                &(0..50).map(|_| rand::random::<u8>()).collect::<Bytes>(),
                 RecordKind::Chunk,
             ) {
-                Ok(value) => value,
+                Ok(value) => value.to_vec(),
                 Err(err) => panic!("Cannot generate record value {:?}", err),
             };
             let record = Record {
@@ -706,11 +707,11 @@ mod tests {
         let self_address = NetworkAddress::from_peer(self_id);
         for i in 0..100 {
             let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
-            let value: Vec<u8> = match try_serialize_record(
-                &(0..50).map(|_| rand::random::<u8>()).collect::<Vec<_>>(),
+            let value = match try_serialize_record(
+                &(0..50).map(|_| rand::random::<u8>()).collect::<Bytes>(),
                 RecordKind::Chunk,
             ) {
-                Ok(value) => value,
+                Ok(value) => value.to_vec(),
                 Err(err) => panic!("Cannot generate record value {:?}", err),
             };
             let record = Record {
@@ -801,11 +802,11 @@ mod tests {
         // minus one here as if we hit max, the store will fail
         for _ in 0..max_records - 1 {
             let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
-            let value: Vec<u8> = match try_serialize_record(
-                &(0..50).map(|_| rand::random::<u8>()).collect::<Vec<_>>(),
+            let value = match try_serialize_record(
+                &(0..50).map(|_| rand::random::<u8>()).collect::<Bytes>(),
                 RecordKind::Chunk,
             ) {
-                Ok(value) => value,
+                Ok(value) => value.to_vec(),
                 Err(err) => panic!("Cannot generate record value {:?}", err),
             };
             let record = Record {

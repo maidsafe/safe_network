@@ -219,7 +219,7 @@ impl Node {
 
         let record = Record {
             key,
-            value: try_serialize_record(&chunk, RecordKind::Chunk)?,
+            value: try_serialize_record(&chunk, RecordKind::Chunk)?.to_vec(),
             publisher: None,
             expires: None,
         };
@@ -272,7 +272,7 @@ impl Node {
         // store in kad
         let record = Record {
             key: key.clone(),
-            value: try_serialize_record(&updated_register, RecordKind::Register)?,
+            value: try_serialize_record(&updated_register, RecordKind::Register)?.to_vec(),
             publisher: None,
             expires: None,
         };
@@ -358,7 +358,7 @@ impl Node {
         // store the record into the local storage
         let record = Record {
             key: key.clone(),
-            value: try_serialize_record(&validated_spends, RecordKind::Spend)?,
+            value: try_serialize_record(&validated_spends, RecordKind::Spend)?.to_vec(),
             publisher: None,
             expires: None,
         };
