@@ -8,6 +8,7 @@
 
 use crate::{error::Result, NetworkAddress};
 
+use bytes::Bytes;
 use core::fmt;
 use serde::{Deserialize, Serialize};
 use sn_transfers::{MainPubkey, NanoTokens};
@@ -28,7 +29,7 @@ pub enum QueryResponse {
     /// Response to [`GetReplicatedRecord`]
     ///
     /// [`GetReplicatedRecord`]: crate::messages::Query::GetReplicatedRecord
-    GetReplicatedRecord(Result<(NetworkAddress, Vec<u8>)>),
+    GetReplicatedRecord(Result<(NetworkAddress, Bytes)>),
 }
 
 // Debug implementation for QueryResponse, to avoid printing Vec<u8>
