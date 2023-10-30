@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.11](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.10...sn_networking-v0.9.11) - 2023-10-30
+
+### Other
+- *(node)* use Bytes for Gossip related data types
+- *(node)* make gossipsubpublish take Bytes
+- *(networking)* avoid a replication keys clone
+
 ## [0.9.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.9...sn_networking-v0.9.10) - 2023-10-27
 
 ### Other
