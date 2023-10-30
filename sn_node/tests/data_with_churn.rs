@@ -306,7 +306,7 @@ fn create_cash_note_task(
 
             let dest_pk = MainSecretKey::random().main_pubkey();
             let cash_note = wallet_client
-                .send_cash_note(NanoTokens::from(10), dest_pk, false)
+                .send_cash_note(NanoTokens::from(10), dest_pk, true)
                 .await
                 .expect("Failed to send CashNote to {dest_pk}");
 
@@ -421,9 +421,8 @@ fn store_chunks_task(
             };
 
             println!(
-                "Storing ({}) Chunk/s at cost: {cost:?} of file ({} bytes) at {addr:?} in {delay:?}",
-                chunks_len,
-                chunk_size
+                "Storws ({}) Chunk/s at cost: {cost:?} of file ({} bytes) at {addr:?} in {delay:?}",
+                chunks_len, chunk_size
             );
             sleep(delay).await;
 

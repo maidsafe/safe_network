@@ -26,7 +26,7 @@ use std::{
     fs::{self, create_dir_all, File},
     io::{Read, Write},
     path::{Path, PathBuf},
-    time::Instant,
+    time::{Duration, Instant},
 };
 use tempfile::tempdir;
 use tokio::task;
@@ -304,6 +304,9 @@ impl Files {
                 .await?;
         }
 
+        // small wait before we verify
+        tokio::time::sleep(Duration::from_secs(1)).await;
+
         let mut failed_chunks = self.verify_uploaded_chunks(chunks, BATCH_SIZE).await?;
         warn!("Failed chunks: {:?}", failed_chunks.len());
 
@@ -337,6 +340,9 @@ impl Files {
                 self.get_local_payment_and_upload_chunk(chunk, false, false)
                     .await?;
             }
+
+            // small wait before we verify
+            tokio::time::sleep(Duration::from_secs(1)).await;
 
             trace!("Chunks uploaded again....");
 
