@@ -889,11 +889,11 @@ impl SwarmDriver {
 
     // Check for changes in our close group
     fn check_for_change_in_our_close_group(&mut self) -> Option<Vec<PeerId>> {
-        let all_peers = self.get_all_local_peers();
+        let closest_k_peers = self.get_closest_k_value_local_peers();
 
         let new_closest_peers = {
             sort_peers_by_address(
-                &all_peers,
+                &closest_k_peers,
                 &NetworkAddress::from_peer(self.self_peer_id),
                 CLOSE_GROUP_SIZE,
             )
