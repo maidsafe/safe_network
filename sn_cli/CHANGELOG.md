@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.84.31](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.30...sn_cli-v0.84.31) - 2023-10-30
+
+### Added
+- *(cli)* error out if empty wallet
+- *(cli)* error out if we do not have enough balance
+
 ## [0.84.30](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.29...sn_cli-v0.84.30) - 2023-10-30
 
 ### Other
