@@ -11,7 +11,6 @@ use super::{
     error::{Error, Result},
     Client, WalletClient,
 };
-use bincode::deserialize;
 use bytes::Bytes;
 use futures::{future::join_all, stream::FuturesOrdered, StreamExt};
 use itertools::Itertools;
@@ -422,13 +421,14 @@ impl Files {
     /// the process repeats itself until it obtains the first level DataMapLevel.
     async fn unpack_chunk(&self, mut chunk: Chunk) -> Result<DataMap> {
         loop {
-            match deserialize(chunk.value()).map_err(ChunksError::Serialisation)? {
+            match bincode::deserialize(chunk.value()).map_err(ChunksError::Serialisation)? {
                 DataMapLevel::First(data_map) => {
                     return Ok(data_map);
                 }
                 DataMapLevel::Additional(data_map) => {
                     let serialized_chunk = self.read_all(data_map, None, false).await?.unwrap();
-                    chunk = deserialize(&serialized_chunk).map_err(ChunksError::Serialisation)?;
+                    chunk = bincode::deserialize(&serialized_chunk)
+                        .map_err(ChunksError::Serialisation)?;
                 }
             }
         }

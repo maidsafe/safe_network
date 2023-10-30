@@ -6,13 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{CashNote, SignedSpend, SpendAddress, UniquePubkey};
-
 use super::{
     error::{Error, Result},
     KeyLessWallet,
 };
-
+use crate::{CashNote, SignedSpend, SpendAddress, UniquePubkey};
 use std::{
     collections::BTreeSet,
     fs,
@@ -28,8 +26,8 @@ const UNCONFRIMED_TX_NAME: &str = "unconfirmed_spend_requests";
 /// Writes the `KeyLessWallet` to the specified path.
 pub(super) fn store_wallet(wallet_dir: &Path, wallet: &KeyLessWallet) -> Result<()> {
     let wallet_path = wallet_dir.join(WALLET_FILE_NAME);
-    let bytes = bincode::serialize(&wallet)?;
-    fs::write(wallet_path, bytes)?;
+    let mut file = fs::File::create(wallet_path)?;
+    bincode::serialize_into(&mut file, &wallet)?;
     Ok(())
 }
 
@@ -62,8 +60,9 @@ pub(super) fn store_unconfirmed_spend_requests(
     unconfirmed_spend_requests: &BTreeSet<SignedSpend>,
 ) -> Result<()> {
     let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFRIMED_TX_NAME);
-    let bytes = bincode::serialize(&unconfirmed_spend_requests)?;
-    fs::write(unconfirmed_spend_requests_path, bytes)?;
+
+    let mut file = fs::File::create(unconfirmed_spend_requests_path)?;
+    bincode::serialize_into(&mut file, &unconfirmed_spend_requests)?;
     Ok(())
 }
 
@@ -76,8 +75,8 @@ pub(super) fn get_unconfirmed_spend_requests(
         return Ok(None);
     }
 
-    let bytes = fs::read(&path)?;
-    let unconfirmed_spend_requests = bincode::deserialize(&bytes)?;
+    let reader = fs::File::open(&path)?;
+    let unconfirmed_spend_requests = bincode::deserialize_from(&reader)?;
 
     Ok(Some(unconfirmed_spend_requests))
 }
