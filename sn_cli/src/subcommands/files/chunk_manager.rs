@@ -33,16 +33,14 @@ pub(crate) struct ChunkedFile {
     pub chunks: Vec<(XorName, PathBuf)>,
 }
 pub(crate) struct ChunkManager {
-    files_api: Files,
     artifacts_dir: PathBuf,
     chunked_files: BTreeMap<PathXorName, ChunkedFile>,
     uploaded_files: Vec<(OsString, XorName)>,
 }
 
 impl ChunkManager {
-    pub(crate) fn new(root_dir: &Path, files_api: Files) -> Self {
+    pub(crate) fn new(root_dir: &Path) -> Self {
         Self {
-            files_api,
             artifacts_dir: root_dir.join("chunk_artifacts"),
             chunked_files: Default::default(),
             uploaded_files: Default::default(),
@@ -167,7 +165,7 @@ impl ChunkManager {
                 }
             };
 
-                match self.files_api.chunk_file(path, &file_chunks_dir) {
+                match Files::chunk_file(path, &file_chunks_dir) {
                     Ok((file_xor_addr, _size, chunks)) => {
                         progress_bar.clone().inc(1);
                         Some((path_xor.clone(), ChunkedFile {file_xor_addr, file_name: original_file_name.clone(), chunks}))

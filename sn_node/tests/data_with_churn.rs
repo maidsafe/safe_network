@@ -391,9 +391,8 @@ fn store_chunks_task(
                 .write_all(&random_bytes)
                 .expect("failed to write to temp chunk file");
 
-            let (addr, _file_size, chunks) = file_api
-                .chunk_file(&file_path, &output_dir)
-                .expect("Failed to chunk bytes");
+            let (addr, _file_size, chunks) =
+                Files::chunk_file(&file_path, &output_dir).expect("Failed to chunk bytes");
 
             println!(
                 "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",

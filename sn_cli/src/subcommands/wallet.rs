@@ -160,7 +160,7 @@ pub(crate) async fn wallet_cmds(
         } => {
             let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
 
-            let mut manager = ChunkManager::new(root_dir, file_api.clone());
+            let mut manager = ChunkManager::new(root_dir);
             manager.chunk_path(&path)?;
 
             let all_chunks: Vec<_> = manager
