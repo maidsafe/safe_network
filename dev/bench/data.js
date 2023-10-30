@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698674853848,
+  "lastUpdate": 1698674855594,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30093,6 +30093,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 39,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "4c24e25ec0e8a29b87cacb14fe6b14e02aab8bdc",
+          "message": "feat(cli): error out if empty wallet",
+          "timestamp": "2023-10-30T13:10:24Z",
+          "tree_id": "4d9ba228778082d7576f6df3dd3a821cda5b43f3",
+          "url": "https://github.com/maidsafe/safe_network/commit/4c24e25ec0e8a29b87cacb14fe6b14e02aab8bdc"
+        },
+        "date": 1698674855147,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 148,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 41,
             "unit": "MB"
           }
         ]
