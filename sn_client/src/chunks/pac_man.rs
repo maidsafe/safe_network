@@ -7,9 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::Result;
-
-use bincode::serialize;
-use bytes::Bytes;
+use bytes::{BufMut, Bytes, BytesMut};
 use rayon::prelude::*;
 use self_encryption::{DataMap, StreamSelfEncryptor, MAX_CHUNK_SIZE};
 use serde::{Deserialize, Serialize};
@@ -120,7 +118,11 @@ fn pack_data_map(data_map: DataMap) -> Result<(XorName, Vec<Chunk>)> {
             // Returns the address of the last datamap, and all the chunks produced.
             break (name, chunks);
         } else {
-            let serialized_chunk = Bytes::from(serialize(&chunk)?);
+            let size = bincode::serialized_size(&chunk)?;
+            let mut bytes = BytesMut::with_capacity(size as usize).writer();
+            bincode::serialize_into(&mut bytes, &chunk)?;
+            let serialized_chunk = bytes.into_inner().freeze();
+
             let (data_map, next_encrypted_chunks) = self_encryption::encrypt(serialized_chunk)?;
             chunks = next_encrypted_chunks
                 .par_iter()
@@ -135,7 +137,10 @@ fn pack_data_map(data_map: DataMap) -> Result<(XorName, Vec<Chunk>)> {
 }
 
 fn wrap_data_map(data_map: DataMapLevel) -> Result<Bytes> {
-    Ok(Bytes::from(serialize(&data_map)?))
+    let size = bincode::serialized_size(&data_map)?;
+    let mut bytes = BytesMut::with_capacity(size as usize).writer();
+    bincode::serialize_into(&mut bytes, &data_map)?;
+    Ok(bytes.into_inner().freeze())
 }
 
 fn encrypt_file(file: &Path, output_dir: &Path) -> Result<(DataMap, Vec<XorName>)> {

@@ -12,7 +12,7 @@ use crate::{
     spends::{aggregate_spends, check_parent_spends},
     Marker,
 };
-use bytes::BytesMut;
+use bytes::{BufMut, BytesMut};
 use libp2p::kad::{Record, RecordKey};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -501,22 +501,26 @@ impl Node {
         }
 
         // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for the network royalties payment.
-        match bincode::serialize(&royalties_transfers) {
-            Ok(serialised) => {
-                let royalties_pk = *NETWORK_ROYALTIES_PK;
-                trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
-                let topic = TRANSFER_NOTIF_TOPIC.to_string();
-                let royalties_pk_bytes = royalties_pk.to_bytes();
-                let mut msg = BytesMut::with_capacity(royalties_pk_bytes.len() + serialised.len());
-                msg.extend_from_slice(&royalties_pk_bytes);
-                msg.extend(serialised);
+        let royalties_pk = *NETWORK_ROYALTIES_PK;
+        trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
+        let royalties_pk_bytes = royalties_pk.to_bytes();
 
-                let msg = msg.freeze();
-                if let Err(err) = self.network.publish_on_topic(topic.clone(), msg) {
-                    debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
+        if let Ok(transfers_size) = bincode::serialized_size(&royalties_transfers) {
+            let mut msg =
+                BytesMut::with_capacity(royalties_pk_bytes.len() + transfers_size as usize);
+            msg.extend_from_slice(&royalties_pk_bytes);
+            let mut msg = msg.writer();
+            match bincode::serialize_into(&mut msg, &royalties_transfers) {
+                Ok(_) => {
+                    let msg = msg.into_inner().freeze();
+                    if let Err(err) = self.network.publish_on_topic(TRANSFER_NOTIF_TOPIC.to_string(), msg) {
+                        debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
+                    }
                 }
+                Err(err) => warn!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
             }
-            Err(err) => debug!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
+        } else {
+            warn!("Failed to get serialized_size for network royalties payment data to publish a notification over gossipsub for record {pretty_key}");
         }
 
         // check payment is sufficient both for our store cost and for network royalties
