@@ -283,10 +283,10 @@ impl SwarmDriver {
         match cmd {
             SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
                 // Only store record from Replication that close enough to us.
-                let all_peers = self.get_all_local_peers();
+                let all_close_peers = self.get_closest_k_value_local_peers();
                 let keys_to_store = keys
                     .into_iter()
-                    .filter(|(key, _)| self.is_in_close_range(key, &all_peers))
+                    .filter(|(key, _)| self.is_in_close_range(key, &all_close_peers))
                     .collect();
                 #[allow(clippy::mutable_key_type)]
                 let all_keys = self
