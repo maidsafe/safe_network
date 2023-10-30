@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.9](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.8...sn_transfers-v0.14.9) - 2023-10-30
+
+### Added
+- `bincode::serialize` into `Bytes` without intermediate allocation
+
 ## [0.14.8](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.7...sn_transfers-v0.14.8) - 2023-10-27
 
 ### Added
