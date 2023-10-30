@@ -1909,6 +1909,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - make rpc client a bin
 
+## [0.96.15](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.14...sn_node-v0.96.15) - 2023-10-30
+
+### Added
+- *(rpc_client)* show total accumulated balance when decrypting transfers received
+- *(rpc-client)* be able to decrpyt received Transfers by providing a secret key
+- encrypt network royalty to Transfer for gossip msg
+
+### Other
+- *(node)* use Bytes for Gossip related data types
+- *(node)* make gossipsubpublish take Bytes
+- *(release)* sn_client-v0.95.11/sn_protocol-v0.8.7/sn_transfers-v0.14.8/sn_networking-v0.9.10
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

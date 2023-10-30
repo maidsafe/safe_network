@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.84.29](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.28...sn_cli-v0.84.29) - 2023-10-30
+
+### Other
+- *(node)* use Bytes for Gossip related data types
+- *(release)* sn_client-v0.95.11/sn_protocol-v0.8.7/sn_transfers-v0.14.8/sn_networking-v0.9.10
+
 ## [0.84.28](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.27...sn_cli-v0.84.28) - 2023-10-27
 
 ### Other
