@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698653259488,
+  "lastUpdate": 1698653551414,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "780c79cecb26ac81659401f1d3232cd1a6237db3",
-          "message": "refactor: specific error types for different payment proof verification scenarios",
-          "timestamp": "2023-06-20T12:03:27Z",
-          "tree_id": "6b8957c92010aafe53a57e9289e522f449acb02d",
-          "url": "https://github.com/maidsafe/safe_network/commit/780c79cecb26ac81659401f1d3232cd1a6237db3"
-        },
-        "date": 1687267437278,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 77.26,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 67,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "9ff900dc92f2ff4db013430a932e2141c3d720fa",
+          "message": "chore(node): use Bytes for Gossip related data types",
+          "timestamp": "2023-10-30T07:05:55Z",
+          "tree_id": "34c683e6d6c9e1435ed924969f9362a15b026315",
+          "url": "https://github.com/maidsafe/safe_network/commit/9ff900dc92f2ff4db013430a932e2141c3d720fa"
+        },
+        "date": 1698653551002,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 60,
             "unit": "MB"
           }
         ]
