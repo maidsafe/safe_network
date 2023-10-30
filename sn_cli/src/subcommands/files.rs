@@ -225,6 +225,9 @@ async fn upload_files(
     );
 
     let file_api: Files = Files::new(client.clone(), wallet_dir_path.to_path_buf());
+    if file_api.wallet()?.balance().is_zero() {
+        bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
+    }
 
     // Temp folder to hold SE chunks, which is cleaned up automatically once out of scope.
     let temp_dir = tempdir()?;
