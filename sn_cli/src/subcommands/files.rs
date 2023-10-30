@@ -16,9 +16,9 @@ use color_eyre::{
 use indicatif::{ProgressBar, ProgressStyle};
 use libp2p::futures::future::join_all;
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use sn_client::{Client, Files};
+use sn_client::{Client, Error as ClientError, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::NanoTokens;
+use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
 use std::{
     collections::BTreeMap,
     fs,
@@ -260,6 +260,11 @@ async fn upload_files(
             .await
         {
             Ok((cost, new_balance)) => (cost, new_balance),
+            Err(ClientError::Transfers(WalletError::Transfer(
+                TransfersError::NotEnoughBalance(available, required),
+            ))) => {
+                bail!("Not enough balance in wallet to pay for chunk. We have {available:?} but need {required:?} to pay for the chunk");
+            }
             Err(error) => {
                 warn!(
                     "Failed to pay for chunks. Validation steps should retry this batch: {error}"
