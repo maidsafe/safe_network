@@ -48,8 +48,15 @@ impl ReplicationFetcher {
             .into_iter()
             .filter_map(|(addr, record_type)| {
                 let key = addr.to_record_key();
-                if Some(&record_type) == locally_stored_keys.get(&key) {
-                    None
+                let local = locally_stored_keys.get(&key);
+
+                // if we have a local value of matching record_type, we don't need to fetch it
+                if let Some((_, local_record_type)) = local {
+                    if local_record_type == &record_type {
+                        None
+                    } else {
+                        Some((key, record_type))
+                    }
                 } else {
                     Some((key, record_type))
                 }

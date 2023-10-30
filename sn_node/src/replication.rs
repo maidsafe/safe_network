@@ -65,7 +65,7 @@ impl Node {
             Default::default();
 
         if is_removal {
-            let _ = closest_k_peers.push(peer_id);
+            closest_k_peers.push(peer_id);
         }
 
         for (key, record_type) in all_records {
