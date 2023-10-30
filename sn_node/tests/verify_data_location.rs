@@ -324,7 +324,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         let mut output_file = File::create(file_path.clone())?;
         output_file.write_all(&random_bytes)?;
 
-        let (file_addr, _file_size, chunks) = file_api.chunk_file(&file_path, chunks_dir.path())?;
+        let (file_addr, _file_size, chunks) = Files::chunk_file(&file_path, chunks_dir.path())?;
 
         println!(
             "Paying storage for ({}) new Chunk/s of file ({} bytes) at {file_addr:?}",
