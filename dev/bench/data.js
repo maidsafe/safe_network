@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698657537121,
+  "lastUpdate": 1698674581909,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "1bfec27c659265f93b205418f9c966dadc2dbaa9",
-          "message": "fix(node): specifically remove the key, not the whole dir",
-          "timestamp": "2023-07-05T06:53:31+02:00",
-          "tree_id": "9d6b5340a103d53f0e45faf47aaf853b2b95b362",
-          "url": "https://github.com/maidsafe/safe_network/commit/1bfec27c659265f93b205418f9c966dadc2dbaa9"
-        },
-        "date": 1688534277334,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.9252762449345497,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 18.632314011492202,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 8.528574597029532,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 20.34156606473493,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "4c24e25ec0e8a29b87cacb14fe6b14e02aab8bdc",
+          "message": "feat(cli): error out if empty wallet",
+          "timestamp": "2023-10-30T13:10:24Z",
+          "tree_id": "4d9ba228778082d7576f6df3dd3a821cda5b43f3",
+          "url": "https://github.com/maidsafe/safe_network/commit/4c24e25ec0e8a29b87cacb14fe6b14e02aab8bdc"
+        },
+        "date": 1698674579912,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.1930022410137341,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.9618717799606138,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 20.861036604788424,
             "unit": "MiB/s"
           }
         ]
