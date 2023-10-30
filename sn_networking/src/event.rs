@@ -665,27 +665,30 @@ impl SwarmDriver {
                 if let Some((sender, result_map, _quorum, expected_holders)) =
                     self.pending_get_record.remove(&id)
                 {
-                    let log_string = if let Some((record, _)) = result_map.values().next() {
-                        // Consider any early completion as Putting in progress or split.
-                        // Just send back the first record (for put verification only),
-                        // and not to update self
-                        sender
-                            .send(Err(Error::RecordNotEnoughCopies(record.clone())))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
-                        format!(
-                            "Getting record {:?} completed with only {:?} copies received",
+                    let num_of_versions = result_map.len();
+                    let (result, log_string) = if let Some((record, _)) = result_map.values().next()
+                    {
+                        let result = if num_of_versions == 1 {
+                            Err(Error::RecordNotEnoughCopies(record.clone()))
+                        } else {
+                            Err(Error::SplitRecord {
+                                result_map: result_map.clone(),
+                            })
+                        };
+
+                        (result, format!(
+                            "Getting record {:?} completed with only {:?} copies received, and {num_of_versions} versions.",
                             PrettyPrintRecordKey::from(&record.key),
                             usize::from(step.count) - 1
-                        )
+                        ))
                     } else {
-                        sender
-                            .send(Err(Error::RecordNotFound))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        (Err(Error::RecordNotFound),
                         format!(
-                            "Getting record task {id:?} completed with step count {:?} copies received",
+                            "Getting record task {id:?} completed with step count {:?}, but no copy found.",
                             step.count
-                        )
+                        ))
                     };
+
                     if expected_holders.is_empty() {
                         debug!("{log_string}");
                     } else {
@@ -693,6 +696,10 @@ impl SwarmDriver {
                             "{log_string}, and {expected_holders:?} expected holders not responded"
                         );
                     }
+
+                    sender
+                        .send(result)
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
             }
             kad::Event::OutboundQueryProgressed {
