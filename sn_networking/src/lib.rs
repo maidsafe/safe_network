@@ -37,10 +37,9 @@ pub use self::{
 use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
 use bytes::Bytes;
 use futures::future::select_all;
-use itertools::Itertools;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketKey, Record, RecordKey},
+    kad::{KBucketDistance, KBucketKey, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
@@ -103,35 +102,36 @@ pub fn sort_peers_by_key<'a, T>(
     key: &KBucketKey<T>,
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
+    // Check if there are enough peers to satisfy the request.
+    // bail early if that's not the case
+    if CLOSE_GROUP_SIZE > peers.len() {
+        warn!("Not enough peers in the k-bucket to satisfy the request");
+        return Err(Error::NotEnoughPeers {
+            found: peers.len(),
+            required: CLOSE_GROUP_SIZE,
+        });
+    }
+
     // Create a vector of tuples where each tuple is a reference to a peer and its distance to the key.
     // This avoids multiple computations of the same distance in the sorting process.
-    let mut peer_distances = peers
-        .iter()
-        .map(|peer_id| {
-            let addr = NetworkAddress::from_peer(*peer_id);
-            let distance = key.distance(&addr.as_kbucket_key());
-            (peer_id, distance)
-        })
-        .collect_vec();
+    let mut peer_distances: Vec<(&PeerId, KBucketDistance)> = Vec::with_capacity(peers.len());
+
+    for peer_id in peers {
+        let addr = NetworkAddress::from_peer(*peer_id);
+        let distance = key.distance(&addr.as_kbucket_key());
+        peer_distances.push((peer_id, distance));
+    }
 
     // Sort the vector of tuples by the distance.
     peer_distances.sort_by(|a, b| a.1.cmp(&b.1));
 
     // Collect the sorted peers into a new vector.
-    let sorted_peers: Vec<&PeerId> = peer_distances
-        .iter()
+    let sorted_peers: Vec<_> = peer_distances
+        .into_iter()
         .take(expected_entries)
-        .map(|&(peer_id, _)| peer_id)
+        .map(|(peer_id, _)| peer_id)
         .collect();
 
-    // Check if there are enough peers to satisfy the request.
-    if CLOSE_GROUP_SIZE > sorted_peers.len() {
-        warn!("Not enough peers in the k-bucket to satisfy the request");
-        return Err(Error::NotEnoughPeers {
-            found: sorted_peers.len(),
-            required: CLOSE_GROUP_SIZE,
-        });
-    }
     Ok(sorted_peers)
 }
 
