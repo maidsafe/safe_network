@@ -1921,6 +1921,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(node)* make gossipsubpublish take Bytes
 - *(release)* sn_client-v0.95.11/sn_protocol-v0.8.7/sn_transfers-v0.14.8/sn_networking-v0.9.10
 
+## [0.96.16](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.15...sn_node-v0.96.16) - 2023-10-30
+
+### Added
+- `bincode::serialize` into `Bytes` without intermediate allocation
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
