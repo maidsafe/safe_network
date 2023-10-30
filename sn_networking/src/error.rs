@@ -35,6 +35,9 @@ pub enum Error {
     #[error("Close group size must be a non-zero usize")]
     InvalidCloseGroupSize,
 
+    #[error("Could ont build the gossipsub config: {0}")]
+    GossipsubConfigError(String),
+
     #[error("Internal messaging channel was dropped")]
     InternalMsgChannelDropped,
 
