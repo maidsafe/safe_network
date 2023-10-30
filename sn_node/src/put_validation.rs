@@ -18,7 +18,8 @@ use sn_protocol::{
     error::Error as ProtocolError,
     messages::CmdOk,
     storage::{
-        try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, SpendAddress,
+        try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
+        SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -30,6 +31,7 @@ use sn_transfers::{
     CashNote, NanoTokens, SignedSpend, UniquePubkey, NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
 };
 use std::collections::{BTreeSet, HashSet};
+use xor_name::XorName;
 
 impl Node {
     /// Validate a record and it's payment, and store the record to the RecordStore
@@ -62,7 +64,13 @@ impl Node {
                 // Finally before we store, lets bail for any payment issues
                 payment_res?;
 
-                self.store_chunk(chunk)
+                // Writing chunk to disk takes time, hence try to execute it first.
+                // So that when the replicate target asking for the copy,
+                // the node can have a higher chance to respond.
+                let store_chunk_result = self.store_chunk(chunk);
+                self.replicate_paid_record(record_key, RecordType::Chunk);
+
+                store_chunk_result
             }
             RecordKind::Chunk => {
                 error!("Chunk should not be validated at this point");
@@ -84,22 +92,33 @@ impl Node {
                 // check if the deserialized value's RegisterAddress matches the record's key
                 let net_addr = NetworkAddress::from_register_address(*register.address());
                 let key = net_addr.to_record_key();
+                let pretty_key = PrettyPrintRecordKey::from(&key);
                 if record.key != key {
                     warn!(
-                        "Record's key does not match with the value's RegisterAddress, ignoring PUT."
+                        "Record's key {pretty_key:?} does not match with the value's RegisterAddress, ignoring PUT."
                     );
                     return Err(ProtocolError::RecordKeyMismatch);
                 }
 
                 let already_exists = self.validate_key_and_existence(&net_addr, &key).await?;
 
-                if !already_exists {
-                    // Validate the payment and that we received what we asked.
-                    self.payment_for_us_exists_and_is_still_valid(&net_addr, payment)
-                        .await?;
+                // The register may already exist during the replication.
+                // The payment shall get deposit to self even the register already presents.
+                // However, if the register already presents, the incoming one maybe for edit only.
+                // Hence the corresponding payment error shall not be thrown out.
+                if let Err(err) = self
+                    .payment_for_us_exists_and_is_still_valid(&net_addr, payment)
+                    .await
+                {
+                    if already_exists {
+                        trace!("Payment of the incoming exists register {pretty_key:?} having error {err:?}");
+                    } else {
+                        error!("Payment of the incoming non-exist register {pretty_key:?} having error {err:?}");
+                        return Err(err);
+                    }
                 }
 
-                self.validate_and_store_register(register).await
+                self.validate_and_store_register(register, true).await
             }
         }
     }
@@ -162,7 +181,7 @@ impl Node {
                     );
                     return Err(ProtocolError::RecordKeyMismatch);
                 }
-                self.validate_and_store_register(register).await
+                self.validate_and_store_register(register, false).await
             }
         }
     }
@@ -244,6 +263,7 @@ impl Node {
     pub(crate) async fn validate_and_store_register(
         &self,
         register: SignedRegister,
+        with_payment: bool,
     ) -> Result<CmdOk, ProtocolError> {
         let reg_addr = register.address();
         debug!("Validating and storing register {reg_addr:?}");
@@ -276,6 +296,8 @@ impl Node {
             publisher: None,
             expires: None,
         };
+        let content_hash = XorName::from_content(&record.value);
+
         debug!("Storing register {reg_addr:?} as Record locally");
         self.network.put_local_record(record).map_err(|err| {
             warn!("Error while locally storing register as a Record {err}");
@@ -283,6 +305,10 @@ impl Node {
         })?;
 
         self.record_metrics(Marker::ValidRegisterRecordPutFromNetwork(&pretty_key));
+
+        if with_payment {
+            self.replicate_paid_record(key, RecordType::NonChunk(content_hash));
+        }
 
         Ok(CmdOk::StoredSuccessfully)
     }

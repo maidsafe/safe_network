@@ -12,14 +12,14 @@ use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetQuorum, REPLICATE_RANGE};
+use sn_networking::{sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE, REPLICATE_RANGE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::collections::{BTreeMap, BTreeSet};
-use tokio::task::JoinHandle;
+use tokio::task::{spawn, JoinHandle};
 
 // To reduce the number of messages exchanged, patch max 500 replication keys into one request.
 const MAX_REPLICATION_KEYS_PER_REQUEST: usize = 500;
@@ -138,7 +138,7 @@ impl Node {
         for (holder, key) in keys_to_fetch {
             let node = self.clone();
             let requester = NetworkAddress::from_peer(self.network.peer_id);
-            let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
+            let _handle: JoinHandle<Result<()>> = spawn(async move {
                 let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
                 trace!("Fetching record {pretty_key:?} from node {holder:?}");
                 let req = Request::Query(Query::GetReplicatedRecord {
@@ -190,6 +190,70 @@ impl Node {
             });
         }
         Ok(())
+    }
+
+    /// Replicate a paid record to its close group peers.
+    pub(crate) fn replicate_paid_record(&self, paid_key: RecordKey, record_type: RecordType) {
+        let network = self.network.clone();
+
+        let _handle = spawn(async move {
+            let start = std::time::Instant::now();
+            let pretty_key = PrettyPrintRecordKey::from(&paid_key);
+            trace!("Start replicate paid record {pretty_key:?} on store");
+
+            // Already contains self_peer_id
+            let all_peers: Vec<_> = match network.get_all_local_peers().await {
+                Ok(peers) => peers.to_vec(),
+                Err(err) => {
+                    error!("When replicating paid record {pretty_key:?}, having error when get local peers {err:?}");
+                    return;
+                }
+            };
+
+            // Do not carry out replication if not many peers present.
+            if all_peers.len() < K_VALUE.into() {
+                trace!(
+                    "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
+                    all_peers.len()
+                );
+                return;
+            }
+
+            let addr = NetworkAddress::from_record_key(&paid_key);
+
+            let sorted_based_on_addr = match sort_peers_by_address(
+                &all_peers,
+                &addr,
+                CLOSE_GROUP_SIZE,
+            ) {
+                Ok(result) => result,
+                Err(err) => {
+                    error!(
+                            "When replicating paid record {pretty_key:?}, having error when sort {err:?}"
+                        );
+                    return;
+                }
+            };
+
+            let our_peer_id = network.peer_id;
+            let our_address = NetworkAddress::from_peer(our_peer_id);
+
+            for peer_id in sorted_based_on_addr {
+                if peer_id != &our_peer_id {
+                    trace!("Replicating paid record {pretty_key:?} to {peer_id:?}");
+                    let request = Request::Cmd(Cmd::Replicate {
+                        holder: our_address.clone(),
+                        keys: vec![(addr.clone(), record_type.clone())],
+                    });
+
+                    let _ = network.send_req_ignore_reply(request, *peer_id);
+                }
+            }
+            trace!(
+                "Completed replicate paid record {pretty_key:?} on store, in {:?}",
+                start.elapsed()
+            );
+        });
     }
 
     // Utility to send `Cmd::Replicate` without awaiting for the `Response` at the call site.

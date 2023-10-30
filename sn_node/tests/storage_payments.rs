@@ -276,11 +276,11 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
         get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    println!("Paying for random Register address...");
     let mut rng = rand::thread_rng();
     let xor_name = XorName::random(&mut rng);
     let address = RegisterAddress::new(xor_name, client.signer_pk());
     let net_addr = NetworkAddress::from_register_address(address);
+    println!("Paying for random Register address {net_addr:?} ...");
 
     let _cost = wallet_client
         .pay_for_storage(std::iter::once(net_addr))

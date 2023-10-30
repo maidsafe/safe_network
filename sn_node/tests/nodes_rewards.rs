@@ -47,8 +47,8 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
         chunks_dir.path().to_path_buf(),
     )?;
 
-    println!("Paying for {} random addresses... {chunks:?}", chunks.len());
     let prev_rewards_balance = current_rewards_balance()?;
+    println!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
 
     let (_file_addr, rewards_paid, _royalties_fees) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
@@ -78,10 +78,11 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
 
     let rb = current_rewards_balance()?;
 
-    println!("Paying for random Register address... rb {rb:?}");
     let mut rng = rand::thread_rng();
     let register_addr = XorName::random(&mut rng);
     let expected_royalties_fees = NETWORK_ROYALTIES_AMOUNT_PER_ADDR; // fee for a single address
+
+    println!("Paying for random Register address {register_addr:?} with current balance {rb:?}");
 
     let prev_rewards_balance = current_rewards_balance()?;
 
@@ -150,7 +151,7 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let mut rng = rand::thread_rng();
     let register_addr = XorName::random(&mut rng);
 
-    println!("Paying for random Register address...");
+    println!("Paying for random Register address {register_addr:?} ...");
 
     let handle = spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string());
 
@@ -196,7 +197,7 @@ fn current_rewards_balance() -> Result<NanoTokens> {
         let path = entry?.path();
         let wallet = LocalWallet::try_load_from(&path)?;
         let balance = wallet.balance();
-        println!("Node's wallet {path:?} currentln have balance of {balance:?}");
+        println!("Node's wallet {path:?} currently have balance of {balance:?}");
         total_rewards = total_rewards
             .checked_add(balance)
             .ok_or_else(|| eyre!("Faied to sum up rewards balance"))?;
