@@ -151,7 +151,7 @@ async fn upload_files(
     if file_api.wallet()?.balance().is_zero() {
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
-    let mut manager = ChunkManager::new(root_dir, file_api.clone());
+    let mut manager = ChunkManager::new(root_dir);
     manager.chunk_path(&files_path)?;
 
     let chunks_to_upload = manager.get_chunks();
