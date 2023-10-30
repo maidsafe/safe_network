@@ -82,7 +82,7 @@ impl RecordStore for UnifiedRecordStore {
 }
 
 impl UnifiedRecordStore {
-    pub(crate) fn contains(&self, key: &RecordKey) -> Option<&RecordType> {
+    pub(crate) fn contains(&self, key: &RecordKey) -> bool {
         match self {
             Self::Client(store) => store.contains(key),
             Self::Node(store) => store.contains(key),
@@ -97,7 +97,7 @@ impl UnifiedRecordStore {
     }
 
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashMap<RecordKey, RecordType> {
+    pub(crate) fn record_addresses_ref(&self) -> &HashMap<RecordKey, (NetworkAddress, RecordType)> {
         match self {
             Self::Client(store) => store.record_addresses_ref(),
             Self::Node(store) => store.record_addresses_ref(),

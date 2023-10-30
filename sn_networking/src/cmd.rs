@@ -427,8 +427,7 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .contains(&key)
-                    .is_some();
+                    .contains(&key);
                 let _ = sender.send(has_key);
             }
             SwarmCmd::GetAllLocalRecordAddresses { sender } => {
