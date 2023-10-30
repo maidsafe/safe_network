@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698674581909,
+  "lastUpdate": 1698674853848,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "1cf66abde5fab4015338f1b6b3744ba5370d45f6",
-          "message": "fix(network): use safe operations when dealing with Vec",
-          "timestamp": "2023-06-20T16:41:41Z",
-          "tree_id": "a0a5450e5034ea202a5db28fa30f0f3b6463d5b2",
-          "url": "https://github.com/maidsafe/safe_network/commit/1cf66abde5fab4015338f1b6b3744ba5370d45f6"
-        },
-        "date": 1687283574401,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 12.97,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 104,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "4c24e25ec0e8a29b87cacb14fe6b14e02aab8bdc",
+          "message": "feat(cli): error out if empty wallet",
+          "timestamp": "2023-10-30T13:10:24Z",
+          "tree_id": "4d9ba228778082d7576f6df3dd3a821cda5b43f3",
+          "url": "https://github.com/maidsafe/safe_network/commit/4c24e25ec0e8a29b87cacb14fe6b14e02aab8bdc"
+        },
+        "date": 1698674852349,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 65,
             "unit": "MB"
           }
         ]
