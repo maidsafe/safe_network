@@ -19,6 +19,7 @@ use safenode_proto::{
 use sn_client::Client;
 use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
+use sn_peers_acquisition::{parse_peers_args, PeersArgs};
 use sn_protocol::storage::SpendAddress;
 use sn_transfers::{LocalWallet, MainSecretKey, Transfer};
 use std::{fs, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
@@ -67,6 +68,9 @@ enum Cmd {
         /// Each file is named after the CashNote id.
         #[clap(name = "log-cash-notes")]
         log_cash_notes: Option<PathBuf>,
+
+        #[command(flatten)]
+        peers: PeersArgs,
     },
     /// Subscribe to a given Gossipsub topic
     #[clap(name = "subscribe")]
@@ -129,8 +133,20 @@ async fn main() -> Result<()> {
         Cmd::Info => node_info(addr).await,
         Cmd::Netinfo => network_info(addr).await,
         Cmd::Events => node_events(addr).await,
-        Cmd::TransfersEvents { sk, log_cash_notes } => {
-            transfers_events(addr, sk, log_cash_notes).await
+        Cmd::TransfersEvents {
+            sk,
+            log_cash_notes,
+            peers,
+        } => {
+            let bootstrap_peers = parse_peers_args(peers).await?;
+            let bootstrap_peers = if bootstrap_peers.is_empty() {
+                // empty vec is returned if `local-discovery` flag is provided
+                None
+            } else {
+                Some(bootstrap_peers)
+            };
+
+            transfers_events(addr, sk, log_cash_notes, bootstrap_peers).await
         }
         Cmd::Subscribe { topic } => gossipsub_subscribe(addr, topic).await,
         Cmd::Unsubscribe { topic } => gossipsub_unsubscribe(addr, topic).await,
@@ -215,10 +231,11 @@ pub async fn transfers_events(
     addr: SocketAddr,
     sk: String,
     log_cash_notes: Option<PathBuf>,
+    bootstrap_peers: Option<Vec<Multiaddr>>,
 ) -> Result<()> {
     let (client, mut wallet) = match SecretKey::from_hex(&sk) {
         Ok(sk) => {
-            let client = Client::new(sk.clone(), None, None).await?;
+            let client = Client::new(sk.clone(), bootstrap_peers, None).await?;
             let main_sk = MainSecretKey::new(sk);
             let wallet_dir = TempDir::new()?;
             let wallet = LocalWallet::load_from_main_key(&wallet_dir, main_sk)?;
