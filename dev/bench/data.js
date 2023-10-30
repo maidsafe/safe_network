@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698657263089,
+  "lastUpdate": 1698657535672,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "ba96bef407a89e4136b890e5ce9812d4773dbab9",
-          "message": "feat(sn_networking): Make it possible to pass in a keypair for PeerID\n\nmakes changes up the stack so nodes could restart and maintain peerId,\nclients simply ignore this and provide None as they have a separate Signer\nused for client ops. Their PeerId is not relevant or used in kad at all",
-          "timestamp": "2023-06-20T14:07:06Z",
-          "tree_id": "37262bc3fcb2f1ea40abf0b0919d5e685178e187",
-          "url": "https://github.com/maidsafe/safe_network/commit/ba96bef407a89e4136b890e5ce9812d4773dbab9"
-        },
-        "date": 1687274800205,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 57.01,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 60,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "bc06c33ce7c6a86e5e78ceb71fa465f6671f3b9d",
+          "message": "feat: `bincode::serialize` into `Bytes` without intermediate allocation",
+          "timestamp": "2023-10-30T08:21:39Z",
+          "tree_id": "23b5df09bdcabd4cd8b240e0e17c91bae2c800ba",
+          "url": "https://github.com/maidsafe/safe_network/commit/bc06c33ce7c6a86e5e78ceb71fa465f6671f3b9d"
+        },
+        "date": 1698657535298,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 104,
             "unit": "MB"
           }
         ]
