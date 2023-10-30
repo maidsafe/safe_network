@@ -31,7 +31,7 @@ use libp2p::mdns;
 use libp2p::{
     autonat,
     identity::Keypair,
-    kad::{self, QueryId, Record},
+    kad::{self, QueryId, Record, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
     swarm::{
@@ -583,6 +583,23 @@ impl SwarmDriver {
         }
         all_peers.push(self.self_peer_id);
         all_peers
+    }
+
+    // get cloest k_value the peers from our local RoutingTable. Contains self
+    pub(crate) fn get_closest_k_value_local_peers(&mut self) -> Vec<PeerId> {
+        let mut all_peers: HashSet<PeerId> = Default::default();
+        // buckets should be ordered by proximity to
+        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+            if all_peers.len() > K_VALUE.get() {
+                // stop once we have enough peers
+                break;
+            }
+            for entry in kbucket.iter() {
+                all_peers.insert(entry.node.key.clone().into_preimage());
+            }
+        }
+        all_peers.insert(self.self_peer_id);
+        all_peers.into_iter().collect()
     }
 
     /// Dials the given multiaddress. If address contains a peer ID, simultaneous

@@ -54,13 +54,18 @@ pub enum SwarmCmd {
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
     // Get closest peers from the local RoutingTable
-    GetClosestLocalPeers {
+    GetCloseGroupLocalPeers {
         key: NetworkAddress,
         sender: oneshot::Sender<Vec<PeerId>>,
     },
     // Returns all the peers from all the k-buckets from the local Routing Table.
     // This includes our PeerId as well.
     GetAllLocalPeers {
+        sender: oneshot::Sender<Vec<PeerId>>,
+    },
+    // Returns up to K_VALUE peers from all the k-buckets from the local Routing Table.
+    // And our PeerId as well.
+    GetClosestKLocalPeers {
         sender: oneshot::Sender<Vec<PeerId>>,
     },
     // Returns the peers that are closet to our PeerId.
@@ -212,7 +217,10 @@ impl Debug for SwarmCmd {
             SwarmCmd::GetClosestPeers { key, .. } => {
                 write!(f, "SwarmCmd::GetClosestPeers {{ key: {:?} }}", key)
             }
-            SwarmCmd::GetClosestLocalPeers { key, .. } => {
+            SwarmCmd::GetClosestKLocalPeers { .. } => {
+                write!(f, "SwarmCmd::GetClosestKLocalPeers")
+            }
+            SwarmCmd::GetCloseGroupLocalPeers { key, .. } => {
                 write!(f, "SwarmCmd::GetClosestLocalPeers {{ key: {:?} }}", key)
             }
             SwarmCmd::StopBootstrapping => {
@@ -464,7 +472,10 @@ impl SwarmDriver {
                     .pending_get_closest_peers
                     .insert(query_id, (sender, Default::default()));
             }
-            SwarmCmd::GetClosestLocalPeers { key, sender } => {
+            SwarmCmd::GetAllLocalPeers { sender } => {
+                let _ = sender.send(self.get_all_local_peers());
+            }
+            SwarmCmd::GetCloseGroupLocalPeers { key, sender } => {
                 let key = key.as_kbucket_key();
                 // calls `kbuckets.closest_keys(key)` internally, which orders the peers by
                 // increasing distance
@@ -480,11 +491,11 @@ impl SwarmDriver {
 
                 let _ = sender.send(closest_peers);
             }
-            SwarmCmd::GetAllLocalPeers { sender } => {
-                let _ = sender.send(self.get_all_local_peers());
-            }
             SwarmCmd::GetOurCloseGroup { sender } => {
                 let _ = sender.send(self.close_group.clone());
+            }
+            SwarmCmd::GetClosestKLocalPeers { sender } => {
+                let _ = sender.send(self.get_closest_k_value_local_peers());
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 // If `self` is the recipient, forward the request directly to our upper layer to
