@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698676828141,
+  "lastUpdate": 1698677103216,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "9fd5908d809199826b40cbf6e776c899ff27bb3a",
-          "message": "feat: provide option for log output in json\n\nSome users who had been interacting with the InstallNet testnet requested output in this form. It\ndoesn't give us any more elaborate data, like say what comes from an Open Telemetry trace, but might\nfunction as a starting point.",
-          "timestamp": "2023-06-21T01:03:54Z",
-          "tree_id": "4a305c262b77e2cd29286cea444566e4e230d936",
-          "url": "https://github.com/maidsafe/safe_network/commit/9fd5908d809199826b40cbf6e776c899ff27bb3a"
-        },
-        "date": 1687313022345,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 13.18,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 65,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "4dcd8e99bb1753b0a5aa9c2912581bf5923e6afc",
+          "message": "chore(networking): de/serialise directly to Bytes",
+          "timestamp": "2023-10-30T13:45:39Z",
+          "tree_id": "73e01c8deb5b26c0e47293e78e37b24e8f8ec85c",
+          "url": "https://github.com/maidsafe/safe_network/commit/4dcd8e99bb1753b0a5aa9c2912581bf5923e6afc"
+        },
+        "date": 1698677102537,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57,
             "unit": "MB"
           }
         ]
