@@ -39,7 +39,7 @@ impl ReplicationFetcher {
         &mut self,
         holder: PeerId,
         incoming_keys: Vec<(NetworkAddress, RecordType)>,
-        locally_stored_keys: &HashMap<RecordKey, RecordType>,
+        locally_stored_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
     ) -> Vec<(PeerId, RecordKey)> {
         self.remove_stored_keys(locally_stored_keys);
 
@@ -159,9 +159,18 @@ impl ReplicationFetcher {
     }
 
     /// Remove keys that we hold already and no longer need to be replicated.
-    fn remove_stored_keys(&mut self, existing_keys: &HashMap<RecordKey, RecordType>) {
-        self.to_be_fetched
-            .retain(|(key, t, _), _| Some(t) != existing_keys.get(key));
+    fn remove_stored_keys(
+        &mut self,
+        existing_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
+    ) {
+        self.to_be_fetched.retain(|(key, t, _), _| {
+            if let Some((_addr, record_type)) = existing_keys.get(key) {
+                // check the address only against similar record types
+                t != record_type
+            } else {
+                true
+            }
+        });
     }
 
     /// Add the key if not present yet.

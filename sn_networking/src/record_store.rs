@@ -41,7 +41,7 @@ pub struct NodeRecordStore {
     /// The configuration of the store.
     config: NodeRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
-    records: HashMap<Key, RecordType>,
+    records: HashMap<Key, (NetworkAddress, RecordType)>,
     /// Currently only used to notify the record received via network put to be validated.
     event_sender: Option<mpsc::Sender<NetworkEvent>>,
     /// Distance range specify the acceptable range of record entry.
@@ -189,8 +189,8 @@ impl NodeRecordStore {
 
 impl NodeRecordStore {
     /// Returns `true` if the `Key` is present locally
-    pub(crate) fn contains(&self, key: &Key) -> Option<&RecordType> {
-        self.records.get(key)
+    pub(crate) fn contains(&self, key: &Key) -> bool {
+        self.records.contains_key(key)
     }
 
     /// Returns the set of `NetworkAddress::RecordKey` held by the store
@@ -198,18 +198,13 @@ impl NodeRecordStore {
     pub(crate) fn record_addresses(&self) -> HashMap<NetworkAddress, RecordType> {
         self.records
             .iter()
-            .map(|(record_key, record_type)| {
-                (
-                    NetworkAddress::from_record_key(record_key),
-                    record_type.clone(),
-                )
-            })
+            .map(|(_record_key, (addr, record_type))| (addr.clone(), record_type.clone()))
             .collect()
     }
 
     /// Returns the reference to the set of `NetworkAddress::RecordKey` held by the store
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, RecordType> {
+    pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType)> {
         &self.records
     }
 
@@ -223,7 +218,10 @@ impl NodeRecordStore {
 
         let filename = Self::key_to_hex(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
-        let _ = self.records.insert(r.key.clone(), record_type);
+        let _ = self.records.insert(
+            r.key.clone(),
+            (NetworkAddress::from_record_key(&r.key), record_type),
+        );
         #[cfg(feature = "open-metrics")]
         if let Some(metric) = &self.record_count_metric {
             let _ = metric.set(self.records.len() as i64);
@@ -348,11 +346,11 @@ impl RecordStore for NodeRecordStore {
                         // otherwise shall be passed further to allow
                         // double spend to be detected or register op update.
                         match self.records.get(&record.key) {
-                            Some(RecordType::Chunk) => {
+                            Some((_addr, RecordType::Chunk)) => {
                                 trace!("Chunk {record_key:?} already exists.");
                                 return Ok(());
                             }
-                            Some(RecordType::NonChunk(existing_content_hash)) => {
+                            Some((_addr, RecordType::NonChunk(existing_content_hash))) => {
                                 let content_hash = XorName::from_content(&record.value);
                                 if content_hash == *existing_content_hash {
                                     trace!("A non-chunk record {record_key:?} with same content_hash {content_hash:?} already exists.");
@@ -437,12 +435,12 @@ impl RecordStore for NodeRecordStore {
 /// A place holder RecordStore impl for the client that does nothing
 #[derive(Default, Debug)]
 pub struct ClientRecordStore {
-    empty_record_addresses: HashMap<Key, RecordType>,
+    empty_record_addresses: HashMap<Key, (NetworkAddress, RecordType)>,
 }
 
 impl ClientRecordStore {
-    pub(crate) fn contains(&self, _key: &Key) -> Option<&RecordType> {
-        None
+    pub(crate) fn contains(&self, _key: &Key) -> bool {
+        false
     }
 
     pub(crate) fn record_addresses(&self) -> HashMap<NetworkAddress, RecordType> {
@@ -450,7 +448,7 @@ impl ClientRecordStore {
     }
 
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, RecordType> {
+    pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType)> {
         &self.empty_record_addresses
     }
 
