@@ -24,9 +24,19 @@ use xor_name::XorName;
 
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
 
-// the hex encoded XorName of the entire path's bytes
+// The unique hex encoded hash(path)
+// This allows us to uniquely identify if a file has been chuked or not.
+// An alternative to use instead of filename as it might not be unique
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 struct PathXorName(String);
+
+impl PathXorName {
+    fn new(path: &Path) -> PathXorName {
+        let path_as_bytes = path.as_os_str().as_bytes();
+        let path_xor = XorName::from_content(path_as_bytes);
+        PathXorName(hex::encode(path_xor))
+    }
+}
 
 /// Info about a file that has been chunked
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
@@ -36,6 +46,8 @@ pub(crate) struct ChunkedFile {
     pub chunks: Vec<(XorName, PathBuf)>,
 }
 
+/// Manages the chunking process by resuming pre-chunked files and chunking any
+/// file that has not been chunked yet.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub(crate) struct ChunkManager {
     artifacts_dir: PathBuf,
@@ -45,6 +57,7 @@ pub(crate) struct ChunkManager {
 }
 
 impl ChunkManager {
+    // Provide the root_dir. The function creates a sub-directory to store the SE chunks
     pub(crate) fn new(root_dir: &Path) -> Self {
         Self {
             artifacts_dir: root_dir.join(CHUNK_ARTIFACTS_DIR),
@@ -55,7 +68,6 @@ impl ChunkManager {
     }
 
     /// Chunk all the files in the provided `files_path`
-    /// `chunks_dir` is used to store the results of the self-encryption process
     pub(crate) fn chunk_path(&mut self, files_path: &Path) -> Result<()> {
         trace!("Starting to chunk {files_path:?} now.");
         let now = Instant::now();
@@ -67,7 +79,7 @@ impl ChunkManager {
                 if !entry.file_type().is_file() {
                     return None;
                 }
-                let path_xor = Self::get_path_xor_name(entry.path());
+                let path_xor = PathXorName::new(entry.path());
                 info!(
                     "Added file {:?} with path_xor: {path_xor:?} to be chunked/resumed",
                     entry.path()
@@ -83,16 +95,17 @@ impl ChunkManager {
             .values()
             .flat_map(|chunked_file| &chunked_file.chunks)
             .count();
-        // we don't care if we have partial chunks as they might have been marked as completed
         let to_filter = resumed.keys().cloned().collect::<BTreeSet<_>>();
         self.chunked_files.extend(resumed);
 
+        // we don't care if we have partial chunks as they might have been marked as completed
         let total_files = files_to_chunk.len() - to_filter.len();
         if total_files == 0 {
             debug!(
                 "All files_to_chunk ({:?}) were resumed. Returning the resumed chunks.",
                 files_to_chunk.len()
             );
+            debug!("It took {:?} to resume all the files", now.elapsed());
             // no more files to chunk
             return Ok(());
         }
@@ -105,21 +118,20 @@ impl ChunkManager {
             // filter out all the resumed ones
             .filter(|(_,path_xor, _)| !to_filter.contains(path_xor))
             .filter_map(|(original_file_name, path_xor, path)| {
-                // Each file using individual dir for temp SE chunks.
-            let file_chunks_dir = {
-                let file_chunks_dir = artifacts_dir.join(&path_xor.0);
-                match fs::create_dir_all(&file_chunks_dir) {
-                    Ok(_) => file_chunks_dir,
-                    Err(err) => {
-                        println!("Failed to create temp folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
-                        error!("Failed to create temp folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
-                        // use the chunk_artifacts_dir directly; This should not fail. Resume
-                        // operation is not conisdered for this failure here.
-                        // We assume each file is chunked to the `path_xor`
-                        artifacts_dir.clone()
+                let file_chunks_dir = {
+                    let file_chunks_dir = artifacts_dir.join(&path_xor.0);
+                    match fs::create_dir_all(&file_chunks_dir) {
+                        Ok(_) => file_chunks_dir,
+                        Err(err) => {
+                            println!("Failed to create temp folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
+                            error!("Failed to create temp folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
+                            // use the chunk_artifacts_dir directly; This should not result in any
+                            // undefined behaviour. The resume operation will be disabled if we don't
+                            // use the `path_xor` dir.
+                            artifacts_dir.clone()
+                        }
                     }
-                }
-            };
+                };
 
                 match Files::chunk_file(path, &file_chunks_dir) {
                     Ok((file_xor_addr, size, chunks)) => {
@@ -180,6 +192,8 @@ impl ChunkManager {
         Ok(())
     }
 
+    // Try to resume all the given files.
+    // Return the set of chunked_files if that we were able to resume.
     fn resume_path(
         files_to_chunk: &Vec<(OsString, PathXorName, PathBuf)>,
         artifacts_dir: &Path,
@@ -231,6 +245,7 @@ impl ChunkManager {
         Ok(resumed)
     }
 
+    /// Get all the chunk name and their path
     pub(crate) fn get_chunks(&self) -> Vec<(XorName, PathBuf)> {
         self.chunked_files
             .values()
@@ -239,6 +254,8 @@ impl ChunkManager {
             .collect()
     }
 
+    /// Mark all the chunks as completed and remove them from the chunk_artifacts_dir
+    /// Thus they cannot be resumed if we try to call `chunk_path()` again.
     pub(crate) fn mark_finished_all(&mut self) {
         let all_chunks = self
             .chunked_files
@@ -249,6 +266,8 @@ impl ChunkManager {
         self.mark_finished(all_chunks.into_iter());
     }
 
+    /// Mark a set of chunks as completed and remove them from the chunk_artifacts_dir
+    /// These chunks cannot be resumed if we try to call `chunk_path()` again.
     pub(crate) fn mark_finished(&mut self, finished_chunks: impl Iterator<Item = XorName>) {
         let finished_chunks = finished_chunks.collect::<BTreeSet<_>>();
         // remove those files
@@ -302,6 +321,8 @@ impl ChunkManager {
         }
     }
 
+    /// Return the filename and the file's Xor address if all their chunks has been marked as
+    /// completed
     pub(crate) fn completed_files(&self) -> &Vec<(OsString, XorName)> {
         &self.uploaded_files
     }
@@ -348,6 +369,7 @@ impl ChunkManager {
         (chunks, file_xor_addr)
     }
 
+    // Try to read the metadata file
     fn try_read_metadata(path: &Path) -> Option<XorName> {
         let metadata = fs::read(path)
             .map_err(|err| error!("Failed to read metadata with err {err:?}"))
@@ -358,12 +380,7 @@ impl ChunkManager {
         Some(metadata)
     }
 
-    fn get_path_xor_name(path: &Path) -> PathXorName {
-        let path_as_bytes = path.as_os_str().as_bytes();
-        let path_xor = XorName::from_content(path_as_bytes);
-        PathXorName(hex::encode(path_xor))
-    }
-
+    // Decode the hex encoded xorname
     fn hex_decode_xorname(string: &str) -> Option<XorName> {
         let hex_decoded = hex::decode(string)
             .map_err(|err| error!("Failed to decode {string} into bytes with err {err:?}"))
@@ -713,7 +730,7 @@ mod tests {
         }
 
         // remove metadata file
-        let path_xor = ChunkManager::get_path_xor_name(&random_file).0;
+        let path_xor = PathXorName::new(&random_file).0;
         let metadata_path = artifacts_dir.join(&path_xor).join("metadata");
         fs::remove_file(&metadata_path)?;
         // also remove a random chunk to make sure it is re-chunked
