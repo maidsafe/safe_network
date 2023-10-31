@@ -187,21 +187,24 @@ impl Network {
 
         match receiver.await {
             Ok(close_peers) => {
-                let close_peers_pretty_print: Vec<_> = close_peers
-                    .iter()
-                    .map(|peer_id| {
-                        format!(
-                            "{peer_id:?}({:?})",
-                            PrettyPrintKBucketKey(
-                                NetworkAddress::from_peer(*peer_id).as_kbucket_key()
+                // Only perform the pretty print and tracing if tracing is enabled
+                if tracing::level_enabled!(tracing::Level::TRACE) {
+                    let close_peers_pretty_print: Vec<_> = close_peers
+                        .iter()
+                        .map(|peer_id| {
+                            format!(
+                                "{peer_id:?}({:?})",
+                                PrettyPrintKBucketKey(
+                                    NetworkAddress::from_peer(*peer_id).as_kbucket_key()
+                                )
                             )
-                        )
-                    })
-                    .collect();
+                        })
+                        .collect();
 
-                trace!(
-                    "Local knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}"
-                );
+                    trace!(
+                        "Local knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}"
+                    );
+                }
                 Ok(close_peers)
             }
             Err(err) => {

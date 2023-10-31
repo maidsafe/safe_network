@@ -431,6 +431,7 @@ impl SwarmDriver {
                 let _ = sender.send(has_key);
             }
             SwarmCmd::GetAllLocalRecordAddresses { sender } => {
+                #[allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
                 let addresses = self
                     .swarm
                     .behaviour_mut()
