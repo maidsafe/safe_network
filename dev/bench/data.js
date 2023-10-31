@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698745897789,
+  "lastUpdate": 1698745899365,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30161,6 +30161,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 39,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "33b366c24794e06c0da9ad1d402c425a27f78aff",
+          "message": "feat(rpc-client): allow to set peers to connect to in order to validate decrypted transfers events",
+          "timestamp": "2023-10-31T08:55:16Z",
+          "tree_id": "9d81bb1e906579b0ed741fbcc85a3b003f22c040",
+          "url": "https://github.com/maidsafe/safe_network/commit/33b366c24794e06c0da9ad1d402c425a27f78aff"
+        },
+        "date": 1698745898979,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 115,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 35,
             "unit": "MB"
           }
         ]
