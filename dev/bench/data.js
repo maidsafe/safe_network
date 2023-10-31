@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698761615709,
+  "lastUpdate": 1698761872753,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "e6e6b77a75b133787fe1e253d7e4d5b570fb2e7a",
-          "message": "chore(network): remove `NetworkEvent::PutRecord` dead code\n- since we do not use `kad.put_record` or `kad's replication flow`, we\n  should not get any inbound `PutRecord` from the swarm.",
-          "timestamp": "2023-06-21T16:40:25Z",
-          "tree_id": "028b176e59484ab5e1bfd7cfd1a3c5246944395f",
-          "url": "https://github.com/maidsafe/safe_network/commit/e6e6b77a75b133787fe1e253d7e4d5b570fb2e7a"
-        },
-        "date": 1687370664708,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 12.68,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "1ea3cd2238a2a3fab664baf17ead8b54d77071ef",
+          "message": "refactor(node): using unsigned gossipsub msgs",
+          "timestamp": "2023-10-31T13:17:57Z",
+          "tree_id": "1cbe526b1ce1df42885ed7fc443fa8251ebadc2b",
+          "url": "https://github.com/maidsafe/safe_network/commit/1ea3cd2238a2a3fab664baf17ead8b54d77071ef"
+        },
+        "date": 1698761872296,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 63,
             "unit": "MB"
           }
         ]
