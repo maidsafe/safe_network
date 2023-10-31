@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698745639967,
+  "lastUpdate": 1698745897789,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "0e07e753bb9470b703969fcb83100a00f82b06a4",
-          "message": "fix(sn_transfers): hardcode new genesis DBC for tests",
-          "timestamp": "2023-06-21T09:21:08Z",
-          "tree_id": "653136b50154f8d1031b3b1359777ddfb4e89a7f",
-          "url": "https://github.com/maidsafe/safe_network/commit/0e07e753bb9470b703969fcb83100a00f82b06a4"
-        },
-        "date": 1687343304544,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 12.72,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/4dcd8e99bb1753b0a5aa9c2912581bf5923e6afc"
         },
         "date": 1698677102537,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "33b366c24794e06c0da9ad1d402c425a27f78aff",
+          "message": "feat(rpc-client): allow to set peers to connect to in order to validate decrypted transfers events",
+          "timestamp": "2023-10-31T08:55:16Z",
+          "tree_id": "9d81bb1e906579b0ed741fbcc85a3b003f22c040",
+          "url": "https://github.com/maidsafe/safe_network/commit/33b366c24794e06c0da9ad1d402c425a27f78aff"
+        },
+        "date": 1698745897368,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
