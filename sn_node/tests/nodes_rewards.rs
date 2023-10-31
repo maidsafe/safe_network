@@ -171,6 +171,10 @@ async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
     let mut iteration = 0;
     let mut cur_rewards_history = Vec::new();
 
+    // An initial sleep to avoid access to the wallet file synced with the node operations.
+    // Ideally, there shall be wallet file locker to prevent handle multiple processes access.
+    sleep(Duration::from_secs(5)).await;
+
     while iteration < 15 {
         iteration += 1;
         println!("Current iteration {iteration}");
