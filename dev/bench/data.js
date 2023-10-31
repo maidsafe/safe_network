@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698769969979,
+  "lastUpdate": 1698770272287,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "879c64f0064327d632c9ffaf333e96a71acd577e",
-          "message": "feat(node): trigger replication when inactivity",
-          "timestamp": "2023-06-21T19:18:42Z",
-          "tree_id": "3eb2822f73ae1415c0807c05ab5e99c34a8f867b",
-          "url": "https://github.com/maidsafe/safe_network/commit/879c64f0064327d632c9ffaf333e96a71acd577e"
-        },
-        "date": 1687379351044,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 13.21,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 63,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "6f0273db992ad62f3d31e854ff5e13bad06be2d2",
+          "message": "fix: avoid access to the wallet files at the same time",
+          "timestamp": "2023-10-31T15:37:35Z",
+          "tree_id": "81bc6cc7c92179765c59dd60a17c25da6aed5b01",
+          "url": "https://github.com/maidsafe/safe_network/commit/6f0273db992ad62f3d31e854ff5e13bad06be2d2"
+        },
+        "date": 1698770271428,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 58,
             "unit": "MB"
           }
         ]
