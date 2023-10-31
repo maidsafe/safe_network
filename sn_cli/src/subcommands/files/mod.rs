@@ -151,10 +151,32 @@ async fn upload_files(
     if file_api.wallet()?.balance().is_zero() {
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
-    let mut manager = ChunkManager::new(root_dir);
-    manager.chunk_path(&files_path)?;
+    let mut chunk_manager = ChunkManager::new(root_dir);
+    chunk_manager.chunk_path(&files_path)?;
 
-    let chunks_to_upload = manager.get_chunks();
+    let chunks_to_upload = chunk_manager.get_chunks();
+    // check for any resumed files
+    if !chunk_manager.completed_files().is_empty() {
+        println!("**************************************");
+        println!("*          Resumed Files             *");
+        println!("**************************************");
+        // todo: how do we write to the uploaded_files file here? Appending will result in
+        // duplicates
+        for (file_name, addr) in chunk_manager.completed_files() {
+            if let Some(file_name) = file_name.to_str() {
+                println!("Uploaded {file_name} to {addr:x}");
+                info!("Uploaded {file_name} to {addr:x}");
+            } else {
+                println!("Uploaded {file_name:?} to {addr:x}");
+                info!("Uploaded {file_name:?} to {addr:x}");
+            }
+        }
+    }
+    // Empty if they were uploaded already
+    if chunks_to_upload.is_empty() {
+        println!("All files were already uploaded and verified");
+        return Ok(());
+    }
     let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
     println!("Input was split into {} chunks", chunks_to_upload.len());
     println!("Will now attempt to upload them...");
@@ -247,16 +269,16 @@ async fn upload_files(
             verify_and_repay_if_needed(
                 file_api.clone(),
                 data_to_verify_or_repay,
-                &mut manager,
+                &mut chunk_manager,
                 batch_size,
                 show_holders,
             )
             .await?;
-            data_to_verify_or_repay = manager.get_chunks();
+            data_to_verify_or_repay = chunk_manager.get_chunks();
             println!("{data_to_verify_or_repay:?} were not yet verified...");
         }
     } else {
-        manager.mark_finished_all();
+        chunk_manager.mark_completed_all();
     }
 
     progress_bar.finish_and_clear();
@@ -270,7 +292,7 @@ async fn upload_files(
         .write(true)
         .append(true)
         .open(file_names_path)?;
-    for (file_name, addr) in manager.completed_files() {
+    for (file_name, addr) in chunk_manager.completed_files() {
         if let Some(file_name) = file_name.to_str() {
             println!("\"{file_name}\" {addr:x}");
             info!("Uploaded {file_name} to {addr:x}");
@@ -393,10 +415,10 @@ async fn verify_and_repay_if_needed(
 
     if failed_chunks.is_empty() {
         println!("Verification complete: all chunks paid and stored");
-        chunk_manager.mark_finished_all();
+        chunk_manager.mark_completed_all();
     }
 
-    chunk_manager.mark_finished(failed_chunks.iter().map(|(addr, _)| *addr.xorname()));
+    chunk_manager.mark_completed(failed_chunks.iter().map(|(addr, _)| *addr.xorname()));
     let failed_chunks = chunk_manager.get_chunks();
 
     let num_of_failed_chunks = failed_chunks.len();
