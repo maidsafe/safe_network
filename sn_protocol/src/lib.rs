@@ -17,6 +17,7 @@ pub mod messages;
 pub mod storage;
 
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
+use bytes::Bytes;
 use libp2p::{
     kad::{KBucketDistance as Distance, KBucketKey as Key, RecordKey},
     PeerId,
@@ -40,7 +41,7 @@ use xor_name::XorName;
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum NetworkAddress {
     /// The NetworkAddress is representing a PeerId.
-    PeerId(Vec<u8>),
+    PeerId(Bytes),
     /// The NetworkAddress is representing a ChunkAddress.
     ChunkAddress(ChunkAddress),
     /// The NetworkAddress is representing a SpendAddress.
@@ -48,7 +49,7 @@ pub enum NetworkAddress {
     /// The NetworkAddress is representing a ChunkAddress.
     RegisterAddress(RegisterAddress),
     /// The NetworkAddress is representing a RecordKey.
-    RecordKey(Vec<u8>),
+    RecordKey(Bytes),
 }
 
 impl NetworkAddress {
@@ -69,12 +70,12 @@ impl NetworkAddress {
 
     /// Return a `NetworkAddress` representation of the `PeerId` by encapsulating its bytes.
     pub fn from_peer(peer_id: PeerId) -> Self {
-        NetworkAddress::PeerId(peer_id.to_bytes())
+        NetworkAddress::PeerId(Bytes::from(peer_id.to_bytes()))
     }
 
     /// Return a `NetworkAddress` representation of the `RecordKey` by encapsulating its bytes.
     pub fn from_record_key(record_key: &RecordKey) -> Self {
-        NetworkAddress::RecordKey(record_key.to_vec())
+        NetworkAddress::RecordKey(Bytes::copy_from_slice(record_key.as_ref()))
     }
 
     /// Return the encapsulated bytes of this `NetworkAddress`.

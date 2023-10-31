@@ -54,6 +54,7 @@ impl Node {
         let our_peer_id = self.network.peer_id;
         let our_address = NetworkAddress::from_peer(our_peer_id);
 
+        #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
         let all_records = self.network.get_all_local_record_addresses().await?;
 
         trace!(
