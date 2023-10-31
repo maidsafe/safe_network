@@ -1931,6 +1931,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.96.18](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.17...sn_node-v0.96.18) - 2023-10-31
+
+### Added
+- *(rpc-client)* allow to set peers to connect to in order to validate decrypted transfers events
+
+### Other
+- *(release)* sn_cli-v0.84.32/sn_client-v0.95.14/sn_networking-v0.9.13/sn_protocol-v0.8.9
+- *(networking)* de/serialise directly to Bytes
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
