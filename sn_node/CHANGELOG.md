@@ -1940,6 +1940,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(release)* sn_cli-v0.84.32/sn_client-v0.95.14/sn_networking-v0.9.13/sn_protocol-v0.8.9
 - *(networking)* de/serialise directly to Bytes
 
+## [0.96.19](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.18...sn_node-v0.96.19) - 2023-10-31
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
