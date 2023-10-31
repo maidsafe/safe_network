@@ -93,6 +93,10 @@ jobs:
           toolchain: stable
 
       - uses: Swatinem/rust-cache@v2
+      
+      - name: Run CLI tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_cli
 
       - name: Run testnet tests
         timeout-minutes: 25
