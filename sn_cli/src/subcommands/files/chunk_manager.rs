@@ -15,7 +15,6 @@ use std::{
     ffi::OsString,
     fs::{self, File},
     io::Write,
-    os::unix::prelude::OsStrExt,
     path::{Path, PathBuf},
     time::Instant,
 };
@@ -32,8 +31,10 @@ struct PathXorName(String);
 
 impl PathXorName {
     fn new(path: &Path) -> PathXorName {
-        let path_as_bytes = path.as_os_str().as_bytes();
-        let path_xor = XorName::from_content(path_as_bytes);
+        // we just need an unique value per path, thus we don't have to mind between the
+        // [u8]/[u16]
+        let path_as_lossy_str = path.as_os_str().to_string_lossy();
+        let path_xor = XorName::from_content(path_as_lossy_str.as_bytes());
         PathXorName(hex::encode(path_xor))
     }
 }
