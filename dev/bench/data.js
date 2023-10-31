@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698770272287,
+  "lastUpdate": 1698770274662,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30229,6 +30229,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 40,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "6f0273db992ad62f3d31e854ff5e13bad06be2d2",
+          "message": "fix: avoid access to the wallet files at the same time",
+          "timestamp": "2023-10-31T15:37:35Z",
+          "tree_id": "81bc6cc7c92179765c59dd60a17c25da6aed5b01",
+          "url": "https://github.com/maidsafe/safe_network/commit/6f0273db992ad62f3d31e854ff5e13bad06be2d2"
+        },
+        "date": 1698770273832,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 154,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 41,
             "unit": "MB"
           }
         ]
