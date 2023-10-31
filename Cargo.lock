@@ -4544,6 +4544,7 @@ dependencies = [
  "hex",
  "indicatif",
  "libp2p 0.53.0",
+ "rand",
  "rayon",
  "reqwest",
  "sn_build_info",
