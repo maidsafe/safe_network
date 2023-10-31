@@ -22,6 +22,7 @@ use walkdir::WalkDir;
 use xor_name::XorName;
 
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
+const METADATA_FILE: &str = "metadata";
 
 // The unique hex encoded hash(path)
 // This allows us to uniquely identify if a file has been chuked or not.
@@ -53,7 +54,7 @@ pub(crate) struct ChunkedFile {
 pub(crate) struct ChunkManager {
     artifacts_dir: PathBuf,
     chunked_files: BTreeMap<PathXorName, ChunkedFile>,
-    uploaded_files: Vec<(OsString, XorName)>,
+    completed_files: Vec<(OsString, XorName)>,
     resumed_chunk_count: usize,
 }
 
@@ -63,7 +64,7 @@ impl ChunkManager {
         Self {
             artifacts_dir: root_dir.join(CHUNK_ARTIFACTS_DIR),
             chunked_files: Default::default(),
-            uploaded_files: Default::default(),
+            completed_files: Default::default(),
             resumed_chunk_count: 0,
         }
     }
@@ -90,14 +91,34 @@ impl ChunkManager {
             })
             .collect::<Vec<_>>();
 
-        // resume chunks if any
+        // resume chunks if any;
         let resumed = Self::resume_path(&files_to_chunk, &self.artifacts_dir)?;
+
+        // note the number of chunks that we've resumed
         self.resumed_chunk_count = resumed
             .values()
             .flat_map(|chunked_file| &chunked_file.chunks)
             .count();
+        // these files are not chunked again. This contains the files that have 0 chunk left too
+        // i.e., those that are complately makred as completed
         let to_filter = resumed.keys().cloned().collect::<BTreeSet<_>>();
-        self.chunked_files.extend(resumed);
+
+        // if the chunks are empty, then then all the chunks were marked as completed
+        let completed_files = resumed.values().filter_map(|chunked_file| {
+            if chunked_file.chunks.is_empty() {
+                Some((chunked_file.file_name.clone(), chunked_file.file_xor_addr))
+            } else {
+                None
+            }
+        });
+        self.completed_files.extend(completed_files);
+
+        // only add the entries with non-empty chunks
+        self.chunked_files.extend(
+            resumed
+                .into_iter()
+                .filter(|(_, chunked_file)| !chunked_file.chunks.is_empty()),
+        );
 
         // we don't care if we have partial chunks as they might have been marked as completed
         let total_files = files_to_chunk.len() - to_filter.len();
@@ -160,7 +181,7 @@ impl ChunkManager {
         let _ = chunked_files
             .par_iter()
             .filter_map(|(path_xor, chunked_file)| {
-                let metadata_path = artifacts_dir.join(&path_xor.0).join("metadata");
+                let metadata_path = artifacts_dir.join(&path_xor.0).join(METADATA_FILE);
                 let metadata = bincode::serialize(&chunked_file.file_xor_addr)
                     .map_err(|_| error!("Failed to serialize file_xor_addr for writing metadata"))
                     .ok()?;
@@ -217,6 +238,10 @@ impl ChunkManager {
                     Self::read_file_chunks_dir(file_chunks_dir, path_xor.clone());
 
                 resume_progress_bar.clone().inc(1);
+
+                // if a file's entire chunk list has been marked as complete and removed, the
+                // folder and the file_xor_addr remains. Thus we can add it to the completed list
+                // file_xor_addr is needed to display to the user.
                 match file_xor_addr {
                     Some(file_xor_addr) => {
                         let original_file_name = files_path.file_name()?.to_owned();
@@ -257,28 +282,28 @@ impl ChunkManager {
 
     /// Mark all the chunks as completed and remove them from the chunk_artifacts_dir
     /// Thus they cannot be resumed if we try to call `chunk_path()` again.
-    pub(crate) fn mark_finished_all(&mut self) {
+    pub(crate) fn mark_completed_all(&mut self) {
         let all_chunks = self
             .chunked_files
             .values()
             .flat_map(|chunked_file| &chunked_file.chunks)
             .map(|(chunk, _)| *chunk)
             .collect::<Vec<_>>();
-        self.mark_finished(all_chunks.into_iter());
+        self.mark_completed(all_chunks.into_iter());
     }
 
     /// Mark a set of chunks as completed and remove them from the chunk_artifacts_dir
     /// These chunks cannot be resumed if we try to call `chunk_path()` again.
-    pub(crate) fn mark_finished(&mut self, finished_chunks: impl Iterator<Item = XorName>) {
-        let finished_chunks = finished_chunks.collect::<BTreeSet<_>>();
+    pub(crate) fn mark_completed(&mut self, completed_chunks: impl Iterator<Item = XorName>) {
+        let completed = completed_chunks.collect::<BTreeSet<_>>();
         // remove those files
         let _ = self
             .chunked_files
             .par_iter()
             .flat_map(|(_, chunked_file)| &chunked_file.chunks)
             .filter_map(|(chunk_xor, chunk_path)| {
-                if finished_chunks.contains(chunk_xor) {
-                    debug!("removing {chunk_xor:?} at {chunk_path:?} as it is marked as finished");
+                if completed.contains(chunk_xor) {
+                    debug!("removing {chunk_xor:?} at {chunk_path:?} as it is marked as completed");
                     fs::remove_file(chunk_path)
                         .map_err(|_err| {
                             error!("Failed to remove SE chunk {chunk_xor} from {chunk_path:?}");
@@ -296,36 +321,28 @@ impl ChunkManager {
             .for_each(|(path_xor, chunked_file)| {
                 chunked_file
                     .chunks
-                    // if chunk is part of finished_chunk, return false to remove it
-                    .retain(|(chunk_xor, _)| !finished_chunks.contains(chunk_xor));
+                    // if chunk is part of completed_chunks, return false to remove it
+                    .retain(|(chunk_xor, _)| !completed.contains(chunk_xor));
                 if chunked_file.chunks.is_empty() {
                     entire_file_is_done.insert(path_xor.clone());
                 }
             });
 
         if !entire_file_is_done.is_empty() {
-            let artifacts_dir = &self.artifacts_dir;
-
             for path_xor in &entire_file_is_done {
                 debug!("Removing {path_xor:?} as the entire file is done");
                 if let Some(chunked_file) = self.chunked_files.remove(path_xor) {
-                    self.uploaded_files
+                    self.completed_files
                         .push((chunked_file.file_name, chunked_file.file_xor_addr));
                 }
             }
-            entire_file_is_done.par_iter().for_each(|path_xor| {
-                let file_chunks_dir = artifacts_dir.join(&path_xor.0);
-                if let Err(err) = fs::remove_dir_all(&file_chunks_dir) {
-                    error!("Error while cleaning up {file_chunks_dir:?}, err: {err:?}");
-                }
-            })
         }
     }
 
     /// Return the filename and the file's Xor address if all their chunks has been marked as
     /// completed
     pub(crate) fn completed_files(&self) -> &Vec<(OsString, XorName)> {
-        &self.uploaded_files
+        &self.completed_files
     }
 
     // Try to read the chunks from `file_chunks_dir`
@@ -344,7 +361,7 @@ impl ChunkManager {
                 if !entry.file_type().is_file() {
                     return None;
                 }
-                if entry.file_name() == "metadata" {
+                if entry.file_name() == METADATA_FILE {
                     if let Some(metadata) = Self::try_read_metadata(entry.path()) {
                         file_xor_addr = Some(metadata);
                         debug!("Obtained metadata for {path_xor:?}");
@@ -444,7 +461,7 @@ mod tests {
         // verify the metadata
         let mut file_xor_addr_from_metadata = None;
         for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
-            if entry.file_type().is_file() && entry.file_name() == "metadata" {
+            if entry.file_type().is_file() && entry.file_name() == METADATA_FILE {
                 file_xor_addr_from_metadata = ChunkManager::try_read_metadata(entry.path());
             }
         }
@@ -470,7 +487,7 @@ mod tests {
             .collect::<BTreeSet<_>>();
         for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
             let file_name = entry.file_name();
-            if entry.file_type().is_file() && file_name != "metadata" {
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
                 let chunk_xorname_from_filename =
                     ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
                         .expect("Failed to get xorname from hex encoded file_name");
@@ -482,7 +499,7 @@ mod tests {
     }
 
     #[test]
-    fn all_chunks_should_be_resumed_if_none_are_marked_as_finished() -> Result<()> {
+    fn all_chunks_should_be_resumed_if_none_are_marked_as_completed() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
 
         let tmp_dir = tempfile::tempdir()?;
@@ -517,13 +534,13 @@ mod tests {
             .values_mut()
             .for_each(|chunked_file| chunked_file.chunks.sort());
         assert_eq!(manager.chunked_files, new_manager.chunked_files);
-        assert_eq!(manager.uploaded_files, new_manager.uploaded_files);
+        assert_eq!(manager.completed_files, new_manager.completed_files);
 
         Ok(())
     }
 
     #[test]
-    fn not_all_chunks_should_be_resumed_if_marked_as_finished() -> Result<()> {
+    fn not_all_chunks_should_be_resumed_if_marked_as_completed() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
 
         let tmp_dir = tempfile::tempdir()?;
@@ -542,7 +559,7 @@ mod tests {
             .flat_map(|chunked_file| &chunked_file.chunks)
             .count();
 
-        // mark a chunk as finished
+        // mark a chunk as completed
         let removed_chunk = manager
             .chunked_files
             .values()
@@ -550,7 +567,7 @@ mod tests {
             .expect("Atleast 1 file should be present")
             .chunks[0]
             .0;
-        manager.mark_finished([removed_chunk].into_iter());
+        manager.mark_completed([removed_chunk].into_iter());
 
         let mut new_manager = ChunkManager::new(&root_dir);
         new_manager.chunk_path(&random_files_dir)?;
@@ -562,7 +579,7 @@ mod tests {
     }
 
     #[test]
-    fn mark_finished_should_remove_chunk_from_artifacts_dir() -> Result<()> {
+    fn mark_completed_should_remove_chunk_from_artifacts_dir() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
 
         let tmp_dir = tempfile::tempdir()?;
@@ -590,7 +607,7 @@ mod tests {
         let mut old_chunks_from_dir = BTreeSet::new();
         for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
             let file_name = entry.file_name();
-            if entry.file_type().is_file() && file_name != "metadata" {
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
                 let chunk_xorname_from_filename =
                     ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
                         .expect("Failed to get xorname from hex encoded file_name");
@@ -599,7 +616,7 @@ mod tests {
         }
         assert_lists(old_chunks, old_chunks_from_dir);
 
-        // mark a chunk as finished
+        // mark a chunk as completed
         let removed_chunk = manager
             .chunked_files
             .values()
@@ -607,7 +624,7 @@ mod tests {
             .expect("Atleast 1 file should be present")
             .chunks[0]
             .0;
-        manager.mark_finished([removed_chunk].into_iter());
+        manager.mark_completed([removed_chunk].into_iter());
 
         // compare the dir and struct data
         let new_chunks = manager
@@ -622,7 +639,7 @@ mod tests {
         let mut new_chunks_from_dir = BTreeSet::new();
         for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
             let file_name = entry.file_name();
-            if entry.file_type().is_file() && file_name != "metadata" {
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
                 let chunk_xorname_from_filename =
                     ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
                         .expect("Failed to get xorname from hex encoded file_name");
@@ -637,7 +654,7 @@ mod tests {
     }
 
     #[test]
-    fn mark_finished_all_should_remove_all_the_chunks() -> Result<()> {
+    fn mark_completed_all_should_remove_all_the_chunks() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
 
         let tmp_dir = tempfile::tempdir()?;
@@ -667,29 +684,47 @@ mod tests {
         let mut old_chunks_from_dir = BTreeSet::new();
         for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
             let file_name = entry.file_name();
-            if entry.file_type().is_file() && file_name != "metadata" {
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
                 let chunk_xorname_from_filename =
                     ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
                         .expect("Failed to get xorname from hex encoded file_name");
                 old_chunks_from_dir.insert(chunk_xorname_from_filename);
             }
 
-            if entry.file_type().is_file() && file_name == "metadata" {
+            if entry.file_type().is_file() && file_name == METADATA_FILE {
                 file_xor_addr = ChunkManager::try_read_metadata(entry.path());
             }
         }
         assert_lists(old_chunks, old_chunks_from_dir);
 
-        // mark all as finished
-        manager.mark_finished_all();
+        // mark all as completed
+        manager.mark_completed_all();
 
-        // should be removed from struct and fs
+        // should be removed from struct
         assert!(manager.chunked_files.values().next().is_none());
-        assert!(fs::read_dir(&artifacts_dir)?.next().is_none());
+
+        // should contain just 1 folder for that single file
+        let mut read_dir = fs::read_dir(&artifacts_dir)?;
+        let mut path_xor = None;
+        assert!(read_dir.next().is_some_and(|entry| {
+            let entry = entry.expect("should not error out");
+            path_xor = Some(entry.file_name());
+            true
+        }));
+        // 1 file only
+        assert!(read_dir.next().is_none());
+        // should just contain the metadata file inside the above folder
+        let path_xor = path_xor.expect("a single folder should be present");
+        let mut read_dir = fs::read_dir(artifacts_dir.join(path_xor))?;
+        assert!(read_dir.next().is_some_and(|entry| {
+            let entry = entry.expect("should not error out");
+            entry.file_name() == METADATA_FILE
+        }));
+        assert!(read_dir.next().is_none());
 
         // should be added to uploaded_files
-        assert_eq!(manager.uploaded_files.len(), 1);
-        let uploaded = manager.uploaded_files.remove(0);
+        assert_eq!(manager.completed_files.len(), 1);
+        let uploaded = manager.completed_files.remove(0);
         assert_eq!(
             uploaded.0,
             random_file.file_name().expect("Not a directory")
@@ -722,7 +757,7 @@ mod tests {
         let mut old_chunks_from_dir = BTreeSet::new();
         for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
             let file_name = entry.file_name();
-            if entry.file_type().is_file() && file_name != "metadata" {
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
                 let chunk_xorname_from_filename =
                     ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
                         .expect("Failed to get xorname from hex encoded file_name");
@@ -732,7 +767,7 @@ mod tests {
 
         // remove metadata file
         let path_xor = PathXorName::new(&random_file).0;
-        let metadata_path = artifacts_dir.join(&path_xor).join("metadata");
+        let metadata_path = artifacts_dir.join(&path_xor).join(METADATA_FILE);
         fs::remove_file(&metadata_path)?;
         // also remove a random chunk to make sure it is re-chunked
         let removed_chunk = manager
@@ -759,7 +794,7 @@ mod tests {
         let mut new_chunks_from_dir = BTreeSet::new();
         for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
             let file_name = entry.file_name();
-            if entry.file_type().is_file() && file_name != "metadata" {
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
                 let chunk_xorname_from_filename =
                     ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
                         .expect("Failed to get xorname from hex encoded file_name");
@@ -770,6 +805,45 @@ mod tests {
         assert!(new_chunks_from_dir.contains(&removed_chunk));
         assert_lists(old_chunks_from_dir, new_chunks_from_dir);
         assert!(metadata_path.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn fully_completed_file_should_not_be_resumed() -> Result<()> {
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+
+        let tmp_dir = tempfile::tempdir()?;
+        let random_files_dir = tmp_dir.path().join("random_files");
+        let root_dir = tmp_dir.path().join("root_dir");
+        fs::create_dir_all(&root_dir)?;
+        fs::create_dir_all(&random_files_dir)?;
+
+        let _random_files = create_random_files(&random_files_dir, 2, 5)?;
+
+        let mut manager = ChunkManager::new(&root_dir);
+        manager.chunk_path(&random_files_dir)?;
+        assert_eq!(manager.completed_files.len(), 0);
+        assert_eq!(manager.chunked_files.len(), 2);
+
+        // mark a single file as completed
+        let completed_file = manager
+            .chunked_files
+            .values()
+            .next()
+            .expect("We have 2 files")
+            .clone();
+        manager.mark_completed(completed_file.chunks.into_iter().map(|(chunk, _)| chunk));
+
+        let mut new_manager = ChunkManager::new(&root_dir);
+        new_manager.chunk_path(&random_files_dir)?;
+
+        assert_eq!(new_manager.completed_files.len(), 1);
+        assert_eq!(
+            new_manager.completed_files.remove(0).1,
+            completed_file.file_xor_addr
+        );
+        assert_eq!(new_manager.chunked_files.len(), 1);
 
         Ok(())
     }
