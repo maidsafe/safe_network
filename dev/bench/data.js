@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698761874389,
+  "lastUpdate": 1698769969979,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "d2f85950923c915f9797e5f6bfb9da953f87f8aa",
-          "message": "fix(node): verify incoming `Record::key`\n- The `Record::key` should be the same one obtained from the data inside\n  `Record::value`\n- This prevents someone from storing data to the wrong part of the\n  network or prevents overwriting of valid data.",
-          "timestamp": "2023-07-05T13:57:06Z",
-          "tree_id": "1adb69636217b7791f284eff8dde29703362cac8",
-          "url": "https://github.com/maidsafe/safe_network/commit/d2f85950923c915f9797e5f6bfb9da953f87f8aa"
-        },
-        "date": 1688570002691,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.8520509582226643,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 18.226494433821177,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 8.844183936674012,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 19.827273136994165,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "6f0273db992ad62f3d31e854ff5e13bad06be2d2",
+          "message": "fix: avoid access to the wallet files at the same time",
+          "timestamp": "2023-10-31T15:37:35Z",
+          "tree_id": "81bc6cc7c92179765c59dd60a17c25da6aed5b01",
+          "url": "https://github.com/maidsafe/safe_network/commit/6f0273db992ad62f3d31e854ff5e13bad06be2d2"
+        },
+        "date": 1698769967122,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.18264858065195463,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.7988121252469096,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 19.14105457741816,
             "unit": "MiB/s"
           }
         ]
