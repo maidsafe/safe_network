@@ -221,7 +221,7 @@ impl Debug for SwarmCmd {
                 write!(f, "SwarmCmd::GetClosestKLocalPeers")
             }
             SwarmCmd::GetCloseGroupLocalPeers { key, .. } => {
-                write!(f, "SwarmCmd::GetClosestLocalPeers {{ key: {:?} }}", key)
+                write!(f, "SwarmCmd::GetCloseGroupLocalPeers {{ key: {:?} }}", key)
             }
             SwarmCmd::StopBootstrapping => {
                 write!(f, "SwarmCmd::StopBootstrapping")
