@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698677105319,
+  "lastUpdate": 1698745639967,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "954625187ce324734fbfc21c18f2bed64ff14944",
-          "message": "test: refactoring node integration test and adding a test for failed payment case",
-          "timestamp": "2023-07-05T10:19:30+02:00",
-          "tree_id": "65f4f68b5da062eb22d6746e6bde42585372bf32",
-          "url": "https://github.com/maidsafe/safe_network/commit/954625187ce324734fbfc21c18f2bed64ff14944"
-        },
-        "date": 1688546898270,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.9184410197677728,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 18.695809968353725,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 8.756004046508677,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 18.366525736064588,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "33b366c24794e06c0da9ad1d402c425a27f78aff",
+          "message": "feat(rpc-client): allow to set peers to connect to in order to validate decrypted transfers events",
+          "timestamp": "2023-10-31T08:55:16Z",
+          "tree_id": "9d81bb1e906579b0ed741fbcc85a3b003f22c040",
+          "url": "https://github.com/maidsafe/safe_network/commit/33b366c24794e06c0da9ad1d402c425a27f78aff"
+        },
+        "date": 1698745638020,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.20185614004752514,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.8582564620662912,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 18.51727665752952,
             "unit": "MiB/s"
           }
         ]
