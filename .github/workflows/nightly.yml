@@ -120,6 +120,10 @@ jobs:
         run: cargo test --release --lib --bins --no-run 
         timeout-minutes: 30
 
+      - name: Run CLI tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_cli
+
       - name: Run testnet tests
         timeout-minutes: 25
         run: cargo test --release --package sn_testnet
