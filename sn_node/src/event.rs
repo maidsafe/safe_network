@@ -13,7 +13,8 @@ use serde::{Deserialize, Serialize};
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
 use sn_transfers::{Transfer, UniquePubkey};
 use tokio::sync::broadcast;
-const NODE_EVENT_CHANNEL_SIZE: usize = 10_000;
+
+const NODE_EVENT_CHANNEL_SIZE: usize = 500;
 
 /// Channel where users of the public API can listen to events broadcasted by the node.
 #[derive(Clone)]
