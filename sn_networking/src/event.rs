@@ -831,7 +831,9 @@ impl SwarmDriver {
             } => {
                 event_string = "kad_event::RoutingUpdated";
                 if is_new_peer {
-                    info!("New peer added to routing table: {peer:?}");
+                    // todo: cache the count as it is frequently used during replication as well.
+                    let connected_peers = self.swarm.connected_peers().count();
+                    info!("New peer added to routing table: {peer:?}, now we have #{connected_peers} connected peers");
                     self.log_kbuckets(&peer);
 
                     if self.bootstrap.notify_new_peer() {
