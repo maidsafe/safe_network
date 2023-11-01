@@ -66,7 +66,7 @@ impl Node {
             Default::default();
 
         if is_removal {
-            closest_k_peers.push(peer_id);
+            let _existed = closest_k_peers.insert(peer_id);
         }
 
         for (key, record_type) in all_records {
@@ -197,10 +197,10 @@ impl Node {
             trace!("Start replicate paid record {pretty_key:?} on store");
 
             // Already contains self_peer_id
-            let all_peers: Vec<_> = match network.get_all_local_peers().await {
-                Ok(peers) => peers.to_vec(),
+            let all_peers = match network.get_closest_k_value_local_peers().await {
+                Ok(peers) => peers,
                 Err(err) => {
-                    error!("When replicating paid record {pretty_key:?}, having error when get local peers {err:?}");
+                    error!("Replicating paid record {pretty_key:?} get_closest_local_peers errored: {err:?}");
                     return;
                 }
             };

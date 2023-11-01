@@ -48,16 +48,6 @@ pub enum SwarmCmd {
     },
     // Stop the continuous Kademlia Bootstrap process.
     StopBootstrapping,
-    // Get closest peers from the network
-    GetClosestPeers {
-        key: NetworkAddress,
-        sender: oneshot::Sender<HashSet<PeerId>>,
-    },
-    // Get closest peers from the local RoutingTable
-    GetCloseGroupLocalPeers {
-        key: NetworkAddress,
-        sender: oneshot::Sender<Vec<PeerId>>,
-    },
     // Returns all the peers from all the k-buckets from the local Routing Table.
     // This includes our PeerId as well.
     GetAllLocalPeers {
@@ -66,10 +56,16 @@ pub enum SwarmCmd {
     // Returns up to K_VALUE peers from all the k-buckets from the local Routing Table.
     // And our PeerId as well.
     GetClosestKLocalPeers {
-        sender: oneshot::Sender<Vec<PeerId>>,
+        sender: oneshot::Sender<HashSet<PeerId>>,
     },
-    // Returns the peers that are closet to our PeerId.
-    GetOurCloseGroup {
+    // Get closest peers from the network
+    GetClosestPeersToAddressFromNetwork {
+        key: NetworkAddress,
+        sender: oneshot::Sender<HashSet<PeerId>>,
+    },
+    // Get closest peers from the local RoutingTable
+    GetCloseGroupLocalPeers {
+        key: NetworkAddress,
         sender: oneshot::Sender<Vec<PeerId>>,
     },
     GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
@@ -214,7 +210,7 @@ impl Debug for SwarmCmd {
             SwarmCmd::DialWithOpts { opts, .. } => {
                 write!(f, "SwarmCmd::DialWithOpts {{ opts: {:?} }}", opts)
             }
-            SwarmCmd::GetClosestPeers { key, .. } => {
+            SwarmCmd::GetClosestPeersToAddressFromNetwork { key, .. } => {
                 write!(f, "SwarmCmd::GetClosestPeers {{ key: {:?} }}", key)
             }
             SwarmCmd::GetClosestKLocalPeers { .. } => {
@@ -242,9 +238,9 @@ impl Debug for SwarmCmd {
             SwarmCmd::GetAllLocalPeers { .. } => {
                 write!(f, "SwarmCmd::GetAllLocalPeers")
             }
-            SwarmCmd::GetOurCloseGroup { .. } => {
-                write!(f, "SwarmCmd::GetOurCloseGroup")
-            }
+            // SwarmCmd::GetOurCloseGroup { .. } => {
+            //     write!(f, "SwarmCmd::GetOurCloseGroup")
+            // }
             SwarmCmd::GetSwarmLocalState { .. } => {
                 write!(f, "SwarmCmd::GetSwarmLocalState")
             }
@@ -283,10 +279,10 @@ impl SwarmDriver {
         match cmd {
             SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
                 // Only store record from Replication that close enough to us.
-                let all_close_peers = self.get_closest_k_value_local_peers();
+                let closest_k_peers = self.get_closest_k_value_local_peers();
                 let keys_to_store = keys
                     .into_iter()
-                    .filter(|(key, _)| self.is_in_close_range(key, &all_close_peers))
+                    .filter(|(key, _)| self.is_in_close_range(key, &closest_k_peers))
                     .collect();
                 #[allow(clippy::mutable_key_type)]
                 let all_keys = self
@@ -462,7 +458,7 @@ impl SwarmDriver {
             SwarmCmd::StopBootstrapping => {
                 self.bootstrap.stop_bootstrapping();
             }
-            SwarmCmd::GetClosestPeers { key, sender } => {
+            SwarmCmd::GetClosestPeersToAddressFromNetwork { key, sender } => {
                 let query_id = self
                     .swarm
                     .behaviour_mut()
@@ -491,9 +487,9 @@ impl SwarmDriver {
 
                 let _ = sender.send(closest_peers);
             }
-            SwarmCmd::GetOurCloseGroup { sender } => {
-                let _ = sender.send(self.close_group.clone());
-            }
+            // SwarmCmd::GetOurCloseGroup { sender } => {
+            //     let _ = sender.send(self.close_group.clone());
+            // }
             SwarmCmd::GetClosestKLocalPeers { sender } => {
                 let _ = sender.send(self.get_closest_k_value_local_peers());
             }
@@ -596,7 +592,7 @@ impl SwarmDriver {
     // are none among target b011111's close range.
     // Hence, the ilog2 calculation based on close_range cannot cover such case.
     // And have to sort all nodes to figure out whether self is among the close_group to the target.
-    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &[PeerId]) -> bool {
+    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &HashSet<PeerId>) -> bool {
         if all_peers.len() <= REPLICATE_RANGE {
             return true;
         }
