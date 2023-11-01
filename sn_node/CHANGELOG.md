@@ -1953,6 +1953,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - avoid access to the wallet files at the same time
 
+## [0.96.21](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.20...sn_node-v0.96.21) - 2023-11-01
+
+### Other
+- *(node)* don't log the transfers events
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
