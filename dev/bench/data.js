@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698850089379,
+  "lastUpdate": 1698853417610,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "5c18d13b74146206a59b17f50c9e167901c9a369",
-          "message": "fix: use SAFE_PEERS as fall back initial peers for non-local-discovery",
-          "timestamp": "2023-07-06T11:27:06Z",
-          "tree_id": "a77c4ff6ffc01a49b255f365c459a2c0391efe8c",
-          "url": "https://github.com/maidsafe/safe_network/commit/5c18d13b74146206a59b17f50c9e167901c9a369"
-        },
-        "date": 1688647758453,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.9085015804991166,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 18.8231125632809,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 9.238162474313553,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 13.613985521623148,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4ca83b120e24f4de9609824cd2e8b99a7dbc8b18",
+          "message": "refactor(node): reduce the max number of events that can be queued in the NodeEventsChannel",
+          "timestamp": "2023-11-01T14:49:34Z",
+          "tree_id": "061100b6a9541b666c295f6c3c258154705bca09",
+          "url": "https://github.com/maidsafe/safe_network/commit/4ca83b120e24f4de9609824cd2e8b99a7dbc8b18"
+        },
+        "date": 1698853415101,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.19884816773503253,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.8129803449611094,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 14.117447996437798,
             "unit": "MiB/s"
           }
         ]
