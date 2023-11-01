@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698849773172,
+  "lastUpdate": 1698850086890,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bf5808d3a159a147a3819a1db6e99fb77455f968",
-          "message": "feat: use standarised directories for files/wallet commands\n\nBREAKING CHANGE: use `~/.local/share/safe/wallet` as the root directory for wallet storage and\n`~/.local/share/safe/client` for files related to downloads/uploads.\n\nThe previous directories were `~/.safe/wallet` and `~/.safe/client`, which we can phase out in\npreference of using directories in the XDG standard.\n\nUsage of a `RECEIVED_DBCS_PATH` environment variable was added for users who may feel the default\ndirectory a bit unwieldy for working with the `wallet deposit` command, especially on Windows, where\nthe `AppData` directory is marked as hidden and so will only be shown by Windows Explorer if users\nhave viewing hidden files enabled.\n\nAlso provided and/or clarified documentation for other commands.",
-          "timestamp": "2023-06-22T09:19:11+09:00",
-          "tree_id": "625485846f58bc29312ebcd36f868e0fb401fee7",
-          "url": "https://github.com/maidsafe/safe_network/commit/bf5808d3a159a147a3819a1db6e99fb77455f968"
-        },
-        "date": 1687394206118,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 22.07,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 63,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "34291e409ad4b1f222a136af6a3d4ab27fb381ed",
+          "message": "feat(networking): finish query when stop tracking\n\nWhen we stop tracking a query ID, then we might as well call finish on\nthe query. This might result in less nodes being queried.",
+          "timestamp": "2023-11-01T13:46:52Z",
+          "tree_id": "8d21223a7dee9bd8aa8b1981e4e9f65c7bf57666",
+          "url": "https://github.com/maidsafe/safe_network/commit/34291e409ad4b1f222a136af6a3d4ab27fb381ed"
+        },
+        "date": 1698850085907,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 59,
             "unit": "MB"
           }
         ]
