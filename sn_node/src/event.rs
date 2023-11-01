@@ -13,7 +13,8 @@ use serde::{Deserialize, Serialize};
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
 use sn_transfers::{Transfer, UniquePubkey};
 use tokio::sync::broadcast;
-const NODE_EVENT_CHANNEL_SIZE: usize = 10_000;
+
+const NODE_EVENT_CHANNEL_SIZE: usize = 500;
 
 /// Channel where users of the public API can listen to events broadcasted by the node.
 #[derive(Clone)]
@@ -40,6 +41,11 @@ impl NodeEventsChannel {
         if let Err(err) = self.0.send(event.clone()) {
             trace!("Error occurred when trying to broadcast a node event ({event:?}): {err}");
         }
+    }
+
+    /// Returns the number of active receivers
+    pub fn receiver_count(&self) -> usize {
+        self.0.receiver_count()
     }
 }
 

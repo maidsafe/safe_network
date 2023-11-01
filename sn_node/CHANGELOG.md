@@ -1958,6 +1958,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(node)* don't log the transfers events
 
+## [0.96.22](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.21...sn_node-v0.96.22) - 2023-11-01
+
+### Other
+- update dependencies
+
+## [0.96.23](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.22...sn_node-v0.96.23) - 2023-11-01
+
+### Other
+- *(node)* reduce the max number of events that can be queued in the NodeEventsChannel
+- *(node)* skip transfer notif decoding if there is no NodeEvents receiver subscribed
+- *(node)* short-circuit transfers verification once the first one belonging to itself is found
+
+## [0.96.24](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.23...sn_node-v0.96.24) - 2023-11-01
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
