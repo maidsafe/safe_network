@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698853417610,
+  "lastUpdate": 1698853686266,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "e5227552887a7a2c9662926d8da0fe3de493fd74",
-          "message": "chore(client): initial refactor around uploads",
-          "timestamp": "2023-06-22T10:05:35+09:00",
-          "tree_id": "df74321ffbbd80d8ff308f5b14d278355277b2fc",
-          "url": "https://github.com/maidsafe/safe_network/commit/e5227552887a7a2c9662926d8da0fe3de493fd74"
-        },
-        "date": 1687396907086,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 20.28,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "21dd4dea96c458a6c48edbcb1727bab5bee9524f",
           "message": "feat(node): expose log markers in public api\n\nStart using them for some more crucial log messages, which we'll treat\nas an API and have to version accordingly.",
           "timestamp": "2023-06-22T15:47:56+09:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 59,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4ca83b120e24f4de9609824cd2e8b99a7dbc8b18",
+          "message": "refactor(node): reduce the max number of events that can be queued in the NodeEventsChannel",
+          "timestamp": "2023-11-01T14:49:34Z",
+          "tree_id": "061100b6a9541b666c295f6c3c258154705bca09",
+          "url": "https://github.com/maidsafe/safe_network/commit/4ca83b120e24f4de9609824cd2e8b99a7dbc8b18"
+        },
+        "date": 1698853685524,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57,
             "unit": "MB"
           }
         ]
