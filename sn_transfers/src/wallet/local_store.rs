@@ -282,7 +282,7 @@ impl LocalWallet {
         Ok(created_cash_notes)
     }
 
-    /// Performs a CashNote payment for each content address.
+    /// Performs a payment for each content address.
     /// Returns the amount paid for storage, including the network royalties fee paid.
     pub fn local_send_storage_payment(
         &mut self,
@@ -492,7 +492,7 @@ impl LocalWallet {
 
     /// Lookup previous payments and subtract them from the payments we're about to do.
     /// In essence this will make sure we don't overpay.
-    pub fn adjust_payment_map(
+    pub fn take_previous_payments_into_account(
         &self,
         payment_map: &mut BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
     ) {
@@ -507,7 +507,7 @@ impl LocalWallet {
                         .find(|(pubkey, _)| pubkey == prev_payment_pub_key)
                     {
                         // Subtract what we already paid from what we're about to pay.
-                        // `checked_sub` overflows if would be negative, so we set it to 0.
+                        // `checked_sub` underflows if would be negative, so we set it to 0.
                         *payment_tokens = payment_tokens
                             .checked_sub(*prev_payment_value)
                             .unwrap_or(NanoTokens::zero());
@@ -987,7 +987,7 @@ mod tests {
         map.get_mut(&xor4).expect("to have value")[0].1 = 390.into(); // decrease: 400 -> 390
         map.get_mut(&xor4).expect("to have value")[1].1 = 410.into(); // increase: 401 -> 410
 
-        sender.adjust_payment_map(&mut map);
+        sender.take_previous_payments_into_account(&mut map);
 
         // The map should now only have the entries where store costs increased:
         assert_eq!(

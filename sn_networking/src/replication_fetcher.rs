@@ -200,7 +200,7 @@ mod tests {
     use eyre::Result;
     use libp2p::{kad::RecordKey, PeerId};
     use sn_protocol::{storage::RecordType, NetworkAddress};
-    use std::{collections::HashSet, time::Duration};
+    use std::{collections::HashMap, time::Duration};
 
     #[tokio::test]
     async fn verify_max_parallel_fetches() -> Result<()> {

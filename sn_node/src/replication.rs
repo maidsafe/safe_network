@@ -12,7 +12,7 @@ use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE, REPLICATE_RANGE};
+use sn_networking::{sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -176,7 +176,7 @@ impl Node {
                     trace!("Replicating paid record {pretty_key:?} to {peer_id:?}");
                     let request = Request::Cmd(Cmd::Replicate {
                         holder: our_address.clone(),
-                        keys: vec![(addr.clone(), record_type.clone())],
+                        keys: HashMap::from_iter([(addr.clone(), record_type.clone())]),
                     });
 
                     let _ = network.send_req_ignore_reply(request, *peer_id);
