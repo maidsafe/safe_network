@@ -429,7 +429,7 @@ impl Node {
 
         for transfer in payment {
             match transfer {
-                Transfer::Encrypted(_) => match self
+                Transfer::Encrypted(_) if cash_notes.is_empty() => match self
                     .network
                     .verify_and_unpack_transfer(transfer, wallet)
                     .await
@@ -441,6 +441,7 @@ impl Node {
                     // transfer ok
                     Ok(cns) => cash_notes = cns,
                 },
+                Transfer::Encrypted(_) => continue, // we already have our cash notes, so we can skip this one
                 Transfer::NetworkRoyalties(cashnote_redemptions) => {
                     if let Ok(cash_notes) = self
                         .network
