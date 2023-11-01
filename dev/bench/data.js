@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698845989379,
+  "lastUpdate": 1698846333959,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a8285202e2807a64c9642a5050dee22175fffc54",
-          "message": "fix: improve client upload speed\n\nImprove client upload speed by:\n1, Only using local network knowledge one\n2, Reduce network nodes to contact",
-          "timestamp": "2023-06-22T09:18:54+09:00",
-          "tree_id": "7c33a7c96194cac397e2e32333ce33b4ec2d6043",
-          "url": "https://github.com/maidsafe/safe_network/commit/a8285202e2807a64c9642a5050dee22175fffc54"
-        },
-        "date": 1687394132502,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 20.34,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 58,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "a119fd2771b1efbb904786028084703ab9b633a4",
+          "message": "chore(node): don't log the transfers events",
+          "timestamp": "2023-11-01T12:34:27Z",
+          "tree_id": "6950c5eebbbba947ee21c4877b534487b2aa8a29",
+          "url": "https://github.com/maidsafe/safe_network/commit/a119fd2771b1efbb904786028084703ab9b633a4"
+        },
+        "date": 1698846333112,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 63,
             "unit": "MB"
           }
         ]
