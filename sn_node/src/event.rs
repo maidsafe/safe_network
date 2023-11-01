@@ -41,6 +41,11 @@ impl NodeEventsChannel {
             trace!("Error occurred when trying to broadcast a node event ({event:?}): {err}");
         }
     }
+
+    /// Returns the number of active receivers
+    pub fn receiver_count(&self) -> usize {
+        self.0.receiver_count()
+    }
 }
 
 /// Type of events broadcasted by the node to the public API.
