@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
 use sn_transfers::{Transfer, UniquePubkey};
 use tokio::sync::broadcast;
-
 const NODE_EVENT_CHANNEL_SIZE: usize = 10_000;
 
 /// Channel where users of the public API can listen to events broadcasted by the node.
@@ -45,7 +44,7 @@ impl NodeEventsChannel {
 }
 
 /// Type of events broadcasted by the node to the public API.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Debug, Deserialize)]
 pub enum NodeEvent {
     /// The node has been connected to the network
     ConnectedToNetwork,

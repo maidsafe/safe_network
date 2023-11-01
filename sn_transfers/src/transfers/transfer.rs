@@ -12,12 +12,14 @@ use rayon::iter::ParallelIterator;
 use rayon::prelude::IntoParallelRefIterator;
 
 use serde::{Deserialize, Serialize};
+use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeMap;
+use std::hash::{Hash, Hasher};
 
 use crate::error::{Error, Result};
 
 /// Transfer sent to a recipient
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
 pub enum Transfer {
     /// List of encrypted CashNoteRedemptions from which a recipient can verify and get money
     /// Only the recipient can decrypt these CashNoteRedemptions
@@ -25,6 +27,30 @@ pub enum Transfer {
     /// The network requires a payment as network royalties for storage which nodes can validate
     /// and verify, these CashNoteRedemptions need to be sent to storage nodes as payment proof as well.
     NetworkRoyalties(Vec<CashNoteRedemption>),
+}
+
+impl std::fmt::Debug for Transfer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NetworkRoyalties(cn_redemptions) => {
+                write!(f, "Transfer::NetworkRoyalties: {:?}", cn_redemptions)
+            }
+            Self::Encrypted(transfers) => {
+                // Iterate over the transfers and log the hash of each encrypted transfer
+                let hashed: Vec<_> = transfers
+                    .iter()
+                    .map(|transfer| {
+                        // Calculate the hash of the transfer
+                        let mut hasher = DefaultHasher::new();
+                        transfer.hash(&mut hasher);
+                        hasher.finish()
+                    })
+                    .collect();
+                // Write the encrypted transfers to the formatter
+                write!(f, "Transfer::Encrypted: {:?}", hashed)
+            }
+        }
+    }
 }
 
 impl Transfer {
@@ -147,7 +173,7 @@ impl Transfer {
 ///
 /// This struct contains sensitive information that should be kept secret
 /// so it should be encrypted to the recipient's public key (public address)
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, custom_debug::Debug)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug, Hash)]
 pub struct CashNoteRedemption {
     /// derivation index of the CashNoteRedemption
     /// with this derivation index the owner can derive
