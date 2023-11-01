@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698850086890,
+  "lastUpdate": 1698850089379,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30297,6 +30297,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "34291e409ad4b1f222a136af6a3d4ab27fb381ed",
+          "message": "feat(networking): finish query when stop tracking\n\nWhen we stop tracking a query ID, then we might as well call finish on\nthe query. This might result in less nodes being queried.",
+          "timestamp": "2023-11-01T13:46:52Z",
+          "tree_id": "8d21223a7dee9bd8aa8b1981e4e9f65c7bf57666",
+          "url": "https://github.com/maidsafe/safe_network/commit/34291e409ad4b1f222a136af6a3d4ab27fb381ed"
+        },
+        "date": 1698850088430,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 160,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 42,
             "unit": "MB"
           }
         ]
