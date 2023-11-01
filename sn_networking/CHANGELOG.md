@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.18](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.17...sn_networking-v0.9.18) - 2023-11-01
+
+### Other
+- *(networking)* remove unused and confusing GetOurCloseGroup SwarmCmd
+- *(networking)* update debug for GetCloseGroupLocalPeers
+- *(networking)* make NetworkAddress hold bytes rather than vec<u8>
+- *(networking)* dont keep recomputing NetworkAddr of record key
+- *(networking)* only get KVALUE peers for closeness checks in replication
+- *(networking)* only get KVALUE peers when sorting closely
+- *(networking)* refactor sort_peers_by_key
+
 ## [0.9.17](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.16...sn_networking-v0.9.17) - 2023-11-01
 
 ### Fixed

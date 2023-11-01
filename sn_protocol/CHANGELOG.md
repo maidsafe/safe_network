@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.11](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.10...sn_protocol-v0.8.11) - 2023-11-01
+
+### Other
+- *(networking)* make NetworkAddress hold bytes rather than vec<u8>
+
 ## [0.8.10](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.9...sn_protocol-v0.8.10) - 2023-11-01
 
 ### Other

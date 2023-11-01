@@ -1975,6 +1975,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.96.25](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.24...sn_node-v0.96.25) - 2023-11-01
+
+### Other
+- *(node)* updating verify_data_test
+- *(node)* sent ignored events to trace
+- *(networking)* remove unused and confusing GetOurCloseGroup SwarmCmd
+- *(networking)* make NetworkAddress hold bytes rather than vec<u8>
+- *(networking)* only get KVALUE peers for closeness checks in replication
+- *(networking)* only get KVALUE peers when sorting closely
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
