@@ -38,7 +38,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{hash_map::Entry, HashMap, HashSet},
     fmt::{Debug, Formatter},
     num::NonZeroUsize,
 };
@@ -988,9 +988,9 @@ impl SwarmDriver {
             self.self_peer_id
         };
 
-        if let Some((sender, mut result_map, quorum, mut expected_holders)) =
-            self.pending_get_record.remove(&query_id)
-        {
+        if let Entry::Occupied(mut entry) = self.pending_get_record.entry(query_id) {
+            let (_sender, result_map, quorum, expected_holders) = entry.get_mut();
+
             let pretty_key = PrettyPrintRecordKey::from(&peer_record.record.key).into_owned();
 
             if !expected_holders.is_empty() {
@@ -1028,6 +1028,9 @@ impl SwarmDriver {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {expected_holders:?}");
                 }
 
+                // Remove the query task and consume the variables.
+                let (sender, result_map, _, _) = entry.remove();
+
                 if result_map.len() == 1 {
                     let _ = sender.send(Ok(peer_record.record));
                 } else {
@@ -1039,15 +1042,9 @@ impl SwarmDriver {
                 if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(&query_id) {
                     query.finish();
                 }
-            } else {
-                if usize::from(count) >= CLOSE_GROUP_SIZE {
-                    debug!("For record {pretty_key:?} task {query_id:?}, got {count:?} with {} versions so far.",
-                        result_map.len());
-                }
-
-                let _ = self
-                    .pending_get_record
-                    .insert(query_id, (sender, result_map, quorum, expected_holders));
+            } else if usize::from(count) >= CLOSE_GROUP_SIZE {
+                debug!("For record {pretty_key:?} task {query_id:?}, got {count:?} with {} versions so far.",
+                    result_map.len());
             }
         }
     }
@@ -1064,9 +1061,9 @@ impl SwarmDriver {
         query_id: &QueryId,
         peer_record: &PeerRecord,
     ) -> bool {
-        if let Some((sender, result_map, quorum, expected_holders)) =
-            self.pending_get_record.remove(query_id)
-        {
+        if let Entry::Occupied(mut entry) = self.pending_get_record.entry(*query_id) {
+            let (_, _, quorum, expected_holders) = entry.get_mut();
+
             if expected_holders.is_empty() &&
                RecordHeader::is_record_of_type_chunk(&peer_record.record).unwrap_or(false) &&
                // Ensure that we only exit early if quorum is indeed for only one match
@@ -1076,16 +1073,15 @@ impl SwarmDriver {
                 if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(query_id) {
                     query.finish();
                 }
+
+                // Stop tracking the query task by removing the entry and consume the sender.
+                let (sender, ..) = entry.remove();
                 // A claimed Chunk type record can be trusted.
                 // Punishment of peer that sending corrupted Chunk type record
                 // maybe carried out by other verification mechanism.
                 let _ = sender.send(Ok(peer_record.record.clone()));
                 return true;
             }
-
-            let _ = self
-                .pending_get_record
-                .insert(*query_id, (sender, result_map, quorum, expected_holders));
         } else {
             // A non-existing pending entry does not need to undertake any further action.
             return true;
