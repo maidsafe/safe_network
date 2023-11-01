@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.17](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.16...sn_networking-v0.9.17) - 2023-11-01
+
+### Fixed
+- return with majority
+
+### Other
+- log detailed intermediate errors
+- throw out SplitRecord in case of FinishedWithNoAdditionalRecord
+
 ## [0.9.16](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.15...sn_networking-v0.9.16) - 2023-11-01
 
 ### Added
