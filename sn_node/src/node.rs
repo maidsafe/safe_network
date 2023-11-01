@@ -371,16 +371,18 @@ impl Node {
             }
             NetworkEvent::GossipsubMsgReceived { topic, msg }
             | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
-                if topic == TRANSFER_NOTIF_TOPIC {
-                    // this is expected to be a notification of a transfer which we treat specially
-                    match try_decode_transfer_notif(&msg) {
-                        Ok(notif_event) => return self.events_channel.broadcast(notif_event),
-                        Err(err) => warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {:?}", err),
+                if self.events_channel.receiver_count() > 0 {
+                    if topic == TRANSFER_NOTIF_TOPIC {
+                        // this is expected to be a notification of a transfer which we treat specially
+                        match try_decode_transfer_notif(&msg) {
+                            Ok(notif_event) => return self.events_channel.broadcast(notif_event),
+                            Err(err) => warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {:?}", err),
+                        }
                     }
-                }
 
-                self.events_channel
-                    .broadcast(NodeEvent::GossipsubMsg { topic, msg });
+                    self.events_channel
+                        .broadcast(NodeEvent::GossipsubMsg { topic, msg });
+                }
             }
         }
 
