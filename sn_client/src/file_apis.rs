@@ -71,7 +71,13 @@ impl Files {
         downloaded_file_path: Option<PathBuf>,
         show_holders: bool,
     ) -> Result<Option<Bytes>> {
-        let chunk = self.client.get_chunk(address, show_holders).await?;
+        let chunk = match self.client.get_chunk(address, show_holders).await {
+            Ok(chunk) => chunk,
+            Err(err) => {
+                error!("Failed to fetch head chunk {address:?}");
+                return Err(err);
+            }
+        };
 
         // first try to deserialize a LargeFile, if it works, we go and seek it
         if let Ok(data_map) = self.unpack_chunk(chunk.clone()).await {

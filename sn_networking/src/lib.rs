@@ -318,10 +318,10 @@ impl Network {
                 expected_holders: expected_holders.clone(),
             })?;
 
-            match receiver
-                .await
-                .map_err(|_e| Error::InternalMsgChannelDropped)?
-            {
+            match receiver.await.map_err(|e| {
+                error!("When fetching record {pretty_key:?} , encountered a channel error {e:?}.");
+                Error::InternalMsgChannelDropped
+            })? {
                 Ok(returned_record) => {
                     let header = RecordHeader::from_record(&returned_record)?;
                     let is_chunk = matches!(header.kind, RecordKind::Chunk);
