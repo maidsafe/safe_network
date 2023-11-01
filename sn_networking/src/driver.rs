@@ -586,7 +586,7 @@ impl SwarmDriver {
     }
 
     // get cloest k_value the peers from our local RoutingTable. Contains self
-    pub(crate) fn get_closest_k_value_local_peers(&mut self) -> Vec<PeerId> {
+    pub(crate) fn get_closest_k_value_local_peers(&mut self) -> HashSet<PeerId> {
         let mut all_peers: HashSet<PeerId> = Default::default();
         // buckets should be ordered by proximity to
         for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
@@ -599,7 +599,7 @@ impl SwarmDriver {
             }
         }
         all_peers.insert(self.self_peer_id);
-        all_peers.into_iter().collect()
+        all_peers
     }
 
     /// Dials the given multiaddress. If address contains a peer ID, simultaneous

@@ -51,7 +51,10 @@ use sn_protocol::{
 };
 use sn_transfers::MainPubkey;
 use sn_transfers::NanoTokens;
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
@@ -87,7 +90,7 @@ const PUT_RECORD_RETRIES: usize = 3;
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
 pub fn sort_peers_by_address<'a>(
-    peers: &'a [PeerId],
+    peers: &'a HashSet<PeerId>,
     address: &NetworkAddress,
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
@@ -98,7 +101,7 @@ pub fn sort_peers_by_address<'a>(
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
 pub fn sort_peers_by_key<'a, T>(
-    peers: &'a [PeerId],
+    peers: &'a HashSet<PeerId>,
     key: &KBucketKey<T>,
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
@@ -227,9 +230,9 @@ impl Network {
 
     /// Returns all the PeerId from all the KBuckets from our local Routing Table
     /// Also contains our own PeerId.
-    pub async fn get_closest_k_value_local_peers(&self) -> Result<Vec<PeerId>> {
+    pub async fn get_closest_k_value_local_peers(&self) -> Result<HashSet<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetAllLocalPeers { sender })?;
+        self.send_swarm_cmd(SwarmCmd::GetClosestKLocalPeers { sender })?;
 
         receiver
             .await
@@ -642,35 +645,34 @@ impl Network {
     ) -> Result<Vec<PeerId>> {
         trace!("Getting the closest peers to {key:?}");
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetClosestPeers {
+        self.send_swarm_cmd(SwarmCmd::GetClosestPeersToAddressFromNetwork {
             key: key.clone(),
             sender,
         })?;
         let k_bucket_peers = receiver.await?;
 
         // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
-        let mut closest_peers: Vec<_> = k_bucket_peers.into_iter().collect();
-        if !client {
-            closest_peers.push(self.peer_id);
+        let mut closest_peers = k_bucket_peers;
+        // ensure we're not including self here
+        if client {
+            let _existed = closest_peers.remove(&self.peer_id);
+        }
+        if tracing::level_enabled!(tracing::Level::TRACE) {
+            let close_peers_pretty_print: Vec<_> = closest_peers
+                .iter()
+                .map(|peer_id| {
+                    format!(
+                        "{peer_id:?}({:?})",
+                        PrettyPrintKBucketKey(NetworkAddress::from_peer(*peer_id).as_kbucket_key())
+                    )
+                })
+                .collect();
+
+            trace!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
         }
 
-        let close_peers_pretty_print: Vec<_> = closest_peers
-            .iter()
-            .map(|peer_id| {
-                format!(
-                    "{peer_id:?}({:?})",
-                    PrettyPrintKBucketKey(NetworkAddress::from_peer(*peer_id).as_kbucket_key())
-                )
-            })
-            .collect();
-
-        trace!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
-
-        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?
-            .into_iter()
-            .cloned()
-            .collect();
-        Ok(closest_peers)
+        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?;
+        Ok(closest_peers.into_iter().cloned().collect())
     }
 
     /// Send a `Request` to the provided set of peers and wait for their responses concurrently.

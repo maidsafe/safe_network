@@ -894,33 +894,38 @@ impl SwarmDriver {
         Ok(())
     }
 
-    // Check for changes in our close group
-    fn check_for_change_in_our_close_group(&mut self) -> Option<Vec<PeerId>> {
+    /// Check for changes in our close group
+    ///
+    fn check_for_change_in_our_close_group(&mut self) -> bool {
         let closest_k_peers = self.get_closest_k_value_local_peers();
 
         let new_closest_peers = {
-            sort_peers_by_address(
+            match sort_peers_by_address(
                 &closest_k_peers,
                 &NetworkAddress::from_peer(self.self_peer_id),
                 CLOSE_GROUP_SIZE,
-            )
-            .ok()?
+            ) {
+                Err(error) => {
+                    error!("Failed to sort peers by address: {error:?}");
+                    return false;
+                }
+                Ok(closest_k_peers) => closest_k_peers,
+            }
         };
 
         let old = self.close_group.iter().cloned().collect::<HashSet<_>>();
-        let new_members = new_closest_peers
+        let new_members: Vec<_> = new_closest_peers
             .iter()
             .filter(|p| !old.contains(p))
-            .cloned()
-            .collect::<Vec<_>>();
+            .collect();
         if !new_members.is_empty() {
             debug!("The close group has been updated. The new members are {new_members:?}");
             debug!("New close group: {new_closest_peers:?}");
             self.close_group = new_closest_peers.into_iter().cloned().collect();
             let _ = self.update_record_distance_range();
-            Some(new_members.into_iter().cloned().collect())
+            true
         } else {
-            None
+            false
         }
     }
 
