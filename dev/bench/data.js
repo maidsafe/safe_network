@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698853686266,
+  "lastUpdate": 1698853688473,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30326,6 +30326,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 160,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 42,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4ca83b120e24f4de9609824cd2e8b99a7dbc8b18",
+          "message": "refactor(node): reduce the max number of events that can be queued in the NodeEventsChannel",
+          "timestamp": "2023-11-01T14:49:34Z",
+          "tree_id": "061100b6a9541b666c295f6c3c258154705bca09",
+          "url": "https://github.com/maidsafe/safe_network/commit/4ca83b120e24f4de9609824cd2e8b99a7dbc8b18"
+        },
+        "date": 1698853687609,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 163,
             "unit": "MB"
           },
           {
