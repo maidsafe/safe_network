@@ -1028,6 +1028,11 @@ impl SwarmDriver {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
                     let _ = sender.send(Err(Error::SplitRecord { result_map }));
                 }
+
+                // Stop the query; possibly stops more nodes from being queried.
+                if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(&query_id) {
+                    query.finish();
+                }
             } else {
                 let _ = self
                     .pending_get_record
@@ -1063,6 +1068,14 @@ impl SwarmDriver {
                             chunk.name()
                         );
                         let _ = sender.send(Ok(peer_record.record.clone()));
+
+                        // Stop the query; possibly stops more nodes from being queried.
+                        if let Some(mut query) =
+                            self.swarm.behaviour_mut().kademlia.query_mut(query_id)
+                        {
+                            query.finish();
+                        }
+
                         return true;
                     }
                 }
