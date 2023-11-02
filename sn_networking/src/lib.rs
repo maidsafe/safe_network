@@ -49,8 +49,7 @@ use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
-use sn_transfers::MainPubkey;
-use sn_transfers::NanoTokens;
+use sn_transfers::{MainPubkey, NanoTokens};
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,

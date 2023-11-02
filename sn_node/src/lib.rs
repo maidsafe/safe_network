@@ -55,15 +55,17 @@ mod spends;
 pub use self::{
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
     log_markers::Marker,
-    node::NodeBuilder,
+    node::{NodeBuilder, NodeCmd},
 };
 
-use crate::error::Result;
+use crate::error::{Error, Result};
+use bls::PublicKey;
 use bytes::Bytes;
 use libp2p::PeerId;
 use sn_networking::{Network, SwarmLocalState};
 use sn_protocol::NetworkAddress;
 use std::{collections::HashSet, path::PathBuf};
+use tokio::sync::broadcast;
 
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
@@ -71,6 +73,7 @@ use std::{collections::HashSet, path::PathBuf};
 pub struct RunningNode {
     network: Network,
     node_events_channel: NodeEventsChannel,
+    node_cmds: broadcast::Sender<NodeCmd>,
 }
 
 impl RunningNode {
@@ -130,6 +133,17 @@ impl RunningNode {
     /// Publish a message on a given gossipsub topic
     pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) -> Result<()> {
         self.network.publish_on_topic(topic_id, msg)?;
+        Ok(())
+    }
+
+    /// Set a PublicKey to start decoding and accepting Transfer notifications received over gossipsub.
+    /// All Transfer notifications are dropped/discarded if no public key is set.
+    /// All Transfer notifications received for a key which don't match the set public key is also discarded.
+    pub fn transfer_notifs_filter(&self, filter: Option<PublicKey>) -> Result<()> {
+        let _ = self
+            .node_cmds
+            .send(NodeCmd::TransferNotifsFilter(filter))
+            .map_err(|err| Error::NodeCmdFailed(err.to_string()))?;
         Ok(())
     }
 }
