@@ -26,6 +26,9 @@ pub enum Error {
     #[error("Failed to parse NodeEvent")]
     NodeEventParsingFailed,
 
+    #[error("Failed to send a cmd to the node: {0}")]
+    NodeCmdFailed(String),
+
     #[error("Node's rewards wallet error {0}")]
     RewardsWallet(#[from] WalletError),
 }

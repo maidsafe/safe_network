@@ -11,6 +11,7 @@ use sn_node::RunningNode;
 
 use super::NodeCtrl;
 
+use bls::{PublicKey, PK_SIZE};
 use eyre::{ErrReport, Result};
 use std::{
     env,
@@ -29,7 +30,8 @@ use safenode_proto::{
     GossipsubSubscribeResponse, GossipsubUnsubscribeRequest, GossipsubUnsubscribeResponse,
     NetworkInfoRequest, NetworkInfoResponse, NodeEvent, NodeEventsRequest, NodeInfoRequest,
     NodeInfoResponse, RecordAddressesRequest, RecordAddressesResponse, RestartRequest,
-    RestartResponse, StopRequest, StopResponse, UpdateRequest, UpdateResponse,
+    RestartResponse, StopRequest, StopResponse, TransferNotifsFilterRequest,
+    TransferNotifsFilterResponse, UpdateRequest, UpdateResponse,
 };
 
 // this includes code generated from .proto files
@@ -132,6 +134,37 @@ impl SafeNode for SafeNodeRpcService {
         });
 
         Ok(Response::new(ReceiverStream::new(client_rx)))
+    }
+
+    async fn transfer_notifs_filter(
+        &self,
+        request: Request<TransferNotifsFilterRequest>,
+    ) -> Result<Response<TransferNotifsFilterResponse>, Status> {
+        trace!(
+            "RPC request received at {}: {:?}",
+            self.addr,
+            request.get_ref()
+        );
+
+        let mut pk_bytes = [0u8; PK_SIZE];
+        pk_bytes.copy_from_slice(&request.get_ref().pk);
+        let pk = match PublicKey::from_bytes(pk_bytes) {
+            Ok(pk) => pk,
+            Err(err) => {
+                return Err(Status::new(
+                    Code::Internal,
+                    format!("Failed to decode provided pk: {err}"),
+                ))
+            }
+        };
+
+        match self.running_node.transfer_notifs_filter(Some(pk)) {
+            Ok(()) => Ok(Response::new(TransferNotifsFilterResponse {})),
+            Err(err) => Err(Status::new(
+                Code::Internal,
+                format!("Failed to set transfer notifs filter with {pk:?}: {err}"),
+            )),
+        }
     }
 
     async fn record_addresses(

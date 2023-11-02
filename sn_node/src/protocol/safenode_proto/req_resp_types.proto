@@ -67,6 +67,13 @@ message GossipsubPublishRequest {
 
 message GossipsubPublishResponse {}
 
+// Set a PublicKey to start decoding and accepting Transfer notifications received over gossipsub.
+message TransferNotifsFilterRequest {
+  bytes pk = 1;
+}
+
+message TransferNotifsFilterResponse {}
+
 // Stop the safenode app
 message StopRequest {
   uint64 delay_millis = 1;

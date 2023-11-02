@@ -14,7 +14,8 @@ use libp2p::{Multiaddr, PeerId};
 use safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
     GossipsubUnsubscribeRequest, NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest,
-    RecordAddressesRequest, RestartRequest, StopRequest, UpdateRequest,
+    RecordAddressesRequest, RestartRequest, StopRequest, TransferNotifsFilterRequest,
+    UpdateRequest,
 };
 use sn_client::Client;
 use sn_logging::LogBuilder;
@@ -233,23 +234,29 @@ pub async fn transfers_events(
     log_cash_notes: Option<PathBuf>,
     bootstrap_peers: Option<Vec<Multiaddr>>,
 ) -> Result<()> {
-    let (client, mut wallet) = match SecretKey::from_hex(&sk) {
+    let (client, mut wallet, pk) = match SecretKey::from_hex(&sk) {
         Ok(sk) => {
+            let pk = sk.public_key();
             let client = Client::new(sk.clone(), bootstrap_peers, None).await?;
             let main_sk = MainSecretKey::new(sk);
             let wallet_dir = TempDir::new()?;
             let wallet = LocalWallet::load_from_main_key(&wallet_dir, main_sk)?;
-            (client, wallet)
+            (client, wallet, pk)
         }
         Err(err) => return Err(eyre!("Failed to parse hex-encoded SK: {err:?}")),
     };
     let endpoint = format!("https://{addr}");
     let mut node_client = SafeNodeClient::connect(endpoint).await?;
+    let _ = node_client
+        .transfer_notifs_filter(Request::new(TransferNotifsFilterRequest {
+            pk: pk.to_bytes().to_vec(),
+        }))
+        .await?;
     let response = node_client
         .node_events(Request::new(NodeEventsRequest {}))
         .await?;
 
-    println!("Listening to transfers notifications... (press Ctrl+C to exit)");
+    println!("Listening to transfers notifications for {pk:?}... (press Ctrl+C to exit)");
     if let Some(ref path) = log_cash_notes {
         // create cash_notes dir
         fs::create_dir_all(path)?;
