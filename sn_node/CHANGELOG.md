@@ -1985,6 +1985,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(networking)* only get KVALUE peers for closeness checks in replication
 - *(networking)* only get KVALUE peers when sorting closely
 
+## [0.96.26](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.25...sn_node-v0.96.26) - 2023-11-02
+
+### Added
+- keep transfers in mem instead of heavy cashnotes
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
