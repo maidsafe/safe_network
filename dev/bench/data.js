@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698916612282,
+  "lastUpdate": 1698919017394,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "91e700109d526f6f04eb113f08d1abc68cc98f05",
-          "message": "ci: fix chart naming",
-          "timestamp": "2023-07-07T11:05:58+02:00",
-          "tree_id": "9b0387d6fa5c952f7f5de103c6cb6e9a3cfdd98d",
-          "url": "https://github.com/maidsafe/safe_network/commit/91e700109d526f6f04eb113f08d1abc68cc98f05"
-        },
-        "date": 1688722041662,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1882959141112153,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.703331241904216,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.350199684839168,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 15.483077248190128,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9e3ed96e8e5d782ab41ca41785c90ee1a9848828",
+          "message": "refactor(networking): use Entry API for query task\n\nThis PR changes the old behavior where query tasks are removed from the\nlist and later reinserted. By using the Entry API, tasks are borrowed\nand later removed only if neccessary.",
+          "timestamp": "2023-11-02T08:41:50Z",
+          "tree_id": "460657a2f681da54bb695e806e9dd4eff28b3b29",
+          "url": "https://github.com/maidsafe/safe_network/commit/9e3ed96e8e5d782ab41ca41785c90ee1a9848828"
+        },
+        "date": 1698919014728,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.18337508516065598,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.8809951471892741,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 15.499366367230014,
             "unit": "MiB/s"
           }
         ]
