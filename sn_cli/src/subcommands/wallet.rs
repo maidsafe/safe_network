@@ -164,7 +164,7 @@ pub(crate) async fn wallet_cmds(
             manager.chunk_path(&path)?;
 
             let all_chunks: Vec<_> = manager
-                .get_chunks()
+                .get_unpaid_chunks()
                 .iter()
                 .map(|(xor_name, _)| *xor_name)
                 .collect();
