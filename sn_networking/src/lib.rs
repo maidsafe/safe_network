@@ -575,6 +575,7 @@ impl Network {
     }
 
     // Add a list of keys of a holder to Replication Fetcher.
+    #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
     pub fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,

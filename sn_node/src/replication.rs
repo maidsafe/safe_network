@@ -55,6 +55,7 @@ impl Node {
 
     /// Add a list of keys to the Replication fetcher.
     /// These keys are later fetched from network.
+    #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
     pub(crate) fn add_keys_to_replication_fetcher(
         &self,
         holder: PeerId,
@@ -175,7 +176,7 @@ impl Node {
             for peer_id in sorted_based_on_addr {
                 if peer_id != &our_peer_id {
                     trace!("Replicating paid record {pretty_key:?} to {peer_id:?}");
-
+                    #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
                     let keys = HashMap::from([(addr.clone(), record_type.clone())]);
                     let request = Request::Cmd(Cmd::Replicate {
                         holder: our_address.clone(),
@@ -193,6 +194,7 @@ impl Node {
     }
 
     // Utility to send `Cmd::Replicate` without awaiting for the `Response` at the call site.
+    #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
     fn send_replicate_cmd_without_wait(
         &self,
         our_address: &NetworkAddress,
