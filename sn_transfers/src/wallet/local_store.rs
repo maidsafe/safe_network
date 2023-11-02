@@ -351,16 +351,27 @@ impl LocalWallet {
                                 && !used_cash_notes.contains(&cash_note.unique_pubkey().to_bytes())
                         })
                 {
-                    trace!("Created transaction regarding {content_addr:?} paying {:?}(origin {token:?}) to payee {payee:?}.",
-                        cash_note.value());
                     used_cash_notes.insert(cash_note.unique_pubkey().to_bytes());
                     let cash_notes_for_content: &mut Vec<PaymentDetails> =
                         all_transfers_per_address.entry(content_addr).or_default();
-                    cash_notes_for_content.push((
-                        Transfer::transfers_from_cash_note(cash_note.to_owned())?,
-                        *cash_note.main_pubkey(),
-                        cash_note.value()?,
-                    ));
+                    let value = cash_note.value();
+
+                    // diffentiate between network royalties and storage payments
+                    if cash_note.main_pubkey == *crate::NETWORK_ROYALTIES_PK {
+                        trace!("Created netowrk royalties transaction regarding {content_addr:?} paying {value:?}(origin {token:?}) to payee {payee:?}.");
+                        cash_notes_for_content.push((
+                            Transfer::royalties_transfers_from_cash_note(cash_note.to_owned())?,
+                            *cash_note.main_pubkey(),
+                            value?,
+                        ));
+                    } else {
+                        trace!("Created transaction regarding {content_addr:?} paying {value:?}(origin {token:?}) to payee {payee:?}.");
+                        cash_notes_for_content.push((
+                            Transfer::transfers_from_cash_note(cash_note.to_owned())?,
+                            *cash_note.main_pubkey(),
+                            value?,
+                        ));
+                    }
                 }
             }
         }
