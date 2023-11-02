@@ -47,8 +47,8 @@ futures = "~0.3.13"
 hex = "~0.4.3"
 itertools = "~0.11.0"
 lazy_static = "~1.4.0"
-libp2p = { version="0.52", features = ["tokio", "dns", "kad", "macros", "autonat"] }
-prometheus-client = { version = "0.21.2", optional = true }
+libp2p = {   version="0.53" ,  features = ["tokio", "dns", "kad", "macros", "autonat"] }
+prometheus-client = { version = "0.22", optional = true }
 # watch out updating this, protoc compiler needs to be installed on all build systems
 # arm builds + musl are very problematic
 prost = { version = "0.9" }

@@ -11,9 +11,8 @@ use crate::event::NetworkEvent;
 use libp2p::{
     identity::PeerId,
     kad::{
-        record::{Key, ProviderRecord, Record},
         store::{Error, RecordStore, Result},
-        KBucketDistance as Distance, KBucketKey,
+        KBucketDistance as Distance, KBucketKey, ProviderRecord, Record, RecordKey as Key,
     },
 };
 #[cfg(feature = "open-metrics")]

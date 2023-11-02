@@ -29,11 +29,11 @@ color-eyre = "~0.6.0"
 eyre = "~0.6.5"
 clap = { version = "3.2.0", features = ["derive", "env"]}
 dirs-next = "2.0.0"
-libp2p = { version="0.52" }
+libp2p = "0.53"
 # watch out updating this, protoc compiler needs to be installed on all build systems
 # arm builds + musl are very problematic
 prost = { version = "0.9" }
-regex = "~1.9.6"
+regex = "1.10"
 tonic = { version = "0.6.2" }
 tracing = "~0.1.26"
 tracing-core = "~0.1.21"
