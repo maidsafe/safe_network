@@ -227,24 +227,17 @@ impl LocalWallet {
     }
 
     /// Return the payment cash_note ids for the given content address name if cached.
-    pub fn get_payment_cash_notes(&self, name: &XorName) -> Vec<CashNote> {
-        let ids = self.get_payment_unique_pubkeys_and_values(name);
-        // now grab all those cash_notes
-        let mut cash_notes: Vec<CashNote> = vec![];
+    pub fn get_payment_transfers(&self, name: &XorName) -> Vec<Transfer> {
+        let mut transfers: Vec<Transfer> = vec![];
 
-        if let Some(ids) = ids {
-            for (id, _main_pub_key, _value) in ids {
-                if let Some(cash_note) = load_created_cash_note(id, &self.wallet_dir) {
-                    trace!(
-                        "Current cash_note of chunk {name:?} is paying {:?} tokens.",
-                        cash_note.value()
-                    );
-                    cash_notes.push(cash_note);
-                }
+        if let Some(payment) = self.get_payment_unique_pubkeys_and_values(name) {
+            for (trans, _main_pub_key, value) in payment {
+                trace!("Current transfer for chunk {name:?} is of {value:?} tokens.");
+                transfers.push(trans.to_owned());
             }
         }
 
-        cash_notes
+        transfers
     }
 
     /// Make a transfer and return all created cash_notes
@@ -289,7 +282,7 @@ impl LocalWallet {
         Ok(created_cash_notes)
     }
 
-    /// Performs a CashNote payment for each content address.
+    /// Performs a payment for each content address.
     /// Returns the amount paid for storage, including the network royalties fee paid.
     pub fn local_send_storage_payment(
         &mut self,
@@ -350,7 +343,7 @@ impl LocalWallet {
         for (content_addr, payees) in all_data_payments {
             for (payee, token) in payees {
                 if let Some(cash_note) =
-                    &offline_transfer
+                    offline_transfer
                         .created_cash_notes
                         .iter()
                         .find(|cash_note| {
@@ -358,16 +351,27 @@ impl LocalWallet {
                                 && !used_cash_notes.contains(&cash_note.unique_pubkey().to_bytes())
                         })
                 {
-                    trace!("Created transaction regarding {content_addr:?} paying {:?}(origin {token:?}) to payee {payee:?}.",
-                        cash_note.value());
                     used_cash_notes.insert(cash_note.unique_pubkey().to_bytes());
                     let cash_notes_for_content: &mut Vec<PaymentDetails> =
                         all_transfers_per_address.entry(content_addr).or_default();
-                    cash_notes_for_content.push((
-                        cash_note.unique_pubkey(),
-                        *cash_note.main_pubkey(),
-                        cash_note.value()?,
-                    ));
+                    let value = cash_note.value();
+
+                    // diffentiate between network royalties and storage payments
+                    if cash_note.main_pubkey == *crate::NETWORK_ROYALTIES_PK {
+                        trace!("Created netowrk royalties transaction regarding {content_addr:?} paying {value:?}(origin {token:?}) to payee {payee:?}.");
+                        cash_notes_for_content.push((
+                            Transfer::royalties_transfers_from_cash_note(cash_note.to_owned())?,
+                            *cash_note.main_pubkey(),
+                            value?,
+                        ));
+                    } else {
+                        trace!("Created transaction regarding {content_addr:?} paying {value:?}(origin {token:?}) to payee {payee:?}.");
+                        cash_notes_for_content.push((
+                            Transfer::transfers_from_cash_note(cash_note.to_owned())?,
+                            *cash_note.main_pubkey(),
+                            value?,
+                        ));
+                    }
                 }
             }
         }
@@ -499,24 +503,24 @@ impl LocalWallet {
 
     /// Lookup previous payments and subtract them from the payments we're about to do.
     /// In essence this will make sure we don't overpay.
-    pub fn adjust_payment_map(
+    pub fn take_previous_payments_into_account(
         &self,
         payment_map: &mut BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
     ) {
         // For each target address
         for (xor, payments) in payment_map.iter_mut() {
             // All payments done for an address, should be multiple nodes.
-            if let Some(notes) = self.get_payment_unique_pubkeys_and_values(xor) {
-                for (_note_main_key, main_pub_key, note_value) in notes {
-                    // Find new payment to a node, for which we have a cashnote already
+            if let Some(prev_payment) = self.get_payment_unique_pubkeys_and_values(xor) {
+                for (_transfer, prev_payment_pub_key, prev_payment_value) in prev_payment {
+                    // Find new payment to a node, for which we have a transfer already
                     if let Some((_main_pub_key, payment_tokens)) = payments
                         .iter_mut()
-                        .find(|(pubkey, _)| pubkey.public_key() == main_pub_key.public_key())
+                        .find(|(pubkey, _)| pubkey == prev_payment_pub_key)
                     {
                         // Subtract what we already paid from what we're about to pay.
-                        // `checked_sub` overflows if would be negative, so we set it to 0.
+                        // `checked_sub` underflows if would be negative, so we set it to 0.
                         *payment_tokens = payment_tokens
-                            .checked_sub(*note_value)
+                            .checked_sub(*prev_payment_value)
                             .unwrap_or(NanoTokens::zero());
                     }
                 }
@@ -994,7 +998,7 @@ mod tests {
         map.get_mut(&xor4).expect("to have value")[0].1 = 390.into(); // decrease: 400 -> 390
         map.get_mut(&xor4).expect("to have value")[1].1 = 410.into(); // increase: 401 -> 410
 
-        sender.adjust_payment_map(&mut map);
+        sender.take_previous_payments_into_account(&mut map);
 
         // The map should now only have the entries where store costs increased:
         assert_eq!(
