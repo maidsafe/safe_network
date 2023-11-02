@@ -46,6 +46,9 @@ service SafeNode {
   // Publish a msg on a Gossipsub topic
   rpc PublishOnTopic (GossipsubPublishRequest) returns (GossipsubPublishResponse);
 
+  // Set the address the node shall request its rewards to be sent/paid to.
+  rpc SetRewardsAddress (SetRewardsAddressRequest) returns (SetRewardsAddressResponse);
+
   // Stop the execution of this node
   rpc Stop (StopRequest) returns (StopResponse);
 

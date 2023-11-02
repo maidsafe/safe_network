@@ -11,7 +11,7 @@ use sn_node::RunningNode;
 
 use super::NodeCtrl;
 
-use bls::{PublicKey, PK_SIZE};
+use bls::{PublicKey, SecretKey, PK_SIZE, SK_SIZE};
 use eyre::{ErrReport, Result};
 use std::{
     env,
@@ -30,8 +30,9 @@ use safenode_proto::{
     GossipsubSubscribeResponse, GossipsubUnsubscribeRequest, GossipsubUnsubscribeResponse,
     NetworkInfoRequest, NetworkInfoResponse, NodeEvent, NodeEventsRequest, NodeInfoRequest,
     NodeInfoResponse, RecordAddressesRequest, RecordAddressesResponse, RestartRequest,
-    RestartResponse, StopRequest, StopResponse, TransferNotifsFilterRequest,
-    TransferNotifsFilterResponse, UpdateRequest, UpdateResponse,
+    RestartResponse, SetRewardsAddressRequest, SetRewardsAddressResponse, StopRequest,
+    StopResponse, TransferNotifsFilterRequest, TransferNotifsFilterResponse, UpdateRequest,
+    UpdateResponse,
 };
 
 // this includes code generated from .proto files
@@ -253,6 +254,37 @@ impl SafeNode for SafeNodeRpcService {
             Err(err) => Err(Status::new(
                 Code::Internal,
                 format!("Failed to publish on topic '{topic}': {err}"),
+            )),
+        }
+    }
+
+    async fn set_rewards_address(
+        &self,
+        request: Request<SetRewardsAddressRequest>,
+    ) -> Result<Response<SetRewardsAddressResponse>, Status> {
+        trace!(
+            "RPC request received at {}: {:?}",
+            self.addr,
+            request.get_ref()
+        );
+
+        let mut sk_bytes = [0u8; SK_SIZE];
+        sk_bytes.copy_from_slice(&request.get_ref().sk);
+        let sk = match SecretKey::from_bytes(sk_bytes) {
+            Ok(sk) => sk,
+            Err(err) => {
+                return Err(Status::new(
+                    Code::Internal,
+                    format!("Failed to decode provided sk: {err}"),
+                ))
+            }
+        };
+
+        match self.running_node.set_rewards_address(sk) {
+            Ok(()) => Ok(Response::new(SetRewardsAddressResponse {})),
+            Err(err) => Err(Status::new(
+                Code::Internal,
+                format!("Failed to set rewards address: {err}"),
             )),
         }
     }

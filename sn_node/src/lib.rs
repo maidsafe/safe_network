@@ -59,7 +59,7 @@ pub use self::{
 };
 
 use crate::error::{Error, Result};
-use bls::PublicKey;
+use bls::{PublicKey, SecretKey};
 use bytes::Bytes;
 use libp2p::PeerId;
 use sn_networking::{Network, SwarmLocalState};
@@ -143,6 +143,15 @@ impl RunningNode {
         let _ = self
             .node_cmds
             .send(NodeCmd::TransferNotifsFilter(filter))
+            .map_err(|err| Error::NodeCmdFailed(err.to_string()))?;
+        Ok(())
+    }
+
+    /// Set address the node shall request its rewards to be sent/paid to.
+    pub fn set_rewards_address(&self, sk: SecretKey) -> Result<()> {
+        let _ = self
+            .node_cmds
+            .send(NodeCmd::RewardsAddress(sk))
             .map_err(|err| Error::NodeCmdFailed(err.to_string()))?;
         Ok(())
     }

@@ -79,6 +79,13 @@ message StopRequest {
   uint64 delay_millis = 1;
 }
 
+// Set the address the node shall request its rewards to be sent/paid to.
+message SetRewardsAddressRequest {
+  bytes sk = 1;
+}
+
+message SetRewardsAddressResponse {}
+
 message StopResponse {}
 
 // Restart the safenode app

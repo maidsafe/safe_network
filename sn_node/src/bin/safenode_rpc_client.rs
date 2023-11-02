@@ -14,8 +14,8 @@ use libp2p::{Multiaddr, PeerId};
 use safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
     GossipsubUnsubscribeRequest, NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest,
-    RecordAddressesRequest, RestartRequest, StopRequest, TransferNotifsFilterRequest,
-    UpdateRequest,
+    RecordAddressesRequest, RestartRequest, SetRewardsAddressRequest, StopRequest,
+    TransferNotifsFilterRequest, UpdateRequest,
 };
 use sn_client::Client;
 use sn_logging::LogBuilder;
@@ -93,6 +93,13 @@ enum Cmd {
         /// Message to publish
         msg: String,
     },
+    /// Set the address the node shall request its rewards to be sent/paid to.
+    #[clap(name = "rewards")]
+    RewardsAddress {
+        /// The SecretKey corresponding to the address the node shall request
+        /// its rewards to be sent/paid to.
+        sk: String,
+    },
     /// Restart the node after the specified delay
     #[clap(name = "restart")]
     Restart {
@@ -152,6 +159,7 @@ async fn main() -> Result<()> {
         Cmd::Subscribe { topic } => gossipsub_subscribe(addr, topic).await,
         Cmd::Unsubscribe { topic } => gossipsub_unsubscribe(addr, topic).await,
         Cmd::Publish { topic, msg } => gossipsub_publish(addr, topic, msg).await,
+        Cmd::RewardsAddress { sk } => rewards_address(addr, sk).await,
         Cmd::Restart { delay_millis } => node_restart(addr, delay_millis).await,
         Cmd::Stop { delay_millis } => node_stop(addr, delay_millis).await,
         Cmd::Update { delay_millis } => node_update(addr, delay_millis).await,
@@ -383,6 +391,24 @@ pub async fn gossipsub_publish(addr: SocketAddr, topic: String, msg: String) -> 
         }))
         .await?;
     println!("Node successfully received the request to publish on topic '{topic}'");
+    Ok(())
+}
+
+pub async fn rewards_address(addr: SocketAddr, sk: String) -> Result<()> {
+    let sk =
+        SecretKey::from_hex(&sk).map_err(|err| eyre!("Failed to parse hex-encoded SK: {err:?}"))?;
+
+    let endpoint = format!("https://{addr}");
+    let mut client = SafeNodeClient::connect(endpoint).await?;
+    let _response = client
+        .set_rewards_address(Request::new(SetRewardsAddressRequest {
+            sk: sk.to_bytes().to_vec(),
+        }))
+        .await?;
+    println!(
+        "Node successfully received the request to set the rewards address to {:?}",
+        sk.public_key()
+    );
     Ok(())
 }
 

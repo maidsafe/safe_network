@@ -10,6 +10,7 @@ use super::{error::Result, event::NodeEventsChannel, Marker, NodeEvent};
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetrics;
 use crate::RunningNode;
+use bls::SecretKey;
 use bls::{PublicKey, PK_SIZE};
 use bytes::Bytes;
 use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr};
@@ -97,7 +98,7 @@ impl NodeBuilder {
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
     pub fn build_and_run(self) -> Result<RunningNode> {
-        // TODO: Make this key settable, and accessible via API
+        // this can be changed later on by the user through the `NodeCmd` API
         let reward_key = MainSecretKey::random();
         let reward_address = reward_key.main_pubkey();
 
@@ -155,6 +156,8 @@ impl NodeBuilder {
 pub enum NodeCmd {
     /// Set a PublicKey to start decoding and accepting Transfer notifications received over gossipsub.
     TransferNotifsFilter(Option<PublicKey>),
+    /// The SecretKey corresponding to the address the node shall request its rewards to be sent/paid to.
+    RewardsAddress(SecretKey),
 }
 
 /// `Node` represents a single node in the distributed network. It handles
@@ -268,6 +271,11 @@ impl Node {
                     node_cmd = cmds_receiver.recv() => {
                         match node_cmd {
                             Ok(NodeCmd::TransferNotifsFilter(filter)) => self.transfer_notifs_filter = filter,
+                            Ok(NodeCmd::RewardsAddress(sk)) => {
+                                let pk = MainSecretKey::new(sk).main_pubkey();
+                                info!("Node's rewards address is being changed now from {:?} to: {pk:?}", self.reward_address.public_key());
+                                self.reward_address = pk;
+                            },
                             Err(err) => error!("When trying to read from the NodeCmds channel/receiver: {err:?}")
                         }
                     }
