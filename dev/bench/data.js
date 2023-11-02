@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698919289081,
+  "lastUpdate": 1698919295081,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30467,6 +30467,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 37,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9e3ed96e8e5d782ab41ca41785c90ee1a9848828",
+          "message": "refactor(networking): use Entry API for query task\n\nThis PR changes the old behavior where query tasks are removed from the\nlist and later reinserted. By using the Entry API, tasks are borrowed\nand later removed only if neccessary.",
+          "timestamp": "2023-11-02T08:41:50Z",
+          "tree_id": "460657a2f681da54bb695e806e9dd4eff28b3b29",
+          "url": "https://github.com/maidsafe/safe_network/commit/9e3ed96e8e5d782ab41ca41785c90ee1a9848828"
+        },
+        "date": 1698919290735,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 161,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 38,
             "unit": "MB"
           }
         ]
