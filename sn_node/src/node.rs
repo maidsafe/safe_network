@@ -34,7 +34,10 @@ use std::{
     },
     time::Duration,
 };
-use tokio::{sync::mpsc::Receiver, task::spawn};
+use tokio::{
+    sync::{broadcast, mpsc::Receiver},
+    task::spawn,
+};
 
 /// Expected topic name where notifications of transfers are sent on.
 /// The notification msg is expected to contain the serialised public key, followed by the
@@ -118,18 +121,22 @@ impl NodeBuilder {
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
+        let (node_cmds, _) = broadcast::channel(10);
 
         let node = Node {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
+            node_cmds: node_cmds.clone(),
             initial_peers: self.initial_peers,
             reward_address,
+            transfer_notifs_filter: None,
             #[cfg(feature = "open-metrics")]
             node_metrics,
         };
         let running_node = RunningNode {
             network,
             node_events_channel,
+            node_cmds,
         };
 
         // Run the node
@@ -143,6 +150,13 @@ impl NodeBuilder {
     }
 }
 
+/// Commands that can be sent by the user to the Node instance, e.g. to mutate some settings.
+#[derive(Clone)]
+pub enum NodeCmd {
+    /// Set a PublicKey to start decoding and accepting Transfer notifications received over gossipsub.
+    TransferNotifsFilter(Option<PublicKey>),
+}
+
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
 /// storage, and broadcasts node-related events.
@@ -150,19 +164,27 @@ impl NodeBuilder {
 pub(crate) struct Node {
     pub(crate) network: Network,
     pub(crate) events_channel: NodeEventsChannel,
-    /// Peers that are dialed at startup of node.
+    // We keep a copy of the Sender which is clonable and we can obtain a receiver from.
+    node_cmds: broadcast::Sender<NodeCmd>,
+    // Peers that are dialed at startup of node.
     initial_peers: Vec<Multiaddr>,
     reward_address: MainPubkey,
+    transfer_notifs_filter: Option<PublicKey>,
     #[cfg(feature = "open-metrics")]
     pub(crate) node_metrics: NodeMetrics,
 }
 
 impl Node {
     /// Runs the provided `SwarmDriver` and spawns a task to process for `NetworkEvents`
-    fn run(self, swarm_driver: SwarmDriver, mut network_event_receiver: Receiver<NetworkEvent>) {
+    fn run(
+        mut self,
+        swarm_driver: SwarmDriver,
+        mut network_event_receiver: Receiver<NetworkEvent>,
+    ) {
         let mut rng = StdRng::from_entropy();
 
         let peers_connected = Arc::new(AtomicUsize::new(0));
+        let mut cmds_receiver = self.node_cmds.subscribe();
 
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
@@ -242,6 +264,12 @@ impl Node {
 
                             info!("Periodic replication took {:?}", start.elapsed());
                         });
+                    }
+                    node_cmd = cmds_receiver.recv() => {
+                        match node_cmd {
+                            Ok(NodeCmd::TransferNotifsFilter(filter)) => self.transfer_notifs_filter = filter,
+                            Err(err) => error!("When trying to read from the NodeCmds channel/receiver: {err:?}")
+                        }
                     }
                 }
             }
@@ -373,15 +401,23 @@ impl Node {
             | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
                 if self.events_channel.receiver_count() > 0 {
                     if topic == TRANSFER_NOTIF_TOPIC {
-                        // this is expected to be a notification of a transfer which we treat specially
-                        match try_decode_transfer_notif(&msg) {
-                            Ok(notif_event) => return self.events_channel.broadcast(notif_event),
-                            Err(err) => warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {:?}", err),
+                        // this is expected to be a notification of a transfer which we treat specially,
+                        // and we try to decode it only if it's referring to a PK the user is interested in
+                        if let Some(filter_pk) = self.transfer_notifs_filter {
+                            match try_decode_transfer_notif(&msg, filter_pk) {
+                                Ok(Some(notif_event)) => self.events_channel.broadcast(notif_event),
+                                Ok(None) => { /* transfer notif filered out */ }
+                                Err(err) => {
+                                    warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {:?}", err);
+                                    self.events_channel
+                                        .broadcast(NodeEvent::GossipsubMsg { topic, msg });
+                                }
+                            }
                         }
+                    } else {
+                        self.events_channel
+                            .broadcast(NodeEvent::GossipsubMsg { topic, msg });
                     }
-
-                    self.events_channel
-                        .broadcast(NodeEvent::GossipsubMsg { topic, msg });
                 }
             }
         }
@@ -515,15 +551,17 @@ impl Node {
     }
 }
 
-fn try_decode_transfer_notif(msg: &[u8]) -> eyre::Result<NodeEvent> {
+fn try_decode_transfer_notif(msg: &[u8], filter: PublicKey) -> eyre::Result<Option<NodeEvent>> {
     let mut key_bytes = [0u8; PK_SIZE];
     key_bytes.copy_from_slice(
         msg.get(0..PK_SIZE)
             .ok_or_else(|| eyre::eyre!("msg doesn't have enough bytes"))?,
     );
     let key = PublicKey::from_bytes(key_bytes)?;
-
-    let transfers: Vec<Transfer> = bincode::deserialize(&msg[PK_SIZE..])?;
-
-    Ok(NodeEvent::TransferNotif { key, transfers })
+    if key == filter {
+        let transfers: Vec<Transfer> = bincode::deserialize(&msg[PK_SIZE..])?;
+        Ok(Some(NodeEvent::TransferNotif { key, transfers }))
+    } else {
+        Ok(None)
+    }
 }

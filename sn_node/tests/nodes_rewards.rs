@@ -10,7 +10,9 @@ mod common;
 
 use crate::common::{
     get_client_and_wallet, random_content,
-    safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest},
+    safenode_proto::{
+        safe_node_client::SafeNodeClient, NodeEventsRequest, TransferNotifsFilterRequest,
+    },
 };
 use sn_client::WalletClient;
 use sn_logging::LogBuilder;
@@ -214,14 +216,19 @@ fn current_rewards_balance() -> Result<NanoTokens> {
 
 fn spawn_royalties_payment_listener(endpoint: String) -> JoinHandle<Result<usize, eyre::Report>> {
     tokio::spawn(async move {
+        let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let _ = rpc_client
+            .transfer_notifs_filter(Request::new(TransferNotifsFilterRequest {
+                pk: royalties_pk.to_bytes().to_vec(),
+            }))
+            .await?;
         let response = rpc_client
             .node_events(Request::new(NodeEventsRequest {}))
             .await?;
 
         let mut count = 0;
         let mut stream = response.into_inner();
-        let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
 
         println!("Awaiting transfers notifs...");
         while let Some(Ok(e)) = stream.next().await {
