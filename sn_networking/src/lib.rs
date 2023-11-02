@@ -516,11 +516,7 @@ impl Network {
                 Quorum::One => GetQuorum::One,
                 Quorum::Majority => GetQuorum::Majority,
                 Quorum::All => GetQuorum::All,
-                // we dont use this so should not be an issue
-                Quorum::N(_) => {
-                    warn!("libp2p Quroum:N being used unuexpectedly, defaulting to GetQuorum::All");
-                    GetQuorum::All
-                }
+                Quorum::N(v) => GetQuorum::N(v),
             };
             // Verify the record is stored, requiring re-attempts
             self.get_record_from_network(

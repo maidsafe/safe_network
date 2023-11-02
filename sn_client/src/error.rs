@@ -65,4 +65,7 @@ pub enum Error {
     /// CashNote add would overflow
     #[error("Total price exceed possible token amount")]
     TotalPriceTooHigh,
+
+    #[error("Logic error: NonZeroUsize was initialised as zero")]
+    NonZeroUsizeWasInitialisedAsZero,
 }
