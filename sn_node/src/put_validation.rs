@@ -415,6 +415,7 @@ impl Node {
     }
 
     /// Gets CashNotes out of a Payment, this includes network verifications of the Transfers
+    /// Rewraps the royalties transfers into encrypted Transfers ready to be sent directly to the beneficiary
     async fn cash_notes_from_payment(
         &self,
         payment: &Vec<Transfer>,
@@ -452,7 +453,7 @@ impl Node {
                             "{} network royalties payment cash notes found for record {pretty_key} for a total value of {received_royalties:?}",
                             cash_notes.len()
                         );
-                        let encrypted_cashnote_redemptions = cash_notes
+                        let rewraped_transfers = cash_notes
                             .into_iter()
                             .map(Transfer::transfers_from_cash_note)
                             .collect::<Result<Vec<Transfer>, sn_transfers::Error>>()
@@ -461,7 +462,7 @@ impl Node {
                                 ProtocolError::FailedToEncryptTransfer
                             })?;
 
-                        royalties_transfers.extend(encrypted_cashnote_redemptions);
+                        royalties_transfers.extend(rewraped_transfers);
                         received_fee = received_fee
                             .checked_add(received_royalties)
                             .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
@@ -520,9 +521,10 @@ impl Node {
             .set(wallet.balance().as_nano() as i64);
 
         if royalties_transfers.is_empty() {
-            return Err(ProtocolError::NoNetworkRoyaltiesPayment(
-                pretty_key.into_owned(),
-            ));
+            warn!("No network royalties payment found for record {pretty_key}");
+            // return Err(ProtocolError::NoNetworkRoyaltiesPayment(
+            //     pretty_key.into_owned(),
+            // ));
         }
 
         // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for the network royalties payment.
