@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698916430620,
+  "lastUpdate": 1698916610923,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7ce6d64ab4635b89d233f07c548c679a5a3ae933",
-          "message": "feat(node): only add to routing table after Identify success\n\nKademliaBucketInserts::Manual",
-          "timestamp": "2023-06-23T11:57:40+09:00",
-          "tree_id": "208cf9f7a15b5c221379586efbc7ac089175c00d",
-          "url": "https://github.com/maidsafe/safe_network/commit/7ce6d64ab4635b89d233f07c548c679a5a3ae933"
-        },
-        "date": 1687490088284,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 23.69,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "c23eb32eacb826636fadaf6107b984a8890edaa9",
+          "message": "feat: keep transfers in mem instead of heavy cashnotes",
+          "timestamp": "2023-11-02T08:28:23Z",
+          "tree_id": "206009e48bbd92dfc0e00f9a9c000a009a9cc793",
+          "url": "https://github.com/maidsafe/safe_network/commit/c23eb32eacb826636fadaf6107b984a8890edaa9"
+        },
+        "date": 1698916610575,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
