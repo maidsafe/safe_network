@@ -12,7 +12,7 @@ use crate::metrics::NodeMetrics;
 use crate::RunningNode;
 use bls::{PublicKey, PK_SIZE};
 use bytes::Bytes;
-use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr};
+use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr, PeerId};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -35,14 +35,35 @@ use std::{
     time::Duration,
 };
 use tokio::{sync::mpsc::Receiver, task::spawn};
-
-/// Expected topic name where notifications of transfers are sent on.
-/// The notification msg is expected to contain the serialised public key, followed by the
-/// serialised transfer info encrypted against the referenced public key.
-pub(super) const TRANSFER_NOTIF_TOPIC: &str = "TRANSFER_NOTIFICATION";
+use xor_name::{XorName, XOR_NAME_LEN};
 
 /// Interval to trigger replication on a random close_group peer
 const PERIODIC_REPLICATION_INTERVAL: Duration = Duration::from_secs(10);
+
+/// Expected topic name where notifications of royalty payment transfers are sent on.
+/// The notification msg is expected to contain the serialised public key, followed by the
+/// serialised transfer info encrypted against the referenced public key.
+const ROYALTY_TRANSFER_NOTIF_TOPIC: &str = "ROYALTY_TRANSFER";
+
+pub(crate) fn royalty_topic_group(peer_id: &PeerId) -> String {
+    let group_index = common_prefix(
+        &XorName::from_content(ROYALTY_TRANSFER_NOTIF_TOPIC.as_bytes()),
+        &XorName::from_content(&peer_id.to_bytes()),
+    );
+    format!("{ROYALTY_TRANSFER_NOTIF_TOPIC}_GROUP_{group_index}")
+}
+
+/// Returns the length of the common prefix with the `other` name; e. g.
+/// the when `other = 11110000` and `self = 11111111` this is 4.
+fn common_prefix(xor_name_1: &XorName, xor_name_2: &XorName) -> usize {
+    for byte_index in 0..XOR_NAME_LEN {
+        if xor_name_1.0[byte_index] != xor_name_2.0[byte_index] {
+            return (byte_index * 8)
+                + (xor_name_1.0[byte_index] ^ xor_name_2.0[byte_index]).leading_zeros() as usize;
+        }
+    }
+    8 * XOR_NAME_LEN
+}
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
@@ -127,6 +148,7 @@ impl NodeBuilder {
             #[cfg(feature = "open-metrics")]
             node_metrics,
         };
+        let topic_string = royalty_topic_group(&network.peer_id);
         let running_node = RunningNode {
             network,
             node_events_channel,
@@ -134,10 +156,10 @@ impl NodeBuilder {
 
         // Run the node
         node.run(swarm_driver, network_event_receiver);
-        // subscribe to receive transfer notifications over gossipsub topic TRANSFER_NOTIF_TOPIC
+        // subscribe to receive transfer notifications over gossipsub topic
         running_node
-            .subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())
-            .map(|()| info!("Node has been subscribed to gossipsub topic '{TRANSFER_NOTIF_TOPIC}' to receive network royalties payments notifications."))?;
+            .subscribe_to_topic(topic_string.clone())
+            .map(|()| info!("Node has been subscribed to gossipsub topic '{topic_string}' to receive network royalties payments notifications."))?;
 
         Ok(running_node)
     }
@@ -372,7 +394,9 @@ impl Node {
             NetworkEvent::GossipsubMsgReceived { topic, msg }
             | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
                 if self.events_channel.receiver_count() > 0 {
-                    if topic == TRANSFER_NOTIF_TOPIC {
+                    // TODO: shall record which topics this network instance subscribed.
+                    //       currently just using a wild match
+                    if topic.contains(ROYALTY_TRANSFER_NOTIF_TOPIC) {
                         // this is expected to be a notification of a transfer which we treat specially
                         match try_decode_transfer_notif(&msg) {
                             Ok(notif_event) => return self.events_channel.broadcast(notif_event),

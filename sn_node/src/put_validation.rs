@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    node::royalty_topic_group,
     node::Node,
-    node::TRANSFER_NOTIF_TOPIC,
     spends::{aggregate_spends, check_parent_spends},
     Marker,
 };
@@ -534,7 +534,7 @@ impl Node {
             ));
         }
 
-        // publish a notification over gossipsub topic TRANSFER_NOTIF_TOPIC for the network royalties payment.
+        // publish a notification over gossipsub topic for the network royalties payment.
         let royalties_pk = *NETWORK_ROYALTIES_PK;
         trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
         let royalties_pk_bytes = royalties_pk.to_bytes();
@@ -547,7 +547,7 @@ impl Node {
             match bincode::serialize_into(&mut msg, &royalties_transfers) {
                 Ok(_) => {
                     let msg = msg.into_inner().freeze();
-                    if let Err(err) = self.network.publish_on_topic(TRANSFER_NOTIF_TOPIC.to_string(), msg) {
+                    if let Err(err) = self.network.publish_on_topic(royalty_topic_group(&self.network.peer_id), msg) {
                         debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
                     }
                 }

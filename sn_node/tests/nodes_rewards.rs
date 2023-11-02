@@ -10,7 +10,9 @@ mod common;
 
 use crate::common::{
     get_client_and_wallet, random_content,
-    safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest},
+    safenode_proto::{
+        safe_node_client::SafeNodeClient, GossipsubSubscribeRequest, NodeEventsRequest,
+    },
 };
 use sn_client::WalletClient;
 use sn_logging::LogBuilder;
@@ -215,6 +217,15 @@ fn current_rewards_balance() -> Result<NanoTokens> {
 fn spawn_royalties_payment_listener(endpoint: String) -> JoinHandle<Result<usize, eyre::Report>> {
     tokio::spawn(async move {
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+
+        for group_index in 0..256 {
+            let royalty_topic: &str = "ROYALTY_TRANSFER";
+            let topic = format!("{royalty_topic}_GROUP_{group_index}");
+            let _response = rpc_client
+                .subscribe_to_topic(Request::new(GossipsubSubscribeRequest { topic }))
+                .await?;
+        }
+
         let response = rpc_client
             .node_events(Request::new(NodeEventsRequest {}))
             .await?;
