@@ -9,7 +9,7 @@
 use libp2p::{
     gossipsub::{PublishError, SubscriptionError},
     kad::{self, Record},
-    request_response::{OutboundFailure, RequestId},
+    request_response::{OutboundFailure, OutboundRequestId},
     swarm::DialError,
     PeerId, TransportError,
 };
@@ -42,7 +42,7 @@ pub enum Error {
     InternalMsgChannelDropped,
 
     #[error("Response received for a request not found in our local tracking map: {0}")]
-    ReceivedResponseDropped(RequestId),
+    ReceivedResponseDropped(OutboundRequestId),
 
     #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0}")]
     OutgoingResponseDropped(Response),

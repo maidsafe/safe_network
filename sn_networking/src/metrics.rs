@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use libp2p_metrics::{Metrics as Libp2pMetrics, Recorder};
+use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
 use prometheus_client::{metrics::gauge::Gauge, registry::Registry};
 use std::time::Duration;
 use sysinfo::{Pid, PidExt, ProcessExt, ProcessRefreshKind, System, SystemExt};
@@ -113,8 +113,8 @@ impl Recorder<libp2p::identify::Event> for NetworkMetrics {
     }
 }
 
-impl<TBvEv, THandleErr> Recorder<libp2p::swarm::SwarmEvent<TBvEv, THandleErr>> for NetworkMetrics {
-    fn record(&self, event: &libp2p::swarm::SwarmEvent<TBvEv, THandleErr>) {
+impl<T> Recorder<libp2p::swarm::SwarmEvent<T>> for NetworkMetrics {
+    fn record(&self, event: &libp2p::swarm::SwarmEvent<T>) {
         self.libp2p_metrics.record(event);
     }
 }

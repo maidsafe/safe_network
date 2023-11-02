@@ -18,6 +18,8 @@ use custom_debug::Debug as CustomDebug;
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
+#[cfg(feature = "open-metrics")]
+use libp2p::metrics::Recorder;
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{
@@ -29,8 +31,6 @@ use libp2p::{
     swarm::SwarmEvent,
     Multiaddr, PeerId,
 };
-#[cfg(feature = "open-metrics")]
-use libp2p_metrics::Recorder;
 
 use sn_protocol::{
     messages::{Request, Response},
@@ -204,10 +204,7 @@ impl Debug for NetworkEvent {
 
 impl SwarmDriver {
     /// Handle `SwarmEvents`
-    pub(super) fn handle_swarm_events<EventError: std::error::Error>(
-        &mut self,
-        event: SwarmEvent<NodeEvent, EventError>,
-    ) -> Result<()> {
+    pub(super) fn handle_swarm_events(&mut self, event: SwarmEvent<NodeEvent>) -> Result<()> {
         // This does not record all the events. `SwarmEvent::Behaviour(_)` are skipped. Hence `.record()` has to be
         // called individually on each behaviour.
         #[cfg(feature = "open-metrics")]
