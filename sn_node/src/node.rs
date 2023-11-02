@@ -148,7 +148,7 @@ impl NodeBuilder {
             #[cfg(feature = "open-metrics")]
             node_metrics,
         };
-        let topic_string = royalty_topic_group(&network.peer_id);
+
         let running_node = RunningNode {
             network,
             node_events_channel,
@@ -156,10 +156,6 @@ impl NodeBuilder {
 
         // Run the node
         node.run(swarm_driver, network_event_receiver);
-        // subscribe to receive transfer notifications over gossipsub topic
-        running_node
-            .subscribe_to_topic(topic_string.clone())
-            .map(|()| info!("Node has been subscribed to gossipsub topic '{topic_string}' to receive network royalties payments notifications."))?;
 
         Ok(running_node)
     }
@@ -393,6 +389,8 @@ impl Node {
             }
             NetworkEvent::GossipsubMsgReceived { topic, msg }
             | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
+                trace!("Received a gossip msg for the topic of {topic}");
+
                 if self.events_channel.receiver_count() > 0 {
                     // TODO: shall record which topics this network instance subscribed.
                     //       currently just using a wild match
