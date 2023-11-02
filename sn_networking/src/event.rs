@@ -1024,7 +1024,7 @@ impl SwarmDriver {
             let expected_answers = match quorum {
                 GetQuorum::Majority => close_group_majority(),
                 GetQuorum::All => CLOSE_GROUP_SIZE,
-                GetQuorum::N(v) => v.into(),
+                GetQuorum::N(v) => v.get(),
                 GetQuorum::One => 1,
             };
 
