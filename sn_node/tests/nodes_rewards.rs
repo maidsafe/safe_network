@@ -24,10 +24,11 @@ use sn_transfers::{
 use xor_name::XorName;
 
 use assert_fs::TempDir;
+use bls::{PublicKey, SecretKey};
 use eyre::{eyre, Result};
 use tokio::{
     task::JoinHandle,
-    time::{sleep, Duration},
+    time::{sleep, timeout, Duration},
 };
 use tokio_stream::StreamExt;
 use tonic::Request;
@@ -123,8 +124,9 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     )?;
 
     println!("Paying for {} random addresses...", chunks.len());
-
-    let handle = spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string());
+    let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
+    let handle =
+        spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string(), royalties_pk, true);
 
     let _cost = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
@@ -154,8 +156,9 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let register_addr = XorName::random(&mut rng);
 
     println!("Paying for random Register address {register_addr:?} ...");
-
-    let handle = spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string());
+    let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
+    let handle =
+        spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string(), royalties_pk, true);
 
     let _register = client
         .create_and_pay_for_register(register_addr, &mut wallet_client, true)
@@ -165,6 +168,59 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let count = handle.await??;
     println!("Number of notifications received by node: {count}");
     assert_eq!(count, CLOSE_GROUP_SIZE, "Not enough notifications received");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("nodes_rewards");
+
+    let paying_wallet_balance = 10_000_111_111_000;
+    let paying_wallet_dir = TempDir::new()?;
+    let chunks_dir = TempDir::new()?;
+
+    let (client, _paying_wallet) =
+        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+
+    let (files_api, _content_bytes, content_addr, chunks) = random_content(
+        &client,
+        paying_wallet_dir.to_path_buf(),
+        chunks_dir.path().to_path_buf(),
+    )?;
+
+    // this node shall receive the notifications since we set the correct royalties pk as filter
+    let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
+    let handle_1 =
+        spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string(), royalties_pk, true);
+    // this other node shall *not* receive any notification since we set the wrong pk as filter
+    let random_pk = SecretKey::random().public_key();
+    let handle_2 =
+        spawn_royalties_payment_listener("https://127.0.0.1:12002".to_string(), random_pk, true);
+    // this other node shall *not* receive any notification either since we don't set any pk as filter
+    let handle_3 = spawn_royalties_payment_listener(
+        "https://127.0.0.1:12003".to_string(),
+        royalties_pk,
+        false,
+    );
+
+    let _cost = files_api
+        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
+        .await?;
+
+    let count_1 = handle_1.await??;
+    println!("Number of notifications received by node #1: {count_1}");
+    let count_2 = handle_2.await??;
+    println!("Number of notifications received by node #2: {count_2}");
+    let count_3 = handle_3.await??;
+    println!("Number of notifications received by node #3: {count_3}");
+
+    assert_eq!(
+        count_1, CLOSE_GROUP_SIZE,
+        "Not enough notifications received"
+    );
+    assert_eq!(count_2, 0, "Notifications were not expected");
+    assert_eq!(count_3, 0, "Notifications were not expected");
 
     Ok(())
 }
@@ -214,15 +270,20 @@ fn current_rewards_balance() -> Result<NanoTokens> {
     Ok(total_rewards)
 }
 
-fn spawn_royalties_payment_listener(endpoint: String) -> JoinHandle<Result<usize, eyre::Report>> {
+fn spawn_royalties_payment_listener(
+    endpoint: String,
+    royalties_pk: PublicKey,
+    set_fiter: bool,
+) -> JoinHandle<Result<usize, eyre::Report>> {
     tokio::spawn(async move {
-        let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
-        let _ = rpc_client
-            .transfer_notifs_filter(Request::new(TransferNotifsFilterRequest {
-                pk: royalties_pk.to_bytes().to_vec(),
-            }))
-            .await?;
+        if set_fiter {
+            let _ = rpc_client
+                .transfer_notifs_filter(Request::new(TransferNotifsFilterRequest {
+                    pk: royalties_pk.to_bytes().to_vec(),
+                }))
+                .await?;
+        }
         let response = rpc_client
             .node_events(Request::new(NodeEventsRequest {}))
             .await?;
@@ -230,23 +291,31 @@ fn spawn_royalties_payment_listener(endpoint: String) -> JoinHandle<Result<usize
         let mut count = 0;
         let mut stream = response.into_inner();
 
-        println!("Awaiting transfers notifs...");
-        while let Some(Ok(e)) = stream.next().await {
-            match NodeEvent::from_bytes(&e.event) {
-                Ok(NodeEvent::TransferNotif { key, transfers: _ }) => {
-                    println!("Transfer notif received for key {key:?}");
-                    if key == royalties_pk {
-                        count += 1;
-                        if count == CLOSE_GROUP_SIZE {
-                            break;
+        let duration = Duration::from_secs(120);
+        println!("Awaiting transfers notifs for at most {duration:?}...");
+        if timeout(duration, async {
+            while let Some(Ok(e)) = stream.next().await {
+                match NodeEvent::from_bytes(&e.event) {
+                    Ok(NodeEvent::TransferNotif { key, transfers: _ }) => {
+                        println!("Transfer notif received for key {key:?}");
+                        if key == royalties_pk {
+                            count += 1;
+                            if count == CLOSE_GROUP_SIZE {
+                                break;
+                            }
                         }
                     }
-                }
-                Ok(_) => { /* ignored */ }
-                Err(_) => {
-                    println!("Error while parsing received NodeEvent");
+                    Ok(_) => { /* ignored */ }
+                    Err(_) => {
+                        println!("Error while parsing received NodeEvent");
+                    }
                 }
             }
+        })
+        .await
+        .is_err()
+        {
+            println!("Timeout after {duration:?}.");
         }
 
         Ok(count)
