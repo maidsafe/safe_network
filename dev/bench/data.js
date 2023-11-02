@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698870921210,
+  "lastUpdate": 1698916430620,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "d29cae7683bec39fdef219ffdbfdb083d4d7d2f6",
-          "message": "feat: provide a `--clean` flag\n\nProvides a `--clean` flag to remove all previous node root directories under the data directory,\nwhich is platform specific.",
-          "timestamp": "2023-07-07T07:17:02Z",
-          "tree_id": "34c6270a1ab26d76386bd48ce13539d29f67eed5",
-          "url": "https://github.com/maidsafe/safe_network/commit/d29cae7683bec39fdef219ffdbfdb083d4d7d2f6"
-        },
-        "date": 1688718344558,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1829986950566398,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.781628065756104,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.19795698203776,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 14.585084916399667,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "c23eb32eacb826636fadaf6107b984a8890edaa9",
+          "message": "feat: keep transfers in mem instead of heavy cashnotes",
+          "timestamp": "2023-11-02T08:28:23Z",
+          "tree_id": "206009e48bbd92dfc0e00f9a9c000a009a9cc793",
+          "url": "https://github.com/maidsafe/safe_network/commit/c23eb32eacb826636fadaf6107b984a8890edaa9"
+        },
+        "date": 1698916429223,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.1942950550913222,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0817518851549854,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 15.483077248190128,
             "unit": "MiB/s"
           }
         ]
