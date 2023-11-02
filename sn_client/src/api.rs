@@ -38,6 +38,7 @@ use sn_transfers::{
 };
 use std::{
     collections::{HashMap, HashSet},
+    num::NonZeroUsize,
     time::Duration,
 };
 use tokio::task::spawn;
@@ -391,7 +392,12 @@ impl Client {
 
         Ok(self
             .network
-            .put_record(record, record_to_verify, expected_holders, Quorum::One)
+            .put_record(
+                record,
+                record_to_verify,
+                expected_holders,
+                Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
+            )
             .await?)
     }
 
@@ -432,7 +438,13 @@ impl Client {
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::One, false, Default::default())
+            .get_record_from_network(
+                key,
+                None,
+                GetQuorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
+                false,
+                Default::default(),
+            )
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {

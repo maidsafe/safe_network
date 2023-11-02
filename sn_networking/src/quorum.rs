@@ -6,10 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::num::NonZeroUsize;
+
 /// When fetching a Record, the quorum to use.
 /// The answer threshold we need to reach to consider the fetch successful.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum GetQuorum {
+    N(NonZeroUsize),
     All,
     Majority,
     One,
