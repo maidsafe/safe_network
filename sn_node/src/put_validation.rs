@@ -414,8 +414,8 @@ impl Node {
         Ok(CmdOk::StoredSuccessfully)
     }
 
-    /// Gets CashNotes out of a Payment, this includes network verifications of the Transfer.
-    /// Return the CashNotes corresponding to our wallet and the trasfers corresponding to network royalties payment.
+    /// Gets CashNotes out of a Payment, this includes network verifications of the Transfers
+    /// Rewraps the royalties transfers into encrypted Transfers ready to be sent directly to the beneficiary
     async fn cash_notes_from_payment(
         &self,
         payment: &Vec<Transfer>,
@@ -429,7 +429,7 @@ impl Node {
 
         for transfer in payment {
             match transfer {
-                Transfer::Encrypted(_) if cash_notes.is_empty() => match self
+                Transfer::Encrypted(_) => match self
                     .network
                     .verify_and_unpack_transfer(transfer, wallet)
                     .await
@@ -438,35 +438,41 @@ impl Node {
                     Err(ProtocolError::FailedToDecypherTransfer) => continue,
                     // transfer invalid
                     Err(e) => return Err(e),
-                    // transfer ok
-                    Ok(cns) => cash_notes = cns,
+                    // transfer ok, add to cash_notes and continue as more transfers might be ours
+                    Ok(cns) => cash_notes.extend(cns),
                 },
-                Transfer::Encrypted(_) => continue, // we already have our cash notes, so we can skip this one
                 Transfer::NetworkRoyalties(cashnote_redemptions) => {
-                    if let Ok(cash_notes) = self
+                    match self
                         .network
                         .verify_cash_notes_redemptions(royalties_pk, cashnote_redemptions)
                         .await
                     {
-                        let received_royalties =
-                            total_cash_notes_amount(&cash_notes, pretty_key.clone())?;
-                        trace!(
-                            "{} network royalties payment cash notes found for record {pretty_key} for a total value of {received_royalties:?}",
-                            cash_notes.len()
-                        );
-                        let encrypted_cashnote_redemptions = cash_notes
-                            .into_iter()
-                            .map(Transfer::transfers_from_cash_note)
-                            .collect::<Result<Vec<Transfer>, sn_transfers::Error>>()
-                            .map_err(|err| {
-                                error!("Error generating royalty transfer: {err:?}");
-                                ProtocolError::FailedToEncryptTransfer
-                            })?;
+                        Ok(cash_notes) => {
+                            let received_royalties =
+                                total_cash_notes_amount(&cash_notes, pretty_key.clone())?;
+                            trace!(
+                                "{} network royalties payment cash notes found for record {pretty_key} for a total value of {received_royalties:?}",
+                                cash_notes.len()
+                            );
+                            let rewraped_transfers = cash_notes
+                                .into_iter()
+                                .map(Transfer::transfers_from_cash_note)
+                                .collect::<Result<Vec<Transfer>, sn_transfers::Error>>()
+                                .map_err(|err| {
+                                    error!("Error generating royalty transfer: {err:?}");
+                                    ProtocolError::FailedToEncryptTransfer
+                                })?;
 
-                        royalties_transfers.extend(encrypted_cashnote_redemptions);
-                        received_fee = received_fee
-                            .checked_add(received_royalties)
-                            .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
+                            royalties_transfers.extend(rewraped_transfers);
+                            received_fee = received_fee
+                                .checked_add(received_royalties)
+                                .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
+                        }
+                        Err(e) => {
+                            warn!(
+                                "Invalid network royalties payment for record {pretty_key}: {e:?}"
+                            );
+                        }
                     }
                 }
             }
@@ -522,6 +528,7 @@ impl Node {
             .set(wallet.balance().as_nano() as i64);
 
         if royalties_transfers.is_empty() {
+            warn!("No network royalties payment found for record {pretty_key}");
             return Err(ProtocolError::NoNetworkRoyaltiesPayment(
                 pretty_key.into_owned(),
             ));

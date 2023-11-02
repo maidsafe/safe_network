@@ -13,7 +13,6 @@ use rayon::prelude::IntoParallelRefIterator;
 
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
-use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
 use crate::error::{Error, Result};
@@ -54,50 +53,6 @@ impl std::fmt::Debug for Transfer {
 }
 
 impl Transfer {
-    /// This function is used to create Transfer from CashNotes, can be done offline, and sent to the recipient.
-    /// Creates Transfers from the given cash_notes
-    /// Grouping CashNotes by recipient into different transfers
-    /// This Transfer can be sent safely to the recipients as all data in it is encrypted
-    /// The recipients can then decrypt the data and use it to verify and reconstruct the CashNotes
-    pub fn transfers_from_cash_notes(cash_notes: Vec<CashNote>) -> Result<Vec<Transfer>> {
-        let mut cashnote_redemptions_map: BTreeMap<MainPubkey, Vec<CashNoteRedemption>> =
-            BTreeMap::new();
-        for cash_note in cash_notes {
-            let recipient = cash_note.main_pubkey;
-            let derivation_index = cash_note.derivation_index();
-            let parent_spend_addr = match cash_note.signed_spends.iter().next() {
-                Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
-                None => {
-                    warn!(
-                        "Skipping CashNote {cash_note:?} while creating Transfer as it has no parent spends."
-                    );
-                    continue;
-                }
-            };
-
-            info!("Creating Transfer for CashNote {cash_note:?} with recipient {recipient:?} of value {:?}", cash_note.value()?);
-            let u = CashNoteRedemption::new(derivation_index, parent_spend_addr);
-            cashnote_redemptions_map
-                .entry(recipient)
-                .or_default()
-                .push(u);
-        }
-
-        let mut transfers = Vec::new();
-        for (recipient, cashnote_redemptions) in cashnote_redemptions_map {
-            let t = if recipient == *crate::NETWORK_ROYALTIES_PK {
-                // create a network royalties transfer type
-                Self::NetworkRoyalties(cashnote_redemptions.clone())
-            } else {
-                Self::create(cashnote_redemptions, recipient)
-                    .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?
-            };
-
-            transfers.push(t);
-        }
-        Ok(transfers)
-    }
-
     /// This function is used to create a Transfer from a CashNote, can be done offline, and sent to the recipient.
     /// Creates a Transfer from the given cash_note
     /// This Transfer can be sent safely to the recipients as all data in it is encrypted
@@ -116,6 +71,21 @@ impl Transfer {
         let t = Transfer::create(vec![u], recipient)
             .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
         Ok(t)
+    }
+
+    /// This function is used to create a Network Royalties Transfer from a CashNote
+    /// can be done offline, and should be sent along with a data payment
+    pub(crate) fn royalties_transfers_from_cash_note(cash_note: CashNote) -> Result<Transfer> {
+        let derivation_index = cash_note.derivation_index();
+        let parent_spend_addr = match cash_note.signed_spends.iter().next() {
+            Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
+            None => {
+                return Err(Error::CashNoteHasNoParentSpends);
+            }
+        };
+
+        let u = CashNoteRedemption::new(derivation_index, parent_spend_addr);
+        Ok(Self::NetworkRoyalties(vec![u]))
     }
 
     /// Create a new transfer

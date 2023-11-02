@@ -59,13 +59,13 @@ impl WalletClient {
     pub fn get_payment_transfers(&self, address: &NetworkAddress) -> WalletResult<Vec<Transfer>> {
         match &address.as_xorname() {
             Some(xorname) => {
-                let cash_notes = self.wallet.get_payment_cash_notes(xorname);
+                let transfers = self.wallet.get_payment_transfers(xorname);
 
                 info!(
-                    "Payment cash notes retrieved from wallet: {:?}",
-                    cash_notes.len()
+                    "Payment transfers retrieved for {xorname:?} from wallet: {:?}",
+                    transfers.len()
                 );
-                Ok(Transfer::transfers_from_cash_notes(cash_notes)?)
+                Ok(transfers)
             }
             None => Err(WalletError::InvalidAddressType),
         }
@@ -139,10 +139,9 @@ impl WalletClient {
         content_addrs: impl Iterator<Item = NetworkAddress>,
     ) -> WalletResult<(NanoTokens, NanoTokens)> {
         let verify_store = true;
-        let mut payment_map = BTreeMap::default();
 
+        // get store cost from network in parrallel
         let mut tasks = JoinSet::new();
-        // we can collate all the payments together into one transfer
         for content_addr in content_addrs {
             let client = self.client.clone();
             tasks.spawn(async move {
@@ -156,8 +155,10 @@ impl WalletClient {
                 (content_addr, costs)
             });
         }
-
         debug!("Pending store cost tasks: {:?}", tasks.len());
+
+        // collect store costs
+        let mut payment_map = BTreeMap::default();
         while let Some(res) = tasks.join_next().await {
             // In case of cann't fetch cost from network for a content,
             // just skip it as it will then get verification failure,
@@ -179,13 +180,14 @@ impl WalletClient {
                 }
             }
         }
-
         info!("Storecosts retrieved");
 
+        // pay for records
         if payment_map.is_empty() {
             Ok((NanoTokens::zero(), NanoTokens::zero()))
         } else {
-            self.wallet.adjust_payment_map(&mut payment_map);
+            self.wallet
+                .take_previous_payments_into_account(&mut payment_map);
             self.pay_for_records(payment_map, verify_store).await
         }
     }
@@ -200,16 +202,12 @@ impl WalletClient {
         all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
         verify_store: bool,
     ) -> WalletResult<(NanoTokens, NanoTokens)> {
-        // TODO:
-        // Check for any existing payment CashNotes, and use them if they exist, only topping up if needs be
-
         let total_cost = self
             .wallet
             .local_send_storage_payment(all_data_payments, None)?;
 
         // send to network
         trace!("Sending storage payment transfer to the network");
-
         let spend_attempt_result = self
             .client
             .send(
