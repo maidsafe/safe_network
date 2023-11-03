@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699003215050,
+  "lastUpdate": 1699005414115,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "d7760063050c81e3a7c9650723687285031f5b93",
-          "message": "test: adapting paid chunk upload integration tests to new no-responses type of protocol",
-          "timestamp": "2023-07-07T16:35:43Z",
-          "tree_id": "abcea46ef1eda899e034ff1e1a86adb28c9ed325",
-          "url": "https://github.com/maidsafe/safe_network/commit/d7760063050c81e3a7c9650723687285031f5b93"
-        },
-        "date": 1688751468523,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1935044793374843,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.877539819043596,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.219219256399931,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 14.477424171045532,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "293741+willief@users.noreply.github.com",
+            "name": "Southside",
+            "username": "willief"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "25d24fd367a6a68e553be5ee8eb9b0537792fa04",
+          "message": "chore(cli): make file upload output cut n paste friendly\n\nnaive attempt to address issue from https://safenetforum.org/t/heapnet2-testnet-12-10-23/38749/460?u=southside",
+          "timestamp": "2023-11-03T08:33:17Z",
+          "tree_id": "3e8f204c9236d6c2d85f235b2cfa0541ac10bb5d",
+          "url": "https://github.com/maidsafe/safe_network/commit/25d24fd367a6a68e553be5ee8eb9b0537792fa04"
+        },
+        "date": 1699005411914,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.18604620540277553,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.7504699032721438,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 13.650957512767098,
             "unit": "MiB/s"
           }
         ]
