@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699005414115,
+  "lastUpdate": 1699005716092,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4d10bf30422453ca2aedd7f33706338f321d596e",
-          "message": "chore: log detailed peer distance and kBucketTable stats",
-          "timestamp": "2023-06-24T21:57:10Z",
-          "tree_id": "ffbc9a75a6d1c57837a7be973dc9ef22cf6b55bf",
-          "url": "https://github.com/maidsafe/safe_network/commit/4d10bf30422453ca2aedd7f33706338f321d596e"
-        },
-        "date": 1687647019112,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 15.88,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "293741+willief@users.noreply.github.com",
+            "name": "Southside",
+            "username": "willief"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "25d24fd367a6a68e553be5ee8eb9b0537792fa04",
+          "message": "chore(cli): make file upload output cut n paste friendly\n\nnaive attempt to address issue from https://safenetforum.org/t/heapnet2-testnet-12-10-23/38749/460?u=southside",
+          "timestamp": "2023-11-03T08:33:17Z",
+          "tree_id": "3e8f204c9236d6c2d85f235b2cfa0541ac10bb5d",
+          "url": "https://github.com/maidsafe/safe_network/commit/25d24fd367a6a68e553be5ee8eb9b0537792fa04"
+        },
+        "date": 1699005715656,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 56,
             "unit": "MB"
           }
         ]
