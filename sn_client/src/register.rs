@@ -25,6 +25,7 @@ use xor_name::XorName;
 /// Ops made to an offline Register instance are applied locally only,
 /// and accumulated till the user explicitly calls 'sync'. The user can
 /// switch back to sync with the network for every op by invoking `online` API.
+#[derive(Clone)]
 pub struct ClientRegister {
     client: Client,
     register: Register,
