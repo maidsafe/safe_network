@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.21](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.20...sn_networking-v0.9.21) - 2023-11-03
+
+### Added
+- *(node)* allow to set a filter for transfer notifications based on targeted pk
+
 ## [0.9.20](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.19...sn_networking-v0.9.20) - 2023-11-02
 
 ### Other
