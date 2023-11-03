@@ -257,12 +257,16 @@ fn current_rewards_balance() -> Result<NanoTokens> {
 
     for entry in std::fs::read_dir(node_dir_path)? {
         let path = entry?.path();
-        let wallet = LocalWallet::try_load_from(&path)?;
-        let balance = wallet.balance();
-        println!("Node's wallet {path:?} currently have balance of {balance:?}");
-        total_rewards = total_rewards
-            .checked_add(balance)
-            .ok_or_else(|| eyre!("Faied to sum up rewards balance"))?;
+        let wallets_dir_path = path.join("rewards_wallets");
+        for entry in std::fs::read_dir(wallets_dir_path)? {
+            let path = entry?.path();
+            let wallet = LocalWallet::load_from_path(&path, None)?;
+            let balance = wallet.balance();
+            println!("Node's wallet {path:?} currently have balance of {balance:?}");
+            total_rewards = total_rewards
+                .checked_add(balance)
+                .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
+        }
     }
 
     println!("Current total balance is {total_rewards:?}");

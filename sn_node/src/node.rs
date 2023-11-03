@@ -48,6 +48,11 @@ pub(super) const TRANSFER_NOTIF_TOPIC: &str = "TRANSFER_NOTIFICATION";
 /// Interval to trigger replication on a random close_group peer
 const PERIODIC_REPLICATION_INTERVAL: Duration = Duration::from_secs(10);
 
+/// Directory name where all rewards wallets will be created/stored. Since the node's rewards address
+/// can be changed by the user over time, a subdirectoy will be created using the hex-encoded pub key
+/// for each of the correspondings rewards addresses set.
+const REWARDS_WALLETS_DIR: &str = "rewards_wallets";
+
 /// Helper to build and run a Node
 pub struct NodeBuilder {
     keypair: Keypair,
@@ -98,14 +103,6 @@ impl NodeBuilder {
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
     pub fn build_and_run(self) -> Result<RunningNode> {
-        // this can be changed later on by the user through the `NodeCmd` API
-        let reward_key = MainSecretKey::random();
-        let reward_address = reward_key.main_pubkey();
-
-        let mut wallet = LocalWallet::load_from_main_key(&self.root_dir, reward_key)?;
-        // store in case it's a fresh wallet created if none was found
-        wallet.deposit_and_store_to_disk(&vec![])?;
-
         #[cfg(feature = "open-metrics")]
         let (metrics_registry, node_metrics) = {
             let mut metrics_registry = Registry::default();
@@ -124,16 +121,22 @@ impl NodeBuilder {
         let node_events_channel = NodeEventsChannel::default();
         let (node_cmds, _) = broadcast::channel(10);
 
-        let node = Node {
+        // this can be changed later on by the user through the `NodeCmd` API
+        let reward_key = MainSecretKey::random();
+
+        let mut node = Node {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
             node_cmds: node_cmds.clone(),
             initial_peers: self.initial_peers,
-            reward_address,
+            reward_address: reward_key.main_pubkey(),
             transfer_notifs_filter: None,
             #[cfg(feature = "open-metrics")]
             node_metrics,
         };
+
+        node.set_rewards_address(reward_key)?;
+
         let running_node = RunningNode {
             network,
             node_events_channel,
@@ -272,9 +275,9 @@ impl Node {
                         match node_cmd {
                             Ok(NodeCmd::TransferNotifsFilter(filter)) => self.transfer_notifs_filter = filter,
                             Ok(NodeCmd::RewardsAddress(sk)) => {
-                                let pk = MainSecretKey::new(sk).main_pubkey();
-                                info!("Node's rewards address is being changed now from {:?} to: {pk:?}", self.reward_address.public_key());
-                                self.reward_address = pk;
+                                let main_sk = MainSecretKey::new(sk);
+                                info!("Node's rewards address is being changed now from {:?} to: {:?}", self.reward_address.public_key(), main_sk.main_pubkey().public_key());
+                                self.set_rewards_address(main_sk).unwrap();
                             },
                             Err(err) => error!("When trying to read from the NodeCmds channel/receiver: {err:?}")
                         }
@@ -292,7 +295,33 @@ impl Node {
         self.node_metrics.record(marker);
     }
 
+    fn set_rewards_address(&mut self, sk: MainSecretKey) -> Result<()> {
+        let main_pubkey = sk.main_pubkey();
+        let wallet_dir = self.get_wallet_dir(main_pubkey.public_key());
+        let mut wallet = LocalWallet::load_from_path(&wallet_dir, Some(sk))?;
+        // store in case it's a fresh wallet created if none was found
+        wallet.deposit_and_store_to_disk(&vec![])?;
+        self.reward_address = main_pubkey;
+        Ok(())
+    }
+
+    /// Loads the rewards wallet as per the current rewards address set.
+    pub(crate) fn load_wallet(&self) -> Result<LocalWallet> {
+        let wallet_dir = self.get_wallet_dir(self.reward_address.public_key());
+        let wallet = LocalWallet::load_from_path(&wallet_dir, None)?;
+        Ok(wallet)
+    }
+
     // **** Private helpers *****
+
+    fn get_wallet_dir(&self, pk: PublicKey) -> PathBuf {
+        let pk_hex = pk.to_hex();
+        let folder_name = format!("{}_{}", &pk_hex[..6], &pk_hex[pk_hex.len() - 6..]);
+        self.network
+            .root_dir_path
+            .join(REWARDS_WALLETS_DIR)
+            .join(folder_name)
+    }
 
     async fn handle_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
         // when the node has not been connected to enough peers, it should not perform activities

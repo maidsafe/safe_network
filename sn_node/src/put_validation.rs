@@ -506,7 +506,8 @@ impl Node {
         trace!("Validating record payment for {pretty_key}");
 
         // load wallet
-        let mut wallet = LocalWallet::load_from(&self.network.root_dir_path)
+        let mut wallet = self
+            .load_wallet()
             .map_err(|err| ProtocolError::FailedToStorePaymentIntoNodeWallet(err.to_string()))?;
 
         // unpack transfer

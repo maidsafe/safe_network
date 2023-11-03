@@ -136,8 +136,12 @@ impl LocalWallet {
     /// Loads a serialized wallet from a path.
     pub fn load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        // This creates the received_cash_notes dir if it doesn't exist.
-        std::fs::create_dir_all(&wallet_dir)?;
+        Self::load_from_path(&wallet_dir, None)
+    }
+
+    /// Tries to loads a serialized wallet from a path, bailing out if it doesn't exist.
+    pub fn try_load_from(root_dir: &Path) -> Result<Self> {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
         let (key, wallet, unconfirmed_spend_requests) = load_from_path(&wallet_dir, None)?;
         Ok(Self {
             key,
@@ -147,10 +151,11 @@ impl LocalWallet {
         })
     }
 
-    /// Tries to loads a serialized wallet from a path, bailing out if it doesn't exist.
-    pub fn try_load_from(root_dir: &Path) -> Result<Self> {
-        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        let (key, wallet, unconfirmed_spend_requests) = load_from_path(&wallet_dir, None)?;
+    /// Loads a serialized wallet from a given path, no additional element will
+    /// be added to the provided path and strictly taken as the wallet files location.
+    pub fn load_from_path(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
+        std::fs::create_dir_all(wallet_dir)?;
+        let (key, wallet, unconfirmed_spend_requests) = load_from_path(wallet_dir, main_key)?;
         Ok(Self {
             key,
             wallet,
