@@ -534,8 +534,6 @@ impl ChunkManager {
                 }
             });
 
-        // Just remove the entry and not the dir.
-        // Also add them to verified_files
         for path_xor in &entire_file_is_done {
             if let Some(chunked_file) = self.paid_chunks.remove(path_xor) {
                 self.verified_files
@@ -651,60 +649,56 @@ mod tests {
     use rayon::prelude::IntoParallelIterator;
     use sn_logging::LogBuilder;
     use sn_protocol::test_utils::assert_lists;
+    use tempfile::TempDir;
 
     #[test]
-    fn chunked_files_should_be_written_to_artifacts_dir() -> Result<()> {
+    fn chunked_files_should_be_written_to_unpaid_dir() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
+        let unpaid_dir = manager.unpaid_dir.clone();
+        let _ = create_random_files(&random_files_dir, 1, 1)?;
+        manager.chunk_path(&random_files_dir)?;
 
-        let tmp_dir = tempfile::tempdir()?;
-        let mut manager = ChunkManager::new(tmp_dir.path());
-        let random_file = create_random_files(tmp_dir.path(), 1, 1)?.remove(0);
-        manager.chunk_path(&random_file)?;
-
-        let chunks = manager.get_chunks();
-        // 1mb file produces a chunk of size 1
+        let chunks = manager.get_unpaid_chunks();
+        // 1. 1mb file produces 4 chunks
         assert_eq!(chunks.len(), 4);
 
-        // check the chunks inside the temp dir
-        let artifacts_dir = tmp_dir.path().join(CHUNK_ARTIFACTS_DIR);
-
-        let n_folders = WalkDir::new(&artifacts_dir)
+        // 2. make sure we have 1 folder == 1 file
+        let n_folders = WalkDir::new(&unpaid_dir)
             .into_iter()
             .flatten()
-            .filter(|entry| entry.file_type().is_dir() && entry.path() != artifacts_dir)
+            .filter(|entry| entry.file_type().is_dir() && entry.path() != unpaid_dir)
             .count();
-        // 1 dir per file
         assert_eq!(n_folders, 1);
 
-        let n_files = WalkDir::new(&artifacts_dir)
+        // 3. make sure we have the 1 file per chunk + 1 metadata file
+        let n_files = WalkDir::new(&unpaid_dir)
             .into_iter()
             .flatten()
             .filter(|entry| entry.file_type().is_file())
             .count();
-
-        // 1 per chunk and 1 metadata file
         assert_eq!(n_files, chunks.len() + 1);
 
-        // verify the metadata
+        // 4. make sure metadata file holds the correct file_xor_addr
         let mut file_xor_addr_from_metadata = None;
-        for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
+        for entry in WalkDir::new(&unpaid_dir).into_iter().flatten() {
             if entry.file_type().is_file() && entry.file_name() == METADATA_FILE {
                 file_xor_addr_from_metadata = ChunkManager::try_read_metadata(entry.path());
             }
         }
         let file_xor_addr_from_metadata =
-            file_xor_addr_from_metadata.expect("The metadata file should be presesnt");
+            file_xor_addr_from_metadata.expect("The metadata file should be present");
         let file_xor_addr = manager
-            .chunked_files
+            .unpaid_chunks
             .values()
             .next()
-            .expect("We must have 1 file here")
+            .expect("1 file should be present")
             .file_xor_addr;
         assert_eq!(file_xor_addr_from_metadata, file_xor_addr);
 
-        // make sure the chunked file's name is the XorName of that chunk
+        // 5. make sure the chunked file's name is the XorName of that chunk
         let chunk_xornames = manager
-            .chunked_files
+            .unpaid_chunks
             .values()
             .next()
             .expect("We must have 1 file here")
@@ -712,7 +706,7 @@ mod tests {
             .iter()
             .map(|(xor_name, _)| *xor_name)
             .collect::<BTreeSet<_>>();
-        for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
+        for entry in WalkDir::new(&unpaid_dir).into_iter().flatten() {
             let file_name = entry.file_name();
             if entry.file_type().is_file() && file_name != METADATA_FILE {
                 let chunk_xorname_from_filename =
@@ -726,263 +720,480 @@ mod tests {
     }
 
     #[test]
-    fn all_chunks_should_be_resumed_if_none_are_marked_as_completed() -> Result<()> {
+    // 1. UNPAID: simple case
+    fn chunks_should_be_moved_to_paid_dir_if_marked_as_paid() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
 
-        let tmp_dir = tempfile::tempdir()?;
-        let random_files_dir = tmp_dir.path().join("random_files");
-        let root_dir = tmp_dir.path().join("root_dir");
-        fs::create_dir_all(&random_files_dir)?;
-        fs::create_dir_all(&root_dir)?;
-
-        let _ = create_random_files(&random_files_dir, 5, 5)?;
-
-        let mut manager = ChunkManager::new(&root_dir);
+        let random_file_name = create_random_files(&random_files_dir, 1, 1)?
+            .remove(0)
+            .file_name()
+            .unwrap()
+            .to_owned();
         manager.chunk_path(&random_files_dir)?;
 
-        let mut new_manager = ChunkManager::new(&root_dir);
-        new_manager.chunk_path(&random_files_dir)?;
+        assert_eq!(manager.unpaid_chunks.len(), 1);
+        assert!(manager.paid_chunks.is_empty());
 
-        let original_chunk_count = manager
-            .chunked_files
+        // 1. check the files initially
+        let path_xor = manager.unpaid_chunks.keys().next().unwrap().clone();
+        let file_chunks_dir = manager.unpaid_dir.join(&path_xor.0);
+        let chunk_entry = ChunkManager::read_file_chunks_dir(
+            file_chunks_dir,
+            path_xor.clone(),
+            random_file_name.clone(),
+        )
+        .expect("Chunk should be present");
+        assert_eq!(
+            manager.unpaid_chunks.iter().next().unwrap(),
+            (&chunk_entry.0, &chunk_entry.1)
+        );
+
+        // 2. check if a random chunk's path is set correctly
+        let (unpaid_chunk, unpaid_chunk_path) = manager
+            .unpaid_chunks
             .values()
-            .flat_map(|chunked_file| &chunked_file.chunks)
-            .count();
-        assert_eq!(manager.resumed_chunk_count, 0);
-        assert_eq!(new_manager.resumed_chunk_count, original_chunk_count);
+            .next()
+            .unwrap()
+            .chunks
+            .first()
+            .expect("Must contain 1 chunk")
+            .clone();
+        let mut unpaid_chunk_path_clone = unpaid_chunk_path.clone();
+        unpaid_chunk_path_clone.pop();
+        unpaid_chunk_path_clone.pop();
+        assert_eq!(unpaid_chunk_path_clone, manager.unpaid_dir);
 
-        // sort the chunks as they might have been inserted in an random order
-        manager
-            .chunked_files
-            .values_mut()
-            .for_each(|chunked_file| chunked_file.chunks.sort());
-        new_manager
-            .chunked_files
-            .values_mut()
-            .for_each(|chunked_file| chunked_file.chunks.sort());
-        assert_eq!(manager.chunked_files, new_manager.chunked_files);
-        assert_eq!(manager.completed_files, new_manager.completed_files);
+        // mark a random chunk as paid
+        manager.mark_paid(vec![unpaid_chunk].into_iter());
+
+        // 3. check the structs
+        assert_eq!(manager.unpaid_chunks.len(), 1);
+        assert!(!manager
+            .unpaid_chunks
+            .values()
+            .next()
+            .unwrap()
+            .chunks
+            .contains(&(unpaid_chunk, unpaid_chunk_path)));
+        assert_eq!(manager.paid_chunks.len(), 1);
+        assert_eq!(manager.paid_chunks.values().next().unwrap().chunks.len(), 1);
+
+        // 4. check the files inside unpaid dir.
+        let file_chunks_dir = manager.unpaid_dir.join(&path_xor.0);
+        let chunk_entry = ChunkManager::read_file_chunks_dir(
+            file_chunks_dir,
+            path_xor.clone(),
+            random_file_name.clone(),
+        )
+        .expect("Chunk should be present");
+        assert_eq!(
+            manager.unpaid_chunks.iter().next().unwrap(),
+            (&chunk_entry.0, &chunk_entry.1)
+        );
+
+        // 5. check the files inside paid dir
+        let file_chunks_dir = manager.paid_dir.join(&path_xor.0);
+        let chunk_entry =
+            ChunkManager::read_file_chunks_dir(file_chunks_dir, path_xor, random_file_name)
+                .expect("Chunk should be present");
+        assert_eq!(
+            manager.paid_chunks.iter().next().unwrap(),
+            (&chunk_entry.0, &chunk_entry.1)
+        );
+
+        // 6. check if the random chunks' path is set correctly to PAID_DIR now
+        let (paid_chunk, mut paid_chunk_path) = manager
+            .paid_chunks
+            .values()
+            .next()
+            .unwrap()
+            .chunks
+            .first()
+            .expect("Must contain 1 chunk")
+            .clone();
+        paid_chunk_path.pop();
+        paid_chunk_path.pop();
+        assert_eq!(paid_chunk_path, manager.paid_dir);
+        assert_eq!(unpaid_chunk, paid_chunk);
 
         Ok(())
     }
 
     #[test]
-    fn not_all_chunks_should_be_resumed_if_marked_as_completed() -> Result<()> {
+    // 2. UNPAID: if all the chunks are moved, the dir should be removed.
+    fn marking_all_chunks_as_paid_should_remove_the_dir() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
-
-        let tmp_dir = tempfile::tempdir()?;
-        let random_files_dir = tmp_dir.path().join("random_files");
-        let root_dir = tmp_dir.path().join("root_dir");
-        fs::create_dir_all(&random_files_dir)?;
-        fs::create_dir_all(&root_dir)?;
+        let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
-
-        let mut manager = ChunkManager::new(&root_dir);
         manager.chunk_path(&random_files_dir)?;
-        let original_chunk_count = manager
-            .chunked_files
+
+        let n_folders = WalkDir::new(&manager.unpaid_dir)
+            .into_iter()
+            .flatten()
+            .filter(|entry| entry.file_type().is_dir() && entry.path() != manager.unpaid_dir)
+            .count();
+        assert_eq!(n_folders, 5);
+
+        manager.mark_paid_all();
+
+        let n_folders = WalkDir::new(&manager.unpaid_dir)
+            .into_iter()
+            .flatten()
+            .filter(|entry| entry.file_type().is_dir() && entry.path() != manager.unpaid_dir)
+            .count();
+        assert_eq!(n_folders, 0);
+
+        Ok(())
+    }
+
+    #[test]
+    // 1. PAID: simple case
+    fn chunks_should_be_removed_from_paid_dir_if_marked_as_verified() -> Result<()> {
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
+
+        let _ = create_random_files(&random_files_dir, 1, 1)?;
+        manager.chunk_path(&random_files_dir)?;
+
+        let path_xor = manager.unpaid_chunks.keys().next().unwrap().clone();
+        let chunked_file = manager.unpaid_chunks.values().next().unwrap().clone();
+        let file_xor_addr = chunked_file.file_xor_addr;
+        let (chunk, _) = chunked_file
+            .chunks
+            .first()
+            .expect("Must contain 1 chunk")
+            .clone();
+        manager.mark_paid(vec![chunk].into_iter());
+        manager.mark_verified(vec![chunk].into_iter());
+
+        // 1. chunk should be removed from paid struct
+        assert_eq!(
+            manager
+                .paid_chunks
+                .values()
+                .next()
+                .expect("Since unpaid still exists, it should be present")
+                .chunks
+                .len(),
+            0
+        );
+
+        // 2. the folder should exists, but chunk removed
+        let file_chunks_dir = manager.paid_dir.join(&path_xor.0);
+        let (path_xor_from_dir, chunked_file_from_dir) = ChunkManager::read_file_chunks_dir(
+            file_chunks_dir,
+            path_xor.clone(),
+            chunked_file.file_name.to_owned(),
+        )
+        .expect("Folder and metadata should be present");
+        assert_eq!(chunked_file_from_dir.chunks.len(), 0);
+        assert_eq!(chunked_file_from_dir.file_xor_addr, file_xor_addr);
+        assert_eq!(path_xor_from_dir, path_xor);
+
+        // 2. file should not be marked as verified
+        // since unpaid exists
+        assert!(manager.verified_files.is_empty());
+
+        Ok(())
+    }
+
+    #[test]
+    // 2. PAID: if all the chunks are verified, the dir should
+    fn marking_all_chunks_as_verified_should_not_remove_the_dir() -> Result<()> {
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
+
+        let _ = create_random_files(&random_files_dir, 5, 5)?;
+        manager.chunk_path(&random_files_dir)?;
+        // cloned after chunking
+        let manager_clone = manager.clone();
+
+        let n_folders = WalkDir::new(&manager.unpaid_dir)
+            .into_iter()
+            .flatten()
+            .filter(|entry| entry.file_type().is_dir() && entry.path() != manager.unpaid_dir)
+            .count();
+        assert_eq!(n_folders, 5);
+
+        manager.mark_paid_all();
+        manager.mark_verified_all();
+
+        // all 5 files should be marked as verified
+        assert_eq!(manager.verified_files.len(), 5);
+
+        // all 5 folders should exist
+        for (path_xor, chunked_file) in manager_clone.unpaid_chunks.iter() {
+            let file_chunks_dir = manager_clone.paid_dir.join(path_xor.0.clone());
+            let (path_xor_from_dir, chunked_file_from_dir) = ChunkManager::read_file_chunks_dir(
+                file_chunks_dir,
+                path_xor.clone(),
+                chunked_file.file_name.to_owned(),
+            )
+            .expect("Folder and metadata should be present");
+            assert_eq!(chunked_file_from_dir.chunks.len(), 0);
+            assert_eq!(
+                chunked_file_from_dir.file_xor_addr,
+                chunked_file.file_xor_addr
+            );
+            assert_eq!(&path_xor_from_dir, path_xor);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    // RESUME: 1. mark none as paid -> try resume all
+    fn mark_none_and_resume() -> Result<()> {
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
+
+        let _ = create_random_files(&random_files_dir, 5, 5)?;
+        manager.chunk_path(&random_files_dir)?;
+
+        let mut new_manager = ChunkManager::new(&root_dir);
+        new_manager.chunk_path(&random_files_dir)?;
+        // 1. make sure we don't have any paid chunks
+        assert_eq!(new_manager.paid_chunks.len(), 0);
+
+        // 2. make sure the chunk counts match
+        let original_unpaid_count = manager
+            .unpaid_chunks
+            .values()
+            .flat_map(|chunked_file| &chunked_file.chunks)
+            .count();
+        assert_eq!(manager.resumed_unpaid_chunk_count, 0);
+        assert_eq!(manager.resumed_paid_chunk_count, 0);
+        assert_eq!(
+            new_manager.resumed_unpaid_chunk_count,
+            original_unpaid_count
+        );
+        assert_eq!(new_manager.resumed_paid_chunk_count, 0);
+
+        // 3. assert the two managers
+        assert_eq!(manager.unpaid_chunks, new_manager.unpaid_chunks);
+        assert_eq!(manager.paid_chunks, new_manager.paid_chunks);
+        assert_eq!(manager.verified_files, new_manager.verified_files);
+
+        Ok(())
+    }
+
+    #[test]
+    // RESUME: 2 .mark one as paid -> resume, unpaid and paid should be present
+    // mark the above as verified -> resume, still should have the unpaid and should not be added to verified file;
+    fn mark_one_chunk_as_paid_and_resume() -> Result<()> {
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
+
+        let _ = create_random_files(&random_files_dir, 5, 5)?;
+        manager.chunk_path(&random_files_dir)?;
+
+        let original_unpaid_count = manager
+            .unpaid_chunks
             .values()
             .flat_map(|chunked_file| &chunked_file.chunks)
             .count();
 
         // mark a chunk as completed
         let removed_chunk = manager
-            .chunked_files
+            .unpaid_chunks
             .values()
             .next()
             .expect("Atleast 1 file should be present")
-            .chunks[0]
+            .chunks
+            .iter()
+            .next()
+            .expect("Chunk should be present")
             .0;
-        manager.mark_completed([removed_chunk].into_iter());
+        manager.mark_paid([removed_chunk].into_iter());
+        let mut new_manager = ChunkManager::new(&root_dir);
+        new_manager.chunk_path(&random_files_dir)?;
+
+        // 1. we should have 1 paid chunk and (original_unpaid_count-1) unpaid chunks
+        assert_eq!(manager.resumed_unpaid_chunk_count, 0);
+        assert_eq!(manager.resumed_paid_chunk_count, 0);
+        assert_eq!(
+            new_manager.resumed_unpaid_chunk_count,
+            original_unpaid_count - 1
+        );
+        assert_eq!(new_manager.resumed_paid_chunk_count, 1);
+        // also check the structs
+        assert_eq!(
+            new_manager
+                .unpaid_chunks
+                .values()
+                .flat_map(|chunked_file| &chunked_file.chunks)
+                .count(),
+            original_unpaid_count - 1
+        );
+        assert_eq!(
+            new_manager
+                .paid_chunks
+                .values()
+                .flat_map(|chunked_file| &chunked_file.chunks)
+                .count(),
+            1
+        );
+
+        // 2. files should not be added to verified
+        assert_eq!(new_manager.verified_files.len(), 0);
+
+        // mark the same as verified
+        new_manager.mark_verified([removed_chunk].into_iter());
+        let mut new_manager = ChunkManager::new(&root_dir); // create a new manager
+        new_manager.chunk_path(&random_files_dir)?;
+
+        // 3. we should have 0 paid chunks and (original_unpaid_count-1) unpaid chunks
+        assert_eq!(
+            new_manager.resumed_unpaid_chunk_count,
+            original_unpaid_count - 1
+        );
+        assert_eq!(new_manager.resumed_paid_chunk_count, 0);
+        assert_eq!(
+            new_manager
+                .unpaid_chunks
+                .values()
+                .flat_map(|chunked_file| &chunked_file.chunks)
+                .count(),
+            original_unpaid_count - 1
+        );
+        assert_eq!(
+            new_manager
+                .paid_chunks
+                .values()
+                .flat_map(|chunked_file| &chunked_file.chunks)
+                .count(),
+            0
+        );
+
+        // 3. files should not be added to verified since entries still exists; we just verified 1 chunk
+        assert_eq!(new_manager.verified_files.len(), 0);
+
+        Ok(())
+    }
+
+    #[test]
+    // RESUME: 3. mark the rest as paid -> resume, nothing in unpaid (no entry), paid should have entry;
+    // Also, mark one as verified -> resume, should not be added to verified files
+    fn mark_all_as_paid_and_resume() -> Result<()> {
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
+
+        let _ = create_random_files(&random_files_dir, 5, 5)?;
+        manager.chunk_path(&random_files_dir)?;
+
+        let original_unpaid_count = manager
+            .unpaid_chunks
+            .values()
+            .flat_map(|chunked_file| &chunked_file.chunks)
+            .count();
+
+        // mark all as paid
+        manager.mark_paid_all();
+        let mut new_manager = ChunkManager::new(&root_dir);
+        new_manager.chunk_path(&random_files_dir)?;
+
+        // 1. we should have original_unpaid_count paid chunks and 0 unpaid chunks
+        assert_eq!(new_manager.resumed_unpaid_chunk_count, 0,);
+        assert_eq!(new_manager.resumed_paid_chunk_count, original_unpaid_count);
+        assert_eq!(new_manager.unpaid_chunks.len(), 0); // no unpaid entry
+        assert_eq!(
+            new_manager
+                .paid_chunks
+                .values()
+                .flat_map(|chunked_file| &chunked_file.chunks)
+                .count(),
+            original_unpaid_count,
+        );
+
+        // 2. no verified file
+        assert_eq!(new_manager.verified_files.len(), 0);
+
+        // mark the same as verified
+        let removed_chunk = new_manager
+            .paid_chunks
+            .values()
+            .next()
+            .expect("Atleast 1 file should be present")
+            .chunks
+            .iter()
+            .next()
+            .expect("Chunk should be present")
+            .0;
+        new_manager.mark_verified([removed_chunk].into_iter());
+        let mut new_manager = ChunkManager::new(&root_dir);
+        new_manager.chunk_path(&random_files_dir)?;
+
+        // 3. we should have (original_unpaid_count - 1) paid chunks and 0 unpaid chunks
+        assert_eq!(new_manager.resumed_unpaid_chunk_count, 0,);
+        assert_eq!(
+            new_manager.resumed_paid_chunk_count,
+            original_unpaid_count - 1
+        );
+        assert_eq!(new_manager.unpaid_chunks.len(), 0); // no unpaid entry
+        assert_eq!(
+            new_manager
+                .paid_chunks
+                .values()
+                .flat_map(|chunked_file| &chunked_file.chunks)
+                .count(),
+            original_unpaid_count - 1,
+        );
+
+        // 4. no verified file
+        assert_eq!(new_manager.verified_files.len(), 0);
+
+        Ok(())
+    }
+
+    #[test]
+    //4. RESUME: mark all as verified -> resume, should have an paid entry? not sure, but should have the file added to verified list
+    fn mark_all_as_verified_and_resume() -> Result<()> {
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
+
+        let _ = create_random_files(&random_files_dir, 5, 5)?;
+        manager.chunk_path(&random_files_dir)?;
+        manager.mark_paid_all();
+        manager.mark_verified_all();
 
         let mut new_manager = ChunkManager::new(&root_dir);
         new_manager.chunk_path(&random_files_dir)?;
 
-        assert_eq!(manager.resumed_chunk_count, 0);
-        assert_eq!(new_manager.resumed_chunk_count, original_chunk_count - 1);
-
-        Ok(())
-    }
-
-    #[test]
-    fn mark_completed_should_remove_chunk_from_artifacts_dir() -> Result<()> {
-        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
-
-        let tmp_dir = tempfile::tempdir()?;
-        let random_files_dir = tmp_dir.path().join("random_files");
-        let root_dir = tmp_dir.path().join("root_dir");
-        let artifacts_dir = root_dir.join(CHUNK_ARTIFACTS_DIR);
-        fs::create_dir_all(&root_dir)?;
-        fs::create_dir_all(&random_files_dir)?;
-
-        let _ = create_random_files(&random_files_dir, 1, 5)?;
-
-        let mut manager = ChunkManager::new(&root_dir);
-        manager.chunk_path(&random_files_dir)?;
-
-        // make sure the dir and the struct data match
-        let old_chunks = manager
-            .chunked_files
-            .values()
-            .next()
-            .expect("We must have 1 file here")
-            .chunks
-            .iter()
-            .map(|(xor_name, _)| *xor_name)
-            .collect::<BTreeSet<_>>();
-        let mut old_chunks_from_dir = BTreeSet::new();
-        for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
-            let file_name = entry.file_name();
-            if entry.file_type().is_file() && file_name != METADATA_FILE {
-                let chunk_xorname_from_filename =
-                    ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
-                        .expect("Failed to get xorname from hex encoded file_name");
-                old_chunks_from_dir.insert(chunk_xorname_from_filename);
-            }
-        }
-        assert_lists(old_chunks, old_chunks_from_dir);
-
-        // mark a chunk as completed
-        let removed_chunk = manager
-            .chunked_files
-            .values()
-            .next()
-            .expect("Atleast 1 file should be present")
-            .chunks[0]
-            .0;
-        manager.mark_completed([removed_chunk].into_iter());
-
-        // compare the dir and struct data
-        let new_chunks = manager
-            .chunked_files
-            .values()
-            .next()
-            .expect("We must have 1 file here")
-            .chunks
-            .iter()
-            .map(|(xor_name, _)| *xor_name)
-            .collect::<BTreeSet<_>>();
-        let mut new_chunks_from_dir = BTreeSet::new();
-        for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
-            let file_name = entry.file_name();
-            if entry.file_type().is_file() && file_name != METADATA_FILE {
-                let chunk_xorname_from_filename =
-                    ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
-                        .expect("Failed to get xorname from hex encoded file_name");
-                new_chunks_from_dir.insert(chunk_xorname_from_filename);
-            }
-        }
-        assert!(!new_chunks.contains(&removed_chunk));
-        assert!(!new_chunks_from_dir.contains(&removed_chunk));
-        assert_lists(new_chunks, new_chunks_from_dir);
-
-        Ok(())
-    }
-
-    #[test]
-    fn mark_completed_all_should_remove_all_the_chunks() -> Result<()> {
-        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
-
-        let tmp_dir = tempfile::tempdir()?;
-        let random_files_dir = tmp_dir.path().join("random_files");
-        let root_dir = tmp_dir.path().join("root_dir");
-        let artifacts_dir = root_dir.join(CHUNK_ARTIFACTS_DIR);
-        fs::create_dir_all(&root_dir)?;
-        fs::create_dir_all(&random_files_dir)?;
-
-        let mut random_file = create_random_files(&random_files_dir, 1, 5)?;
-        let random_file = random_file.remove(0);
-
-        let mut manager = ChunkManager::new(&root_dir);
-        manager.chunk_path(&random_files_dir)?;
-
-        // make sure the dir and the struct data match
-        let old_chunks = manager
-            .chunked_files
-            .values()
-            .next()
-            .expect("We must have 1 file here")
-            .chunks
-            .iter()
-            .map(|(xor_name, _)| *xor_name)
-            .collect::<BTreeSet<_>>();
-        let mut file_xor_addr = None;
-        let mut old_chunks_from_dir = BTreeSet::new();
-        for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
-            let file_name = entry.file_name();
-            if entry.file_type().is_file() && file_name != METADATA_FILE {
-                let chunk_xorname_from_filename =
-                    ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
-                        .expect("Failed to get xorname from hex encoded file_name");
-                old_chunks_from_dir.insert(chunk_xorname_from_filename);
-            }
-
-            if entry.file_type().is_file() && file_name == METADATA_FILE {
-                file_xor_addr = ChunkManager::try_read_metadata(entry.path());
-            }
-        }
-        assert_lists(old_chunks, old_chunks_from_dir);
-
-        // mark all as completed
-        manager.mark_completed_all();
-
-        // should be removed from struct
-        assert!(manager.chunked_files.values().next().is_none());
-
-        // should contain just 1 folder for that single file
-        let mut read_dir = fs::read_dir(&artifacts_dir)?;
-        let mut path_xor = None;
-        assert!(read_dir.next().is_some_and(|entry| {
-            let entry = entry.expect("should not error out");
-            path_xor = Some(entry.file_name());
-            true
-        }));
-        // 1 file only
-        assert!(read_dir.next().is_none());
-        // should just contain the metadata file inside the above folder
-        let path_xor = path_xor.expect("a single folder should be present");
-        let mut read_dir = fs::read_dir(artifacts_dir.join(path_xor))?;
-        assert!(read_dir.next().is_some_and(|entry| {
-            let entry = entry.expect("should not error out");
-            entry.file_name() == METADATA_FILE
-        }));
-        assert!(read_dir.next().is_none());
-
-        // should be added to uploaded_files
-        assert_eq!(manager.completed_files.len(), 1);
-        let uploaded = manager.completed_files.remove(0);
+        // 1. make sure we don't have any unpaid chunks
+        assert_eq!(new_manager.unpaid_chunks.len(), 0);
+        // 2. we should have unpaid entries, but 0 chunks inside them
+        assert_eq!(new_manager.paid_chunks.len(), 5);
         assert_eq!(
-            uploaded.0,
-            random_file.file_name().expect("Not a directory")
+            new_manager
+                .paid_chunks
+                .values()
+                .flat_map(|chunked_file| &chunked_file.chunks)
+                .count(),
+            0
         );
-        assert_eq!(
-            uploaded.1,
-            file_xor_addr.expect("Metadata file should be present")
-        );
+        // 3. the resumed stats should be 0
+        assert_eq!(new_manager.resumed_paid_chunk_count, 0);
+        assert_eq!(new_manager.resumed_unpaid_chunk_count, 0);
+
+        // 4. make sure the files are added to verified list
+        assert_eq!(new_manager.verified_files.len(), 5);
 
         Ok(())
     }
 
     #[test]
-    fn file_should_be_re_chunked_if_metadata_file_is_absent() -> Result<()> {
+    fn metadata_file_absent_from_unpaid_dir() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, _root_dir, random_files_dir) = init_manager()?;
 
-        let tmp_dir = tempfile::tempdir()?;
-        let random_files_dir = tmp_dir.path().join("random_files");
-        let root_dir = tmp_dir.path().join("root_dir");
-        let artifacts_dir = root_dir.join(CHUNK_ARTIFACTS_DIR);
-        fs::create_dir_all(&root_dir)?;
-        fs::create_dir_all(&random_files_dir)?;
-
-        let mut random_file = create_random_files(&random_files_dir, 1, 5)?;
-        let random_file = random_file.remove(0);
-
-        let mut manager = ChunkManager::new(&root_dir);
+        let mut random_files = create_random_files(&random_files_dir, 1, 1)?;
+        let random_file = random_files.remove(0);
         manager.chunk_path(&random_files_dir)?;
 
         let mut old_chunks_from_dir = BTreeSet::new();
-        for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
+        for entry in WalkDir::new(&manager.unpaid_dir).into_iter().flatten() {
             let file_name = entry.file_name();
             if entry.file_type().is_file() && file_name != METADATA_FILE {
                 let chunk_xorname_from_filename =
@@ -994,32 +1205,33 @@ mod tests {
 
         // remove metadata file
         let path_xor = PathXorName::new(&random_file).0;
-        let metadata_path = artifacts_dir.join(&path_xor).join(METADATA_FILE);
+        let metadata_path = manager.unpaid_dir.join(&path_xor).join(METADATA_FILE);
         fs::remove_file(&metadata_path)?;
         // also remove a random chunk to make sure it is re-chunked
         let removed_chunk = manager
-            .chunked_files
+            .unpaid_chunks
             .values()
             .next()
             .expect("We must have 1 file here")
             .chunks
-            .get(0)
-            .expect("We must have atleast 1 chunk")
+            .iter()
+            .next()
+            .expect("We must have at least 1 chunk")
             .0;
-        fs::remove_file(
-            artifacts_dir
-                .join(path_xor)
-                .join(ChunkManager::hex_enocode_xorname(removed_chunk)),
-        )?;
+        let removed_chunk_path = manager
+            .unpaid_dir
+            .join(path_xor)
+            .join(ChunkManager::hex_encode_xorname(removed_chunk));
+        fs::remove_file(removed_chunk_path)?;
 
         // use the same manager to chunk the path
-        assert_eq!(manager.resumed_chunk_count, 0);
+        assert_eq!(manager.resumed_unpaid_chunk_count, 0);
         manager.chunk_path(&random_files_dir)?;
         // nothing should be resumed
-        assert_eq!(manager.resumed_chunk_count, 0);
+        assert_eq!(manager.resumed_unpaid_chunk_count, 0);
 
         let mut new_chunks_from_dir = BTreeSet::new();
-        for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
+        for entry in WalkDir::new(&manager.unpaid_dir).into_iter().flatten() {
             let file_name = entry.file_name();
             if entry.file_type().is_file() && file_name != METADATA_FILE {
                 let chunk_xorname_from_filename =
@@ -1037,42 +1249,176 @@ mod tests {
     }
 
     #[test]
-    fn fully_completed_file_should_not_be_resumed() -> Result<()> {
+    fn metadata_file_absent_from_unpaid_dir_but_present_in_paid_dir() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, _root_dir, random_files_dir) = init_manager()?;
 
+        let mut random_files = create_random_files(&random_files_dir, 1, 1)?;
+        let random_file = random_files.remove(0);
+        manager.chunk_path(&random_files_dir)?;
+
+        // mark a file as paid to move it to PAID_DIR and create the metadata file there
+        let moved_chunk = manager
+            .unpaid_chunks
+            .values()
+            .next()
+            .expect("We must have 1 file here")
+            .chunks
+            .iter()
+            .next()
+            .expect("We must have at least 1 chunk")
+            .0;
+        manager.mark_paid(vec![moved_chunk].into_iter());
+
+        let mut old_unpaid_chunks = BTreeSet::new();
+        for entry in WalkDir::new(&manager.unpaid_dir).into_iter().flatten() {
+            let file_name = entry.file_name();
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
+                let chunk_xorname_from_filename =
+                    ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
+                        .expect("Failed to get xorname from hex encoded file_name");
+                old_unpaid_chunks.insert(chunk_xorname_from_filename);
+            }
+        }
+        let mut old_paid_chunks = BTreeSet::new();
+        for entry in WalkDir::new(&manager.paid_dir).into_iter().flatten() {
+            let file_name = entry.file_name();
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
+                let chunk_xorname_from_filename =
+                    ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
+                        .expect("Failed to get xorname from hex encoded file_name");
+                old_paid_chunks.insert(chunk_xorname_from_filename);
+            }
+        }
+
+        // remove metadata file from unpaid dir
+        let path_xor = PathXorName::new(&random_file);
+        let metadata_path = manager.unpaid_dir.join(path_xor.0).join(METADATA_FILE);
+        fs::remove_file(metadata_path)?;
+
+        // use the same manager to chunk the path
+        manager.chunk_path(&random_files_dir)?;
+        // nothing should be resumed
+        assert_eq!(manager.resumed_unpaid_chunk_count, 0);
+        assert_eq!(manager.resumed_paid_chunk_count, 1);
+        assert_eq!(
+            manager
+                .unpaid_chunks
+                .values()
+                .flat_map(|c| &c.chunks)
+                .count(),
+            0
+        );
+        assert_eq!(
+            manager.paid_chunks.values().flat_map(|c| &c.chunks).count(),
+            1
+        );
+
+        // the dir should still contain chunks, but never read
+        let mut new_unpaid_chunks = BTreeSet::new();
+        for entry in WalkDir::new(&manager.unpaid_dir).into_iter().flatten() {
+            let file_name = entry.file_name();
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
+                let chunk_xorname_from_filename =
+                    ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
+                        .expect("Failed to get xorname from hex encoded file_name");
+                new_unpaid_chunks.insert(chunk_xorname_from_filename);
+            }
+        }
+        assert_lists(new_unpaid_chunks, old_unpaid_chunks);
+
+        // now marking the chunk as verified should complete the entire file
+        // this is intended. Lack of metadata file would make us believe that all the chunks were paid.
+        manager.mark_verified(vec![moved_chunk].into_iter());
+        manager.chunk_path(&random_files_dir)?;
+        assert_eq!(manager.resumed_unpaid_chunk_count, 0);
+        assert_eq!(manager.resumed_paid_chunk_count, 0);
+        assert_eq!(manager.verified_files.len(), 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn metadata_file_absent_from_paid_dir() -> Result<()> {
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, _root_dir, random_files_dir) = init_manager()?;
+
+        let mut random_files = create_random_files(&random_files_dir, 1, 1)?;
+        let random_file = random_files.remove(0);
+        manager.chunk_path(&random_files_dir)?;
+
+        // mark a file as paid to move it to PAID_DIR and create the metadata file there
+        let moved_chunk = manager
+            .unpaid_chunks
+            .values()
+            .next()
+            .expect("We must have 1 file here")
+            .chunks
+            .iter()
+            .next()
+            .expect("We must have at least 1 chunk")
+            .0;
+        manager.mark_paid(vec![moved_chunk].into_iter());
+
+        let mut old_unpaid_chunks = BTreeSet::new();
+        for entry in WalkDir::new(&manager.unpaid_dir).into_iter().flatten() {
+            let file_name = entry.file_name();
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
+                let chunk_xorname_from_filename =
+                    ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
+                        .expect("Failed to get xorname from hex encoded file_name");
+                old_unpaid_chunks.insert(chunk_xorname_from_filename);
+            }
+        }
+
+        // remove metadata file from PAID_DIR
+        let path_xor = PathXorName::new(&random_file);
+        let metadata_path = manager.paid_dir.join(path_xor.0).join(METADATA_FILE);
+        fs::remove_file(metadata_path)?;
+
+        // use the same manager to chunk the path
+        manager.chunk_path(&random_files_dir)?;
+        // unpaid should be resumed
+        assert_eq!(manager.resumed_unpaid_chunk_count, old_unpaid_chunks.len());
+        // paid should not be resumed
+        assert_eq!(manager.resumed_paid_chunk_count, 0);
+
+        // moving another chunk to paid does not insert the metadata file.
+        // should this be fixed? if, need a better way to check for metadata file.
+        let moved_chunk = manager
+            .unpaid_chunks
+            .values()
+            .next()
+            .expect("We must have 1 file here")
+            .chunks
+            .iter()
+            .next()
+            .expect("We must have at least 1 chunk")
+            .0;
+        manager.mark_paid(vec![moved_chunk].into_iter());
+
+        // use the same manager to chunk the path
+        manager.chunk_path(&random_files_dir)?;
+        // unpaid should be resumed
+        assert_eq!(
+            manager.resumed_unpaid_chunk_count,
+            old_unpaid_chunks.len() - 1
+        );
+        // the metadata file is not inserted again.
+        assert_eq!(manager.resumed_paid_chunk_count, 0);
+
+        Ok(())
+    }
+
+    fn init_manager() -> Result<(TempDir, ChunkManager, PathBuf, PathBuf)> {
         let tmp_dir = tempfile::tempdir()?;
         let random_files_dir = tmp_dir.path().join("random_files");
         let root_dir = tmp_dir.path().join("root_dir");
-        fs::create_dir_all(&root_dir)?;
         fs::create_dir_all(&random_files_dir)?;
+        fs::create_dir_all(&root_dir)?;
+        let manager = ChunkManager::new(&root_dir);
 
-        let _random_files = create_random_files(&random_files_dir, 2, 5)?;
-
-        let mut manager = ChunkManager::new(&root_dir);
-        manager.chunk_path(&random_files_dir)?;
-        assert_eq!(manager.completed_files.len(), 0);
-        assert_eq!(manager.chunked_files.len(), 2);
-
-        // mark a single file as completed
-        let completed_file = manager
-            .chunked_files
-            .values()
-            .next()
-            .expect("We have 2 files")
-            .clone();
-        manager.mark_completed(completed_file.chunks.into_iter().map(|(chunk, _)| chunk));
-
-        let mut new_manager = ChunkManager::new(&root_dir);
-        new_manager.chunk_path(&random_files_dir)?;
-
-        assert_eq!(new_manager.completed_files.len(), 1);
-        assert_eq!(
-            new_manager.completed_files.remove(0).1,
-            completed_file.file_xor_addr
-        );
-        assert_eq!(new_manager.chunked_files.len(), 1);
-
-        Ok(())
+        Ok((tmp_dir, manager, root_dir, random_files_dir))
     }
 
     fn create_random_files(

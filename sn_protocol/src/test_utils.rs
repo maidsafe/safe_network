@@ -6,11 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::fmt;
-
+/// Assert any collection/iterator even if their orders do not match.
 pub fn assert_lists<I, J, K>(a: I, b: J)
 where
-    K: fmt::Debug + Eq + Clone,
+    K: Eq + Clone,
     I: IntoIterator<Item = K>,
     J: IntoIterator<Item = K>,
 {
