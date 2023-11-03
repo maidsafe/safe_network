@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1698919295081,
+  "lastUpdate": 1699002945460,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "345c03439de1aaa86211233c1363eb9fd648c2fb",
-          "message": "ci: duplicate proto files for sn_testnet\n\nThis is a quick fix to the publishing problem regarding missing proto files, which duplicates the\nfiles.\n\nIt is not completely straight forward to reference the files from another crate due to the way the\nCargo publishing process works.",
-          "timestamp": "2023-07-07T14:47:22+02:00",
-          "tree_id": "c5c7a447b0a58e2d489581db839f9760f6759f33",
-          "url": "https://github.com/maidsafe/safe_network/commit/345c03439de1aaa86211233c1363eb9fd648c2fb"
-        },
-        "date": 1688735617259,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1373546051076986,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.102230475770227,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 8.476656350639411,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 15.499366367230014,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "705789380b31bfed998440f8f1b0cdf871d0385b",
+          "message": "test: e2e test for transfer notifs filtering",
+          "timestamp": "2023-11-03T08:22:37Z",
+          "tree_id": "78aa80af4f5fbcd1aa7f4d7ed6857caf0731464b",
+          "url": "https://github.com/maidsafe/safe_network/commit/705789380b31bfed998440f8f1b0cdf871d0385b"
+        },
+        "date": 1699002943061,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.19669354848994608,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0747825240562292,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 14.477424171045532,
             "unit": "MiB/s"
           }
         ]
