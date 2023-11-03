@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699002945460,
+  "lastUpdate": 1699003212857,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "8ac2b2811961e78e44cfca361916f682b3846cd9",
-          "message": "chore(networking): reduce some log levels to make 'info' more useful",
-          "timestamp": "2023-06-23T17:42:32Z",
-          "tree_id": "91bbcbc798eb589219fea7dd20127c52e42c1fe7",
-          "url": "https://github.com/maidsafe/safe_network/commit/8ac2b2811961e78e44cfca361916f682b3846cd9"
-        },
-        "date": 1687546158149,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 17.06,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/9e3ed96e8e5d782ab41ca41785c90ee1a9848828"
         },
         "date": 1698919287987,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "705789380b31bfed998440f8f1b0cdf871d0385b",
+          "message": "test: e2e test for transfer notifs filtering",
+          "timestamp": "2023-11-03T08:22:37Z",
+          "tree_id": "78aa80af4f5fbcd1aa7f4d7ed6857caf0731464b",
+          "url": "https://github.com/maidsafe/safe_network/commit/705789380b31bfed998440f8f1b0cdf871d0385b"
+        },
+        "date": 1699003212047,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
