@@ -291,7 +291,7 @@ fn spawn_royalties_payment_listener(
         let mut count = 0;
         let mut stream = response.into_inner();
 
-        let duration = Duration::from_secs(120);
+        let duration = Duration::from_secs(60);
         println!("Awaiting transfers notifs for at most {duration:?}...");
         if timeout(duration, async {
             while let Some(Ok(e)) = stream.next().await {
@@ -300,9 +300,6 @@ fn spawn_royalties_payment_listener(
                         println!("Transfer notif received for key {key:?}");
                         if key == royalties_pk {
                             count += 1;
-                            if count == CLOSE_GROUP_SIZE {
-                                break;
-                            }
                         }
                     }
                     Ok(_) => { /* ignored */ }
@@ -317,6 +314,8 @@ fn spawn_royalties_payment_listener(
         {
             println!("Timeout after {duration:?}.");
         }
+
+        println!("Received {count} royalty transfer notifs");
 
         Ok(count)
     })
