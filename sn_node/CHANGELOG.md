@@ -2003,6 +2003,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - e2e test for transfer notifs filtering
 
+## [0.96.29](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.28...sn_node-v0.96.29) - 2023-11-03
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
