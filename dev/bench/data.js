@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699005716092,
+  "lastUpdate": 1699005717826,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30535,6 +30535,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 40,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "293741+willief@users.noreply.github.com",
+            "name": "Southside",
+            "username": "willief"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "25d24fd367a6a68e553be5ee8eb9b0537792fa04",
+          "message": "chore(cli): make file upload output cut n paste friendly\n\nnaive attempt to address issue from https://safenetforum.org/t/heapnet2-testnet-12-10-23/38749/460?u=southside",
+          "timestamp": "2023-11-03T08:33:17Z",
+          "tree_id": "3e8f204c9236d6c2d85f235b2cfa0541ac10bb5d",
+          "url": "https://github.com/maidsafe/safe_network/commit/25d24fd367a6a68e553be5ee8eb9b0537792fa04"
+        },
+        "date": 1699005717398,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 45,
             "unit": "MB"
           }
         ]
