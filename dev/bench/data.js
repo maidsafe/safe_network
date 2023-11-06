@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699277023090,
+  "lastUpdate": 1699277025365,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20419,40 +20419,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "6cca14f594d844bfe254132bc6d44cf4385209f9",
-          "message": "fix: update the safe files upload cmd removing more nonsense",
-          "timestamp": "2023-06-20T12:24:43+09:00",
-          "tree_id": "78c7d29c5edc80b7cd8efe19b7c2167d776f3308",
-          "url": "https://github.com/maidsafe/safe_network/commit/6cca14f594d844bfe254132bc6d44cf4385209f9"
-        },
-        "date": 1687232775276,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 925.6,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 487,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "80763c990efe5257fba9ec414008c457a7aa3fc4",
           "message": "chore: reduce some log levels to make 'debug' more useful",
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 173,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 40,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2c390e3082c24858553a06a3959dbd24a3391506",
+          "message": "chore: using libp2p newly exposed API to avoid hash work",
+          "timestamp": "2023-11-06T12:39:53Z",
+          "tree_id": "975e06995343e1f036e280be1c480e2a5ba89224",
+          "url": "https://github.com/maidsafe/safe_network/commit/2c390e3082c24858553a06a3959dbd24a3391506"
+        },
+        "date": 1699277024559,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 153,
             "unit": "MB"
           },
           {
