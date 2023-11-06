@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699293570354,
+  "lastUpdate": 1699293720384,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "4d434cac0187417fbd174ff1259541ffb64b2d6b",
-          "message": "Revert \"feat: append peer id to node's default root dir\"\n\nThis reverts commit 86b83b68d039330f666fc60db5bdcc6a605c8aa9.",
-          "timestamp": "2023-06-26T10:01:57+01:00",
-          "tree_id": "56638e72faa74910e78e68392a8aa41a9a4b6389",
-          "url": "https://github.com/maidsafe/safe_network/commit/4d434cac0187417fbd174ff1259541ffb64b2d6b"
-        },
-        "date": 1687771119118,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 17.6,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 61,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "f923a67eb1f33e9908fde7934dd671e909facb42",
+          "message": "fix(network): use saturating_* functions to track the connected peers",
+          "timestamp": "2023-11-06T17:17:39Z",
+          "tree_id": "a52e9aa6af92e34fa3da85a8db84d416a15e7937",
+          "url": "https://github.com/maidsafe/safe_network/commit/f923a67eb1f33e9908fde7934dd671e909facb42"
+        },
+        "date": 1699293719331,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 59,
             "unit": "MB"
           }
         ]
