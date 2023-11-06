@@ -9,16 +9,17 @@
 #[macro_use]
 extern crate tracing;
 
-mod rpc;
+mod rpc_service;
 
 use clap::Parser;
-use eyre::{eyre, Error, Result};
+use eyre::{eyre, Result};
 use libp2p::{identity::Keypair, PeerId};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{LogFormat, LogOutputDest};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
+use sn_protocol::node_rpc::NodeCtrl;
 use std::{
     env,
     io::Write,
@@ -151,18 +152,6 @@ struct Opt {
     metrics_server_port: u16,
 }
 
-#[derive(Debug)]
-// To be sent to the main thread in order to stop/restart the execution of the safenode app.
-enum NodeCtrl {
-    // Request to stop the exeution of the safenode app, providing an error as a reason for it.
-    Stop { delay: Duration, cause: Error },
-    // Request to restart the exeution of the safenode app,
-    // retrying to join the network, after the requested delay.
-    Restart(Duration),
-    // Request to update the safenode app, and restart it, after the requested delay.
-    Update(Duration),
-}
-
 fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
@@ -256,7 +245,7 @@ You can check your reward balance by running:
 
     // Start up gRPC interface if enabled by user
     if let Some(addr) = rpc {
-        rpc::start_rpc_service(
+        rpc_service::start_rpc_service(
             addr,
             log_output_dest,
             running_node.clone(),
