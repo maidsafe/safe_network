@@ -8,13 +8,13 @@
 
 mod common;
 
-use crate::common::safenode_proto::{
-    safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
-    GossipsubUnsubscribeRequest, NodeEventsRequest,
-};
 use eyre::Result;
 use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
+use sn_protocol::safenode_proto::{
+    safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
+    GossipsubUnsubscribeRequest, NodeEventsRequest,
+};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     time::Duration,

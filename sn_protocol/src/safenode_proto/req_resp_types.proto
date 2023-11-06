@@ -52,6 +52,13 @@ message GossipsubSubscribeRequest {
 
 message GossipsubSubscribeResponse {}
 
+// Unsubsribe from a gossipsub topic
+message GossipsubUnsubscribeRequest {
+  string topic = 1;
+}
+
+message GossipsubUnsubscribeResponse {}
+
 // Publish a msg on a gossipsub topic
 message GossipsubPublishRequest {
   string topic = 1;
@@ -59,6 +66,13 @@ message GossipsubPublishRequest {
 }
 
 message GossipsubPublishResponse {}
+
+// Set a PublicKey to start decoding and accepting Transfer notifications received over gossipsub.
+message TransferNotifsFilterRequest {
+  bytes pk = 1;
+}
+
+message TransferNotifsFilterResponse {}
 
 // Stop the safenode app
 message StopRequest {

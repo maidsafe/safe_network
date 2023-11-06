@@ -13,8 +13,15 @@ extern crate tracing;
 pub mod error;
 /// Messages types
 pub mod messages;
+/// RPC commands to node
+pub mod node_rpc;
 /// Storage types for spends, chunks and registers.
 pub mod storage;
+
+// this includes code generated from .proto files
+pub mod safenode_proto {
+    tonic::include_proto!("safenode_proto");
+}
 
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
 use bytes::Bytes;

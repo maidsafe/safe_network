@@ -8,15 +8,12 @@
 
 #![allow(dead_code)]
 
-#[allow(unused_qualifications, unreachable_pub, clippy::unwrap_used)]
-pub mod safenode_proto {
-    tonic::include_proto!("safenode_proto");
-}
-
-use safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest};
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client, Files};
 use sn_peers_acquisition::parse_peer_addr;
+use sn_protocol::safenode_proto::{
+    safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest,
+};
 use sn_protocol::storage::ChunkAddress;
 use sn_transfers::LocalWallet;
 
