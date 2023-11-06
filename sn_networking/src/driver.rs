@@ -451,6 +451,7 @@ impl NetworkBuilder {
             self_peer_id: peer_id,
             local: self.local,
             is_client,
+            connected_peers: 0,
             bootstrap: ContinuousBootstrap::new(),
             close_group: Default::default(),
             replication_fetcher: Default::default(),
@@ -486,6 +487,7 @@ pub struct SwarmDriver {
     pub(crate) self_peer_id: PeerId,
     pub(crate) local: bool,
     pub(crate) is_client: bool,
+    pub(crate) connected_peers: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) close_group: Vec<PeerId>,
