@@ -2028,6 +2028,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(node)* log marker to track the number of peers in the routing table
 
+## [0.96.34](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.33...sn_node-v0.96.34) - 2023-11-06
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
