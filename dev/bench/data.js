@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699288024017,
+  "lastUpdate": 1699288177790,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "jacderida"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "86b83b68d039330f666fc60db5bdcc6a605c8aa9",
-          "message": "feat: append peer id to node's default root dir\n\nBREAKING CHANGE: The default root directory for the node will now have the node's peer ID appended\nto its path.\n\nUsing the peer ID facilitates running multiple node processes on a single machine, without the need\nto explicitly use the `--root-dir` argument for each node to specify its own root directory.\nPreviously, if they didn't do that, all the nodes would share the same record store.",
-          "timestamp": "2023-06-26T05:58:26Z",
-          "tree_id": "7acfa33081dfdafe571bab388875ee7f6275e818",
-          "url": "https://github.com/maidsafe/safe_network/commit/86b83b68d039330f666fc60db5bdcc6a605c8aa9"
-        },
-        "date": 1687762636696,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 16.63,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
             "email": "chris.oneil@gmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 60,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "d38477ff07d4eaefb4d5a045e1582a642d4aadc5",
+          "message": "test(protocol): use exposed hashed_bytes method",
+          "timestamp": "2023-11-06T15:45:52Z",
+          "tree_id": "667f121b71e6a59453bcb78d0e2c5654f1b0d945",
+          "url": "https://github.com/maidsafe/safe_network/commit/d38477ff07d4eaefb4d5a045e1582a642d4aadc5"
+        },
+        "date": 1699288177383,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 61,
             "unit": "MB"
           }
         ]
