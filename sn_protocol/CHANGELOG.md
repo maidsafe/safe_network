@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.15](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.14...sn_protocol-v0.8.15) - 2023-11-06
+
+### Other
+- *(protocol)* use exposed hashed_bytes method
+
 ## [0.8.14](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.13...sn_protocol-v0.8.14) - 2023-11-06
 
 ### Other
