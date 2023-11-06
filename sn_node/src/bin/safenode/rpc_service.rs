@@ -316,7 +316,7 @@ impl SafeNode for SafeNodeRpcService {
     }
 }
 
-pub(super) fn start_rpc_service(
+pub(crate) fn start_rpc_service(
     addr: SocketAddr,
     log_dir: &str,
     running_node: RunningNode,

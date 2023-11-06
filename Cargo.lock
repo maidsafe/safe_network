@@ -4360,6 +4360,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "sn_faucet"
+version = "0.1.0"
+dependencies = [
+ "blsttc",
+ "clap 4.4.7",
+ "color-eyre",
+ "dirs-next",
+ "sn_client",
+ "sn_logging",
+ "sn_peers_acquisition",
+ "sn_transfers",
+ "tiny_http",
+ "tokio",
+ "tracing",
+ "tracing-core",
+]
+
+[[package]]
 name = "sn_logging"
 version = "0.2.14"
 dependencies = [
@@ -4452,7 +4470,6 @@ dependencies = [
  "strum",
  "tempfile",
  "thiserror",
- "tiny_http",
  "tokio",
  "tokio-stream",
  "tonic 0.6.2",
