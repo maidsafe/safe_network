@@ -311,8 +311,8 @@ impl Node {
                     tokio::time::sleep(Duration::from_millis(10)).await;
                 }
                 // These events do not need to wait until there are enough peers
-                NetworkEvent::PeerAdded(_)
-                | NetworkEvent::PeerRemoved(_)
+                NetworkEvent::PeerAdded(..)
+                | NetworkEvent::PeerRemoved(..)
                 | NetworkEvent::NewListenAddr(_)
                 | NetworkEvent::NatStatusChanged(_)
                 | NetworkEvent::GossipsubMsgReceived { .. }
@@ -332,20 +332,22 @@ impl Node {
                     error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
                 }
             }
-            NetworkEvent::PeerAdded(peer_id) => {
+            NetworkEvent::PeerAdded(peer_id, connected_peers) => {
                 // increment peers_connected and send ConnectedToNetwork event if have connected to K_VALUE peers
                 let _ = peers_connected.fetch_add(1, Ordering::SeqCst);
                 if peers_connected.load(Ordering::SeqCst) == CLOSE_GROUP_SIZE {
                     self.events_channel.broadcast(NodeEvent::ConnectedToNetwork);
                 }
 
+                self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
                 self.record_metrics(Marker::PeerAddedToRoutingTable(peer_id));
 
                 if let Err(err) = self.try_trigger_targetted_replication(peer_id, false).await {
                     error!("During CloseGroupUpdate, error while triggering replication {err:?}");
                 }
             }
-            NetworkEvent::PeerRemoved(peer_id) => {
+            NetworkEvent::PeerRemoved(peer_id, connected_peers) => {
+                self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
                 self.record_metrics(Marker::PeerRemovedFromRoutingTable(peer_id));
                 // During a node restart, the new node got added before the old one got removed.
                 // If the old one is `pushed out of close_group by the new one`, then the records

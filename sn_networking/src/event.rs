@@ -125,10 +125,10 @@ pub enum NetworkEvent {
         /// Response
         res: Response,
     },
-    /// Peer has been added to the Routing Table
-    PeerAdded(PeerId),
-    // Peer has been removed from the Routing Table
-    PeerRemoved(PeerId),
+    /// Peer has been added to the Routing Table. And the number of connected peers.
+    PeerAdded(PeerId, usize),
+    // Peer has been removed from the Routing Table. And the number of connected peers.
+    PeerRemoved(PeerId, usize),
     /// The records bearing these keys are to be fetched from the holder or the network
     KeysForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
@@ -165,11 +165,14 @@ impl Debug for NetworkEvent {
             NetworkEvent::ResponseReceived { res, .. } => {
                 write!(f, "NetworkEvent::ResponseReceived({res:?})")
             }
-            NetworkEvent::PeerAdded(peer_id) => {
-                write!(f, "NetworkEvent::PeerAdded({peer_id:?})")
+            NetworkEvent::PeerAdded(peer_id, connected_peers) => {
+                write!(f, "NetworkEvent::PeerAdded({peer_id:?}, {connected_peers})")
             }
-            NetworkEvent::PeerRemoved(peer_id) => {
-                write!(f, "NetworkEvent::PeerRemoved({peer_id:?})")
+            NetworkEvent::PeerRemoved(peer_id, connected_peers) => {
+                write!(
+                    f,
+                    "NetworkEvent::PeerRemoved({peer_id:?}, {connected_peers})"
+                )
             }
             NetworkEvent::KeysForReplication(list) => {
                 let pretty_list: Vec<_> = list
@@ -425,7 +428,11 @@ impl SwarmDriver {
                     .kademlia
                     .remove_peer(&failed_peer_id)
                 {
-                    self.send_event(NetworkEvent::PeerRemoved(*dead_peer.node.key.preimage()));
+                    self.connected_peers -= 1;
+                    self.send_event(NetworkEvent::PeerRemoved(
+                        *dead_peer.node.key.preimage(),
+                        self.connected_peers,
+                    ));
                     self.log_kbuckets(&failed_peer_id);
                     let _ = self.check_for_change_in_our_close_group();
                 }
@@ -840,14 +847,14 @@ impl SwarmDriver {
                         info!("Performing the first bootstrap");
                         self.initiate_bootstrap();
                     }
-                    self.send_event(NetworkEvent::PeerAdded(peer));
+                    self.send_event(NetworkEvent::PeerAdded(peer, self.connected_peers));
                 }
 
                 if old_peer.is_some() {
                     self.connected_peers -= 1;
 
                     info!("Evicted old peer on new peer join: {old_peer:?}");
-                    self.send_event(NetworkEvent::PeerRemoved(peer));
+                    self.send_event(NetworkEvent::PeerRemoved(peer, self.connected_peers));
                     self.log_kbuckets(&peer);
                 }
                 let _ = self.check_for_change_in_our_close_group();
