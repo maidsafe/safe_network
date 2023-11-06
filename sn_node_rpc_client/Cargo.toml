@@ -20,7 +20,7 @@ bls = { package = "blsttc", version = "8.0.1" }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
 hex = "~0.4.3"
-libp2p = { version="0.52"}
+libp2p = { version="0.52", features = ["kad"]}
 sn_client = { path = "../sn_client", version = "0.95.22" }
 sn_logging = { path = "../sn_logging", version = "0.2.14" }
 sn_node = { path = "../sn_node", version ="0.96.29"}
