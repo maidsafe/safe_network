@@ -9,11 +9,7 @@
 #![allow(clippy::mutable_key_type)]
 mod common;
 
-use crate::common::{
-    get_client_and_wallet, node_restart,
-    safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
-    PAYING_WALLET_INITIAL_BALANCE,
-};
+use crate::common::{get_client_and_wallet, node_restart, PAYING_WALLET_INITIAL_BALANCE};
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use libp2p::{
@@ -24,6 +20,9 @@ use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Files};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
+use sn_protocol::safenode_proto::{
+    safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest,
+};
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{
     collections::{BTreeSet, HashMap, HashSet},

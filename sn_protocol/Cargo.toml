@@ -12,6 +12,7 @@ version = "0.8.12"
 [dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
+color-eyre = "0.6.2"
 crdts = { version = "7.3", default-features = false, features = ["merkle"] }
 custom_debug = "~0.5.0"
 hex = "~0.4.3"
@@ -23,4 +24,13 @@ sn_transfers = { path = "../sn_transfers", version = "0.14.11" }
 sn_registers = { path = "../sn_registers", version = "0.3.3" }
 thiserror = "1.0.23"
 tracing = { version = "~0.1.26" }
+# # watch out updating this, protoc compiler needs to be installed on all build systems
+# # arm builds + musl are very problematic
+prost = { version = "0.9" }
+tonic = { version = "0.6.2" }
 xor_name = "5.0.0"
+
+[build-dependencies]
+# watch out updating this, protoc compiler needs to be installed on all build systems
+# arm builds + musl are very problematic
+tonic-build = { version = "~0.6.2" }

@@ -4456,7 +4456,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic 0.6.2",
- "tonic-build",
  "tracing",
  "tracing-appender",
  "tracing-core",
@@ -4465,6 +4464,29 @@ dependencies = [
  "tracing-subscriber",
  "walkdir",
  "xor_name",
+]
+
+[[package]]
+name = "sn_node_rpc_client"
+version = "0.1.0"
+dependencies = [
+ "assert_fs",
+ "blsttc",
+ "clap 4.4.7",
+ "color-eyre",
+ "hex",
+ "libp2p",
+ "sn_client",
+ "sn_logging",
+ "sn_node",
+ "sn_peers_acquisition",
+ "sn_protocol",
+ "sn_transfers",
+ "tokio",
+ "tokio-stream",
+ "tonic 0.6.2",
+ "tracing",
+ "tracing-core",
 ]
 
 [[package]]
@@ -4486,16 +4508,20 @@ version = "0.8.12"
 dependencies = [
  "blsttc",
  "bytes",
+ "color-eyre",
  "crdts",
  "custom_debug",
  "hex",
  "libp2p",
+ "prost 0.9.0",
  "rmp-serde",
  "serde",
  "sha2",
  "sn_registers",
  "sn_transfers",
  "thiserror",
+ "tonic 0.6.2",
+ "tonic-build",
  "tracing",
  "xor_name",
 ]

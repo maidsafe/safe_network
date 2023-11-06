@@ -8,16 +8,14 @@
 
 mod common;
 
-use crate::common::{
-    get_client_and_wallet, random_content,
-    safenode_proto::{
-        safe_node_client::SafeNodeClient, NodeEventsRequest, TransferNotifsFilterRequest,
-    },
-};
+use crate::common::{get_client_and_wallet, random_content};
 use sn_client::WalletClient;
 use sn_logging::LogBuilder;
 use sn_networking::CLOSE_GROUP_SIZE;
 use sn_node::NodeEvent;
+use sn_protocol::safenode_proto::{
+    safe_node_client::SafeNodeClient, NodeEventsRequest, TransferNotifsFilterRequest,
+};
 use sn_transfers::{
     LocalWallet, NanoTokens, NETWORK_ROYALTIES_AMOUNT_PER_ADDR, NETWORK_ROYALTIES_PK,
 };
