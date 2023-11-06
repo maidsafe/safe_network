@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.95.26](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.25...sn_client-v0.95.26) - 2023-11-06
+
+### Added
+- *(node)* log marker to track the number of peers in the routing table
+
 ## [0.95.25](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.24...sn_client-v0.95.25) - 2023-11-06
 
 ### Other

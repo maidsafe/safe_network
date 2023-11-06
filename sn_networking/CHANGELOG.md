@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.25](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.24...sn_networking-v0.9.25) - 2023-11-06
+
+### Added
+- *(node)* log marker to track the number of peers in the routing table
+- *(network)* cache the number of connected peers
+
+### Fixed
+- *(network)* use saturating_* functions to track the connected peers
+
+### Other
+- *(log)* log the connected peers during peer add
+
 ## [0.9.24](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.23...sn_networking-v0.9.24) - 2023-11-06
 
 ### Other
