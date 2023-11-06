@@ -330,7 +330,6 @@ mod tests {
     use bls::rand::thread_rng;
     use bytes::Bytes;
     use libp2p::kad::{KBucketKey, RecordKey};
-    use sha2::{Digest, Sha256};
 
     // A struct that implements hex representation of RecordKey using `bytes::Bytes`
     struct OldRecordKeyPrint(RecordKey);
@@ -361,8 +360,7 @@ mod tests {
     // old impl using Bytes
     impl std::fmt::Display for OldKBucketKeyPrint {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let generic_array = Sha256::digest(self.0.preimage());
-            let kbucket_key_b = Bytes::from(generic_array.to_vec());
+            let kbucket_key_b = Bytes::from(self.0.hashed_bytes().to_vec());
             write!(f, "{:64x}", kbucket_key_b)
         }
     }
