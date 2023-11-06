@@ -144,7 +144,7 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build node and client
+      - name: Build binaries
         run: cargo build --release --bin safenode --bin safe --bin faucet
         timeout-minutes: 30
 
@@ -235,8 +235,8 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build node
-        run: cargo build --release --bin safenode
+      - name: Build binaries
+        run: cargo build --release --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Build gossipsub testing executable
@@ -282,7 +282,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build safe bins
+      - name: Build binaries
         run: cargo build --release --features=local-discovery --bin safenode --bin faucet
         timeout-minutes: 30
 
@@ -359,7 +359,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build safe bins
+      - name: Build binaries
         run: cargo build --release --features local-discovery --bin safenode --bin faucet
         timeout-minutes: 30
 
@@ -466,7 +466,7 @@ jobs:
 
         - uses: Swatinem/rust-cache@v2
 
-        - name: Build safe bins
+        - name: Build binaries
           run: cargo build --release --features local-discovery --bin safenode --bin faucet
           timeout-minutes: 30
 

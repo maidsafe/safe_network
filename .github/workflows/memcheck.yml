@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: sudo apt-get install -y ripgrep
 
-      - name: Build sn bins
+      - name: Build binaries
         run: cargo build --release --bins 
         timeout-minutes: 30
 
