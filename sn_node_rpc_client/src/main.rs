@@ -9,18 +9,18 @@
 use assert_fs::TempDir;
 use bls::SecretKey;
 use clap::Parser;
-use eyre::{eyre, Result};
+use color_eyre::eyre::{eyre, Result};
 use libp2p::{Multiaddr, PeerId};
-use safenode_proto::{
+use sn_client::Client;
+use sn_logging::LogBuilder;
+use sn_node::NodeEvent;
+use sn_peers_acquisition::{parse_peers_args, PeersArgs};
+use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
     GossipsubUnsubscribeRequest, NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest,
     RecordAddressesRequest, RestartRequest, StopRequest, TransferNotifsFilterRequest,
     UpdateRequest,
 };
-use sn_client::Client;
-use sn_logging::LogBuilder;
-use sn_node::NodeEvent;
-use sn_peers_acquisition::{parse_peers_args, PeersArgs};
 use sn_protocol::storage::SpendAddress;
 use sn_transfers::{LocalWallet, MainSecretKey, Transfer};
 use std::{fs, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
@@ -28,11 +28,6 @@ use tokio_stream::StreamExt;
 use tonic::Request;
 use tracing::warn;
 use tracing_core::Level;
-
-// this includes code generated from .proto files
-mod safenode_proto {
-    tonic::include_proto!("safenode_proto");
-}
 
 #[derive(Parser, Debug)]
 #[clap(name = "safenode RPC client")]
