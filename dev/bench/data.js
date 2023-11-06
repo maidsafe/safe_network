@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699271709868,
+  "lastUpdate": 1699271711605,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30569,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 45,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "4798b507d1ad5259ce60bd3c5d09528cc9874b9f",
+          "message": "feat(deps): upgrade libp2p to 0.53",
+          "timestamp": "2023-11-06T10:54:05Z",
+          "tree_id": "6b224ec80bcfc36e924a7846ec94fb0fc4c48d14",
+          "url": "https://github.com/maidsafe/safe_network/commit/4798b507d1ad5259ce60bd3c5d09528cc9874b9f"
+        },
+        "date": 1699271711205,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 173,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 40,
             "unit": "MB"
           }
         ]
