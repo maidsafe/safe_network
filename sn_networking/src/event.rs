@@ -428,7 +428,7 @@ impl SwarmDriver {
                     .kademlia
                     .remove_peer(&failed_peer_id)
                 {
-                    self.connected_peers -= 1;
+                    self.connected_peers = self.connected_peers.saturating_sub(1);
                     self.send_event(NetworkEvent::PeerRemoved(
                         *dead_peer.node.key.preimage(),
                         self.connected_peers,
@@ -838,7 +838,7 @@ impl SwarmDriver {
             } => {
                 event_string = "kad_event::RoutingUpdated";
                 if is_new_peer {
-                    self.connected_peers += 1;
+                    self.connected_peers = self.connected_peers.saturating_add(1);
 
                     info!("New peer added to routing table: {peer:?}, now we have #{} connected peers", self.connected_peers);
                     self.log_kbuckets(&peer);
@@ -851,7 +851,7 @@ impl SwarmDriver {
                 }
 
                 if old_peer.is_some() {
-                    self.connected_peers -= 1;
+                    self.connected_peers = self.connected_peers.saturating_sub(1);
 
                     info!("Evicted old peer on new peer join: {old_peer:?}");
                     self.send_event(NetworkEvent::PeerRemoved(peer, self.connected_peers));
