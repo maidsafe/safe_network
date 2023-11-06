@@ -219,7 +219,7 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     let count_3 = handle_3.await??;
     println!("Number of notifications received by node #3: {count_3}");
 
-    assert!(count_1 >= expected, "Not enough notifications received");
+    assert_eq!(count_1, 1, "Not enough notifications received");
     assert_eq!(count_2, 0, "Notifications were not expected");
     assert_eq!(count_3, 0, "Notifications were not expected");
 
