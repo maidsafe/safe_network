@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699295848644,
+  "lastUpdate": 1699296001972,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "2c465f63b62c3b23d73dd1b70cbf45ffdda131af",
-          "message": "fix: get_closest_local shall only return CLOSE_GROUP_SIZE peers",
-          "timestamp": "2023-06-26T15:48:51Z",
-          "tree_id": "db66777a517d3f5a3a27ea1b6861f2d635fb2386",
-          "url": "https://github.com/maidsafe/safe_network/commit/2c465f63b62c3b23d73dd1b70cbf45ffdda131af"
-        },
-        "date": 1687798418782,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 15.57,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 59,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "694b62f135abcca628fe0a52326d88de1da7c558",
+          "message": "chore(ci): use latest cargo udeps",
+          "timestamp": "2023-11-06T17:40:08Z",
+          "tree_id": "b1b0846756f219be6c9f043d3f1422c7deb61c44",
+          "url": "https://github.com/maidsafe/safe_network/commit/694b62f135abcca628fe0a52326d88de1da7c558"
+        },
+        "date": 1699296001314,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 64,
             "unit": "MB"
           }
         ]
