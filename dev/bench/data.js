@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699276867202,
+  "lastUpdate": 1699277023090,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f25f4d5d7bba328a14db694136b0e92716cbd610",
-          "message": "chore(logging): dont log PID with metrics",
-          "timestamp": "2023-06-26T04:57:52Z",
-          "tree_id": "9de7bfb5fa323943c27b0b14b1ab2c6951a9baad",
-          "url": "https://github.com/maidsafe/safe_network/commit/f25f4d5d7bba328a14db694136b0e92716cbd610"
-        },
-        "date": 1687759588791,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 15.89,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2c390e3082c24858553a06a3959dbd24a3391506",
+          "message": "chore: using libp2p newly exposed API to avoid hash work",
+          "timestamp": "2023-11-06T12:39:53Z",
+          "tree_id": "975e06995343e1f036e280be1c480e2a5ba89224",
+          "url": "https://github.com/maidsafe/safe_network/commit/2c390e3082c24858553a06a3959dbd24a3391506"
+        },
+        "date": 1699277022210,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 60,
             "unit": "MB"
           }
         ]
