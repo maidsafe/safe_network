@@ -831,9 +831,9 @@ impl SwarmDriver {
             } => {
                 event_string = "kad_event::RoutingUpdated";
                 if is_new_peer {
-                    // todo: cache the count as it is frequently used during replication as well.
-                    let connected_peers = self.swarm.connected_peers().count();
-                    info!("New peer added to routing table: {peer:?}, now we have #{connected_peers} connected peers");
+                    self.connected_peers += 1;
+
+                    info!("New peer added to routing table: {peer:?}, now we have #{} connected peers", self.connected_peers);
                     self.log_kbuckets(&peer);
 
                     if self.bootstrap.notify_new_peer() {
@@ -844,6 +844,8 @@ impl SwarmDriver {
                 }
 
                 if old_peer.is_some() {
+                    self.connected_peers -= 1;
+
                     info!("Evicted old peer on new peer join: {old_peer:?}");
                     self.send_event(NetworkEvent::PeerRemoved(peer));
                     self.log_kbuckets(&peer);
