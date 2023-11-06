@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699296001972,
+  "lastUpdate": 1699296005032,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "ba96bef407a89e4136b890e5ce9812d4773dbab9",
-          "message": "feat(sn_networking): Make it possible to pass in a keypair for PeerID\n\nmakes changes up the stack so nodes could restart and maintain peerId,\nclients simply ignore this and provide None as they have a separate Signer\nused for client ops. Their PeerId is not relevant or used in kad at all",
-          "timestamp": "2023-06-20T14:07:06Z",
-          "tree_id": "37262bc3fcb2f1ea40abf0b0919d5e685178e187",
-          "url": "https://github.com/maidsafe/safe_network/commit/ba96bef407a89e4136b890e5ce9812d4773dbab9"
-        },
-        "date": 1687274807238,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 914.62,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 493,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 37,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "694b62f135abcca628fe0a52326d88de1da7c558",
+          "message": "chore(ci): use latest cargo udeps",
+          "timestamp": "2023-11-06T17:40:08Z",
+          "tree_id": "b1b0846756f219be6c9f043d3f1422c7deb61c44",
+          "url": "https://github.com/maidsafe/safe_network/commit/694b62f135abcca628fe0a52326d88de1da7c558"
+        },
+        "date": 1699296004412,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 182,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 39,
             "unit": "MB"
           }
         ]
