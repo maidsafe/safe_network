@@ -27,12 +27,8 @@ jobs:
           toolchain: nightly
           # we need rustfmt here while we have a build step
           components: rustfmt
-
       - name: Install cargo-udeps
-        # TODO: (2023-07-03) This is a non-released version from udeps, which includes a bug fix:
-        # https://github.com/est31/cargo-udeps/issues/180
-        # Change this when this is released.
-        run: cargo install --git=https://github.com/est31/cargo-udeps.git --rev=f7a4705 --locked
+        run: cargo install cargo-udeps --locked
       - name: Run cargo-udeps
         run: cargo +nightly udeps --all-targets
 
