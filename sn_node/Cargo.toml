@@ -17,10 +17,6 @@ path = "src/bin/safenode/main.rs"
 name = "faucet"
 path = "src/bin/faucet/main.rs"
 
-[[bin]]
-name = "safenode_rpc_client"
-path = "src/bin/safenode_rpc_client.rs"
-
 [features]
 default=["metrics"]
 local-discovery=["sn_networking/local-discovery"]
@@ -83,8 +79,3 @@ color-eyre = "0.6.2"
 
 [dev-dependencies]
 tempfile = "3.6.0"
-
-[build-dependencies]
-# watch out updating this, protoc compiler needs to be installed on all build systems
-# arm builds + musl are very problematic
-tonic-build = { version = "~0.6.2" }
