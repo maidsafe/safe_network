@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699277025365,
+  "lastUpdate": 1699288024017,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "346c2af8c44dadeb08e8888d44d59c87ae6de9f2",
-          "message": "feat: client query register via get_record",
-          "timestamp": "2023-07-10T14:53:27Z",
-          "tree_id": "27e40470cabe87b85bb3582929788c718c24e478",
-          "url": "https://github.com/maidsafe/safe_network/commit/346c2af8c44dadeb08e8888d44d59c87ae6de9f2"
-        },
-        "date": 1689005036900,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1932881472408854,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.744861950781761,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 9.915502013429787,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 90.93791837269335,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "d38477ff07d4eaefb4d5a045e1582a642d4aadc5",
+          "message": "test(protocol): use exposed hashed_bytes method",
+          "timestamp": "2023-11-06T15:45:52Z",
+          "tree_id": "667f121b71e6a59453bcb78d0e2c5654f1b0d945",
+          "url": "https://github.com/maidsafe/safe_network/commit/d38477ff07d4eaefb4d5a045e1582a642d4aadc5"
+        },
+        "date": 1699288022083,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.28195679012560687,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6059521310043812,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 93.20609727090653,
             "unit": "MiB/s"
           }
         ]
