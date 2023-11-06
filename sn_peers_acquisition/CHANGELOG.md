@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.1.8...sn_peers_acquisition-v0.1.9) - 2023-11-06
+
+### Added
+- *(deps)* upgrade libp2p to 0.53
+
 ## [0.1.8](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.1.7...sn_peers_acquisition-v0.1.8) - 2023-10-26
 
 ### Fixed
