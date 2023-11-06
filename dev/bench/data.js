@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699271432225,
+  "lastUpdate": 1699271709868,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "1983c3dcae4fe777900d1a467d2b4feaffdb0ee6",
-          "message": "test: adding proptests for payment proofs merkletree utilities",
-          "timestamp": "2023-06-25T23:23:41Z",
-          "tree_id": "96d87cceef8a36402b635a9f296ebe94d3aead84",
-          "url": "https://github.com/maidsafe/safe_network/commit/1983c3dcae4fe777900d1a467d2b4feaffdb0ee6"
-        },
-        "date": 1687738986506,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 17.01,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "4798b507d1ad5259ce60bd3c5d09528cc9874b9f",
+          "message": "feat(deps): upgrade libp2p to 0.53",
+          "timestamp": "2023-11-06T10:54:05Z",
+          "tree_id": "6b224ec80bcfc36e924a7846ec94fb0fc4c48d14",
+          "url": "https://github.com/maidsafe/safe_network/commit/4798b507d1ad5259ce60bd3c5d09528cc9874b9f"
+        },
+        "date": 1699271709447,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
