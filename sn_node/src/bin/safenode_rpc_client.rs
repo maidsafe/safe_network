@@ -245,6 +245,15 @@ pub async fn transfers_events(
     };
     let endpoint = format!("https://{addr}");
     let mut node_client = SafeNodeClient::connect(endpoint).await?;
+
+    for group_index in 0..256 {
+        let royalty_topic: &str = "ROYALTY_TRANSFER";
+        let topic = format!("{royalty_topic}_GROUP_{group_index}");
+        let _response = node_client
+            .subscribe_to_topic(Request::new(GossipsubSubscribeRequest { topic }))
+            .await?;
+    }
+
     let response = node_client
         .node_events(Request::new(NodeEventsRequest {}))
         .await?;
