@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699005717826,
+  "lastUpdate": 1699271432225,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "4c03afc297c027ee906d00a305cd40580c1ac60b",
-          "message": "fix: update nightly node data dir",
-          "timestamp": "2023-07-10T10:31:05Z",
-          "tree_id": "a51c880f2fe644efc5f59b0b6f0c6999db652300",
-          "url": "https://github.com/maidsafe/safe_network/commit/4c03afc297c027ee906d00a305cd40580c1ac60b"
-        },
-        "date": 1688989162432,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2064135319801699,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.988085969520464,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.164488327913835,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 13.650957512767098,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "4798b507d1ad5259ce60bd3c5d09528cc9874b9f",
+          "message": "feat(deps): upgrade libp2p to 0.53",
+          "timestamp": "2023-11-06T10:54:05Z",
+          "tree_id": "6b224ec80bcfc36e924a7846ec94fb0fc4c48d14",
+          "url": "https://github.com/maidsafe/safe_network/commit/4798b507d1ad5259ce60bd3c5d09528cc9874b9f"
+        },
+        "date": 1699271429799,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.2666330372335553,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.8164059227159727,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 51.53438558321222,
             "unit": "MiB/s"
           }
         ]
