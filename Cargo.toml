@@ -5,6 +5,7 @@ members = [
     "sn_build_info",
     "sn_cli",
     "sn_client",
+    "sn_faucet",
     "sn_logging",
     "sn_networking",
     "sn_node",

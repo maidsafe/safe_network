@@ -6,12 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::path;
-
 use crate::{claim_genesis, send_tokens};
-use eyre::{eyre, Result};
+use color_eyre::eyre::{eyre, Result};
 use sn_client::Client;
-
+use std::path;
 use tiny_http::{Response, Server};
 
 /// Run the faucet server.
