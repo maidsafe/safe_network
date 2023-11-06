@@ -200,7 +200,7 @@ impl Client {
 
     fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
         match event {
-            NetworkEvent::PeerAdded(peer_id) => {
+            NetworkEvent::PeerAdded(peer_id, _connected_peer) => {
                 self.peers_added += 1;
                 debug!("PeerAdded: {peer_id}");
 
