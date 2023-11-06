@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699288177790,
+  "lastUpdate": 1699288179915,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "80763c990efe5257fba9ec414008c457a7aa3fc4",
-          "message": "chore: reduce some log levels to make 'debug' more useful",
-          "timestamp": "2023-06-20T04:49:04Z",
-          "tree_id": "0485cc70acd1b07162723fcf639698cef9bc5448",
-          "url": "https://github.com/maidsafe/safe_network/commit/80763c990efe5257fba9ec414008c457a7aa3fc4"
-        },
-        "date": 1687240534964,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 925.87,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 467,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 40,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman+github@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "d38477ff07d4eaefb4d5a045e1582a642d4aadc5",
+          "message": "test(protocol): use exposed hashed_bytes method",
+          "timestamp": "2023-11-06T15:45:52Z",
+          "tree_id": "667f121b71e6a59453bcb78d0e2c5654f1b0d945",
+          "url": "https://github.com/maidsafe/safe_network/commit/d38477ff07d4eaefb4d5a045e1582a642d4aadc5"
+        },
+        "date": 1699288179513,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 192,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 43,
             "unit": "MB"
           }
         ]
