@@ -23,7 +23,6 @@ use libp2p::{
     PeerId,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use sha2::{Digest, Sha256};
 use std::{
     borrow::Cow,
     fmt::{self, Debug, Display, Formatter},
@@ -229,10 +228,7 @@ pub struct PrettyPrintKBucketKey(pub Key<Vec<u8>>);
 
 impl std::fmt::Display for PrettyPrintKBucketKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // The `KeyBytes` part of `KBucketKey` is private and no API to expose it.
-        // Hence here we have to carry out a hash manually to simulate its behaviour.
-        let generic_array = Sha256::digest(self.0.preimage());
-        for byte in generic_array {
+        for byte in self.0.hashed_bytes() {
             f.write_fmt(format_args!("{:02x}", byte))?;
         }
         Ok(())
