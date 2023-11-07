@@ -32,6 +32,7 @@ sn_protocol = { path = "../sn_protocol", version = "0.8.17" }
 sn_transfers = { path = "../sn_transfers", version = "0.14.11" }
 sysinfo = { version = "0.29.0", default-features = false, optional = true }
 thiserror = "1.0.23"
+tiny-keccak = { version = "~2.0.2", features = [ "sha3" ] }
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"

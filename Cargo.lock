@@ -4659,6 +4659,7 @@ dependencies = [
  "sn_transfers",
  "sysinfo",
  "thiserror",
+ "tiny-keccak",
  "tokio",
  "tracing",
  "xor_name",

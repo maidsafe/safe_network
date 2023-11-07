@@ -56,6 +56,7 @@ use std::{
     path::PathBuf,
     time::Duration,
 };
+use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
@@ -391,14 +392,22 @@ impl NetworkBuilder {
             .boxed();
 
         // Gossipsub behaviour
-        // set default parameters for gossipsub
         let gossipsub_config = libp2p::gossipsub::ConfigBuilder::default()
+            // we don't currently require source peer id and/or signing
             .validation_mode(libp2p::gossipsub::ValidationMode::Permissive)
+            // we use the hash of the msg content as the msg id to deduplicate them
+            .message_id_fn(|msg| {
+                let mut sha3 = Sha3::v256();
+                let mut msg_id = [0; 32];
+                sha3.update(&msg.data);
+                sha3.finalize(&mut msg_id);
+                msg_id.into()
+            })
             .build()
             .map_err(|err| Error::GossipsubConfigError(err.to_string()))?;
 
         // Set the message authenticity
-        let message_authenticity = libp2p::gossipsub::MessageAuthenticity::Author(peer_id);
+        let message_authenticity = libp2p::gossipsub::MessageAuthenticity::Anonymous;
 
         // build a gossipsub network behaviour
         let gossipsub: libp2p::gossipsub::Behaviour =

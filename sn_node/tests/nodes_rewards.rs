@@ -11,7 +11,6 @@ mod common;
 use crate::common::{get_client_and_wallet, random_content};
 use sn_client::WalletClient;
 use sn_logging::LogBuilder;
-use sn_networking::CLOSE_GROUP_SIZE;
 use sn_node::NodeEvent;
 use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, NodeEventsRequest, TransferNotifsFilterRequest,
@@ -121,20 +120,23 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
         chunks_dir.path().to_path_buf(),
     )?;
 
-    println!("Paying for {} random addresses...", chunks.len());
+    let num_of_chunks = chunks.len();
+    println!("Paying for {num_of_chunks} random addresses...");
     let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
     let handle =
         spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string(), royalties_pk, true);
 
-    let _cost = files_api
+    let (_, storage_cost, royalties_cost) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
         .await?;
 
-    println!("Random chunks stored");
+    println!("Random chunks stored, paid {storage_cost}/{royalties_cost}");
 
     let count = handle.await??;
+    let expected = royalties_cost.as_nano() as usize;
+
     println!("Number of notifications received by node: {count}");
-    assert_eq!(count, CLOSE_GROUP_SIZE, "Not enough notifications received");
+    assert!(count >= expected, "Not enough notifications received");
 
     Ok(())
 }
@@ -158,14 +160,15 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let handle =
         spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string(), royalties_pk, true);
 
-    let _register = client
-        .create_and_pay_for_register(register_addr, &mut wallet_client, true)
+    let (_, cost) = client
+        .create_and_pay_for_register(register_addr, &mut wallet_client, false)
         .await?;
-    println!("Random Register created");
+
+    println!("Random Register created, paid {cost}");
 
     let count = handle.await??;
     println!("Number of notifications received by node: {count}");
-    assert_eq!(count, CLOSE_GROUP_SIZE, "Not enough notifications received");
+    assert!(count >= 1, "Not enough notifications received");
 
     Ok(())
 }
@@ -202,21 +205,22 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
         false,
     );
 
-    let _cost = files_api
+    let num_of_chunks = chunks.len();
+    println!("Paying for {num_of_chunks} random addresses...");
+    let (_, storage_cost, royalties_cost) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
         .await?;
+    println!("Random chunks stored, paid {storage_cost}/{royalties_cost}");
 
     let count_1 = handle_1.await??;
+    let expected = royalties_cost.as_nano() as usize;
     println!("Number of notifications received by node #1: {count_1}");
     let count_2 = handle_2.await??;
     println!("Number of notifications received by node #2: {count_2}");
     let count_3 = handle_3.await??;
     println!("Number of notifications received by node #3: {count_3}");
 
-    assert_eq!(
-        count_1, CLOSE_GROUP_SIZE,
-        "Not enough notifications received"
-    );
+    assert!(count_1 >= expected, "Not enough notifications received");
     assert_eq!(count_2, 0, "Notifications were not expected");
     assert_eq!(count_3, 0, "Notifications were not expected");
 
@@ -289,18 +293,15 @@ fn spawn_royalties_payment_listener(
         let mut count = 0;
         let mut stream = response.into_inner();
 
-        let duration = Duration::from_secs(120);
-        println!("Awaiting transfers notifs for at most {duration:?}...");
+        let duration = Duration::from_secs(10);
+        println!("Awaiting transfers notifs for {duration:?}...");
         if timeout(duration, async {
             while let Some(Ok(e)) = stream.next().await {
                 match NodeEvent::from_bytes(&e.event) {
-                    Ok(NodeEvent::TransferNotif { key, transfers: _ }) => {
+                    Ok(NodeEvent::TransferNotif { key, .. }) => {
                         println!("Transfer notif received for key {key:?}");
                         if key == royalties_pk {
                             count += 1;
-                            if count == CLOSE_GROUP_SIZE {
-                                break;
-                            }
                         }
                     }
                     Ok(_) => { /* ignored */ }
