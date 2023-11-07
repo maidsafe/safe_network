@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.16](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.15...sn_protocol-v0.8.16) - 2023-11-07
+
+### Other
+- move protobuf definition to sn_protocol
+
 ## [0.8.15](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.14...sn_protocol-v0.8.15) - 2023-11-06
 
 ### Other
