@@ -4530,7 +4530,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.84.50"
+version = "0.84.51"
 dependencies = [
  "bincode",
  "blsttc",
