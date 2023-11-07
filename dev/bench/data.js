@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699354436666,
+  "lastUpdate": 1699354438830,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "1cf66abde5fab4015338f1b6b3744ba5370d45f6",
-          "message": "fix(network): use safe operations when dealing with Vec",
-          "timestamp": "2023-06-20T16:41:41Z",
-          "tree_id": "a0a5450e5034ea202a5db28fa30f0f3b6463d5b2",
-          "url": "https://github.com/maidsafe/safe_network/commit/1cf66abde5fab4015338f1b6b3744ba5370d45f6"
-        },
-        "date": 1687283578859,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 917.94,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 465,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 39,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "92c30a4a06d00b12c98a5b49a56e6f5b0747616d",
+          "message": "chore: change extension to small letters\n\n- causes error with the release flow",
+          "timestamp": "2023-11-07T11:26:16+01:00",
+          "tree_id": "3d8e206d9345b01cc5791b020255829f11ddda97",
+          "url": "https://github.com/maidsafe/safe_network/commit/92c30a4a06d00b12c98a5b49a56e6f5b0747616d"
+        },
+        "date": 1699354438042,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 157,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 37,
             "unit": "MB"
           }
         ]
