@@ -202,7 +202,7 @@ impl Node {
         keys: HashMap<NetworkAddress, RecordType>,
     ) -> Result<()> {
         trace!(
-            "Sending a replication list of {} keys to {peer_id:?} keys: {keys:?}",
+            "Sending a replication list of {} keys to {peer_id:?} ",
             keys.len()
         );
         let request = Request::Cmd(Cmd::Replicate {
