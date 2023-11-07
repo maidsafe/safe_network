@@ -22,11 +22,10 @@ use sn_protocol::safenode_proto::{
     UpdateRequest,
 };
 use sn_protocol::storage::SpendAddress;
-use sn_transfers::{LocalWallet, MainSecretKey, Transfer};
+use sn_transfers::{LocalWallet, MainPubkey, MainSecretKey};
 use std::{fs, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
 use tokio_stream::StreamExt;
 use tonic::Request;
-use tracing::warn;
 use tracing_core::Level;
 
 #[derive(Parser, Debug)]
@@ -260,62 +259,59 @@ pub async fn transfers_events(
     println!();
 
     let mut stream = response.into_inner();
+    let main_pk = MainPubkey(pk);
     while let Some(Ok(e)) = stream.next().await {
         match NodeEvent::from_bytes(&e.event) {
-            Ok(NodeEvent::TransferNotif { key, transfers }) => {
+            Ok(NodeEvent::TransferNotif {
+                key,
+                cashnote_redemptions,
+            }) => {
                 println!(
-                    "New transfer notification received for {key:?}, containing {} transfer/s.",
-                    transfers.len()
+                    "New transfer notification received for {key:?}, containing {} CashNoteRedemption/s.",
+                    cashnote_redemptions.len()
                 );
 
-                let mut cash_notes = vec![];
-                for transfer in transfers {
-                    match transfer {
-                        Transfer::Encrypted(_) => {
-                            match client.verify_and_unpack_transfer(&transfer, &wallet).await {
-                                // transfer not for us
-                                Err(err) => {
-                                    warn!("Transfer received is invalid or not for us. Ignoring it: {err:?}");
-                                    continue;
-                                }
-                                // transfer ok
-                                Ok(cns) => cash_notes.extend(cns),
+                match client
+                    .verify_cash_notes_redemptions(main_pk, &cashnote_redemptions)
+                    .await
+                {
+                    Err(err) => {
+                        println!(
+                            "At least one of the CashNoteRedemptions received is invalid, dropping them: {err:?}"
+                        );
+                    }
+                    Ok(cash_notes) => {
+                        wallet.deposit(&cash_notes)?;
+
+                        for cn in cash_notes {
+                            println!(
+                                "CashNote received with {:?}, value: {}",
+                                cn.unique_pubkey(),
+                                cn.value()?
+                            );
+
+                            if let Some(ref path) = log_cash_notes {
+                                // create cash_notes dir
+                                let unique_pubkey_name =
+                                    *SpendAddress::from_unique_pubkey(&cn.unique_pubkey())
+                                        .xorname();
+                                let unique_pubkey_file_name =
+                                    format!("{}.cash_note", hex::encode(unique_pubkey_name));
+
+                                let cash_note_file_path = path.join(unique_pubkey_file_name);
+                                println!("Writing cash note to: {}", cash_note_file_path.display());
+
+                                let hex = cn.to_hex()?;
+                                fs::write(cash_note_file_path, &hex)?;
                             }
                         }
-                        Transfer::NetworkRoyalties(_) => {
-                            // we should always send Transfers as they are lighter weight.
-                            warn!("Unencrypted network royalty received via TransferNotification. Ignoring it.");
-                        }
+                        println!(
+                            "New balance after depositing received CashNote/s: {}",
+                            wallet.balance()
+                        );
                     }
                 }
 
-                wallet.deposit(&cash_notes)?;
-
-                for cn in cash_notes {
-                    println!(
-                        "CashNote received with {:?}, value: {}",
-                        cn.unique_pubkey(),
-                        cn.value()?
-                    );
-
-                    if let Some(ref path) = log_cash_notes {
-                        // create cash_notes dir
-                        let unique_pubkey_name =
-                            *SpendAddress::from_unique_pubkey(&cn.unique_pubkey()).xorname();
-                        let unique_pubkey_file_name =
-                            format!("{}.cash_note", hex::encode(unique_pubkey_name));
-
-                        let cash_note_file_path = path.join(unique_pubkey_file_name);
-                        println!("Writing cash note to: {}", cash_note_file_path.display());
-
-                        let hex = cn.to_hex()?;
-                        fs::write(cash_note_file_path, &hex)?;
-                    }
-                }
-                println!(
-                    "New balance after depositing received CashNote/s: {}",
-                    wallet.balance()
-                );
                 println!();
             }
             Ok(_) => continue,

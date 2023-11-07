@@ -11,7 +11,7 @@ use bls::PublicKey;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
-use sn_transfers::{Transfer, UniquePubkey};
+use sn_transfers::{CashNoteRedemption, UniquePubkey};
 use tokio::sync::broadcast;
 
 const NODE_EVENT_CHANNEL_SIZE: usize = 500;
@@ -77,8 +77,8 @@ pub enum NodeEvent {
     TransferNotif {
         /// Public key the transfer notification is about
         key: PublicKey,
-        /// The transfers
-        transfers: Vec<Transfer>,
+        /// The cashnote redemptions of the transfers
+        cashnote_redemptions: Vec<CashNoteRedemption>,
     },
 }
 
