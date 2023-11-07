@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.17](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.16...sn_protocol-v0.8.17) - 2023-11-07
+
+### Fixed
+- do not allocate while serializing PrettyPrintRecordKey
+
+### Other
+- rename test function and spell correction
+- *(cli)* add more tests to chunk manager for unpaid paid dir refactor
+- *(cli)* add tests for `ChunkManager`
+
 ## [0.8.16](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.15...sn_protocol-v0.8.16) - 2023-11-07
 
 ### Other
