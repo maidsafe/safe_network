@@ -648,7 +648,7 @@ mod tests {
     use rand::{thread_rng, Rng};
     use rayon::prelude::IntoParallelIterator;
     use sn_logging::LogBuilder;
-    use sn_protocol::test_utils::assert_lists;
+    use sn_protocol::test_utils::assert_list_eq;
     use tempfile::TempDir;
 
     #[test]
@@ -1242,7 +1242,7 @@ mod tests {
         }
 
         assert!(new_chunks_from_dir.contains(&removed_chunk));
-        assert_lists(old_chunks_from_dir, new_chunks_from_dir);
+        assert_list_eq(old_chunks_from_dir, new_chunks_from_dir);
         assert!(metadata_path.exists());
 
         Ok(())
@@ -1325,7 +1325,7 @@ mod tests {
                 new_unpaid_chunks.insert(chunk_xorname_from_filename);
             }
         }
-        assert_lists(new_unpaid_chunks, old_unpaid_chunks);
+        assert_list_eq(new_unpaid_chunks, old_unpaid_chunks);
 
         // now marking the chunk as verified should complete the entire file
         // this is intended. Lack of metadata file would make us believe that all the chunks were paid.
