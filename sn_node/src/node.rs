@@ -504,7 +504,7 @@ impl Node {
         let resp = match cmd {
             Cmd::Replicate { holder, keys } => {
                 trace!(
-                    "Received replication list from {holder:?} of {} keys {keys:?}",
+                    "Received replication list from {holder:?} of {} keys",
                     keys.len()
                 );
 
