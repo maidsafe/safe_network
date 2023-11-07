@@ -7,10 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
+use rand::{thread_rng, Rng};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::{
     fs::File,
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
     process::{exit, Command},
     time::Duration,
 };
@@ -52,17 +54,19 @@ fn safe_files_download() {
     }
 }
 
-fn create_file(size_mb: u64) -> tempfile::TempDir {
-    let dir = tempdir().expect("Failed to create temporary directory");
+fn generate_file(path: &PathBuf, file_size_mb: usize) {
+    let mut file = File::create(path).expect("Failed to create file");
+    let mut rng = thread_rng();
 
-    let time_stamp = chrono::Local::now().format("%H-%M-%S_%6f").to_string();
-    let file_path = dir.path().join(format!("tempfile_{time_stamp}"));
-
-    let mut file = File::create(file_path).expect("Failed to create file");
-    let data = vec![0u8; (size_mb * 1024 * 1024) as usize]; // Create a vector with size_mb MB of data
-    file.write_all(&data).expect("Failed to write to file");
-
-    dir
+    // can create [u8; 32] max at time. Thus each mb has 1024*32 such small chunks
+    let n_small_chunks = file_size_mb * 1024 * 32;
+    for _ in 0..n_small_chunks {
+        let random_data: [u8; 32] = rng.gen();
+        file.write_all(&random_data)
+            .expect("Failed to write to file");
+    }
+    let size = file.metadata().expect("Failed to get metadata").len() as f64 / (1024 * 1024) as f64;
+    assert_eq!(file_size_mb as f64, size);
 }
 
 fn fund_cli_wallet() {
@@ -81,11 +85,21 @@ fn criterion_benchmark(c: &mut Criterion) {
         exit(1);
     }
 
-    let sizes = [1, 10]; // File sizes in MB. Add more sizes as needed
+    let sizes: [u64; 2] = [1, 10]; // File sizes in MB. Add more sizes as needed
 
     for size in sizes.iter() {
-        let dir = create_file(*size);
-        let dir_path = dir.path().to_str().unwrap();
+        let temp_dir = tempdir().expect("Failed to create temp dir");
+        let temp_dir_path = temp_dir.into_path();
+        let temp_dir_path_str = temp_dir_path.to_str().unwrap();
+
+        // create 23 random files. This is to keep the benchmark results consistent with prior runs. The change to make
+        // use of ChunkManager means that we don't upload the same file twice and the `uploaded_files` file is now read
+        // as a set and we don't download the same file twice. Hence create 23 files as counted from the logs
+        // pre ChunkManager change.
+        (0..23).into_par_iter().for_each(|idx| {
+            let path = temp_dir_path.join(format!("random_file_{size}_mb_{idx}"));
+            generate_file(&path, *size as usize);
+        });
         fund_cli_wallet();
 
         // Wait little bit for the fund to be settled.
@@ -103,7 +117,9 @@ fn criterion_benchmark(c: &mut Criterion) {
         // Set the throughput to be reported in terms of bytes
         group.throughput(Throughput::Bytes(size * 1024 * 1024));
         let bench_id = format!("safe files upload {}mb", size);
-        group.bench_function(bench_id, |b| b.iter(|| safe_files_upload(dir_path)));
+        group.bench_function(bench_id, |b| {
+            b.iter(|| safe_files_upload(temp_dir_path_str))
+        });
         group.finish();
     }
 
