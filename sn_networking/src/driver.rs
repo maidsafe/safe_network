@@ -566,18 +566,14 @@ impl SwarmDriver {
         let event_sender = self.event_sender.clone();
         let capacity = event_sender.capacity();
 
-        if capacity == 0 {
-            warn!(
-                "NetworkEvent channel is full. Dropping NetworkEvent: {:?}",
-                event
-            );
-
-            // Lets error out just now.
-            return;
-        }
-
         // push the event off thread so as to be non-blocking
         let _handle = tokio::spawn(async move {
+            if capacity == 0 {
+                warn!(
+                    "NetworkEvent channel is full. Await capacity to send: {:?}",
+                    event
+                );
+            }
             if let Err(error) = event_sender.send(event).await {
                 error!("SwarmDriver failed to send event: {}", error);
             }

@@ -45,7 +45,7 @@ use tokio::{
 pub const TRANSFER_NOTIF_TOPIC: &str = "TRANSFER_NOTIFICATION";
 
 /// Interval to trigger replication on a random close_group peer
-const PERIODIC_REPLICATION_INTERVAL: Duration = Duration::from_secs(10);
+const PERIODIC_REPLICATION_INTERVAL: Duration = Duration::from_secs(100);
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
