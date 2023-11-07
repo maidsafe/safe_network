@@ -2033,6 +2033,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.96.35](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.34...sn_node-v0.96.35) - 2023-11-07
+
+### Other
+- move sn_faucet to its own crate
+- move sn_node_rpc_client to its own crate
+- move protobuf definition to sn_protocol
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
