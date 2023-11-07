@@ -154,7 +154,7 @@ async fn upload_files(
     let mut chunk_manager = ChunkManager::new(root_dir);
     chunk_manager.chunk_path(&files_path)?;
 
-    // Return early if we hav no files to pay/verify
+    // Return early if we have no files to pay/verify
     if chunk_manager.is_unpaid_chunks_empty() && chunk_manager.is_paid_chunks_empty() {
         println!("All files were already uploaded and verified");
         println!("**************************************");

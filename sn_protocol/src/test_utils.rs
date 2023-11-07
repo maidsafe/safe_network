@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 /// Assert any collection/iterator even if their orders do not match.
-pub fn assert_lists<I, J, K>(a: I, b: J)
+pub fn assert_list_eq<I, J, K>(a: I, b: J)
 where
     K: Eq + Clone,
     I: IntoIterator<Item = K>,
