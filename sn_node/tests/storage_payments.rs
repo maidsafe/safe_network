@@ -206,7 +206,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         .await?;
 
     files_api
-        .pay_and_upload_bytes_test(*file_addr.xorname(), chunks)
+        .pay_and_upload_bytes_test(*file_addr.xorname(), chunks, true)
         .await?;
 
     files_api.read_bytes(file_addr, None, false).await?;

@@ -404,7 +404,7 @@ fn store_chunks_task(
             let chunks_len = chunks.len();
 
             let (addr, cost) = match file_api
-                .pay_and_upload_bytes_test(chunk_name, chunks.clone())
+                .pay_and_upload_bytes_test(chunk_name, chunks.clone(), true)
                 .await
             {
                 Ok((addr, storage_cost, royalties_fees)) => {

@@ -51,7 +51,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     println!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
 
     let (_file_addr, rewards_paid, _royalties_fees) = files_api
-        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
+        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, true)
         .await?;
 
     println!("Paid {rewards_paid:?} total rewards for the chunks");
@@ -127,7 +127,7 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
         spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string(), royalties_pk, true);
 
     let (_, storage_cost, royalties_cost) = files_api
-        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
+        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, false)
         .await?;
 
     println!("Random chunks stored, paid {storage_cost}/{royalties_cost}");
@@ -136,7 +136,10 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     let expected = royalties_cost.as_nano() as usize;
 
     println!("Number of notifications received by node: {count}");
-    assert!(count >= expected, "Not enough notifications received");
+    assert_eq!(
+        count, expected,
+        "Unexpected number of notifications received"
+    );
 
     Ok(())
 }
@@ -163,12 +166,11 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let (_, cost) = client
         .create_and_pay_for_register(register_addr, &mut wallet_client, false)
         .await?;
-
     println!("Random Register created, paid {cost}");
 
     let count = handle.await??;
     println!("Number of notifications received by node: {count}");
-    assert!(count >= 1, "Not enough notifications received");
+    assert_eq!(count, 1, "Unexpected number of notifications received");
 
     Ok(())
 }
@@ -208,7 +210,7 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     let num_of_chunks = chunks.len();
     println!("Paying for {num_of_chunks} random addresses...");
     let (_, storage_cost, royalties_cost) = files_api
-        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
+        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, false)
         .await?;
     println!("Random chunks stored, paid {storage_cost}/{royalties_cost}");
 
@@ -220,7 +222,10 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     let count_3 = handle_3.await??;
     println!("Number of notifications received by node #3: {count_3}");
 
-    assert!(count_1 >= expected, "Not enough notifications received");
+    assert_eq!(
+        count_1, expected,
+        "Unexpected number of notifications received"
+    );
     assert_eq!(count_2, 0, "Notifications were not expected");
     assert_eq!(count_3, 0, "Notifications were not expected");
 
