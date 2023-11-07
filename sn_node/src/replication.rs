@@ -26,13 +26,13 @@ impl Node {
     pub(crate) async fn try_interval_replication(&self) -> Result<()> {
         let start = std::time::Instant::now();
         // Already contains self_peer_id
-        let all_peers = self.network.get_all_local_peers().await?;
+        let all_cloest_k_peers = self.network.get_closest_k_value_local_peers().await?;
 
         // Do not carry out replication if not many peers present.
-        if all_peers.len() < K_VALUE.into() {
+        if all_cloest_k_peers.len() < K_VALUE.into() {
             trace!(
                 "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                all_peers.len()
+                all_cloest_k_peers.len()
             );
             return Ok(());
         }
@@ -45,7 +45,11 @@ impl Node {
         #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
         let all_records = self.network.get_all_local_record_addresses().await?;
 
-        for peer_id in all_peers {
+        debug!(
+            "Informing all peers of our records. {:?} peers will be informed",
+            all_cloest_k_peers.len()
+        );
+        for peer_id in all_cloest_k_peers {
             self.send_replicate_cmd_without_wait(&our_address, &peer_id, all_records.clone())?;
         }
 
