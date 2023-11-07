@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699359272023,
+  "lastUpdate": 1699359492825,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "f49082f6a0862436416fb1bdac6b5ff4847a5a60",
-          "message": "feat: append peer id to node's default root dir\n\nBREAKING CHANGE: The default root directory for the node will now have the node's peer ID appended\nto its path.\n\nUsing the peer ID facilitates running multiple node processes on a single machine, without the need\nto explicitly use the `--root-dir` argument for each node to specify its own root directory.\nPreviously, if they didn't do that, all the nodes would share the same record store.",
-          "timestamp": "2023-06-27T17:14:04Z",
-          "tree_id": "8fadc9f32127cb75d9c0de4cafd90b095c0fdc5f",
-          "url": "https://github.com/maidsafe/safe_network/commit/f49082f6a0862436416fb1bdac6b5ff4847a5a60"
-        },
-        "date": 1687890018623,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 17.49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 58,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "953f363a2d1157d51a74a498b3e19aead0b65d3d",
+          "message": "feat(ci): release faucet and rpc binaries",
+          "timestamp": "2023-11-07T11:02:38Z",
+          "tree_id": "f6b822acc52efd18347540461e2a2e6f0b667f57",
+          "url": "https://github.com/maidsafe/safe_network/commit/953f363a2d1157d51a74a498b3e19aead0b65d3d"
+        },
+        "date": 1699359491967,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
