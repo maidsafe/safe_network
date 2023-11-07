@@ -46,10 +46,14 @@ build-release-artifacts arch:
     cross build --release --features=network-contacts --target $arch --bin safe
     cross build --release --features=network-contacts --target $arch --bin safenode
     cross build --release --target $arch --bin testnet
+    cross build --release --target $arch --bin faucet
+    cross build --release --target $arch --bin safenode_rpc_client
   else
     cargo build --release --features=network-contacts --target $arch --bin safe
     cargo build --release --features=network-contacts --target $arch --bin safenode
     cargo build --release --target $arch --bin testnet
+    cargo build --release --target $arch --bin faucet
+    cargo build --release --target $arch --bin safenode_rpc_client
   fi
 
   find target/$arch/release -maxdepth 1 -type f -exec cp '{}' artifacts \;
@@ -102,8 +106,14 @@ package-release-assets bin version="":
     testnet)
       crate="sn_testnet"
       ;;
+    faucet)
+      crate="sn_faucet"
+      ;;
+    safenode_rpc_client)
+      crate="sn_node_rpc_client"
+      ;;
     *)
-      echo "The only supported binaries are safe, safenode or testnet."
+      echo "The only supported binaries are safe, safenode, testnet, faucet, safenode_rpc_client"
       exit 1
       ;;
   esac
@@ -135,6 +145,8 @@ upload-release-assets:
     "sn_cli"
     "sn_node"
     "sn_testnet"
+    "sn_faucet"
+    "sn_node_rpc_client"
   )
 
   commit_msg=$(git log -1 --pretty=%B)
@@ -163,8 +175,16 @@ upload-release-assets:
             bin_name="testnet"
             bucket="sn-testnet"
             ;;
+          sn_faucet)
+            bin_name="faucet"
+            bucket="sn-faucet"
+            ;;
+          sn_node_rpc_client)
+            bin_name="safenode_rpc_client"
+            bucket="sn-node-rpc-client"
+            ;;
           *)
-            echo "The only supported binaries are safe, safenode or testnet."
+            echo "The only supported binaries are safe, safenode, testnet, faucet, safenode_rpc_client"
             exit 1
             ;;
         esac
@@ -202,8 +222,14 @@ upload-release-assets-to-s3 bin_name:
     testnet)
       bucket="sn-testnet"
       ;;
+    faucet)
+      bucket="sn-faucet"
+      ;;
+    safenode_rpc_client)
+      bucket="sn-node-rpc-client"
+      ;;
     *)
-      echo "The only supported binaries are safe, safenode or testnet"
+      echo "The only supported binaries are safe, safenode, testnet, faucet, safenode_rpc_client"
       exit 1
       ;;
   esac

@@ -111,6 +111,8 @@ jobs:
           just package-release-assets "safe"
           just package-release-assets "safenode"
           just package-release-assets "testnet"
+          just package-release-assets "faucet"
+          just package-release-assets "safenode_rpc_client"
       - uses: actions/upload-artifact@main
         with:
           name: packaged_binaries
