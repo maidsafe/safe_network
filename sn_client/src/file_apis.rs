@@ -285,12 +285,13 @@ impl Files {
     }
 
     /// Used for testing
-    /// Uploads bytes, loops over verification and repays if needed.
+    /// Uploads bytes, loops over verification and repays if needed,
+    /// verifying chunks were stored if `verify` was set.
     pub async fn pay_and_upload_bytes_test(
         &self,
         file_addr: XorName,
         chunks: Vec<(XorName, PathBuf)>,
-        // verify: bool,
+        verify: bool,
     ) -> Result<(NetworkAddress, NanoTokens, NanoTokens)> {
         // initial payment
         let (mut storage_cost, mut royalties_fees) = self
@@ -308,6 +309,12 @@ impl Files {
             let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
             self.get_local_payment_and_upload_chunk(chunk, false, false)
                 .await?;
+        }
+
+        let net_addr = NetworkAddress::ChunkAddress(ChunkAddress::new(file_addr));
+
+        if !verify {
+            return Ok((net_addr, storage_cost, royalties_fees));
         }
 
         let mut failed_chunks = self.verify_uploaded_chunks(chunks, BATCH_SIZE).await?;
@@ -351,11 +358,7 @@ impl Files {
                 .await?;
         }
 
-        Ok((
-            NetworkAddress::ChunkAddress(ChunkAddress::new(file_addr)),
-            storage_cost,
-            royalties_fees,
-        ))
+        Ok((net_addr, storage_cost, royalties_fees))
     }
 
     // Gets and decrypts chunks from the network using nothing else but the data map.

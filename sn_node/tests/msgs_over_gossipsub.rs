@@ -67,7 +67,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
 
                 let mut count = 0;
 
-                let _ = timeout(Duration::from_millis(30000), async {
+                let _ = timeout(Duration::from_secs(10), async {
                     let mut stream = response.into_inner();
                     while let Some(Ok(e)) = stream.next().await {
                         match NodeEvent::from_bytes(&e.event) {
@@ -77,9 +77,6 @@ async fn msgs_over_gossipsub() -> Result<()> {
                                     String::from_utf8(msg.to_vec()).unwrap()
                                 );
                                 count += 1;
-                                if count == NODE_COUNT - NODES_SUBSCRIBED {
-                                    break;
-                                }
                             }
                             Ok(_) => { /* ignored */ }
                             Err(_) => {
@@ -96,7 +93,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
             subs_handles.push((node_index, addr, handle));
         }
 
-        tokio::time::sleep(Duration::from_millis(3000)).await;
+        tokio::time::sleep(Duration::from_secs(3)).await;
 
         // have all other nodes to publish each a different msg to that same topic
         let mut other_nodes = all_nodes_addrs.clone();
