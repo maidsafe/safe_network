@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699354202632,
+  "lastUpdate": 1699354436666,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "b9e4aade04e8a51908b2fb77365478a1bc819aad",
-          "message": "ci: benchmark client download",
-          "timestamp": "2023-06-27T00:28:01Z",
-          "tree_id": "fff25c43765ffc56a4e09c077a7b2441d5be7621",
-          "url": "https://github.com/maidsafe/safe_network/commit/b9e4aade04e8a51908b2fb77365478a1bc819aad"
-        },
-        "date": 1687830185687,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 15.37,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 64,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "92c30a4a06d00b12c98a5b49a56e6f5b0747616d",
+          "message": "chore: change extension to small letters\n\n- causes error with the release flow",
+          "timestamp": "2023-11-07T11:26:16+01:00",
+          "tree_id": "3d8e206d9345b01cc5791b020255829f11ddda97",
+          "url": "https://github.com/maidsafe/safe_network/commit/92c30a4a06d00b12c98a5b49a56e6f5b0747616d"
+        },
+        "date": 1699354435925,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57,
             "unit": "MB"
           }
         ]
