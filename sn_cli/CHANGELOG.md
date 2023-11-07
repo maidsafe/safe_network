@@ -6,6 +6,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.51...sn_cli-v0.85.0) - 2023-11-07
+
+### Added
+- *(cli)* store paid and upaid chunks separately
+- *(cli)* use ChunkManager during the upload process
+- *(cli)* implement ChunkManager to re-use already chunked files
+
+### Fixed
+- *(cli)* keep track of files that have been completely uploaded
+- *(cli)* get bytes from OsStr by first converting it into lossy string
+- *(client)* [**breaking**] make `Files::chunk_file` into an associated function
+- *(upload)* don't ignore file if filename cannot be converted from OsString to String
+
+### Other
+- rename test function and spell correction
+- *(cli)* add more tests to chunk manager for unpaid paid dir refactor
+- *(cli)* add some docs to ChunkManager
+- *(cli)* add tests for `ChunkManager`
+- *(cli)* move chunk management to its own module
+
+## [0.84.51](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.50...sn_cli-v0.84.51) - 2023-11-07
+
+### Other
+- update dependencies
+
+## [0.84.50](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.49...sn_cli-v0.84.50) - 2023-11-07
+
+### Other
+- update dependencies
+
+## [0.84.49](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.48...sn_cli-v0.84.49) - 2023-11-06
+
+### Other
+- update dependencies
+
+## [0.84.48](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.47...sn_cli-v0.84.48) - 2023-11-06
+
+### Other
+- update dependencies
+
+## [0.84.47](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.46...sn_cli-v0.84.47) - 2023-11-06
+
+### Other
+- update dependencies
+
+## [0.84.46](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.45...sn_cli-v0.84.46) - 2023-11-06
+
+### Other
+- update dependencies
+
+## [0.84.45](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.44...sn_cli-v0.84.45) - 2023-11-06
+
+### Added
+- *(deps)* upgrade libp2p to 0.53
+
 ## [0.84.44](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.84.43...sn_cli-v0.84.44) - 2023-11-03
 
 ### Other

@@ -6,7 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::wallet::{ChunkedFile, BATCH_SIZE};
+mod chunk_manager;
+
+pub(crate) use chunk_manager::ChunkManager;
+
+use super::wallet::BATCH_SIZE;
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{
@@ -15,21 +19,18 @@ use color_eyre::{
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use libp2p::futures::future::join_all;
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::{Client, Error as ClientError, Files};
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
 use std::{
-    collections::BTreeMap,
+    collections::BTreeSet,
     fs,
     io::prelude::*,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
-use tempfile::tempdir;
 use tokio::task::JoinHandle;
-use walkdir::WalkDir;
 use xor_name::XorName;
 
 #[derive(Parser, Debug)]
@@ -74,7 +75,7 @@ pub enum FilesCmds {
 pub(crate) async fn files_cmds(
     cmds: FilesCmds,
     client: Client,
-    wallet_dir_path: &Path,
+    root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
@@ -86,7 +87,7 @@ pub(crate) async fn files_cmds(
             upload_files(
                 path,
                 client,
-                wallet_dir_path,
+                root_dir,
                 verify_store,
                 batch_size,
                 show_holders,
@@ -109,27 +110,21 @@ pub(crate) async fn files_cmds(
                 );
             }
 
-            let file_api: Files = Files::new(client, wallet_dir_path.to_path_buf());
+            let file_api: Files = Files::new(client, root_dir.to_path_buf());
 
             match (file_name, file_addr) {
                 (Some(name), Some(address)) => {
                     let bytes = hex::decode(address).expect("Input address is not a hex string");
-                    download_file(
-                        &file_api,
-                        &XorName(
-                            bytes
-                                .try_into()
-                                .expect("Failed to parse XorName from hex string"),
-                        ),
-                        &name,
-                        wallet_dir_path,
-                        show_holders,
-                    )
-                    .await
+                    let xor_name = XorName(
+                        bytes
+                            .try_into()
+                            .expect("Failed to parse XorName from hex string"),
+                    );
+                    download_file(&file_api, &xor_name, &name, root_dir, show_holders).await
                 }
                 _ => {
                     println!("Attempting to download all files uploaded by the current user...");
-                    download_files(&file_api, wallet_dir_path, show_holders).await?
+                    download_files(&file_api, root_dir, show_holders).await?
                 }
             }
         }
@@ -137,84 +132,12 @@ pub(crate) async fn files_cmds(
     Ok(())
 }
 
-/// Chunk all the files in the provided `files_path`
-/// `chunks_dir` is used to store the results of the self-encryption process
-pub(super) async fn chunk_path(
-    file_api: &Files,
-    files_path: &Path,
-    chunks_dir: &Path,
-) -> Result<BTreeMap<XorName, ChunkedFile>> {
-    trace!("Starting to chunk {files_path:?} now.");
-    let now = Instant::now();
-
-    let files_to_chunk = WalkDir::new(files_path)
-        .into_iter()
-        .flatten()
-        .filter_map(|entry| {
-            if !entry.file_type().is_file() {
-                return None;
-            }
-
-            if let Some(file_name) = entry.file_name().to_str() {
-                Some((file_name.to_string(), entry.into_path()))
-            } else {
-                println!(
-                    "Skipping file {:?} as it is not valid UTF-8.",
-                    entry.file_name()
-                );
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-
-    let total_files = files_to_chunk.len();
-    let progress_bar = get_progress_bar(total_files as u64)?;
-    progress_bar.println(format!("Chunking {total_files} files..."));
-
-    let chunked_files = files_to_chunk
-        .par_iter()
-        .filter_map(|(file_name, path)| {
-            // Each file using individual dir for temp SE chunks.
-            let file_chunks_dir = {
-                let file_chunks_dir = chunks_dir.join(file_name);
-                match fs::create_dir_all(&file_chunks_dir) {
-                    Ok(_) => file_chunks_dir,
-                    Err(err) => {
-                        trace!("Failed to create temp folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
-                        chunks_dir.to_path_buf()
-                    }
-                }
-            };
-
-            match file_api.chunk_file(path, &file_chunks_dir) {
-                Ok((file_addr, _size, chunks)) => {
-                    progress_bar.clone().inc(1);
-                    Some((file_addr, ChunkedFile {file_name: file_name.clone(), chunks}))
-                }
-                Err(err) => {
-                    println!("Skipping file {path:?} as it could not be chunked: {err:?}");
-                    None
-                }
-            }
-        })
-        .collect::<BTreeMap<_, _>>();
-
-    if chunked_files.is_empty() {
-        bail!("The provided path does not contain any file. Please check your path!\nExiting...");
-    }
-
-    progress_bar.finish_and_clear();
-    debug!("It took {:?} to chunk all the files", now.elapsed());
-
-    Ok(chunked_files)
-}
-
 /// Given a file or directory, upload either the file or all the files in the directory. Optionally
 /// verify if the data was stored successfully.
 async fn upload_files(
     files_path: PathBuf,
     client: Client,
-    wallet_dir_path: &Path,
+    root_dir: &Path,
     verify_store: bool,
     batch_size: usize,
     show_holders: bool,
@@ -224,36 +147,43 @@ async fn upload_files(
         files_path
     );
 
-    let file_api: Files = Files::new(client.clone(), wallet_dir_path.to_path_buf());
+    let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
     if file_api.wallet()?.balance().is_zero() {
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
+    let mut chunk_manager = ChunkManager::new(root_dir);
+    chunk_manager.chunk_path(&files_path)?;
 
-    // Temp folder to hold SE chunks, which is cleaned up automatically once out of scope.
-    let temp_dir = tempdir()?;
+    // Return early if we have no files to pay/verify
+    if chunk_manager.is_unpaid_chunks_empty() && chunk_manager.is_paid_chunks_empty() {
+        println!("All files were already uploaded and verified");
+        println!("**************************************");
+        println!("*          Uploaded Files            *");
+        println!("**************************************");
+        for (file_name, addr) in chunk_manager.verified_files() {
+            if let Some(file_name) = file_name.to_str() {
+                println!("\"{file_name}\" {addr:x}");
+                info!("Uploaded {file_name} to {addr:x}");
+            } else {
+                println!("\"{file_name:?}\" {addr:x}");
+                info!("Uploaded {file_name:?} to {addr:x}");
+            }
+        }
+        return Ok(());
+    }
 
-    // Payment shall always be verified.
-    let chunked_files = chunk_path(&file_api, &files_path, temp_dir.path()).await?;
+    let unpaid_chunks_to_upload = chunk_manager.get_unpaid_chunks();
+    let unpaid_chunks_to_upload_len = unpaid_chunks_to_upload.len();
 
-    let uploaded_file_info = chunked_files
-        .iter()
-        .map(|(file_addr, chunked_file)| (*file_addr, chunked_file.file_name.clone()))
-        .collect::<Vec<_>>();
-
-    let chunks_to_upload = chunked_files
-        .into_iter()
-        .flat_map(|(_, chunk)| chunk.chunks)
-        .collect::<Vec<_>>();
-
-    let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
-    println!("Input was split into {} chunks", chunks_to_upload.len());
+    let progress_bar = get_progress_bar(unpaid_chunks_to_upload.len() as u64)?;
+    println!("Input was split into {unpaid_chunks_to_upload_len} chunks",);
     println!("Will now attempt to upload them...");
 
     let mut total_cost = NanoTokens::zero();
     let mut final_balance = file_api.wallet()?.balance();
     let now = Instant::now();
 
-    let chunks_batches = chunks_to_upload.chunks(batch_size);
+    let chunks_batches = unpaid_chunks_to_upload.chunks(batch_size);
     let verify_as_we_upload = verify_store && chunks_batches.len() == 1;
 
     for chunks_batch in chunks_batches {
@@ -294,32 +224,26 @@ async fn upload_files(
         {
             let _ = result?;
         }
+        // mark the chunks as paid
+        chunk_manager.mark_paid(chunks_batch.iter().map(|(xor, _)| *xor));
     }
 
     progress_bar.finish_and_clear();
     let elapsed = now.elapsed();
     println!(
-        "Uploaded {} chunks in {}",
-        chunks_to_upload.len(),
+        "Uploaded {unpaid_chunks_to_upload_len} chunks in {}",
         format_elapsed_time(elapsed)
     );
     info!(
-        "Uploaded {} chunks in {}",
-        chunks_to_upload.len(),
+        "Uploaded {unpaid_chunks_to_upload_len} chunks in {}",
         format_elapsed_time(elapsed)
     );
     println!("**************************************");
     println!("*          Payment Details           *");
     println!("**************************************");
-    println!(
-        "Made payment of {total_cost} for {} chunks",
-        chunks_to_upload.len()
-    );
+    println!("Made payment of {total_cost} for {unpaid_chunks_to_upload_len} chunks",);
     println!("New wallet balance: {final_balance}");
-    info!(
-        "Made payment of {total_cost} for {} chunks",
-        chunks_to_upload.len()
-    );
+    info!("Made payment of {total_cost} for {unpaid_chunks_to_upload_len} chunks",);
     info!("New wallet balance: {final_balance}");
 
     // If we are not verifying, we can skip this
@@ -328,37 +252,41 @@ async fn upload_files(
         println!("*            Verification            *");
         println!("**************************************");
 
-        let mut data_to_verify_or_repay = chunks_to_upload;
-        while !data_to_verify_or_repay.is_empty() {
-            trace!(
-                "Verifying and potentially topping up payment of {:?} chunks",
-                data_to_verify_or_repay.len()
-            );
-            data_to_verify_or_repay = verify_and_repay_if_needed(
+        while !chunk_manager.is_paid_chunks_empty() {
+            verify_and_repay_if_needed(
                 file_api.clone(),
-                data_to_verify_or_repay,
+                &mut chunk_manager,
                 batch_size,
                 show_holders,
             )
             .await?;
         }
+    } else {
+        // for safe measure, mark all as paid too
+        chunk_manager.mark_paid_all();
+        chunk_manager.mark_verified_all();
     }
-
     progress_bar.finish_and_clear();
 
     println!("**************************************");
     println!("*          Uploaded Files            *");
     println!("**************************************");
-    let file_names_path = wallet_dir_path.join("uploaded_files");
+    let file_names_path = root_dir.join("uploaded_files");
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .append(true)
         .open(file_names_path)?;
-    for (addr, file_name) in uploaded_file_info.iter() {
-        println!("\"{}\" {:x}", file_name, addr);
-        info!("Uploaded {} to {:x}", file_name, addr);
-        writeln!(file, "{:x}: {}", addr, file_name)?;
+    for (file_name, addr) in chunk_manager.verified_files() {
+        if let Some(file_name) = file_name.to_str() {
+            println!("\"{file_name}\" {addr:x}");
+            info!("Uploaded {file_name} to {addr:x}");
+            writeln!(file, "{addr:x}: {file_name}")?;
+        } else {
+            println!("\"{file_name:?}\" {addr:x}");
+            info!("Uploaded {file_name:?} to {addr:x}");
+            writeln!(file, "{addr:x}: {file_name:?}")?;
+        }
     }
     file.flush()?;
 
@@ -420,22 +348,23 @@ async fn upload_chunk(
 /// Return a list of files which had to be repaid, but are not yet reverified.
 async fn verify_and_repay_if_needed(
     file_api: Files,
-    chunks_paths: Vec<(XorName, PathBuf)>,
+    chunk_manager: &mut ChunkManager,
     batch_size: usize,
     show_holders: bool,
-) -> Result<Vec<(XorName, PathBuf)>> {
-    let total_chunks = chunks_paths.len();
+) -> Result<()> {
+    let unverified_chunks = chunk_manager.get_paid_chunks();
+    let unverified_chunks_len = unverified_chunks.len();
 
-    println!("{total_chunks} chunks to be checked and repaid if required");
+    println!("{unverified_chunks_len} chunks to be checked and repaid if required");
+    trace!("Verifying and potentially topping up payment of {unverified_chunks_len:?} chunks");
 
-    let progress_bar = get_progress_bar(total_chunks as u64)?;
+    let progress_bar = get_progress_bar(unverified_chunks_len as u64)?;
     let now = Instant::now();
-    let mut failed_chunks = Vec::new();
-    for chunks_batch in chunks_paths.chunks(batch_size) {
+    for chunks_batch in unverified_chunks.chunks(batch_size) {
         // now we try and get batched chunks, keep track of any that fail
         // Iterate over each uploaded chunk
         let mut verify_handles = Vec::new();
-        for (name, path) in chunks_batch.iter().cloned() {
+        for (name, _) in chunks_batch.iter().cloned() {
             let file_api = file_api.clone();
             let pb = progress_bar.clone();
 
@@ -446,7 +375,7 @@ async fn verify_and_repay_if_needed(
                 let res = file_api.client().verify_chunk_stored(chunk_address).await;
 
                 pb.inc(1);
-                Ok::<_, Error>(((chunk_address, path), res.is_err()))
+                Ok::<_, Error>((chunk_address, res.is_ok()))
             });
             verify_handles.push(handle);
         }
@@ -454,46 +383,46 @@ async fn verify_and_repay_if_needed(
         // Await all fetch tasks and collect the results
         let verify_results = join_all(verify_handles).await;
 
-        // Check for any errors during fetch
+        // Mark the verified chunks
+        let mut verified_chunks = BTreeSet::new();
         for result in verify_results {
-            if let ((chunk_addr, path), true) = result?? {
-                warn!("Failed to fetch a chunk {chunk_addr:?}");
-                // This needs to be NetAddr to allow for repayment
-                failed_chunks.push((chunk_addr, path));
+            match result?? {
+                (chunk_addr, true) => {
+                    verified_chunks.insert(*chunk_addr.xorname());
+                }
+                (chunk_addr, false) => {
+                    warn!("Failed to fetch a chunk {chunk_addr:?}");
+                }
             }
         }
+        chunk_manager.mark_verified(verified_chunks.into_iter());
     }
 
     progress_bar.finish_and_clear();
     let elapsed = now.elapsed();
-    println!("Verified {total_chunks:?} chunks in {elapsed:?}");
+    println!("Verified {unverified_chunks_len:?} chunks in {elapsed:?}");
     let now = Instant::now();
 
-    let total_failed_chunks = failed_chunks
-        .iter()
-        .map(|(addr, path)| (*addr.xorname(), path.clone()))
-        .collect::<Vec<_>>();
-
-    if total_failed_chunks.is_empty() {
+    if chunk_manager.is_paid_chunks_empty() {
+        chunk_manager.mark_verified_all();
         println!("Verification complete: all chunks paid and stored");
-        return Ok(total_failed_chunks);
     }
 
-    let num_of_failed_chunks = failed_chunks.len();
-    println!("{num_of_failed_chunks} chunks were not stored. Repaying them in batches.");
-    let progress_bar = get_progress_bar(total_chunks as u64)?;
-
     // If there were any failed chunks, we need to repay them
-    for failed_chunks_batch in failed_chunks.chunks(batch_size) {
+    let remaining_unverified_chunks = chunk_manager.get_paid_chunks();
+    println!(
+        "{} chunks were not stored. Repaying them in batches.",
+        remaining_unverified_chunks.len()
+    );
+    let progress_bar = get_progress_bar(remaining_unverified_chunks.len() as u64)?;
+    for failed_chunks_batch in remaining_unverified_chunks.chunks(batch_size) {
         let mut wallet = file_api.wallet()?;
 
         // Now we pay again or top up, depending on the new current store cost is
         match wallet
-            .pay_for_storage(
-                failed_chunks_batch
-                    .iter()
-                    .map(|(addr, _path)| sn_protocol::NetworkAddress::ChunkAddress(*addr)),
-            )
+            .pay_for_storage(failed_chunks_batch.iter().map(|(addr, _path)| {
+                sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*addr))
+            }))
             .await
         {
             Ok(_new_cost) => {}
@@ -506,11 +435,7 @@ async fn verify_and_repay_if_needed(
         let upload_file_api = file_api.clone();
         let ongoing_uploads = upload_chunks_in_parallel(
             upload_file_api,
-            failed_chunks_batch
-                .iter()
-                .cloned()
-                .map(|(addr, path)| (*addr.xorname(), path))
-                .collect(),
+            failed_chunks_batch.to_vec(),
             false,
             progress_bar.clone(),
             show_holders,
@@ -528,13 +453,9 @@ async fn verify_and_repay_if_needed(
     }
 
     let elapsed = now.elapsed();
-    println!(
-        "Repaid and re-uploaded {:?} chunks in {elapsed:?}",
-        chunks_paths.len()
-    );
-    println!("{total_failed_chunks:?} were not yet verified...");
+    println!("Repaid and re-uploaded {unverified_chunks_len:?} chunks in {elapsed:?}",);
 
-    Ok(total_failed_chunks)
+    Ok(())
 }
 
 async fn download_files(file_api: &Files, root_dir: &Path, show_holders: bool) -> Result<()> {
@@ -544,7 +465,7 @@ async fn download_files(file_api: &Files, root_dir: &Path, show_holders: bool) -
 
     let file = std::fs::File::open(&uploaded_files_path)?;
     let reader = BufReader::new(file);
-    let mut uploaded_files = Vec::new();
+    let mut uploaded_files = BTreeSet::new();
     for line in reader.lines() {
         let line = line?;
         let parts: Vec<&str> = line.split(": ").collect();
@@ -559,7 +480,7 @@ async fn download_files(file_api: &Files, root_dir: &Path, show_holders: bool) -
                 .expect("Failed to parse XorName from hex string");
             let xor_name = XorName(xor_name_bytes);
 
-            uploaded_files.push((xor_name, file_name.to_string()));
+            uploaded_files.insert((xor_name, file_name.to_string()));
         } else {
             println!("Skipping malformed line: {}", line);
         }

@@ -292,7 +292,6 @@ fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
     }
 
     let build_result = build_result
-        .current_dir("sn_node")
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .output()?;

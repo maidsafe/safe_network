@@ -41,6 +41,9 @@ pub enum Marker<'a> {
     /// Peer was removed from the routing table
     PeerRemovedFromRoutingTable(PeerId),
 
+    /// The number of peers in the routing table
+    PeersInRoutingTable(usize),
+
     /// Replication trigger was fired
     ReplicationTriggered,
 

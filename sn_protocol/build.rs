@@ -8,6 +8,6 @@
 // use sn_build_info::pre_build_set_git_commit_env;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::compile_protos("./src/protocol/safenode_proto/safenode.proto")?;
+    tonic_build::compile_protos("./src/safenode_proto/safenode.proto")?;
     Ok(())
 }

@@ -28,12 +28,14 @@ use futures::StreamExt;
 use libp2p::core::muxing::StreamMuxerBox;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
+#[cfg(feature = "quic")]
+use libp2p::quic;
 use libp2p::{
     autonat,
     identity::Keypair,
     kad::{self, QueryId, Record, K_VALUE},
     multiaddr::Protocol,
-    request_response::{self, Config as RequestResponseConfig, ProtocolSupport, RequestId},
+    request_response::{self, Config as RequestResponseConfig, OutboundRequestId, ProtocolSupport},
     swarm::{
         behaviour::toggle::Toggle,
         dial_opts::{DialOpts, PeerCondition},
@@ -41,8 +43,6 @@ use libp2p::{
     },
     Multiaddr, PeerId, Transport,
 };
-#[cfg(feature = "quic")]
-use libp2p_quic as quic;
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_protocol::{
@@ -313,9 +313,8 @@ impl NetworkBuilder {
 
         // RequestResponse Behaviour
         let request_response = {
-            let mut cfg = RequestResponseConfig::default();
-            let _ =
-                cfg.set_request_timeout(self.request_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S));
+            let cfg = RequestResponseConfig::default()
+                .with_request_timeout(self.request_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S));
 
             request_response::cbor::Behaviour::new(
                 [(
@@ -387,7 +386,7 @@ impl NetworkBuilder {
             .boxed();
 
         #[cfg(feature = "quic")]
-        let mut transport = libp2p_quic::tokio::Transport::new(quic::Config::new(&self.keypair))
+        let mut transport = libp2p::quic::tokio::Transport::new(quic::Config::new(&self.keypair))
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
 
@@ -452,6 +451,7 @@ impl NetworkBuilder {
             self_peer_id: peer_id,
             local: self.local,
             is_client,
+            connected_peers: 0,
             bootstrap: ContinuousBootstrap::new(),
             close_group: Default::default(),
             replication_fetcher: Default::default(),
@@ -487,6 +487,7 @@ pub struct SwarmDriver {
     pub(crate) self_peer_id: PeerId,
     pub(crate) local: bool,
     pub(crate) is_client: bool,
+    pub(crate) connected_peers: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) close_group: Vec<PeerId>,
@@ -499,7 +500,8 @@ pub struct SwarmDriver {
 
     /// Trackers for underlying behaviour related events
     pub(crate) pending_get_closest_peers: PendingGetClosest,
-    pub(crate) pending_requests: HashMap<RequestId, Option<oneshot::Sender<Result<Response>>>>,
+    pub(crate) pending_requests:
+        HashMap<OutboundRequestId, Option<oneshot::Sender<Result<Response>>>>,
     pub(crate) pending_get_record: PendingGetRecord,
     /// A list of the most recent peers we have dialed ourselves.
     pub(crate) dialed_peers: CircularVec<PeerId>,

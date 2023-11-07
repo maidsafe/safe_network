@@ -2008,6 +2008,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.96.30](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.29...sn_node-v0.96.30) - 2023-11-06
+
+### Added
+- *(deps)* upgrade libp2p to 0.53
+
+## [0.96.31](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.30...sn_node-v0.96.31) - 2023-11-06
+
+### Other
+- update dependencies
+
+## [0.96.32](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.31...sn_node-v0.96.32) - 2023-11-06
+
+### Other
+- update dependencies
+
+## [0.96.33](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.32...sn_node-v0.96.33) - 2023-11-06
+
+### Added
+- *(node)* log marker to track the number of peers in the routing table
+
+## [0.96.34](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.33...sn_node-v0.96.34) - 2023-11-06
+
+### Other
+- update dependencies
+
+## [0.96.35](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.34...sn_node-v0.96.35) - 2023-11-07
+
+### Other
+- move sn_faucet to its own crate
+- move sn_node_rpc_client to its own crate
+- move protobuf definition to sn_protocol
+
+## [0.97.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.96.35...sn_node-v0.97.0) - 2023-11-07
+
+### Fixed
+- *(client)* [**breaking**] make `Files::chunk_file` into an associated function
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

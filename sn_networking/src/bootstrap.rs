@@ -29,11 +29,9 @@ impl SwarmDriver {
         &mut self,
         current_bootstrap_interval: Duration,
     ) -> Option<Interval> {
-        let peers_in_rt = self.swarm.connected_peers().count() as u32;
-
         let (should_bootstrap, new_interval) = self
             .bootstrap
-            .should_we_bootstrap(peers_in_rt, current_bootstrap_interval)
+            .should_we_bootstrap(self.connected_peers as u32, current_bootstrap_interval)
             .await;
         if should_bootstrap {
             self.initiate_bootstrap();

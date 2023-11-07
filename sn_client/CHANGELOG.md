@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.96.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.27...sn_client-v0.96.0) - 2023-11-07
+
+### Fixed
+- *(client)* [**breaking**] make `Files::chunk_file` into an associated function
+
+## [0.95.27](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.26...sn_client-v0.95.27) - 2023-11-07
+
+### Other
+- updated the following local packages: sn_protocol
+
+## [0.95.26](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.25...sn_client-v0.95.26) - 2023-11-06
+
+### Added
+- *(node)* log marker to track the number of peers in the routing table
+
+## [0.95.25](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.24...sn_client-v0.95.25) - 2023-11-06
+
+### Other
+- updated the following local packages: sn_protocol
+
+## [0.95.24](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.23...sn_client-v0.95.24) - 2023-11-06
+
+### Other
+- updated the following local packages: sn_protocol
+
+## [0.95.23](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.22...sn_client-v0.95.23) - 2023-11-06
+
+### Added
+- *(deps)* upgrade libp2p to 0.53
+
 ## [0.95.22](https://github.com/maidsafe/safe_network/compare/sn_client-v0.95.21...sn_client-v0.95.22) - 2023-11-03
 
 ### Other

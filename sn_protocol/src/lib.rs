@@ -13,8 +13,16 @@ extern crate tracing;
 pub mod error;
 /// Messages types
 pub mod messages;
+/// RPC commands to node
+pub mod node_rpc;
 /// Storage types for spends, chunks and registers.
 pub mod storage;
+pub mod test_utils;
+
+// this includes code generated from .proto files
+pub mod safenode_proto {
+    tonic::include_proto!("safenode_proto");
+}
 
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
 use bytes::Bytes;
@@ -23,7 +31,6 @@ use libp2p::{
     PeerId,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use sha2::{Digest, Sha256};
 use std::{
     borrow::Cow,
     fmt::{self, Debug, Display, Formatter},
@@ -229,10 +236,7 @@ pub struct PrettyPrintKBucketKey(pub Key<Vec<u8>>);
 
 impl std::fmt::Display for PrettyPrintKBucketKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // The `KeyBytes` part of `KBucketKey` is private and no API to expose it.
-        // Hence here we have to carry out a hash manually to simulate its behaviour.
-        let generic_array = Sha256::digest(self.0.preimage());
-        for byte in generic_array {
+        for byte in self.0.hashed_bytes() {
             f.write_fmt(format_args!("{:02x}", byte))?;
         }
         Ok(())
@@ -261,9 +265,11 @@ impl<'a> Serialize for PrettyPrintRecordKey<'a> {
     where
         S: Serializer,
     {
-        // Use the `to_vec` function of the inner RecordKey to get the bytes
-        // and then serialize those bytes
-        self.key.to_vec().serialize(serializer)
+        let record_key_bytes = match &self.key {
+            Cow::Borrowed(borrowed_key) => borrowed_key.as_ref(),
+            Cow::Owned(owned_key) => owned_key.as_ref(),
+        };
+        record_key_bytes.serialize(serializer)
     }
 }
 
@@ -334,7 +340,6 @@ mod tests {
     use bls::rand::thread_rng;
     use bytes::Bytes;
     use libp2p::kad::{KBucketKey, RecordKey};
-    use sha2::{Digest, Sha256};
 
     // A struct that implements hex representation of RecordKey using `bytes::Bytes`
     struct OldRecordKeyPrint(RecordKey);
@@ -365,8 +370,7 @@ mod tests {
     // old impl using Bytes
     impl std::fmt::Display for OldKBucketKeyPrint {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let generic_array = Sha256::digest(self.0.preimage());
-            let kbucket_key_b = Bytes::from(generic_array.to_vec());
+            let kbucket_key_b = Bytes::from(self.0.hashed_bytes().to_vec());
             write!(f, "{:64x}", kbucket_key_b)
         }
     }

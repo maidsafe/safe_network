@@ -130,7 +130,7 @@ impl Files {
 
     /// Tries to chunk the file, returning `(head_address, file_size, chunk_names)`
     /// and writes encrypted chunks to disk.
-    pub fn chunk_file(&self, file_path: &Path, chunk_dir: &Path) -> ChunkFileResult {
+    pub fn chunk_file(file_path: &Path, chunk_dir: &Path) -> ChunkFileResult {
         let mut file = File::open(file_path)?;
         let metadata = file.metadata()?;
         let file_size = metadata.len();
@@ -271,7 +271,7 @@ impl Files {
         let chunk_path = temp_dir.path().join("chunk_path");
         create_dir_all(chunk_path.clone())?;
 
-        let (head_address, _file_size, chunks_paths) = self.chunk_file(&file_path, &chunk_path)?;
+        let (head_address, _file_size, chunks_paths) = Self::chunk_file(&file_path, &chunk_path)?;
 
         for (_chunk_name, chunk_path) in chunks_paths {
             let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));

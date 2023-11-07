@@ -9,10 +9,18 @@
 use bytes::Bytes;
 use sn_node::RunningNode;
 
-use super::NodeCtrl;
-
 use bls::{PublicKey, PK_SIZE};
 use eyre::{ErrReport, Result};
+use sn_protocol::node_rpc::NodeCtrl;
+use sn_protocol::safenode_proto::{
+    safe_node_server::{SafeNode, SafeNodeServer},
+    GossipsubPublishRequest, GossipsubPublishResponse, GossipsubSubscribeRequest,
+    GossipsubSubscribeResponse, GossipsubUnsubscribeRequest, GossipsubUnsubscribeResponse,
+    NetworkInfoRequest, NetworkInfoResponse, NodeEvent, NodeEventsRequest, NodeInfoRequest,
+    NodeInfoResponse, RecordAddressesRequest, RecordAddressesResponse, RestartRequest,
+    RestartResponse, StopRequest, StopResponse, TransferNotifsFilterRequest,
+    TransferNotifsFilterResponse, UpdateRequest, UpdateResponse,
+};
 use std::{
     env,
     net::SocketAddr,
@@ -23,21 +31,6 @@ use tokio::sync::mpsc::{self, Sender};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Server, Code, Request, Response, Status};
 use tracing::{debug, info, trace};
-
-use safenode_proto::safe_node_server::{SafeNode, SafeNodeServer};
-use safenode_proto::{
-    GossipsubPublishRequest, GossipsubPublishResponse, GossipsubSubscribeRequest,
-    GossipsubSubscribeResponse, GossipsubUnsubscribeRequest, GossipsubUnsubscribeResponse,
-    NetworkInfoRequest, NetworkInfoResponse, NodeEvent, NodeEventsRequest, NodeInfoRequest,
-    NodeInfoResponse, RecordAddressesRequest, RecordAddressesResponse, RestartRequest,
-    RestartResponse, StopRequest, StopResponse, TransferNotifsFilterRequest,
-    TransferNotifsFilterResponse, UpdateRequest, UpdateResponse,
-};
-
-// this includes code generated from .proto files
-mod safenode_proto {
-    tonic::include_proto!("safenode_proto");
-}
 
 // Defining a struct to hold information used by our gRPC service backend
 struct SafeNodeRpcService {
@@ -323,7 +316,7 @@ impl SafeNode for SafeNodeRpcService {
     }
 }
 
-pub(super) fn start_rpc_service(
+pub(crate) fn start_rpc_service(
     addr: SocketAddr,
     log_dir: &str,
     running_node: RunningNode,
