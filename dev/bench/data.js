@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699359492825,
+  "lastUpdate": 1699359495089,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "0e07e753bb9470b703969fcb83100a00f82b06a4",
-          "message": "fix(sn_transfers): hardcode new genesis DBC for tests",
-          "timestamp": "2023-06-21T09:21:08Z",
-          "tree_id": "653136b50154f8d1031b3b1359777ddfb4e89a7f",
-          "url": "https://github.com/maidsafe/safe_network/commit/0e07e753bb9470b703969fcb83100a00f82b06a4"
-        },
-        "date": 1687343309209,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 933.82,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 469,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 34,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "953f363a2d1157d51a74a498b3e19aead0b65d3d",
+          "message": "feat(ci): release faucet and rpc binaries",
+          "timestamp": "2023-11-07T11:02:38Z",
+          "tree_id": "f6b822acc52efd18347540461e2a2e6f0b667f57",
+          "url": "https://github.com/maidsafe/safe_network/commit/953f363a2d1157d51a74a498b3e19aead0b65d3d"
+        },
+        "date": 1699359494248,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 163,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 30,
             "unit": "MB"
           }
         ]
