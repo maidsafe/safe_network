@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699355949488,
+  "lastUpdate": 1699359272023,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "12b2befea7cdf068ee4c7458213dbc622094994f",
-          "message": "fix(CI): OS dependent tar files and env setup in nightly",
-          "timestamp": "2023-07-11T13:07:52+02:00",
-          "tree_id": "77bd126f8c4528a1a164b23bc11e984421ebc78a",
-          "url": "https://github.com/maidsafe/safe_network/commit/12b2befea7cdf068ee4c7458213dbc622094994f"
-        },
-        "date": 1689075001466,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1818244130074544,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.490433798609867,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 9.839067143331624,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 752.0156106607404,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "953f363a2d1157d51a74a498b3e19aead0b65d3d",
+          "message": "feat(ci): release faucet and rpc binaries",
+          "timestamp": "2023-11-07T11:02:38Z",
+          "tree_id": "f6b822acc52efd18347540461e2a2e6f0b667f57",
+          "url": "https://github.com/maidsafe/safe_network/commit/953f363a2d1157d51a74a498b3e19aead0b65d3d"
+        },
+        "date": 1699359269557,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.292684711671007,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 52.50717818085004,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 630.5137230382115,
             "unit": "MiB/s"
           }
         ]
