@@ -334,7 +334,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
 
         let key = PrettyPrintRecordKey::from(&RecordKey::new(&file_addr)).into_owned();
         file_api
-            .pay_and_upload_bytes_test(file_addr, chunks)
+            .pay_and_upload_bytes_test(file_addr, chunks, true)
             .await?;
         uploaded_chunks_count += 1;
 
