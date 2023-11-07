@@ -261,7 +261,7 @@ pub async fn transfers_events(
     let mut stream = response.into_inner();
     let main_pk = MainPubkey(pk);
     while let Some(Ok(e)) = stream.next().await {
-        match NodeEvent::from_bytes(&e.event) {
+        let cash_notes = match NodeEvent::from_bytes(&e.event) {
             Ok(NodeEvent::TransferNotif {
                 key,
                 cashnote_redemptions,
@@ -279,46 +279,46 @@ pub async fn transfers_events(
                         println!(
                             "At least one of the CashNoteRedemptions received is invalid, dropping them: {err:?}"
                         );
+                        continue;
                     }
-                    Ok(cash_notes) => {
-                        wallet.deposit(&cash_notes)?;
-
-                        for cn in cash_notes {
-                            println!(
-                                "CashNote received with {:?}, value: {}",
-                                cn.unique_pubkey(),
-                                cn.value()?
-                            );
-
-                            if let Some(ref path) = log_cash_notes {
-                                // create cash_notes dir
-                                let unique_pubkey_name =
-                                    *SpendAddress::from_unique_pubkey(&cn.unique_pubkey())
-                                        .xorname();
-                                let unique_pubkey_file_name =
-                                    format!("{}.cash_note", hex::encode(unique_pubkey_name));
-
-                                let cash_note_file_path = path.join(unique_pubkey_file_name);
-                                println!("Writing cash note to: {}", cash_note_file_path.display());
-
-                                let hex = cn.to_hex()?;
-                                fs::write(cash_note_file_path, &hex)?;
-                            }
-                        }
-                        println!(
-                            "New balance after depositing received CashNote/s: {}",
-                            wallet.balance()
-                        );
-                    }
+                    Ok(cash_notes) => cash_notes,
                 }
-
-                println!();
             }
             Ok(_) => continue,
             Err(_) => {
                 println!("Error while parsing received NodeEvent");
+                continue;
+            }
+        };
+
+        wallet.deposit(&cash_notes)?;
+
+        for cn in cash_notes {
+            println!(
+                "CashNote received with {:?}, value: {}",
+                cn.unique_pubkey(),
+                cn.value()?
+            );
+
+            if let Some(ref path) = log_cash_notes {
+                // create cash_notes dir
+                let unique_pubkey_name =
+                    *SpendAddress::from_unique_pubkey(&cn.unique_pubkey()).xorname();
+                let unique_pubkey_file_name =
+                    format!("{}.cash_note", hex::encode(unique_pubkey_name));
+
+                let cash_note_file_path = path.join(unique_pubkey_file_name);
+                println!("Writing cash note to: {}", cash_note_file_path.display());
+
+                let hex = cn.to_hex()?;
+                fs::write(cash_note_file_path, &hex)?;
             }
         }
+        println!(
+            "New balance after depositing received CashNote/s: {}",
+            wallet.balance()
+        );
+        println!();
     }
 
     Ok(())
