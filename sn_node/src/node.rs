@@ -127,8 +127,8 @@ impl NodeBuilder {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
             node_cmds: node_cmds.clone(),
-            initial_peers: self.initial_peers,
-            reward_address,
+            initial_peers: Arc::new(self.initial_peers),
+            reward_address: Arc::new(reward_address),
             transfer_notifs_filter: None,
             #[cfg(feature = "open-metrics")]
             node_metrics,
@@ -167,8 +167,8 @@ pub(crate) struct Node {
     // We keep a copy of the Sender which is clonable and we can obtain a receiver from.
     node_cmds: broadcast::Sender<NodeCmd>,
     // Peers that are dialed at startup of node.
-    initial_peers: Vec<Multiaddr>,
-    reward_address: MainPubkey,
+    initial_peers: Arc<Vec<Multiaddr>>,
+    reward_address: Arc<MainPubkey>,
     transfer_notifs_filter: Option<PublicKey>,
     #[cfg(feature = "open-metrics")]
     pub(crate) node_metrics: NodeMetrics,
@@ -351,7 +351,7 @@ impl Node {
                     let network = self.network.clone();
                     let peers = self.initial_peers.clone();
                     let _handle = spawn(async move {
-                        for addr in &peers {
+                        for addr in &*peers {
                             if let Err(err) = network.dial(addr.clone()).await {
                                 tracing::error!("Failed to dial {addr}: {err:?}");
                             };
@@ -443,7 +443,7 @@ impl Node {
         let resp: QueryResponse = match query {
             Query::GetStoreCost(address) => {
                 trace!("Got GetStoreCost request for {address:?}");
-                let payment_address = self.reward_address;
+                let payment_address = *self.reward_address;
 
                 let record_exists = {
                     if let Some(key) = address.as_record_key() {
