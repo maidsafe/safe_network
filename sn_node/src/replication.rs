@@ -41,10 +41,6 @@ impl Node {
         // remove our peer id from the calculations here:
         let _we_were_there = closest_k_peers.remove(&self.network.peer_id);
 
-        let our_addr = NetworkAddress::from_peer(self.network.peer_id);
-        let sorted_based_on_addr =
-            sort_peers_by_address(&closest_k_peers, &our_addr, CLOSE_GROUP_SIZE * 2)?;
-
         trace!("Try trigger interval replication started@{start:?}, peers found_and_sorted, took: {:?}", start.elapsed());
         self.record_metrics(Marker::IntervalReplicationTriggered);
 
@@ -59,8 +55,8 @@ impl Node {
                 "Informing all peers of our records. {:?} peers will be informed",
                 closest_k_peers.len()
             );
-            for peer_id in sorted_based_on_addr {
-                self.send_replicate_cmd_without_wait(&our_address, peer_id, all_records.clone())?;
+            for peer_id in closest_k_peers {
+                self.send_replicate_cmd_without_wait(&our_address, &peer_id, all_records.clone())?;
             }
         }
 
