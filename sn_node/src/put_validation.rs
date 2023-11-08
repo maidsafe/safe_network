@@ -25,7 +25,8 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{
-    is_genesis_parent_tx, LocalWallet, Transfer, GENESIS_CASHNOTE, NETWORK_ROYALTIES_PK,
+    is_genesis_parent_tx, CashNoteRedemption, LocalWallet, Transfer, GENESIS_CASHNOTE,
+    NETWORK_ROYALTIES_PK,
 };
 use sn_transfers::{
     CashNote, NanoTokens, SignedSpend, UniquePubkey, NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
@@ -418,20 +419,20 @@ impl Node {
     /// Rewraps the royalties transfers into encrypted Transfers ready to be sent directly to the beneficiary
     async fn cash_notes_from_payment(
         &self,
-        payment: &Vec<Transfer>,
+        payment: Vec<Transfer>,
         wallet: &LocalWallet,
         pretty_key: PrettyPrintRecordKey<'static>,
-    ) -> Result<(NanoTokens, Vec<CashNote>, Vec<Transfer>), ProtocolError> {
+    ) -> Result<(NanoTokens, Vec<CashNote>, Vec<CashNoteRedemption>), ProtocolError> {
         let royalties_pk = *NETWORK_ROYALTIES_PK;
         let mut cash_notes = vec![];
-        let mut royalties_transfers = vec![];
+        let mut royalties_cash_notes_r = vec![];
         let mut received_fee = NanoTokens::zero();
 
         for transfer in payment {
             match transfer {
                 Transfer::Encrypted(_) => match self
                     .network
-                    .verify_and_unpack_transfer(transfer, wallet)
+                    .verify_and_unpack_transfer(&transfer, wallet)
                     .await
                 {
                     // transfer not for us
@@ -444,7 +445,7 @@ impl Node {
                 Transfer::NetworkRoyalties(cashnote_redemptions) => {
                     match self
                         .network
-                        .verify_cash_notes_redemptions(royalties_pk, cashnote_redemptions)
+                        .verify_cash_notes_redemptions(royalties_pk, &cashnote_redemptions)
                         .await
                     {
                         Ok(cash_notes) => {
@@ -454,16 +455,7 @@ impl Node {
                                 "{} network royalties payment cash notes found for record {pretty_key} for a total value of {received_royalties:?}",
                                 cash_notes.len()
                             );
-                            let rewraped_transfers = cash_notes
-                                .into_iter()
-                                .map(Transfer::transfers_from_cash_note)
-                                .collect::<Result<Vec<Transfer>, sn_transfers::Error>>()
-                                .map_err(|err| {
-                                    error!("Error generating royalty transfer: {err:?}");
-                                    ProtocolError::FailedToEncryptTransfer
-                                })?;
-
-                            royalties_transfers.extend(rewraped_transfers);
+                            royalties_cash_notes_r.extend(cashnote_redemptions);
                             received_fee = received_fee
                                 .checked_add(received_royalties)
                                 .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
@@ -491,7 +483,7 @@ impl Node {
                 .checked_add(received_fee_to_our_node)
                 .ok_or_else(|| ProtocolError::PaymentExceedsTotalTokens)?;
 
-            Ok((received_fee, cash_notes, royalties_transfers))
+            Ok((received_fee, cash_notes, royalties_cash_notes_r))
         }
     }
 
@@ -511,8 +503,8 @@ impl Node {
 
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key}");
-        let (received_fee, cash_notes, royalties_transfers) = self
-            .cash_notes_from_payment(&payment, &wallet, pretty_key.clone())
+        let (received_fee, cash_notes, royalties_cash_notes_r) = self
+            .cash_notes_from_payment(payment, &wallet, pretty_key.clone())
             .await?;
 
         trace!("Received payment of {received_fee:?} for {pretty_key}");
@@ -527,7 +519,7 @@ impl Node {
             .reward_wallet_balance
             .set(wallet.balance().as_nano() as i64);
 
-        if royalties_transfers.is_empty() {
+        if royalties_cash_notes_r.is_empty() {
             warn!("No network royalties payment found for record {pretty_key}");
             return Err(ProtocolError::NoNetworkRoyaltiesPayment(
                 pretty_key.into_owned(),
@@ -539,12 +531,12 @@ impl Node {
         trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
         let royalties_pk_bytes = royalties_pk.to_bytes();
 
-        if let Ok(transfers_size) = bincode::serialized_size(&royalties_transfers) {
+        if let Ok(transfers_size) = bincode::serialized_size(&royalties_cash_notes_r) {
             let mut msg =
                 BytesMut::with_capacity(royalties_pk_bytes.len() + transfers_size as usize);
             msg.extend_from_slice(&royalties_pk_bytes);
             let mut msg = msg.writer();
-            match bincode::serialize_into(&mut msg, &royalties_transfers) {
+            match bincode::serialize_into(&mut msg, &royalties_cash_notes_r) {
                 Ok(_) => {
                     let msg = msg.into_inner().freeze();
                     if let Err(err) = self.network.publish_on_topic(TRANSFER_NOTIF_TOPIC.to_string(), msg) {

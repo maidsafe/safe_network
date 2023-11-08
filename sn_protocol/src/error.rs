@@ -82,8 +82,6 @@ pub enum Error {
     // ---------- transfer errors
     #[error("Failed to decypher transfer, we probably are not the recipient")]
     FailedToDecypherTransfer,
-    #[error("Failed to encrypt transfer")]
-    FailedToEncryptTransfer,
     #[error("Failed to get transfer parent spend")]
     FailedToGetTransferParentSpend,
     #[error("Transfer is invalid: {0}")]

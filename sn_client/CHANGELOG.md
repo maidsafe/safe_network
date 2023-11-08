@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.96.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.96.1...sn_client-v0.96.2) - 2023-11-08
+
+### Added
+- *(node)* set custom msg id in order to deduplicate transfer notifs
+
 ## [0.96.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.96.0...sn_client-v0.96.1) - 2023-11-07
 
 ### Other

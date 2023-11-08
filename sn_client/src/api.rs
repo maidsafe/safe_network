@@ -33,7 +33,9 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::{CashNote, LocalWallet, NanoTokens, SignedSpend, Transfer, UniquePubkey};
+use sn_transfers::{
+    CashNote, CashNoteRedemption, MainPubkey, NanoTokens, SignedSpend, Transfer, UniquePubkey,
+};
 use std::{
     collections::{HashMap, HashSet},
     time::Duration,
@@ -593,21 +595,19 @@ impl Client {
         Ok(())
     }
 
-    /// This function is used to receive a Transfer and turn it back into spendable CashNotes.
+    /// This function is used to receive a list of CashNoteRedemptions and turn it back into spendable CashNotes.
     /// Needs Network connection.
-    /// Verify Transfer and rebuild spendable currency from it
-    /// Returns an `Error::FailedToDecypherTransfer` if the transfer cannot be decyphered
-    /// (This means the transfer is not for us as it was not encrypted to our key)
-    /// Returns an `Error::InvalidTransfer` if the transfer is not valid
-    /// Else returns a list of CashNotes that can be deposited to our wallet and spent
-    pub async fn verify_and_unpack_transfer(
+    /// Verify CashNoteRedemptions and rebuild spendable currency from them.
+    /// Returns an `Error::InvalidTransfer` if any CashNoteRedemption is not valid
+    /// Else returns a list of CashNotes that can be spent by the owner.
+    pub async fn verify_cash_notes_redemptions(
         &self,
-        transfer: &Transfer,
-        wallet: &LocalWallet,
+        main_pubkey: MainPubkey,
+        cashnote_redemptions: &[CashNoteRedemption],
     ) -> Result<Vec<CashNote>> {
         let cash_notes = self
             .network
-            .verify_and_unpack_transfer(transfer, wallet)
+            .verify_cash_notes_redemptions(main_pubkey, cashnote_redemptions)
             .await?;
         Ok(cash_notes)
     }
