@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.3...sn_node_rpc_client-v0.1.4) - 2023-11-08
+
+### Added
+- *(node)* set custom msg id in order to deduplicate transfer notifs
+
 ## [0.1.3](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.2...sn_node_rpc_client-v0.1.3) - 2023-11-07
 
 ### Other
