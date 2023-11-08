@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699450529521,
+  "lastUpdate": 1699450531067,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20332,40 +20332,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a8285202e2807a64c9642a5050dee22175fffc54",
-          "message": "fix: improve client upload speed\n\nImprove client upload speed by:\n1, Only using local network knowledge one\n2, Reduce network nodes to contact",
-          "timestamp": "2023-06-22T09:18:54+09:00",
-          "tree_id": "7c33a7c96194cac397e2e32333ce33b4ec2d6043",
-          "url": "https://github.com/maidsafe/safe_network/commit/a8285202e2807a64c9642a5050dee22175fffc54"
-        },
-        "date": 1687394136135,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 927.7,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 576,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30525,6 +30491,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 80,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "81017468c2b189862a349bcbc6c21242f044dbfc",
+          "message": "refactor(networking): use internal libp2p method\n\nInstead of relying on `kbuckets` method and iterate over that, use the\nlibp2p native method that iterates over the kbuckets for us and sorts it\naccording to distance to our own key.",
+          "timestamp": "2023-11-08T12:35:32Z",
+          "tree_id": "69f69f9b1615dead72220e9de4f6c060274e6030",
+          "url": "https://github.com/maidsafe/safe_network/commit/81017468c2b189862a349bcbc6c21242f044dbfc"
+        },
+        "date": 1699450530650,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 178,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 76,
             "unit": "MB"
           }
         ]
