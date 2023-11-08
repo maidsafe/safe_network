@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::SwarmDriver;
+use libp2p::kad::K_VALUE;
 use std::time::{Duration, Instant};
 use tokio::time::Interval;
 
@@ -114,8 +115,8 @@ impl ContinuousBootstrap {
         current_interval: Duration,
     ) -> (bool, Option<Interval>) {
         // stop bootstrapping if flag is set
-        if self.stop_bootstrapping {
-            info!("stop_bootstrapping flag has been set to true. Disabling further bootstrapping");
+        if self.stop_bootstrapping || peers_in_rt as usize > K_VALUE.into() {
+            info!("We got {peers_in_rt} peers connected, stop_bootstrapping flag is {}. Disabling further bootstrapping", self.stop_bootstrapping);
             let mut new_interval = tokio::time::interval(Duration::from_secs(86400));
             new_interval.tick().await; // the first tick completes immediately
             return (false, Some(new_interval));
