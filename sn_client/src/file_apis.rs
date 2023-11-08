@@ -168,7 +168,7 @@ impl Files {
         let payment = wallet_client.get_payment_transfers(&chunk_addr)?;
 
         debug!(
-            "Payment for chunk: {chunk_addr:?} is #{:?} {payment:?}",
+            "{:?} payments for chunk: {chunk_addr:?}:  {payment:?}",
             payment.len()
         );
 
