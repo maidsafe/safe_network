@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699436407360,
+  "lastUpdate": 1699436409817,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "879c64f0064327d632c9ffaf333e96a71acd577e",
-          "message": "feat(node): trigger replication when inactivity",
-          "timestamp": "2023-06-21T19:18:42Z",
-          "tree_id": "3eb2822f73ae1415c0807c05ab5e99c34a8f867b",
-          "url": "https://github.com/maidsafe/safe_network/commit/879c64f0064327d632c9ffaf333e96a71acd577e"
-        },
-        "date": 1687379355762,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 930.35,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 466,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 38,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0484719a0215200887b0868c6918a4a7d2c05678",
+          "message": "fix(bench): update benchmark to account for de duplicated files",
+          "timestamp": "2023-11-08T08:30:06Z",
+          "tree_id": "95d94198126b7a5ba5b1c6d6782e98bce66e3900",
+          "url": "https://github.com/maidsafe/safe_network/commit/0484719a0215200887b0868c6918a4a7d2c05678"
+        },
+        "date": 1699436408911,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 216,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 80,
             "unit": "MB"
           }
         ]
