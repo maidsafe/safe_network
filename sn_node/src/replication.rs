@@ -25,18 +25,27 @@ impl Node {
     /// Sends _all_ record keys every interval to all peers.
     pub(crate) async fn try_interval_replication(&self) -> Result<()> {
         let start = std::time::Instant::now();
+        trace!("Try trigger interval replication started@{start:?}");
         // Already contains self_peer_id
-        let all_cloest_k_peers = self.network.get_closest_k_value_local_peers().await?;
+        let mut closest_k_peers = self.network.get_closest_k_value_local_peers().await?;
 
         // Do not carry out replication if not many peers present.
-        if all_cloest_k_peers.len() < K_VALUE.into() {
+        if closest_k_peers.len() < K_VALUE.into() {
             trace!(
                 "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                all_cloest_k_peers.len()
+                closest_k_peers.len()
             );
             return Ok(());
         }
 
+        // remove our peer id from the calculations here:
+        let _we_were_there = closest_k_peers.remove(&self.network.peer_id);
+
+        let our_addr = NetworkAddress::from_peer(self.network.peer_id);
+        let sorted_based_on_addr =
+            sort_peers_by_address(&closest_k_peers, &our_addr, CLOSE_GROUP_SIZE * 2)?;
+
+        trace!("Try trigger interval replication started@{start:?}, peers found_and_sorted, took: {:?}", start.elapsed());
         self.record_metrics(Marker::IntervalReplicationTriggered);
 
         let our_peer_id = self.network.peer_id;
@@ -45,15 +54,20 @@ impl Node {
         #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
         let all_records = self.network.get_all_local_record_addresses().await?;
 
-        debug!(
-            "Informing all peers of our records. {:?} peers will be informed",
-            all_cloest_k_peers.len()
-        );
-        for peer_id in all_cloest_k_peers {
-            self.send_replicate_cmd_without_wait(&our_address, &peer_id, all_records.clone())?;
+        if !all_records.is_empty() {
+            debug!(
+                "Informing all peers of our records. {:?} peers will be informed",
+                closest_k_peers.len()
+            );
+            for peer_id in sorted_based_on_addr {
+                self.send_replicate_cmd_without_wait(&our_address, peer_id, all_records.clone())?;
+            }
         }
 
-        info!("Try trigger interval, took {:?}", start.elapsed());
+        info!(
+            "Try trigger interval started@{start:?}, took {:?}",
+            start.elapsed()
+        );
         Ok(())
     }
 
@@ -141,7 +155,7 @@ impl Node {
             trace!("Start replicate paid record {pretty_key:?} on store");
 
             // Already contains self_peer_id
-            let all_peers = match network.get_closest_k_value_local_peers().await {
+            let mut closest_k_peers = match network.get_closest_k_value_local_peers().await {
                 Ok(peers) => peers,
                 Err(err) => {
                     error!("Replicating paid record {pretty_key:?} get_closest_local_peers errored: {err:?}");
@@ -149,20 +163,23 @@ impl Node {
                 }
             };
 
+            // remove ourself from these calculations
+            let _we_were_there = closest_k_peers.remove(&network.peer_id);
+
             // Do not carry out replication if not many peers present.
-            if all_peers.len() < K_VALUE.into() {
+            if closest_k_peers.len() < K_VALUE.into() {
                 trace!(
                     "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                    all_peers.len()
+                    closest_k_peers.len()
                 );
                 return;
             }
 
-            let addr = NetworkAddress::from_record_key(&paid_key);
+            let data_addr = NetworkAddress::from_record_key(&paid_key);
 
             let sorted_based_on_addr = match sort_peers_by_address(
-                &all_peers,
-                &addr,
+                &closest_k_peers,
+                &data_addr,
                 CLOSE_GROUP_SIZE,
             ) {
                 Ok(result) => result,
@@ -176,19 +193,17 @@ impl Node {
 
             let our_peer_id = network.peer_id;
             let our_address = NetworkAddress::from_peer(our_peer_id);
+            #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
+            let keys = HashMap::from([(data_addr.clone(), record_type.clone())]);
 
             for peer_id in sorted_based_on_addr {
-                if peer_id != &our_peer_id {
-                    trace!("Replicating paid record {pretty_key:?} to {peer_id:?}");
-                    #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-                    let keys = HashMap::from([(addr.clone(), record_type.clone())]);
-                    let request = Request::Cmd(Cmd::Replicate {
-                        holder: our_address.clone(),
-                        keys,
-                    });
+                trace!("Replicating paid record {pretty_key:?} to {peer_id:?}");
+                let request = Request::Cmd(Cmd::Replicate {
+                    holder: our_address.clone(),
+                    keys: keys.clone(),
+                });
 
-                    let _ = network.send_req_ignore_reply(request, *peer_id);
-                }
+                let _ = network.send_req_ignore_reply(request, *peer_id);
             }
             trace!(
                 "Completed replicate paid record {pretty_key:?} on store, in {:?}",
