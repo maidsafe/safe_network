@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699435990490,
+  "lastUpdate": 1699436407360,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "dbf94c7ffc226bb900ee217875264dedf970bac9",
-          "message": "ci: check local-discovery is not a default feature in any crate",
-          "timestamp": "2023-06-28T12:52:29+09:00",
-          "tree_id": "16302ca77f4653b7ef6a4d0f6dcb95f4adfa1144",
-          "url": "https://github.com/maidsafe/safe_network/commit/dbf94c7ffc226bb900ee217875264dedf970bac9"
-        },
-        "date": 1687928898051,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 15.15,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/6268f7deb0a123bdbf77b3fb187da3476c41ae5f"
         },
         "date": 1699427737929,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0484719a0215200887b0868c6918a4a7d2c05678",
+          "message": "fix(bench): update benchmark to account for de duplicated files",
+          "timestamp": "2023-11-08T08:30:06Z",
+          "tree_id": "95d94198126b7a5ba5b1c6d6782e98bce66e3900",
+          "url": "https://github.com/maidsafe/safe_network/commit/0484719a0215200887b0868c6918a4a7d2c05678"
+        },
+        "date": 1699436406456,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
