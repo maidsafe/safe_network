@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699436409817,
+  "lastUpdate": 1699450065220,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11582,6 +11582,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 33.60908868513307,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "81017468c2b189862a349bcbc6c21242f044dbfc",
+          "message": "refactor(networking): use internal libp2p method\n\nInstead of relying on `kbuckets` method and iterate over that, use the\nlibp2p native method that iterates over the kbuckets for us and sorts it\naccording to distance to our own key.",
+          "timestamp": "2023-11-08T12:35:32Z",
+          "tree_id": "69f69f9b1615dead72220e9de4f6c060274e6030",
+          "url": "https://github.com/maidsafe/safe_network/commit/81017468c2b189862a349bcbc6c21242f044dbfc"
+        },
+        "date": 1699450062790,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 2.579959981510598,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 6.1459819231153645,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 35.143468810571015,
             "unit": "MiB/s"
           }
         ]
