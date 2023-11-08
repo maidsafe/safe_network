@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699359495089,
+  "lastUpdate": 1699427596764,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f23b4c8e8441a676e6584cbdcd6d6a34dd683f9e",
-          "message": "fix(client): publish register on creation",
-          "timestamp": "2023-07-11T15:08:59Z",
-          "tree_id": "29268f469a7861c3d3ae497525ba7d7f97b7a41a",
-          "url": "https://github.com/maidsafe/safe_network/commit/f23b4c8e8441a676e6584cbdcd6d6a34dd683f9e"
-        },
-        "date": 1689091872422,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1478365045944752,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.683416565826265,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 9.773969769252245,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 630.5137230382115,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6268f7deb0a123bdbf77b3fb187da3476c41ae5f",
+          "message": "feat(node): set custom msg id in order to deduplicate transfer notifs",
+          "timestamp": "2023-11-08T06:32:48Z",
+          "tree_id": "eb1ce6a726a30bf144332884bbe4794c434b9942",
+          "url": "https://github.com/maidsafe/safe_network/commit/6268f7deb0a123bdbf77b3fb187da3476c41ae5f"
+        },
+        "date": 1699427595387,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.712922273152794,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 58.83416358300733,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 721.5451341627903,
             "unit": "MiB/s"
           }
         ]
