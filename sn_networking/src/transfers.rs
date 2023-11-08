@@ -94,7 +94,10 @@ impl Network {
         cashnote_redemptions: &[CashNoteRedemption],
     ) -> Result<Vec<CashNote>> {
         // get the parent transactions
-        trace!("Getting parent Tx for validation");
+        trace!(
+            "Getting parent Tx for validation from {:?}",
+            cashnote_redemptions.len()
+        );
         let parent_addrs: BTreeSet<SpendAddress> = cashnote_redemptions
             .iter()
             .map(|u| u.parent_spend)
