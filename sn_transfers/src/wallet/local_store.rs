@@ -231,8 +231,8 @@ impl LocalWallet {
         let mut transfers: Vec<Transfer> = vec![];
 
         if let Some(payment) = self.get_payment_unique_pubkeys_and_values(name) {
-            for (trans, _main_pub_key, value) in payment {
-                trace!("Current transfer for chunk {name:?} is of {value:?} tokens.");
+            for (trans, main_pub_key, value) in payment {
+                trace!("Current transfer for record {name:?} is of {value:?} tokens to {main_pub_key:?}.");
                 transfers.push(trans.to_owned());
             }
         }
