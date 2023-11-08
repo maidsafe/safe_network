@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699427738326,
+  "lastUpdate": 1699427739748,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "e6e6b77a75b133787fe1e253d7e4d5b570fb2e7a",
-          "message": "chore(network): remove `NetworkEvent::PutRecord` dead code\n- since we do not use `kad.put_record` or `kad's replication flow`, we\n  should not get any inbound `PutRecord` from the swarm.",
-          "timestamp": "2023-06-21T16:40:25Z",
-          "tree_id": "028b176e59484ab5e1bfd7cfd1a3c5246944395f",
-          "url": "https://github.com/maidsafe/safe_network/commit/e6e6b77a75b133787fe1e253d7e4d5b570fb2e7a"
-        },
-        "date": 1687370670704,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 926.24,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 479,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 30,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6268f7deb0a123bdbf77b3fb187da3476c41ae5f",
+          "message": "feat(node): set custom msg id in order to deduplicate transfer notifs",
+          "timestamp": "2023-11-08T06:32:48Z",
+          "tree_id": "eb1ce6a726a30bf144332884bbe4794c434b9942",
+          "url": "https://github.com/maidsafe/safe_network/commit/6268f7deb0a123bdbf77b3fb187da3476c41ae5f"
+        },
+        "date": 1699427739389,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 38,
             "unit": "MB"
           }
         ]
