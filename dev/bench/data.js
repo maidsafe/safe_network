@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699427596764,
+  "lastUpdate": 1699427738326,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "dd1faaba1d22c1729ae53f6ece4585646374574a",
-          "message": "feat(node): dial without PeerId",
-          "timestamp": "2023-06-28T01:10:36Z",
-          "tree_id": "3529c2f4e690d9222bddbb66c15a7a2459fd7e8c",
-          "url": "https://github.com/maidsafe/safe_network/commit/dd1faaba1d22c1729ae53f6ece4585646374574a"
-        },
-        "date": 1687919357424,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 16.47,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6268f7deb0a123bdbf77b3fb187da3476c41ae5f",
+          "message": "feat(node): set custom msg id in order to deduplicate transfer notifs",
+          "timestamp": "2023-11-08T06:32:48Z",
+          "tree_id": "eb1ce6a726a30bf144332884bbe4794c434b9942",
+          "url": "https://github.com/maidsafe/safe_network/commit/6268f7deb0a123bdbf77b3fb187da3476c41ae5f"
+        },
+        "date": 1699427737929,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
