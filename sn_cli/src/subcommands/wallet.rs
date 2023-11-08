@@ -276,16 +276,16 @@ async fn send(
     let from = LocalWallet::load_from(root_dir)?;
     let amount = match NanoTokens::from_str(&amount) {
         Ok(amount) => amount,
-        Err(_) => {
+        Err(err) => {
             println!("The amount cannot be parsed. Nothing sent.");
-            return Ok(());
+            return Err(err.into());
         }
     };
     let to = match parse_main_pubkey(to) {
         Ok(to) => to,
         Err(err) => {
             println!("Error while parsing the recipient's 'to' key: {err:?}");
-            return Ok(());
+            return Err(err.into());
         }
     };
 
@@ -311,7 +311,7 @@ async fn send(
                     println!("Failed to send {amount:?} to {to:?} due to {err:?}.");
                 }
             }
-            return Ok(());
+            return Err(err.into());
         }
     };
 
@@ -335,10 +335,10 @@ async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Pa
         Err(err) => {
             println!("Failed to parse transfer: {err:?}");
             println!("Transfer: \"{transfer}\"");
-            return Ok(());
+            return Err(err.into());
         }
     };
-    println!("Successfully parsed transfer.");
+    println!("Successfully parsed transfer. ");
 
     println!("Verifying transfer with the Network...");
     let mut wallet = LocalWallet::load_from(root_dir)?;
@@ -346,7 +346,7 @@ async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Pa
         Ok(cashnotes) => cashnotes,
         Err(err) => {
             println!("Failed to verify and redeem transfer: {err:?}");
-            return Ok(());
+            return Err(err.into());
         }
     };
     println!("Successfully verified transfer.");
