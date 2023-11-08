@@ -276,12 +276,17 @@ impl Client {
     pub async fn get_signed_register_from_network(
         &self,
         address: RegisterAddress,
+        is_verifying: bool,
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
-
+        let quorum = if is_verifying {
+            GetQuorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?)
+        } else {
+            GetQuorum::One
+        };
         let maybe_record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::One, true, Default::default())
+            .get_record_from_network(key, None, quorum, true, Default::default())
             .await;
         let record = match maybe_record {
             Ok(r) => r,
@@ -458,7 +463,7 @@ impl Client {
     /// Verify if a `Register` is stored by expected nodes on the network.
     pub async fn verify_register_stored(&self, address: RegisterAddress) -> Result<SignedRegister> {
         info!("Verifying register: {address:?}");
-        self.get_signed_register_from_network(address).await
+        self.get_signed_register_from_network(address, true).await
     }
 
     /// Send a `SpendCashNote` request to the network

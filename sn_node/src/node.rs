@@ -210,7 +210,7 @@ impl Node {
                                         let event_string = format!("{:?}", event);
 
                                         stateless_node_copy.handle_network_event(event, peers_connected).await ;
-                                        info!("Handled network event in {:?}: {:?}", start.elapsed(), event_string);
+                                        info!("Handled non-blocking network event in {:?}: {:?}", start.elapsed(), event_string);
 
                                     });
                             }
@@ -265,6 +265,8 @@ impl Node {
 
     // **** Private helpers *****
 
+    /// Handle a network event.
+    /// This should be handled in a non blocking fashion, inside of a spawn
     async fn handle_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
         // when the node has not been connected to enough peers, it should not perform activities
         // that might require peers in the RT to succeed.
