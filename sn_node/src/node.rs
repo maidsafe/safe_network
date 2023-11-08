@@ -342,9 +342,15 @@ impl Node {
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
                 self.record_metrics(Marker::PeerAddedToRoutingTable(peer_id));
 
-                if let Err(err) = self.try_trigger_targetted_replication(peer_id, false).await {
-                    error!("During CloseGroupUpdate, error while triggering replication {err:?}");
-                }
+                let stateless_node_copy = self.clone();
+                let _handle = spawn(async move {
+                    if let Err(err) = stateless_node_copy
+                        .try_trigger_targetted_replication(peer_id, false)
+                        .await
+                    {
+                        error!("During PeerAdded({peer_id:?}), error while triggering replication {err:?}");
+                    }
+                });
             }
             NetworkEvent::PeerRemoved(peer_id, connected_peers) => {
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
@@ -354,9 +360,15 @@ impl Node {
                 // that being close to the old one won't got replicated during the CloseGroupUpdate
                 // of the new one, as the old one still sits in the local kBuckets.
                 // Hence, the replication attempts shall also be undertaken when PeerRemoved.
-                if let Err(err) = self.try_trigger_targetted_replication(peer_id, true).await {
-                    error!("During PeerRemoved, error while triggering replication {err:?}");
-                }
+                let stateless_node_copy = self.clone();
+                let _handle = spawn(async move {
+                    if let Err(err) = stateless_node_copy
+                        .try_trigger_targetted_replication(peer_id, true)
+                        .await
+                    {
+                        error!("During PeerRemoved({peer_id:?}), error while triggering replication {err:?}");
+                    }
+                });
             }
             NetworkEvent::KeysForReplication(keys) => {
                 self.record_metrics(Marker::fetching_keys_for_replication(&keys));
