@@ -35,6 +35,7 @@ use xor_name::XorName;
 
 /// Max amount of times to retry uploading a chunk
 const MAX_CHUNK_PUT_RETRIES: usize = 10;
+const CHUNK_PUT_RETRY_WAIT_S: u64 = 2;
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
@@ -362,7 +363,7 @@ async fn verify_and_repay_if_needed(
             println!(
                 "Retrying chunk upload and payment verification in 2s (retry attempt {retries})"
             );
-            tokio::time::sleep(Duration::from_secs(2)).await;
+            tokio::time::sleep(Duration::from_secs(CHUNK_PUT_RETRY_WAIT_S)).await;
         }
         retries += 1;
 
