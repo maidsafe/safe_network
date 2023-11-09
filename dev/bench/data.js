@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699539047393,
+  "lastUpdate": 1699539049031,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "jacderida"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "86b83b68d039330f666fc60db5bdcc6a605c8aa9",
-          "message": "feat: append peer id to node's default root dir\n\nBREAKING CHANGE: The default root directory for the node will now have the node's peer ID appended\nto its path.\n\nUsing the peer ID facilitates running multiple node processes on a single machine, without the need\nto explicitly use the `--root-dir` argument for each node to specify its own root directory.\nPreviously, if they didn't do that, all the nodes would share the same record store.",
-          "timestamp": "2023-06-26T05:58:26Z",
-          "tree_id": "7acfa33081dfdafe571bab388875ee7f6275e818",
-          "url": "https://github.com/maidsafe/safe_network/commit/86b83b68d039330f666fc60db5bdcc6a605c8aa9"
-        },
-        "date": 1687762641429,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 930.81,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 554,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
             "email": "chris.oneil@gmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 88,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "999785aff1052fe2c45236f10114bb90710995d2",
+          "message": "fix(test): fetch record_holders during retry",
+          "timestamp": "2023-11-09T13:06:14Z",
+          "tree_id": "e3cb125e2d7a406f2b042e96874e8932dee35a99",
+          "url": "https://github.com/maidsafe/safe_network/commit/999785aff1052fe2c45236f10114bb90710995d2"
+        },
+        "date": 1699539048537,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 183,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 76,
             "unit": "MB"
           }
         ]
