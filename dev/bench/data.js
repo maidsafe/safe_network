@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699526714083,
+  "lastUpdate": 1699527232134,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11679,35 +11679,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "1788a54c5784a4887ae6baf855608b100329c5d9",
-          "message": "feat(node): add missing send_event calls",
-          "timestamp": "2023-06-29T08:22:11+09:00",
-          "tree_id": "ac50548760405b70f6180a0c40bc641ddda5865e",
-          "url": "https://github.com/maidsafe/safe_network/commit/1788a54c5784a4887ae6baf855608b100329c5d9"
-        },
-        "date": 1687999035580,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 17.43,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "0916891426253ce05266a6538e5fcc4f74a280e3",
           "message": "fix(memcheck): add missing local-discovery feats",
           "timestamp": "2023-06-29T10:00:38+09:00",
@@ -20362,6 +20333,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 58,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "295f3a058eb2d05ee107fb340ecc7e5fa17ca137",
+          "message": "chore: const instead of magic num in code for wait time",
+          "timestamp": "2023-11-09T09:46:41Z",
+          "tree_id": "43d7461f1b12d45b36609928bf27aff4be74ef14",
+          "url": "https://github.com/maidsafe/safe_network/commit/295f3a058eb2d05ee107fb340ecc7e5fa17ca137"
+        },
+        "date": 1699527231167,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
