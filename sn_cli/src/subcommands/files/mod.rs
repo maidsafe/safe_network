@@ -33,6 +33,9 @@ use std::{
 use tokio::task::JoinHandle;
 use xor_name::XorName;
 
+/// Max amount of times to retry uploading a chunk
+const MAX_CHUNK_PUT_RETRIES: usize = 3;
+
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
     Upload {
@@ -346,7 +349,38 @@ async fn upload_chunk(
 /// Verify if chunks exist on the network.
 /// Repay if they don't.
 /// Return a list of files which had to be repaid, but are not yet reverified.
+/// Retry up to MAX_CHUNK_PUT_RETRIES times or until all chunks are verified.
 async fn verify_and_repay_if_needed(
+    file_api: Files,
+    chunk_manager: &mut ChunkManager,
+    batch_size: usize,
+    show_holders: bool,
+) -> Result<()> {
+    let mut retries = 0;
+    while !chunk_manager.is_paid_chunks_empty() && retries < MAX_CHUNK_PUT_RETRIES {
+        if retries > 0 {
+            println!(
+                "Retrying chunk upload and payment verification in 2s (retry attempt {retries})"
+            );
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+        retries += 1;
+
+        verify_and_repay_if_needed_once(file_api.clone(), chunk_manager, batch_size, show_holders)
+            .await?;
+    }
+
+    let unverified_chunks = chunk_manager.get_paid_chunks().len();
+    if unverified_chunks == 0 {
+        println!("Verification complete: all chunks paid and stored");
+    } else {
+        println!("Failed to verify and repay all chunks after {retries} retries.");
+    }
+
+    Ok(())
+}
+
+async fn verify_and_repay_if_needed_once(
     file_api: Files,
     chunk_manager: &mut ChunkManager,
     batch_size: usize,
@@ -405,7 +439,7 @@ async fn verify_and_repay_if_needed(
 
     if chunk_manager.is_paid_chunks_empty() {
         chunk_manager.mark_verified_all();
-        println!("Verification complete: all chunks paid and stored");
+        return Ok(());
     }
 
     // If there were any failed chunks, we need to repay them

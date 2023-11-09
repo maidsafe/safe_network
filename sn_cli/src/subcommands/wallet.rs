@@ -6,20 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::files::ChunkManager;
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
-use sn_client::{Client, Error as ClientError, Files};
+use sn_client::{Client, Error as ClientError};
 use sn_transfers::{
     parse_main_pubkey, Error as TransferError, LocalWallet, MainSecretKey, NanoTokens, Transfer,
     WalletError,
 };
-use std::{
-    io::Read,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{io::Read, path::Path, str::FromStr};
 use url::Url;
 
 // Defines the size of batch for the parallel uploading of chunks and correspondent payments.
@@ -39,6 +34,9 @@ pub enum WalletCmds {
         #[clap(long)]
         peer_id: Vec<String>,
     },
+    /// [DEPRECATED] will be removed in future versions.
+    /// Prefer using the send and receive commands instead.
+    ///
     /// Deposit CashNotes from the received directory to the local wallet.
     /// Or Read a hex encoded CashNote from stdin.
     ///
@@ -92,18 +90,6 @@ pub enum WalletCmds {
         #[clap(name = "transfer")]
         transfer: String,
     },
-    /// Make a payment for chunk storage based on files to be stored.
-    ///
-    /// Right now this command is highly experimental and doesn't really do anything functional.
-    Pay {
-        /// Location of the files to be stored.
-        #[clap(name = "path", value_name = "DIRECTORY")]
-        path: PathBuf,
-        /// The batch_size to split chunks into parallely handling batches
-        /// during payment and upload processing.
-        #[clap(long, default_value_t = BATCH_SIZE)]
-        batch_size: usize,
-    },
 }
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
@@ -154,23 +140,6 @@ pub(crate) async fn wallet_cmds(
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
         WalletCmds::Receive { file, transfer } => receive(transfer, file, client, root_dir).await?,
         WalletCmds::GetFaucet { url } => get_faucet(root_dir, client, url.clone()).await?,
-        WalletCmds::Pay {
-            path,
-            batch_size: _,
-        } => {
-            let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
-
-            let mut manager = ChunkManager::new(root_dir);
-            manager.chunk_path(&path)?;
-
-            let all_chunks: Vec<_> = manager
-                .get_unpaid_chunks()
-                .iter()
-                .map(|(xor_name, _)| *xor_name)
-                .collect();
-
-            file_api.pay_for_chunks(all_chunks).await?;
-        }
         cmd => {
             return Err(eyre!(
                 "{cmd:?} has to be processed before connecting to the network"
