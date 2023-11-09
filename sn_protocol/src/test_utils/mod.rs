@@ -9,4 +9,5 @@
 mod testnet;
 mod utils;
 
+pub use testnet::*;
 pub use utils::*;

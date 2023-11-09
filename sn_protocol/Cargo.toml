@@ -10,7 +10,7 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.8.22"
 
 [features]
-test-utils=[]
+test-utils=["dirs-next", "serde_json"]
 
 [dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
@@ -18,10 +18,12 @@ bytes = { version = "1.0.1", features = ["serde"] }
 color-eyre = "0.6.2"
 crdts = { version = "7.3", default-features = false, features = ["merkle"] }
 custom_debug = "~0.5.0"
+dirs-next = { version = "~2.0.0", optional = true }
 hex = "~0.4.3"
 libp2p = {   version="0.53" ,  features = ["identify", "kad"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
+serde_json = {version = "1.0", optional = true }
 sha2 = "0.10.7"
 sn_transfers = { path = "../sn_transfers", version = "0.14.15" }
 sn_registers = { path = "../sn_registers", version = "0.3.3" }
