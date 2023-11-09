@@ -347,13 +347,15 @@ impl SwarmDriver {
 
                 #[cfg(feature = "open-metrics")]
                 self.network_metrics.record(&event);
-                match event {
-                    libp2p::gossipsub::Event::Message { message, .. } => {
-                        let topic = message.topic.into_string();
-                        let msg = Bytes::from(message.data);
-                        self.send_event(NetworkEvent::GossipsubMsgReceived { topic, msg });
+                if self.is_gossip_listener {
+                    match event {
+                        libp2p::gossipsub::Event::Message { message, .. } => {
+                            let topic = message.topic.into_string();
+                            let msg = Bytes::from(message.data);
+                            self.send_event(NetworkEvent::GossipsubMsgReceived { topic, msg });
+                        }
+                        other => trace!("Gossipsub Event has been ignored: {other:?}"),
                     }
-                    other => trace!("Gossipsub Event has been ignored: {other:?}"),
                 }
             }
             SwarmEvent::NewListenAddr { address, .. } => {

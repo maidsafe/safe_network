@@ -325,6 +325,7 @@ fn spawn_royalties_payment_client_listener(
 ) -> Result<JoinHandle<Result<usize, eyre::Report>>> {
     let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
     client.subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())?;
+
     let mut events_receiver = client.events_channel();
 
     let handle = tokio::spawn(async move {
