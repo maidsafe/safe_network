@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699531011335,
+  "lastUpdate": 1699531013672,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4d10bf30422453ca2aedd7f33706338f321d596e",
-          "message": "chore: log detailed peer distance and kBucketTable stats",
-          "timestamp": "2023-06-24T21:57:10Z",
-          "tree_id": "ffbc9a75a6d1c57837a7be973dc9ef22cf6b55bf",
-          "url": "https://github.com/maidsafe/safe_network/commit/4d10bf30422453ca2aedd7f33706338f321d596e"
-        },
-        "date": 1687647023367,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 934.51,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 581,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 78,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "e31d4cc33327ba3f68dc26e046d04a6710e1e849",
+          "message": "chore: increase periodic bootstrap interval by reducing stepping",
+          "timestamp": "2023-11-09T11:00:01Z",
+          "tree_id": "d1b9d1d741db9703b81a09e798e74e7e3acca863",
+          "url": "https://github.com/maidsafe/safe_network/commit/e31d4cc33327ba3f68dc26e046d04a6710e1e849"
+        },
+        "date": 1699531012799,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 207,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
             "unit": "MB"
           }
         ]
