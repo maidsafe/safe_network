@@ -136,8 +136,12 @@ impl LocalWallet {
     /// Loads a serialized wallet from a path.
     pub fn load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        // This creates the received_cash_notes dir if it doesn't exist.
-        std::fs::create_dir_all(&wallet_dir)?;
+        Self::load_from_path(&wallet_dir, None)
+    }
+
+    /// Tries to loads a serialized wallet from a path, bailing out if it doesn't exist.
+    pub fn try_load_from(root_dir: &Path) -> Result<Self> {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
         let (key, wallet, unconfirmed_spend_requests) = load_from_path(&wallet_dir, None)?;
         Ok(Self {
             key,
@@ -147,10 +151,11 @@ impl LocalWallet {
         })
     }
 
-    /// Tries to loads a serialized wallet from a path, bailing out if it doesn't exist.
-    pub fn try_load_from(root_dir: &Path) -> Result<Self> {
-        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        let (key, wallet, unconfirmed_spend_requests) = load_from_path(&wallet_dir, None)?;
+    /// Loads a serialized wallet from a given path, no additional element will
+    /// be added to the provided path and strictly taken as the wallet files location.
+    pub fn load_from_path(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
+        std::fs::create_dir_all(wallet_dir)?;
+        let (key, wallet, unconfirmed_spend_requests) = load_from_path(wallet_dir, main_key)?;
         Ok(Self {
             key,
             wallet,
@@ -293,18 +298,27 @@ impl LocalWallet {
         let mut all_payees_only = vec![];
         let mut rng = &mut rand::thread_rng();
 
-        // We currently pay NETWORK_ROYALTIES_AMOUNT_PER_ADDR (1 nano/addr) as network royalties.
-        let royalties_fees = NanoTokens::from(
-            NETWORK_ROYALTIES_AMOUNT_PER_ADDR.as_nano() * all_data_payments.len() as u64,
-        );
+        // we currently pay 1 nano per address as network royalties.
+        let royalties_pk = *crate::NETWORK_ROYALTIES_PK;
 
         let mut storage_cost = NanoTokens::zero();
+        let mut royalties_fees = NanoTokens::zero();
+
         for (_content_addr, payees) in all_data_payments.iter_mut() {
+            // add network royalties payment as payee for each address being payed
+            payees.push((royalties_pk, NETWORK_ROYALTIES_AMOUNT_PER_ADDR));
+
             let mut unique_key_vec = Vec::<(NanoTokens, MainPubkey, [u8; 32])>::new();
             for (address, amount) in payees.clone().into_iter() {
-                storage_cost = storage_cost
-                    .checked_add(amount)
-                    .ok_or(WalletError::TotalPriceTooHigh)?;
+                if address == *NETWORK_ROYALTIES_PK {
+                    royalties_fees = royalties_fees
+                        .checked_add(amount)
+                        .ok_or(WalletError::TotalPriceTooHigh)?;
+                } else {
+                    storage_cost = storage_cost
+                        .checked_add(amount)
+                        .ok_or(WalletError::TotalPriceTooHigh)?;
+                }
 
                 unique_key_vec.push((
                     amount,
@@ -312,14 +326,6 @@ impl LocalWallet {
                     UniquePubkey::random_derivation_index(&mut rng),
                 ));
             }
-
-            // Add network royalties payment as payee for each address being paid
-            payees.push((*NETWORK_ROYALTIES_PK, NETWORK_ROYALTIES_AMOUNT_PER_ADDR));
-            unique_key_vec.push((
-                NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
-                *NETWORK_ROYALTIES_PK,
-                UniquePubkey::random_derivation_index(&mut rng),
-            ));
 
             all_payees_only.extend(unique_key_vec);
         }
@@ -383,8 +389,6 @@ impl LocalWallet {
         }
 
         self.update_local_wallet(offline_transfer, exclusive_access)?;
-
-        // `storage_cost` doesn't include the `royalties_fees`.
         Ok((storage_cost, royalties_fees))
     }
 
