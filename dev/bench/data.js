@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699530475005,
+  "lastUpdate": 1699531011335,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "0916891426253ce05266a6538e5fcc4f74a280e3",
-          "message": "fix(memcheck): add missing local-discovery feats",
-          "timestamp": "2023-06-29T10:00:38+09:00",
-          "tree_id": "6b8dbfa294fa29a65bb5b4d90a8c00af9e3cc19e",
-          "url": "https://github.com/maidsafe/safe_network/commit/0916891426253ce05266a6538e5fcc4f74a280e3"
-        },
-        "date": 1688004707160,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 19,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 55,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "e31d4cc33327ba3f68dc26e046d04a6710e1e849",
+          "message": "chore: increase periodic bootstrap interval by reducing stepping",
+          "timestamp": "2023-11-09T11:00:01Z",
+          "tree_id": "d1b9d1d741db9703b81a09e798e74e7e3acca863",
+          "url": "https://github.com/maidsafe/safe_network/commit/e31d4cc33327ba3f68dc26e046d04a6710e1e849"
+        },
+        "date": 1699531010373,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57,
             "unit": "MB"
           }
         ]
