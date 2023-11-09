@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699538563627,
+  "lastUpdate": 1699539047393,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "01ca0b6147d2bcd11051cb16b3ade8884f9c90e1",
-          "message": "fix: perm test",
-          "timestamp": "2023-07-04T11:10:54+02:00",
-          "tree_id": "5767f29c58a545f9965daf9dbd6c862e02cd63fa",
-          "url": "https://github.com/maidsafe/safe_network/commit/01ca0b6147d2bcd11051cb16b3ade8884f9c90e1"
-        },
-        "date": 1688464836988,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 19.55,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/c4eac8f5176d5e4d1911c26bc248c8152daf4756"
         },
         "date": 1699538274914,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 58,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "999785aff1052fe2c45236f10114bb90710995d2",
+          "message": "fix(test): fetch record_holders during retry",
+          "timestamp": "2023-11-09T13:06:14Z",
+          "tree_id": "e3cb125e2d7a406f2b042e96874e8932dee35a99",
+          "url": "https://github.com/maidsafe/safe_network/commit/999785aff1052fe2c45236f10114bb90710995d2"
+        },
+        "date": 1699539046822,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
