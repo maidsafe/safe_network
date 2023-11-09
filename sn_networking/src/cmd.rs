@@ -568,6 +568,8 @@ impl SwarmDriver {
                     msg: msg.clone(),
                 });
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
+                let content_hash = XorName::from_content(&msg);
+                trace!("Publishing a gossipsub msg {content_hash:?} with topic_id {topic_id:}");
                 self.swarm
                     .behaviour_mut()
                     .gossipsub
