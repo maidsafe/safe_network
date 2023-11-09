@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699536877379,
+  "lastUpdate": 1699537965362,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fdb169980390a1b34dc12d24412d63810338a02e",
-          "message": "chore(metrics): remove network stats\n- Currently the `NetworkMetrics` provides interface/system wide stats\n  and thus can dirtied easily. A process level mechanism has to be\n  implemented to have valid usable network stat.",
-          "timestamp": "2023-07-13T07:42:24Z",
-          "tree_id": "1f1110648a0658b2ff04f7675653a2692b235bb7",
-          "url": "https://github.com/maidsafe/safe_network/commit/fdb169980390a1b34dc12d24412d63810338a02e"
-        },
-        "date": 1689238205678,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1772489760618743,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.639354855821466,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.31965672746308,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 31.974105152494356,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "c4eac8f5176d5e4d1911c26bc248c8152daf4756",
+          "message": "fix(test): use client API to listen for gossipsub msgs when checking transfer notifs",
+          "timestamp": "2023-11-09T12:38:48Z",
+          "tree_id": "0a9b1d8b1592e60dcaea0f5de938b3e69d328d19",
+          "url": "https://github.com/maidsafe/safe_network/commit/c4eac8f5176d5e4d1911c26bc248c8152daf4756"
+        },
+        "date": 1699537963722,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 3.0668889843041667,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 8.362039322376189,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 46.73828765837246,
             "unit": "MiB/s"
           }
         ]
