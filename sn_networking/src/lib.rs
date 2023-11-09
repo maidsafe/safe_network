@@ -623,6 +623,10 @@ impl Network {
         Ok(state)
     }
 
+    pub fn start_listen_gossip(&self) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::GossipListener)
+    }
+
     // Helper to send SwarmCmd
     fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
         let capacity = self.swarm_cmd_sender.capacity();

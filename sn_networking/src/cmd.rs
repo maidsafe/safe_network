@@ -144,6 +144,7 @@ pub enum SwarmCmd {
         /// Raw bytes of the message to publish
         msg: Bytes,
     },
+    GossipListener,
 }
 
 /// Debug impl for SwarmCmd to avoid printing full Record, instead only RecodKey
@@ -257,6 +258,9 @@ impl Debug for SwarmCmd {
             }
             SwarmCmd::SendRequest { req, peer, .. } => {
                 write!(f, "SwarmCmd::SendRequest req: {:?}, peer: {:?}", req, peer)
+            }
+            SwarmCmd::GossipListener => {
+                write!(f, "SwarmCmd::GossipListener")
             }
         }
     }
@@ -568,15 +572,20 @@ impl SwarmDriver {
             SwarmCmd::GossipsubPublish { topic_id, msg } => {
                 // If we publish a Gossipsub message, we might not receive the same message on our side.
                 // Hence push an event to notify that we've published a message
-                self.send_event(NetworkEvent::GossipsubMsgPublished {
-                    topic: topic_id.clone(),
-                    msg: msg.clone(),
-                });
+                if self.is_gossip_listener {
+                    self.send_event(NetworkEvent::GossipsubMsgPublished {
+                        topic: topic_id.clone(),
+                        msg: msg.clone(),
+                    });
+                }
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
                 self.swarm
                     .behaviour_mut()
                     .gossipsub
                     .publish(topic_id, msg)?;
+            }
+            SwarmCmd::GossipListener => {
+                self.is_gossip_listener = true;
             }
         }
 
