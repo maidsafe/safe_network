@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699536407845,
+  "lastUpdate": 1699536875692,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "9efdfea08f0581c820bbc6f356c8292fb8a05de1",
-          "message": "feat(node): write secret key to disk and re-use",
-          "timestamp": "2023-06-29T15:45:30+01:00",
-          "tree_id": "3346b28f54b45fe9fd433cb7702ebfce65824676",
-          "url": "https://github.com/maidsafe/safe_network/commit/9efdfea08f0581c820bbc6f356c8292fb8a05de1"
-        },
-        "date": 1688054579097,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 18.01,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "aa4a209ffafc2e306f459b4d0077aa934f8fcc0b",
+          "message": "chore: simplify when construct payess for storage",
+          "timestamp": "2023-11-09T12:30:08Z",
+          "tree_id": "db4a88bf9821cc4e3ea1450785c871ebf1d61cf2",
+          "url": "https://github.com/maidsafe/safe_network/commit/aa4a209ffafc2e306f459b4d0077aa934f8fcc0b"
+        },
+        "date": 1699536875288,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
