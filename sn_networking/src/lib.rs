@@ -82,8 +82,6 @@ const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration:
 const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(500);
 /// Number of attempts to verify a record
 const VERIFICATION_ATTEMPTS: usize = 3;
-/// Number of attempts to re-put a record
-const PUT_RECORD_RETRIES: usize = 3;
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
@@ -441,37 +439,28 @@ impl Network {
 
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
-    /// Retry up to `PUT_RECORD_RETRIES` times if we can't verify the record is stored
     pub async fn put_record(
         &self,
         record: Record,
         verify_store: Option<Record>,
         expected_holders: ExpectedHoldersList,
     ) -> Result<()> {
-        let mut retries = 0;
+        info!(
+            "Attempting to PUT record of {:?} to network",
+            PrettyPrintRecordKey::from(&record.key)
+        );
 
-        // TODO: Move this put retry loop up above store cost checks so we can re-put if storecost failed.
-        while retries < PUT_RECORD_RETRIES {
-            info!(
-                "Attempting to PUT record of {:?} to network",
-                PrettyPrintRecordKey::from(&record.key)
-            );
+        let res = self
+            .put_record_once(
+                record.clone(),
+                verify_store.clone(),
+                expected_holders.clone(),
+            )
+            .await;
 
-            let res = self
-                .put_record_once(
-                    record.clone(),
-                    verify_store.clone(),
-                    expected_holders.clone(),
-                )
-                .await;
-
-            // if we're not verifying a record, or it's fine we can return
-            if verify_store.is_none() || res.is_ok() {
-                return res;
-            }
-
-            // otherwise try again
-            retries += 1;
+        // if we're not verifying a record, or it's fine we can return
+        if verify_store.is_none() || res.is_ok() {
+            return Ok(());
         }
 
         Err(Error::FailedToVerifyRecordWasStored(
