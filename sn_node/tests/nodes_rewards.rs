@@ -9,19 +9,20 @@
 mod common;
 
 use crate::common::{get_client_and_wallet, random_content};
-use sn_client::WalletClient;
+use sn_client::{Client, ClientEvent, WalletClient};
 use sn_logging::LogBuilder;
-use sn_node::NodeEvent;
+use sn_node::{NodeEvent, TRANSFER_NOTIF_TOPIC};
 use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, NodeEventsRequest, TransferNotifsFilterRequest,
 };
 use sn_transfers::{
-    LocalWallet, NanoTokens, NETWORK_ROYALTIES_AMOUNT_PER_ADDR, NETWORK_ROYALTIES_PK,
+    CashNoteRedemption, LocalWallet, NanoTokens, NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
+    NETWORK_ROYALTIES_PK,
 };
 use xor_name::XorName;
 
 use assert_fs::TempDir;
-use bls::{PublicKey, SecretKey};
+use bls::{PublicKey, SecretKey, PK_SIZE};
 use eyre::{eyre, Result};
 use tokio::{
     task::JoinHandle,
@@ -51,7 +52,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     println!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
 
     let (_file_addr, rewards_paid, _royalties_fees) = files_api
-        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
+        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, true)
         .await?;
 
     println!("Paid {rewards_paid:?} total rewards for the chunks");
@@ -120,14 +121,12 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
         chunks_dir.path().to_path_buf(),
     )?;
 
+    let handle = spawn_royalties_payment_client_listener(&client)?;
+
     let num_of_chunks = chunks.len();
     println!("Paying for {num_of_chunks} random addresses...");
-    let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
-    let handle =
-        spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string(), royalties_pk, true);
-
     let (_, storage_cost, royalties_cost) = files_api
-        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
+        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, false)
         .await?;
 
     println!("Random chunks stored, paid {storage_cost}/{royalties_cost}");
@@ -136,7 +135,10 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     let expected = royalties_cost.as_nano() as usize;
 
     println!("Number of notifications received by node: {count}");
-    assert!(count >= expected, "Not enough notifications received");
+    assert_eq!(
+        count, expected,
+        "Unexpected number of notifications received"
+    );
 
     Ok(())
 }
@@ -155,20 +157,17 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let mut rng = rand::thread_rng();
     let register_addr = XorName::random(&mut rng);
 
-    println!("Paying for random Register address {register_addr:?} ...");
-    let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
-    let handle =
-        spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string(), royalties_pk, true);
+    let handle = spawn_royalties_payment_client_listener(&client)?;
 
+    println!("Paying for random Register address {register_addr:?} ...");
     let (_, cost) = client
         .create_and_pay_for_register(register_addr, &mut wallet_client, false)
         .await?;
-
     println!("Random Register created, paid {cost}");
 
     let count = handle.await??;
     println!("Number of notifications received by node: {count}");
-    assert!(count >= 1, "Not enough notifications received");
+    assert_eq!(count, 1, "Unexpected number of notifications received");
 
     Ok(())
 }
@@ -208,7 +207,7 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     let num_of_chunks = chunks.len();
     println!("Paying for {num_of_chunks} random addresses...");
     let (_, storage_cost, royalties_cost) = files_api
-        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks)
+        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, false)
         .await?;
     println!("Random chunks stored, paid {storage_cost}/{royalties_cost}");
 
@@ -319,4 +318,58 @@ fn spawn_royalties_payment_listener(
 
         Ok(count)
     })
+}
+
+fn spawn_royalties_payment_client_listener(
+    client: &Client,
+) -> Result<JoinHandle<Result<usize, eyre::Report>>> {
+    let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
+    client.subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())?;
+    let mut events_receiver = client.events_channel();
+
+    let handle = tokio::spawn(async move {
+        let mut count = 0;
+
+        let duration = Duration::from_secs(10);
+        println!("Awaiting transfers notifs for {duration:?}...");
+        if timeout(duration, async {
+            while let Ok(event) = events_receiver.recv().await {
+                match event {
+                    ClientEvent::GossipsubMsg { topic, msg } => {
+                        // we assume it's a notification of a transfer as that's the only topic we've subscribed to
+                        match try_decode_transfer_notif(&msg) {
+                            Ok((key, _)) => {
+                                println!("Transfer notif received for key {key:?}");
+                                if key == royalties_pk {
+                                    count += 1;
+                                }
+                            }
+                            Err(err) => println!("GossipsubMsg received on topic '{topic}' couldn't be decoded as transfer notif: {err:?}"),
+                        }
+                    },
+                    _ => { /* ignored */ }
+                }
+            }
+        })
+        .await
+        .is_err()
+        {
+            println!("Timeout after {duration:?}.");
+        }
+
+        Ok(count)
+    });
+
+    Ok(handle)
+}
+
+fn try_decode_transfer_notif(msg: &[u8]) -> eyre::Result<(PublicKey, Vec<CashNoteRedemption>)> {
+    let mut key_bytes = [0u8; PK_SIZE];
+    key_bytes.copy_from_slice(
+        msg.get(0..PK_SIZE)
+            .ok_or_else(|| eyre::eyre!("msg doesn't have enough bytes"))?,
+    );
+    let key = PublicKey::from_bytes(key_bytes)?;
+    let cashnote_redemptions: Vec<CashNoteRedemption> = bincode::deserialize(&msg[PK_SIZE..])?;
+    Ok((key, cashnote_redemptions))
 }

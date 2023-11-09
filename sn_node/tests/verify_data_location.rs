@@ -90,10 +90,8 @@ async fn verify_data_location() -> Result<()> {
 
     store_chunks(client, chunk_count, paying_wallet_dir.to_path_buf()).await?;
 
-    // set of all the node indexes that stores a record key
-    let record_holders = get_records_and_holders().await?;
     // Verify data location initially
-    verify_location(&record_holders, &all_peers).await?;
+    verify_location(&all_peers).await?;
 
     // Churn nodes and verify the location of the data after VERIFICATION_DELAY
     let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
@@ -112,7 +110,6 @@ async fn verify_data_location() -> Result<()> {
 
         // wait for the dead peer to be removed from the RT and the replication flow to finish
         println!("\nNode {node_index} has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
-
         tokio::time::sleep(VERIFICATION_DELAY).await;
 
         // get the new PeerId for the current NodeIndex
@@ -124,12 +121,9 @@ async fn verify_data_location() -> Result<()> {
         let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
         all_peers[node_index as usize - 1] = peer_id;
 
-        // get the new set of holders
-        let record_holders = get_records_and_holders().await?;
-
         print_node_close_groups(&all_peers);
 
-        verify_location(&record_holders, &all_peers).await?;
+        verify_location(&all_peers).await?;
 
         node_index += 1;
         if node_index > NODE_COUNT as u16 {
@@ -180,15 +174,16 @@ async fn get_records_and_holders() -> Result<RecordHolders> {
     Ok(record_holders)
 }
 
-// Verifies that the chunk is stored by the actual closest peers to the RecordKey
-async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -> Result<()> {
+// Fetches the record_holders and verifies that the record is stored by the actual closest peers to the RecordKey
+// It has a retry loop built in.
+async fn verify_location(all_peers: &[PeerId]) -> Result<()> {
     let mut failed = HashMap::new();
-
     let all_peers_hashset = all_peers.iter().cloned().collect::<HashSet<_>>();
 
     let mut verification_attempts = 0;
     while verification_attempts < VERIFICATION_ATTEMPTS {
         failed.clear();
+        let record_holders = get_records_and_holders().await?;
         for (key, actual_holders_idx) in record_holders.iter() {
             println!("Verifying {:?}", PrettyPrintRecordKey::from(key));
             let record_key = KBucketKey::from(key.to_vec());
@@ -237,7 +232,7 @@ async fn verify_location(record_holders: &RecordHolders, all_peers: &[PeerId]) -
                 .for_each(|expected| failed_peers.push(*expected));
 
             if !failed_peers.is_empty() {
-                failed.insert(PrettyPrintRecordKey::from(key), failed_peers);
+                failed.insert(PrettyPrintRecordKey::from(key).into_owned(), failed_peers);
             }
         }
 
@@ -334,7 +329,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
 
         let key = PrettyPrintRecordKey::from(&RecordKey::new(&file_addr)).into_owned();
         file_api
-            .pay_and_upload_bytes_test(file_addr, chunks)
+            .pay_and_upload_bytes_test(file_addr, chunks, true)
             .await?;
         uploaded_chunks_count += 1;
 
