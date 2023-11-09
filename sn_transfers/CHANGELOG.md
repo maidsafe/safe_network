@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.12](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.11...sn_transfers-v0.14.12) - 2023-11-09
+
+### Other
+- simplify when construct payess for storage
+
 ## [0.14.11](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.10...sn_transfers-v0.14.11) - 2023-11-02
 
 ### Added
