@@ -17,6 +17,8 @@ pub mod messages;
 pub mod node_rpc;
 /// Storage types for spends, chunks and registers.
 pub mod storage;
+/// Test utils
+#[cfg(feature = "test-utils")]
 pub mod test_utils;
 
 // this includes code generated from .proto files
