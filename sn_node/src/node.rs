@@ -246,7 +246,10 @@ impl Node {
                     }
                     node_cmd = cmds_receiver.recv() => {
                         match node_cmd {
-                            Ok(NodeCmd::TransferNotifsFilter(filter)) => self.transfer_notifs_filter = filter,
+                            Ok(NodeCmd::TransferNotifsFilter(filter)) => {
+                                self.transfer_notifs_filter = filter;
+                                let _ = self.network.start_listen_gossip();
+                            }
                             Err(err) => error!("When trying to read from the NodeCmds channel/receiver: {err:?}")
                         }
                     }
