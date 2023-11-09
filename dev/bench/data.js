@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699531013672,
+  "lastUpdate": 1699536407845,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "b3c8fc1c206c85a5571f8c647bcbcf345545bd19",
-          "message": "refactor: client to upload paid chunks in batches",
-          "timestamp": "2023-07-12T05:58:07Z",
-          "tree_id": "8dd07ba3524ee25588e75306ae161c2aa2f8560c",
-          "url": "https://github.com/maidsafe/safe_network/commit/b3c8fc1c206c85a5571f8c647bcbcf345545bd19"
-        },
-        "date": 1689144930892,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1912803478239744,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.738244482471663,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.349445393930955,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 30.539005551120457,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "aa4a209ffafc2e306f459b4d0077aa934f8fcc0b",
+          "message": "chore: simplify when construct payess for storage",
+          "timestamp": "2023-11-09T12:30:08Z",
+          "tree_id": "db4a88bf9821cc4e3ea1450785c871ebf1d61cf2",
+          "url": "https://github.com/maidsafe/safe_network/commit/aa4a209ffafc2e306f459b4d0077aa934f8fcc0b"
+        },
+        "date": 1699536405550,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 2.544387207265423,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 7.428214638030354,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 31.974105152494356,
             "unit": "MiB/s"
           }
         ]
