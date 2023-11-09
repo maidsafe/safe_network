@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699527234652,
+  "lastUpdate": 1699530475005,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11660,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 30.467697990676246,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "e31d4cc33327ba3f68dc26e046d04a6710e1e849",
+          "message": "chore: increase periodic bootstrap interval by reducing stepping",
+          "timestamp": "2023-11-09T11:00:01Z",
+          "tree_id": "d1b9d1d741db9703b81a09e798e74e7e3acca863",
+          "url": "https://github.com/maidsafe/safe_network/commit/e31d4cc33327ba3f68dc26e046d04a6710e1e849"
+        },
+        "date": 1699530471556,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 2.359473593688018,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 6.225670691194613,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 30.539005551120457,
             "unit": "MiB/s"
           }
         ]
