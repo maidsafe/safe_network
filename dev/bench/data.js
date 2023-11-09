@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699538275331,
+  "lastUpdate": 1699538276821,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f25f4d5d7bba328a14db694136b0e92716cbd610",
-          "message": "chore(logging): dont log PID with metrics",
-          "timestamp": "2023-06-26T04:57:52Z",
-          "tree_id": "9de7bfb5fa323943c27b0b14b1ab2c6951a9baad",
-          "url": "https://github.com/maidsafe/safe_network/commit/f25f4d5d7bba328a14db694136b0e92716cbd610"
-        },
-        "date": 1687759591888,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 924.85,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 550,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "c4eac8f5176d5e4d1911c26bc248c8152daf4756",
+          "message": "fix(test): use client API to listen for gossipsub msgs when checking transfer notifs",
+          "timestamp": "2023-11-09T12:38:48Z",
+          "tree_id": "0a9b1d8b1592e60dcaea0f5de938b3e69d328d19",
+          "url": "https://github.com/maidsafe/safe_network/commit/c4eac8f5176d5e4d1911c26bc248c8152daf4756"
+        },
+        "date": 1699538276433,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 249,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 88,
             "unit": "MB"
           }
         ]
