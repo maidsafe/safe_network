@@ -34,7 +34,7 @@ pub enum WalletCmds {
         #[clap(long)]
         peer_id: Vec<String>,
     },
-    /// [DEPRECATED] will be removed in future versions.
+    /// DEPRECATED will be removed in future versions.
     /// Prefer using the send and receive commands instead.
     ///
     /// Deposit CashNotes from the received directory to the local wallet.
