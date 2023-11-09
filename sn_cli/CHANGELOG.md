@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.6](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.85.5...sn_cli-v0.85.6) - 2023-11-09
+
+### Added
+- increase retry count for chunk put
+- chunk put retry taking repayment into account
+
+### Other
+- const instead of magic num in code for wait time
+- please ci
+
 ## [0.85.5](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.85.4...sn_cli-v0.85.5) - 2023-11-08
 
 ### Other

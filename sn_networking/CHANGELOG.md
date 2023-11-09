@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.30](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.29...sn_networking-v0.9.30) - 2023-11-09
+
+### Added
+- chunk put retry taking repayment into account
+
 ## [0.9.29](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.28...sn_networking-v0.9.29) - 2023-11-08
 
 ### Other
