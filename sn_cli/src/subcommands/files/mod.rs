@@ -34,7 +34,7 @@ use tokio::task::JoinHandle;
 use xor_name::XorName;
 
 /// Max amount of times to retry uploading a chunk
-const MAX_CHUNK_PUT_RETRIES: usize = 3;
+const MAX_CHUNK_PUT_RETRIES: usize = 10;
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
