@@ -6,19 +6,26 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use bls::SecretKey;
+use bls::{PublicKey, SecretKey, PK_SIZE};
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
-use sn_client::{Client, Error as ClientError};
+use sn_client::{Client, ClientEvent, Error as ClientError};
 use sn_transfers::{
-    parse_main_pubkey, Error as TransferError, LocalWallet, MainSecretKey, NanoTokens, Transfer,
-    WalletError,
+    parse_main_pubkey, CashNoteRedemption, Error as TransferError, LocalWallet, MainSecretKey,
+    NanoTokens, Transfer, WalletError,
 };
-use std::{io::Read, path::Path, str::FromStr};
+use std::{
+    io::Read,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 use url::Url;
 
 // Defines the size of batch for the parallel uploading of chunks and correspondent payments.
 pub(crate) const BATCH_SIZE: usize = 20;
+
+const DEFAULT_RECEIVE_ONLINE_WALLET_DIR: &str = "receive_online";
+const TRANSFER_NOTIF_TOPIC: &str = "TRANSFER_NOTIFICATION";
 
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
@@ -90,6 +97,18 @@ pub enum WalletCmds {
         #[clap(name = "transfer")]
         transfer: String,
     },
+    /// Listen for transfer notifications from the network over gossipsub protocol,
+    /// depositing them onto a local wallet.
+    /// Only cash notes owned by the public key corresponding to the provided SK will be accepted,
+    /// verified to be valid against the network, and deposited onto a locally stored wallet.
+    ReceiveOnline {
+        /// Hex-encoded main secret key
+        #[clap(name = "sk")]
+        sk: String,
+        /// Optional path where to store the wallet
+        #[clap(name = "path")]
+        path: Option<PathBuf>,
+    },
 }
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
@@ -137,16 +156,17 @@ pub(crate) async fn wallet_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await?,
-        WalletCmds::Receive { file, transfer } => receive(transfer, file, client, root_dir).await?,
-        WalletCmds::GetFaucet { url } => get_faucet(root_dir, client, url.clone()).await?,
-        cmd => {
-            return Err(eyre!(
-                "{cmd:?} has to be processed before connecting to the network"
-            ))
+        WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await,
+        WalletCmds::Receive { file, transfer } => receive(transfer, file, client, root_dir).await,
+        WalletCmds::GetFaucet { url } => get_faucet(root_dir, client, url.clone()).await,
+        WalletCmds::ReceiveOnline { sk, path } => {
+            let wallet_dir = path.unwrap_or(root_dir.join(DEFAULT_RECEIVE_ONLINE_WALLET_DIR));
+            listen_notifs_and_deposit(&wallet_dir, client, sk).await
         }
+        cmd => Err(eyre!(
+            "{cmd:?} has to be processed before connecting to the network"
+        )),
     }
-    Ok(())
 }
 
 fn address(root_dir: &Path) -> Result<()> {
@@ -326,4 +346,94 @@ async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Pa
 
     println!("Successfully stored cash_note to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
     Ok(())
+}
+
+async fn listen_notifs_and_deposit(root_dir: &Path, client: &Client, sk: String) -> Result<()> {
+    let mut wallet = match SecretKey::from_hex(&sk) {
+        Ok(sk) => {
+            let pk_hex = sk.public_key().to_hex();
+            let main_sk = MainSecretKey::new(sk);
+            let folder_name = format!("pk_{}_{}", &pk_hex[..6], &pk_hex[pk_hex.len() - 6..]);
+            let wallet_dir = root_dir.join(folder_name);
+            println!("Loading local wallet from: {}", wallet_dir.display());
+            LocalWallet::load_from_path(&wallet_dir, Some(main_sk))?
+        }
+        Err(err) => return Err(eyre!("Failed to parse hex-encoded SK: {err:?}")),
+    };
+
+    let main_pk = wallet.address();
+    let pk = main_pk.public_key();
+
+    client.subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())?;
+    let mut events_receiver = client.events_channel();
+
+    println!("Current balance in local wallet: {}", wallet.balance());
+    println!("Listening to transfers notifications for {pk:?}... (press Ctrl+C to exit)");
+    println!();
+
+    while let Ok(event) = events_receiver.recv().await {
+        let cash_notes = match event {
+            ClientEvent::GossipsubMsg { topic, msg } => {
+                // we assume it's a notification of a transfer as that's the only topic we've subscribed to
+                match try_decode_transfer_notif(&msg) {
+                    Err(err) => {
+                        println!("GossipsubMsg received on topic '{topic}' couldn't be decoded as transfer notif: {err:?}");
+                        continue;
+                    }
+                    Ok((key, _)) if key != pk => continue,
+                    Ok((key, cashnote_redemptions)) => {
+                        println!("New transfer notification received for {key:?}, containing {} CashNoteRedemption/s.", cashnote_redemptions.len());
+                        match client
+                            .verify_cash_notes_redemptions(main_pk, &cashnote_redemptions)
+                            .await
+                        {
+                            Err(err) => {
+                                println!("At least one of the CashNoteRedemptions received is invalid, dropping them: {err:?}");
+                                continue;
+                            }
+                            Ok(cash_notes) => cash_notes,
+                        }
+                    }
+                }
+            }
+            _other_event => continue,
+        };
+
+        if let Err(err) = wallet.deposit_and_store_to_disk(&cash_notes) {
+            println!("Failed to deposit the received cash notes: {err}");
+        }
+
+        cash_notes.iter().for_each(|cn| {
+            let value = match cn.value() {
+                Ok(value) => value.to_string(),
+                Err(err) => {
+                    println!("Failed to obtain cash note value: {err}");
+                    "unknown".to_string()
+                }
+            };
+            println!(
+                "CashNote received with {:?}, value: {value}",
+                cn.unique_pubkey(),
+            );
+        });
+
+        println!(
+            "New balance after depositing received CashNote/s: {}",
+            wallet.balance()
+        );
+        println!();
+    }
+
+    Ok(())
+}
+
+fn try_decode_transfer_notif(msg: &[u8]) -> Result<(PublicKey, Vec<CashNoteRedemption>)> {
+    let mut key_bytes = [0u8; PK_SIZE];
+    key_bytes.copy_from_slice(
+        msg.get(0..PK_SIZE)
+            .ok_or_else(|| eyre!("msg doesn't have enough bytes"))?,
+    );
+    let key = PublicKey::from_bytes(key_bytes)?;
+    let cashnote_redemptions: Vec<CashNoteRedemption> = bincode::deserialize(&msg[PK_SIZE..])?;
+    Ok((key, cashnote_redemptions))
 }
