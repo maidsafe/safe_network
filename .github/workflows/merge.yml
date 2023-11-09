@@ -175,12 +175,6 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 5
 
-      - name: Start a client to pay for files storage
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir wallet pay "./resources"
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
-
       - name: Start a client to upload files
         run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload -- "./resources"
         env:
