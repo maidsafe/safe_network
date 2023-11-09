@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use serde::{Deserialize, Serialize};
 use std::{env, net::IpAddr, path::PathBuf};
 
@@ -25,22 +25,37 @@ pub struct DeploymentInventory {
     pub uploaded_files: Vec<(String, String)>,
 }
 
-// Read the path from the env variable SN_INVENTORY
-// Else read deployment name from SN_INVENTORY
-fn get_deployment_path() -> Result<PathBuf> {
-    let sn_inventory = env::var("SN_INVENTORY")?;
-    let path = PathBuf::from(sn_inventory);
-    if path.exists() {
-        Ok(path)
-    } else {
-        // let path = dirs_next::data_dir()
-        //     .ok_or_else(|| Error::CouldNotRetrieveDataDirectory)?
-        //     .join("safe")
-        //     .join("testnet-deploy");
-        // if !path.exists() {
-        //     std::fs::create_dir_all(path.clone())?;
-        // }
-        // read from the data dir
-        Ok(path.join(""))
+impl DeploymentInventory {
+    #[allow(dead_code)]
+    pub fn from_json() -> Result<Self> {
+        let path = Self::get_deployment_path()?;
+        let inventory_file = std::fs::read(path)?;
+        let inventory = serde_json::from_slice(&inventory_file)?;
+        Ok(inventory)
+    }
+
+    // Read the path from the env variable SN_INVENTORY
+    // Else read deployment name from SN_INVENTORY
+    #[allow(dead_code)]
+    fn get_deployment_path() -> Result<PathBuf> {
+        let sn_inventory = env::var("SN_INVENTORY")
+        .map_err(|_| eyre!("SN_INVENTORY not set. Provide either the deployment name or the direct path to the inventory.json file"))?;
+        let path_from_env = PathBuf::from(&sn_inventory);
+        if path_from_env.exists() {
+            Ok(path_from_env)
+        } else {
+            let path = dirs_next::data_dir()
+                .ok_or_else(|| eyre!("Could not obtain data_dir"))?
+                .join("safe")
+                .join("testnet-deploy")
+                .join(format!("{sn_inventory}-inventory.json"));
+            if path.exists() {
+                Ok(path)
+            } else {
+                Err(eyre!(
+                    "Could not obtain the deployment path from SN_INVENTORY"
+                ))
+            }
+        }
     }
 }
