@@ -466,6 +466,7 @@ impl Network {
                 record.clone(),
                 verify_store.clone(),
                 expected_holders.clone(),
+                quorum,
             )
             .await;
 
