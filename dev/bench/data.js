@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699536875692,
+  "lastUpdate": 1699536877379,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "1983c3dcae4fe777900d1a467d2b4feaffdb0ee6",
-          "message": "test: adding proptests for payment proofs merkletree utilities",
-          "timestamp": "2023-06-25T23:23:41Z",
-          "tree_id": "96d87cceef8a36402b635a9f296ebe94d3aead84",
-          "url": "https://github.com/maidsafe/safe_network/commit/1983c3dcae4fe777900d1a467d2b4feaffdb0ee6"
-        },
-        "date": 1687738990094,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 924.02,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 537,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "aa4a209ffafc2e306f459b4d0077aa934f8fcc0b",
+          "message": "chore: simplify when construct payess for storage",
+          "timestamp": "2023-11-09T12:30:08Z",
+          "tree_id": "db4a88bf9821cc4e3ea1450785c871ebf1d61cf2",
+          "url": "https://github.com/maidsafe/safe_network/commit/aa4a209ffafc2e306f459b4d0077aa934f8fcc0b"
+        },
+        "date": 1699536876957,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 234,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
