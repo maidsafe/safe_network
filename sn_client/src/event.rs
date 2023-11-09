@@ -59,7 +59,7 @@ pub enum ClientEvent {
 pub struct ClientEventsReceiver(pub(super) broadcast::Receiver<ClientEvent>);
 
 impl ClientEventsReceiver {
-    /// Receive a new event, meant to be ued by the user of the public API.
+    /// Receive a new event, meant to be used by the user of the public API.
     pub async fn recv(&mut self) -> Result<ClientEvent> {
         let event = self.0.recv().await?;
         Ok(event)
