@@ -293,27 +293,18 @@ impl LocalWallet {
         let mut all_payees_only = vec![];
         let mut rng = &mut rand::thread_rng();
 
-        // we currently pay 1 nano per address as network royalties.
-        let royalties_pk = *crate::NETWORK_ROYALTIES_PK;
+        // We currently pay NETWORK_ROYALTIES_AMOUNT_PER_ADDR (1 nano/addr) as network royalties.
+        let royalties_fees = NanoTokens::from(
+            NETWORK_ROYALTIES_AMOUNT_PER_ADDR.as_nano() * all_data_payments.len() as u64,
+        );
 
         let mut storage_cost = NanoTokens::zero();
-        let mut royalties_fees = NanoTokens::zero();
-
         for (_content_addr, payees) in all_data_payments.iter_mut() {
-            // add network royalties payment as payee for each address being payed
-            payees.push((royalties_pk, NETWORK_ROYALTIES_AMOUNT_PER_ADDR));
-
             let mut unique_key_vec = Vec::<(NanoTokens, MainPubkey, [u8; 32])>::new();
             for (address, amount) in payees.clone().into_iter() {
-                if address == *NETWORK_ROYALTIES_PK {
-                    royalties_fees = royalties_fees
-                        .checked_add(amount)
-                        .ok_or(WalletError::TotalPriceTooHigh)?;
-                } else {
-                    storage_cost = storage_cost
-                        .checked_add(amount)
-                        .ok_or(WalletError::TotalPriceTooHigh)?;
-                }
+                storage_cost = storage_cost
+                    .checked_add(amount)
+                    .ok_or(WalletError::TotalPriceTooHigh)?;
 
                 unique_key_vec.push((
                     amount,
@@ -321,6 +312,14 @@ impl LocalWallet {
                     UniquePubkey::random_derivation_index(&mut rng),
                 ));
             }
+
+            // Add network royalties payment as payee for each address being paid
+            payees.push((*NETWORK_ROYALTIES_PK, NETWORK_ROYALTIES_AMOUNT_PER_ADDR));
+            unique_key_vec.push((
+                NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
+                *NETWORK_ROYALTIES_PK,
+                UniquePubkey::random_derivation_index(&mut rng),
+            ));
 
             all_payees_only.extend(unique_key_vec);
         }
@@ -384,6 +383,8 @@ impl LocalWallet {
         }
 
         self.update_local_wallet(offline_transfer, exclusive_access)?;
+
+        // `storage_cost` doesn't include the `royalties_fees`.
         Ok((storage_cost, royalties_fees))
     }
 
