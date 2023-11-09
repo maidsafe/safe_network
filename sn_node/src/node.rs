@@ -42,7 +42,7 @@ use tokio::{
 /// Expected topic name where notifications of transfers are sent on.
 /// The notification msg is expected to contain the serialised public key, followed by the
 /// serialised transfer info encrypted against the referenced public key.
-pub(super) const TRANSFER_NOTIF_TOPIC: &str = "TRANSFER_NOTIFICATION";
+pub const TRANSFER_NOTIF_TOPIC: &str = "TRANSFER_NOTIFICATION";
 
 /// Interval to trigger replication on a random close_group peer
 const PERIODIC_REPLICATION_INTERVAL: Duration = Duration::from_secs(10);
@@ -410,7 +410,7 @@ impl Node {
                                 Ok(Some(notif_event)) => self.events_channel.broadcast(notif_event),
                                 Ok(None) => { /* transfer notif filered out */ }
                                 Err(err) => {
-                                    warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {:?}", err);
+                                    warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {err:?}");
                                     self.events_channel
                                         .broadcast(NodeEvent::GossipsubMsg { topic, msg });
                                 }
