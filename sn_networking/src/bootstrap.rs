@@ -15,7 +15,7 @@ pub(crate) const BOOTSTRAP_INTERVAL: Duration = Duration::from_secs(5);
 
 /// Every BOOTSTRAP_CONNECTED_PEERS_STEP connected peer, we step up the BOOTSTRAP_INTERVAL to slow down bootstrapping
 /// process
-const BOOTSTRAP_CONNECTED_PEERS_STEP: u32 = 50;
+const BOOTSTRAP_CONNECTED_PEERS_STEP: u32 = 5;
 
 /// If the previously added peer has been before LAST_PEER_ADDED_TIME_LIMIT, then we should slowdown the bootstrapping
 /// process. This is to make sure we don't flood the network with `FindNode` msgs.
