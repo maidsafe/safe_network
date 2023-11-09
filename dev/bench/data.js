@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699537965362,
+  "lastUpdate": 1699538275331,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "d4e88bfec5e40fdf8b8b596061dec6fd4081b407",
-          "message": "chore: various tidy up",
-          "timestamp": "2023-07-03T11:40:37+01:00",
-          "tree_id": "dcf1b29eb2f2822088c21154db2842c4ab0c500c",
-          "url": "https://github.com/maidsafe/safe_network/commit/d4e88bfec5e40fdf8b8b596061dec6fd4081b407"
-        },
-        "date": 1688383665325,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 17.51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 55,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "c4eac8f5176d5e4d1911c26bc248c8152daf4756",
+          "message": "fix(test): use client API to listen for gossipsub msgs when checking transfer notifs",
+          "timestamp": "2023-11-09T12:38:48Z",
+          "tree_id": "0a9b1d8b1592e60dcaea0f5de938b3e69d328d19",
+          "url": "https://github.com/maidsafe/safe_network/commit/c4eac8f5176d5e4d1911c26bc248c8152daf4756"
+        },
+        "date": 1699538274914,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 58,
             "unit": "MB"
           }
         ]
