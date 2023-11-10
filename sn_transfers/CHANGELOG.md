@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.14](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.13...sn_transfers-v0.14.14) - 2023-11-10
+
+### Added
+- *(cli)* attempt to reload wallet from disk if storing it fails when receiving transfers online
+- *(cli)* new cmd to listen to royalties payments and deposit them into a local wallet
+
 ## [0.14.13](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.12...sn_transfers-v0.14.13) - 2023-11-10
 
 ### Other
