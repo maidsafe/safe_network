@@ -97,8 +97,10 @@ pub enum WalletCmds {
         #[clap(name = "transfer")]
         transfer: String,
     },
-    /// Listen for transfer notifications from the network over gossipsub protocol,
-    /// depositing them onto a local wallet.
+    /// Listen for transfer notifications from the network over gossipsub protocol.
+    ///
+    /// Transfers will be deposited to a local wallet.
+    ///
     /// Only cash notes owned by the public key corresponding to the provided SK will be accepted,
     /// verified to be valid against the network, and deposited onto a locally stored wallet.
     ReceiveOnline {
