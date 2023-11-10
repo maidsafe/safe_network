@@ -5,25 +5,25 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
+//
+
+use sn_node_rpc_client::{RpcActions, RpcClient};
 
 use assert_fs::TempDir;
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::eyre::{eyre, Result};
-use libp2p::{Multiaddr, PeerId};
+use libp2p::Multiaddr;
 use sn_client::Client;
 use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
 use sn_protocol::safenode_proto::{
-    safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
-    GossipsubUnsubscribeRequest, NetworkInfoRequest, NodeEventsRequest, NodeInfoRequest,
-    RecordAddressesRequest, RestartRequest, StopRequest, TransferNotifsFilterRequest,
-    UpdateRequest,
+    safe_node_client::SafeNodeClient, NodeEventsRequest, TransferNotifsFilterRequest,
 };
 use sn_protocol::storage::SpendAddress;
 use sn_transfers::{LocalWallet, MainPubkey, MainSecretKey};
-use std::{fs, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
+use std::{fs, net::SocketAddr, path::PathBuf, time::Duration};
 use tokio_stream::StreamExt;
 use tonic::Request;
 use tracing_core::Level;
@@ -154,47 +154,37 @@ async fn main() -> Result<()> {
 
 pub async fn node_info(addr: SocketAddr) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint.clone()).await?;
-    let response = client.node_info(Request::new(NodeInfoRequest {})).await?;
-    let node_info = response.get_ref();
-    let peer_id = PeerId::from_bytes(&node_info.peer_id)?;
+    let client = RpcClient::new(&endpoint);
+    let node_info = client.node_info().await?;
 
     println!("Node info:");
     println!("==========");
     println!("RPC endpoint: {endpoint}");
-    println!("Peer Id: {peer_id}");
-    println!("Logs dir: {}", node_info.log_dir);
+    println!("Peer Id: {}", node_info.peer_id);
+    println!("Logs dir: {}", node_info.log_path.to_string_lossy());
     println!("PID: {}", node_info.pid);
-    println!("Binary version: {}", node_info.bin_version);
-    println!(
-        "Time since last restart: {:?}",
-        Duration::from_secs(node_info.uptime_secs)
-    );
+    println!("Binary version: {}", node_info.version);
+    println!("Time since last restart: {:?}", node_info.uptime);
 
     Ok(())
 }
 
 pub async fn network_info(addr: SocketAddr) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-    let response = client
-        .network_info(Request::new(NetworkInfoRequest {}))
-        .await?;
-    let network_info = response.get_ref();
+    let client = RpcClient::new(&endpoint);
+    let network_info = client.network_info().await?;
 
     println!("Node's connections to the Network:");
     println!();
     println!("Connected peers:");
-    for bytes in network_info.connected_peers.iter() {
-        let peer_id = PeerId::from_bytes(bytes)?;
+    for peer_id in network_info.connected_peers.iter() {
         println!("Peer: {peer_id}");
     }
 
     println!();
     println!("Node's listeners:");
     for multiaddr_str in network_info.listeners.iter() {
-        let multiaddr = Multiaddr::from_str(multiaddr_str)?;
-        println!("Listener: {multiaddr}");
+        println!("Listener: {multiaddr_str}");
     }
 
     Ok(())
@@ -326,15 +316,12 @@ pub async fn transfers_events(
 
 pub async fn record_addresses(addr: SocketAddr) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-    let response = client
-        .record_addresses(Request::new(RecordAddressesRequest {}))
-        .await?;
+    let client = RpcClient::new(&endpoint);
+    let record_addresses = client.record_addresses().await?;
 
     println!("Records held by the node:");
-    for bytes in response.get_ref().addresses.iter() {
-        let key = libp2p::kad::RecordKey::from(bytes.clone());
-        println!("Key: {key:?}");
+    for address in record_addresses.iter() {
+        println!("Key: {:?}", address.key);
     }
 
     Ok(())
@@ -342,47 +329,32 @@ pub async fn record_addresses(addr: SocketAddr) -> Result<()> {
 
 pub async fn gossipsub_subscribe(addr: SocketAddr, topic: String) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-    let _response = client
-        .subscribe_to_topic(Request::new(GossipsubSubscribeRequest {
-            topic: topic.clone(),
-        }))
-        .await?;
+    let client = RpcClient::new(&endpoint);
+    client.gossipsub_subscribe(&topic).await?;
     println!("Node successfully received the request to subscribe to topic '{topic}'");
     Ok(())
 }
 
 pub async fn gossipsub_unsubscribe(addr: SocketAddr, topic: String) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-    let _response = client
-        .unsubscribe_from_topic(Request::new(GossipsubUnsubscribeRequest {
-            topic: topic.clone(),
-        }))
-        .await?;
+    let client = RpcClient::new(&endpoint);
+    client.gossipsub_unsubscribe(&topic).await?;
     println!("Node successfully received the request to unsubscribe from topic '{topic}'");
     Ok(())
 }
 
 pub async fn gossipsub_publish(addr: SocketAddr, topic: String, msg: String) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-    let _response = client
-        .publish_on_topic(Request::new(GossipsubPublishRequest {
-            topic: topic.clone(),
-            msg: msg.into(),
-        }))
-        .await?;
+    let client = RpcClient::new(&endpoint);
+    client.gossipsub_publish(&topic, &msg).await?;
     println!("Node successfully received the request to publish on topic '{topic}'");
     Ok(())
 }
 
 pub async fn node_restart(addr: SocketAddr, delay_millis: u64) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-    let _response = client
-        .restart(Request::new(RestartRequest { delay_millis }))
-        .await?;
+    let client = RpcClient::new(&endpoint);
+    client.node_restart(delay_millis).await?;
     println!(
         "Node successfully received the request to restart in {:?}",
         Duration::from_millis(delay_millis)
@@ -392,10 +364,8 @@ pub async fn node_restart(addr: SocketAddr, delay_millis: u64) -> Result<()> {
 
 pub async fn node_stop(addr: SocketAddr, delay_millis: u64) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-    let _response = client
-        .stop(Request::new(StopRequest { delay_millis }))
-        .await?;
+    let client = RpcClient::new(&endpoint);
+    client.node_stop(delay_millis).await?;
     println!(
         "Node successfully received the request to stop in {:?}",
         Duration::from_millis(delay_millis)
@@ -405,10 +375,8 @@ pub async fn node_stop(addr: SocketAddr, delay_millis: u64) -> Result<()> {
 
 pub async fn node_update(addr: SocketAddr, delay_millis: u64) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-    let _response = client
-        .update(Request::new(UpdateRequest { delay_millis }))
-        .await?;
+    let client = RpcClient::new(&endpoint);
+    client.node_update(delay_millis).await?;
     println!(
         "Node successfully received the request to try to update in {:?}",
         Duration::from_millis(delay_millis)
