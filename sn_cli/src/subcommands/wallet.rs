@@ -399,10 +399,6 @@ async fn listen_notifs_and_deposit(root_dir: &Path, client: &Client, sk: String)
             _other_event => continue,
         };
 
-        if let Err(err) = wallet.deposit_and_store_to_disk(&cash_notes) {
-            println!("Failed to deposit the received cash notes: {err}");
-        }
-
         cash_notes.iter().for_each(|cn| {
             let value = match cn.value() {
                 Ok(value) => value.to_string(),
@@ -416,6 +412,19 @@ async fn listen_notifs_and_deposit(root_dir: &Path, client: &Client, sk: String)
                 cn.unique_pubkey(),
             );
         });
+
+        match wallet.deposit_and_store_to_disk(&cash_notes) {
+            Ok(()) => {}
+            Err(err @ WalletError::Io(_)) => {
+                println!("ERROR: Failed to deposit the received cash notes: {err}");
+                println!();
+                println!("WARNING: we'll try to reload/recreate the local wallet now, but if it was corrupted there could have been lost funds.");
+                println!();
+                wallet.reload_from_disk()?;
+                wallet.deposit_and_store_to_disk(&cash_notes)?;
+            }
+            Err(other_err) => return Err(other_err.into()),
+        }
 
         println!(
             "New balance after depositing received CashNote/s: {}",
