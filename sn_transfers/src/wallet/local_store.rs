@@ -76,6 +76,16 @@ impl LocalWallet {
         Ok(())
     }
 
+    /// Attempts to reload the wallet from disk.
+    pub fn reload_from_disk(&mut self) -> Result<()> {
+        std::fs::create_dir_all(&self.wallet_dir)?;
+        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
+        trace!("Trying to lock wallet to get available cash_notes...");
+        let exclusive_access = self.lock()?;
+        self.reload()?;
+        self.store(exclusive_access)
+    }
+
     /// Locks the wallet and returns exclusive access to the wallet
     /// This lock prevents any other process from locking the wallet dir, effectively acts as a mutex for the wallet
     pub fn lock(&self) -> Result<WalletExclusiveAccess> {
