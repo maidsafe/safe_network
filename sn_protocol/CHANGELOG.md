@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.20](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.19...sn_protocol-v0.8.20) - 2023-11-10
+
+### Other
+- mutable_key_type clippy fixes
+- *(networking)* sort records by closeness
+
 ## [0.8.19](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.18...sn_protocol-v0.8.19) - 2023-11-09
 
 ### Other
