@@ -420,7 +420,7 @@ fn store_chunks_task(
             };
 
             println!(
-                "Storws ({}) Chunk/s at cost: {cost:?} of file ({} bytes) at {addr:?} in {delay:?}",
+                "Stores ({}) Chunk/s at cost: {cost:?} of file ({} bytes) at {addr:?} in {delay:?}",
                 chunks_len, chunk_size
             );
             sleep(delay).await;
