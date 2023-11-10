@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.97.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.96.6...sn_client-v0.97.0) - 2023-11-10
+
+### Added
+- verify chunks with Quorum::N(2)
+- *(client)* only pay one node
+
+### Fixed
+- *(client)* register validations checks for more than one node
+- *(client)* set Quorum::One for registers
+- *(test)* use client API to listen for gossipsub msgs when checking transfer notifs
+
+### Other
+- *(transfers)* more logs around payments...
+- *(churn)* small delay before validating chunks in data_with_churn
+- *(client)* register get quorum->one
+- *(tests)* make gossipsub verification more strict wrt number of msgs received
+
 ## [0.96.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.96.5...sn_client-v0.96.6) - 2023-11-09
 
 ### Other

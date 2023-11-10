@@ -2085,6 +2085,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.98.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.97.8...sn_node-v0.98.0) - 2023-11-10
+
+### Added
+- *(client)* only pay one node
+
+### Fixed
+- *(client)* register validations checks for more than one node
+- *(node)* reduce replication candidates for interval flow.
+- *(networking)* only inform close peers of repl data
+- *(test)* fetch record_holders during retry
+- *(test)* use client API to listen for gossipsub msgs when checking transfer notifs
+
+### Other
+- fix typo
+- *(node)* add clearer error to test
+- *(node)* periodic replication every 30s
+- *(node)* send replication msgs to closest KVALUE nodes
+- *(node)* Arc<MainPubKey> to make clones cheaper
+- *(node)* post-rebase fixes for expected royalties on tests
+- reduce logging on keys on repl
+- do not drop cmds/events
+- *(node)* node gets one notification vs 5
+- mutable_key_type clippy fixes
+- *(churn)* small delay before validating chunks in data_with_churn
+- *(networking)* sort records by closeness
+- *(tests)* make gossipsub verification more strict wrt number of msgs received
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

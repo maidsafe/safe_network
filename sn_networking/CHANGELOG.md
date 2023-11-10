@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.32...sn_networking-v0.10.0) - 2023-11-10
+
+### Added
+- verify chunks with Quorum::N(2)
+- *(sn_networking)* get store cost only from majority
+- *(client)* only pay one node
+
+### Fixed
+- *(networking)* add put_record_once argument
+- *(sn_networking)* if record already stored, 0 cost
+
+### Other
+- *(transfers)* more logs around payments...
+- do not drop cmds/events
+- mutable_key_type clippy fixes
+- rebase fixups
+- *(networking)* increase timeout for replication fetches
+- *(networking)* increase parallel replications
+- *(networking)* sort records by closeness
+- *(networking)* add some randomness to retry interval for GET
+- *(networking)* increase replication fetcher throughput
+
 ## [0.9.32](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.9.31...sn_networking-v0.9.32) - 2023-11-09
 
 ### Other
