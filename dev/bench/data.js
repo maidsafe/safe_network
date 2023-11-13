@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699885195816,
+  "lastUpdate": 1699885198734,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "dbf94c7ffc226bb900ee217875264dedf970bac9",
-          "message": "ci: check local-discovery is not a default feature in any crate",
-          "timestamp": "2023-06-28T12:52:29+09:00",
-          "tree_id": "16302ca77f4653b7ef6a4d0f6dcb95f4adfa1144",
-          "url": "https://github.com/maidsafe/safe_network/commit/dbf94c7ffc226bb900ee217875264dedf970bac9"
-        },
-        "date": 1687928902012,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 936.36,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 471,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 75,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "f58306f5fa3c7d85ae779e7d4ff40cafc21eeaee",
+          "message": "fix(cli): failed to move chunk path shall not get deleted",
+          "timestamp": "2023-11-13T13:25:35Z",
+          "tree_id": "0d847c2ef0b4e23420b5db9182c8ee87023f8f52",
+          "url": "https://github.com/maidsafe/safe_network/commit/f58306f5fa3c7d85ae779e7d4ff40cafc21eeaee"
+        },
+        "date": 1699885197529,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 188,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 77,
             "unit": "MB"
           }
         ]
