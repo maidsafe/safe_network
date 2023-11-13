@@ -367,13 +367,29 @@ impl ChunkManager {
     pub(crate) fn mark_paid(&mut self, chunks: impl Iterator<Item = XorName>) {
         let set_of_paid_chunk = chunks.collect::<BTreeSet<_>>();
         let paid_dir = self.paid_dir.clone();
+        let unpaid_dir = self.unpaid_dir.clone();
 
-        // get all the chunks from unpaid
-        // if they're part of the set of paid_chunks, move them to the PAID_DIR and take a note of their new paths
+        // Get all the chunks from unpaid. If they're part of the set of paid_chunks,
+        // move them to the PAID_DIR and take a note of their new paths
         let new_chunk_paths = self
             .unpaid_chunks
             .par_iter()
             .flat_map(|(path_xor, chunked_file)| {
+                // Make sure the PAID_DIR/xor_path & PAID_DIR/xor_path/metadata exists.
+                // This only need to be undertaken at per file level.
+                let new_path = paid_dir.join(path_xor.0.clone());
+                if !new_path.exists() {
+                    if let Err(err) = fs::create_dir_all(&new_path) {
+                        error!("Failed to create dir inside PAID_DIR {new_path:?}: {err:?}");
+                    }
+                    let new_metadata = new_path.join(METADATA_FILE);
+                    let old_metadata = unpaid_dir.join(path_xor.0.clone()).join(METADATA_FILE);
+
+                    if let Err(err) = fs::copy(&old_metadata, &new_metadata) {
+                       error!("Failed to copy metadata file from {old_metadata:?} to {new_metadata:?}: {err:?}") 
+                    }
+                }
+
                 chunked_file
                     .chunks
                     .par_iter()
@@ -381,31 +397,14 @@ impl ChunkManager {
             })
             .filter_map(|(path_xor, (chunk_xor, chunk_path))| {
                 if set_of_paid_chunk.contains(chunk_xor) {
-                    // make sure the PAID_DIR/xor_path & PAID_DIR/xor_path/metadata exists
-                    let new_path = paid_dir.join(path_xor.0);
-                    if !new_path.exists() {
-                        fs::create_dir_all(&new_path)
-                            .map_err(|err| error!("Failed to create dir inside PAID_DIR {new_path:?}: {err:?}"))
-                            .ok()?;
-                        let new_metadata = new_path.join(METADATA_FILE);
-                        if !new_metadata.exists() {
-                            let mut old_metadata = chunk_path.clone();
-                            // to point to UNPAID_DIR/xor_path
-                            old_metadata.pop();
-                            old_metadata.push(METADATA_FILE);
-                            fs::copy(&old_metadata, &new_metadata)
-                                .map_err(|_| error!("Failed to copy metadata file from {old_metadata:?} to {new_metadata:?}"))
-                                .ok()?;
-                        }
-                    }
-                    let new_path = new_path.join(Self::hex_encode_xorname(*chunk_xor));
+                    let new_path = paid_dir.join(path_xor.0).join(Self::hex_encode_xorname(*chunk_xor));
 
-                    fs::rename(chunk_path, &new_path)
-                        .map_err(|_| {
-                            error!("Failed to move SE chunk from {chunk_path:?} to {new_path:?}");
-                        })
-                        .ok()?;
-                    Some((*chunk_xor, new_path))
+                    if let Err(err) = fs::rename(chunk_path, &new_path) {
+                        error!("Failed to move SE chunk from {chunk_path:?} to {new_path:?}: {err:?}");
+                        None
+                    } else {
+                        Some((*chunk_xor, new_path))
+                    }
                 } else {
                     None
                 }
@@ -418,6 +417,7 @@ impl ChunkManager {
         self.unpaid_chunks
             .iter_mut()
             .for_each(|(path_xor, chunked_file)| {
+                let mut all_moved_to_new_path = true;
                 chunked_file.chunks.retain(|(chunk_xor, chunk_path)| {
                     if set_of_paid_chunk.contains(chunk_xor) {
                         move_to_paid.insert(
@@ -429,13 +429,19 @@ impl ChunkManager {
                                 chunked_file.file_xor_addr,
                             ),
                         );
+                        if !new_chunk_paths.contains_key(chunk_xor) {
+                            all_moved_to_new_path = false;
+                        }
                         // don't retain it
                         false
                     } else {
                         true
                     }
                 });
-                if chunked_file.chunks.is_empty() {
+
+                // Whenever there is a chunk failed to be moved into new path,
+                // the parent `file folder` shall not be removed.
+                if chunked_file.chunks.is_empty() && all_moved_to_new_path {
                     entire_file_is_paid.insert(path_xor.clone());
                 }
             });
@@ -446,7 +452,7 @@ impl ChunkManager {
             let chunk_path = if let Some(new_path) = new_chunk_paths.get(&chunk_xor) {
                 new_path.clone()
             } else {
-                error!("Could not retrieve the PAID chunk path. Something went wrong. ");
+                error!("Could not retrieve the PAID chunk path of {chunk_xor:?}. Something went wrong. ");
                 // using the old one; assuming that it might be there?
                 chunk_path
             };
