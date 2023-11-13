@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.13](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.85.12...sn_cli-v0.85.13) - 2023-11-13
+
+### Fixed
+- avoid infinite looping on verification during upload
+
 ## [0.85.12](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.85.11...sn_cli-v0.85.12) - 2023-11-13
 
 ### Other
