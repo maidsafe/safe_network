@@ -458,7 +458,10 @@ async fn verify_and_repay_if_needed_once(
     }
 
     // If there were any failed chunks, we need to repay them
-    let remaining_unverified_chunks = chunk_manager.get_paid_chunks();
+    let mut remaining_unverified_chunks = chunk_manager.get_paid_chunks();
+    // We shall also include `unpaid_chunks` that due to transfer failures.
+    remaining_unverified_chunks.extend(chunk_manager.get_unpaid_chunks());
+
     println!(
         "{} chunks were not stored. Repaying them in batches.",
         remaining_unverified_chunks.len()
@@ -474,7 +477,9 @@ async fn verify_and_repay_if_needed_once(
             }))
             .await
         {
-            Ok(_new_cost) => {}
+            Ok(_new_cost) => {
+                chunk_manager.mark_paid(failed_chunks_batch.iter().map(|(addr, _path)| *addr));
+            }
             Err(error) => {
                 error!("Failed to repay for record storage: {failed_chunks_batch:?}: {error:?}");
             }
