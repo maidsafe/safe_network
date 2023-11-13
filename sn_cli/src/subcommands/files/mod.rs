@@ -35,6 +35,8 @@ use xor_name::XorName;
 
 /// Max amount of times to retry uploading a chunk
 const MAX_CHUNK_PUT_RETRIES: usize = 10;
+/// Max amount of times to retry verification and repay.
+const MAX_VERIFICATION_RETRIES: usize = 5;
 const CHUNK_PUT_RETRY_WAIT_S: u64 = 2;
 
 #[derive(Parser, Debug)]
@@ -256,7 +258,19 @@ async fn upload_files(
         println!("*            Verification            *");
         println!("**************************************");
 
-        while !chunk_manager.is_paid_chunks_empty() {
+        let mut attempts = 0;
+
+        // There will be MAX_CHUNK_PUT_RETRIES (currently 10) re-puts
+        // within each `verify_and_repay_if_needed` run.
+        // To avoid infinite looping here due to other unrecoverable error,
+        // the `while` loop need to be terminated after certain attempts.
+        // Meanwhile, with real network, there will be certain chunks need to be re-put,
+        // especially with large files/folder.
+        // Note those succeeded files will still get recorded within `uploaded_files`,
+        // after complete this while loop of verification.
+        while !chunk_manager.is_paid_chunks_empty() && attempts <= MAX_VERIFICATION_RETRIES {
+            attempts += 1;
+            println!("The current overall verify and repay iteration is {attempts}");
             verify_and_repay_if_needed(
                 file_api.clone(),
                 &mut chunk_manager,
