@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699884814960,
+  "lastUpdate": 1699885195816,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "504137b0e6fd1121828438bb77d6906f4f616da9",
-          "message": "feat: disable record filter; send duplicated record to validation for doube spend detection",
-          "timestamp": "2023-07-05T12:10:49+02:00",
-          "tree_id": "32f44156516462036b8472a3080ae5355689ebb9",
-          "url": "https://github.com/maidsafe/safe_network/commit/504137b0e6fd1121828438bb77d6906f4f616da9"
-        },
-        "date": 1688553583808,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 23.03,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 221,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "f58306f5fa3c7d85ae779e7d4ff40cafc21eeaee",
+          "message": "fix(cli): failed to move chunk path shall not get deleted",
+          "timestamp": "2023-11-13T13:25:35Z",
+          "tree_id": "0d847c2ef0b4e23420b5db9182c8ee87023f8f52",
+          "url": "https://github.com/maidsafe/safe_network/commit/f58306f5fa3c7d85ae779e7d4ff40cafc21eeaee"
+        },
+        "date": 1699885194863,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 156,
             "unit": "MB"
           }
         ]
