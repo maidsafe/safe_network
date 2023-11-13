@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699877996734,
+  "lastUpdate": 1699878332192,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "954625187ce324734fbfc21c18f2bed64ff14944",
-          "message": "test: refactoring node integration test and adding a test for failed payment case",
-          "timestamp": "2023-07-05T10:19:30+02:00",
-          "tree_id": "65f4f68b5da062eb22d6746e6bde42585372bf32",
-          "url": "https://github.com/maidsafe/safe_network/commit/954625187ce324734fbfc21c18f2bed64ff14944"
-        },
-        "date": 1688547133035,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 19.26,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 114,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "5b9de9bce5966c45b09f2ec934ec606689058a50",
+          "message": "fix: avoid infinite looping on verification during upload",
+          "timestamp": "2023-11-13T11:28:42Z",
+          "tree_id": "fcaf21e20da80604c028699e5219d8e8a4c3298f",
+          "url": "https://github.com/maidsafe/safe_network/commit/5b9de9bce5966c45b09f2ec934ec606689058a50"
+        },
+        "date": 1699878331728,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 221,
             "unit": "MB"
           }
         ]
