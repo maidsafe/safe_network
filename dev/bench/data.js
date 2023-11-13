@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699878332192,
+  "lastUpdate": 1699878333953,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "f49082f6a0862436416fb1bdac6b5ff4847a5a60",
-          "message": "feat: append peer id to node's default root dir\n\nBREAKING CHANGE: The default root directory for the node will now have the node's peer ID appended\nto its path.\n\nUsing the peer ID facilitates running multiple node processes on a single machine, without the need\nto explicitly use the `--root-dir` argument for each node to specify its own root directory.\nPreviously, if they didn't do that, all the nodes would share the same record store.",
-          "timestamp": "2023-06-27T17:14:04Z",
-          "tree_id": "8fadc9f32127cb75d9c0de4cafd90b095c0fdc5f",
-          "url": "https://github.com/maidsafe/safe_network/commit/f49082f6a0862436416fb1bdac6b5ff4847a5a60"
-        },
-        "date": 1687890022549,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 928.43,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 505,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 70,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "5b9de9bce5966c45b09f2ec934ec606689058a50",
+          "message": "fix: avoid infinite looping on verification during upload",
+          "timestamp": "2023-11-13T11:28:42Z",
+          "tree_id": "fcaf21e20da80604c028699e5219d8e8a4c3298f",
+          "url": "https://github.com/maidsafe/safe_network/commit/5b9de9bce5966c45b09f2ec934ec606689058a50"
+        },
+        "date": 1699878333443,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 75,
             "unit": "MB"
           }
         ]
