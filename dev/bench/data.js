@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699633887307,
+  "lastUpdate": 1699871121953,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f174112c7e5091b513e887c247179f80c6699f3a",
-          "message": "fix(sn_networking): revert multiaddr pop fn\n\nThe function should only actually mutate/pop the multiaddr if it's in\nfact containing the /p2p/ protocol. Else it returns `None` and leaves\nthe address in its original state.",
-          "timestamp": "2023-07-17T13:25:59Z",
-          "tree_id": "7be1a171ea10e5b3985e3f437d770650a5df5f63",
-          "url": "https://github.com/maidsafe/safe_network/commit/f174112c7e5091b513e887c247179f80c6699f3a"
-        },
-        "date": 1689604819176,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1823373753634372,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.824815518532045,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 9.74226480911677,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 31.095741222699807,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "d8af522a73bf901e19aa269876c2aba470e22bc5",
+          "message": "chore(cli): disable silent ignoring of wallet errors",
+          "timestamp": "2023-11-13T09:32:38Z",
+          "tree_id": "7c51596b95179b5d5e423cfa80d60824e2700b39",
+          "url": "https://github.com/maidsafe/safe_network/commit/d8af522a73bf901e19aa269876c2aba470e22bc5"
+        },
+        "date": 1699871119015,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 3.8217769863413538,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 16.946230422002305,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 37.01360644188822,
             "unit": "MiB/s"
           }
         ]
