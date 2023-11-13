@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699872568426,
+  "lastUpdate": 1699872774055,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4598ca7c336ceaf8f4fbe8fca13938dbb04272d2",
-          "message": "ci: print peak client mem consumption in CI",
-          "timestamp": "2023-07-05T06:54:38+02:00",
-          "tree_id": "49b2291b2c9086fb7dc63648bae5d915a12dd07f",
-          "url": "https://github.com/maidsafe/safe_network/commit/4598ca7c336ceaf8f4fbe8fca13938dbb04272d2"
-        },
-        "date": 1688534595510,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 19.21,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 171,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "6df907e9f5dbe716c1563091b7d4b56796a4d41d",
+          "message": "feat: no throwing up if not a gossip listener",
+          "timestamp": "2023-11-13T09:45:41Z",
+          "tree_id": "c3a9dcf20b1f7315985f259d4bddda0dc1d40e67",
+          "url": "https://github.com/maidsafe/safe_network/commit/6df907e9f5dbe716c1563091b7d4b56796a4d41d"
+        },
+        "date": 1699872773726,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 114,
             "unit": "MB"
           }
         ]
