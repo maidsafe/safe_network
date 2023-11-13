@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699871121953,
+  "lastUpdate": 1699871393799,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "1bfec27c659265f93b205418f9c966dadc2dbaa9",
-          "message": "fix(node): specifically remove the key, not the whole dir",
-          "timestamp": "2023-07-05T06:53:31+02:00",
-          "tree_id": "9d6b5340a103d53f0e45faf47aaf853b2b95b362",
-          "url": "https://github.com/maidsafe/safe_network/commit/1bfec27c659265f93b205418f9c966dadc2dbaa9"
-        },
-        "date": 1688534452082,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 21.45,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "4598ca7c336ceaf8f4fbe8fca13938dbb04272d2",
           "message": "ci: print peak client mem consumption in CI",
           "timestamp": "2023-07-05T06:54:38+02:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 131,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "d8af522a73bf901e19aa269876c2aba470e22bc5",
+          "message": "chore(cli): disable silent ignoring of wallet errors",
+          "timestamp": "2023-11-13T09:32:38Z",
+          "tree_id": "7c51596b95179b5d5e423cfa80d60824e2700b39",
+          "url": "https://github.com/maidsafe/safe_network/commit/d8af522a73bf901e19aa269876c2aba470e22bc5"
+        },
+        "date": 1699871392929,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 171,
             "unit": "MB"
           }
         ]
