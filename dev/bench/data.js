@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699871393799,
+  "lastUpdate": 1699871396093,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "b9e4aade04e8a51908b2fb77365478a1bc819aad",
-          "message": "ci: benchmark client download",
-          "timestamp": "2023-06-27T00:28:01Z",
-          "tree_id": "fff25c43765ffc56a4e09c077a7b2441d5be7621",
-          "url": "https://github.com/maidsafe/safe_network/commit/b9e4aade04e8a51908b2fb77365478a1bc819aad"
-        },
-        "date": 1687830189272,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 928.85,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 563,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 78,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "d8af522a73bf901e19aa269876c2aba470e22bc5",
+          "message": "chore(cli): disable silent ignoring of wallet errors",
+          "timestamp": "2023-11-13T09:32:38Z",
+          "tree_id": "7c51596b95179b5d5e423cfa80d60824e2700b39",
+          "url": "https://github.com/maidsafe/safe_network/commit/d8af522a73bf901e19aa269876c2aba470e22bc5"
+        },
+        "date": 1699871395237,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 184,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 62,
             "unit": "MB"
           }
         ]
