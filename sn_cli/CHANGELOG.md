@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.11](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.85.10...sn_cli-v0.85.11) - 2023-11-13
+
+### Other
+- *(cli)* disable silent ignoring of wallet errors
+
 ## [0.85.10](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.85.9...sn_cli-v0.85.10) - 2023-11-10
 
 ### Added
