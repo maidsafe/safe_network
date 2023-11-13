@@ -38,8 +38,11 @@ impl NodeEventsChannel {
 
     // Broadcast a new event, meant to be a helper only used by the sn_node's internals.
     pub(crate) fn broadcast(&self, event: NodeEvent) {
-        if let Err(err) = self.0.send(event.clone()) {
-            trace!("Error occurred when trying to broadcast a node event ({event:?}): {err}");
+        let event_string = format!("{:?}", event);
+        if let Err(err) = self.0.send(event) {
+            trace!(
+                "Error occurred when trying to broadcast a node event ({event_string:?}): {err}"
+            );
         }
     }
 
@@ -50,7 +53,7 @@ impl NodeEventsChannel {
 }
 
 /// Type of events broadcasted by the node to the public API.
-#[derive(Clone, Serialize, Debug, Deserialize)]
+#[derive(Clone, Serialize, custom_debug::Debug, Deserialize)]
 pub enum NodeEvent {
     /// The node has been connected to the network
     ConnectedToNetwork,
@@ -71,6 +74,7 @@ pub enum NodeEvent {
         /// Topic the message was published on
         topic: String,
         /// The raw bytes of the received message
+        #[debug(skip)]
         msg: Bytes,
     },
     /// Transfer notification message received for a public key

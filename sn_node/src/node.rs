@@ -385,25 +385,26 @@ impl Node {
             }
             NetworkEvent::GossipsubMsgReceived { topic, msg }
             | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
-                if self.events_channel.receiver_count() > 0 {
-                    if topic == TRANSFER_NOTIF_TOPIC {
-                        // this is expected to be a notification of a transfer which we treat specially,
-                        // and we try to decode it only if it's referring to a PK the user is interested in
-                        if let Some(filter_pk) = self.transfer_notifs_filter {
-                            match try_decode_transfer_notif(&msg, filter_pk) {
-                                Ok(Some(notif_event)) => self.events_channel.broadcast(notif_event),
-                                Ok(None) => { /* transfer notif filered out */ }
-                                Err(err) => {
-                                    warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {err:?}");
-                                    self.events_channel
-                                        .broadcast(NodeEvent::GossipsubMsg { topic, msg });
-                                }
+                if self.events_channel.receiver_count() == 0 {
+                    return;
+                }
+                if topic == TRANSFER_NOTIF_TOPIC {
+                    // this is expected to be a notification of a transfer which we treat specially,
+                    // and we try to decode it only if it's referring to a PK the user is interested in
+                    if let Some(filter_pk) = self.transfer_notifs_filter {
+                        match try_decode_transfer_notif(&msg, filter_pk) {
+                            Ok(Some(notif_event)) => self.events_channel.broadcast(notif_event),
+                            Ok(None) => { /* transfer notif filered out */ }
+                            Err(err) => {
+                                warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {err:?}");
+                                self.events_channel
+                                    .broadcast(NodeEvent::GossipsubMsg { topic, msg });
                             }
                         }
-                    } else {
-                        self.events_channel
-                            .broadcast(NodeEvent::GossipsubMsg { topic, msg });
                     }
+                } else {
+                    self.events_channel
+                        .broadcast(NodeEvent::GossipsubMsg { topic, msg });
                 }
             }
         }
