@@ -349,7 +349,12 @@ impl SwarmDriver {
                 self.network_metrics.record(&event);
                 if self.is_gossip_listener {
                     match event {
-                        libp2p::gossipsub::Event::Message { message, .. } => {
+                        libp2p::gossipsub::Event::Message {
+                            message,
+                            message_id,
+                            ..
+                        } => {
+                            info!("Gossipsub message received, id: {message_id:?}");
                             let topic = message.topic.into_string();
                             let msg = Bytes::from(message.data);
                             self.send_event(NetworkEvent::GossipsubMsgReceived { topic, msg });
