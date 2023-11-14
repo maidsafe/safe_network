@@ -633,14 +633,25 @@ impl Network {
 
         let cmd_sender = self.swarm_cmd_sender.clone();
 
-        // Spawn a task to send the SwarmCmd and keep this fn sync
-        let _handle = tokio::spawn(async move {
-            if capacity == 0 {
+        if capacity == 0 {
+            if matches!(cmd, SwarmCmd::AddKeysToReplicationFetcher { .. }) {
+                // we can safely drop AddKeysToReplicationFetcher
+                // it should be reattempted in a few seconds and if we can cope we'll do it.
+                warn!(
+                    "SwarmCmd channel is full. Dropping AddKeysToReplicationFetcher: {:?}",
+                    cmd
+                );
+                return Ok(());
+            } else {
                 error!(
                     "SwarmCmd channel is full. Await capacity to send: {:?}",
                     cmd
                 );
             }
+        }
+
+        // Spawn a task to send the SwarmCmd and keep this fn sync
+        let _handle = tokio::spawn(async move {
             if let Err(error) = cmd_sender.send(cmd).await {
                 error!("Failed to send SwarmCmd: {}", error);
             }
