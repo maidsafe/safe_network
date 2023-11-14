@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699974112291,
+  "lastUpdate": 1699974323031,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "45e014a8a10757acfb9997f32d8dc3839fb1433b",
-          "message": "chore: small tidy up",
-          "timestamp": "2023-07-06T14:15:48Z",
-          "tree_id": "f2277a1df8b9c98621552841ffa910bc5b3b1f0f",
-          "url": "https://github.com/maidsafe/safe_network/commit/45e014a8a10757acfb9997f32d8dc3839fb1433b"
-        },
-        "date": 1688657438379,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 40.99,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4f4a87489b4ce4c1ec24557d0b5f188b12299890",
+          "message": "test(royalties): verify royalties fees amounts",
+          "timestamp": "2023-11-14T14:25:26Z",
+          "tree_id": "4e7f7517a56979eba71786844483dbe0b96fc872",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f4a87489b4ce4c1ec24557d0b5f188b12299890"
+        },
+        "date": 1699974322415,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 71,
             "unit": "MB"
           }
         ]
