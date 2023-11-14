@@ -25,11 +25,8 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{
-    is_genesis_parent_tx, CashNoteRedemption, LocalWallet, Transfer, GENESIS_CASHNOTE,
-    NETWORK_ROYALTIES_PK,
-};
-use sn_transfers::{
-    CashNote, NanoTokens, SignedSpend, UniquePubkey, NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
+    calculate_royalties_fee, is_genesis_parent_tx, CashNote, CashNoteRedemption, LocalWallet,
+    NanoTokens, SignedSpend, Transfer, UniquePubkey, GENESIS_CASHNOTE, NETWORK_ROYALTIES_PK,
 };
 use std::collections::{BTreeSet, HashSet};
 use xor_name::XorName;
@@ -549,17 +546,20 @@ impl Node {
             warn!("Failed to get serialized_size for network royalties payment data to publish a notification over gossipsub for record {pretty_key}");
         }
 
-        // check payment is sufficient both for our store cost and for network royalties
-        let expected_fee = self
-            .network
-            .get_local_storecost()
-            .await
-            .map_err(|e| ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}")))?
-            .checked_add(NETWORK_ROYALTIES_AMOUNT_PER_ADDR)
-            .ok_or(ProtocolError::RecordNotStored(
+        // Let's check payment is sufficient both for our store cost and for network royalties
+        let local_storecost =
+            self.network.get_local_storecost().await.map_err(|e| {
+                ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
+            })?;
+        // Since the storage payment is made to a single node, we can calculate the royalties fee based on that single payment.
+        let expected_royalties_fee = calculate_royalties_fee(local_storecost);
+        let expected_fee = local_storecost.checked_add(expected_royalties_fee).ok_or(
+            ProtocolError::RecordNotStored(
                 pretty_key.clone(),
                 "CashNote value overflow".to_string(),
-            ))?;
+            ),
+        )?;
+
         // finally, (after we accept any payments to us as they are ours now anyway)
         // lets check they actually paid enough
         if received_fee < expected_fee {
