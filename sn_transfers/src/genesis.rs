@@ -24,8 +24,13 @@ use thiserror::Error;
 /// thus creating a total of 1,288,490,189,000,000,000 available units.
 pub(super) const GENESIS_CASHNOTE_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
 
-/// Expected amount to be paid as network royalties for each record to be stored.
-pub const NETWORK_ROYALTIES_AMOUNT_PER_ADDR: NanoTokens = NanoTokens::from(1);
+/// Based on the given store cost, it calculates what's the expected amount to be paid as network royalties.
+/// Network royalties fee is expected to be 15% of the payment amount, i.e. 85% of store cost + 15% royalties fees.
+pub fn calculate_royalties_fee(store_cost: NanoTokens) -> NanoTokens {
+    let fees_amount = (store_cost.as_nano() as f64 * 0.15) / 0.85;
+    // we round down the calculated amount
+    NanoTokens::from(fees_amount as u64)
+}
 
 /// A specialised `Result` type for genesis crate.
 pub(super) type GenesisResult<T> = Result<T, Error>;

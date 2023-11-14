@@ -219,7 +219,6 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     println!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
 
     let count_1 = handle_1.await??;
-    let expected = royalties_fees.as_nano() as usize;
     println!("Number of notifications received by node #1: {count_1}");
     let count_2 = handle_2.await??;
     println!("Number of notifications received by node #2: {count_2}");
@@ -227,8 +226,8 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     println!("Number of notifications received by node #3: {count_3}");
 
     assert!(
-        count_1 >= expected,
-        "expected: {expected:?}, received {count_1:?}... Not enough notifications received"
+        count_1 >= num_of_chunks,
+        "expected: {num_of_chunks:?}, received {count_1:?}... Not enough notifications received"
     );
     assert_eq!(count_2, 0, "Notifications were not expected");
     assert_eq!(count_3, 0, "Notifications were not expected");
@@ -311,9 +310,6 @@ fn spawn_royalties_payment_listener(
                         println!("Transfer notif received for key {key:?}");
                         if key == royalties_pk {
                             count += 1;
-                            // if count == 1 {
-                            //     break;
-                            // }
                         }
                     }
                     Ok(_) => { /* ignored */ }

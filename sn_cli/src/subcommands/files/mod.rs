@@ -240,15 +240,9 @@ async fn upload_files(
     }
 
     progress_bar.finish_and_clear();
-    let elapsed = now.elapsed();
-    println!(
-        "Uploaded {unpaid_chunks_to_upload_len} chunks in {}",
-        format_elapsed_time(elapsed)
-    );
-    info!(
-        "Uploaded {unpaid_chunks_to_upload_len} chunks in {}",
-        format_elapsed_time(elapsed)
-    );
+    let elapsed = format_elapsed_time(now.elapsed());
+    println!("Uploaded {unpaid_chunks_to_upload_len} chunks in {elapsed}");
+    info!("Uploaded {unpaid_chunks_to_upload_len} chunks in {elapsed}");
     println!("**************************************");
     println!("*          Payment Details           *");
     println!("**************************************");
@@ -483,8 +477,20 @@ async fn verify_and_repay_if_needed_once(
             }))
             .await
         {
-            Ok(_new_cost) => {
+            Ok((storage_cost, royalties_fees)) => {
                 chunk_manager.mark_paid(failed_chunks_batch.iter().map(|(addr, _path)| *addr));
+                if !storage_cost.is_zero() {
+                    println!(
+                        "Made new payment of {storage_cost} for {} chunks",
+                        failed_chunks_batch.len()
+                    );
+                }
+                if !royalties_fees.is_zero() {
+                    println!("Made new payment of {royalties_fees} for royalties fees");
+                }
+                if !royalties_fees.is_zero() || !storage_cost.is_zero() {
+                    println!("New wallet balance: {}", wallet.balance());
+                }
             }
             Err(error) => {
                 error!("Failed to repay for record storage: {failed_chunks_batch:?}: {error:?}");
