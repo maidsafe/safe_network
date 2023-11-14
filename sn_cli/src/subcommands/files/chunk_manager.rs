@@ -366,6 +366,7 @@ impl ChunkManager {
     /// If the entire file is paid for, then remove the entire dir.
     pub(crate) fn mark_paid(&mut self, chunks: impl Iterator<Item = XorName>) {
         let set_of_paid_chunk = chunks.collect::<BTreeSet<_>>();
+        trace!("marking as paid: {set_of_paid_chunk:?}");
         let paid_dir = self.paid_dir.clone();
         let unpaid_dir = self.unpaid_dir.clone();
 
@@ -501,6 +502,23 @@ impl ChunkManager {
     /// If the entire file is verified, keep the folder and metadata file
     pub(crate) fn mark_verified(&mut self, chunks: impl Iterator<Item = XorName>) {
         let set_of_verified_chunk = chunks.collect::<BTreeSet<_>>();
+        trace!("marking as verified: {set_of_verified_chunk:?}");
+
+        // make sure they have already been marked as paid, if not, mark them as paid.
+        let still_unpaid = self
+            .unpaid_chunks
+            .iter()
+            .flat_map(|(_, chunked_file)| &chunked_file.chunks)
+            .filter_map(|(chunk_xor, _)| {
+                if set_of_verified_chunk.contains(chunk_xor) {
+                    Some(*chunk_xor)
+                } else {
+                    None
+                }
+            })
+            .collect::<BTreeSet<_>>();
+        self.mark_paid(still_unpaid.into_iter());
+
         // remove those files
         let _ = self
             .paid_chunks
@@ -542,6 +560,7 @@ impl ChunkManager {
 
         for path_xor in &entire_file_is_done {
             if let Some(chunked_file) = self.paid_chunks.remove(path_xor) {
+                trace!("removed {path_xor:?} from paid_chunks");
                 self.verified_files
                     .push((chunked_file.file_name, chunked_file.file_xor_addr));
             }
@@ -906,7 +925,7 @@ mod tests {
     }
 
     #[test]
-    // 2. PAID: if all the chunks are verified, the dir should
+    // 2. PAID: if all the chunks are verified, the paid_dirs should exists
     fn marking_all_chunks_as_verified_should_not_remove_the_dir() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
         let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
@@ -945,6 +964,51 @@ mod tests {
             );
             assert_eq!(&path_xor_from_dir, path_xor);
         }
+
+        Ok(())
+    }
+
+    #[test]
+    //3. PAID: mark all as verified before marking as paid should have call mark_paid internally
+    fn marking_as_verified_before_paid_should_not_result_in_undefined_behaviour() -> Result<()> {
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
+
+        let _ = create_random_files(&random_files_dir, 1, 1)?;
+        manager.chunk_path(&random_files_dir)?;
+
+        let path_xor = manager.unpaid_chunks.keys().next().unwrap().clone();
+        let chunked_file = manager.unpaid_chunks.values().next().unwrap().clone();
+        let file_xor_addr = chunked_file.file_xor_addr;
+
+        // marking all as verified should not do anything
+        let manager_clone = manager.clone();
+        manager.mark_verified_all();
+
+        // 1. mark_verified_all() directly does nothing
+        assert_eq!(manager, manager_clone);
+
+        // get all the chunks and then mark as verified. This should trigger mark_paid
+        manager.mark_verified(chunked_file.chunks.clone().into_iter().map(|(c, _)| c));
+
+        // 2. chunk should be removed from paid and unpaid struct
+        assert!(manager.unpaid_chunks.keys().next().is_none());
+        assert!(manager.paid_chunks.keys().next().is_none());
+
+        // 3. the folder should exists, but chunk removed
+        let file_chunks_dir = manager.paid_dir.join(&path_xor.0);
+        let (path_xor_from_dir, chunked_file_from_dir) = ChunkManager::read_file_chunks_dir(
+            file_chunks_dir,
+            path_xor.clone(),
+            chunked_file.file_name.to_owned(),
+        )
+        .expect("Folder and metadata should be present");
+        assert_eq!(chunked_file_from_dir.chunks.len(), 0);
+        assert_eq!(chunked_file_from_dir.file_xor_addr, file_xor_addr);
+        assert_eq!(path_xor_from_dir, path_xor);
+
+        // 2. should be added to verified files
+        assert_eq!(manager.verified_files.len(), 1);
 
         Ok(())
     }
@@ -1154,7 +1218,7 @@ mod tests {
     }
 
     #[test]
-    //4. RESUME: mark all as verified -> resume, should have an paid entry? not sure, but should have the file added to verified list
+    //4. RESUME: mark all as verified -> resume, we should have paid entries. File should be added to verified_files
     fn mark_all_as_verified_and_resume() -> Result<()> {
         let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
         let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
@@ -1169,7 +1233,7 @@ mod tests {
 
         // 1. make sure we don't have any unpaid chunks
         assert_eq!(new_manager.unpaid_chunks.len(), 0);
-        // 2. we should have unpaid entries, but 0 chunks inside them
+        // 2. we should have paid entries, but 0 chunks inside them
         assert_eq!(new_manager.paid_chunks.len(), 5);
         assert_eq!(
             new_manager
