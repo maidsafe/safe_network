@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699965166316,
+  "lastUpdate": 1699970444140,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "ed199e40331eabd1fcea2f4ac24e0d90e19fcf13",
-          "message": "feat: faucet integration in testnet bin",
-          "timestamp": "2023-07-19T10:43:23Z",
-          "tree_id": "4bf6f7666c177c41198f9f39b86d7fbfc3be33b1",
-          "url": "https://github.com/maidsafe/safe_network/commit/ed199e40331eabd1fcea2f4ac24e0d90e19fcf13"
-        },
-        "date": 1689768910891,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1481324461002944,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.642399184621736,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 8.936451188247503,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 50.224533981137654,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "f79a81793c2d56c9129311a64a0d81c3f9039879",
+          "message": "feat(networking): drop excessive AddKeysToReplicationFetcher cmds",
+          "timestamp": "2023-11-14T13:16:48Z",
+          "tree_id": "0705b203682afd26460a5ff3b060ea9830fe6145",
+          "url": "https://github.com/maidsafe/safe_network/commit/f79a81793c2d56c9129311a64a0d81c3f9039879"
+        },
+        "date": 1699970441824,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 4.380641230430724,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 19.053662419309095,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 50.67459520858406,
             "unit": "MiB/s"
           }
         ]
