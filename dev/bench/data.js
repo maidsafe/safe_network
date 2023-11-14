@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699948209275,
+  "lastUpdate": 1699948569742,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "d2f85950923c915f9797e5f6bfb9da953f87f8aa",
-          "message": "fix(node): verify incoming `Record::key`\n- The `Record::key` should be the same one obtained from the data inside\n  `Record::value`\n- This prevents someone from storing data to the wrong part of the\n  network or prevents overwriting of valid data.",
-          "timestamp": "2023-07-05T13:57:06Z",
-          "tree_id": "1adb69636217b7791f284eff8dde29703362cac8",
-          "url": "https://github.com/maidsafe/safe_network/commit/d2f85950923c915f9797e5f6bfb9da953f87f8aa"
-        },
-        "date": 1688570292220,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 21.2,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 156,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "916f8d4de998f0fceaf892f4b19e880ddc2050bf",
+          "message": "fix(cli): repay unpaid chunks due to transfer failures",
+          "timestamp": "2023-11-14T07:03:57Z",
+          "tree_id": "c8c079b810bd17a573a18bb9a388da6911539b37",
+          "url": "https://github.com/maidsafe/safe_network/commit/916f8d4de998f0fceaf892f4b19e880ddc2050bf"
+        },
+        "date": 1699948568833,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 145,
             "unit": "MB"
           }
         ]
