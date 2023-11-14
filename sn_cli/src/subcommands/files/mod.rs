@@ -186,6 +186,7 @@ async fn upload_files(
     println!("Will now attempt to upload them...");
 
     let mut total_cost = NanoTokens::zero();
+    let mut total_royalties = NanoTokens::zero();
     let mut final_balance = file_api.wallet()?.balance();
     let now = Instant::now();
 
@@ -194,11 +195,19 @@ async fn upload_files(
 
     for chunks_batch in chunks_batches {
         // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
-        let (cost, new_balance) = match file_api
+        match file_api
             .pay_for_chunks(chunks_batch.iter().map(|(name, _)| *name).collect())
             .await
         {
-            Ok((cost, new_balance)) => (cost, new_balance),
+            Ok((storage_cost, royalties_fees, new_balance)) => {
+                final_balance = new_balance;
+                total_cost = total_cost
+                    .checked_add(storage_cost)
+                    .ok_or_else(|| eyre!("Unable to add cost to total cost"))?;
+                total_royalties = total_royalties
+                    .checked_add(royalties_fees)
+                    .ok_or_else(|| eyre!("Unable to add cost to total royalties fees"))?;
+            }
             Err(ClientError::Transfers(WalletError::Transfer(
                 TransfersError::NotEnoughBalance(available, required),
             ))) => {
@@ -211,10 +220,6 @@ async fn upload_files(
                 continue;
             }
         };
-        final_balance = new_balance;
-        total_cost = total_cost
-            .checked_add(cost)
-            .ok_or_else(|| eyre!("Unable to add cost to total cost"))?;
 
         // Verification will be carried out later on, if being asked to.
         // Hence no need to carry out verification within the first attempt.
@@ -247,9 +252,10 @@ async fn upload_files(
     println!("**************************************");
     println!("*          Payment Details           *");
     println!("**************************************");
-    println!("Made payment of {total_cost} for {unpaid_chunks_to_upload_len} chunks",);
+    println!("Made payment of {total_cost} for {unpaid_chunks_to_upload_len} chunks");
+    println!("Made payment of {total_royalties} for royalties fees");
     println!("New wallet balance: {final_balance}");
-    info!("Made payment of {total_cost} for {unpaid_chunks_to_upload_len} chunks",);
+    info!("Made payment of {total_cost} for {unpaid_chunks_to_upload_len} chunks");
     info!("New wallet balance: {final_balance}");
 
     // If we are not verifying, we can skip this

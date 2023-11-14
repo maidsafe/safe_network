@@ -322,9 +322,9 @@ impl Client {
         address: XorName,
         wallet_client: &mut WalletClient,
         verify_store: bool,
-    ) -> Result<(ClientRegister, NanoTokens)> {
+    ) -> Result<(ClientRegister, NanoTokens, NanoTokens)> {
         info!("Instantiating a new Register replica with address {address:?}");
-        let (reg, mut total_cost) =
+        let (reg, mut total_cost, mut total_royalties) =
             ClientRegister::create_online(self.clone(), address, wallet_client, false).await?;
 
         debug!("{address:?} Created in theorryyyyy");
@@ -336,7 +336,7 @@ impl Client {
             while !stored {
                 info!("Register not completely stored on the network yet. Retrying...");
                 // this verify store call here ensures we get the record from Quorum::all
-                let (reg, top_up_cost) =
+                let (reg, top_up_cost, royalties_top_up) =
                     ClientRegister::create_online(self.clone(), address, wallet_client, true)
                         .await?;
                 let reg_address = reg.address();
@@ -344,11 +344,17 @@ impl Client {
                 total_cost = total_cost.checked_add(top_up_cost).ok_or(Error::Transfers(
                     sn_transfers::WalletError::from(sn_transfers::Error::ExcessiveNanoValue),
                 ))?;
+                total_royalties =
+                    total_cost
+                        .checked_add(royalties_top_up)
+                        .ok_or(Error::Transfers(sn_transfers::WalletError::from(
+                            sn_transfers::Error::ExcessiveNanoValue,
+                        )))?;
                 stored = self.verify_register_stored(*reg_address).await.is_ok();
             }
         }
 
-        Ok((reg, total_cost))
+        Ok((reg, total_cost, total_royalties))
     }
 
     /// Store `Chunk` as a record.

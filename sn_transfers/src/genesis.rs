@@ -37,7 +37,7 @@ pub const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
 ///
 /// This key is public for auditing purposes. Hard coding its value means all nodes will be able to
 /// validate it.
-const GENESIS_CASHNOTE_SK: &str =
+pub const GENESIS_CASHNOTE_SK: &str =
     "5f15ae2ea589007e1474e049bbc32904d583265f12ce1f8153f955076a9af49b";
 
 /// Main error type for the crate.

@@ -88,18 +88,18 @@ async fn create_register(
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
 
     let meta = XorName::from_content(name.as_bytes());
-    let (register, cost) = client
+    let (register, storage_cost, royalties_fees) = client
         .create_and_pay_for_register(meta, &mut wallet_client, verify_store)
         .await?;
 
-    if cost.is_zero() {
+    if storage_cost.is_zero() {
         println!(
             "Register '{name}' already exists at {}!",
             register.address()
         );
     } else {
         println!(
-            "Successfully created register '{name}' at {} for {cost:?}!",
+            "Successfully created register '{name}' at {} for {storage_cost:?} (royalties fees: {royalties_fees:?})!",
             register.address()
         );
     }
