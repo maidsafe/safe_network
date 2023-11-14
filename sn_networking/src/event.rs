@@ -922,7 +922,7 @@ impl SwarmDriver {
                 CLOSE_GROUP_SIZE,
             ) {
                 Err(error) => {
-                    error!("Failed to sort peers by address: {error:?}");
+                    debug!("Failed to sort peers by address: {error:?}");
                     return false;
                 }
                 Ok(closest_k_peers) => closest_k_peers,

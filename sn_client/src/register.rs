@@ -71,10 +71,10 @@ impl ClientRegister {
         meta: XorName,
         wallet_client: &mut WalletClient,
         verify_store: bool,
-    ) -> Result<(Self, NanoTokens)> {
+    ) -> Result<(Self, NanoTokens, NanoTokens)> {
         let mut reg = Self::create_register(client, meta, Permissions::new_owner_only())?;
-        let cost = reg.sync(wallet_client, verify_store).await?;
-        Ok((reg, cost))
+        let (storage_cost, royalties_fees) = reg.sync(wallet_client, verify_store).await?;
+        Ok((reg, storage_cost, royalties_fees))
     }
 
     /// Retrieve a Register from the network to work on it offline.
@@ -173,10 +173,11 @@ impl ClientRegister {
         &mut self,
         wallet_client: &mut WalletClient,
         verify_store: bool,
-    ) -> Result<NanoTokens> {
+    ) -> Result<(NanoTokens, NanoTokens)> {
         let addr = *self.address();
         debug!("Syncing Register at {addr:?}!");
-        let mut cost = NanoTokens::zero();
+        let mut storage_cost = NanoTokens::zero();
+        let mut royalties_fees = NanoTokens::zero();
         let reg_result = if verify_store {
             debug!("VERIFYING REGISTER STORED {:?}", self.address());
             let res = self.client.verify_register_stored(*self.address()).await;
@@ -204,10 +205,10 @@ impl ClientRegister {
                 // Let's check if the user has already paid for this address first
                 let net_addr = sn_protocol::NetworkAddress::RegisterAddress(addr);
                 // Let's make the storage payment
-                let (storage_cost, royalties_fees) = wallet_client
+                (storage_cost, royalties_fees) = wallet_client
                     .pay_for_storage(std::iter::once(net_addr.clone()))
                     .await?;
-                cost = storage_cost
+                let cost = storage_cost
                     .checked_add(royalties_fees)
                     .ok_or(Error::TotalPriceTooHigh)?;
 
@@ -239,7 +240,7 @@ impl ClientRegister {
         self.register.merge(remote_replica);
         self.push(verify_store).await?;
 
-        Ok(cost)
+        Ok((storage_cost, royalties_fees))
     }
 
     /// Push all operations made locally to the replicas of this Register on the network.
