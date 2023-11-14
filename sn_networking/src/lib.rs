@@ -67,7 +67,7 @@ pub const CLOSE_GROUP_SIZE: usize = 5;
 
 /// The range of peers that will be considered as close to a record target,
 /// that a replication of the record shall be sent/accepted to/by the peer.
-pub const REPLICATE_RANGE: usize = CLOSE_GROUP_SIZE * 2;
+pub const REPLICATE_RANGE: usize = CLOSE_GROUP_SIZE + 2;
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
