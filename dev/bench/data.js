@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699955735934,
+  "lastUpdate": 1699955959452,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "0200e6cf8a3451d16cc8230735b6ddd97241d789",
-          "message": "ci: give slightly more time to memcheck\n\nThis should provide a bit more time per node cycle for replication",
-          "timestamp": "2023-07-05T16:52:43+02:00",
-          "tree_id": "7ab77b5644c32bbf21056df2082b4b5b3f13f524",
-          "url": "https://github.com/maidsafe/safe_network/commit/0200e6cf8a3451d16cc8230735b6ddd97241d789"
-        },
-        "date": 1688570410239,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 21.05,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 145,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "9b173bb09ea35c6ba78ae4c8c3edd2d4895b2355",
+          "message": "fix(cli): marking chunks as verified should mark them as paid too",
+          "timestamp": "2023-11-14T09:02:39Z",
+          "tree_id": "ec46e5a95f6c4fc7504d95ce31725f0e20933551",
+          "url": "https://github.com/maidsafe/safe_network/commit/9b173bb09ea35c6ba78ae4c8c3edd2d4895b2355"
+        },
+        "date": 1699955958140,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 116,
             "unit": "MB"
           }
         ]
