@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699955959452,
+  "lastUpdate": 1699955962304,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "1788a54c5784a4887ae6baf855608b100329c5d9",
-          "message": "feat(node): add missing send_event calls",
-          "timestamp": "2023-06-29T08:22:11+09:00",
-          "tree_id": "ac50548760405b70f6180a0c40bc641ddda5865e",
-          "url": "https://github.com/maidsafe/safe_network/commit/1788a54c5784a4887ae6baf855608b100329c5d9"
-        },
-        "date": 1687999038999,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 916.65,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 442,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "0916891426253ce05266a6538e5fcc4f74a280e3",
           "message": "fix(memcheck): add missing local-discovery feats",
           "timestamp": "2023-06-29T10:00:38+09:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 77,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "9b173bb09ea35c6ba78ae4c8c3edd2d4895b2355",
+          "message": "fix(cli): marking chunks as verified should mark them as paid too",
+          "timestamp": "2023-11-14T09:02:39Z",
+          "tree_id": "ec46e5a95f6c4fc7504d95ce31725f0e20933551",
+          "url": "https://github.com/maidsafe/safe_network/commit/9b173bb09ea35c6ba78ae4c8c3edd2d4895b2355"
+        },
+        "date": 1699955961067,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 224,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 75,
             "unit": "MB"
           }
         ]
