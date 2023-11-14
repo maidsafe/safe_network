@@ -2147,6 +2147,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.98.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.7...sn_node-v0.98.8) - 2023-11-14
+
+### Other
+- small tweaks around gossip msg receipt for efficiency
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
