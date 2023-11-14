@@ -194,7 +194,10 @@ impl Files {
     /// Pay for a given set of chunks.
     ///
     /// Returns the cost and the resulting new balance of the local wallet.
-    pub async fn pay_for_chunks(&self, chunks: Vec<XorName>) -> Result<(NanoTokens, NanoTokens)> {
+    pub async fn pay_for_chunks(
+        &self,
+        chunks: Vec<XorName>,
+    ) -> Result<(NanoTokens, NanoTokens, NanoTokens)> {
         let mut wallet_client = self.wallet()?;
         info!("Paying for and uploading {:?} chunks", chunks.len());
 
@@ -205,13 +208,9 @@ impl Files {
                 }))
                 .await?;
 
-        let cost = storage_cost
-            .checked_add(royalties_fees)
-            .ok_or(Error::TotalPriceTooHigh)?;
-
         wallet_client.store_local_wallet()?;
         let new_balance = wallet_client.balance();
-        Ok((cost, new_balance))
+        Ok((storage_cost, royalties_fees, new_balance))
     }
 
     /// Verify that chunks were uploaded

@@ -76,7 +76,7 @@ async fn main() -> Result<()> {
         }
         Err(_) => {
             println!("Register '{reg_nickname}' not found, creating it at {address}");
-            let (register, _cost) = client
+            let (register, _cost, _royalties_fees) = client
                 .create_and_pay_for_register(meta, &mut wallet_client, true)
                 .await?;
 

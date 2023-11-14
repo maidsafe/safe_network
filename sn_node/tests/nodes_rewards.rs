@@ -16,8 +16,7 @@ use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, NodeEventsRequest, TransferNotifsFilterRequest,
 };
 use sn_transfers::{
-    CashNoteRedemption, LocalWallet, NanoTokens, NETWORK_ROYALTIES_AMOUNT_PER_ADDR,
-    NETWORK_ROYALTIES_PK,
+    CashNoteRedemption, LocalWallet, MainSecretKey, NanoTokens, NETWORK_ROYALTIES_PK,
 };
 use xor_name::XorName;
 
@@ -81,22 +80,18 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
 
     let mut rng = rand::thread_rng();
     let register_addr = XorName::random(&mut rng);
-    let expected_royalties_fees = NETWORK_ROYALTIES_AMOUNT_PER_ADDR; // fee for a single address
 
     println!("Paying for random Register address {register_addr:?} with current balance {rb:?}");
 
     let prev_rewards_balance = current_rewards_balance()?;
 
-    let (_register, cost) = client
+    let (_register, storage_cost, _royalties_fees) = client
         .create_and_pay_for_register(register_addr, &mut wallet_client, false)
         .await?;
-    println!("Cost is {cost:?}: {prev_rewards_balance:?}");
-    let rewards_paid = cost
-        .checked_sub(expected_royalties_fees)
-        .ok_or_else(|| eyre!("Failed to substract rewards balance"))?;
+    println!("Cost is {storage_cost:?}: {prev_rewards_balance:?}");
 
     let expected_rewards_balance = prev_rewards_balance
-        .checked_add(rewards_paid)
+        .checked_add(storage_cost)
         .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
 
     verify_rewards(expected_rewards_balance).await?;
@@ -121,23 +116,27 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
         chunks_dir.path().to_path_buf(),
     )?;
 
-    let handle = spawn_royalties_payment_client_listener(&client)?;
+    let handle = spawn_royalties_payment_client_listener(client.clone())?;
 
     let num_of_chunks = chunks.len();
     println!("Paying for {num_of_chunks} random addresses...");
-    let (_, storage_cost, royalties_cost) = files_api
+    let (_, storage_cost, royalties_fees) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, false)
         .await?;
 
-    println!("Random chunks stored, paid {storage_cost}/{royalties_cost}");
+    println!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
 
-    let count = handle.await??;
-    let expected = royalties_cost.as_nano() as usize;
+    let (count, amount) = handle.await??;
 
-    println!("Number of notifications received by node: {count}");
+    println!("Number of notifications received: {count}");
+    println!("Amount notified for royalties fees: {amount}");
     assert_eq!(
-        count, expected,
-        "Unexpected number of notifications received"
+        amount, royalties_fees,
+        "Unexpected amount of royalties fees received"
+    );
+    assert_eq!(
+        count, num_of_chunks,
+        "Unexpected number of royalties fees notifications received"
     );
 
     Ok(())
@@ -157,17 +156,25 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let mut rng = rand::thread_rng();
     let register_addr = XorName::random(&mut rng);
 
-    let handle = spawn_royalties_payment_client_listener(&client)?;
+    let handle = spawn_royalties_payment_client_listener(client.clone())?;
 
     println!("Paying for random Register address {register_addr:?} ...");
-    let (_, cost) = client
+    let (_, storage_cost, royalties_fees) = client
         .create_and_pay_for_register(register_addr, &mut wallet_client, false)
         .await?;
-    println!("Random Register created, paid {cost}");
+    println!("Random Register created, paid {storage_cost}/{royalties_fees}");
 
-    let count = handle.await??;
-    println!("Number of notifications received by node: {count}");
-    assert_eq!(count, 1, "Unexpected number of notifications received");
+    let (count, amount) = handle.await??;
+    println!("Number of notifications received: {count}");
+    println!("Amount notified for royalties fees: {amount}");
+    assert_eq!(
+        amount, royalties_fees,
+        "Unexpected amount of royalties fees received"
+    );
+    assert_eq!(
+        count, 1,
+        "Unexpected number of royalties fees notifications received"
+    );
 
     Ok(())
 }
@@ -206,13 +213,13 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
 
     let num_of_chunks = chunks.len();
     println!("Paying for {num_of_chunks} random addresses...");
-    let (_, storage_cost, royalties_cost) = files_api
+    let (_, storage_cost, royalties_fees) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, false)
         .await?;
-    println!("Random chunks stored, paid {storage_cost}/{royalties_cost}");
+    println!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
 
     let count_1 = handle_1.await??;
-    let expected = royalties_cost.as_nano() as usize;
+    let expected = royalties_fees.as_nano() as usize;
     println!("Number of notifications received by node #1: {count_1}");
     let count_2 = handle_2.await??;
     println!("Number of notifications received by node #2: {count_2}");
@@ -327,11 +334,13 @@ fn spawn_royalties_payment_listener(
 }
 
 fn spawn_royalties_payment_client_listener(
-    client: &Client,
-) -> Result<JoinHandle<Result<usize, eyre::Report>>> {
+    client: Client,
+) -> Result<JoinHandle<Result<(usize, NanoTokens), eyre::Report>>> {
+    let temp_dir = assert_fs::TempDir::new()?;
+    let sk = SecretKey::from_hex(sn_transfers::GENESIS_CASHNOTE_SK)?;
+    let mut wallet = LocalWallet::load_from_path(&temp_dir, Some(MainSecretKey::new(sk)))?;
     let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
     client.subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())?;
-
     let mut events_receiver = client.events_channel();
 
     let handle = tokio::spawn(async move {
@@ -341,20 +350,35 @@ fn spawn_royalties_payment_client_listener(
         println!("Awaiting transfers notifs for {duration:?}...");
         if timeout(duration, async {
             while let Ok(event) = events_receiver.recv().await {
-                match event {
+                let cashnote_redemptions = match event {
                     ClientEvent::GossipsubMsg { topic, msg } => {
                         // we assume it's a notification of a transfer as that's the only topic we've subscribed to
                         match try_decode_transfer_notif(&msg) {
-                            Ok((key, _)) => {
+                            Ok((key, cashnote_redemptions)) => {
                                 println!("Transfer notif received for key {key:?}");
-                                if key == royalties_pk {
-                                    count += 1;
+                                if key != royalties_pk {
+                                    continue;
                                 }
+                                count += 1;
+                                cashnote_redemptions
                             }
-                            Err(err) => println!("GossipsubMsg received on topic '{topic}' couldn't be decoded as transfer notif: {err:?}"),
+                            Err(err) => {
+                                println!("GossipsubMsg received on topic '{topic}' couldn't be decoded as transfer notif: {err:?}");
+                                continue;
+                            },
                         }
                     },
-                    _ => { /* ignored */ }
+                    _ => continue
+                };
+
+                match client
+                    .verify_cash_notes_redemptions(wallet.address(), &cashnote_redemptions)
+                    .await
+                {
+                    Ok(cash_notes) => if let Err(err) = wallet.deposit(&cash_notes) {
+                        println!("Failed to deposit cash notes: {err}");
+                    }
+                    Err(err) => println!("At least one of the CashNoteRedemptions received is invalid, dropping them: {err:?}")
                 }
             }
         })
@@ -364,7 +388,7 @@ fn spawn_royalties_payment_client_listener(
             println!("Timeout after {duration:?}.");
         }
 
-        Ok(count)
+        Ok((count, wallet.balance()))
     });
 
     Ok(handle)
