@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699948569742,
+  "lastUpdate": 1699948572063,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "43b062a0f43c765398f5d2ede773e4c52bea3280",
-          "message": "fix: rename UserRights to UserPermissions",
-          "timestamp": "2023-06-28T19:55:42+09:00",
-          "tree_id": "a4ca7508f40b62b2e0d55e443c9f9537d71b557f",
-          "url": "https://github.com/maidsafe/safe_network/commit/43b062a0f43c765398f5d2ede773e4c52bea3280"
-        },
-        "date": 1687954190080,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 918.98,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 438,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 188,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 77,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "916f8d4de998f0fceaf892f4b19e880ddc2050bf",
+          "message": "fix(cli): repay unpaid chunks due to transfer failures",
+          "timestamp": "2023-11-14T07:03:57Z",
+          "tree_id": "c8c079b810bd17a573a18bb9a388da6911539b37",
+          "url": "https://github.com/maidsafe/safe_network/commit/916f8d4de998f0fceaf892f4b19e880ddc2050bf"
+        },
+        "date": 1699948571222,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 198,
             "unit": "MB"
           },
           {
