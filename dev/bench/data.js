@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699964953452,
+  "lastUpdate": 1699965164500,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": false,
-          "id": "b250867fa197352bdcb30126309a0ee083e005fc",
-          "message": "chore(CI): reduce the testing file size",
-          "timestamp": "2023-07-05T15:48:51Z",
-          "tree_id": "7729d6fc0134fb63cb67aebdd1e6c8491f3cf50f",
-          "url": "https://github.com/maidsafe/safe_network/commit/b250867fa197352bdcb30126309a0ee083e005fc"
-        },
-        "date": 1688576565152,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 19.31,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
           "id": "5c18d13b74146206a59b17f50c9e167901c9a369",
           "message": "fix: use SAFE_PEERS as fall back initial peers for non-local-discovery",
           "timestamp": "2023-07-06T11:27:06Z",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 116,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "3fd17c54e1264a3d6a87a5c2cf7a616433f6f882",
+          "message": "chore(networking): calm down replication",
+          "timestamp": "2023-11-14T11:45:06Z",
+          "tree_id": "c6755c85d7816acccbf0cd5affd03ed8e3f67421",
+          "url": "https://github.com/maidsafe/safe_network/commit/3fd17c54e1264a3d6a87a5c2cf7a616433f6f882"
+        },
+        "date": 1699965163922,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 86,
             "unit": "MB"
           }
         ]
