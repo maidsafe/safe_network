@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699885198734,
+  "lastUpdate": 1699948209275,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "e51a8da0b645727b741251a8ca1e2b503913822b",
-          "message": "chore(networking): only log queries we started",
-          "timestamp": "2023-07-18T08:51:53Z",
-          "tree_id": "8b04fdf000f9d4af0bf692d44c181369ebf3397b",
-          "url": "https://github.com/maidsafe/safe_network/commit/e51a8da0b645727b741251a8ca1e2b503913822b"
-        },
-        "date": 1689675055571,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1891168635380551,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.699361243268129,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.118737840174525,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 28.3363715250729,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "916f8d4de998f0fceaf892f4b19e880ddc2050bf",
+          "message": "fix(cli): repay unpaid chunks due to transfer failures",
+          "timestamp": "2023-11-14T07:03:57Z",
+          "tree_id": "c8c079b810bd17a573a18bb9a388da6911539b37",
+          "url": "https://github.com/maidsafe/safe_network/commit/916f8d4de998f0fceaf892f4b19e880ddc2050bf"
+        },
+        "date": 1699948206046,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 3.093680617198205,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 11.10216271861696,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 32.10352231578467,
             "unit": "MiB/s"
           }
         ]
