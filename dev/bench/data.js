@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699970661704,
+  "lastUpdate": 1699970664270,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "9efdfea08f0581c820bbc6f356c8292fb8a05de1",
-          "message": "feat(node): write secret key to disk and re-use",
-          "timestamp": "2023-06-29T15:45:30+01:00",
-          "tree_id": "3346b28f54b45fe9fd433cb7702ebfce65824676",
-          "url": "https://github.com/maidsafe/safe_network/commit/9efdfea08f0581c820bbc6f356c8292fb8a05de1"
-        },
-        "date": 1688054582935,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 926.41,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 482,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 80,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "f79a81793c2d56c9129311a64a0d81c3f9039879",
+          "message": "feat(networking): drop excessive AddKeysToReplicationFetcher cmds",
+          "timestamp": "2023-11-14T13:16:48Z",
+          "tree_id": "0705b203682afd26460a5ff3b060ea9830fe6145",
+          "url": "https://github.com/maidsafe/safe_network/commit/f79a81793c2d56c9129311a64a0d81c3f9039879"
+        },
+        "date": 1699970663225,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 222,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 71,
             "unit": "MB"
           }
         ]
