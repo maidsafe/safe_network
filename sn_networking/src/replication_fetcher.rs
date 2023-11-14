@@ -18,7 +18,7 @@ use std::{
 };
 
 // Max parallel fetches that can be undertaken at the same time.
-const MAX_PARALLEL_FETCH: usize = K_VALUE.get() * 4;
+const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
