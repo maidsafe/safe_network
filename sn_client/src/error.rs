@@ -10,7 +10,7 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 use super::ClientEvent;
 use sn_registers::{Entry, EntryHash};
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, time::Duration};
 use thiserror::Error;
 
 /// Internal error.
@@ -68,4 +68,7 @@ pub enum Error {
 
     #[error("Logic error: NonZeroUsize was initialised as zero")]
     NonZeroUsizeWasInitialisedAsZero,
+
+    #[error("Could not connect to the network in {0:?}")]
+    ConnectionTimeout(Duration),
 }
