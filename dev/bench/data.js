@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700026613299,
+  "lastUpdate": 1700026940927,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "d29cae7683bec39fdef219ffdbfdb083d4d7d2f6",
-          "message": "feat: provide a `--clean` flag\n\nProvides a `--clean` flag to remove all previous node root directories under the data directory,\nwhich is platform specific.",
-          "timestamp": "2023-07-07T07:17:02Z",
-          "tree_id": "34c6270a1ab26d76386bd48ce13539d29f67eed5",
-          "url": "https://github.com/maidsafe/safe_network/commit/d29cae7683bec39fdef219ffdbfdb083d4d7d2f6"
-        },
-        "date": 1688718372357,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 24.63,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 90,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "3a729d92727a25743514e2815029ed662824343c",
+          "message": "feat(royalties): make royalties payment to be 15% of the total storage cost",
+          "timestamp": "2023-11-15T04:55:19Z",
+          "tree_id": "2215baeda5ae1aa6dd97edd3f2c6379d62a37556",
+          "url": "https://github.com/maidsafe/safe_network/commit/3a729d92727a25743514e2815029ed662824343c"
+        },
+        "date": 1700026940488,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 71,
             "unit": "MB"
           }
         ]
