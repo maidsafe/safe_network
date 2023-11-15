@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700031813515,
+  "lastUpdate": 1700031815147,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "b250867fa197352bdcb30126309a0ee083e005fc",
-          "message": "chore(CI): reduce the testing file size",
-          "timestamp": "2023-07-05T15:48:51Z",
-          "tree_id": "7729d6fc0134fb63cb67aebdd1e6c8491f3cf50f",
-          "url": "https://github.com/maidsafe/safe_network/commit/b250867fa197352bdcb30126309a0ee083e005fc"
-        },
-        "date": 1688576567737,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 345.46,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 198,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 73,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a68961f43472abd24d4983aee914bdde1a9e55c5",
+          "message": "feat(client)!: error out if we cannot connect to the network in\nspecified time",
+          "timestamp": "2023-11-15T06:20:18Z",
+          "tree_id": "2945514af55a0f012a410195455ca7f6390b5663",
+          "url": "https://github.com/maidsafe/safe_network/commit/a68961f43472abd24d4983aee914bdde1a9e55c5"
+        },
+        "date": 1700031814733,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 71,
             "unit": "MB"
           }
         ]
