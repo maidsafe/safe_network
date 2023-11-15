@@ -61,7 +61,7 @@ pub async fn get_client() -> Client {
     };
 
     println!("Client bootstrap with peer {bootstrap_peers:?}");
-    Client::new(secret_key, bootstrap_peers, None)
+    Client::new(secret_key, bootstrap_peers)
         .await
         .expect("Client shall be successfully created.")
 }
