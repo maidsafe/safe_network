@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_cli"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.86.0"
+version = "0.86.1"
 
 [[bin]]
 path="src/main.rs"
@@ -40,11 +40,11 @@ libp2p = {   version="0.53", features = ["identify", "kad"] }
 rayon = "1.8.0"
 reqwest = { version="0.11.18", default-features=false, features = ["rustls"] }
 sn_build_info = { path="../sn_build_info", version = "0.1.2" }
-sn_client = { path = "../sn_client", version = "0.98.0" }
+sn_client = { path = "../sn_client", version = "0.98.1" }
 sn_transfers = { path = "../sn_transfers", version = "0.14.16" }
 sn_logging = { path = "../sn_logging", version = "0.2.14" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.1.9" }
-sn_protocol = { path = "../sn_protocol", version = "0.8.23" }
+sn_protocol = { path = "../sn_protocol", version = "0.8.24" }
 tempfile = "3.6.0"
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
@@ -57,4 +57,4 @@ xor_name = "5.0.0"
 criterion = "0.5.1"
 tempfile = "3.6.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
-sn_protocol = { path = "../sn_protocol", version = "0.8.23", features = ["test-utils"]}
+sn_protocol = { path = "../sn_protocol", version = "0.8.24", features = ["test-utils"]}
