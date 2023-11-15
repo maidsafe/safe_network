@@ -8,7 +8,11 @@
 
 use color_eyre::eyre::{eyre, Result};
 use serde::{Deserialize, Serialize};
-use std::{env, net::IpAddr, path::PathBuf};
+use std::{
+    env,
+    net::{IpAddr, SocketAddr},
+    path::PathBuf,
+};
 
 // The contents of the file stored by sn-testnet-deploy.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -17,6 +21,7 @@ pub struct DeploymentInventory {
     pub version_info: Option<(String, String)>,
     pub branch_info: Option<(String, String)>,
     pub vm_list: Vec<(String, IpAddr)>,
+    pub rpc_endpoints: Vec<SocketAddr>,
     pub node_count: u16,
     pub ssh_user: String,
     pub genesis_multiaddr: String,
