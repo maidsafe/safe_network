@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1699982720244,
+  "lastUpdate": 1700026613299,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "56148224680e275d789035f35b3c8cd5c3a4770b",
-          "message": "chore: cleanup error types",
-          "timestamp": "2023-07-20T06:32:37Z",
-          "tree_id": "5974efda02450198942a3736045ec626f09bb3b5",
-          "url": "https://github.com/maidsafe/safe_network/commit/56148224680e275d789035f35b3c8cd5c3a4770b"
-        },
-        "date": 1689838763622,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1758788866804326,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.601289361545405,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 9.294432189618878,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 52.473059379048024,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "3a729d92727a25743514e2815029ed662824343c",
+          "message": "feat(royalties): make royalties payment to be 15% of the total storage cost",
+          "timestamp": "2023-11-15T04:55:19Z",
+          "tree_id": "2215baeda5ae1aa6dd97edd3f2c6379d62a37556",
+          "url": "https://github.com/maidsafe/safe_network/commit/3a729d92727a25743514e2815029ed662824343c"
+        },
+        "date": 1700026610706,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 3.534760218709895,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 14.116197509015993,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 31.450439904203193,
             "unit": "MiB/s"
           }
         ]
