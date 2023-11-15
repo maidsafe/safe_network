@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use sn_networking::Network;
 use sn_protocol::error::Error as ProtocolError;
 use sn_protocol::NetworkAddress;
 use sn_transfers::{NanoTokens, PaymentQuote};
@@ -17,7 +18,7 @@ const QUOTE_EXPIRATION_SECS: u64 = 3600;
 
 impl Node {
     pub(crate) fn create_quote_for_storecost(
-        &self,
+        network: &Network,
         store_cost: Result<NanoTokens, ProtocolError>,
         address: NetworkAddress,
     ) -> Result<PaymentQuote, ProtocolError> {
@@ -29,7 +30,7 @@ impl Node {
         let timestamp = std::time::SystemTime::now();
         let bytes = PaymentQuote::bytes_for_signing(content, cost, timestamp);
 
-        let signature = match self.network.sign(&bytes) {
+        let signature = match network.sign(&bytes) {
             Ok(s) => s,
             Err(_) => return Err(ProtocolError::QuoteGenerationFailed),
         };
