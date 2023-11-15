@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700031516499,
+  "lastUpdate": 1700031813515,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "91e700109d526f6f04eb113f08d1abc68cc98f05",
-          "message": "ci: fix chart naming",
-          "timestamp": "2023-07-07T11:05:58+02:00",
-          "tree_id": "9b0387d6fa5c952f7f5de103c6cb6e9a3cfdd98d",
-          "url": "https://github.com/maidsafe/safe_network/commit/91e700109d526f6f04eb113f08d1abc68cc98f05"
-        },
-        "date": 1688722069845,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 26.28,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 71,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a68961f43472abd24d4983aee914bdde1a9e55c5",
+          "message": "feat(client)!: error out if we cannot connect to the network in\nspecified time",
+          "timestamp": "2023-11-15T06:20:18Z",
+          "tree_id": "2945514af55a0f012a410195455ca7f6390b5663",
+          "url": "https://github.com/maidsafe/safe_network/commit/a68961f43472abd24d4983aee914bdde1a9e55c5"
+        },
+        "date": 1700031813120,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 78,
             "unit": "MB"
           }
         ]
