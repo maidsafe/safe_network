@@ -15,13 +15,8 @@ use bytes::Bytes;
 use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
-use rand::{
-    rngs::{OsRng, StdRng},
-    Rng, SeedableRng,
-};
-use sn_networking::{
-    MsgResponder, Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
-};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use sn_networking::{Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{Cmd, CmdResponse, Query, QueryResponse, Response},
@@ -153,7 +148,7 @@ impl NodeBuilder {
 
         // Having a portion of nodes (1/50) subscribe to the ROYALTY_TRANSFER_NOTIF_TOPIC
         // Such nodes become `forwarder` to ensure the actual beneficary won't miss.
-        let index: usize = OsRng.gen_range(0..FORWARDER_CHOOSING_FACTOR);
+        let index: usize = StdRng::from_entropy().gen_range(0..FORWARDER_CHOOSING_FACTOR);
         if index == FORWARDER_CHOOSING_FACTOR / 2 {
             trace!("Picked as a forwarding node to subscribe to the {ROYALTY_TRANSFER_NOTIF_TOPIC} topic");
             // Forwarder only needs to forward topic msgs on libp2p level,
@@ -223,16 +218,12 @@ impl Node {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
                             Some(event) => {
-                                let stateless_node_copy = self.clone();
-                                let _handle =
-                                    spawn(async move {
-                                        let start = std::time::Instant::now();
-                                        let event_string = format!("{:?}", event);
+                                let start = std::time::Instant::now();
+                                let event_string = format!("{:?}", event);
 
-                                        stateless_node_copy.handle_network_event(event, peers_connected).await ;
-                                        info!("Handled non-blocking network event in {:?}: {:?}", start.elapsed(), event_string);
+                                self.handle_network_event(event, peers_connected).await ;
+                                info!("Handled non-blocking network event in {:?}: {:?}", start.elapsed(), event_string);
 
-                                    });
                             }
                             None => {
                                 error!("The `NetworkEvent` channel is closed");
@@ -245,13 +236,13 @@ impl Node {
                     _ = replication_interval.tick() => {
                         let start = std::time::Instant::now();
                         info!("Periodic replication triggered");
-                        let stateless_node_copy = self.clone();
-                        let _handle = spawn(async move {
+                        let network = self.network.clone();
+                        self.record_metrics(Marker::IntervalReplicationTriggered);
 
+                        let _handle = spawn(async move {
                             Marker::ForcedReplication.log();
 
-                            if let Err(err) = stateless_node_copy
-                                .try_interval_replication()
+                            if let Err(err) = Self::try_interval_replication(network)
                                 .await
                             {
                                 error!("Error while triggering replication {err:?}");
@@ -285,7 +276,7 @@ impl Node {
     // **** Private helpers *****
 
     /// Handle a network event.
-    /// This should be handled in a non blocking fashion, inside of a spawn
+    /// Spawns a thread for any likely long running tasks
     async fn handle_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
         // when the node has not been connected to enough peers, it should not perform activities
         // that might require peers in the RT to succeed.
@@ -323,21 +314,17 @@ impl Node {
         let event_string = format!("{:?}", event);
         trace!("Handling NetworkEvent {event_string:?}");
 
-        match event {
-            NetworkEvent::QueryRequestReceived { query, channel } => {
-                let res = self.handle_query(query).await;
+        self.handle_sync_network_event(event, peers_connected);
 
-                self.send_response(res, channel);
-            }
-            NetworkEvent::CmdRequestReceived { cmd } => {
-                self.handle_node_cmd(cmd);
-            }
-            NetworkEvent::ResponseReceived { res } => {
-                trace!("NetworkEvent::ResponseReceived {res:?}");
-                if let Err(err) = self.handle_response(res) {
-                    error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
-                }
-            }
+        trace!(
+            "NetworkEvent handled in {:?} : {event_string:?}",
+            start.elapsed()
+        );
+    }
+
+    /// Handle synchronous network events.
+    fn handle_sync_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
+        match event {
             NetworkEvent::PeerAdded(peer_id, connected_peers) => {
                 // increment peers_connected and send ConnectedToNetwork event if have connected to K_VALUE peers
                 let _ = peers_connected.fetch_add(1, Ordering::SeqCst);
@@ -348,28 +335,26 @@ impl Node {
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
                 self.record_metrics(Marker::PeerAddedToRoutingTable(peer_id));
 
-                if let Err(err) = self.try_interval_replication().await {
-                    error!("During CloseGroupUpdate, error while triggering replication {err:?}");
-                }
+                // try replication here
+                let net_clone = self.network.clone();
+                self.record_metrics(Marker::IntervalReplicationTriggered);
+                let _handle = spawn(async move {
+                    if let Err(err) = Self::try_interval_replication(net_clone).await {
+                        error!("Error while triggering replication {err:?}");
+                    }
+                });
             }
             NetworkEvent::PeerRemoved(peer_id, connected_peers) => {
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
                 self.record_metrics(Marker::PeerRemovedFromRoutingTable(peer_id));
-                // During a node restart, the new node got added before the old one got removed.
-                // If the old one is `pushed out of close_group by the new one`, then the records
-                // that being close to the old one won't got replicated during the CloseGroupUpdate
-                // of the new one, as the old one still sits in the local kBuckets.
-                // Hence, the replication attempts shall also be undertaken when PeerRemoved.
-                if let Err(err) = self.try_interval_replication().await {
-                    error!("During PeerRemoved, error while triggering replication {err:?}");
-                }
-            }
-            NetworkEvent::KeysForReplication(keys) => {
-                self.record_metrics(Marker::fetching_keys_for_replication(&keys));
 
-                if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
-                    error!("Error while trying to fetch replicated data {err:?}");
-                }
+                let net = self.network.clone();
+                self.record_metrics(Marker::IntervalReplicationTriggered);
+                let _handle = spawn(async move {
+                    if let Err(e) = Self::try_interval_replication(net).await {
+                        error!("Error while triggering replication {e:?}");
+                    }
+                });
             }
             NetworkEvent::NewListenAddr(_) => {
                 if !cfg!(feature = "local-discovery") {
@@ -390,52 +375,82 @@ impl Node {
                     self.events_channel.broadcast(NodeEvent::BehindNat);
                 }
             }
-            NetworkEvent::UnverifiedRecord(record) => {
-                let key = PrettyPrintRecordKey::from(&record.key).into_owned();
-                match self.validate_and_store_record(record).await {
-                    Ok(cmdok) => trace!("UnverifiedRecord {key} stored with {cmdok:?}."),
-                    Err(err) => {
-                        self.record_metrics(Marker::RecordRejected(&key));
-                        trace!("UnverifiedRecord {key} failed to be stored with error {err:?}.")
-                    }
-                }
-            }
             NetworkEvent::FailedToWrite(key) => {
                 if let Err(e) = self.network.remove_failed_local_record(key) {
                     error!("Failed to remove local record: {e:?}");
                 }
             }
+            NetworkEvent::ResponseReceived { res } => {
+                trace!("NetworkEvent::ResponseReceived {res:?}");
+                if let Err(err) = self.handle_response(res) {
+                    error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
+                }
+            }
+            NetworkEvent::KeysForReplication(keys) => {
+                self.record_metrics(Marker::fetching_keys_for_replication(&keys));
+
+                if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
+                    error!("Error while trying to fetch replicated data {err:?}");
+                }
+            }
+            NetworkEvent::QueryRequestReceived { query, channel } => {
+                let network = self.network.clone();
+                let payment_address = *self.reward_address;
+
+                let _handle = spawn(async move {
+                    let res = Self::handle_query(&network, query, payment_address).await;
+
+                    if let Err(error) = network.send_response(res, channel) {
+                        error!("Error while sending response form query req: {error:?}");
+                    }
+                });
+            }
+            NetworkEvent::CmdRequestReceived { cmd } => {
+                self.handle_node_cmd(cmd);
+            }
+            NetworkEvent::UnverifiedRecord(record) => {
+                // queries can be long running and require validation, so we spawn a task to handle them
+                let self_clone = self.clone();
+                let _handle = spawn(async move {
+                    let key = PrettyPrintRecordKey::from(&record.key).into_owned();
+                    match self_clone.validate_and_store_record(record).await {
+                        Ok(cmdok) => trace!("UnverifiedRecord {key} stored with {cmdok:?}."),
+                        Err(err) => {
+                            self_clone.record_metrics(Marker::RecordRejected(&key));
+                            trace!("UnverifiedRecord {key} failed to be stored with error {err:?}.")
+                        }
+                    }
+                });
+            }
             NetworkEvent::GossipsubMsgReceived { topic, msg }
             | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
                 trace!("Received a gossip msg for the topic of {topic}");
-                if self.events_channel.receiver_count() == 0 {
+                let events_channel = self.events_channel.clone();
+
+                if events_channel.receiver_count() == 0 {
                     return;
                 }
                 if topic == ROYALTY_TRANSFER_NOTIF_TOPIC {
                     // this is expected to be a notification of a transfer which we treat specially,
                     // and we try to decode it only if it's referring to a PK the user is interested in
                     if let Some(filter_pk) = self.transfer_notifs_filter {
-                        match try_decode_transfer_notif(&msg, filter_pk) {
-                            Ok(Some(notif_event)) => self.events_channel.broadcast(notif_event),
-                            Ok(None) => { /* transfer notif filered out */ }
-                            Err(err) => {
-                                warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {err:?}");
-                                self.events_channel
-                                    .broadcast(NodeEvent::GossipsubMsg { topic, msg });
+                        let _handle = spawn(async move {
+                            match try_decode_transfer_notif(&msg, filter_pk) {
+                                Ok(Some(notif_event)) => events_channel.broadcast(notif_event),
+                                Ok(None) => { /* transfer notif filered out */ }
+                                Err(err) => {
+                                    warn!("GossipsubMsg matching the transfer notif. topic name, couldn't be decoded as such: {err:?}");
+                                    events_channel
+                                        .broadcast(NodeEvent::GossipsubMsg { topic, msg });
+                                }
                             }
-                        }
+                        });
                     }
                 } else {
-                    self.events_channel
-                        .broadcast(NodeEvent::GossipsubMsg { topic, msg });
+                    events_channel.broadcast(NodeEvent::GossipsubMsg { topic, msg });
                 }
             }
         }
-
-        trace!(
-            "NetworkEvent handled in {:?} : {event_string:?}",
-            start.elapsed()
-        );
     }
 
     // Handle the response that was not awaited at the call site
@@ -456,15 +471,18 @@ impl Node {
         Ok(())
     }
 
-    async fn handle_query(&self, query: Query) -> Response {
+    async fn handle_query(
+        network: &Network,
+        query: Query,
+        payment_address: MainPubkey,
+    ) -> Response {
         let resp: QueryResponse = match query {
             Query::GetStoreCost(address) => {
                 trace!("Got GetStoreCost request for {address:?}");
-                let payment_address = *self.reward_address;
 
                 let record_exists = {
                     if let Some(key) = address.as_record_key() {
-                        match self.network.is_record_key_present_locally(&key).await {
+                        match network.is_record_key_present_locally(&key).await {
                             Ok(res) => res,
                             Err(error) => {
                                 error!("Problem getting record key's existence: {error:?}");
@@ -484,14 +502,13 @@ impl Node {
                         payment_address,
                     }
                 } else {
-                    let store_cost = self
-                        .network
+                    let store_cost = network
                         .get_local_storecost()
                         .await
                         .map_err(|_| ProtocolError::GetStoreCostFailed);
 
                     QueryResponse::GetStoreCost {
-                        quote: self.create_quote_for_storecost(store_cost, address),
+                        quote: Self::create_quote_for_storecost(network, store_cost, address),
                         payment_address,
                     }
                 }
@@ -499,7 +516,7 @@ impl Node {
             Query::GetReplicatedRecord { requester, key } => {
                 trace!("Got GetReplicatedRecord from {requester:?} regarding {key:?}");
 
-                let our_address = NetworkAddress::from_peer(self.network.peer_id);
+                let our_address = NetworkAddress::from_peer(network.peer_id);
                 let mut result = Err(ProtocolError::ReplicatedRecordNotFound {
                     holder: Box::new(our_address.clone()),
                     key: Box::new(key.clone()),
@@ -507,7 +524,7 @@ impl Node {
                 let record_key = key.as_record_key();
 
                 if let Some(record_key) = record_key {
-                    if let Ok(Some(record)) = self.network.get_local_record(&record_key).await {
+                    if let Ok(Some(record)) = network.get_local_record(&record_key).await {
                         result = Ok((our_address, Bytes::from(record.value)));
                     }
                 }
@@ -557,12 +574,6 @@ impl Node {
                 });
             }
         };
-    }
-
-    fn send_response(&self, resp: Response, response_channel: MsgResponder) {
-        if let Err(err) = self.network.send_response(resp, response_channel) {
-            warn!("Error while sending response: {err:?}");
-        }
     }
 }
 
