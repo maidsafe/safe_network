@@ -1048,12 +1048,16 @@ impl SwarmDriver {
                 // Remove the query task and consume the variables.
                 let (sender, result_map, _, _) = entry.remove();
 
-                if result_map.len() == 1 {
-                    let _ = sender.send(Ok(peer_record.record));
+                let result = if result_map.len() == 1 {
+                    Ok(peer_record.record)
                 } else {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
-                    let _ = sender.send(Err(Error::SplitRecord { result_map }));
-                }
+                    Err(Error::SplitRecord { result_map })
+                };
+
+                let _handle = tokio::spawn(async move {
+                    let _ = sender.send(result);
+                });
 
                 // Stop the query; possibly stops more nodes from being queried.
                 if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(&query_id) {
@@ -1093,10 +1097,14 @@ impl SwarmDriver {
 
                 // Stop tracking the query task by removing the entry and consume the sender.
                 let (sender, ..) = entry.remove();
+                let record = peer_record.record.clone();
                 // A claimed Chunk type record can be trusted.
                 // Punishment of peer that sending corrupted Chunk type record
                 // maybe carried out by other verification mechanism.
-                let _ = sender.send(Ok(peer_record.record.clone()));
+                let _handle = tokio::spawn(async move {
+                    let _ = sender.send(Ok(record));
+                });
+
                 return true;
             }
         } else {

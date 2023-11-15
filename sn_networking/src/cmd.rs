@@ -333,7 +333,9 @@ impl SwarmDriver {
             SwarmCmd::GetLocalStoreCost { sender } => {
                 let cost = self.swarm.behaviour_mut().kademlia.store_mut().store_cost();
 
-                let _res = sender.send(cost);
+                let _handle = tokio::spawn(async move {
+                    let _ = sender.send(cost);
+                });
             }
             SwarmCmd::GetLocalRecord { key, sender } => {
                 let record = self
@@ -343,7 +345,9 @@ impl SwarmDriver {
                     .store_mut()
                     .get(&key)
                     .map(|rec| rec.into_owned());
-                let _ = sender.send(record);
+                let _handle = tokio::spawn(async move {
+                    let _ = sender.send(record);
+                });
             }
             SwarmCmd::PutRecord {
                 record,
@@ -372,9 +376,11 @@ impl SwarmDriver {
                     }
                 };
 
-                if let Err(err) = sender.send(res) {
-                    error!("Could not send response to PutRecord cmd: {:?}", err);
-                }
+                let _handle = tokio::spawn(async move {
+                    if let Err(err) = sender.send(res) {
+                        error!("Could not send response to PutRecord cmd: {:?}", err);
+                    }
+                });
             }
             SwarmCmd::PutLocalRecord { record } => {
                 let key = record.key.clone();
@@ -428,7 +434,9 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .contains(&key);
-                let _ = sender.send(has_key);
+                let _handle = tokio::spawn(async move {
+                    let _ = sender.send(has_key);
+                });
             }
             SwarmCmd::GetAllLocalRecordAddresses { sender } => {
                 #[allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
@@ -438,7 +446,9 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .record_addresses();
-                let _ = sender.send(addresses);
+                let _handle = tokio::spawn(async move {
+                    let _ = sender.send(addresses);
+                });
             }
 
             SwarmCmd::StartListening { addr, sender } => {
@@ -473,7 +483,10 @@ impl SwarmDriver {
                     .insert(query_id, (sender, Default::default()));
             }
             SwarmCmd::GetAllLocalPeers { sender } => {
-                let _ = sender.send(self.get_all_local_peers());
+                let result = self.get_all_local_peers();
+                let _handle = tokio::spawn(async move {
+                    let _ = sender.send(result);
+                });
             }
             SwarmCmd::GetCloseGroupLocalPeers { key, sender } => {
                 let key = key.as_kbucket_key();
@@ -488,14 +501,18 @@ impl SwarmDriver {
                     .map(|peer| peer.into_preimage())
                     .take(CLOSE_GROUP_SIZE)
                     .collect();
-
-                let _ = sender.send(closest_peers);
+                let _handle = tokio::spawn(async move {
+                    let _ = sender.send(closest_peers);
+                });
             }
             // SwarmCmd::GetOurCloseGroup { sender } => {
             //     let _ = sender.send(self.close_group.clone());
             // }
             SwarmCmd::GetClosestKLocalPeers { sender } => {
-                let _ = sender.send(self.get_closest_k_value_local_peers());
+                let result = self.get_closest_k_value_local_peers();
+                let _handle = tokio::spawn(async move {
+                    let _ = sender.send(result);
+                });
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
                 // If `self` is the recipient, forward the request directly to our upper layer to
@@ -549,9 +566,9 @@ impl SwarmDriver {
                     listeners: self.swarm.listeners().cloned().collect(),
                 };
 
-                sender
-                    .send(current_state)
-                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                let _handle = tokio::spawn(async move {
+                    let _ = sender.send(current_state);
+                });
             }
             SwarmCmd::GossipsubSubscribe(topic_id) => {
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
