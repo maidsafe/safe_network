@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700026942631,
+  "lastUpdate": 1700031516499,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "e3bd53790e20ba312f00458cd3a3cbeb8f7bf724",
-          "message": "ci: fix issues in dbc spend test and memcheck workflow\n\nThe `local-discovery` feature was unintentionally removed from the client and node binaries for the\nDBC spend tests.\n\nFor the memcheck workflow, we had to prevent `SAFE_PEERS` from being reset in the new custom action\nbecause the node that's runner with heaptrack is the only one that stays consistent through the\ntest.",
-          "timestamp": "2023-07-20T18:43:41+01:00",
-          "tree_id": "3bc2fb528f299ed24ac575ee9431cdb51f75abb8",
-          "url": "https://github.com/maidsafe/safe_network/commit/e3bd53790e20ba312f00458cd3a3cbeb8f7bf724"
-        },
-        "date": 1689876445364,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.121876618977975,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.065902940024374,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 8.338885576307488,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 31.450439904203193,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a68961f43472abd24d4983aee914bdde1a9e55c5",
+          "message": "feat(client)!: error out if we cannot connect to the network in\nspecified time",
+          "timestamp": "2023-11-15T06:20:18Z",
+          "tree_id": "2945514af55a0f012a410195455ca7f6390b5663",
+          "url": "https://github.com/maidsafe/safe_network/commit/a68961f43472abd24d4983aee914bdde1a9e55c5"
+        },
+        "date": 1700031514238,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 3.9202966787380213,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 15.958986453002012,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 36.51410501922593,
             "unit": "MiB/s"
           }
         ]
