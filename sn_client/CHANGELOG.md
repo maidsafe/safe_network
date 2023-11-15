@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.98.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.97.6...sn_client-v0.98.0) - 2023-11-15
+
+### Added
+- *(client)* [**breaking**] error out if we cannot connect to the network in
+
+### Other
+- *(client)* [**breaking**] remove request_response timeout argument
+
 ## [0.97.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.97.5...sn_client-v0.97.6) - 2023-11-15
 
 ### Other
