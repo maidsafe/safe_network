@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
-    let client = Client::new(secret_key, bootstrap_peers, None).await?;
+    let client = Client::new(secret_key, bootstrap_peers).await?;
 
     faucet_cmds(opt.cmd, &client).await?;
 

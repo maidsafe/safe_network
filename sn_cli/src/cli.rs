@@ -11,7 +11,7 @@ use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
 use sn_logging::{LogFormat, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
 pub fn parse_log_output(val: &str) -> Result<LogOutputDest> {
     match val {
@@ -68,10 +68,6 @@ pub(crate) struct Opt {
     /// Available sub commands.
     #[clap(subcommand)]
     pub cmd: SubCmd,
-
-    /// Timeout in seconds to wait for a data response from the network.
-    #[clap(long = "timeout", global = true, value_parser = |t: &str| -> Result<Duration> { Ok(t.parse().map(Duration::from_secs)?) })]
-    pub timeout: Option<Duration>,
 
     /// Prevent verification of data storage on the network.
     ///
