@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.23](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.22...sn_protocol-v0.8.23) - 2023-11-15
+
+### Added
+- *(test)* read the DeploymentInventory from SN_INVENTORY
+- *(protocol)* move test utils behind a feature gate
+
 ## [0.8.22](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.21...sn_protocol-v0.8.22) - 2023-11-14
 
 ### Other

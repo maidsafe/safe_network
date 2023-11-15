@@ -2162,6 +2162,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(royalties)* verify royalties fees amounts
 
+## [0.98.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.10...sn_node-v0.98.11) - 2023-11-15
+
+### Added
+- *(royalties)* make royalties payment to be 15% of the total storage cost
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
