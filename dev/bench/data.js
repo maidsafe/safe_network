@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700026940927,
+  "lastUpdate": 1700026942631,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20419,40 +20419,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "58405011f9e3d2e347dcbdd21134d87bc7c95030",
-          "message": "feat: running benchmark test with local-discovery",
-          "timestamp": "2023-07-04T12:08:19+02:00",
-          "tree_id": "123b4f93ce6b1987803dc7157f8b3b6ef5fca5ab",
-          "url": "https://github.com/maidsafe/safe_network/commit/58405011f9e3d2e347dcbdd21134d87bc7c95030"
-        },
-        "date": 1688467119497,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 969.02,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 549,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "b250867fa197352bdcb30126309a0ee083e005fc",
           "message": "chore(CI): reduce the testing file size",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 70,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "3a729d92727a25743514e2815029ed662824343c",
+          "message": "feat(royalties): make royalties payment to be 15% of the total storage cost",
+          "timestamp": "2023-11-15T04:55:19Z",
+          "tree_id": "2215baeda5ae1aa6dd97edd3f2c6379d62a37556",
+          "url": "https://github.com/maidsafe/safe_network/commit/3a729d92727a25743514e2815029ed662824343c"
+        },
+        "date": 1700026942184,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 194,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 73,
             "unit": "MB"
           }
         ]
