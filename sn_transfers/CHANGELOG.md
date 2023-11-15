@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.16](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.15...sn_transfers-v0.14.16) - 2023-11-15
+
+### Added
+- *(royalties)* make royalties payment to be 15% of the total storage cost
+
 ## [0.14.15](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.14...sn_transfers-v0.14.15) - 2023-11-14
 
 ### Other
