@@ -45,12 +45,22 @@ use tokio::task::spawn;
 use tracing::trace;
 use xor_name::XorName;
 
+/// The maximum duration the client will wait for a connection to the network before timing out.
+const CONNECTION_TIMEOUT: Duration = Duration::from_secs(180);
+
 /// The timeout duration for the client to receive any response from the network.
-const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs(30);
+const INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 
 impl Client {
     /// Instantiate a new client.
-    pub async fn new(signer: SecretKey, peers: Option<Vec<Multiaddr>>) -> Result<Self> {
+    ///
+    /// Optionally specify the maximum time the client will wait for a connection to the network before timing out.
+    /// Defaults to 180s
+    pub async fn new(
+        signer: SecretKey,
+        peers: Option<Vec<Multiaddr>>,
+        connection_timeout: Option<Duration>,
+    ) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
         let local = match peers {
             Some(ref peers) => !peers.iter().any(multiaddr_is_global),
@@ -145,29 +155,42 @@ impl Client {
 
         // loop to connect to the network
         let mut is_connected = false;
-        loop {
-            match client_events_rx.recv().await {
-                Ok(ClientEvent::ConnectedToNetwork) => {
-                    is_connected = true;
-                    info!("Client connected to the Network {is_connected:?}.");
-                    break;
-                }
-                Ok(ClientEvent::InactiveClient(timeout)) => {
-                    if is_connected {
-                        info!("The client was inactive for {timeout:?}.");
-                    } else {
-                        info!("The client still does not know enough network nodes.");
-                    }
+        let connection_timeout = connection_timeout.unwrap_or(CONNECTION_TIMEOUT);
+        let mut connection_timeout_interval = tokio::time::interval(connection_timeout);
+        // first tick completes immediately
+        connection_timeout_interval.tick().await;
 
-                    continue;
-                }
-                Ok(ClientEvent::GossipsubMsg { .. }) => {}
-                Err(err) => {
-                    error!("Unexpected error during client startup {err:?}");
-                    println!("Unexpected error during client startup {err:?}");
-                    return Err(err);
+        loop {
+            tokio::select! {
+            _ = connection_timeout_interval.tick() => {
+                if !is_connected {
+                    error!("Timeout: Client failed to connect to the network within {connection_timeout:?}");
+                    return Err(Error::ConnectionTimeout(connection_timeout));
                 }
             }
+            event = client_events_rx.recv() => {
+                match event {
+                    Ok(ClientEvent::ConnectedToNetwork) => {
+                        is_connected = true;
+                        info!("Client connected to the Network {is_connected:?}.");
+                        break;
+                    }
+                    Ok(ClientEvent::InactiveClient(timeout)) => {
+                        if is_connected {
+                            info!("The client was inactive for {timeout:?}.");
+                        } else {
+                            info!("The client still does not know enough network nodes.");
+                        }
+                        continue;
+                    }
+                    Ok(ClientEvent::GossipsubMsg { .. }) => {}
+                    Err(err) => {
+                        error!("Unexpected error during client startup {err:?}");
+                        println!("Unexpected error during client startup {err:?}");
+                        return Err(err);
+                    }
+                }
+            }}
         }
 
         // The above loop breaks if `ConnectedToNetwork` is received, but we might need the
