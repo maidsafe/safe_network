@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700031815147,
+  "lastUpdate": 1700040669129,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "21afa206e44718d1f77e0daf6d314a5b9ae724ba",
-          "message": "ci: update benchmark generation for faucet startup",
-          "timestamp": "2023-07-21T12:32:17+02:00",
-          "tree_id": "c37a28239fc7ac68251419aa65d731fe688d0182",
-          "url": "https://github.com/maidsafe/safe_network/commit/21afa206e44718d1f77e0daf6d314a5b9ae724ba"
-        },
-        "date": 1689937060821,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1728368950141457,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 7.2958469570855,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 9.215862561105045,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 36.51410501922593,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "a593dbd05d16115d35bd40c7cfbc8ca22259913d",
+          "message": "chore: include RPC endpoints field to DeploymentInventory",
+          "timestamp": "2023-11-15T08:45:28Z",
+          "tree_id": "c77f822bde3732cd2e84f4059a32c1aa653de7fc",
+          "url": "https://github.com/maidsafe/safe_network/commit/a593dbd05d16115d35bd40c7cfbc8ca22259913d"
+        },
+        "date": 1700040667320,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 4.2665442562124944,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 17.820593335735573,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 50.1629804354891,
             "unit": "MiB/s"
           }
         ]
