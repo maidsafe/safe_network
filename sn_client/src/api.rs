@@ -50,11 +50,7 @@ const INACTIVITY_TIMEOUT: std::time::Duration = tokio::time::Duration::from_secs
 
 impl Client {
     /// Instantiate a new client.
-    pub async fn new(
-        signer: SecretKey,
-        peers: Option<Vec<Multiaddr>>,
-        req_response_timeout: Option<Duration>,
-    ) -> Result<Self> {
+    pub async fn new(signer: SecretKey, peers: Option<Vec<Multiaddr>>) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
         let local = match peers {
             Some(ref peers) => !peers.iter().any(multiaddr_is_global),
@@ -64,13 +60,11 @@ impl Client {
         info!("Startup a client with peers {peers:?} and local {local:?} flag");
         info!("Starting Kad swarm in client mode...");
 
-        let mut network_builder =
+        let network_builder =
             NetworkBuilder::new(Keypair::generate_ed25519(), local, std::env::temp_dir());
 
-        if let Some(request_timeout) = req_response_timeout {
-            network_builder.request_timeout(request_timeout);
-        }
-
+        #[cfg(feature = "open-metrics")]
+        let mut network_builder = network_builder;
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_registry(Registry::default());
 

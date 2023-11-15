@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     let signer = SecretKey::random();
 
     println!("Starting SAFE client...");
-    let client = Client::new(signer, None, None).await?;
+    let client = Client::new(signer, None).await?;
     println!("SAFE client signer public key: {:?}", client.signer_pk());
 
     let root_dir = dirs_next::data_dir()

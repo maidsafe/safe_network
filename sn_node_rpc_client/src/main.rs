@@ -231,7 +231,7 @@ pub async fn transfers_events(
     let (client, mut wallet, pk) = match SecretKey::from_hex(&sk) {
         Ok(sk) => {
             let pk = sk.public_key();
-            let client = Client::new(sk.clone(), bootstrap_peers, None).await?;
+            let client = Client::new(sk.clone(), bootstrap_peers).await?;
             let main_sk = MainSecretKey::new(sk);
             let wallet_dir = TempDir::new()?;
             let wallet = LocalWallet::load_from_main_key(&wallet_dir, main_sk)?;
