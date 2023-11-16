@@ -17,7 +17,7 @@ use super::{
 
 use crate::{
     calculate_royalties_fee,
-    transfers::{create_offline_transfer, ContentPaymentsIdMap, OfflineTransfer, PaymentDetails},
+    transfers::{create_offline_transfer, ContentPaymentsMap, OfflineTransfer, PaymentDetails},
     CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
     MainSecretKey, NanoTokens, SignedSpend, Transfer, UniquePubkey, WalletError,
     NETWORK_ROYALTIES_PK,
@@ -78,13 +78,13 @@ impl LocalWallet {
     }
 
     /// Attempts to reload the wallet from disk.
-    pub fn reload_from_disk(&mut self) -> Result<()> {
+    pub fn reload_from_disk_or_recreate(&mut self) -> Result<()> {
         std::fs::create_dir_all(&self.wallet_dir)?;
         // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
         trace!("Trying to lock wallet to get available cash_notes...");
-        let exclusive_access = self.lock()?;
+        let _exclusive_access = self.lock()?;
         self.reload()?;
-        self.store(exclusive_access)
+        Ok(())
     }
 
     /// Locks the wallet and returns exclusive access to the wallet
@@ -235,22 +235,25 @@ impl LocalWallet {
     }
 
     /// Return the payment cash_note ids for the given content address name if cached.
-    pub fn get_payment_unique_pubkeys_and_values(
-        &self,
-        name: &XorName,
-    ) -> Option<&Vec<PaymentDetails>> {
+    pub fn get_cached_payment_for_xorname(&self, name: &XorName) -> Option<&PaymentDetails> {
         self.wallet.payment_transactions.get(name)
     }
 
-    /// Return the payment cash_note ids for the given content address name if cached.
+    /// Return the payment transfers for the given content address name if cached.
     pub fn get_payment_transfers(&self, name: &XorName) -> Vec<Transfer> {
         let mut transfers: Vec<Transfer> = vec![];
 
-        if let Some(payment) = self.get_payment_unique_pubkeys_and_values(name) {
-            for (trans, main_pub_key, value) in payment {
-                trace!("Current transfer for record {name:?} is of {value:?} tokens to {main_pub_key:?}.");
-                transfers.push(trans.to_owned());
-            }
+        if let Some(payment) = self.get_cached_payment_for_xorname(name) {
+            let (trans, value) = &payment.transfer;
+            trace!(
+                "Retrieved transfer for record {name:?} of {value:?} tokens to {:?}.",
+                payment.recipient
+            );
+            transfers.push(trans.to_owned());
+
+            let (cnr, value) = &payment.royalties;
+            trace!("Retrieved royalites cnr for record {name:?} of {value:?}");
+            transfers.push(Transfer::NetworkRoyalties(vec![cnr.clone()]));
         }
 
         transfers
@@ -299,111 +302,101 @@ impl LocalWallet {
     }
 
     /// Performs a payment for each content address.
+    /// Includes payment of network royalties.
     /// Returns the amount paid for storage, including the network royalties fee paid.
     pub fn local_send_storage_payment(
         &mut self,
-        mut all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
-        reason_hash: Option<Hash>,
+        price_map: BTreeMap<XorName, (MainPubkey, NanoTokens)>,
     ) -> Result<(NanoTokens, NanoTokens)> {
-        // create a unique key for each output
-        let mut all_payees_only = vec![];
         let mut rng = &mut rand::thread_rng();
-
         let mut storage_cost = NanoTokens::zero();
         let mut royalties_fees = NanoTokens::zero();
 
-        for (_content_addr, payees) in all_data_payments.iter_mut() {
-            let mut cost = NanoTokens::zero();
-            let mut unique_key_vec = Vec::<(NanoTokens, MainPubkey, [u8; 32])>::new();
-            for (address, amount) in payees.clone().into_iter() {
-                cost = cost
-                    .checked_add(amount)
-                    .ok_or(WalletError::TotalPriceTooHigh)?;
-
-                unique_key_vec.push((
-                    amount,
-                    address,
-                    UniquePubkey::random_derivation_index(&mut rng),
-                ));
-            }
-
-            // add network royalties payment as payee as well
-            let royalties = calculate_royalties_fee(cost);
-            payees.push((*NETWORK_ROYALTIES_PK, royalties));
-            unique_key_vec.push((
-                royalties,
+        // create random derivation indexes for recipients
+        let mut recipients_by_xor = BTreeMap::new();
+        for (xorname, (main_pubkey, cost)) in price_map.iter() {
+            let storage_payee = (
+                *cost,
+                *main_pubkey,
+                UniquePubkey::random_derivation_index(&mut rng),
+            );
+            let royalties_fee = calculate_royalties_fee(*cost);
+            let royalties_payee = (
+                royalties_fee,
                 *NETWORK_ROYALTIES_PK,
                 UniquePubkey::random_derivation_index(&mut rng),
-            ));
-
-            all_payees_only.extend(unique_key_vec);
+            );
 
             storage_cost = storage_cost
-                .checked_add(cost)
+                .checked_add(*cost)
                 .ok_or(WalletError::TotalPriceTooHigh)?;
             royalties_fees = royalties_fees
-                .checked_add(royalties)
+                .checked_add(royalties_fee)
                 .ok_or(WalletError::TotalPriceTooHigh)?;
+
+            recipients_by_xor.insert(xorname, (storage_payee, royalties_payee));
         }
 
-        let reason_hash = reason_hash.unwrap_or_default();
-
+        // create offline transfers
+        let recipients = recipients_by_xor
+            .values()
+            .flat_map(|(node, roy)| vec![node, roy])
+            .cloned()
+            .collect();
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
         debug!("Available CashNotes: {:#?}", available_cash_notes);
+        let reason_hash = Default::default(); // NB TODO use XorName of each piece of data!!
         let offline_transfer = create_offline_transfer(
             available_cash_notes,
-            all_payees_only,
+            recipients,
             self.address(),
             reason_hash,
         )?;
 
-        let mut all_transfers_per_address = BTreeMap::default();
+        // cache transfer payments in the wallet
+        for (xorname, recipients_info) in recipients_by_xor {
+            let (storage_payee, royalties_payee) = recipients_info;
+            let node_key = storage_payee.1;
+            let cash_note_for_node = offline_transfer
+                .created_cash_notes
+                .iter()
+                .find(|cash_note| {
+                    // cash_note.reason() == Hash::hash(xorname) && // NB TODO uncomment and use Reason!!
+                    cash_note.main_pubkey() == &node_key
+                })
+                .ok_or(Error::CouldNotSendMoney(format!(
+                    "No cashnote found to pay node for {xorname:?}"
+                )))?;
+            let transfer_amount = cash_note_for_node.value()?;
+            let transfer_for_node =
+                Transfer::transfer_from_cash_note(cash_note_for_node.to_owned())?;
+            trace!("Created transaction regarding {xorname:?} paying {transfer_amount:?} to {node_key:?}.");
 
-        let mut used_cash_notes = std::collections::HashSet::new();
+            let royalties_key = royalties_payee.1;
+            let cash_note_for_royalties = offline_transfer
+                .created_cash_notes
+                .iter()
+                .find(|cash_note| {
+                    // cash_note.reason() == Hash::hash(xorname) && // NB TODO uncomment and use Reason!!
+                    *cash_note.main_pubkey() == royalties_key
+                })
+                .ok_or(Error::CouldNotSendMoney(format!(
+                    "No cashnote found to pay royalties for {xorname:?}"
+                )))?;
+            let royalties = CashNoteRedemption::from_cash_note(cash_note_for_royalties)?;
+            let royalties_amount = cash_note_for_royalties.value()?;
+            trace!("Created network royalties cnr regarding {xorname:?} paying {royalties_amount:?} to {royalties_key:?}.");
 
-        for (content_addr, payees) in all_data_payments {
-            for (payee, token) in payees {
-                if let Some(cash_note) =
-                    offline_transfer
-                        .created_cash_notes
-                        .iter()
-                        .find(|cash_note| {
-                            cash_note.main_pubkey() == &payee
-                                && !used_cash_notes.contains(&cash_note.unique_pubkey().to_bytes())
-                        })
-                {
-                    used_cash_notes.insert(cash_note.unique_pubkey().to_bytes());
-                    let cash_notes_for_content: &mut Vec<PaymentDetails> =
-                        all_transfers_per_address.entry(content_addr).or_default();
-                    let value = cash_note.value();
+            let payment = PaymentDetails {
+                recipient: node_key,
+                transfer: (transfer_for_node, transfer_amount),
+                royalties: (royalties, royalties_amount),
+            };
 
-                    // diffentiate between network royalties and storage payments
-                    if cash_note.main_pubkey == *NETWORK_ROYALTIES_PK {
-                        trace!("Created netowrk royalties transaction regarding {content_addr:?} paying {value:?}(origin {token:?}) to payee {payee:?}.");
-                        cash_notes_for_content.push((
-                            Transfer::royalties_transfers_from_cash_note(cash_note.to_owned())?,
-                            *cash_note.main_pubkey(),
-                            value?,
-                        ));
-                    } else {
-                        trace!("Created transaction regarding {content_addr:?} paying {value:?}(origin {token:?}) to payee {payee:?}.");
-                        cash_notes_for_content.push((
-                            Transfer::transfers_from_cash_note(cash_note.to_owned())?,
-                            *cash_note.main_pubkey(),
-                            value?,
-                        ));
-                    }
-                }
-            }
+            self.wallet.payment_transactions.insert(*xorname, payment);
         }
 
-        // Add new payments to the existing map if present
-        // Use entry API to avoid multiple lookups in the BTreeMap
-        for (xorname, payment_details) in all_transfers_per_address {
-            let existing_payments = self.wallet.payment_transactions.entry(xorname).or_default();
-            existing_payments.extend(payment_details);
-        }
-
+        // write all changes to local wallet
         self.update_local_wallet(offline_transfer, exclusive_access)?;
         Ok((storage_cost, royalties_fees))
     }
@@ -521,39 +514,6 @@ impl LocalWallet {
     pub fn derive_key(&self, derivation_index: &DerivationIndex) -> DerivedSecretKey {
         self.key.derive_key(derivation_index)
     }
-
-    /// Lookup previous payments and subtract them from the payments we're about to do.
-    /// In essence this will make sure we don't overpay.
-    pub fn take_previous_payments_into_account(
-        &self,
-        payment_map: &mut BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
-    ) {
-        // For each target address
-        for (xor, payments) in payment_map.iter_mut() {
-            // All payments done for an address, should be multiple nodes.
-            if let Some(prev_payment) = self.get_payment_unique_pubkeys_and_values(xor) {
-                for (_transfer, prev_payment_pub_key, prev_payment_value) in prev_payment {
-                    // Find new payment to a node, for which we have a transfer already
-                    if let Some((_main_pub_key, payment_tokens)) = payments
-                        .iter_mut()
-                        .find(|(pubkey, _)| pubkey == prev_payment_pub_key)
-                    {
-                        // Subtract what we already paid from what we're about to pay.
-                        // `checked_sub` underflows if would be negative, so we set it to 0.
-                        *payment_tokens = payment_tokens
-                            .checked_sub(*prev_payment_value)
-                            .unwrap_or(NanoTokens::zero());
-                    }
-                }
-            }
-
-            // Remove all payments that are 0.
-            payments.retain(|(_mainpk, payment_tokens)| payment_tokens > &NanoTokens::zero());
-        }
-
-        // Remove entries that do not have payments associated anymore.
-        payment_map.retain(|_xor, payments| !payments.is_empty());
-    }
 }
 
 /// Loads a serialized wallet from a path.
@@ -599,7 +559,7 @@ impl KeyLessWallet {
             available_cash_notes: Default::default(),
             cash_notes_created_for_others: Default::default(),
             spent_cash_notes: Default::default(),
-            payment_transactions: ContentPaymentsIdMap::default(),
+            payment_transactions: ContentPaymentsMap::default(),
         }
     }
 
@@ -979,7 +939,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn reuse_previous_cashnotes_for_payment_to_same_address() -> Result<()> {
+    async fn test_local_send_storage_payment_returns_correct_cost() -> Result<()> {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
@@ -995,41 +955,21 @@ mod tests {
         let xor4 = XorName::random(&mut rng);
 
         let key1a = MainSecretKey::random().main_pubkey();
-        let key1b = MainSecretKey::random().main_pubkey();
         let key2a = MainSecretKey::random().main_pubkey();
-        let key2b = MainSecretKey::random().main_pubkey();
         let key3a = MainSecretKey::random().main_pubkey();
-        let key3b = MainSecretKey::random().main_pubkey();
         let key4a = MainSecretKey::random().main_pubkey();
-        let key4b = MainSecretKey::random().main_pubkey();
 
-        // Test 4 scenarios. 1) No change in cost. 2) Increase in cost. 3) Decrease in cost. 4) Both increase and decrease.
-
-        let mut map = BTreeMap::from([
-            (xor1, vec![(key1a, 100.into()), (key1b, 101.into())]),
-            (xor2, vec![(key2a, 200.into()), (key2b, 201.into())]),
-            (xor3, vec![(key3a, 300.into()), (key3b, 301.into())]),
-            (xor4, vec![(key4a, 400.into()), (key4b, 401.into())]),
+        let map = BTreeMap::from([
+            (xor1, (key1a, 100.into())),
+            (xor2, (key2a, 200.into())),
+            (xor3, (key3a, 300.into())),
+            (xor4, (key4a, 400.into())),
         ]);
 
-        let _ = sender.local_send_storage_payment(map.clone(), None)?;
+        let (price, _) = sender.local_send_storage_payment(map.clone())?;
 
-        map.get_mut(&xor2).expect("to have value")[0].1 = 210.into(); // increase: 200 -> 210
-        map.get_mut(&xor3).expect("to have value")[0].1 = 290.into(); // decrease: 300 -> 290
-        map.get_mut(&xor4).expect("to have value")[0].1 = 390.into(); // decrease: 400 -> 390
-        map.get_mut(&xor4).expect("to have value")[1].1 = 410.into(); // increase: 401 -> 410
-
-        sender.take_previous_payments_into_account(&mut map);
-
-        // The map should now only have the entries where store costs increased:
-        assert_eq!(
-            map,
-            BTreeMap::from([
-                (xor2, vec![(key2a, 10.into())]),
-                (xor4, vec![(key4b, 9.into())]),
-            ]),
-            "payment map should only have the adjusted prices"
-        );
+        let expected_price: u64 = map.values().map(|(_, price)| price.as_nano()).sum();
+        assert_eq!(price.as_nano(), expected_price);
 
         Ok(())
     }

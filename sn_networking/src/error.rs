@@ -96,6 +96,9 @@ pub enum Error {
     #[error("No SwarmCmd channel capacity")]
     NoSwarmCmdChannelCapacity,
 
+    #[error("No Store Cost Responses")]
+    NoStoreCostResponses,
+
     #[error("Failed to sign the message with the PeerId keypair")]
     SigningFailed(#[from] libp2p::identity::SigningError),
 

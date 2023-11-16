@@ -93,11 +93,11 @@ let client = Client::new(signer, peers, req_response_timeout, custom_concurrency
 - **Parameters**: `cash_note_id: &CashNoteId`
 - **Returns**: `Result<SignedSpend>`
 
-#### `get_store_costs_at_address`
+#### `get_store_cost_at_address`
 
 - **Description**: Get the store cost at a given address.
 - **Parameters**: `address: &NetworkAddress`
-- **Returns**: `Result<Vec<(PublicAddress, Token)>>`
+- **Returns**: `Result<(PublicAddress, Token)>`
 
 ## Contributing
 

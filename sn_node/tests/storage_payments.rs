@@ -149,7 +149,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
         .iter()
         .take(subset_len)
         .all(|name| paying_wallet
-            .get_payment_unique_pubkeys_and_values(&name.as_xorname().unwrap())
+            .get_cached_payment_for_xorname(&name.as_xorname().unwrap())
             .is_some()));
 
     // now let's request to pay for all addresses, even that we've already paid for a subset of them
@@ -236,16 +236,16 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
     for (chunk_name, _) in chunks.iter() {
         no_data_payments.insert(
             *chunk_name,
-            vec![(
+            (
                 MainPubkey::new(bls::SecretKey::random().public_key()),
                 NanoTokens::from(0),
-            )],
+            ),
         );
     }
 
     let _ = wallet_client
         .mut_wallet()
-        .local_send_storage_payment(no_data_payments, None)?;
+        .local_send_storage_payment(no_data_payments)?;
 
     sleep(Duration::from_secs(5)).await;
 
@@ -329,15 +329,15 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
         net_address
             .as_xorname()
             .expect("RegisterAddress should convert to XorName"),
-        vec![(
+        (
             MainPubkey::new(bls::SecretKey::random().public_key()),
             NanoTokens::from(0),
-        )],
+        ),
     );
 
     let _ = wallet_client
         .mut_wallet()
-        .local_send_storage_payment(no_data_payments, None)?;
+        .local_send_storage_payment(no_data_payments)?;
 
     // this should fail to store as the amount paid is not enough
     let (mut register, _cost, _royalties_fees) = client

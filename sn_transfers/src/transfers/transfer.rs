@@ -57,35 +57,12 @@ impl Transfer {
     /// Creates a Transfer from the given cash_note
     /// This Transfer can be sent safely to the recipients as all data in it is encrypted
     /// The recipients can then decrypt the data and use it to verify and reconstruct the CashNote
-    pub fn transfers_from_cash_note(cash_note: CashNote) -> Result<Transfer> {
+    pub fn transfer_from_cash_note(cash_note: CashNote) -> Result<Transfer> {
         let recipient = cash_note.main_pubkey;
-        let derivation_index = cash_note.derivation_index();
-        let parent_spend_addr = match cash_note.signed_spends.iter().next() {
-            Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
-            None => {
-                return Err(Error::CashNoteHasNoParentSpends);
-            }
-        };
-
-        let u = CashNoteRedemption::new(derivation_index, parent_spend_addr);
+        let u = CashNoteRedemption::from_cash_note(&cash_note)?;
         let t = Transfer::create(vec![u], recipient)
             .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
         Ok(t)
-    }
-
-    /// This function is used to create a Network Royalties Transfer from a CashNote
-    /// can be done offline, and should be sent along with a data payment
-    pub(crate) fn royalties_transfers_from_cash_note(cash_note: CashNote) -> Result<Transfer> {
-        let derivation_index = cash_note.derivation_index();
-        let parent_spend_addr = match cash_note.signed_spends.iter().next() {
-            Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
-            None => {
-                return Err(Error::CashNoteHasNoParentSpends);
-            }
-        };
-
-        let u = CashNoteRedemption::new(derivation_index, parent_spend_addr);
-        Ok(Self::NetworkRoyalties(vec![u]))
     }
 
     /// Create a new transfer
@@ -161,6 +138,17 @@ impl CashNoteRedemption {
             derivation_index,
             parent_spend,
         }
+    }
+
+    pub fn from_cash_note(cash_note: &CashNote) -> Result<Self> {
+        let derivation_index = cash_note.derivation_index();
+        let parent_spend = match cash_note.signed_spends.iter().next() {
+            Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
+            None => {
+                return Err(Error::CashNoteHasNoParentSpends);
+            }
+        };
+        Ok(Self::new(derivation_index, parent_spend))
     }
 
     /// Serialize the CashNoteRedemption to bytes

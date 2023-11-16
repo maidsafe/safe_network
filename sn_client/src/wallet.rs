@@ -60,7 +60,6 @@ impl WalletClient {
         match &address.as_xorname() {
             Some(xorname) => {
                 let transfers = self.wallet.get_payment_transfers(xorname);
-
                 info!(
                     "Payment transfers retrieved for {xorname:?} from wallet: {:?}",
                     transfers.len()
@@ -117,11 +116,11 @@ impl WalletClient {
     }
 
     /// Get storecost from the network
-    /// Returns a Vec of proofs
+    /// Returns the MainPubkey of the node to pay and the price in NanoTokens
     pub async fn get_store_cost_at_address(
         &self,
         address: NetworkAddress,
-    ) -> WalletResult<Vec<(MainPubkey, NanoTokens)>> {
+    ) -> WalletResult<(MainPubkey, NanoTokens)> {
         self.client
             .network
             .get_store_costs_from_network(address)
@@ -145,29 +144,29 @@ impl WalletClient {
         for content_addr in content_addrs {
             let client = self.client.clone();
             tasks.spawn(async move {
-                let costs = client
+                let cost = client
                     .network
                     .get_store_costs_from_network(content_addr.clone())
                     .await
                     .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()));
 
-                debug!("Storecosts retrieved for {content_addr:?} {costs:?}");
-                (content_addr, costs)
+                debug!("Storecosts retrieved for {content_addr:?} {cost:?}");
+                (content_addr, cost)
             });
         }
         debug!("Pending store cost tasks: {:?}", tasks.len());
 
         // collect store costs
-        let mut payment_map = BTreeMap::default();
+        let mut cost_map = BTreeMap::default();
         while let Some(res) = tasks.join_next().await {
             // In case of cann't fetch cost from network for a content,
             // just skip it as it will then get verification failure,
             // and repay/re-upload will be triggered correspondently.
             match res {
-                Ok((content_addr, Ok(costs))) => {
+                Ok((content_addr, Ok(cost))) => {
                     if let Some(xorname) = content_addr.as_xorname() {
-                        let _ = payment_map.insert(xorname, costs);
-                        debug!("Storecosts inserted into payment map for {content_addr:?}");
+                        let _ = cost_map.insert(xorname, cost);
+                        debug!("Storecost inserted into payment map for {content_addr:?}");
                     } else {
                         warn!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
                     }
@@ -183,13 +182,7 @@ impl WalletClient {
         info!("Storecosts retrieved");
 
         // pay for records
-        if payment_map.is_empty() {
-            Ok((NanoTokens::zero(), NanoTokens::zero()))
-        } else {
-            self.wallet
-                .take_previous_payments_into_account(&mut payment_map);
-            self.pay_for_records(payment_map, verify_store).await
-        }
+        self.pay_for_records(cost_map, verify_store).await
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
@@ -199,12 +192,10 @@ impl WalletClient {
     /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
     pub async fn pay_for_records(
         &mut self,
-        all_data_payments: BTreeMap<XorName, Vec<(MainPubkey, NanoTokens)>>,
+        cost_map: BTreeMap<XorName, (MainPubkey, NanoTokens)>,
         verify_store: bool,
     ) -> WalletResult<(NanoTokens, NanoTokens)> {
-        let total_cost = self
-            .wallet
-            .local_send_storage_payment(all_data_payments, None)?;
+        let total_cost = self.wallet.local_send_storage_payment(cost_map)?;
 
         // send to network
         trace!("Sending storage payment transfer to the network");

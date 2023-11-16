@@ -306,7 +306,7 @@ async fn send(
         }
     };
 
-    let transfer = Transfer::transfers_from_cash_note(cash_note)?.to_hex()?;
+    let transfer = Transfer::transfer_from_cash_note(cash_note)?.to_hex()?;
     println!("The encrypted transfer has been successfully created.");
     println!("Please share this to the recipient:\n\n{transfer}\n");
     println!("The recipient can then use the 'receive' command to claim the funds.");
@@ -422,7 +422,7 @@ async fn listen_notifs_and_deposit(root_dir: &Path, client: &Client, sk: String)
                 println!();
                 println!("WARNING: we'll try to reload/recreate the local wallet now, but if it was corrupted there could have been lost funds.");
                 println!();
-                wallet.reload_from_disk()?;
+                wallet.reload_from_disk_or_recreate()?;
                 wallet.deposit_and_store_to_disk(&cash_notes)?;
             }
             Err(other_err) => return Err(other_err.into()),
