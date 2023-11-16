@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700153396181,
+  "lastUpdate": 1700153398519,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "345c03439de1aaa86211233c1363eb9fd648c2fb",
-          "message": "ci: duplicate proto files for sn_testnet\n\nThis is a quick fix to the publishing problem regarding missing proto files, which duplicates the\nfiles.\n\nIt is not completely straight forward to reference the files from another crate due to the way the\nCargo publishing process works.",
-          "timestamp": "2023-07-07T14:47:22+02:00",
-          "tree_id": "c5c7a447b0a58e2d489581db839f9760f6759f33",
-          "url": "https://github.com/maidsafe/safe_network/commit/345c03439de1aaa86211233c1363eb9fd648c2fb"
-        },
-        "date": 1688735659600,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 309.72,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 255,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 72,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "2b372f8a759a6c21798bcc1c6ea1462a4bc51b12",
+          "message": "chore: reduce AddKeysToReplicationFetcher processing time",
+          "timestamp": "2023-11-16T16:01:21Z",
+          "tree_id": "92a58f5f61a47d7e68b260a6aedd49179e892624",
+          "url": "https://github.com/maidsafe/safe_network/commit/2b372f8a759a6c21798bcc1c6ea1462a4bc51b12"
+        },
+        "date": 1700153397676,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 68,
             "unit": "MB"
           }
         ]
