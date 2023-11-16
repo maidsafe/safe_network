@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700153205616,
+  "lastUpdate": 1700153396181,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "4c03afc297c027ee906d00a305cd40580c1ac60b",
-          "message": "fix: update nightly node data dir",
-          "timestamp": "2023-07-10T10:31:05Z",
-          "tree_id": "a51c880f2fe644efc5f59b0b6f0c6999db652300",
-          "url": "https://github.com/maidsafe/safe_network/commit/4c03afc297c027ee906d00a305cd40580c1ac60b"
-        },
-        "date": 1688989190068,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 24.62,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 69,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "2b372f8a759a6c21798bcc1c6ea1462a4bc51b12",
+          "message": "chore: reduce AddKeysToReplicationFetcher processing time",
+          "timestamp": "2023-11-16T16:01:21Z",
+          "tree_id": "92a58f5f61a47d7e68b260a6aedd49179e892624",
+          "url": "https://github.com/maidsafe/safe_network/commit/2b372f8a759a6c21798bcc1c6ea1462a4bc51b12"
+        },
+        "date": 1700153395332,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 81,
             "unit": "MB"
           }
         ]
