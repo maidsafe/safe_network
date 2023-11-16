@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700139239352,
+  "lastUpdate": 1700153205616,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4adf3051bc350fd93f00849fa59c0a1748ee358f",
-          "message": "feat(rpc): get addresses of the locally stored Records",
-          "timestamp": "2023-07-24T09:40:30Z",
-          "tree_id": "58d94fb1147f3620a5855b7fff02e4406caee6fd",
-          "url": "https://github.com/maidsafe/safe_network/commit/4adf3051bc350fd93f00849fa59c0a1748ee358f"
-        },
-        "date": 1690196277896,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.149636247880652,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 7.273304879457194,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 12.023473361005403,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 49.74590393844227,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "2b372f8a759a6c21798bcc1c6ea1462a4bc51b12",
+          "message": "chore: reduce AddKeysToReplicationFetcher processing time",
+          "timestamp": "2023-11-16T16:01:21Z",
+          "tree_id": "92a58f5f61a47d7e68b260a6aedd49179e892624",
+          "url": "https://github.com/maidsafe/safe_network/commit/2b372f8a759a6c21798bcc1c6ea1462a4bc51b12"
+        },
+        "date": 1700153203437,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 4.750174507932801,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 23.294956433570395,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 49.59617759698293,
             "unit": "MiB/s"
           }
         ]
