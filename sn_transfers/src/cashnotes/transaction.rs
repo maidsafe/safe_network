@@ -13,7 +13,7 @@ use crate::Error;
 
 type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize, Hash)]
 pub struct Input {
     pub unique_pubkey: UniquePubkey,
     pub amount: NanoTokens,
@@ -39,7 +39,7 @@ impl Input {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct Output {
     pub unique_pubkey: UniquePubkey,
     pub amount: NanoTokens,
@@ -65,19 +65,11 @@ impl Output {
     }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct Transaction {
     pub inputs: Vec<Input>,
     pub outputs: Vec<Output>,
 }
-
-impl PartialEq for Transaction {
-    fn eq(&self, other: &Self) -> bool {
-        self.hash().eq(&other.hash())
-    }
-}
-
-impl Eq for Transaction {}
 
 impl PartialOrd for Transaction {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {

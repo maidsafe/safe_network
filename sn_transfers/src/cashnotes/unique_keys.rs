@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 /// DerivedSecretKey from the MainSecretKey of that MainPubkey.
 pub type DerivationIndex = [u8; 32];
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize, Hash)]
 pub struct UniquePubkey(PublicKey);
 
 impl UniquePubkey {
@@ -91,7 +91,7 @@ impl DerivedSecretKey {
 /// the MainPubkey can also see that the UniquePubkey is related to this MainPubkey.
 /// The recipient can then use the received DerivationIndex to generate the DerivedSecretKey
 /// corresponding to that UniquePubkey, and thus unlock the value of the CashNote by using that DerivedSecretKey.
-#[derive(Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Clone, Serialize, Deserialize)]
+#[derive(Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Clone, Serialize, Deserialize, Hash)]
 pub struct MainPubkey(pub PublicKey);
 
 impl MainPubkey {

@@ -56,7 +56,7 @@ use tiny_keccak::{Hasher, Sha3};
 /// To spend or work with a CashNote, wallet software must obtain the corresponding
 /// MainSecretKey from the user, and then call an API function that accepts a MainSecretKey,
 /// eg: `cashnote.derivation_index(&main_key)`
-#[derive(custom_debug::Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(custom_debug::Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
 pub struct CashNote {
     /// The unique pulbic key of this CashNote. It is unique, and there can never
     /// be another CashNote with the same pulbic key. It used in SignedSpends.
