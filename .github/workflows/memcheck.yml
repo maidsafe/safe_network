@@ -270,26 +270,40 @@ jobs:
             exit 1
           fi
 
+      - name: Check node swarm_driver handling statistics
+        shell: bash
+        run: |
+          num_of_times=$(
+            rg "SwarmCmd handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
+            rg "(\d+) matches" |
+            rg "\d+" -o
+          )
+          echo "Number of long cmd handling times: $num_of_times"
+          total_long_handling_ms=$(
+            rg "SwarmCmd handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
+            awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
+          )
+          echo "Total cmd long handling time is: $total_long_handling_ms ms"
+          average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
+          echo "Average cmd long handling time is: $average_handling_ms ms"
+          num_of_times=$(
+            rg "SwarmEvent handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
+            rg "(\d+) matches" |
+            rg "\d+" -o
+          )
+          echo "Number of long event handling times: $num_of_times"
+          total_long_handling_ms=$(
+            rg "SwarmEvent handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
+            awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
+          )
+          echo "Total event long handling time is: $total_long_handling_ms ms"
+          average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
+          echo "Average event long handling time is: $average_handling_ms ms"
+
       - name: Upload payment wallet initialization log
         uses: actions/upload-artifact@main
         with:
           name: payment_wallet_initialization_log
           path: initial_balance_from_faucet.txt
-        continue-on-error: true
-        if: always()
-
-      - name: Upload Faucet folder
-        uses: actions/upload-artifact@main
-        with:
-          name: faucet_folder
-          path: /home/runner/.local/share/safe/test_faucet
-        continue-on-error: true
-        if: always()
-
-      - name: Upload bootstrap node logging folder
-        uses: actions/upload-artifact@main
-        with:
-          name: bootstrap_node_folder
-          path: /home/runner/.local/share/safe/bootstrap_node
         continue-on-error: true
         if: always()
