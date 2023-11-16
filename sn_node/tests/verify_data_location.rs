@@ -10,8 +10,8 @@
 mod common;
 
 use crate::common::{
-    get_all_peer_ids, get_gossip_client_and_wallet, node_restart, NODE_COUNT,
-    PAYING_WALLET_INITIAL_BALANCE,
+    client::{get_gossip_client_and_wallet, PAYING_WALLET_INITIAL_BALANCE},
+    node_restart,
 };
 use assert_fs::TempDir;
 use eyre::{eyre, Result};

@@ -9,7 +9,7 @@
 #![allow(clippy::mutable_key_type)]
 mod common;
 
-use crate::common::{get_all_peer_ids, NODE_COUNT};
+use crate::common::get_all_peer_ids;
 use color_eyre::Result;
 use libp2p::{
     kad::{KBucketKey, K_VALUE},
