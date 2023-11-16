@@ -148,7 +148,7 @@ async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> 
     }
 
     let cash_note = get_tokens_from_faucet(amount, to, client).await?;
-    let transfer_hex = Transfer::transfers_from_cash_note(cash_note)?.to_hex()?;
+    let transfer_hex = Transfer::transfer_from_cash_note(cash_note)?.to_hex()?;
     println!("{transfer_hex}");
 
     Ok(transfer_hex)

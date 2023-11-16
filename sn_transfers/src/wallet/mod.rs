@@ -57,7 +57,7 @@ mod keys;
 mod local_store;
 mod wallet_file;
 
-use crate::transfers::ContentPaymentsIdMap;
+use crate::transfers::ContentPaymentsMap;
 
 pub use self::{
     error::{Error, Result},
@@ -84,5 +84,5 @@ pub(super) struct KeyLessWallet {
     /// transfer history.
     cash_notes_created_for_others: BTreeSet<UniquePubkey>,
     /// Cached proofs of storage transactions made to be used for uploading the paid content.
-    payment_transactions: ContentPaymentsIdMap,
+    payment_transactions: ContentPaymentsMap,
 }

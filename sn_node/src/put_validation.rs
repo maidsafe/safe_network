@@ -226,7 +226,7 @@ impl Node {
         Ok(false)
     }
 
-    /// Store a `ChunkWithPayment` to the RecordStore
+    /// Store a `Chunk` to the RecordStore
     pub(crate) fn store_chunk(&self, chunk: Chunk) -> Result<CmdOk, ProtocolError> {
         let chunk_name = *chunk.name();
         let chunk_addr = *chunk.address();
