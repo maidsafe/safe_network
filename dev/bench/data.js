@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700139043358,
+  "lastUpdate": 1700139237823,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "d7760063050c81e3a7c9650723687285031f5b93",
-          "message": "test: adapting paid chunk upload integration tests to new no-responses type of protocol",
-          "timestamp": "2023-07-07T16:35:43Z",
-          "tree_id": "abcea46ef1eda899e034ff1e1a86adb28c9ed325",
-          "url": "https://github.com/maidsafe/safe_network/commit/d7760063050c81e3a7c9650723687285031f5b93"
-        },
-        "date": 1688751496928,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 35.51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 72,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "d77f38e321384573e46dc664e4daf4dc9274c341",
+          "message": "fix: wrong royaltie amount",
+          "timestamp": "2023-11-16T12:10:22Z",
+          "tree_id": "2634e056a186165a0966ebf06a83d08a5e58be8f",
+          "url": "https://github.com/maidsafe/safe_network/commit/d77f38e321384573e46dc664e4daf4dc9274c341"
+        },
+        "date": 1700139237453,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 69,
             "unit": "MB"
           }
         ]
