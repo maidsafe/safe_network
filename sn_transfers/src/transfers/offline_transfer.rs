@@ -7,11 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    rng, CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens,
-    SignedSpend, Transaction, TransactionBuilder, Transfer, UniquePubkey,
+    rng, CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey,
+    NanoTokens, SignedSpend, Transaction, TransactionBuilder, Transfer, UniquePubkey,
 };
 use crate::{Error, Result};
 
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use xor_name::XorName;
 
@@ -19,7 +20,7 @@ use xor_name::XorName;
 /// This struct contains all the necessary information to carry out the transfer.
 /// The created cash_notes and change cash_note from a transfer
 /// of tokens from one or more cash_notes, into one or more new cash_notes.
-#[derive(custom_debug::Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(custom_debug::Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OfflineTransfer {
     /// This is the transaction where all the below
     /// spends were made and cash_notes created.
@@ -36,11 +37,19 @@ pub struct OfflineTransfer {
     pub all_spend_requests: Vec<SignedSpend>,
 }
 
-pub type PaymentDetails = (Transfer, MainPubkey, NanoTokens);
+/// Information relating to a data payment for one address
+#[derive(Clone, Serialize, Deserialize)]
+pub struct PaymentDetails {
+    /// The node we pay
+    pub recipient: MainPubkey,
+    /// The transfer we send to it and its amount as reference
+    pub transfer: (Transfer, NanoTokens),
+    /// The network Royalties
+    pub royalties: (CashNoteRedemption, NanoTokens),
+}
 
-/// Xorname of data from which the content was fetched, mapping to the CashNote UniquePubkey (its id on disk)
-/// the main key for that CashNote and the value
-pub type ContentPaymentsIdMap = BTreeMap<XorName, Vec<PaymentDetails>>;
+/// A map of content to their payments
+pub type ContentPaymentsMap = BTreeMap<XorName, PaymentDetails>;
 
 /// The input details necessary to
 /// carry out a transfer of tokens.

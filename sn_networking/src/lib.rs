@@ -240,7 +240,7 @@ impl Network {
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
-    ) -> Result<Vec<(MainPubkey, NanoTokens)>> {
+    ) -> Result<(MainPubkey, NanoTokens)> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
         let mut close_nodes = self.get_closest_peers(&record_address, true).await?;
@@ -735,35 +735,28 @@ impl Network {
     }
 }
 
-/// Given `all_costs` it will return the CLOSE_GROUP majority cost.
-#[allow(clippy::result_large_err)]
+/// Given `all_costs` it will return the lowest cost.
 fn get_fees_from_store_cost_responses(
     mut all_costs: Vec<(MainPubkey, NanoTokens)>,
-) -> Result<Vec<(MainPubkey, NanoTokens)>> {
-    // TODO: we should make this configurable based upon data type
-    // or user requirements for resilience.
-
-    // Rigth now we only take one quote and pay one node.
-    let desired_quote_count = 1;
-
+) -> Result<(MainPubkey, NanoTokens)> {
     // sort all costs by fee, lowest to highest
     // if there's a tie in cost, sort by pubkey
-    all_costs.sort_by(|(pub_key_a, cost_a), (pub_key_b, cost_b)| {
-        match cost_a.partial_cmp(cost_b) {
-            Some(std::cmp::Ordering::Equal) => pub_key_a.cmp(pub_key_b),
-            other => other.unwrap_or(std::cmp::Ordering::Equal),
-        }
-    });
-
-    // get the lowest desired_quote_counts of all_costs
-    all_costs.truncate(desired_quote_count);
-
-    info!(
-        "Final fees calculated as: {all_costs:?}, from: {:?}",
-        all_costs
+    all_costs.sort_by(
+        |(pub_key_a, cost_a), (pub_key_b, cost_b)| match cost_a.cmp(cost_b) {
+            std::cmp::Ordering::Equal => pub_key_a.cmp(pub_key_b),
+            other => other,
+        },
     );
 
-    Ok(all_costs)
+    // get the lowest cost
+    trace!("Got all costs, getting lowest: {all_costs:?}");
+    let lowest = all_costs
+        .into_iter()
+        .next()
+        .ok_or(Error::NoStoreCostResponses)?;
+    info!("Final fees calculated as: {lowest:?}");
+
+    Ok(lowest)
 }
 
 /// Verifies if `Multiaddr` contains IPv4 address that is not global.
@@ -819,13 +812,11 @@ mod tests {
             costs.push((addr, NanoTokens::from(i as u64)));
         }
         let expected_price = costs[0].1.as_nano();
-        let prices = get_fees_from_store_cost_responses(costs)?;
-        let total_price: u64 = prices
-            .iter()
-            .fold(0, |acc, (_, price)| acc + price.as_nano());
+        let (_key, price) = get_fees_from_store_cost_responses(costs)?;
 
         assert_eq!(
-            total_price, expected_price,
+            price.as_nano(),
+            expected_price,
             "price should be {}",
             expected_price
         );
@@ -849,19 +840,16 @@ mod tests {
         // this should be the lowest price
         let expected_price = costs[0].1.as_nano();
 
-        let prices = match get_fees_from_store_cost_responses(costs) {
+        let (_key, price) = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),
             Ok(cost) => cost,
         };
 
-        let total_price: u64 = prices
-            .iter()
-            .fold(0, |acc, (_, price)| acc + price.as_nano());
-
         assert_eq!(
-            total_price, expected_price,
+            price.as_nano(),
+            expected_price,
             "price should be {}",
-            total_price
+            expected_price
         );
 
         Ok(())
