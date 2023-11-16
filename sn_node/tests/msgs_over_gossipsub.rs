@@ -8,7 +8,6 @@
 
 mod common;
 
-use common::NODE_COUNT;
 use eyre::Result;
 use sn_logging::LogBuilder;
 use sn_node::NodeEvent;

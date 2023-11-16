@@ -4692,6 +4692,7 @@ dependencies = [
  "prost 0.9.0",
  "rand",
  "rayon",
+ "reqwest",
  "rmp-serde",
  "self_encryption",
  "serde",
