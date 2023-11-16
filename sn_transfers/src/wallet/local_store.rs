@@ -26,7 +26,7 @@ use xor_name::XorName;
 
 use fs2::FileExt;
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     fs::{File, OpenOptions},
     path::{Path, PathBuf},
 };
@@ -345,7 +345,7 @@ impl LocalWallet {
             .collect();
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
         debug!("Available CashNotes: {:#?}", available_cash_notes);
-        let reason_hash = Default::default(); // NB TODO use XorName of each piece of data!!
+        let reason_hash = Default::default();
         let offline_transfer = create_offline_transfer(
             available_cash_notes,
             recipients,
@@ -354,36 +354,41 @@ impl LocalWallet {
         )?;
 
         // cache transfer payments in the wallet
+        let mut cashnotes_to_use: HashSet<CashNote> = offline_transfer
+            .created_cash_notes
+            .iter()
+            .cloned()
+            .collect();
         for (xorname, recipients_info) in recipients_by_xor {
             let (storage_payee, royalties_payee) = recipients_info;
             let node_key = storage_payee.1;
-            let cash_note_for_node = offline_transfer
-                .created_cash_notes
+            let pay_amount = storage_payee.0;
+            let cash_note_for_node = cashnotes_to_use
                 .iter()
                 .find(|cash_note| {
-                    // cash_note.reason() == Hash::hash(xorname) && // NB TODO uncomment and use Reason!!
-                    cash_note.main_pubkey() == &node_key
+                    cash_note.value() == Ok(pay_amount) && cash_note.main_pubkey() == &node_key
                 })
                 .ok_or(Error::CouldNotSendMoney(format!(
                     "No cashnote found to pay node for {xorname:?}"
-                )))?;
+                )))?
+                .clone();
+            cashnotes_to_use.remove(&cash_note_for_node);
             let transfer_amount = cash_note_for_node.value()?;
-            let transfer_for_node =
-                Transfer::transfer_from_cash_note(cash_note_for_node.to_owned())?;
+            let transfer_for_node = Transfer::transfer_from_cash_note(cash_note_for_node)?;
             trace!("Created transaction regarding {xorname:?} paying {transfer_amount:?} to {node_key:?}.");
 
             let royalties_key = royalties_payee.1;
-            let cash_note_for_royalties = offline_transfer
-                .created_cash_notes
+            let cash_note_for_royalties = cashnotes_to_use
                 .iter()
                 .find(|cash_note| {
-                    // cash_note.reason() == Hash::hash(xorname) && // NB TODO uncomment and use Reason!!
-                    *cash_note.main_pubkey() == royalties_key
+                    cash_note.value() == Ok(pay_amount) && cash_note.main_pubkey() == &royalties_key
                 })
                 .ok_or(Error::CouldNotSendMoney(format!(
                     "No cashnote found to pay royalties for {xorname:?}"
-                )))?;
-            let royalties = CashNoteRedemption::from_cash_note(cash_note_for_royalties)?;
+                )))?
+                .clone();
+            cashnotes_to_use.remove(&cash_note_for_royalties);
+            let royalties = CashNoteRedemption::from_cash_note(&cash_note_for_royalties)?;
             let royalties_amount = cash_note_for_royalties.value()?;
             trace!("Created network royalties cnr regarding {xorname:?} paying {royalties_amount:?} to {royalties_key:?}.");
 
