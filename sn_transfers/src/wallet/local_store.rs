@@ -378,10 +378,12 @@ impl LocalWallet {
             trace!("Created transaction regarding {xorname:?} paying {transfer_amount:?} to {node_key:?}.");
 
             let royalties_key = royalties_payee.1;
+            let royalties_amount = royalties_payee.0;
             let cash_note_for_royalties = cashnotes_to_use
                 .iter()
                 .find(|cash_note| {
-                    cash_note.value() == Ok(pay_amount) && cash_note.main_pubkey() == &royalties_key
+                    cash_note.value() == Ok(royalties_amount)
+                        && cash_note.main_pubkey() == &royalties_key
                 })
                 .ok_or(Error::CouldNotSendMoney(format!(
                     "No cashnote found to pay royalties for {xorname:?}"
