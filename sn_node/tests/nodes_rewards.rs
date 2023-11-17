@@ -269,7 +269,7 @@ fn current_rewards_balance() -> Result<NanoTokens> {
         let path = entry?.path();
         let wallet = LocalWallet::try_load_from(&path)?;
         let balance = wallet.balance();
-        println!("Node's wallet {path:?} currently have balance of {balance:?}");
+        //println!("Node's wallet {path:?} currently have balance of {balance:?}");
         total_rewards = total_rewards
             .checked_add(balance)
             .ok_or_else(|| eyre!("Faied to sum up rewards balance"))?;
@@ -342,7 +342,7 @@ fn spawn_royalties_payment_client_listener(
     let handle = tokio::spawn(async move {
         let mut count = 0;
 
-        let duration = Duration::from_secs(20);
+        let duration = Duration::from_secs(40);
         println!("Awaiting transfers notifs for {duration:?}...");
         if timeout(duration, async {
             while let Ok(event) = events_receiver.recv().await {

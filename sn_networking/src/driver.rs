@@ -404,6 +404,8 @@ impl NetworkBuilder {
                 sha3.finalize(&mut msg_id);
                 msg_id.into()
             })
+            // set the heartbeat interval to be higher than default 1sec
+            .heartbeat_interval(Duration::from_secs(5))
             .build()
             .map_err(|err| Error::GossipsubConfigError(err.to_string()))?;
 
