@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700222650185,
+  "lastUpdate": 1700222652832,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "4c03afc297c027ee906d00a305cd40580c1ac60b",
-          "message": "fix: update nightly node data dir",
-          "timestamp": "2023-07-10T10:31:05Z",
-          "tree_id": "a51c880f2fe644efc5f59b0b6f0c6999db652300",
-          "url": "https://github.com/maidsafe/safe_network/commit/4c03afc297c027ee906d00a305cd40580c1ac60b"
-        },
-        "date": 1688989193302,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 309.54,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 236,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 195,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 74,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d275b13ce2ec28425f32ef48e200ca1a68235e34",
+          "message": "test(CI): collect swarm_driver handling statistics",
+          "timestamp": "2023-11-17T11:22:07Z",
+          "tree_id": "402bdc36417eb5c0b0ca6ff3f2cfba1e7e6f6c3f",
+          "url": "https://github.com/maidsafe/safe_network/commit/d275b13ce2ec28425f32ef48e200ca1a68235e34"
+        },
+        "date": 1700222651745,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 221,
             "unit": "MB"
           },
           {
