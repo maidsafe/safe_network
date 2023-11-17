@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_faucet"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.1.25"
+version = "0.1.26"
 
 [[bin]]
 path="src/main.rs"
@@ -19,7 +19,7 @@ bls = { package = "blsttc", version = "8.0.1" }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
 dirs-next = "~2.0.0"
-sn_client = { path = "../sn_client", version = "0.98.3" }
+sn_client = { path = "../sn_client", version = "0.98.4" }
 sn_logging = { path = "../sn_logging", version = "0.2.14" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.1.8" }
 sn_transfers = { path = "../sn_transfers", version = "0.14.17" }

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.98.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.3...sn_client-v0.98.4) - 2023-11-17
+
+### Fixed
+- *(client)* ensure we store spends at CLOSE_GROUP nodes.
+
 ## [0.98.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.2...sn_client-v0.98.3) - 2023-11-16
 
 ### Other
