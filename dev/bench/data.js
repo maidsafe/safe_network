@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700214476633,
+  "lastUpdate": 1700214479127,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "d7760063050c81e3a7c9650723687285031f5b93",
-          "message": "test: adapting paid chunk upload integration tests to new no-responses type of protocol",
-          "timestamp": "2023-07-07T16:35:43Z",
-          "tree_id": "abcea46ef1eda899e034ff1e1a86adb28c9ed325",
-          "url": "https://github.com/maidsafe/safe_network/commit/d7760063050c81e3a7c9650723687285031f5b93"
-        },
-        "date": 1688751499465,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 325.97,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 235,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 68,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fd4bcffabd2a79ffbb8daacdaf00501530a1cd90",
+          "message": "fix(node): increase timeout for reward waits\n\nWith longer verifications this can take longer",
+          "timestamp": "2023-11-17T09:05:31Z",
+          "tree_id": "80cc95fce698d93f0844f01bd9718a1032ff4697",
+          "url": "https://github.com/maidsafe/safe_network/commit/fd4bcffabd2a79ffbb8daacdaf00501530a1cd90"
+        },
+        "date": 1700214478124,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 74,
             "unit": "MB"
           }
         ]
