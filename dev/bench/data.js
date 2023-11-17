@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700222431942,
+  "lastUpdate": 1700222650185,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "346c2af8c44dadeb08e8888d44d59c87ae6de9f2",
-          "message": "feat: client query register via get_record",
-          "timestamp": "2023-07-10T14:53:27Z",
-          "tree_id": "27e40470cabe87b85bb3582929788c718c24e478",
-          "url": "https://github.com/maidsafe/safe_network/commit/346c2af8c44dadeb08e8888d44d59c87ae6de9f2"
-        },
-        "date": 1689005065229,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 25.57,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 61,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d275b13ce2ec28425f32ef48e200ca1a68235e34",
+          "message": "test(CI): collect swarm_driver handling statistics",
+          "timestamp": "2023-11-17T11:22:07Z",
+          "tree_id": "402bdc36417eb5c0b0ca6ff3f2cfba1e7e6f6c3f",
+          "url": "https://github.com/maidsafe/safe_network/commit/d275b13ce2ec28425f32ef48e200ca1a68235e34"
+        },
+        "date": 1700222649192,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 86,
             "unit": "MB"
           }
         ]
