@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700214244957,
+  "lastUpdate": 1700214476633,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "e4899b55542615496a0daa1280f6e88932663ebc",
-          "message": "feat: read peers from SAFE_PEERS if local discovery is not enabled",
-          "timestamp": "2023-07-10T10:47:49Z",
-          "tree_id": "f0bef92aa76f37b9dc54493fd27ef13c13439a09",
-          "url": "https://github.com/maidsafe/safe_network/commit/e4899b55542615496a0daa1280f6e88932663ebc"
-        },
-        "date": 1688991634463,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 28.22,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fd4bcffabd2a79ffbb8daacdaf00501530a1cd90",
+          "message": "fix(node): increase timeout for reward waits\n\nWith longer verifications this can take longer",
+          "timestamp": "2023-11-17T09:05:31Z",
+          "tree_id": "80cc95fce698d93f0844f01bd9718a1032ff4697",
+          "url": "https://github.com/maidsafe/safe_network/commit/fd4bcffabd2a79ffbb8daacdaf00501530a1cd90"
+        },
+        "date": 1700214475513,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 61,
             "unit": "MB"
           }
         ]
