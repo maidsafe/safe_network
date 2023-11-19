@@ -21,7 +21,7 @@ use sn_networking::{
 };
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{Cmd, CmdResponse, Query, QueryResponse, Request, Response},
+    messages::{Cmd, CmdResponse, Query, QueryResponse, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{CashNoteRedemption, LocalWallet, MainPubkey, MainSecretKey};
@@ -283,7 +283,8 @@ impl Node {
                 // these activities requires the node to be connected to some peer to be able to carry
                 // out get kad.get_record etc. This happens during replication/PUT. So we should wait
                 // until we have enough nodes, else these might fail.
-                NetworkEvent::RequestReceived { .. }
+                NetworkEvent::CmdRequestReceived { .. }
+                | NetworkEvent::QueryRequestReceived { .. }
                 | NetworkEvent::UnverifiedRecord(_)
                 | NetworkEvent::FailedToWrite(_)
                 | NetworkEvent::ResponseReceived { .. }
@@ -307,8 +308,13 @@ impl Node {
         trace!("Handling NetworkEvent {event_string:?}");
 
         match event {
-            NetworkEvent::RequestReceived { req, channel } => {
-                self.handle_request(req, channel).await;
+            NetworkEvent::QueryRequestReceived { query, channel } => {
+                let res = self.handle_query(query).await;
+
+                self.send_response(res, channel);
+            }
+            NetworkEvent::CmdRequestReceived { cmd } => {
+                self.handle_node_cmd(cmd);
             }
             NetworkEvent::ResponseReceived { res } => {
                 trace!("NetworkEvent::ResponseReceived {res:?}");
@@ -419,9 +425,8 @@ impl Node {
     fn handle_response(&self, response: Response) -> Result<()> {
         match response {
             Response::Cmd(CmdResponse::Replicate(Ok(()))) => {
-                // Nothing to do, response was fine
-                // This only exists to ensure we dont drop the handle and
-                // exit early, potentially logging false connection woes
+                // This should actually have been short-circuted when received
+                warn!("Mishandled replicate response, should be handled earlier");
             }
             Response::Query(QueryResponse::GetReplicatedRecord(resp)) => {
                 error!("Response to replication shall be handled by called not by common handler, {resp:?}");
@@ -432,15 +437,6 @@ impl Node {
         };
 
         Ok(())
-    }
-
-    async fn handle_request(&self, request: Request, response_channel: MsgResponder) {
-        trace!("Handling request: {request:?}");
-        let response = match request {
-            Request::Cmd(cmd) => self.handle_node_cmd(cmd),
-            Request::Query(query) => self.handle_query(query).await,
-        };
-        self.send_response(response, response_channel);
     }
 
     async fn handle_query(&self, query: Query) -> Response {
@@ -505,9 +501,9 @@ impl Node {
         Response::Query(resp)
     }
 
-    fn handle_node_cmd(&self, cmd: Cmd) -> Response {
+    fn handle_node_cmd(&self, cmd: Cmd) {
         Marker::NodeCmdReceived(&cmd).log();
-        let resp = match cmd {
+        match cmd {
             Cmd::Replicate { holder, keys } => {
                 trace!(
                     "Received replication list from {holder:?} of {} keys",
@@ -520,15 +516,8 @@ impl Node {
                 } else {
                     error!("Within the replication list, Can not parse peer_id from {holder:?}");
                 }
-
-                // if we do not send a response, we can cause connection failures.
-                CmdResponse::Replicate(Ok(()))
             }
         };
-
-        Marker::NodeCmdResponded(&resp).log();
-
-        Response::Cmd(resp)
     }
 
     fn send_response(&self, resp: Response, response_channel: MsgResponder) {

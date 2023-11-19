@@ -538,12 +538,15 @@ impl SwarmDriver {
                 // be handled.
                 // `self` then handles the request and sends a response back again to itself.
                 if peer == *self.swarm.local_peer_id() {
-                    trace!("Sending request to self");
-
-                    self.send_event(NetworkEvent::RequestReceived {
-                        req,
-                        channel: MsgResponder::FromSelf(sender),
-                    });
+                    trace!("Sending query request to self");
+                    if let Request::Query(query) = req {
+                        self.send_event(NetworkEvent::QueryRequestReceived {
+                            query,
+                            channel: MsgResponder::FromSelf(sender),
+                        });
+                    } else {
+                        trace!("Replicate cmd to self received, ignoring");
+                    }
                 } else {
                     let request_id = self
                         .swarm
@@ -552,6 +555,8 @@ impl SwarmDriver {
                         .send_request(&peer, req);
                     trace!("Sending request {request_id:?} to peer {peer:?}");
                     let _ = self.pending_requests.insert(request_id, sender);
+
+                    trace!("Pending Requests now: {:?}", self.pending_requests.len());
                 }
             }
             SwarmCmd::SendResponse { resp, channel } => match channel {

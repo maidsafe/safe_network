@@ -33,7 +33,7 @@ use libp2p::{
 };
 
 use sn_protocol::{
-    messages::{Request, Response},
+    messages::{Cmd, CmdResponse, Query, Request, Response},
     storage::RecordHeader,
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -113,10 +113,15 @@ pub enum MsgResponder {
 #[allow(clippy::large_enum_variant)]
 /// Events forwarded by the underlying Network; to be used by the upper layers
 pub enum NetworkEvent {
-    /// Incoming `Request` from a peer
-    RequestReceived {
-        /// Request
-        req: Request,
+    /// Incoming `Cmd` from a peer
+    CmdRequestReceived {
+        /// Cmd
+        cmd: Cmd,
+    },
+    /// Incoming `Query` from a peer
+    QueryRequestReceived {
+        /// Query
+        query: Query,
         /// The channel to send the `Response` through
         channel: MsgResponder,
     },
@@ -159,8 +164,11 @@ pub enum NetworkEvent {
 impl Debug for NetworkEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            NetworkEvent::RequestReceived { req, .. } => {
-                write!(f, "NetworkEvent::RequestReceived({req:?})")
+            NetworkEvent::CmdRequestReceived { cmd, .. } => {
+                write!(f, "NetworkEvent::CmdRequestReceived({cmd:?})")
+            }
+            NetworkEvent::QueryRequestReceived { query, .. } => {
+                write!(f, "NetworkEvent::QueryRequestReceived({query:?})")
             }
             NetworkEvent::ResponseReceived { res, .. } => {
                 write!(f, "NetworkEvent::ResponseReceived({res:?})")
@@ -487,10 +495,29 @@ impl SwarmDriver {
                     ..
                 } => {
                     trace!("Received request {request_id:?} from peer {peer:?}, req: {request:?}");
-                    self.send_event(NetworkEvent::RequestReceived {
-                        req: request,
-                        channel: MsgResponder::FromPeer(channel),
-                    })
+                    // if the request is replication, we can handle it and send the OK response here,
+                    // as we send that regardless of how we handle the request as its unimportant to the sender.
+                    match request {
+                        Request::Cmd(cmd) => {
+                            trace!("Short circuit ReplicateOk response to peer {peer:?}");
+                            let response = Response::Cmd(
+                                sn_protocol::messages::CmdResponse::Replicate(Ok(())),
+                            );
+                            self.swarm
+                                .behaviour_mut()
+                                .request_response
+                                .send_response(channel, response)
+                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+
+                            self.send_event(NetworkEvent::CmdRequestReceived { cmd });
+                        }
+                        Request::Query(query) => {
+                            self.send_event(NetworkEvent::QueryRequestReceived {
+                                query,
+                                channel: MsgResponder::FromPeer(channel),
+                            })
+                        }
+                    }
                 }
                 Message::Response {
                     request_id,
@@ -507,9 +534,17 @@ impl SwarmDriver {
                                 .send(Ok(response))
                                 .map_err(|_| Error::InternalMsgChannelDropped)?,
                             None => {
-                                // responses that are not awaited at the call site must be handled
-                                // separately
-                                self.send_event(NetworkEvent::ResponseReceived { res: response });
+                                if let Response::Cmd(CmdResponse::Replicate(Ok(()))) = response {
+                                    // Nothing to do, response was fine
+                                    // This only exists to ensure we dont drop the handle and
+                                    // exit early, potentially logging false connection woes
+                                } else {
+                                    // responses that are not awaited at the call site must be handled
+                                    // separately
+                                    self.send_event(NetworkEvent::ResponseReceived {
+                                        res: response,
+                                    });
+                                }
                             }
                         }
                     } else {
