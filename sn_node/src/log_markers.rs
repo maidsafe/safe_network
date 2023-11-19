@@ -7,10 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use libp2p::{kad::RecordKey, PeerId};
-use sn_protocol::{
-    messages::{Cmd, CmdResponse},
-    PrettyPrintRecordKey,
-};
+use sn_protocol::{messages::Cmd, PrettyPrintRecordKey};
 use std::time::Duration;
 // this gets us to_string easily enough
 use strum::Display;
@@ -31,9 +28,6 @@ pub enum Marker<'a> {
 
     /// Network Cmd message received
     NodeCmdReceived(&'a Cmd),
-
-    /// Network Cmd message response was generated
-    NodeCmdResponded(&'a CmdResponse),
 
     /// Peer was added to the routing table
     PeerAddedToRoutingTable(PeerId),
