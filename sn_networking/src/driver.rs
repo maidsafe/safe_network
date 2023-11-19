@@ -393,14 +393,15 @@ impl NetworkBuilder {
 
         // Transport
         #[cfg(not(feature = "quic"))]
-        let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
-            .upgrade(libp2p::core::upgrade::Version::V1)
-            .authenticate(
-                libp2p::noise::Config::new(&self.keypair)
-                    .expect("Signing libp2p-noise static DH keypair failed."),
-            )
-            .multiplex(libp2p::yamux::Config::default())
-            .boxed();
+        let mut transport =
+            libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::new().port_reuse(true))
+                .upgrade(libp2p::core::upgrade::Version::V1)
+                .authenticate(
+                    libp2p::noise::Config::new(&self.keypair)
+                        .expect("Signing libp2p-noise static DH keypair failed."),
+                )
+                .multiplex(libp2p::yamux::Config::default())
+                .boxed();
 
         #[cfg(feature = "quic")]
         let mut transport = libp2p::quic::tokio::Transport::new(quic::Config::new(&self.keypair))
