@@ -1,12 +1,19 @@
+mod control;
 mod install;
+mod node;
 mod service;
 
-use crate::install::{get_node_registry_path, install, NodeRegistry};
+use crate::control::start;
+use crate::install::{get_node_registry_path, install};
+use crate::node::NodeRegistry;
 use crate::service::NodeServiceManager;
 use clap::{Parser, Subcommand};
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{eyre::eyre, Help, Result};
+use libp2p_identity::PeerId;
 use sn_releases::SafeReleaseRepositoryInterface;
+use sn_rpc_client::RpcClient;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -18,7 +25,7 @@ pub(crate) struct Cmd {
 
 #[derive(Subcommand, Debug)]
 pub enum SubCmd {
-    /// Install `safenode` as a service.
+    /// Install safenode as a service.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "install")]
@@ -36,6 +43,18 @@ pub enum SubCmd {
         /// The version of safenode
         #[clap(long)]
         version: Option<String>,
+    },
+    /// Start an installed safenode service.
+    ///
+    /// If no peer ID(s) or service name(s) are supplied, all installed services will be started.
+    #[clap(name = "start")]
+    Start {
+        /// The peer ID of the service to start.
+        #[clap(long)]
+        peer_id: Option<String>,
+        /// The name of the service to start.
+        #[clap(long)]
+        service_name: Option<String>,
     },
 }
 
@@ -65,6 +84,50 @@ async fn main() -> Result<()> {
             )
             .await?;
             node_registry.save(&get_node_registry_path()?)?;
+            Ok(())
+        }
+        SubCmd::Start {
+            peer_id,
+            service_name,
+        } => {
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+            if service_name.is_some() && peer_id.is_some() {
+                return Err(eyre!("The service name and peer ID are mutually exclusive")
+                    .suggestion(
+                    "Please try again using either the peer ID or the service name, but not both.",
+                ));
+            }
+
+            if let Some(ref name) = service_name {
+                let mut node = node_registry
+                    .installed_nodes
+                    .iter_mut()
+                    .find(|x| x.service_name == *name)
+                    .ok_or_else(|| eyre!("No service named '{name}'"))?;
+
+                let rpc_client = RpcClient::new(&format!("127.0.0.1:{}", node.rpc_port));
+                start(&mut node, &NodeServiceManager {}, &rpc_client).await?;
+            } else if let Some(ref peer_id) = peer_id {
+                let peer_id = PeerId::from_str(&peer_id)?;
+                let mut node = node_registry
+                    .installed_nodes
+                    .iter_mut()
+                    .find(|x| x.peer_id == Some(peer_id))
+                    .ok_or_else(|| {
+                        eyre!(format!(
+                            "Could not find node with peer ID '{}'",
+                            peer_id.to_string()
+                        ))
+                    })?;
+
+                let rpc_client = RpcClient::new(&format!("127.0.0.1:{}", node.rpc_port));
+                start(&mut node, &NodeServiceManager {}, &rpc_client).await?;
+            } else {
+                for mut node in node_registry.installed_nodes.iter_mut() {
+                    let rpc_client = RpcClient::new(&format!("127.0.0.1:{}", node.rpc_port));
+                    start(&mut node, &NodeServiceManager {}, &rpc_client).await?;
+                }
+            }
             Ok(())
         }
     }

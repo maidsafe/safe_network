@@ -1,10 +1,11 @@
 use color_eyre::Result;
 #[cfg(test)]
 use mockall::automock;
-use service_manager::{ServiceInstallCtx, ServiceLabel, ServiceManager};
+use service_manager::{ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx};
 use std::ffi::OsString;
 use std::net::{SocketAddr, TcpListener};
 use std::path::Path;
+use sysinfo::{Pid, System, SystemExt};
 
 /// A thin wrapper around the `service_manager::ServiceManager`, which makes our own testing
 /// easier.
@@ -17,6 +18,7 @@ use std::path::Path;
 pub trait ServiceControl {
     fn create_service_user(&self, username: &str) -> Result<()>;
     fn get_available_port(&self) -> Result<u16>;
+    fn is_service_process_running(&self, pid: u32) -> bool;
     fn install(
         &self,
         name: &str,
@@ -25,6 +27,7 @@ pub trait ServiceControl {
         rpc_port: u16,
         service_user: &str,
     ) -> Result<()>;
+    fn start(&self, service_name: &str) -> Result<()>;
 }
 
 pub struct NodeServiceManager {}
@@ -117,6 +120,12 @@ impl ServiceControl for NodeServiceManager {
         Ok(())
     }
 
+    fn is_service_process_running(&self, pid: u32) -> bool {
+        let mut system = System::new_all();
+        system.refresh_all();
+        system.process(Pid::from(pid as usize)).is_some()
+    }
+
     fn get_available_port(&self) -> Result<u16> {
         let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
         Ok(TcpListener::bind(addr)?.local_addr()?.port())
@@ -143,7 +152,16 @@ impl ServiceControl for NodeServiceManager {
             ],
             contents: None,
             username: Some(service_user.to_string()),
+            working_directory: None,
+            environment: None,
         })?;
+        Ok(())
+    }
+
+    fn start(&self, service_name: &str) -> Result<()> {
+        let label: ServiceLabel = service_name.parse()?;
+        let manager = <dyn ServiceManager>::native()?;
+        manager.start(ServiceStartCtx { label })?;
         Ok(())
     }
 }
