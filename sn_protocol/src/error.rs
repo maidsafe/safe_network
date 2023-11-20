@@ -58,9 +58,16 @@ pub enum Error {
     PaymentExceedsTotalTokens,
 
     // ---------- payment errors
-    /// Failed to get the storecost from kademlia store
     #[error("There was an error getting the storecost from kademlia store")]
     GetStoreCostFailed,
+    #[error("There was an error generating the payment quote")]
+    QuoteGenerationFailed,
+    #[error("The content of the payment quote is invalid")]
+    InvalidQuoteContent,
+    #[error("The payment quote's signature is invalid")]
+    InvalidQuoteSignature,
+    #[error("The payment quote expired")]
+    QuoteExpired,
     /// The amount paid by payment proof is not the required for the received content
     #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
     PaymentProofInsufficientAmount {

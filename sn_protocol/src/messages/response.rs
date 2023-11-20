@@ -11,7 +11,7 @@ use crate::{error::Result, NetworkAddress};
 use bytes::Bytes;
 use core::fmt;
 use serde::{Deserialize, Serialize};
-use sn_transfers::{MainPubkey, NanoTokens};
+use sn_transfers::{MainPubkey, PaymentQuote};
 use std::fmt::Debug;
 
 /// The response to a query, containing the query result.
@@ -19,8 +19,8 @@ use std::fmt::Debug;
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum QueryResponse {
     GetStoreCost {
-        /// The store cost in nanos for storing the next record.
-        store_cost: Result<NanoTokens>,
+        /// The store cost quote for storing the next record.
+        quote: Result<PaymentQuote>,
         /// The cash_note MainPubkey to pay this node's store cost to.
         payment_address: MainPubkey,
     },
@@ -37,13 +37,13 @@ impl Debug for QueryResponse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             QueryResponse::GetStoreCost {
-                store_cost,
+                quote,
                 payment_address,
             } => {
                 write!(
                     f,
-                    "GetStoreCost(store_cost: {:?}, payment_address: {:?})",
-                    store_cost, payment_address
+                    "GetStoreCost(quote: {:?}, payment_address: {:?})",
+                    quote, payment_address
                 )
             }
             QueryResponse::GetReplicatedRecord(result) => match result {

@@ -34,7 +34,7 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{
-    CashNote, CashNoteRedemption, MainPubkey, NanoTokens, SignedSpend, Transfer, UniquePubkey,
+    CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend, UniquePubkey,
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -378,7 +378,7 @@ impl Client {
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
-        payment: Vec<Transfer>,
+        payment: Payment,
         verify_store: bool,
         show_holders: bool,
     ) -> Result<()> {

@@ -20,7 +20,7 @@ use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress},
     NetworkAddress,
 };
-use sn_transfers::{MainPubkey, NanoTokens};
+use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::collections::BTreeMap;
 use tokio::time::{sleep, Duration};
 use xor_name::XorName;
@@ -238,7 +238,7 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
             *chunk_name,
             (
                 MainPubkey::new(bls::SecretKey::random().public_key()),
-                NanoTokens::from(0),
+                PaymentQuote::new_dummy(*chunk_name, NanoTokens::from(0)),
             ),
         );
     }
@@ -331,7 +331,7 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
             .expect("RegisterAddress should convert to XorName"),
         (
             MainPubkey::new(bls::SecretKey::random().public_key()),
-            NanoTokens::from(0),
+            PaymentQuote::new_dummy(xor_name, NanoTokens::from(0)),
         ),
     );
 
