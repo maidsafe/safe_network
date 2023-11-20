@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700484643922,
+  "lastUpdate": 1700484646724,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "879cfdd2c12566adb3650f183aeda29793878c13",
-          "message": "chore(node): cleanup unused SwarmCmd for GetAllRecordAddrs",
-          "timestamp": "2023-07-10T14:57:56Z",
-          "tree_id": "d765b61a86e425b6aa7846aa00ebe12164a0ec27",
-          "url": "https://github.com/maidsafe/safe_network/commit/879cfdd2c12566adb3650f183aeda29793878c13"
-        },
-        "date": 1689008579773,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 311.5,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 241,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "dab735ab25fd73d0f40ebe722520d531976ea5ae",
           "message": "ci: count node processes on nightly run",
           "timestamp": "2023-07-11T10:20:32+02:00",
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 220,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 68,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2bd92fcb4faf385976df81e588dbbd9cb6dae0a6",
+          "message": "test(CI): showing swarm_driver long handling statistics in bench diagram",
+          "timestamp": "2023-11-20T12:00:47Z",
+          "tree_id": "993627cf19d30f2ca970e38bf909b398dd419768",
+          "url": "https://github.com/maidsafe/safe_network/commit/2bd92fcb4faf385976df81e588dbbd9cb6dae0a6"
+        },
+        "date": 1700484645143,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 194,
             "unit": "MB"
           },
           {
