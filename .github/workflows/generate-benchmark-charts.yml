@@ -110,7 +110,7 @@ jobs:
           SN_LOG: "all"
       
       #########################
-      ### Mem Analysis      ###
+      ### Stop Network      ###
       #########################
 
       - name: Stop the local network
@@ -119,6 +119,10 @@ jobs:
         with:
           action: stop
           platform: ubuntu-latest
+
+      #########################
+      ### Mem Analysis      ###
+      #########################
 
       - name: Check node memory usage
         shell: bash
@@ -201,6 +205,81 @@ jobs:
           name: 'Client memory'
           tool: 'customSmallerIsBetter'
           output-file-path: client_memory_usage.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          max-items-in-chart: 300
+
+      ###########################################
+      ### Swarm_driver handling time Analysis ###
+      ###########################################
+
+      - name: Check swarm_driver handling time
+        shell: bash
+        run: |
+          num_of_times=$(
+            rg "SwarmCmd handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
+            rg "(\d+) matches" |
+            rg "\d+" -o
+          )
+          echo "Number of long cmd handling times: $num_of_times"
+          total_long_handling_ms=$(
+            rg "SwarmCmd handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
+            awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
+          )
+          echo "Total cmd long handling time is: $total_long_handling_ms ms"
+          average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
+          echo "Average cmd long handling time is: $average_handling_ms ms"
+          total_long_handling=$(($total_long_handling_ms))
+          total_num_of_times=$(($num_of_times))
+          num_of_times=$(
+            rg "SwarmEvent handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
+            rg "(\d+) matches" |
+            rg "\d+" -o
+          )
+          echo "Number of long event handling times: $num_of_times"
+          total_long_handling_ms=$(
+            rg "SwarmEvent handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
+            awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
+          )
+          echo "Total event long handling time is: $total_long_handling_ms ms"
+          average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
+          echo "Average event long handling time is: $average_handling_ms ms"
+          total_long_handling=$(($total_long_handling_ms+$total_long_handling))
+          total_num_of_times=$(($num_of_times+$total_num_of_times))
+          average_handling_ms=$(($total_long_handling/$(($total_num_of_times))))
+          echo "Total swarm_driver long handling times is: $total_num_of_times"
+          echo "Total swarm_driver long handling duration is: $total_long_handling ms"
+          echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
+         
+          # Write the node memory usage to a file
+          echo '[
+              {
+                  "name": "swarm_driver long handling times",
+                  "value": '$total_num_of_times',
+                  "unit": "hits"
+              },
+              {
+                  "name": "swarm_driver long handling total_time",
+                  "value": '$total_long_handling',
+                  "unit": "ms"
+              },
+              {
+                  "name": "swarm_driver average long handling time",
+                  "value": '$average_handling_ms',
+                  "unit": "ms"
+              }
+          ]' > swarm_driver_long_handlings.json
+
+      - name: check swarm_driver_long_handlings.json
+        shell: bash
+        run: cat swarm_driver_long_handlings.json
+
+      - name: Upload swarm_driver Long Handlings
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: 'swarm_driver long handlings'
+          tool: 'customSmallerIsBetter'
+          output-file-path: swarm_driver_long_handlings.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           max-items-in-chart: 300
