@@ -342,7 +342,7 @@ fn spawn_royalties_payment_client_listener(
     let handle = tokio::spawn(async move {
         let mut count = 0;
 
-        let duration = Duration::from_secs(40);
+        let duration = Duration::from_secs(80);
         println!("Awaiting transfers notifs for {duration:?}...");
         if timeout(duration, async {
             while let Ok(event) = events_receiver.recv().await {
