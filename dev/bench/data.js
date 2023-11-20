@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700484646724,
+  "lastUpdate": 1700484649281,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30604,6 +30604,47 @@ window.BENCHMARK_DATA = {
             "name": "Average memory usage w/ upload",
             "value": 68,
             "unit": "MB"
+          }
+        ]
+      }
+    ],
+    "swarm_driver long handlings": [
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2bd92fcb4faf385976df81e588dbbd9cb6dae0a6",
+          "message": "test(CI): showing swarm_driver long handling statistics in bench diagram",
+          "timestamp": "2023-11-20T12:00:47Z",
+          "tree_id": "993627cf19d30f2ca970e38bf909b398dd419768",
+          "url": "https://github.com/maidsafe/safe_network/commit/2bd92fcb4faf385976df81e588dbbd9cb6dae0a6"
+        },
+        "date": 1700484648044,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 2742,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 43237,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 15,
+            "unit": "ms"
           }
         ]
       }
