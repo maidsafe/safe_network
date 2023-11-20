@@ -2212,6 +2212,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - remove comment
 - *(node)* set gossipsub heartbeat interval to 5secs instead of 1sec
 
+## [0.98.20](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.19...sn_node-v0.98.20) - 2023-11-20
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
