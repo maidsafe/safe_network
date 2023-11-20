@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700222652832,
+  "lastUpdate": 1700479719973,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "d02e1cc975f68caadce385bf66b87515564f7a68",
-          "message": "test: prevent from self-encrypting same file twice in churn tests\n\nCo-authored-by: RolandSherwin <RolandSherwin@protonmail.com>",
-          "timestamp": "2023-07-24T13:41:38Z",
-          "tree_id": "f70e486d36b1269e86c2518df6e0cb433fb8faf6",
-          "url": "https://github.com/maidsafe/safe_network/commit/d02e1cc975f68caadce385bf66b87515564f7a68"
-        },
-        "date": 1690210790096,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.13613061038947,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 7.446190477050504,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 12.054469785470417,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 49.960214598063644,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "9f55149a29ae037dfb284bd58493e429e7a311b5",
+          "message": "fix: adapt register updates",
+          "timestamp": "2023-11-20T10:45:52Z",
+          "tree_id": "389a8d04fe4ed5b625ad62a4a9367c8b9ae95cd5",
+          "url": "https://github.com/maidsafe/safe_network/commit/9f55149a29ae037dfb284bd58493e429e7a311b5"
+        },
+        "date": 1700479718111,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.048898793078036,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.12834089663099,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 48.286941737829245,
             "unit": "MiB/s"
           }
         ]
