@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700492572093,
+  "lastUpdate": 1700495030764,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "cc7cca03bf7c2a7405db91aaf7c35a540958561d",
-          "message": "fix(replication): send out keys for replication if not empty",
-          "timestamp": "2023-07-25T18:36:10Z",
-          "tree_id": "86efdec182faa4c1cabdfb42c8549d3309c24abd",
-          "url": "https://github.com/maidsafe/safe_network/commit/cc7cca03bf7c2a7405db91aaf7c35a540958561d"
-        },
-        "date": 1690313893408,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.8188391950811127,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.9405861176276823,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 25.5743061030106,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 51.104695716922514,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7073ff493493029c4c7b97c0eddc2219b857c616",
+          "message": "ci: increase mem usage limits for new batch size",
+          "timestamp": "2023-11-20T15:06:51Z",
+          "tree_id": "ee3577918a713abdd291c55b01dbd4dd7445fdb9",
+          "url": "https://github.com/maidsafe/safe_network/commit/7073ff493493029c4c7b97c0eddc2219b857c616"
+        },
+        "date": 1700495029085,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.379309032461676,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.291657603696233,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 15.510637512687158,
             "unit": "MiB/s"
           }
         ]
