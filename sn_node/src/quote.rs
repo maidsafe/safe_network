@@ -40,6 +40,8 @@ impl Node {
             timestamp,
             signature,
         };
+
+        debug!("Created payment quote for {address:?}: {quote:?}");
         Ok(quote)
     }
 
@@ -48,6 +50,8 @@ impl Node {
         quote: PaymentQuote,
         address: &NetworkAddress,
     ) -> Result<(), ProtocolError> {
+        debug!("Verifying payment quote for {address:?}: {quote:?}");
+
         // check address
         if address.as_xorname().unwrap_or_default() != quote.content {
             return Err(ProtocolError::InvalidQuoteContent);

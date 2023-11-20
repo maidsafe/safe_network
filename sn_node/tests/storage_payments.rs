@@ -238,7 +238,7 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
             *chunk_name,
             (
                 MainPubkey::new(bls::SecretKey::random().public_key()),
-                PaymentQuote::new_dummy(*chunk_name, NanoTokens::from(0)),
+                PaymentQuote::test_dummy(*chunk_name, NanoTokens::from(0)),
             ),
         );
     }
@@ -331,7 +331,7 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
             .expect("RegisterAddress should convert to XorName"),
         (
             MainPubkey::new(bls::SecretKey::random().public_key()),
-            PaymentQuote::new_dummy(xor_name, NanoTokens::from(0)),
+            PaymentQuote::test_dummy(xor_name, NanoTokens::from(0)),
         ),
     );
 
