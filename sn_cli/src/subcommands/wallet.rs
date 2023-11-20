@@ -21,9 +21,6 @@ use std::{
 };
 use url::Url;
 
-// Defines the size of batch for the parallel uploading of chunks and correspondent payments.
-pub(crate) const BATCH_SIZE: usize = 20;
-
 const DEFAULT_RECEIVE_ONLINE_WALLET_DIR: &str = "receive_online";
 const TRANSFER_NOTIF_TOPIC: &str = "TRANSFER_NOTIFICATION";
 

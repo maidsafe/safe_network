@@ -10,7 +10,6 @@ mod chunk_manager;
 
 pub(crate) use chunk_manager::ChunkManager;
 
-use super::wallet::BATCH_SIZE;
 use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{
@@ -19,7 +18,7 @@ use color_eyre::{
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use libp2p::futures::future::join_all;
-use sn_client::{Client, Error as ClientError, Files};
+use sn_client::{Client, Error as ClientError, Files, BATCH_SIZE};
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
 use std::{
@@ -49,7 +48,7 @@ pub enum FilesCmds {
         path: PathBuf,
         /// The batch_size to split chunks into parallely handling batches
         /// during payment and upload processing.
-        #[clap(long, default_value_t = BATCH_SIZE)]
+        #[clap(long, default_value_t = BATCH_SIZE, short='b')]
         batch_size: usize,
         /// Flagging whether to show the holders of the uploaded chunks.
         /// Default to be not showing.
