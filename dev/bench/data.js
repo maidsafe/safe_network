@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700489121841,
+  "lastUpdate": 1700489337456,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "75994f9f8fc06895688bef284d83653ba14040f4",
-          "message": "ci: enable workflow dispatch for nightly",
-          "timestamp": "2023-07-11T12:53:51+02:00",
-          "tree_id": "ff57de3853bc3bf611ce396e9745ad11e21bc8b7",
-          "url": "https://github.com/maidsafe/safe_network/commit/75994f9f8fc06895688bef284d83653ba14040f4"
-        },
-        "date": 1689074364834,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 24.48,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 79,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8428c6c71525eb4acb224bda90f40b9193339605",
+          "message": "chore: be more specific for Request matching.\n\nThis should avoid issues if that enum grows",
+          "timestamp": "2023-11-20T13:28:18Z",
+          "tree_id": "b5ac2115c55744882d69bccc1310b94ca0ffb552",
+          "url": "https://github.com/maidsafe/safe_network/commit/8428c6c71525eb4acb224bda90f40b9193339605"
+        },
+        "date": 1700489336624,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 67,
             "unit": "MB"
           }
         ]
