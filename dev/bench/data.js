@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700489337456,
+  "lastUpdate": 1700489339801,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "dab735ab25fd73d0f40ebe722520d531976ea5ae",
-          "message": "ci: count node processes on nightly run",
-          "timestamp": "2023-07-11T10:20:32+02:00",
-          "tree_id": "c7d06ee52e1c58448b955d5e737148a14f5656c5",
-          "url": "https://github.com/maidsafe/safe_network/commit/dab735ab25fd73d0f40ebe722520d531976ea5ae"
-        },
-        "date": 1689065029788,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 295.34,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 221,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "97f2a8fc3cbfa954999fa477313a0d862fd1bc84",
           "message": "chore(node): only log LostRecord when peersfound",
           "timestamp": "2023-07-11T08:19:17Z",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 68,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8428c6c71525eb4acb224bda90f40b9193339605",
+          "message": "chore: be more specific for Request matching.\n\nThis should avoid issues if that enum grows",
+          "timestamp": "2023-11-20T13:28:18Z",
+          "tree_id": "b5ac2115c55744882d69bccc1310b94ca0ffb552",
+          "url": "https://github.com/maidsafe/safe_network/commit/8428c6c71525eb4acb224bda90f40b9193339605"
+        },
+        "date": 1700489338954,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 248,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 71,
             "unit": "MB"
           }
         ]
