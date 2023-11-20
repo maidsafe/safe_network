@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700482600347,
+  "lastUpdate": 1700482798779,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "dab735ab25fd73d0f40ebe722520d531976ea5ae",
-          "message": "ci: count node processes on nightly run",
-          "timestamp": "2023-07-11T10:20:32+02:00",
-          "tree_id": "c7d06ee52e1c58448b955d5e737148a14f5656c5",
-          "url": "https://github.com/maidsafe/safe_network/commit/dab735ab25fd73d0f40ebe722520d531976ea5ae"
-        },
-        "date": 1689065027243,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 22.14,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "97f2a8fc3cbfa954999fa477313a0d862fd1bc84",
           "message": "chore(node): only log LostRecord when peersfound",
           "timestamp": "2023-07-11T08:19:17Z",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 68,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "03c8b917012c1d8f39e7b8f7fb1300b6a02e0ec5",
+          "message": "chore: remove comment",
+          "timestamp": "2023-11-20T11:43:30Z",
+          "tree_id": "3f42394ce73e9d56c9fa6772b5278fd141edfb2a",
+          "url": "https://github.com/maidsafe/safe_network/commit/03c8b917012c1d8f39e7b8f7fb1300b6a02e0ec5"
+        },
+        "date": 1700482798356,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 62,
             "unit": "MB"
           }
         ]
