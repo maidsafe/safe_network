@@ -14,7 +14,7 @@ use crate::{
 };
 use bytes::Bytes;
 use libp2p::{
-    kad::{store::RecordStore, Quorum, Record, RecordKey, K_VALUE},
+    kad::{store::RecordStore, Quorum, Record, RecordKey},
     swarm::dial_opts::DialOpts,
     Multiaddr, PeerId,
 };
@@ -25,15 +25,11 @@ use sn_protocol::{
 };
 use sn_transfers::NanoTokens;
 use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     fmt::Debug,
-    time::{Duration, Instant},
 };
 use tokio::sync::oneshot;
 use xor_name::XorName;
-
-// Timeout for seen replications to faded out.
-const SEEN_REPLICATION_FADED_OUT_S: Duration = Duration::from_secs(120);
 
 /// Commands to send to the Swarm
 #[allow(clippy::large_enum_variant)]
@@ -282,44 +278,52 @@ impl SwarmDriver {
     #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
     fn select_new_replications(
         &mut self,
-        holder: PeerId,
-        incoming_keys: &mut HashMap<NetworkAddress, RecordType>,
-    ) {
-        if self.seen_replications.len() / 2 > K_VALUE.into() {
-            self.seen_replications.retain(|_k, (time_stamp, _keys)| {
-                time_stamp.elapsed() < SEEN_REPLICATION_FADED_OUT_S
-            });
-        }
+        incoming_keys: &HashMap<NetworkAddress, RecordType>,
+    ) -> Vec<(NetworkAddress, RecordType)> {
+        #[allow(clippy::mutable_key_type)]
+        let locally_stored_keys = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_addresses_ref();
+        let non_exist_keys: Vec<_> = incoming_keys
+            .iter()
+            .filter(|(addr, record_type)| {
+                let key = addr.to_record_key();
+                let local = locally_stored_keys.get(&key);
 
-        let entry = self.seen_replications.entry(holder);
-        if let Entry::Occupied(mut occupied_entry) = entry {
-            let (time_stamp, existing_keys) = occupied_entry.get_mut();
-            incoming_keys.retain(|k, v| match existing_keys.get(k) {
-                Some(existing_v) => v != existing_v,
-                None => true,
-            });
-            existing_keys.extend(incoming_keys.clone());
-            *time_stamp = Instant::now();
-        } else {
-            entry.or_insert((Instant::now(), incoming_keys.clone()));
-        }
+                // if we have a local value of matching record_type, we don't need to fetch it
+                if let Some((_, local_record_type)) = local {
+                    &local_record_type != record_type
+                } else {
+                    true
+                }
+            })
+            .collect();
+
+        let closest_k_peers = self.get_closest_k_value_local_peers();
+        non_exist_keys
+            .into_iter()
+            .filter_map(|(key, record_type)| {
+                if self.is_in_close_range(key, &closest_k_peers) {
+                    Some((key.clone(), record_type.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
-            SwarmCmd::AddKeysToReplicationFetcher { holder, mut keys } => {
-                // Only handle those `first time see` keys
-                self.select_new_replications(holder, &mut keys);
-                if keys.is_empty() {
+            SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
+                // Only handle those non-exist and in close range keys
+                let keys_to_store = self.select_new_replications(&keys);
+                if keys_to_store.is_empty() {
                     return Ok(());
                 }
 
-                // Only store record from Replication that close enough to us.
-                let closest_k_peers = self.get_closest_k_value_local_peers();
-                let keys_to_store = keys
-                    .into_iter()
-                    .filter(|(key, _)| self.is_in_close_range(key, &closest_k_peers))
-                    .collect();
                 #[allow(clippy::mutable_key_type)]
                 let all_keys = self
                     .swarm

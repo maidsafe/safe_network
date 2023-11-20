@@ -47,7 +47,6 @@ use libp2p::{
 use prometheus_client::registry::Registry;
 use sn_protocol::{
     messages::{Request, Response},
-    storage::RecordType,
     NetworkAddress, PrettyPrintKBucketKey,
 };
 use std::{
@@ -55,7 +54,7 @@ use std::{
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
-    time::{Duration, Instant},
+    time::Duration,
 };
 use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
@@ -480,7 +479,6 @@ impl NetworkBuilder {
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             is_gossip_listener: false,
-            seen_replications: Default::default(),
         };
 
         Ok((
@@ -520,7 +518,6 @@ pub struct SwarmDriver {
     /// A list of the most recent peers we have dialed ourselves.
     pub(crate) dialed_peers: CircularVec<PeerId>,
     pub(crate) is_gossip_listener: bool,
-    pub(crate) seen_replications: HashMap<PeerId, (Instant, HashMap<NetworkAddress, RecordType>)>,
 }
 
 impl SwarmDriver {
