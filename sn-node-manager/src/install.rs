@@ -1,48 +1,10 @@
+use crate::node::{InstalledNode, NodeRegistry, NodeStatus};
 use crate::service::ServiceControl;
 use color_eyre::Result;
 use indicatif::{ProgressBar, ProgressStyle};
-use serde::{Deserialize, Serialize};
 use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepositoryInterface};
-use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct InstalledNode {
-    pub version: String,
-    pub service_name: String,
-    pub user: String,
-    pub number: u16,
-    pub port: u16,
-    pub rpc_port: u16,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct NodeRegistry {
-    pub installed_nodes: Vec<InstalledNode>,
-}
-
-impl NodeRegistry {
-    pub fn save(&self, path: &Path) -> Result<()> {
-        let json = serde_json::to_string(self)?;
-        let mut file = std::fs::File::create(path)?;
-        file.write_all(json.as_bytes())?;
-        Ok(())
-    }
-
-    pub fn load(path: &Path) -> Result<Self> {
-        if !path.exists() {
-            return Ok(NodeRegistry {
-                installed_nodes: vec![],
-            });
-        }
-        let mut file = std::fs::File::open(path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        let registry = serde_json::from_str(&contents)?;
-        Ok(registry)
-    }
-}
 
 /// Install safenode as a service.
 ///
@@ -121,6 +83,9 @@ pub async fn install(
             port: safenode_port,
             rpc_port,
             version: version.clone(),
+            status: NodeStatus::Installed,
+            pid: None,
+            peer_id: None,
         });
 
         node_number += 1;
@@ -170,6 +135,7 @@ fn create_temp_dir() -> Result<PathBuf> {
 mod tests {
     use super::*;
     use crate::service::MockServiceControl;
+    use assert_matches::assert_matches;
     use async_trait::async_trait;
     use mockall::mock;
     use mockall::predicate::*;
@@ -299,6 +265,10 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[0].number, 1);
         assert_eq!(node_registry.installed_nodes[0].port, 8080);
         assert_eq!(node_registry.installed_nodes[0].rpc_port, 8081);
+        assert_matches!(
+            node_registry.installed_nodes[0].status,
+            NodeStatus::Installed
+        );
 
         Ok(())
     }
@@ -458,18 +428,30 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[0].number, 1);
         assert_eq!(node_registry.installed_nodes[0].port, 8080);
         assert_eq!(node_registry.installed_nodes[0].rpc_port, 8081);
+        assert_matches!(
+            node_registry.installed_nodes[0].status,
+            NodeStatus::Installed
+        );
         assert_eq!(node_registry.installed_nodes[1].version, latest_version);
         assert_eq!(node_registry.installed_nodes[1].service_name, "safenode2");
         assert_eq!(node_registry.installed_nodes[1].user, "safe");
         assert_eq!(node_registry.installed_nodes[1].number, 2);
         assert_eq!(node_registry.installed_nodes[1].port, 8082);
         assert_eq!(node_registry.installed_nodes[1].rpc_port, 8083);
+        assert_matches!(
+            node_registry.installed_nodes[1].status,
+            NodeStatus::Installed
+        );
         assert_eq!(node_registry.installed_nodes[2].version, latest_version);
         assert_eq!(node_registry.installed_nodes[2].service_name, "safenode3");
         assert_eq!(node_registry.installed_nodes[2].user, "safe");
         assert_eq!(node_registry.installed_nodes[2].number, 3);
         assert_eq!(node_registry.installed_nodes[2].port, 8084);
         assert_eq!(node_registry.installed_nodes[2].rpc_port, 8085);
+        assert_matches!(
+            node_registry.installed_nodes[0].status,
+            NodeStatus::Installed
+        );
 
         Ok(())
     }
@@ -572,6 +554,10 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[0].number, 1);
         assert_eq!(node_registry.installed_nodes[0].port, 8080);
         assert_eq!(node_registry.installed_nodes[0].rpc_port, 8081);
+        assert_matches!(
+            node_registry.installed_nodes[0].status,
+            NodeStatus::Installed
+        );
 
         Ok(())
     }
@@ -672,6 +658,10 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[0].number, 1);
         assert_eq!(node_registry.installed_nodes[0].port, 8080);
         assert_eq!(node_registry.installed_nodes[0].rpc_port, 8081);
+        assert_matches!(
+            node_registry.installed_nodes[0].status,
+            NodeStatus::Installed
+        );
 
         Ok(())
     }
@@ -690,6 +680,9 @@ mod tests {
                 port: 8080,
                 rpc_port: 8081,
                 version: latest_version.to_string(),
+                status: NodeStatus::Installed,
+                pid: None,
+                peer_id: None,
             }],
         };
         let temp_dir = assert_fs::TempDir::new()?;
@@ -785,6 +778,10 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[1].number, 2);
         assert_eq!(node_registry.installed_nodes[1].port, 8082);
         assert_eq!(node_registry.installed_nodes[1].rpc_port, 8083);
+        assert_matches!(
+            node_registry.installed_nodes[0].status,
+            NodeStatus::Installed
+        );
 
         Ok(())
     }
