@@ -79,10 +79,23 @@ impl Node {
             }
             RecordKind::Spend => self.validate_spend_record(record).await,
             RecordKind::Register => {
-                error!("Register should not be validated at this point");
-                Err(ProtocolError::InvalidPutWithoutPayment(
-                    PrettyPrintRecordKey::from(&record.key).into_owned(),
-                ))
+                let register = try_deserialize_record::<SignedRegister>(&record)?;
+
+                // make sure we already have this register locally
+                let net_addr = NetworkAddress::from_register_address(*register.address());
+                let key = net_addr.to_record_key();
+                let pretty_key = PrettyPrintRecordKey::from(&key);
+                trace!("Got record to store without payment for register at {pretty_key:?}");
+                if !self.validate_key_and_existence(&net_addr, &key).await? {
+                    trace!("Ignore store without payment for register at {pretty_key:?}");
+                    return Err(ProtocolError::InvalidPutWithoutPayment(
+                        PrettyPrintRecordKey::from(&record.key).into_owned(),
+                    ));
+                }
+
+                // store the update
+                trace!("Store update without payment as we already had register at {pretty_key:?}");
+                self.validate_and_store_register(register, true).await
             }
             RecordKind::RegisterWithPayment => {
                 let (payment, register) =
