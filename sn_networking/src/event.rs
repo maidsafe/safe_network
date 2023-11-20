@@ -498,7 +498,7 @@ impl SwarmDriver {
                     // if the request is replication, we can handle it and send the OK response here,
                     // as we send that regardless of how we handle the request as its unimportant to the sender.
                     match request {
-                        Request::Cmd(cmd) => {
+                        Request::Cmd(sn_protocol::messages::Cmd::Replicate { holder, keys }) => {
                             trace!("Short circuit ReplicateOk response to peer {peer:?}");
                             let response = Response::Cmd(
                                 sn_protocol::messages::CmdResponse::Replicate(Ok(())),
@@ -509,7 +509,9 @@ impl SwarmDriver {
                                 .send_response(channel, response)
                                 .map_err(|_| Error::InternalMsgChannelDropped)?;
 
-                            self.send_event(NetworkEvent::CmdRequestReceived { cmd });
+                            self.send_event(NetworkEvent::CmdRequestReceived {
+                                cmd: sn_protocol::messages::Cmd::Replicate { holder, keys },
+                            });
                         }
                         Request::Query(query) => {
                             self.send_event(NetworkEvent::QueryRequestReceived {

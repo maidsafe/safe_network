@@ -545,6 +545,8 @@ impl SwarmDriver {
                             channel: MsgResponder::FromSelf(sender),
                         });
                     } else {
+                        // We should never receive a Replicate request from ourselves.
+                        // we already hold this data if we do... so we can ignore
                         trace!("Replicate cmd to self received, ignoring");
                     }
                 } else {
