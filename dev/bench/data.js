@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700479719973,
+  "lastUpdate": 1700479912865,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "879cfdd2c12566adb3650f183aeda29793878c13",
-          "message": "chore(node): cleanup unused SwarmCmd for GetAllRecordAddrs",
-          "timestamp": "2023-07-10T14:57:56Z",
-          "tree_id": "d765b61a86e425b6aa7846aa00ebe12164a0ec27",
-          "url": "https://github.com/maidsafe/safe_network/commit/879cfdd2c12566adb3650f183aeda29793878c13"
-        },
-        "date": 1689008575919,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 19.94,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "dab735ab25fd73d0f40ebe722520d531976ea5ae",
           "message": "ci: count node processes on nightly run",
           "timestamp": "2023-07-11T10:20:32+02:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "9f55149a29ae037dfb284bd58493e429e7a311b5",
+          "message": "fix: adapt register updates",
+          "timestamp": "2023-11-20T10:45:52Z",
+          "tree_id": "389a8d04fe4ed5b625ad62a4a9367c8b9ae95cd5",
+          "url": "https://github.com/maidsafe/safe_network/commit/9f55149a29ae037dfb284bd58493e429e7a311b5"
+        },
+        "date": 1700479912226,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 68,
             "unit": "MB"
           }
         ]
