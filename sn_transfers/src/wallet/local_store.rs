@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 use super::{
+    data_payments::{ContentPaymentsMap, PaymentDetails, PaymentQuote},
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
         get_unconfirmed_spend_requests, get_wallet, load_cash_notes_from_disk,
@@ -17,7 +18,7 @@ use super::{
 
 use crate::{
     calculate_royalties_fee,
-    transfers::{create_offline_transfer, ContentPaymentsMap, OfflineTransfer, PaymentDetails},
+    transfers::{create_offline_transfer, OfflineTransfer},
     CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
     MainSecretKey, NanoTokens, SignedSpend, Transfer, UniquePubkey, WalletError,
     NETWORK_ROYALTIES_PK,
@@ -239,26 +240,6 @@ impl LocalWallet {
         self.wallet.payment_transactions.get(name)
     }
 
-    /// Return the payment transfers for the given content address name if cached.
-    pub fn get_payment_transfers(&self, name: &XorName) -> Vec<Transfer> {
-        let mut transfers: Vec<Transfer> = vec![];
-
-        if let Some(payment) = self.get_cached_payment_for_xorname(name) {
-            let (trans, value) = &payment.transfer;
-            trace!(
-                "Retrieved transfer for record {name:?} of {value:?} tokens to {:?}.",
-                payment.recipient
-            );
-            transfers.push(trans.to_owned());
-
-            let (cnr, value) = &payment.royalties;
-            trace!("Retrieved royalites cnr for record {name:?} of {value:?}");
-            transfers.push(Transfer::NetworkRoyalties(vec![cnr.clone()]));
-        }
-
-        transfers
-    }
-
     /// Make a transfer and return all created cash_notes
     pub fn local_send(
         &mut self,
@@ -306,7 +287,7 @@ impl LocalWallet {
     /// Returns the amount paid for storage, including the network royalties fee paid.
     pub fn local_send_storage_payment(
         &mut self,
-        price_map: BTreeMap<XorName, (MainPubkey, NanoTokens)>,
+        price_map: BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
     ) -> Result<(NanoTokens, NanoTokens)> {
         let mut rng = &mut rand::thread_rng();
         let mut storage_cost = NanoTokens::zero();
@@ -314,13 +295,13 @@ impl LocalWallet {
 
         // create random derivation indexes for recipients
         let mut recipients_by_xor = BTreeMap::new();
-        for (xorname, (main_pubkey, cost)) in price_map.iter() {
+        for (xorname, (main_pubkey, quote)) in price_map.iter() {
             let storage_payee = (
-                *cost,
+                quote.cost,
                 *main_pubkey,
                 UniquePubkey::random_derivation_index(&mut rng),
             );
-            let royalties_fee = calculate_royalties_fee(*cost);
+            let royalties_fee = calculate_royalties_fee(quote.cost);
             let royalties_payee = (
                 royalties_fee,
                 *NETWORK_ROYALTIES_PK,
@@ -328,7 +309,7 @@ impl LocalWallet {
             );
 
             storage_cost = storage_cost
-                .checked_add(*cost)
+                .checked_add(quote.cost)
                 .ok_or(WalletError::TotalPriceTooHigh)?;
             royalties_fees = royalties_fees
                 .checked_add(royalties_fee)
@@ -390,7 +371,7 @@ impl LocalWallet {
                 )))?
                 .clone();
             cashnotes_to_use.remove(&cash_note_for_royalties);
-            let royalties = CashNoteRedemption::from_cash_note(&cash_note_for_royalties)?;
+            let royalties = Transfer::royalties_transfer_from_cash_note(&cash_note_for_royalties)?;
             let royalties_amount = cash_note_for_royalties.value()?;
             trace!("Created network royalties cnr regarding {xorname:?} paying {royalties_amount:?} to {royalties_key:?}.");
 
@@ -398,6 +379,7 @@ impl LocalWallet {
                 recipient: node_key,
                 transfer: (transfer_for_node, transfer_amount),
                 royalties: (royalties, royalties_amount),
+                quote: PaymentQuote::new_dummy(*xorname, transfer_amount),
             };
 
             self.wallet.payment_transactions.insert(*xorname, payment);
@@ -588,7 +570,7 @@ mod tests {
     use super::{get_wallet, store_wallet, LocalWallet};
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
-        wallet::{local_store::WALLET_DIR_NAME, KeyLessWallet},
+        wallet::{data_payments::PaymentQuote, local_store::WALLET_DIR_NAME, KeyLessWallet},
         MainSecretKey, NanoTokens, SpendAddress,
     };
     use assert_fs::TempDir;
@@ -967,15 +949,15 @@ mod tests {
         let key4a = MainSecretKey::random().main_pubkey();
 
         let map = BTreeMap::from([
-            (xor1, (key1a, 100.into())),
-            (xor2, (key2a, 200.into())),
-            (xor3, (key3a, 300.into())),
-            (xor4, (key4a, 400.into())),
+            (xor1, (key1a, PaymentQuote::new_dummy(xor1, 100.into()))),
+            (xor2, (key2a, PaymentQuote::new_dummy(xor2, 200.into()))),
+            (xor3, (key3a, PaymentQuote::new_dummy(xor3, 300.into()))),
+            (xor4, (key4a, PaymentQuote::new_dummy(xor4, 400.into()))),
         ]);
 
         let (price, _) = sender.local_send_storage_payment(map.clone())?;
 
-        let expected_price: u64 = map.values().map(|(_, price)| price.as_nano()).sum();
+        let expected_price: u64 = map.values().map(|(_, quote)| quote.cost.as_nano()).sum();
         assert_eq!(price.as_nano(), expected_price);
 
         Ok(())

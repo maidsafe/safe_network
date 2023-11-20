@@ -33,7 +33,9 @@ pub use genesis::{
 };
 pub use transfers::create_offline_transfer;
 pub use wallet::{bls_secret_from_hex, parse_main_pubkey};
-pub use wallet::{Error as WalletError, LocalWallet, Result as WalletResult};
+pub use wallet::{
+    Error as WalletError, LocalWallet, Payment, PaymentQuote, Result as WalletResult,
+};
 
 // re-export crates used in our public API
 pub use bls::{self, rand, Ciphertext, Signature};

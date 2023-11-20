@@ -30,7 +30,5 @@
 mod offline_transfer;
 mod transfer;
 
-pub use offline_transfer::{
-    create_offline_transfer, ContentPaymentsMap, OfflineTransfer, PaymentDetails,
-};
+pub use offline_transfer::{create_offline_transfer, OfflineTransfer};
 pub use transfer::{CashNoteRedemption, Transfer};

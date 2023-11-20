@@ -49,6 +49,7 @@ mod log_markers;
 mod metrics;
 mod node;
 mod put_validation;
+mod quote;
 mod replication;
 mod spends;
 

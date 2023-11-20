@@ -17,7 +17,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
-use sn_transfers::{NanoTokens, Transfer};
+use sn_transfers::{NanoTokens, Payment};
 
 use std::collections::{BTreeSet, HashSet, LinkedList};
 use xor_name::XorName;
@@ -230,10 +230,11 @@ impl ClientRegister {
                 }
 
                 // Get payment proofs needed to publish the Register
-                let payment = wallet_client.get_payment_transfers(&net_addr)?;
+                let payment = wallet_client.get_payment_for_addr(&net_addr)?;
 
                 debug!("payments found: {payment:?}");
-                self.publish_register(cmd, payment, verify_store).await?;
+                self.publish_register(cmd, Some(payment), verify_store)
+                    .await?;
                 self.register.clone()
             }
         };
@@ -255,11 +256,7 @@ impl ClientRegister {
             while let Some(cmd) = self.ops.pop_back() {
                 // We don't need to send the payment proofs here since
                 // these are all Register mutation cmds which don't require payment.
-                let payment = vec![];
-
-                let result = self
-                    .publish_register(cmd.clone(), payment, verify_store)
-                    .await;
+                let result = self.publish_register(cmd.clone(), None, verify_store).await;
 
                 if let Err(err) = result {
                     warn!("Did not push Register cmd on all nodes in the close group!: {err}");
@@ -318,7 +315,7 @@ impl ClientRegister {
     async fn publish_register(
         &self,
         cmd: RegisterCmd,
-        payment: Vec<Transfer>,
+        payment: Option<Payment>,
         verify_store: bool,
     ) -> Result<()> {
         let cmd_dst = cmd.dst();
@@ -350,12 +347,23 @@ impl ClientRegister {
 
         let network_address = NetworkAddress::from_register_address(*register.address());
         let key = network_address.to_record_key();
-        let record = Record {
-            key: key.clone(),
-            value: try_serialize_record(&(payment, &register), RecordKind::RegisterWithPayment)?
+        let record = match payment {
+            Some(payment) => Record {
+                key: key.clone(),
+                value: try_serialize_record(
+                    &(payment, &register),
+                    RecordKind::RegisterWithPayment,
+                )?
                 .to_vec(),
-            publisher: None,
-            expires: None,
+                publisher: None,
+                expires: None,
+            },
+            None => Record {
+                key: key.clone(),
+                value: try_serialize_record(&register, RecordKind::Register)?.to_vec(),
+                publisher: None,
+                expires: None,
+            },
         };
 
         let (record_to_verify, expected_holders) = if verify_store {

@@ -18,7 +18,7 @@ use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_
 use self_encryption::{decrypt_full_set, StreamSelfDecryptor};
 use sn_protocol::{
     storage::{Chunk, ChunkAddress},
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress,
 };
 use sn_transfers::{LocalWallet, NanoTokens};
 
@@ -165,24 +165,13 @@ impl Files {
         trace!("Client upload started for chunk: {chunk_addr:?}");
 
         let wallet_client = self.wallet()?;
-        let payment = wallet_client.get_payment_transfers(&chunk_addr)?;
+        let payment = wallet_client.get_payment_for_addr(&chunk_addr)?;
 
         debug!(
             "{:?} payments for chunk: {chunk_addr:?}:  {payment:?}",
-            payment.len()
+            payment
         );
 
-        if payment.is_empty() {
-            warn!("Failed to get payment proof for chunk: {chunk_addr:?} it was not found in the local wallet");
-            return Err(ChunksError::NoPaymentForRecord(
-                PrettyPrintRecordKey::from(&chunk_addr.to_record_key()).into_owned(),
-            ))?;
-        }
-
-        trace!(
-            "Payment for {chunk_addr:?}: has length: {:?}",
-            payment.len()
-        );
         self.client
             .store_chunk(chunk, payment, verify_store, show_holders)
             .await?;

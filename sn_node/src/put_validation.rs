@@ -26,7 +26,8 @@ use sn_protocol::{
 use sn_registers::SignedRegister;
 use sn_transfers::{
     calculate_royalties_fee, is_genesis_parent_tx, CashNote, CashNoteRedemption, LocalWallet,
-    NanoTokens, SignedSpend, Transfer, UniquePubkey, GENESIS_CASHNOTE, NETWORK_ROYALTIES_PK,
+    NanoTokens, Payment, SignedSpend, Transfer, UniquePubkey, GENESIS_CASHNOTE,
+    NETWORK_ROYALTIES_PK,
 };
 use std::collections::{BTreeSet, HashSet};
 use xor_name::XorName;
@@ -42,7 +43,7 @@ impl Node {
         match record_header.kind {
             RecordKind::ChunkWithPayment => {
                 let record_key = record.key.clone();
-                let (payment, chunk) = try_deserialize_record::<(Vec<Transfer>, Chunk)>(&record)?;
+                let (payment, chunk) = try_deserialize_record::<(Payment, Chunk)>(&record)?;
                 let already_exists = self
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
@@ -85,7 +86,7 @@ impl Node {
             }
             RecordKind::RegisterWithPayment => {
                 let (payment, register) =
-                    try_deserialize_record::<(Vec<Transfer>, SignedRegister)>(&record)?;
+                    try_deserialize_record::<(Payment, SignedRegister)>(&record)?;
 
                 // check if the deserialized value's RegisterAddress matches the record's key
                 let net_addr = NetworkAddress::from_register_address(*register.address());
@@ -412,11 +413,11 @@ impl Node {
         Ok(CmdOk::StoredSuccessfully)
     }
 
-    /// Gets CashNotes out of a Payment, this includes network verifications of the Transfers
+    /// Gets CashNotes out of Transfers, this includes network verifications of the Transfers
     /// Rewraps the royalties transfers into encrypted Transfers ready to be sent directly to the beneficiary
-    async fn cash_notes_from_payment(
+    async fn cash_notes_from_transfers(
         &self,
-        payment: Vec<Transfer>,
+        transfers: Vec<Transfer>,
         wallet: &LocalWallet,
         pretty_key: PrettyPrintRecordKey<'static>,
     ) -> Result<(NanoTokens, Vec<CashNote>, Vec<CashNoteRedemption>), ProtocolError> {
@@ -425,7 +426,7 @@ impl Node {
         let mut royalties_cash_notes_r = vec![];
         let mut received_fee = NanoTokens::zero();
 
-        for transfer in payment {
+        for transfer in transfers {
             match transfer {
                 Transfer::Encrypted(_) => match self
                     .network
@@ -488,7 +489,7 @@ impl Node {
     async fn payment_for_us_exists_and_is_still_valid(
         &self,
         address: &NetworkAddress,
-        payment: Vec<Transfer>,
+        payment: Payment,
     ) -> Result<(), ProtocolError> {
         let key = address.to_record_key();
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
@@ -501,7 +502,7 @@ impl Node {
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key}");
         let (received_fee, cash_notes, royalties_cash_notes_r) = self
-            .cash_notes_from_payment(payment, &wallet, pretty_key.clone())
+            .cash_notes_from_transfers(payment.transfers, &wallet, pretty_key.clone())
             .await?;
 
         trace!("Received payment of {received_fee:?} for {pretty_key}");
@@ -546,19 +547,27 @@ impl Node {
             warn!("Failed to get serialized_size for network royalties payment data to publish a notification over gossipsub for record {pretty_key}");
         }
 
-        // Let's check payment is sufficient both for our store cost and for network royalties
-        let local_storecost =
-            self.network.get_local_storecost().await.map_err(|e| {
-                ProtocolError::RecordNotStored(pretty_key.clone(), format!("{e:?}"))
-            })?;
-        // Since the storage payment is made to a single node, we can calculate the royalties fee based on that single payment.
-        let expected_royalties_fee = calculate_royalties_fee(local_storecost);
-        let expected_fee = local_storecost.checked_add(expected_royalties_fee).ok_or(
-            ProtocolError::RecordNotStored(
+        // check if the quote is valid
+        let storecost = payment.quote.cost;
+        if let Err(e) = self.verify_quote_for_storecost(payment.quote, address) {
+            trace!("Invalid payment quote for record {pretty_key}");
+            return Err(ProtocolError::RecordNotStored(
                 pretty_key.clone(),
-                "CashNote value overflow".to_string(),
-            ),
-        )?;
+                format!("{e:}"),
+            ));
+        }
+        trace!("Payment quote valid for record {pretty_key}");
+
+        // Let's check payment is sufficient both for our store cost and for network royalties
+        // Since the storage payment is made to a single node, we can calculate the royalties fee based on that single payment.
+        let expected_royalties_fee = calculate_royalties_fee(storecost);
+        let expected_fee =
+            storecost
+                .checked_add(expected_royalties_fee)
+                .ok_or(ProtocolError::RecordNotStored(
+                    pretty_key.clone(),
+                    "CashNote value overflow".to_string(),
+                ))?;
 
         // finally, (after we accept any payments to us as they are ours now anyway)
         // lets check they actually paid enough
