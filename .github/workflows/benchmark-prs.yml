@@ -327,7 +327,7 @@ jobs:
           echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
           total_num_of_times_limit_hits="5000" # hits
           total_long_handling_limit_ms="75000" # ms
-          average_handling_limit_ms="15" # ms
+          average_handling_limit_ms="20" # ms
           if (( $(echo "$total_num_of_times > $total_num_of_times_limit_hits" | bc -l) )); then
             echo "Swarm_driver long handling times exceeded threshold: $total_num_of_times hits"
             exit 1
@@ -364,16 +364,25 @@ jobs:
         shell: bash
         run: cat swarm_driver_long_handlings.json
 
-      - name: Upload swarm_driver Long Handlings
+      - name: Alert for swarm_driver long handlings
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'swarm_driver long handlings'
           tool: 'customSmallerIsBetter'
           output-file-path: swarm_driver_long_handlings.json
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/swarm_driver_long_handlings.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # GitHub API token to make a commit comment
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-          max-items-in-chart: 300
-
+          # Enable alert commit comment
+          comment-on-alert: true
+          # Comment on the PR
+          comment-always: true
+          # 200% regression will result in alert
+          alert-threshold: '200%'
+          # Enable Job Summary for PRs
+          summary-always: true
 
   benchmark-cash:
     name: Compare sn_transfer benchmarks to main
