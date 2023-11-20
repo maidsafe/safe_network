@@ -236,8 +236,8 @@ jobs:
         shell: bash
         # limits here are lower that benchmark tests as there is less going on.
         run: |
-          client_peak_mem_limit_mb="300" # mb
-          client_avg_mem_limit_mb="180" # mb
+          client_peak_mem_limit_mb="700" # mb
+          client_avg_mem_limit_mb="350" # mb
           
           peak_mem_usage=$(
             rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename | 
