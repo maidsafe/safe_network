@@ -35,7 +35,7 @@ use xor_name::XorName;
 
 /// Max amount of times to retry uploading a chunk
 const MAX_CHUNK_PUT_RETRIES: usize = 10;
-/// Max amount of times to retry verification and repay.
+/// Max amount of times to retry verification.
 const MAX_VERIFICATION_RETRIES: usize = 5;
 const CHUNK_PUT_RETRY_WAIT_S: u64 = 2;
 

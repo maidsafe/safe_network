@@ -807,6 +807,7 @@ mod tests {
     use eyre::bail;
 
     use super::*;
+    use sn_transfers::PaymentQuote;
 
     #[test]
     fn test_get_fee_from_store_cost_responses() -> Result<()> {
@@ -817,7 +818,7 @@ mod tests {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
             costs.push((
                 addr,
-                PaymentQuote::new_dummy(Default::default(), NanoTokens::from(i as u64)),
+                PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i as u64)),
             ));
         }
         let expected_price = costs[0].1.cost.as_nano();
@@ -844,7 +845,7 @@ mod tests {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
             costs.push((
                 addr,
-                PaymentQuote::new_dummy(Default::default(), NanoTokens::from(i)),
+                PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i)),
             ));
             println!("price added {}", i);
         }

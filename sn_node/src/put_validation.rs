@@ -550,7 +550,7 @@ impl Node {
         // check if the quote is valid
         let storecost = payment.quote.cost;
         if let Err(e) = self.verify_quote_for_storecost(payment.quote, address) {
-            trace!("Invalid payment quote for record {pretty_key}");
+            debug!("Invalid payment quote for record {pretty_key}: {e:?}");
             return Err(ProtocolError::RecordNotStored(
                 pretty_key.clone(),
                 format!("{e:}"),
