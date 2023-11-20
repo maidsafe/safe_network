@@ -62,24 +62,12 @@ pub struct PaymentQuote {
     /// how much the node demands for storing the content
     pub cost: NanoTokens,
     /// the local node time when the quote was created
-    #[debug(skip)]
     pub timestamp: SystemTime,
     /// the node's signature of the 3 fields above
-    #[debug(skip)]
     pub signature: QuoteSignature,
 }
 
 impl PaymentQuote {
-    /// test utility to create a dummy quote
-    pub fn new_dummy(xorname: XorName, cost: NanoTokens) -> Self {
-        Self {
-            content: xorname,
-            cost,
-            timestamp: SystemTime::now(),
-            signature: vec![],
-        }
-    }
-
     /// create an empty PaymentQuote
     pub fn zero() -> Self {
         Self {
@@ -102,5 +90,15 @@ impl PaymentQuote {
                 .to_le_bytes(),
         );
         bytes
+    }
+
+    /// test utility to create a dummy quote
+    pub fn test_dummy(xorname: XorName, cost: NanoTokens) -> Self {
+        Self {
+            content: xorname,
+            cost,
+            timestamp: SystemTime::now(),
+            signature: vec![],
+        }
     }
 }

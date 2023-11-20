@@ -375,11 +375,18 @@ impl LocalWallet {
             let royalties_amount = cash_note_for_royalties.value()?;
             trace!("Created network royalties cnr regarding {xorname:?} paying {royalties_amount:?} to {royalties_key:?}.");
 
+            let quote = price_map
+                .get(xorname)
+                .ok_or(Error::CouldNotSendMoney(format!(
+                    "No quote found for {xorname:?}"
+                )))?
+                .1
+                .clone();
             let payment = PaymentDetails {
                 recipient: node_key,
                 transfer: (transfer_for_node, transfer_amount),
                 royalties: (royalties, royalties_amount),
-                quote: PaymentQuote::new_dummy(*xorname, transfer_amount),
+                quote,
             };
 
             self.wallet.payment_transactions.insert(*xorname, payment);
@@ -949,10 +956,10 @@ mod tests {
         let key4a = MainSecretKey::random().main_pubkey();
 
         let map = BTreeMap::from([
-            (xor1, (key1a, PaymentQuote::new_dummy(xor1, 100.into()))),
-            (xor2, (key2a, PaymentQuote::new_dummy(xor2, 200.into()))),
-            (xor3, (key3a, PaymentQuote::new_dummy(xor3, 300.into()))),
-            (xor4, (key4a, PaymentQuote::new_dummy(xor4, 400.into()))),
+            (xor1, (key1a, PaymentQuote::test_dummy(xor1, 100.into()))),
+            (xor2, (key2a, PaymentQuote::test_dummy(xor2, 200.into()))),
+            (xor3, (key3a, PaymentQuote::test_dummy(xor3, 300.into()))),
+            (xor4, (key4a, PaymentQuote::test_dummy(xor4, 400.into()))),
         ]);
 
         let (price, _) = sender.local_send_storage_payment(map.clone())?;
