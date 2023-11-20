@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.12...sn_networking-v0.10.13) - 2023-11-20
+
+### Added
+- *(networking)* shortcircuit response sending for replication
+
+### Other
+- be more specific for Request matching.
+
 ## [0.10.12](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.11...sn_networking-v0.10.12) - 2023-11-20
 
 ### Other

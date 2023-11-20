@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.19](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.18...sn_transfers-v0.14.19) - 2023-11-20
+
+### Added
+- *(networking)* shortcircuit response sending for replication
+
 ## [0.14.18](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.17...sn_transfers-v0.14.18) - 2023-11-20
 
 ### Added
