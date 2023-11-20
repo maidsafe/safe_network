@@ -269,7 +269,7 @@ fn current_rewards_balance() -> Result<NanoTokens> {
         let path = entry?.path();
         let wallet = LocalWallet::try_load_from(&path)?;
         let balance = wallet.balance();
-        //println!("Node's wallet {path:?} currently have balance of {balance:?}");
+
         total_rewards = total_rewards
             .checked_add(balance)
             .ok_or_else(|| eyre!("Faied to sum up rewards balance"))?;
