@@ -12,8 +12,8 @@ use super::{error::Result, Client};
 use futures::{future::join_all, TryFutureExt};
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
-    CashNote, LocalWallet, MainPubkey, NanoTokens, SignedSpend, Transfer, UniquePubkey,
-    WalletError, WalletResult,
+    CashNote, LocalWallet, MainPubkey, NanoTokens, Payment, PaymentQuote, SignedSpend, Transfer,
+    UniquePubkey, WalletError, WalletResult,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -55,16 +55,18 @@ impl WalletClient {
         self.wallet.unconfirmed_spend_requests()
     }
 
-    /// Get the payment transfers for a given network address
-    pub fn get_payment_transfers(&self, address: &NetworkAddress) -> WalletResult<Vec<Transfer>> {
+    /// Get the payment for a given network address
+    pub fn get_payment_for_addr(&self, address: &NetworkAddress) -> WalletResult<Payment> {
         match &address.as_xorname() {
             Some(xorname) => {
-                let transfers = self.wallet.get_payment_transfers(xorname);
-                info!(
-                    "Payment transfers retrieved for {xorname:?} from wallet: {:?}",
-                    transfers.len()
-                );
-                Ok(transfers)
+                let payment_details = self
+                    .wallet
+                    .get_cached_payment_for_xorname(xorname)
+                    .ok_or(WalletError::NoPaymentForAddress)?;
+                let payment = payment_details.to_payment();
+                debug!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
+                info!("Payment retrieved for {xorname:?} from wallet");
+                Ok(payment)
             }
             None => Err(WalletError::InvalidAddressType),
         }
@@ -120,7 +122,7 @@ impl WalletClient {
     pub async fn get_store_cost_at_address(
         &self,
         address: NetworkAddress,
-    ) -> WalletResult<(MainPubkey, NanoTokens)> {
+    ) -> WalletResult<(MainPubkey, PaymentQuote)> {
         self.client
             .network
             .get_store_costs_from_network(address)
@@ -192,7 +194,7 @@ impl WalletClient {
     /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
     pub async fn pay_for_records(
         &mut self,
-        cost_map: BTreeMap<XorName, (MainPubkey, NanoTokens)>,
+        cost_map: BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
         verify_store: bool,
     ) -> WalletResult<(NanoTokens, NanoTokens)> {
         let total_cost = self.wallet.local_send_storage_payment(cost_map)?;

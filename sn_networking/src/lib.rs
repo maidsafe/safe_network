@@ -50,7 +50,7 @@ use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
-use sn_transfers::{MainPubkey, NanoTokens};
+use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -151,6 +151,11 @@ impl Network {
         self.keypair.sign(msg).map_err(Error::from)
     }
 
+    /// Verifies a signature for the given data and the node's public key.
+    pub fn verify(&self, msg: &[u8], sig: &[u8]) -> bool {
+        self.keypair.public().verify(msg, sig)
+    }
+
     /// Dial the given peer at the given address.
     pub async fn dial(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
@@ -240,7 +245,7 @@ impl Network {
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
-    ) -> Result<(MainPubkey, NanoTokens)> {
+    ) -> Result<(MainPubkey, PaymentQuote)> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
         let mut close_nodes = self.get_closest_peers(&record_address, true).await?;
@@ -270,21 +275,22 @@ impl Network {
                 "StoreCostReq for {record_address:?} received response: {:?}",
                 response
             );
-            if let Response::Query(QueryResponse::GetStoreCost {
-                store_cost: Ok(cost),
-                payment_address,
-            }) = response
-            {
-                let cost_with_tolerance = NanoTokens::from((cost.as_nano() as f32 * 1.1) as u64);
-                all_costs.push((payment_address, cost_with_tolerance));
-            } else if let Response::Query(QueryResponse::GetStoreCost {
-                store_cost: Err(ProtocolError::RecordExists(_)),
-                payment_address,
-            }) = response
-            {
-                all_costs.push((payment_address, NanoTokens::zero()));
-            } else {
-                error!("Non store cost response received,  was {:?}", response);
+            match response {
+                Response::Query(QueryResponse::GetStoreCost {
+                    quote: Ok(quote),
+                    payment_address,
+                }) => {
+                    all_costs.push((payment_address, quote));
+                }
+                Response::Query(QueryResponse::GetStoreCost {
+                    quote: Err(ProtocolError::RecordExists(_)),
+                    payment_address,
+                }) => {
+                    all_costs.push((payment_address, PaymentQuote::zero()));
+                }
+                _ => {
+                    error!("Non store cost response received,  was {:?}", response);
+                }
             }
         }
 
@@ -737,19 +743,19 @@ impl Network {
 
 /// Given `all_costs` it will return the lowest cost.
 fn get_fees_from_store_cost_responses(
-    mut all_costs: Vec<(MainPubkey, NanoTokens)>,
-) -> Result<(MainPubkey, NanoTokens)> {
+    mut all_costs: Vec<(MainPubkey, PaymentQuote)>,
+) -> Result<(MainPubkey, PaymentQuote)> {
     // sort all costs by fee, lowest to highest
     // if there's a tie in cost, sort by pubkey
-    all_costs.sort_by(
-        |(pub_key_a, cost_a), (pub_key_b, cost_b)| match cost_a.cmp(cost_b) {
+    all_costs.sort_by(|(pub_key_a, cost_a), (pub_key_b, cost_b)| {
+        match cost_a.cost.cmp(&cost_b.cost) {
             std::cmp::Ordering::Equal => pub_key_a.cmp(pub_key_b),
             other => other,
-        },
-    );
+        }
+    });
 
     // get the lowest cost
-    trace!("Got all costs, getting lowest: {all_costs:?}");
+    trace!("Got all costs: {all_costs:?}");
     let lowest = all_costs
         .into_iter()
         .next()
@@ -809,13 +815,16 @@ mod tests {
         let mut costs = vec![];
         for i in 1..CLOSE_GROUP_SIZE {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
-            costs.push((addr, NanoTokens::from(i as u64)));
+            costs.push((
+                addr,
+                PaymentQuote::new_dummy(Default::default(), NanoTokens::from(i as u64)),
+            ));
         }
-        let expected_price = costs[0].1.as_nano();
+        let expected_price = costs[0].1.cost.as_nano();
         let (_key, price) = get_fees_from_store_cost_responses(costs)?;
 
         assert_eq!(
-            price.as_nano(),
+            price.cost.as_nano(),
             expected_price,
             "price should be {}",
             expected_price
@@ -833,12 +842,15 @@ mod tests {
         for i in 1..responses_count {
             // push random MainPubkey and Nano
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
-            costs.push((addr, NanoTokens::from(i)));
+            costs.push((
+                addr,
+                PaymentQuote::new_dummy(Default::default(), NanoTokens::from(i)),
+            ));
             println!("price added {}", i);
         }
 
         // this should be the lowest price
-        let expected_price = costs[0].1.as_nano();
+        let expected_price = costs[0].1.cost.as_nano();
 
         let (_key, price) = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),
@@ -846,12 +858,23 @@ mod tests {
         };
 
         assert_eq!(
-            price.as_nano(),
+            price.cost.as_nano(),
             expected_price,
             "price should be {}",
             expected_price
         );
 
+        Ok(())
+    }
+
+    #[test]
+    fn test_network_sign_verify() -> eyre::Result<()> {
+        let (network, _, _) =
+            NetworkBuilder::new(Keypair::generate_ed25519(), false, std::env::temp_dir())
+                .build_client()?;
+        let msg = b"test message";
+        let sig = network.sign(msg)?;
+        assert!(network.verify(msg, &sig));
         Ok(())
     }
 }

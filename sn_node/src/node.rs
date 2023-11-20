@@ -465,7 +465,7 @@ impl Node {
 
                 if record_exists {
                     QueryResponse::GetStoreCost {
-                        store_cost: Err(ProtocolError::RecordExists(
+                        quote: Err(ProtocolError::RecordExists(
                             PrettyPrintRecordKey::from(&address.to_record_key()).into_owned(),
                         )),
                         payment_address,
@@ -478,7 +478,7 @@ impl Node {
                         .map_err(|_| ProtocolError::GetStoreCostFailed);
 
                     QueryResponse::GetStoreCost {
-                        store_cost,
+                        quote: self.create_quote_for_storecost(store_cost, address),
                         payment_address,
                     }
                 }

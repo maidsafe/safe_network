@@ -54,6 +54,9 @@ pub enum Error {
     /// Failed to decypher transfer with our key, maybe it was encrypted to another key
     #[error("Failed to decypher transfer with our key, maybe it was not for us")]
     FailedToDecypherTransfer,
+    /// No cached payment found for address
+    #[error("No ongoing payment found for address")]
+    NoPaymentForAddress,
 
     /// Transfer error
     #[error("Transfer error: {0}")]

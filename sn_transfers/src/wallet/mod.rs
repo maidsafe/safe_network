@@ -52,14 +52,16 @@
 //! which eventually clears from the mempool and becomes spendable again.
 //!
 
+mod data_payments;
 mod error;
 mod keys;
 mod local_store;
 mod wallet_file;
 
-use crate::transfers::ContentPaymentsMap;
+use data_payments::ContentPaymentsMap;
 
 pub use self::{
+    data_payments::{Payment, PaymentQuote},
     error::{Error, Result},
     keys::{bls_secret_from_hex, parse_main_pubkey},
     local_store::LocalWallet,

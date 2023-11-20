@@ -7,14 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    rng, CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey,
-    NanoTokens, SignedSpend, Transaction, TransactionBuilder, Transfer, UniquePubkey,
+    rng, CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens,
+    SignedSpend, Transaction, TransactionBuilder, UniquePubkey,
 };
 use crate::{Error, Result};
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use xor_name::XorName;
 
 /// Offline Transfer
 /// This struct contains all the necessary information to carry out the transfer.
@@ -36,20 +35,6 @@ pub struct OfflineTransfer {
     /// The parameters necessary to send all spend requests to the network.
     pub all_spend_requests: Vec<SignedSpend>,
 }
-
-/// Information relating to a data payment for one address
-#[derive(Clone, Serialize, Deserialize)]
-pub struct PaymentDetails {
-    /// The node we pay
-    pub recipient: MainPubkey,
-    /// The transfer we send to it and its amount as reference
-    pub transfer: (Transfer, NanoTokens),
-    /// The network Royalties
-    pub royalties: (CashNoteRedemption, NanoTokens),
-}
-
-/// A map of content to their payments
-pub type ContentPaymentsMap = BTreeMap<XorName, PaymentDetails>;
 
 /// The input details necessary to
 /// carry out a transfer of tokens.
