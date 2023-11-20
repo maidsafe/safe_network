@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700495215881,
+  "lastUpdate": 1700495217530,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30722,6 +30722,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 14,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7073ff493493029c4c7b97c0eddc2219b857c616",
+          "message": "ci: increase mem usage limits for new batch size",
+          "timestamp": "2023-11-20T15:06:51Z",
+          "tree_id": "ee3577918a713abdd291c55b01dbd4dd7445fdb9",
+          "url": "https://github.com/maidsafe/safe_network/commit/7073ff493493029c4c7b97c0eddc2219b857c616"
+        },
+        "date": 1700495217116,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4111,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 98609,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 23,
             "unit": "ms"
           }
         ]
