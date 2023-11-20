@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700495030764,
+  "lastUpdate": 1700495214274,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f23b4c8e8441a676e6584cbdcd6d6a34dd683f9e",
-          "message": "fix(client): publish register on creation",
-          "timestamp": "2023-07-11T15:08:59Z",
-          "tree_id": "29268f469a7861c3d3ae497525ba7d7f97b7a41a",
-          "url": "https://github.com/maidsafe/safe_network/commit/f23b4c8e8441a676e6584cbdcd6d6a34dd683f9e"
-        },
-        "date": 1689091904369,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 22.95,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 66,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7073ff493493029c4c7b97c0eddc2219b857c616",
+          "message": "ci: increase mem usage limits for new batch size",
+          "timestamp": "2023-11-20T15:06:51Z",
+          "tree_id": "ee3577918a713abdd291c55b01dbd4dd7445fdb9",
+          "url": "https://github.com/maidsafe/safe_network/commit/7073ff493493029c4c7b97c0eddc2219b857c616"
+        },
+        "date": 1700495213837,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 148,
             "unit": "MB"
           }
         ]
