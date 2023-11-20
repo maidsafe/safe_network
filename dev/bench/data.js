@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700484649281,
+  "lastUpdate": 1700489121841,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "b88b11edb5849eb289409b5292832dc8904f23eb",
-          "message": "feat(node): make the faucet and client use rustls as opposed to openssl\n\nno extra deps to add there",
-          "timestamp": "2023-07-25T12:58:53Z",
-          "tree_id": "6e87402c73ac2660b3eeed933030cf6020206732",
-          "url": "https://github.com/maidsafe/safe_network/commit/b88b11edb5849eb289409b5292832dc8904f23eb"
-        },
-        "date": 1690294660121,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1303966324693948,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 5.872133110624078,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 8.908088418591602,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 50.337060010454366,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8428c6c71525eb4acb224bda90f40b9193339605",
+          "message": "chore: be more specific for Request matching.\n\nThis should avoid issues if that enum grows",
+          "timestamp": "2023-11-20T13:28:18Z",
+          "tree_id": "b5ac2115c55744882d69bccc1310b94ca0ffb552",
+          "url": "https://github.com/maidsafe/safe_network/commit/8428c6c71525eb4acb224bda90f40b9193339605"
+        },
+        "date": 1700489119585,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 4.986665171132538,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 24.872422112220637,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 49.103497731528016,
             "unit": "MiB/s"
           }
         ]
