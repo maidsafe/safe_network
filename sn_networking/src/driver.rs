@@ -401,6 +401,8 @@ impl NetworkBuilder {
         let gossipsub = if self.enable_gossip {
             // Gossipsub behaviour
             let gossipsub_config = libp2p::gossipsub::ConfigBuilder::default()
+                // disable sending to ALL_PEERS subscribed to a topic, which is the default behaviour
+                .flood_publish(false)
                 // we don't currently require source peer id and/or signing
                 .validation_mode(libp2p::gossipsub::ValidationMode::Permissive)
                 // we use the hash of the msg content as the msg id to deduplicate them
