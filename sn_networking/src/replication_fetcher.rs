@@ -45,8 +45,10 @@ impl ReplicationFetcher {
         }
     }
 
-    // Adds the non existing incoming keys from the peer to the fetcher. Returns the next set of keys that has to be
-    // fetched from the peer/network.
+    // Adds the non existing incoming keys from the peer to the fetcher.
+    // Returns the next set of keys that has to be fetched from the peer/network.
+    //
+    // Note: the `incoming_keys` shall already got filter for existence.
     pub(crate) fn add_keys(
         &mut self,
         holder: PeerId,
@@ -58,22 +60,7 @@ impl ReplicationFetcher {
         // add non existing keys to the fetcher
         incoming_keys
             .into_iter()
-            .filter_map(|(addr, record_type)| {
-                let key = addr.to_record_key();
-                let local = locally_stored_keys.get(&key);
-
-                // if we have a local value of matching record_type, we don't need to fetch it
-                if let Some((_, local_record_type)) = local {
-                    if local_record_type == &record_type {
-                        None
-                    } else {
-                        Some((key, record_type))
-                    }
-                } else {
-                    Some((key, record_type))
-                }
-            })
-            .for_each(|(key, record_type)| self.add_key(holder, key, record_type));
+            .for_each(|(key, record_type)| self.add_key(holder, key.to_record_key(), record_type));
 
         self.next_keys_to_fetch()
     }
