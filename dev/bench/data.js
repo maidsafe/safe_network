@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700479912865,
+  "lastUpdate": 1700479914612,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "e4899b55542615496a0daa1280f6e88932663ebc",
-          "message": "feat: read peers from SAFE_PEERS if local discovery is not enabled",
-          "timestamp": "2023-07-10T10:47:49Z",
-          "tree_id": "f0bef92aa76f37b9dc54493fd27ef13c13439a09",
-          "url": "https://github.com/maidsafe/safe_network/commit/e4899b55542615496a0daa1280f6e88932663ebc"
-        },
-        "date": 1688991637348,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 333,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 241,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 74,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "9f55149a29ae037dfb284bd58493e429e7a311b5",
+          "message": "fix: adapt register updates",
+          "timestamp": "2023-11-20T10:45:52Z",
+          "tree_id": "389a8d04fe4ed5b625ad62a4a9367c8b9ae95cd5",
+          "url": "https://github.com/maidsafe/safe_network/commit/9f55149a29ae037dfb284bd58493e429e7a311b5"
+        },
+        "date": 1700479914062,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 241,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 72,
             "unit": "MB"
           }
         ]
