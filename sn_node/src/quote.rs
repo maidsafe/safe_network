@@ -13,9 +13,14 @@ use sn_transfers::{NanoTokens, PaymentQuote};
 use crate::node::Node;
 
 /// The time in seconds that a quote is valid for
+/// The time below is 1 hour
+/// Short enough for the price to not change too much
+/// Long enough for the clients to upload their data with very slow network and in HUGE batches
 const QUOTE_EXPIRATION_SECS: u64 = 3600;
 
 impl Node {
+    /// Create a payment quote for to reply to a storecost request
+    /// This quote contains our signature so we know we can trust its content.
     pub(crate) fn create_quote_for_storecost(
         &self,
         store_cost: Result<NanoTokens, ProtocolError>,
@@ -45,6 +50,10 @@ impl Node {
         Ok(quote)
     }
 
+    /// Verfiy a payment quote
+    /// Make sure the quote is for the address we requested and that it is not expired
+    /// Also, verify that we are indeed the ones who created this quote
+    /// Reject any quote that does not pass these checks
     pub(crate) fn verify_quote_for_storecost(
         &self,
         quote: PaymentQuote,

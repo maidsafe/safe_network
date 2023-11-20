@@ -324,41 +324,24 @@ fn upload_chunks_in_parallel(
     show_holders: bool,
 ) -> Vec<JoinHandle<Result<()>>> {
     let mut upload_handles = Vec::new();
-    for (name, path) in chunks_paths.into_iter() {
+    for (_, path) in chunks_paths.into_iter() {
         let file_api = file_api.clone();
         let progress_bar = progress_bar.clone();
 
         // Spawn a task for each chunk to be uploaded
-        let handle = tokio::spawn(upload_chunk(
-            file_api,
-            (name, path),
-            verify_store,
-            progress_bar,
-            show_holders,
-        ));
+        let handle = tokio::spawn(async move {
+            let chunk = Chunk::new(Bytes::from(fs::read(path)?));
+            file_api
+                .get_local_payment_and_upload_chunk(chunk, verify_store, show_holders)
+                .await?;
+            progress_bar.inc(1);
+            Ok(())
+        });
         upload_handles.push(handle);
     }
 
     // Return the handles immediately without awaiting their completion
     upload_handles
-}
-
-/// Store chunks from chunk_paths (assuming payments have already been made and are in our local wallet).
-/// If verify_store is true, we will attempt to fetch the chunks from the network to verify it is stored.
-async fn upload_chunk(
-    file_api: Files,
-    chunk: (XorName, PathBuf),
-    verify_store: bool,
-    progress_bar: ProgressBar,
-    show_holders: bool,
-) -> Result<()> {
-    let (_, path) = chunk;
-    let chunk = Chunk::new(Bytes::from(fs::read(path)?));
-    file_api
-        .get_local_payment_and_upload_chunk(chunk, verify_store, show_holders)
-        .await?;
-    progress_bar.inc(1);
-    Ok(())
 }
 
 /// Verify if chunks exist on the network.

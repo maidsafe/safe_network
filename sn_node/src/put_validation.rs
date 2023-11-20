@@ -79,9 +79,10 @@ impl Node {
             }
             RecordKind::Spend => self.validate_spend_record(record).await,
             RecordKind::Register => {
-                let register = try_deserialize_record::<SignedRegister>(&record)?;
-
+                // Receiving a Register without payment means the register has been already paid for.
+                // This flow is used for register updates to an existing register this is why we have to
                 // make sure we already have this register locally
+                let register = try_deserialize_record::<SignedRegister>(&record)?;
                 let net_addr = NetworkAddress::from_register_address(*register.address());
                 let key = net_addr.to_record_key();
                 let pretty_key = PrettyPrintRecordKey::from(&key);
