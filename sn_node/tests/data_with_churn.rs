@@ -10,7 +10,7 @@ mod common;
 
 use assert_fs::TempDir;
 use common::{
-    get_client_and_wallet, get_funded_wallet, get_wallet, node_restart,
+    get_funded_wallet, get_gossip_client_and_wallet, get_wallet, node_restart,
     PAYING_WALLET_INITIAL_BALANCE,
 };
 use eyre::{bail, eyre, Result};
@@ -117,7 +117,8 @@ async fn data_availability_during_churn() -> Result<()> {
     println!("Creating a client and paying wallet...");
     let paying_wallet_dir = TempDir::new()?;
     let (client, paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE)
+            .await?;
 
     // Waiting for the paying_wallet funded.
     sleep(std::time::Duration::from_secs(10)).await;

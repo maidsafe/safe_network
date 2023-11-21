@@ -8,7 +8,7 @@
 
 mod common;
 
-use crate::common::{get_client_and_wallet, random_content};
+use crate::common::{get_gossip_client_and_wallet, random_content};
 use sn_client::{Client, ClientEvent, WalletClient};
 use sn_logging::LogBuilder;
 use sn_node::{NodeEvent, TRANSFER_NOTIF_TOPIC};
@@ -39,7 +39,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let chunks_dir = TempDir::new()?;
 
     let (client, _paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
 
     let (files_api, _content_bytes, content_addr, chunks) = random_content(
         &client,
@@ -73,7 +73,7 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let rb = current_rewards_balance()?;
@@ -108,7 +108,7 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     let chunks_dir = TempDir::new()?;
 
     let (client, _paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
 
     let (files_api, _content_bytes, content_addr, chunks) = random_content(
         &client,
@@ -150,7 +150,7 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let mut rng = rand::thread_rng();
@@ -188,7 +188,7 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     let chunks_dir = TempDir::new()?;
 
     let (client, _paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
 
     let (files_api, _content_bytes, content_addr, chunks) = random_content(
         &client,

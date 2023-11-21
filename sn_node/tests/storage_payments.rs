@@ -8,7 +8,7 @@
 
 mod common;
 
-use crate::common::{get_client_and_wallet, random_content};
+use crate::common::{get_gossip_client_and_wallet, random_content};
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use rand::Rng;
@@ -33,7 +33,7 @@ async fn storage_payment_succeeds() -> Result<()> {
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
 
     let balance_before = paying_wallet.balance();
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
@@ -74,7 +74,7 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
     let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
 
     let (files_api, content_bytes, _random_content_addrs, chunks) = random_content(
         &client,
@@ -116,7 +116,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     let paying_wallet_dir: TempDir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     // generate a random number (between 50 and 100) of random addresses
@@ -186,7 +186,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
     let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let (files_api, _content_bytes, file_addr, chunks) = random_content(
@@ -223,7 +223,7 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
     let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let (files_api, content_bytes, content_addr, chunks) = random_content(
@@ -273,7 +273,7 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let mut rng = rand::thread_rng();
@@ -315,7 +315,7 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let mut rng = rand::thread_rng();

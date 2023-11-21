@@ -45,7 +45,7 @@ lazy_static! {
 }
 
 ///  Get a new Client for testing
-pub async fn get_client() -> Client {
+pub async fn get_gossip_client() -> Client {
     let secret_key = bls::SecretKey::random();
 
     let bootstrap_peers = if !cfg!(feature = "local-discovery") {
@@ -61,7 +61,7 @@ pub async fn get_client() -> Client {
     };
 
     println!("Client bootstrap with peer {bootstrap_peers:?}");
-    Client::new(secret_key, bootstrap_peers, None)
+    Client::new(secret_key, bootstrap_peers, true, None)
         .await
         .expect("Client shall be successfully created.")
 }
@@ -91,10 +91,14 @@ pub async fn get_funded_wallet(
     Ok(local_wallet)
 }
 
-pub async fn get_client_and_wallet(root_dir: &Path, amount: u64) -> Result<(Client, LocalWallet)> {
+/// Retrieve a client that is also listening for gossip
+pub async fn get_gossip_client_and_wallet(
+    root_dir: &Path,
+    amount: u64,
+) -> Result<(Client, LocalWallet)> {
     let _guard = FAUCET_WALLET_MUTEX.lock().await;
 
-    let client = get_client().await;
+    let client = get_gossip_client().await;
     let faucet = load_faucet_wallet_from_genesis_wallet(&client).await?;
     let local_wallet = get_funded_wallet(&client, faucet, root_dir, amount).await?;
 
