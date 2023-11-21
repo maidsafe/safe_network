@@ -16,7 +16,7 @@ use sn_logging::{LogBuilder, LogOutputDest};
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
 use sn_transfers::{parse_main_pubkey, NanoTokens, Transfer};
 use std::path::PathBuf;
-use tracing::info;
+use tracing::{error, info};
 use tracing_core::Level;
 
 #[tokio::main]
@@ -34,11 +34,11 @@ async fn main() -> Result<()> {
     let _log_appender_guard = if let Some(log_output_dest) = opt.log_output_dest {
         let logging_targets = vec![
             // TODO: Reset to nice and clean defaults once we have a better idea of what we want
+            ("faucet".to_string(), Level::TRACE),
+            ("sn_faucet".to_string(), Level::TRACE),
             ("sn_networking".to_string(), Level::DEBUG),
-            ("safenode".to_string(), Level::TRACE),
             ("sn_build_info".to_string(), Level::TRACE),
             ("sn_logging".to_string(), Level::TRACE),
-            ("sn_node".to_string(), Level::TRACE),
             ("sn_peers_acquisition".to_string(), Level::TRACE),
             ("sn_protocol".to_string(), Level::TRACE),
             ("sn_registers".to_string(), Level::TRACE),
@@ -55,9 +55,14 @@ async fn main() -> Result<()> {
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
-    let client = Client::new(secret_key, bootstrap_peers, None).await?;
-
-    faucet_cmds(opt.cmd, &client).await?;
+    match Client::new(secret_key, bootstrap_peers, None).await {
+        Ok(client) => {
+            if let Err(err) = faucet_cmds(opt.cmd.clone(), &client).await {
+                error!("Failed to run faucet cmd {:?} with err {err:?}", opt.cmd)
+            }
+        }
+        Err(err) => error!("Failed to get Client with err {err:?}"),
+    }
 
     Ok(())
 }
@@ -87,7 +92,7 @@ struct Opt {
     pub cmd: SubCmd,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 enum SubCmd {
     /// Claim the amount in the genesis CashNote and deposit it to the faucet local wallet.
     /// This needs to be run before a testnet is opened to the public, as to not have

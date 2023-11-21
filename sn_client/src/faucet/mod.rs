@@ -27,15 +27,18 @@ pub async fn get_tokens_from_faucet(
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
 pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<LocalWallet> {
     println!("Loading faucet...");
+    info!("Loading faucet...");
     let mut faucet_wallet = create_faucet_wallet();
 
     let faucet_balance = faucet_wallet.balance();
     if !faucet_balance.is_zero() {
         println!("Faucet wallet balance: {faucet_balance}");
+        debug!("Faucet wallet balance: {faucet_balance}");
         return Ok(faucet_wallet);
     }
 
     println!("Loading genesis...");
+    debug!("Loading genesis...");
     let genesis_wallet = load_genesis_wallet()?;
 
     // Transfer to faucet. We will transfer almost all of the genesis wallet's
@@ -43,6 +46,7 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
 
     let faucet_balance = genesis_wallet.balance();
     println!("Sending {faucet_balance} from genesis to faucet wallet..");
+    debug!("Sending {faucet_balance} from genesis to faucet wallet..");
     let cash_note = send(
         genesis_wallet,
         faucet_balance,
@@ -56,12 +60,16 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
         .deposit_and_store_to_disk(&vec![cash_note.clone()])
         .expect("Faucet wallet shall be stored successfully.");
     println!("Faucet wallet balance: {}", faucet_wallet.balance());
+    debug!("Faucet wallet balance: {}", faucet_wallet.balance());
 
     println!("Verifying the transfer from genesis...");
+    debug!("Verifying the transfer from genesis...");
     if let Err(error) = client.verify(&cash_note).await {
+        error!("Could not verify the transfer from genesis: {error:?}. Panicking.");
         panic!("Could not verify the transfer from genesis: {error:?}");
     } else {
         println!("Successfully verified the transfer from genesis on the second try.");
+        info!("Successfully verified the transfer from genesis on the second try.");
     }
 
     Ok(faucet_wallet)

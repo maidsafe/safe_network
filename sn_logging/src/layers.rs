@@ -236,13 +236,19 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
         // extend will overwrite values inside `targets`
         targets.extend(vec![
             networking_log_level,
+            // bins
+            ("faucet".to_string(), Level::TRACE),
             ("safenode".to_string(), Level::TRACE),
+            ("safenode_rpc_client".to_string(), Level::TRACE),
             ("safe".to_string(), Level::TRACE),
+            // libs
             ("sn_build_info".to_string(), Level::TRACE),
             ("sn_cli".to_string(), Level::TRACE),
             ("sn_client".to_string(), Level::TRACE),
+            ("sn_faucet".to_string(), Level::TRACE),
             ("sn_logging".to_string(), Level::TRACE),
             ("sn_node".to_string(), Level::TRACE),
+            ("sn_node_rpc_client".to_string(), Level::TRACE),
             ("sn_peers_acquisition".to_string(), Level::TRACE),
             ("sn_protocol".to_string(), Level::TRACE),
             ("sn_registers".to_string(), Level::INFO),
