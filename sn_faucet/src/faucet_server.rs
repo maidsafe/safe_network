@@ -11,7 +11,6 @@ use color_eyre::eyre::{eyre, Result};
 use sn_client::Client;
 use std::path;
 use tiny_http::{Response, Server};
-use tracing::{debug, error, trace};
 
 /// Run the faucet server.
 ///
@@ -34,23 +33,15 @@ use tracing::{debug, error, trace};
 
 pub async fn run_faucet_server(client: &Client) -> Result<()> {
     let server =
-        Server::http("0.0.0.0:8000").map_err(|err| eyre!("Failed to start server: {err}"))?;
-    claim_genesis(client).await.map_err(|err| {
+        Server::http("0.0.0.0:8000").map_err(|e| eyre!("Failed to start server: {}", e))?;
+    claim_genesis(client).await.map_err(|e| {
         eprintln!("Faucet Server couldn't start as we failed to claim Genesis");
-        error!("Faucet Server couldn't start as we failed to claim Genesis");
-        err
+        e
     })?;
 
     println!("Starting http server listening on port 8000...");
-    debug!("Starting http server listening on port 8000...");
     for request in server.incoming_requests() {
         println!(
-            "received request! method: {:?}, url: {:?}, headers: {:?}",
-            request.method(),
-            request.url(),
-            request.headers()
-        );
-        trace!(
             "received request! method: {:?}, url: {:?}, headers: {:?}",
             request.method(),
             request.url(),
@@ -60,21 +51,18 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
 
         match send_tokens(client, "100", key).await {
             Ok(transfer) => {
-                println!("Sent tokens to {key}");
-                debug!("Sent tokens to {key}");
+                println!("Sent tokens to {}", key);
                 let response = Response::from_string(transfer);
-                let _ = request.respond(response).map_err(|err| {
-                    eprintln!("Failed to send response: {err}");
-                    error!("Failed to send response: {err}");
-                });
+                let _ = request
+                    .respond(response)
+                    .map_err(|e| eprintln!("Failed to send response: {}", e));
             }
-            Err(err) => {
-                eprintln!("Failed to send tokens to {key}: {err}");
-                error!("Failed to send tokens to {key}: {err}");
-                let response = Response::from_string(format!("Failed to send tokens: {err}"));
+            Err(e) => {
+                eprintln!("Failed to send tokens to {}: {}", key, e);
+                let response = Response::from_string(format!("Failed to send tokens: {}", e));
                 let _ = request
                     .respond(response.with_status_code(500))
-                    .map_err(|err| eprintln!("Failed to send response: {err}"));
+                    .map_err(|e| eprintln!("Failed to send response: {}", e));
             }
         }
     }
