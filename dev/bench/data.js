@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700554565345,
+  "lastUpdate": 1700576614333,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "cc78d9c4505050078b301b9a72fc1358fa849e9b",
-          "message": "chore(networking): increase verification attempts for PUT records",
-          "timestamp": "2023-07-26T14:02:54Z",
-          "tree_id": "9551fb7257df30f8e329d5996adaba9949ebc04e",
-          "url": "https://github.com/maidsafe/safe_network/commit/cc78d9c4505050078b301b9a72fc1358fa849e9b"
-        },
-        "date": 1690388989759,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.768404841778317,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.1004349024505227,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 24.811264240856026,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 26.21740611049416,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "c20f0945537257a6520bad8f68b03328180e4421",
+          "message": "chore: not using seen_cache when add replication list",
+          "timestamp": "2023-11-21T13:52:37Z",
+          "tree_id": "f87091ec7c817463f3f5710f5ee320bbad57cfbc",
+          "url": "https://github.com/maidsafe/safe_network/commit/c20f0945537257a6520bad8f68b03328180e4421"
+        },
+        "date": 1700576612681,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.28273443513642,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.581821650857385,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 25.87089194540247,
             "unit": "MiB/s"
           }
         ]
