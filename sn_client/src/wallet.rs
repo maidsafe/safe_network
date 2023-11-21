@@ -30,6 +30,9 @@ pub struct WalletClient {
     wallet: LocalWallet,
 }
 
+/// Number of retries for data payments
+const DATA_PAYMENT_RETRIES: usize = 3;
+
 impl WalletClient {
     /// Create a new wallet client.
     pub fn new(client: Client, wallet: LocalWallet) -> Self {
@@ -140,7 +143,33 @@ impl WalletClient {
         content_addrs: impl Iterator<Item = NetworkAddress>,
     ) -> WalletResult<(NanoTokens, NanoTokens)> {
         let verify_store = true;
+        let c: Vec<_> = content_addrs.collect();
+        let mut last_err = "No retries".to_string();
 
+        for retry in 0..DATA_PAYMENT_RETRIES {
+            trace!("Paying for storage (retry: {retry}) for: {:?}", c);
+            match self
+                .pay_for_storage_once(c.clone().into_iter(), verify_store)
+                .await
+            {
+                Ok(cost) => return Ok(cost),
+                Err(WalletError::CouldNotSendMoney(err)) => {
+                    warn!("Could not send money: {err:?}");
+                    last_err = err;
+                    sleep(Duration::from_secs(1)).await;
+                }
+                Err(err) => return Err(err),
+            }
+        }
+
+        Err(WalletError::CouldNotSendMoney(last_err))
+    }
+
+    async fn pay_for_storage_once(
+        &mut self,
+        content_addrs: impl Iterator<Item = NetworkAddress>,
+        verify_store: bool,
+    ) -> WalletResult<(NanoTokens, NanoTokens)> {
         // get store cost from network in parrallel
         let mut tasks = JoinSet::new();
         for content_addr in content_addrs {
