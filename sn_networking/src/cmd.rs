@@ -602,14 +602,16 @@ impl SwarmDriver {
             }
             SwarmCmd::GossipsubSubscribe(topic_id) => {
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
-                self.swarm.behaviour_mut().gossipsub.subscribe(&topic_id)?;
+                if let Some(gossip) = self.swarm.behaviour_mut().gossipsub.as_mut() {
+                    gossip.subscribe(&topic_id)?;
+                }
             }
             SwarmCmd::GossipsubUnsubscribe(topic_id) => {
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
-                self.swarm
-                    .behaviour_mut()
-                    .gossipsub
-                    .unsubscribe(&topic_id)?;
+
+                if let Some(gossip) = self.swarm.behaviour_mut().gossipsub.as_mut() {
+                    gossip.unsubscribe(&topic_id)?;
+                }
             }
             SwarmCmd::GossipsubPublish { topic_id, msg } => {
                 // If we publish a Gossipsub message, we might not receive the same message on our side.
@@ -621,10 +623,9 @@ impl SwarmDriver {
                     });
                 }
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
-                self.swarm
-                    .behaviour_mut()
-                    .gossipsub
-                    .publish(topic_id, msg)?;
+                if let Some(gossip) = self.swarm.behaviour_mut().gossipsub.as_mut() {
+                    gossip.publish(topic_id, msg)?;
+                }
             }
             SwarmCmd::GossipListener => {
                 self.is_gossip_listener = true;
