@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700576791220,
+  "lastUpdate": 1700576792922,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f23b4c8e8441a676e6584cbdcd6d6a34dd683f9e",
-          "message": "fix(client): publish register on creation",
-          "timestamp": "2023-07-11T15:08:59Z",
-          "tree_id": "29268f469a7861c3d3ae497525ba7d7f97b7a41a",
-          "url": "https://github.com/maidsafe/safe_network/commit/f23b4c8e8441a676e6584cbdcd6d6a34dd683f9e"
-        },
-        "date": 1689091907037,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 298.27,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 258,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 146,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "c20f0945537257a6520bad8f68b03328180e4421",
+          "message": "chore: not using seen_cache when add replication list",
+          "timestamp": "2023-11-21T13:52:37Z",
+          "tree_id": "f87091ec7c817463f3f5710f5ee320bbad57cfbc",
+          "url": "https://github.com/maidsafe/safe_network/commit/c20f0945537257a6520bad8f68b03328180e4421"
+        },
+        "date": 1700576792472,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 839,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 152,
             "unit": "MB"
           }
         ]
