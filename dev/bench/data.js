@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700554562091,
+  "lastUpdate": 1700554563646,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20419,40 +20419,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "12b2befea7cdf068ee4c7458213dbc622094994f",
-          "message": "fix(CI): OS dependent tar files and env setup in nightly",
-          "timestamp": "2023-07-11T13:07:52+02:00",
-          "tree_id": "77bd126f8c4528a1a164b23bc11e984421ebc78a",
-          "url": "https://github.com/maidsafe/safe_network/commit/12b2befea7cdf068ee4c7458213dbc622094994f"
-        },
-        "date": 1689075036120,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 334.51,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 249,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "f23b4c8e8441a676e6584cbdcd6d6a34dd683f9e",
           "message": "fix(client): publish register on creation",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 142,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ca49e1ec2559c9e5d14a4f054682ec0d5ae01f08",
+          "message": "fix(logs): enable faucet logs",
+          "timestamp": "2023-11-21T09:01:41+01:00",
+          "tree_id": "8e46ae14a49a2448ebbc685105ee95e48c9bcabc",
+          "url": "https://github.com/maidsafe/safe_network/commit/ca49e1ec2559c9e5d14a4f054682ec0d5ae01f08"
+        },
+        "date": 1700554563214,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 668,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 146,
             "unit": "MB"
           }
         ]
