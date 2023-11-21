@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700581249596,
+  "lastUpdate": 1700581251258,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30839,6 +30839,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 16,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6ebee0ec7f8a308f6681ecd487af7e7c27523b99",
+          "message": "chore(sn_networking): enable_gossip via the builder pattern",
+          "timestamp": "2023-11-21T14:55:20Z",
+          "tree_id": "70fd6639ab616d731da86a1f9f3f3fa8938035ae",
+          "url": "https://github.com/maidsafe/safe_network/commit/6ebee0ec7f8a308f6681ecd487af7e7c27523b99"
+        },
+        "date": 1700581250845,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7222,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 104735,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 14,
             "unit": "ms"
           }
         ]
