@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700554384220,
+  "lastUpdate": 1700554562091,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "832f6916cd052c4f1e88a1a7571cc076a60e0e58",
-          "message": "fix: prevent multiple concurrent get_closest calls when joining",
-          "timestamp": "2023-07-11T15:11:53Z",
-          "tree_id": "17fe05497520f32c203867987492fcf81703cc74",
-          "url": "https://github.com/maidsafe/safe_network/commit/832f6916cd052c4f1e88a1a7571cc076a60e0e58"
-        },
-        "date": 1689094496139,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 26.3,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 148,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ca49e1ec2559c9e5d14a4f054682ec0d5ae01f08",
+          "message": "fix(logs): enable faucet logs",
+          "timestamp": "2023-11-21T09:01:41+01:00",
+          "tree_id": "8e46ae14a49a2448ebbc685105ee95e48c9bcabc",
+          "url": "https://github.com/maidsafe/safe_network/commit/ca49e1ec2559c9e5d14a4f054682ec0d5ae01f08"
+        },
+        "date": 1700554561613,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 139,
             "unit": "MB"
           }
         ]
