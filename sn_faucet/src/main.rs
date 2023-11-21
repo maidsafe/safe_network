@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
-    match Client::new(secret_key, bootstrap_peers, None).await {
+    match Client::new(secret_key, bootstrap_peers, false, None).await {
         Ok(client) => {
             if let Err(err) = faucet_cmds(opt.cmd.clone(), &client).await {
                 error!("Failed to run faucet cmd {:?} with err {err:?}", opt.cmd)
