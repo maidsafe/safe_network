@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700581071564,
+  "lastUpdate": 1700581248072,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fdb169980390a1b34dc12d24412d63810338a02e",
-          "message": "chore(metrics): remove network stats\n- Currently the `NetworkMetrics` provides interface/system wide stats\n  and thus can dirtied easily. A process level mechanism has to be\n  implemented to have valid usable network stat.",
-          "timestamp": "2023-07-13T07:42:24Z",
-          "tree_id": "1f1110648a0658b2ff04f7675653a2692b235bb7",
-          "url": "https://github.com/maidsafe/safe_network/commit/fdb169980390a1b34dc12d24412d63810338a02e"
-        },
-        "date": 1689238233587,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 23.84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 116,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6ebee0ec7f8a308f6681ecd487af7e7c27523b99",
+          "message": "chore(sn_networking): enable_gossip via the builder pattern",
+          "timestamp": "2023-11-21T14:55:20Z",
+          "tree_id": "70fd6639ab616d731da86a1f9f3f3fa8938035ae",
+          "url": "https://github.com/maidsafe/safe_network/commit/6ebee0ec7f8a308f6681ecd487af7e7c27523b99"
+        },
+        "date": 1700581247707,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 129,
             "unit": "MB"
           }
         ]
