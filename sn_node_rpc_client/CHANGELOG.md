@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.35](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.34...sn_node_rpc_client-v0.1.35) - 2023-11-21
+
+### Added
+- make joining gossip for clients and rpc nodes optional
+
 ## [0.1.34](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.33...sn_node_rpc_client-v0.1.34) - 2023-11-21
 
 ### Other

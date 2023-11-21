@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.98.10](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.9...sn_client-v0.98.10) - 2023-11-21
+
+### Added
+- make joining gossip for clients and rpc nodes optional
+
+### Other
+- *(sn_networking)* enable_gossip via the builder pattern
+
 ## [0.98.9](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.8...sn_client-v0.98.9) - 2023-11-21
 
 ### Other

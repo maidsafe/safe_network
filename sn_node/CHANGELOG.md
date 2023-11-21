@@ -2237,6 +2237,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.98.25](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.24...sn_node-v0.98.25) - 2023-11-21
+
+### Other
+- *(sn_networking)* enable_gossip via the builder pattern
+- update test setup for clients that also listen to gossip
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
