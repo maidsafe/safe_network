@@ -872,7 +872,7 @@ mod tests {
     fn test_network_sign_verify() -> eyre::Result<()> {
         let (network, _, _) =
             NetworkBuilder::new(Keypair::generate_ed25519(), false, std::env::temp_dir())
-                .build_client(false)?;
+                .build_client()?;
         let msg = b"test message";
         let sig = network.sign(msg)?;
         assert!(network.verify(msg, &sig));

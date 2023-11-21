@@ -59,7 +59,7 @@ impl Client {
     pub async fn new(
         signer: SecretKey,
         peers: Option<Vec<Multiaddr>>,
-        joins_gossip: bool,
+        enable_gossip: bool,
         connection_timeout: Option<Duration>,
     ) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
@@ -71,16 +71,17 @@ impl Client {
         info!("Startup a client with peers {peers:?} and local {local:?} flag");
         info!("Starting Kad swarm in client mode...");
 
-        let network_builder =
+        let mut network_builder =
             NetworkBuilder::new(Keypair::generate_ed25519(), local, std::env::temp_dir());
 
-        #[cfg(feature = "open-metrics")]
-        let mut network_builder = network_builder;
+        if enable_gossip {
+            network_builder.enable_gossip();
+        }
+
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_registry(Registry::default());
 
-        let (network, mut network_event_receiver, swarm_driver) =
-            network_builder.build_client(joins_gossip)?;
+        let (network, mut network_event_receiver, swarm_driver) = network_builder.build_client()?;
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 
