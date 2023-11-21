@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.14](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.13...sn_networking-v0.10.14) - 2023-11-21
+
+### Other
+- not using seen_cache when add replication list
+
 ## [0.10.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.12...sn_networking-v0.10.13) - 2023-11-20
 
 ### Added
