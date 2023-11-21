@@ -9,7 +9,7 @@
 mod common;
 
 use assert_fs::TempDir;
-use common::{get_client_and_wallet, get_wallet};
+use common::{get_gossip_client_and_wallet, get_wallet};
 use eyre::Result;
 use sn_client::send;
 use sn_logging::LogBuilder;
@@ -23,7 +23,7 @@ async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
     let first_wallet_dir = TempDir::new()?;
 
     let (client, first_wallet) =
-        get_client_and_wallet(first_wallet_dir.path(), first_wallet_balance).await?;
+        get_gossip_client_and_wallet(first_wallet_dir.path(), first_wallet_balance).await?;
 
     let second_wallet_balance = NanoTokens::from(first_wallet_balance / 2);
     println!("Transferring from first wallet to second wallet: {second_wallet_balance}.");
@@ -61,7 +61,7 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let first_wallet_dir = TempDir::new()?;
 
     let (client, mut first_wallet) =
-        get_client_and_wallet(first_wallet_dir.path(), first_wallet_balance).await?;
+        get_gossip_client_and_wallet(first_wallet_dir.path(), first_wallet_balance).await?;
 
     // create wallet 2 and 3 to receive money from 1
     let second_wallet_dir = TempDir::new()?;
