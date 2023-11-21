@@ -20,7 +20,7 @@ clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
 dirs-next = "~2.0.0"
 sn_client = { path = "../sn_client", version = "0.98.8" }
-sn_logging = { path = "../sn_logging", version = "0.2.14" }
+sn_logging = { path = "../sn_logging", version = "0.2.15" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.1.8" }
 sn_transfers = { path = "../sn_transfers", version = "0.14.19" }
 tiny_http = { version="0.12", features = ["ssl-rustls"] }

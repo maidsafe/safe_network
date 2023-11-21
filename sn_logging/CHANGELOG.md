@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.15](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.14...sn_logging-v0.2.15) - 2023-11-21
+
+### Fixed
+- *(logs)* enable faucet logs
+
 ## [0.2.14](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.13...sn_logging-v0.2.14) - 2023-10-26
 
 ### Fixed
