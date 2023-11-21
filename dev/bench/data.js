@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700495217530,
+  "lastUpdate": 1700554384220,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "bce4d5516656a15aa4403f90cf5d32e93e5fa180",
-          "message": "feat(networking): record store prunes more frequently.\n\nWe now prune every 1/100 PUTs to keep space available\nmore clear, and remove unneeded data faster\n\nfixes #566",
-          "timestamp": "2023-07-26T12:32:14Z",
-          "tree_id": "eda9b1322a5262501d269d516a6fcece7679c601",
-          "url": "https://github.com/maidsafe/safe_network/commit/bce4d5516656a15aa4403f90cf5d32e93e5fa180"
-        },
-        "date": 1690379020329,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.8941520000889684,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.9480198867425574,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 25.9081593232524,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 15.510637512687158,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ca49e1ec2559c9e5d14a4f054682ec0d5ae01f08",
+          "message": "fix(logs): enable faucet logs",
+          "timestamp": "2023-11-21T09:01:41+01:00",
+          "tree_id": "8e46ae14a49a2448ebbc685105ee95e48c9bcabc",
+          "url": "https://github.com/maidsafe/safe_network/commit/ca49e1ec2559c9e5d14a4f054682ec0d5ae01f08"
+        },
+        "date": 1700554382517,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.281138392052005,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.06448635538978,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 26.21740611049416,
             "unit": "MiB/s"
           }
         ]
