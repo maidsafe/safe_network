@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700576614333,
+  "lastUpdate": 1700576791220,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "b3c8fc1c206c85a5571f8c647bcbcf345545bd19",
-          "message": "refactor: client to upload paid chunks in batches",
-          "timestamp": "2023-07-12T05:58:07Z",
-          "tree_id": "8dd07ba3524ee25588e75306ae161c2aa2f8560c",
-          "url": "https://github.com/maidsafe/safe_network/commit/b3c8fc1c206c85a5571f8c647bcbcf345545bd19"
-        },
-        "date": 1689144957271,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 27.8,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 139,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "c20f0945537257a6520bad8f68b03328180e4421",
+          "message": "chore: not using seen_cache when add replication list",
+          "timestamp": "2023-11-21T13:52:37Z",
+          "tree_id": "f87091ec7c817463f3f5710f5ee320bbad57cfbc",
+          "url": "https://github.com/maidsafe/safe_network/commit/c20f0945537257a6520bad8f68b03328180e4421"
+        },
+        "date": 1700576790588,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 116,
             "unit": "MB"
           }
         ]
