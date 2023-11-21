@@ -59,6 +59,7 @@ impl Client {
     pub async fn new(
         signer: SecretKey,
         peers: Option<Vec<Multiaddr>>,
+        joins_gossip: bool,
         connection_timeout: Option<Duration>,
     ) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
@@ -78,7 +79,8 @@ impl Client {
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_registry(Registry::default());
 
-        let (network, mut network_event_receiver, swarm_driver) = network_builder.build_client()?;
+        let (network, mut network_event_receiver, swarm_driver) =
+            network_builder.build_client(joins_gossip)?;
         info!("Client constructed network and swarm_driver");
         let events_channel = ClientEventsChannel::default();
 

@@ -239,6 +239,7 @@ impl NetworkBuilder {
             kad_cfg,
             Some(store_cfg),
             false,
+            false,
             ProtocolSupport::Full,
             truncate_patch_version(SN_NODE_VERSION_STR).to_string(),
         )?;
@@ -262,7 +263,10 @@ impl NetworkBuilder {
     }
 
     /// Same as `build_node` API but creates the network components in client mode
-    pub fn build_client(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    pub fn build_client(
+        self,
+        is_gossip_client: bool,
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let mut kad_cfg = kad::Config::default(); // default query timeout is 60 secs
@@ -281,6 +285,7 @@ impl NetworkBuilder {
             kad_cfg,
             None,
             true,
+            is_gossip_client,
             ProtocolSupport::Outbound,
             truncate_patch_version(IDENTIFY_CLIENT_VERSION_STR).to_string(),
         )?;
@@ -294,6 +299,7 @@ impl NetworkBuilder {
         kad_cfg: kad::Config,
         record_store_cfg: Option<NodeRecordStoreConfig>,
         is_client: bool,
+        is_gossip_client: bool,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
@@ -391,7 +397,7 @@ impl NetworkBuilder {
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
 
-        let gossipsub = if !is_client {
+        let gossipsub = if !is_client || is_gossip_client {
             // Gossipsub behaviour
             let gossipsub_config = libp2p::gossipsub::ConfigBuilder::default()
                 // we don't currently require source peer id and/or signing
