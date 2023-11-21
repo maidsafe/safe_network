@@ -238,7 +238,6 @@ impl Files {
             for result in verify_results {
                 if let ((chunk_addr, path), true) = result?? {
                     warn!("Failed to fetch a chunk {chunk_addr:?}");
-                    // This needs to be NetAddr to allow for repayment
                     failed_chunks.push((chunk_addr, path));
                 }
             }

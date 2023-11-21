@@ -154,7 +154,7 @@ impl WalletClient {
             {
                 Ok(cost) => return Ok(cost),
                 Err(WalletError::CouldNotSendMoney(err)) => {
-                    warn!("Could not send money: {err:?}");
+                    warn!("Attempt to pay for data failed: {err:?}");
                     last_err = err;
                     sleep(Duration::from_secs(1)).await;
                 }
@@ -190,9 +190,6 @@ impl WalletClient {
         // collect store costs
         let mut cost_map = BTreeMap::default();
         while let Some(res) = tasks.join_next().await {
-            // In case of cann't fetch cost from network for a content,
-            // just skip it as it will then get verification failure,
-            // and repay/re-upload will be triggered correspondently.
             match res {
                 Ok((content_addr, Ok(cost))) => {
                     if let Some(xorname) = content_addr.as_xorname() {
@@ -204,9 +201,12 @@ impl WalletClient {
                 }
                 Ok((content_addr, Err(err))) => {
                     warn!("Cannot get store cost for {content_addr:?} with error {err:?}");
+                    return Err(err);
                 }
                 Err(e) => {
-                    warn!("Cannot get a store cost for a content with error {e:?}");
+                    return Err(WalletError::CouldNotSendMoney(format!(
+                        "Storecost get task failed: {e:?}"
+                    )));
                 }
             }
         }
