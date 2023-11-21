@@ -122,6 +122,7 @@ pub(super) struct NodeBehaviour {
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
     pub(super) autonat: Toggle<autonat::Behaviour>,
+    #[cfg(feature = "gossip")]
     pub(super) gossipsub: libp2p::gossipsub::Behaviour,
 }
 
@@ -391,7 +392,8 @@ impl NetworkBuilder {
         let mut transport = libp2p::quic::tokio::Transport::new(quic::Config::new(&self.keypair))
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
-
+        
+        #[cfg(feature = "gossip")]
         // Gossipsub behaviour
         let gossipsub_config = libp2p::gossipsub::ConfigBuilder::default()
             // we don't currently require source peer id and/or signing
@@ -408,10 +410,12 @@ impl NetworkBuilder {
             .heartbeat_interval(Duration::from_secs(5))
             .build()
             .map_err(|err| Error::GossipsubConfigError(err.to_string()))?;
-
+        
+        #[cfg(feature = "gossip")]
         // Set the message authenticity
         let message_authenticity = libp2p::gossipsub::MessageAuthenticity::Anonymous;
 
+        #[cfg(feature = "gossip")]
         // build a gossipsub network behaviour
         let gossipsub: libp2p::gossipsub::Behaviour =
             libp2p::gossipsub::Behaviour::new(message_authenticity, gossipsub_config)
@@ -450,6 +454,7 @@ impl NetworkBuilder {
             #[cfg(feature = "local-discovery")]
             mdns,
             autonat,
+            #[cfg(feature = "gossip")]
             gossipsub,
         };
         let swarm_config = libp2p::swarm::Config::with_tokio_executor()

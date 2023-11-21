@@ -248,6 +248,8 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
             ("sn_registers".to_string(), Level::INFO),
             ("sn_testnet".to_string(), Level::TRACE),
             ("sn_transfers".to_string(), Level::TRACE),
+            ("libp2p".to_string(), Level::TRACE),
+            ("libp2p_gossipsub".to_string(), Level::TRACE),
         ]);
     }
     Ok(targets

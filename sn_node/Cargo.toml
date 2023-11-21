@@ -14,7 +14,7 @@ name = "safenode"
 path = "src/bin/safenode/main.rs"
 
 [features]
-default=["metrics"]
+default=["metrics", "sn_networking/gossip"]
 local-discovery=["sn_networking/local-discovery"]
 otlp = ["sn_logging/otlp"]
 metrics = ["sn_logging/process-metrics"]
