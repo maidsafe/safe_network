@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700581248072,
+  "lastUpdate": 1700581249596,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "832f6916cd052c4f1e88a1a7571cc076a60e0e58",
-          "message": "fix: prevent multiple concurrent get_closest calls when joining",
-          "timestamp": "2023-07-11T15:11:53Z",
-          "tree_id": "17fe05497520f32c203867987492fcf81703cc74",
-          "url": "https://github.com/maidsafe/safe_network/commit/832f6916cd052c4f1e88a1a7571cc076a60e0e58"
-        },
-        "date": 1689094500000,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 312.54,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 265,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 152,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6ebee0ec7f8a308f6681ecd487af7e7c27523b99",
+          "message": "chore(sn_networking): enable_gossip via the builder pattern",
+          "timestamp": "2023-11-21T14:55:20Z",
+          "tree_id": "70fd6639ab616d731da86a1f9f3f3fa8938035ae",
+          "url": "https://github.com/maidsafe/safe_network/commit/6ebee0ec7f8a308f6681ecd487af7e7c27523b99"
+        },
+        "date": 1700581249189,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 887,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 147,
             "unit": "MB"
           }
         ]
