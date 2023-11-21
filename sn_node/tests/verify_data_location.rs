@@ -9,7 +9,7 @@
 #![allow(clippy::mutable_key_type)]
 mod common;
 
-use crate::common::{get_client_and_wallet, node_restart, PAYING_WALLET_INITIAL_BALANCE};
+use crate::common::{get_gossip_client_and_wallet, node_restart, PAYING_WALLET_INITIAL_BALANCE};
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use libp2p::{
@@ -86,7 +86,8 @@ async fn verify_data_location() -> Result<()> {
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, _paying_wallet) =
-        get_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE).await?;
+        get_gossip_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE)
+            .await?;
 
     store_chunks(client, chunk_count, paying_wallet_dir.to_path_buf()).await?;
 
