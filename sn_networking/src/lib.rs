@@ -83,6 +83,8 @@ const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration:
 const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(1500);
 /// Number of attempts to verify a record
 const VERIFICATION_ATTEMPTS: usize = 3;
+/// Number of attempts to put a record
+const PUT_RECORD_RETRIES: usize = 10;
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
@@ -455,6 +457,7 @@ impl Network {
 
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
+    /// If verify is on, retry PUT_RECORD_RETRIES times with a random wait between 1.5s and 5s
     pub async fn put_record(
         &self,
         record: Record,
@@ -462,23 +465,31 @@ impl Network {
         expected_holders: ExpectedHoldersList,
         quorum: Quorum,
     ) -> Result<()> {
-        info!(
-            "Attempting to PUT record of {:?} to network",
-            PrettyPrintRecordKey::from(&record.key)
-        );
+        for retry in 0..PUT_RECORD_RETRIES {
+            info!(
+                "Attempting to PUT record with key: {:?} to network (attempt: {:})",
+                PrettyPrintRecordKey::from(&record.key),
+                retry + 1,
+            );
 
-        let res = self
-            .put_record_once(
-                record.clone(),
-                verify_store.clone(),
-                expected_holders.clone(),
-                quorum,
-            )
-            .await;
+            let res = self
+                .put_record_once(
+                    record.clone(),
+                    verify_store.clone(),
+                    expected_holders.clone(),
+                    quorum,
+                )
+                .await;
 
-        // if we're not verifying a record, or it's fine we can return
-        if verify_store.is_none() || res.is_ok() {
-            return Ok(());
+            // if we're not verifying a record, or it's fine we can return
+            if verify_store.is_none() || res.is_ok() {
+                return Ok(());
+            }
+
+            // wait for a bit before re-trying
+            let wait_duration = rand::thread_rng()
+                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
+            tokio::time::sleep(wait_duration).await;
         }
 
         Err(Error::FailedToVerifyRecordWasStored(
