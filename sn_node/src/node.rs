@@ -113,6 +113,8 @@ impl NodeBuilder {
         };
 
         let mut network_builder = NetworkBuilder::new(self.keypair, self.local, self.root_dir);
+
+        network_builder.enable_gossip();
         network_builder.listen_addr(self.addr);
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_registry(metrics_registry);
