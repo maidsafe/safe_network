@@ -629,8 +629,8 @@ impl Network {
         Ok(state)
     }
 
-    pub fn start_listen_gossip(&self) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::GossipListener)
+    pub fn start_handle_gossip(&self) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::GossipHandler)
     }
 
     // Helper to send SwarmCmd

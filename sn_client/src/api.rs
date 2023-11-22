@@ -621,7 +621,7 @@ impl Client {
     pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
         info!("Subscribing to topic id: {topic_id}");
         self.network.subscribe_to_topic(topic_id)?;
-        self.network.start_listen_gossip()?;
+        self.network.start_handle_gossip()?;
         Ok(())
     }
 
