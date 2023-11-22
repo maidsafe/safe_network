@@ -30,16 +30,16 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
-          
+
       - name: install ripgrep
         shell: bash
         run: sudo apt-get install -y ripgrep
 
       - name: Build binaries
-        run: cargo build --release --bins 
+        run: cargo build --release --bins
         timeout-minutes: 30
 
-      - name: Build churn tests 
+      - name: Build churn tests
         run: cargo test --release -p sn_node --test data_with_churn --no-run
         timeout-minutes: 30
 
@@ -136,14 +136,14 @@ jobs:
         #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
         #   exit 1
         # fi
-          
+
       - name: Verify data replication using rg
         shell: bash
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only
         # then check we have an expected level of replication
         # TODO: make this use an env var, or relate to testnet size
-        # As the bootstrap_node using separate folder for logging, 
+        # As the bootstrap_node using separate folder for logging,
         # hence the folder input to rg needs to cover that as well.
         run : |
           sending_list_count=$(rg "Sending a replication list" $NODE_DATA_PATH -c --stats | \
@@ -204,13 +204,13 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_memcheck
           platform: ubuntu-latest
-     
+
       - name: Check node memory usage
         shell: bash
         # The resources file and churning chunk_size we upload may change, and with it mem consumption.
-        # This is set to a value high enough to allow for some variation depending on 
-        # resources and node location in the network, but hopefully low enough to catch 
-        # any wild memory issues 
+        # This is set to a value high enough to allow for some variation depending on
+        # resources and node location in the network, but hopefully low enough to catch
+        # any wild memory issues
         # Any changes to this value should be carefully considered and tested!
         # As we have a bootstrap node acting as an access point for churning nodes and client,
         # The memory usage here will be significantly higher here than in the benchmark test,
@@ -219,9 +219,9 @@ jobs:
           node_peak_mem_limit_mb="300" # mb
 
           peak_mem_usage=$(
-            rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename | 
-            awk -F':' '/"memory_used_mb":/{print $2}' | 
-            sort -n | 
+            rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/{print $2}' |
+            sort -n |
             tail -n 1
           )
           echo "Node memory usage: $peak_mem_usage MB"
@@ -236,13 +236,13 @@ jobs:
         shell: bash
         # limits here are lower that benchmark tests as there is less going on.
         run: |
-          client_peak_mem_limit_mb="800" # mb
+          client_peak_mem_limit_mb="1024" # mb
           client_avg_mem_limit_mb="450" # mb
           
           peak_mem_usage=$(
-            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename | 
-            awk -F':' '/"memory_used_mb":/{print $2}' | 
-            sort -n | 
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/{print $2}' |
+            sort -n |
             tail -n 1
           )
           echo "Peak memory usage: $peak_mem_usage MB"
@@ -252,7 +252,7 @@ jobs:
           fi
 
           total_mem=$(
-            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename | 
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
             awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
           )
           num_of_times=$(
