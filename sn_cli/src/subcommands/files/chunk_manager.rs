@@ -352,7 +352,7 @@ impl ChunkManager {
 
     /// Mark all the unpaid chunks as paid and move them from the UNPAID_DIR to PAID_DIR
     /// Also removes the dir from UNPAID_DIR
-    pub(crate) fn mark_paid_all(&mut self) {
+    pub(crate) fn _mark_paid_all(&mut self) {
         let all_chunks = self
             .unpaid_chunks
             .values()
@@ -488,7 +488,7 @@ impl ChunkManager {
 
     /// Mark all the paid chunks as verified and remove them from PAID_DIR
     /// Retains the folder and metadata file
-    pub(crate) fn mark_verified_all(&mut self) {
+    pub(crate) fn _mark_verified_all(&mut self) {
         let all_chunks = self
             .paid_chunks
             .values()
@@ -861,7 +861,7 @@ mod tests {
             .count();
         assert_eq!(n_folders, 5);
 
-        manager.mark_paid_all();
+        manager._mark_paid_all();
 
         let n_folders = WalkDir::new(&manager.unpaid_dir)
             .into_iter()
@@ -942,8 +942,8 @@ mod tests {
             .count();
         assert_eq!(n_folders, 5);
 
-        manager.mark_paid_all();
-        manager.mark_verified_all();
+        manager._mark_paid_all();
+        manager._mark_verified_all();
 
         // all 5 files should be marked as verified
         assert_eq!(manager.verified_files.len(), 5);
@@ -983,9 +983,9 @@ mod tests {
 
         // marking all as verified should not do anything
         let manager_clone = manager.clone();
-        manager.mark_verified_all();
+        manager._mark_verified_all();
 
-        // 1. mark_verified_all() directly does nothing
+        // 1. _mark_verified_all() directly does nothing
         assert_eq!(manager, manager_clone);
 
         // get all the chunks and then mark as verified. This should trigger mark_paid
@@ -1160,7 +1160,7 @@ mod tests {
             .count();
 
         // mark all as paid
-        manager.mark_paid_all();
+        manager._mark_paid_all();
         let mut new_manager = ChunkManager::new(&root_dir);
         new_manager.chunk_path(&random_files_dir)?;
 
@@ -1225,8 +1225,8 @@ mod tests {
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
         manager.chunk_path(&random_files_dir)?;
-        manager.mark_paid_all();
-        manager.mark_verified_all();
+        manager._mark_paid_all();
+        manager._mark_verified_all();
 
         let mut new_manager = ChunkManager::new(&root_dir);
         new_manager.chunk_path(&random_files_dir)?;
