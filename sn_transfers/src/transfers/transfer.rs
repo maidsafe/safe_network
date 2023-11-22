@@ -194,8 +194,10 @@ mod tests {
     #[test]
     fn test_cashnote_redemption_conversions() {
         let rng = &mut bls::rand::thread_rng();
-        let cashnote_redemption =
-            CashNoteRedemption::new([42; 32], SpendAddress::new(XorName::random(rng)));
+        let cashnote_redemption = CashNoteRedemption::new(
+            DerivationIndex([42; 32]),
+            SpendAddress::new(XorName::random(rng)),
+        );
         let sk = MainSecretKey::random();
         let pk = sk.main_pubkey();
 
@@ -212,8 +214,10 @@ mod tests {
     #[test]
     fn test_cashnote_redemption_transfer() {
         let rng = &mut bls::rand::thread_rng();
-        let cashnote_redemption =
-            CashNoteRedemption::new([42; 32], SpendAddress::new(XorName::random(rng)));
+        let cashnote_redemption = CashNoteRedemption::new(
+            DerivationIndex([42; 32]),
+            SpendAddress::new(XorName::random(rng)),
+        );
         let sk = MainSecretKey::random();
         let pk = sk.main_pubkey();
 

@@ -125,7 +125,7 @@ impl CashNote {
         let mut sha3 = Sha3::v256();
         sha3.update(self.src_tx.hash().as_ref());
         sha3.update(&self.main_pubkey.to_bytes());
-        sha3.update(&self.derivation_index);
+        sha3.update(&self.derivation_index.0);
 
         for sp in self.signed_spends.iter() {
             sha3.update(&sp.to_bytes());

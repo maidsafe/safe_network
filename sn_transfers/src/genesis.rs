@@ -9,8 +9,8 @@
 use super::wallet::LocalWallet;
 
 use crate::{
-    CashNote, Error as CashNoteError, Hash, Input, MainPubkey, MainSecretKey, NanoTokens,
-    Transaction, TransactionBuilder,
+    CashNote, DerivationIndex, Error as CashNoteError, Hash, Input, MainPubkey, MainSecretKey,
+    NanoTokens, Transaction, TransactionBuilder,
 };
 
 use bls::SecretKey;
@@ -127,7 +127,7 @@ pub fn create_first_cash_note_from_key(
 ) -> GenesisResult<CashNote> {
     let main_pubkey = first_cash_note_key.main_pubkey();
     debug!("genesis cashnote main_pubkey: {:?}", main_pubkey);
-    let derivation_index = [0u8; 32];
+    let derivation_index = DerivationIndex([0u8; 32]);
     let derived_key = first_cash_note_key.derive_key(&derivation_index);
 
     // Use the same key as the input and output of Genesis Tx.
