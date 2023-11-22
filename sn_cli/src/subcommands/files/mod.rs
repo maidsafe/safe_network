@@ -46,7 +46,7 @@ pub enum FilesCmds {
         /// Can be a file or a directory.
         #[clap(name = "path", value_name = "PATH")]
         path: PathBuf,
-        /// The batch_size to split chunks into parallely handling batches
+        /// The batch_size to split chunks into parallel handling batches
         /// during payment and upload processing.
         #[clap(long, default_value_t = BATCH_SIZE, short='b')]
         batch_size: usize,
@@ -74,6 +74,9 @@ pub enum FilesCmds {
         /// Default to be not showing.
         #[clap(long, name = "show_holders", default_value = "false")]
         show_holders: bool,
+        /// The batch_size for parallel downloading
+        #[clap(long, default_value_t = BATCH_SIZE / 4, short='b')]
+        batch_size: usize,
     },
 }
 
@@ -103,6 +106,7 @@ pub(crate) async fn files_cmds(
             file_name,
             file_addr,
             show_holders,
+            batch_size,
         } => {
             if (file_name.is_some() && file_addr.is_none())
                 || (file_addr.is_some() && file_name.is_none())
@@ -125,11 +129,19 @@ pub(crate) async fn files_cmds(
                             .try_into()
                             .expect("Failed to parse XorName from hex string"),
                     );
-                    download_file(&file_api, &xor_name, &name, root_dir, show_holders).await
+                    download_file(
+                        &file_api,
+                        &xor_name,
+                        &name,
+                        root_dir,
+                        show_holders,
+                        batch_size,
+                    )
+                    .await
                 }
                 _ => {
                     println!("Attempting to download all files uploaded by the current user...");
-                    download_files(&file_api, root_dir, show_holders).await?
+                    download_files(&file_api, root_dir, show_holders, batch_size).await?
                 }
             }
         }
@@ -148,7 +160,7 @@ async fn upload_files(
     show_holders: bool,
 ) -> Result<()> {
     debug!(
-        "Uploading file(s) from {:?}, will verify?: {verify_store}",
+        "Uploading file(s) from {:?}, batch size {batch_size:?} will verify?: {verify_store}",
         files_path
     );
 
@@ -523,7 +535,13 @@ async fn verify_and_repay_if_needed_once(
     Ok(())
 }
 
-async fn download_files(file_api: &Files, root_dir: &Path, show_holders: bool) -> Result<()> {
+async fn download_files(
+    file_api: &Files,
+    root_dir: &Path,
+    show_holders: bool,
+    batch_size: usize,
+) -> Result<()> {
+    info!("Downloading with batch size of {}", batch_size);
     let uploaded_files_path = root_dir.join("uploaded_files");
     let download_path = root_dir.join("downloaded_files");
     std::fs::create_dir_all(download_path.as_path())?;
@@ -552,7 +570,15 @@ async fn download_files(file_api: &Files, root_dir: &Path, show_holders: bool) -
     }
 
     for (xorname, file_name) in uploaded_files.iter() {
-        download_file(file_api, xorname, file_name, &download_path, show_holders).await;
+        download_file(
+            file_api,
+            xorname,
+            file_name,
+            &download_path,
+            show_holders,
+            batch_size,
+        )
+        .await;
     }
 
     Ok(())
@@ -575,8 +601,12 @@ async fn download_file(
     file_name: &String,
     download_path: &Path,
     show_holders: bool,
+    batch_size: usize,
 ) {
-    println!("Downloading {file_name} from {:64x}", xorname);
+    println!(
+        "Downloading {file_name} from {:64x} with batch-size {batch_size}",
+        xorname
+    );
     debug!("Downloading {file_name} from {:64x}", xorname);
     let downloaded_file_path = download_path.join(file_name);
     match file_api
@@ -584,6 +614,7 @@ async fn download_file(
             ChunkAddress::new(*xorname),
             Some(downloaded_file_path.clone()),
             show_holders,
+            batch_size,
         )
         .await
     {
