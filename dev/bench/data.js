@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700648895458,
+  "lastUpdate": 1700648897270,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30873,6 +30873,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 104735,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 14,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244",
+          "message": "feat(peers_acq): shuffle peers before we return.\n\nThis shoulf help prevent any one peer from being hammered more than any other in the list",
+          "timestamp": "2023-11-22T09:47:11Z",
+          "tree_id": "b95d40483b6edd3d468fa76bf660582a022f53b3",
+          "url": "https://github.com/maidsafe/safe_network/commit/8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244"
+        },
+        "date": 1700648896764,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6257,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 93195,
             "unit": "ms"
           },
           {
