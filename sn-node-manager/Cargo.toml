@@ -14,7 +14,8 @@ indicatif = { version = "0.17.5", features = ["tokio"] }
 libp2p-identity = { version="0.2.7", features = ["rand"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-service-manager = "0.5.0"
+# service-manager = "0.5.0"
+service-manager = { git = "https://github.com/jacderida/service-manager-rs.git", branch = "winsw-default-impl" }
 sn_rpc_client = { git = "https://github.com/jacderida/safe_network.git", branch = "sn-rpc-client-crate" }
 sn_protocol = "0.8.17"
 sn-releases = "0.1.1"
@@ -23,11 +24,13 @@ tokio = { version = "1.26", features = ["full"] }
 uuid = { versino = "1.5.0", features = ["v4"] }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
+nix = { version = "0.27.1", features = ["fs", "user"] }
 users = "0.11"
 
 [dev-dependencies]
 assert_cmd = "2.0.12"
 assert_fs = "1.0.13"
+assert_matches = "1.5.0"
 async-trait = "0.1"
 mockall = "0.11.3"
 predicates = "2.0"

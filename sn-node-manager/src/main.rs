@@ -1,12 +1,14 @@
+mod config;
 mod control;
 mod install;
 mod node;
 mod service;
 
+use crate::config::{get_node_registry_path, get_service_data_dir_path, get_service_log_dir_path};
 use crate::control::start;
-use crate::install::{get_node_registry_path, install};
+use crate::install::{install, InstallOptions};
 use crate::node::NodeRegistry;
-use crate::service::NodeServiceManager;
+use crate::service::{NodeServiceManager, ServiceControl};
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Help, Result};
 use libp2p_identity::PeerId;
@@ -33,6 +35,26 @@ pub enum SubCmd {
         /// The number of service instances
         #[clap(long)]
         count: Option<u16>,
+        /// Provide the path for the data directory for the installed node.
+        ///
+        /// This path is a prefix. Each installed node will have its own directory underneath it.
+        ///
+        /// If not provided, the default location is platform specific:
+        ///  - Linux: /var/safenode-manager/services
+        ///  - macOS: /var/safenode-manager/services
+        ///  - Windows: C:\ProgramData\safenode\services
+        #[clap(long, verbatim_doc_comment)]
+        node_data_dir_path: Option<PathBuf>,
+        /// Provide the path for the log directory for the installed node.
+        ///
+        /// This path is a prefix. Each installed node will have its own directory underneath it.
+        ///
+        /// If not provided, the default location is platform specific:
+        ///  - Linux: /var/log/safenode
+        ///  - macOS: /var/log/safenode
+        ///  - Windows: C:\ProgramData\safenode\logs
+        #[clap(long, verbatim_doc_comment)]
+        log_dir_path: Option<PathBuf>,
         /// The user the service should run as.
         ///
         /// If the account does not exist, it will be created.
@@ -65,31 +87,58 @@ async fn main() -> Result<()> {
     match args.cmd {
         SubCmd::Install {
             count,
+            log_dir_path,
+            node_data_dir_path,
             user,
             version,
         } => {
             if !is_running_as_root() {
                 return Err(eyre!("The install command must run as the root user"));
             }
+
+            println!("=================================================");
+            println!("              Add Safenode Services              ");
+            println!("=================================================");
+            println!("{} service(s) to be added", count.unwrap_or(1));
+
+            let service_user = user.unwrap_or("safe".to_string());
+            let service_manager = NodeServiceManager {};
+            service_manager.create_service_user(&service_user)?;
+
+            let service_data_dir_path =
+                get_service_data_dir_path(node_data_dir_path, &service_user)?;
+            let service_log_dir_path = get_service_log_dir_path(log_dir_path, &service_user)?;
+
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+
             install(
-                get_safenode_install_path()?,
-                count,
-                user,
-                version,
+                InstallOptions {
+                    safenode_dir_path: get_safenode_install_path()?,
+                    service_data_dir_path,
+                    service_log_dir_path,
+                    user: service_user,
+                    count,
+                    version,
+                },
                 &mut node_registry,
-                &NodeServiceManager {},
+                &service_manager,
                 release_repo,
             )
             .await?;
+
             node_registry.save(&get_node_registry_path()?)?;
+
             Ok(())
         }
         SubCmd::Start {
             peer_id,
             service_name,
         } => {
+            if !is_running_as_root() {
+                return Err(eyre!("The start command must run as the root user"));
+            }
+
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             if service_name.is_some() && peer_id.is_some() {
                 return Err(eyre!("The service name and peer ID are mutually exclusive")
@@ -98,18 +147,22 @@ async fn main() -> Result<()> {
                 ));
             }
 
+            println!("=================================================");
+            println!("             Start Safenode Services             ");
+            println!("=================================================");
+
             if let Some(ref name) = service_name {
-                let mut node = node_registry
+                let node = node_registry
                     .installed_nodes
                     .iter_mut()
                     .find(|x| x.service_name == *name)
                     .ok_or_else(|| eyre!("No service named '{name}'"))?;
 
-                let rpc_client = RpcClient::new(&format!("127.0.0.1:{}", node.rpc_port));
-                start(&mut node, &NodeServiceManager {}, &rpc_client).await?;
+                let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                start(node, &NodeServiceManager {}, &rpc_client).await?;
             } else if let Some(ref peer_id) = peer_id {
-                let peer_id = PeerId::from_str(&peer_id)?;
-                let mut node = node_registry
+                let peer_id = PeerId::from_str(peer_id)?;
+                let node = node_registry
                     .installed_nodes
                     .iter_mut()
                     .find(|x| x.peer_id == Some(peer_id))
@@ -120,12 +173,13 @@ async fn main() -> Result<()> {
                         ))
                     })?;
 
-                let rpc_client = RpcClient::new(&format!("127.0.0.1:{}", node.rpc_port));
-                start(&mut node, &NodeServiceManager {}, &rpc_client).await?;
+                let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                start(node, &NodeServiceManager {}, &rpc_client).await?;
             } else {
-                for mut node in node_registry.installed_nodes.iter_mut() {
-                    let rpc_client = RpcClient::new(&format!("127.0.0.1:{}", node.rpc_port));
-                    start(&mut node, &NodeServiceManager {}, &rpc_client).await?;
+                for node in node_registry.installed_nodes.iter_mut() {
+                    let rpc_client =
+                        RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                    start(node, &NodeServiceManager {}, &rpc_client).await?;
                 }
             }
             Ok(())
