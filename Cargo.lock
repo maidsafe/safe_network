@@ -4748,6 +4748,7 @@ dependencies = [
  "clap 4.4.7",
  "color-eyre",
  "libp2p 0.53.0",
+ "rand",
  "reqwest",
  "tokio",
  "tracing",
