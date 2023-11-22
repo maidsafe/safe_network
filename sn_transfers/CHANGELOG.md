@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.20](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.19...sn_transfers-v0.14.20) - 2023-11-22
+
+### Other
+- optimise log format of DerivationIndex
+
 ## [0.14.19](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.18...sn_transfers-v0.14.19) - 2023-11-20
 
 ### Added

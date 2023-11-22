@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.98.12](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.11...sn_client-v0.98.12) - 2023-11-22
+
+### Other
+- *(release)* non gossip handler shall not throw gossip msg up
+
 ## [0.98.11](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.10...sn_client-v0.98.11) - 2023-11-22
 
 ### Added
