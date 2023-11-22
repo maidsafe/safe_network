@@ -355,7 +355,7 @@ impl SwarmDriver {
 
                 #[cfg(feature = "open-metrics")]
                 self.network_metrics.record(&event);
-                if self.is_gossip_listener {
+                if self.is_gossip_handler {
                     match event {
                         libp2p::gossipsub::Event::Message {
                             message,

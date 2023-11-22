@@ -250,7 +250,7 @@ impl Node {
                         match node_cmd {
                             Ok(NodeCmd::TransferNotifsFilter(filter)) => {
                                 self.transfer_notifs_filter = filter;
-                                let _ = self.network.start_listen_gossip();
+                                let _ = self.network.start_handle_gossip();
                             }
                             Err(err) => error!("When trying to read from the NodeCmds channel/receiver: {err:?}")
                         }
