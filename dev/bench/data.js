@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700670317605,
+  "lastUpdate": 1700670319537,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fdb169980390a1b34dc12d24412d63810338a02e",
-          "message": "chore(metrics): remove network stats\n- Currently the `NetworkMetrics` provides interface/system wide stats\n  and thus can dirtied easily. A process level mechanism has to be\n  implemented to have valid usable network stat.",
-          "timestamp": "2023-07-13T07:42:24Z",
-          "tree_id": "1f1110648a0658b2ff04f7675653a2692b235bb7",
-          "url": "https://github.com/maidsafe/safe_network/commit/fdb169980390a1b34dc12d24412d63810338a02e"
-        },
-        "date": 1689238236243,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 230.98,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 148,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 132,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "d400521da55e7dd94a4e6492ace1705819f7cbe2",
+          "message": "chore: optimise log format of DerivationIndex",
+          "timestamp": "2023-11-22T15:43:58Z",
+          "tree_id": "3c367587cb748e751634f83166739def693da981",
+          "url": "https://github.com/maidsafe/safe_network/commit/d400521da55e7dd94a4e6492ace1705819f7cbe2"
+        },
+        "date": 1700670318899,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 650,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 124,
             "unit": "MB"
           }
         ]
