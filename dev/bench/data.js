@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700581251258,
+  "lastUpdate": 1700648711158,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "31cb0cc9ef00a1b71ab24eb4274da8e352833aab",
-          "message": "fix(network): close group should only contain CLOSE_GROUP_SIZE elements",
-          "timestamp": "2023-07-27T09:21:48Z",
-          "tree_id": "90e95bcffec413b88da42a6ae8c07dab956d61bc",
-          "url": "https://github.com/maidsafe/safe_network/commit/31cb0cc9ef00a1b71ab24eb4274da8e352833aab"
-        },
-        "date": 1690459271088,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.8125694173893132,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.10101517379389431,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 24.631597674083388,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 15.032961673337606,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244",
+          "message": "feat(peers_acq): shuffle peers before we return.\n\nThis shoulf help prevent any one peer from being hammered more than any other in the list",
+          "timestamp": "2023-11-22T09:47:11Z",
+          "tree_id": "b95d40483b6edd3d468fa76bf660582a022f53b3",
+          "url": "https://github.com/maidsafe/safe_network/commit/8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244"
+        },
+        "date": 1700648709548,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.119932188177506,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 24.757463389214923,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 26.719905918153064,
             "unit": "MiB/s"
           }
         ]
