@@ -11,6 +11,7 @@ use clap::Args;
 use color_eyre::eyre::Context;
 use color_eyre::{eyre::eyre, Result};
 use libp2p::{multiaddr::Protocol, Multiaddr};
+use rand::{seq::SliceRandom, thread_rng};
 use tracing::*;
 #[cfg(feature = "network-contacts")]
 use url::Url;
@@ -88,6 +89,10 @@ pub async fn parse_peers_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
         error!("{err_str}");
         return Err(color_eyre::eyre::eyre!("{err_str}"));
     };
+
+    // Randomly sort peers before we return them to avoid overly hitting any one peer
+    let mut rng = thread_rng();
+    peers.shuffle(&mut rng);
 
     Ok(peers)
 }
