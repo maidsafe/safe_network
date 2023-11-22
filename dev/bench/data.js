@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700670147418,
+  "lastUpdate": 1700670317605,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "dfef4543276939c4d2ecaa6b5895cd48876e44d3",
-          "message": "test: adding integration test for storage payment proofs cached in local wallet",
-          "timestamp": "2023-07-17T08:02:49Z",
-          "tree_id": "61da1a6c966ba8cb09a64d5c0e005409fd81b761",
-          "url": "https://github.com/maidsafe/safe_network/commit/dfef4543276939c4d2ecaa6b5895cd48876e44d3"
-        },
-        "date": 1689585744777,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 24.44,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 178,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "d400521da55e7dd94a4e6492ace1705819f7cbe2",
+          "message": "chore: optimise log format of DerivationIndex",
+          "timestamp": "2023-11-22T15:43:58Z",
+          "tree_id": "3c367587cb748e751634f83166739def693da981",
+          "url": "https://github.com/maidsafe/safe_network/commit/d400521da55e7dd94a4e6492ace1705819f7cbe2"
+        },
+        "date": 1700670317061,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 152,
             "unit": "MB"
           }
         ]
