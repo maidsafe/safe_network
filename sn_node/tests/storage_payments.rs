@@ -12,7 +12,7 @@ use crate::common::{get_gossip_client_and_wallet, random_content};
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use rand::Rng;
-use sn_client::{Error as ClientError, WalletClient};
+use sn_client::{Error as ClientError, WalletClient, BATCH_SIZE};
 use sn_logging::LogBuilder;
 use sn_networking::Error as NetworkError;
 use sn_protocol::{
@@ -209,7 +209,9 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         .pay_and_upload_bytes_test(*file_addr.xorname(), chunks, true)
         .await?;
 
-    files_api.read_bytes(file_addr, None, false).await?;
+    files_api
+        .read_bytes(file_addr, None, false, BATCH_SIZE)
+        .await?;
 
     Ok(())
 }
@@ -256,7 +258,9 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
     println!("Reading {content_addr:?} expected to fail");
     assert!(
         matches!(
-            files_api.read_bytes(content_addr, None, false).await,
+            files_api
+                .read_bytes(content_addr, None, false, BATCH_SIZE)
+                .await,
             Err(ClientError::Network(NetworkError::RecordNotFound))
         ),
         "read bytes should fail as we didn't store them"
