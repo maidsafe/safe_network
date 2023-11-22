@@ -70,6 +70,7 @@ impl Files {
         address: ChunkAddress,
         downloaded_file_path: Option<PathBuf>,
         show_holders: bool,
+        batch_size: usize,
     ) -> Result<Option<Bytes>> {
         let chunk = match self.client.get_chunk(address, show_holders).await {
             Ok(chunk) => chunk,
@@ -80,8 +81,8 @@ impl Files {
         };
 
         // first try to deserialize a LargeFile, if it works, we go and seek it
-        if let Ok(data_map) = self.unpack_chunk(chunk.clone()).await {
-            self.read_all(data_map, downloaded_file_path, show_holders)
+        if let Ok(data_map) = self.unpack_chunk(chunk.clone(), batch_size).await {
+            self.read_all(data_map, downloaded_file_path, show_holders, batch_size)
                 .await
         } else {
             // if an error occurs, we assume it's a SmallFile
@@ -107,13 +108,14 @@ impl Files {
         address: ChunkAddress,
         position: usize,
         length: usize,
+        batch_size: usize,
     ) -> Result<Bytes> {
         trace!("Reading {length} bytes at: {address:?}, starting from position: {position}");
         let chunk = self.client.get_chunk(address, false).await?;
 
         // First try to deserialize a LargeFile, if it works, we go and seek it.
         // If an error occurs, we consider it to be a SmallFile.
-        if let Ok(data_map) = self.unpack_chunk(chunk.clone()).await {
+        if let Ok(data_map) = self.unpack_chunk(chunk.clone(), batch_size).await {
             return self.seek(data_map, position, length).await;
         }
 
@@ -361,6 +363,7 @@ impl Files {
         data_map: DataMap,
         decrypted_file_path: Option<PathBuf>,
         show_holders: bool,
+        batch_size: usize,
     ) -> Result<Option<Bytes>> {
         let mut decryptor = if let Some(path) = decrypted_file_path {
             StreamSelfDecryptor::decrypt_to_file(Box::new(path), &data_map)?
@@ -391,7 +394,7 @@ impl Files {
                 )
             });
 
-            if ordered_read_futures.len() >= BATCH_SIZE || index + BATCH_SIZE > expected_count {
+            if ordered_read_futures.len() >= batch_size || index + batch_size > expected_count {
                 while let Some((dst_hash, result)) = ordered_read_futures.next().await {
                     let chunk = result.map_err(|error| {
                         error!("Chunk missing {dst_hash:?} with {error:?}");
@@ -419,14 +422,17 @@ impl Files {
     /// Extracts a file DataMapLevel from a chunk.
     /// If the DataMapLevel is not the first level mapping directly to the user's contents,
     /// the process repeats itself until it obtains the first level DataMapLevel.
-    async fn unpack_chunk(&self, mut chunk: Chunk) -> Result<DataMap> {
+    async fn unpack_chunk(&self, mut chunk: Chunk, batch_size: usize) -> Result<DataMap> {
         loop {
             match bincode::deserialize(chunk.value()).map_err(ChunksError::Serialisation)? {
                 DataMapLevel::First(data_map) => {
                     return Ok(data_map);
                 }
                 DataMapLevel::Additional(data_map) => {
-                    let serialized_chunk = self.read_all(data_map, None, false).await?.unwrap();
+                    let serialized_chunk = self
+                        .read_all(data_map, None, false, batch_size)
+                        .await?
+                        .unwrap();
                     chunk = bincode::deserialize(&serialized_chunk)
                         .map_err(ChunksError::Serialisation)?;
                 }

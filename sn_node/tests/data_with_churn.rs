@@ -15,7 +15,7 @@ use common::{
 };
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Error, Files, WalletClient};
+use sn_client::{Client, Error, Files, WalletClient, BATCH_SIZE};
 use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
@@ -632,7 +632,7 @@ async fn query_content(
         }
         NetworkAddress::ChunkAddress(addr) => {
             let file_api = Files::new(client.clone(), wallet_dir.to_path_buf());
-            let _ = file_api.read_bytes(*addr, None, false).await?;
+            let _ = file_api.read_bytes(*addr, None, false, BATCH_SIZE).await?;
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet
