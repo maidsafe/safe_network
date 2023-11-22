@@ -8,26 +8,33 @@ pub async fn start(
     service_control: &dyn ServiceControl,
     rpc_client: &dyn RpcClientInterface,
 ) -> Result<()> {
-    match node.status {
-        NodeStatus::Running => {
-            // The last time we checked the service was running, but it doesn't mean it's actually
-            // running at this point in time. If it is running, we don't need to do anything. If it
-            // stopped because of a fault, we will drop to the code below and attempt to start it
-            // again.
-            if service_control.is_service_process_running(node.pid.unwrap()) {
-                return Ok(());
-            }
+    if let NodeStatus::Running = node.status {
+        // The last time we checked the service was running, but it doesn't mean it's actually
+        // running at this point in time. If it is running, we don't need to do anything. If it
+        // stopped because of a fault, we will drop to the code below and attempt to start it
+        // again.
+        if service_control.is_service_process_running(node.pid.unwrap()) {
+            println!("The {} service is already running", node.service_name);
+            return Ok(());
         }
-        _ => {}
     }
 
     // At this point the service either hasn't been started for the first time or it has been
     // stopped. If it was stopped, it was either intentional or because it crashed.
+    println!("Attempting to start {}...", node.service_name);
     service_control.start(&node.service_name)?;
+
+    // Give the node a little bit of time to start before initiating the node info query.
+    service_control.wait(3);
     let node_info = rpc_client.node_info().await?;
     node.pid = Some(node_info.pid);
     node.peer_id = Some(node_info.peer_id);
     node.status = NodeStatus::Running;
+
+    println!("✓ Started {} service", node.service_name);
+    println!("  - Peer ID: {}", node_info.peer_id);
+    println!("  - Logs: {}", node_info.log_path.to_string_lossy());
+
     Ok(())
 }
 
@@ -64,6 +71,11 @@ mod tests {
             .with(eq("Safenode service 1"))
             .times(1)
             .returning(|_| Ok(()));
+        mock_service_control
+            .expect_wait()
+            .with(eq(3))
+            .times(1)
+            .returning(|_| ());
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -109,6 +121,11 @@ mod tests {
             .with(eq("Safenode service 2"))
             .times(1)
             .returning(|_| Ok(()));
+        mock_service_control
+            .expect_wait()
+            .with(eq(3))
+            .times(1)
+            .returning(|_| ());
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1001,
