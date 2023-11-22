@@ -492,7 +492,7 @@ impl NetworkBuilder {
             // 63 will mean at least 63 most recent peers we have dialed, which should be allow for enough time for the
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
-            is_gossip_listener: false,
+            is_gossip_handler: false,
         };
 
         Ok((
@@ -531,7 +531,10 @@ pub struct SwarmDriver {
     pub(crate) pending_get_record: PendingGetRecord,
     /// A list of the most recent peers we have dialed ourselves.
     pub(crate) dialed_peers: CircularVec<PeerId>,
-    pub(crate) is_gossip_listener: bool,
+    // For normal nodes, though they subscribe to the gossip topic
+    // (to ensure no miss-up by carrying out libp2p low level gossip forwarding),
+    // they are not supposed to process the gossip msg that received from libp2p.
+    pub(crate) is_gossip_handler: bool,
 }
 
 impl SwarmDriver {

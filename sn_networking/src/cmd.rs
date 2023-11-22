@@ -144,7 +144,7 @@ pub enum SwarmCmd {
         /// Raw bytes of the message to publish
         msg: Bytes,
     },
-    GossipListener,
+    GossipHandler,
 }
 
 /// Debug impl for SwarmCmd to avoid printing full Record, instead only RecodKey
@@ -259,8 +259,8 @@ impl Debug for SwarmCmd {
             SwarmCmd::SendRequest { req, peer, .. } => {
                 write!(f, "SwarmCmd::SendRequest req: {:?}, peer: {:?}", req, peer)
             }
-            SwarmCmd::GossipListener => {
-                write!(f, "SwarmCmd::GossipListener")
+            SwarmCmd::GossipHandler => {
+                write!(f, "SwarmCmd::GossipHandler")
             }
         }
     }
@@ -616,7 +616,7 @@ impl SwarmDriver {
             SwarmCmd::GossipsubPublish { topic_id, msg } => {
                 // If we publish a Gossipsub message, we might not receive the same message on our side.
                 // Hence push an event to notify that we've published a message
-                if self.is_gossip_listener {
+                if self.is_gossip_handler {
                     self.send_event(NetworkEvent::GossipsubMsgPublished {
                         topic: topic_id.clone(),
                         msg: msg.clone(),
@@ -627,8 +627,8 @@ impl SwarmDriver {
                     gossip.publish(topic_id, msg)?;
                 }
             }
-            SwarmCmd::GossipListener => {
-                self.is_gossip_listener = true;
+            SwarmCmd::GossipHandler => {
+                self.is_gossip_handler = true;
             }
         }
 

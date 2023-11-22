@@ -194,6 +194,15 @@ impl SafeNode for SafeNodeRpcService {
 
         let topic = &request.get_ref().topic;
 
+        // Assuming the rpc subscription request also force the node to handle the gossip.
+        // So far, this is only used during test to allow counting the gossip msgs received by node.
+        if let Err(err) = self.running_node.start_handle_gossip() {
+            return Err(Status::new(
+                Code::Internal,
+                format!("Failed to start handle gossip: {err}"),
+            ));
+        }
+
         match self.running_node.subscribe_to_topic(topic.clone()) {
             Ok(()) => Ok(Response::new(GossipsubSubscribeResponse {})),
             Err(err) => Err(Status::new(
