@@ -1,10 +1,19 @@
 use crate::node::{InstalledNode, NodeRegistry, NodeStatus};
-use crate::service::ServiceControl;
+use crate::service::{ServiceConfig, ServiceControl};
 use color_eyre::Result;
 use indicatif::{ProgressBar, ProgressStyle};
 use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepositoryInterface};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
+
+pub struct InstallOptions {
+    pub safenode_dir_path: PathBuf,
+    pub service_data_dir_path: PathBuf,
+    pub service_log_dir_path: PathBuf,
+    pub user: String,
+    pub count: Option<u16>,
+    pub version: Option<String>,
+}
 
 /// Install safenode as a service.
 ///
@@ -13,14 +22,10 @@ use std::sync::Arc;
 /// There are several arguments that probably seem like they could be handled within the function,
 /// but they enable more controlled unit testing.
 ///
-/// In particular, the install path is one of these arguments. It should be a directory that exists
-/// before calling this function. Depending on the context we're running in, this path may need
-/// root access to be created.
+/// For the directory paths used in the install options, they should be created before this
+/// function is called, as they may require root or administrative access to write to.
 pub async fn install(
-    install_dir_path: PathBuf,
-    count: Option<u16>,
-    user: Option<String>,
-    version: Option<String>,
+    install_options: InstallOptions,
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
     release_repo: Box<dyn SafeReleaseRepositoryInterface>,
@@ -35,13 +40,16 @@ pub async fn install(
         pb_clone.set_position(downloaded);
     });
 
-    let version = if let Some(version) = version {
+    let version = if let Some(version) = install_options.version {
         version
     } else {
+        println!("Retrieving latest version for safenode...");
         release_repo
             .get_latest_version(&ReleaseType::Safenode)
             .await?
     };
+
+    println!("Downloading safenode version {version}...");
 
     let temp_dir_path = create_temp_dir()?;
     let archive_path = release_repo
@@ -55,32 +63,47 @@ pub async fn install(
         )
         .await?;
     pb.finish_with_message("Download complete");
-    let safenode_path = release_repo.extract_release_archive(&archive_path, &install_dir_path)?;
+    let safenode_path =
+        release_repo.extract_release_archive(&archive_path, &install_options.safenode_dir_path)?;
 
-    let service_user = user.unwrap_or("safe".to_string());
-    service_control.create_service_user(&service_user)?;
-
+    let mut installed_service_data = vec![];
     let current_node_count = node_registry.installed_nodes.len() as u16;
-    let target_node_count = current_node_count + count.unwrap_or(1);
+    let target_node_count = current_node_count + install_options.count.unwrap_or(1);
     let mut node_number = current_node_count + 1;
     while node_number <= target_node_count {
-        let safenode_port = service_control.get_available_port()?;
+        let node_port = service_control.get_available_port()?;
         let rpc_port = service_control.get_available_port()?;
 
         let service_name = format!("safenode{node_number}");
-        service_control.install(
-            &service_name,
-            &safenode_path,
-            safenode_port,
+        let service_data_dir_path = install_options
+            .service_data_dir_path
+            .join(service_name.clone());
+        let service_log_dir_path = install_options
+            .service_log_dir_path
+            .join(service_name.clone());
+        service_control.install(ServiceConfig {
+            name: service_name.clone(),
+            safenode_path: safenode_path.clone(),
+            node_port,
             rpc_port,
-            &service_user.clone(),
-        )?;
+            service_user: install_options.user.clone(),
+            log_dir_path: service_log_dir_path.clone(),
+            data_dir_path: service_data_dir_path.clone(),
+        })?;
+
+        installed_service_data.push((
+            service_name.clone(),
+            service_data_dir_path.to_string_lossy().into_owned(),
+            service_log_dir_path.to_string_lossy().into_owned(),
+            node_port,
+            rpc_port,
+        ));
 
         node_registry.installed_nodes.push(InstalledNode {
             service_name,
-            user: service_user.clone(),
+            user: install_options.user.clone(),
             number: node_number,
-            port: safenode_port,
+            port: node_port,
             rpc_port,
             version: version.clone(),
             status: NodeStatus::Installed,
@@ -91,34 +114,18 @@ pub async fn install(
         node_number += 1;
     }
 
+    println!("Services Installed:");
+    for install in installed_service_data.iter() {
+        println!("  ✓ {}", install.0);
+        println!("    - Data path: {}", install.1);
+        println!("    - Log path: {}", install.2);
+        println!("    - Service port: {}", install.3);
+        println!("    - RPC port: {}", install.4);
+    }
+
+    println!("[!] Note: newly added services have not been started");
+
     Ok(())
-}
-
-#[cfg(unix)]
-pub fn get_node_registry_path() -> Result<PathBuf> {
-    // This needs to be a system-wide location rather than a user directory because the `install`
-    // command will run as the root user. However, it should be readable by non-root users, because
-    // other commands, e.g., requesting status, shouldn't require root.
-    use std::os::unix::fs::PermissionsExt;
-
-    let path = Path::new("/var/safenode-manager/");
-    if !path.exists() {
-        std::fs::create_dir_all(path)?;
-        let mut perm = std::fs::metadata(path)?.permissions();
-        perm.set_mode(0o755); // set permissions to rwxr-xr-x
-        std::fs::set_permissions(path, perm)?;
-    }
-
-    Ok(path.join("node_registry.json"))
-}
-
-#[cfg(windows)]
-pub fn get_node_registry_path() -> Result<PathBuf> {
-    let path = Path::new("C:\\ProgramData\\safenode-manager");
-    if !path.exists() {
-        std::fs::create_dir_all(&path)?;
-    }
-    Ok(path.join("node_registry.json"))
 }
 
 /// There is a `tempdir` crate that provides the same kind of functionality, but it was flagged for
@@ -135,6 +142,7 @@ fn create_temp_dir() -> Result<PathBuf> {
 mod tests {
     use super::*;
     use crate::service::MockServiceControl;
+    use assert_fs::prelude::*;
     use assert_matches::assert_matches;
     use async_trait::async_trait;
     use mockall::mock;
@@ -144,6 +152,7 @@ mod tests {
         ArchiveType, Platform, ProgressCallback, ReleaseType, Result as SnReleaseResult,
         SafeReleaseRepositoryInterface,
     };
+    use std::path::Path;
 
     mock! {
         pub SafeReleaseRepository {}
@@ -173,6 +182,10 @@ mod tests {
         };
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
+        let node_data_dir = temp_dir.child("data");
+        node_data_dir.create_dir_all()?;
+        let node_logs_dir = temp_dir.child("logs");
+        node_logs_dir.create_dir_all()?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -217,13 +230,6 @@ mod tests {
             .in_sequence(&mut seq);
 
         mock_service_control
-            .expect_create_service_user()
-            .with(eq("safe"))
-            .times(1)
-            .returning(|_| Ok(()))
-            .in_sequence(&mut seq);
-
-        mock_service_control
             .expect_get_available_port()
             .times(1)
             .returning(|| Ok(8080))
@@ -237,21 +243,27 @@ mod tests {
         mock_service_control
             .expect_install()
             .times(1)
-            .with(
-                eq("safenode1"),
-                eq(safenode_install_path_clone),
-                eq(8080),
-                eq(8081),
-                eq("safe"),
-            )
-            .returning(|_, _, _, _, _| Ok(()))
+            .with(eq(ServiceConfig {
+                name: "safenode1".to_string(),
+                safenode_path: safenode_install_path_clone,
+                node_port: 8080,
+                rpc_port: 8081,
+                service_user: "safe".to_string(),
+                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+            }))
+            .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
         install(
-            temp_dir.to_path_buf(),
-            None,
-            None,
-            None,
+            InstallOptions {
+                safenode_dir_path: temp_dir.to_path_buf(),
+                service_data_dir_path: node_data_dir.to_path_buf(),
+                service_log_dir_path: node_logs_dir.to_path_buf(),
+                user: "safe".to_string(),
+                count: None,
+                version: None,
+            },
             &mut node_registry,
             &mock_service_control,
             Box::new(mock_release_repo),
@@ -285,6 +297,10 @@ mod tests {
 
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
+        let node_data_dir = temp_dir.child("data");
+        node_data_dir.create_dir_all()?;
+        let node_logs_dir = temp_dir.child("logs");
+        node_logs_dir.create_dir_all()?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -328,13 +344,6 @@ mod tests {
             .returning(move |_, _| Ok(safenode_install_path.clone()))
             .in_sequence(&mut seq);
 
-        mock_service_control
-            .expect_create_service_user()
-            .with(eq("safe"))
-            .times(1)
-            .returning(|_| Ok(()))
-            .in_sequence(&mut seq);
-
         // Expected calls for first installation
         mock_service_control
             .expect_get_available_port()
@@ -350,14 +359,16 @@ mod tests {
         mock_service_control
             .expect_install()
             .times(1)
-            .with(
-                eq("safenode1"),
-                eq(safenode_install_path_clone.clone()),
-                eq(8080),
-                eq(8081),
-                eq("safe"),
-            )
-            .returning(|_, _, _, _, _| Ok(()))
+            .with(eq(ServiceConfig {
+                name: "safenode1".to_string(),
+                safenode_path: safenode_install_path_clone.clone(),
+                node_port: 8080,
+                rpc_port: 8081,
+                service_user: "safe".to_string(),
+                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+            }))
+            .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
         // Expected calls for second installation
@@ -375,14 +386,16 @@ mod tests {
         mock_service_control
             .expect_install()
             .times(1)
-            .with(
-                eq("safenode2"),
-                eq(safenode_install_path_clone.clone()),
-                eq(8082),
-                eq(8083),
-                eq("safe"),
-            )
-            .returning(|_, _, _, _, _| Ok(()))
+            .with(eq(ServiceConfig {
+                name: "safenode2".to_string(),
+                safenode_path: safenode_install_path_clone.clone(),
+                node_port: 8082,
+                rpc_port: 8083,
+                service_user: "safe".to_string(),
+                log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
+                data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
+            }))
+            .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
         // Expected calls for third installation
@@ -400,21 +413,27 @@ mod tests {
         mock_service_control
             .expect_install()
             .times(1)
-            .with(
-                eq("safenode3"),
-                eq(safenode_install_path_clone),
-                eq(8084),
-                eq(8085),
-                eq("safe"),
-            )
-            .returning(|_, _, _, _, _| Ok(()))
+            .with(eq(ServiceConfig {
+                name: "safenode3".to_string(),
+                safenode_path: safenode_install_path_clone,
+                node_port: 8084,
+                rpc_port: 8085,
+                service_user: "safe".to_string(),
+                log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
+                data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
+            }))
+            .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
         install(
-            temp_dir.to_path_buf(),
-            Some(3),
-            None,
-            None,
+            InstallOptions {
+                safenode_dir_path: temp_dir.to_path_buf(),
+                service_data_dir_path: node_data_dir.to_path_buf(),
+                service_log_dir_path: node_logs_dir.to_path_buf(),
+                user: "safe".to_string(),
+                count: Some(3),
+                version: None,
+            },
             &mut node_registry,
             &mock_service_control,
             Box::new(mock_release_repo),
@@ -468,6 +487,10 @@ mod tests {
 
         let specific_version = "0.95.0";
         let temp_dir = assert_fs::TempDir::new()?;
+        let node_data_dir = temp_dir.child("data");
+        node_data_dir.create_dir_all()?;
+        let node_logs_dir = temp_dir.child("logs");
+        node_logs_dir.create_dir_all()?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -506,13 +529,6 @@ mod tests {
             .in_sequence(&mut seq);
 
         mock_service_control
-            .expect_create_service_user()
-            .with(eq("safe"))
-            .times(1)
-            .returning(|_| Ok(()))
-            .in_sequence(&mut seq);
-
-        mock_service_control
             .expect_get_available_port()
             .times(1)
             .returning(|| Ok(8080))
@@ -526,21 +542,27 @@ mod tests {
         mock_service_control
             .expect_install()
             .times(1)
-            .with(
-                eq("safenode1"),
-                eq(safenode_install_path_clone),
-                eq(8080),
-                eq(8081),
-                eq("safe"),
-            )
-            .returning(|_, _, _, _, _| Ok(()))
+            .with(eq(ServiceConfig {
+                name: "safenode1".to_string(),
+                safenode_path: safenode_install_path_clone,
+                node_port: 8080,
+                rpc_port: 8081,
+                service_user: "safe".to_string(),
+                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+            }))
+            .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
         install(
-            temp_dir.to_path_buf(),
-            None,
-            None,
-            Some(specific_version.to_string()),
+            InstallOptions {
+                safenode_dir_path: temp_dir.to_path_buf(),
+                service_data_dir_path: node_data_dir.to_path_buf(),
+                service_log_dir_path: node_logs_dir.to_path_buf(),
+                user: "safe".to_string(),
+                count: None,
+                version: Some(specific_version.to_string()),
+            },
             &mut node_registry,
             &mock_service_control,
             Box::new(mock_release_repo),
@@ -551,110 +573,6 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[0].version, specific_version);
         assert_eq!(node_registry.installed_nodes[0].service_name, "safenode1");
         assert_eq!(node_registry.installed_nodes[0].user, "safe");
-        assert_eq!(node_registry.installed_nodes[0].number, 1);
-        assert_eq!(node_registry.installed_nodes[0].port, 8080);
-        assert_eq!(node_registry.installed_nodes[0].rpc_port, 8081);
-        assert_matches!(
-            node_registry.installed_nodes[0].status,
-            NodeStatus::Installed
-        );
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn install_first_node_should_use_specific_user_and_install_one_service() -> Result<()> {
-        let mut mock_service_control = MockServiceControl::new();
-        let mut mock_release_repo = MockSafeReleaseRepository::new();
-
-        let mut node_registry = NodeRegistry {
-            installed_nodes: vec![],
-        };
-        let latest_version = "0.96.4";
-        let temp_dir = assert_fs::TempDir::new()?;
-
-        let mut seq = Sequence::new();
-        mock_release_repo
-            .expect_download_release_from_s3()
-            .with(
-                eq(&ReleaseType::Safenode),
-                eq(latest_version),
-                always(), // Varies per platform
-                eq(&ArchiveType::TarGz),
-                always(), // Temporary directory which doesn't really matter
-                always(), // Callback for progress bar which also doesn't matter
-            )
-            .times(1)
-            .returning(move |_, _, _, _, _, _| {
-                Ok(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                )))
-            })
-            .in_sequence(&mut seq);
-
-        let safenode_install_dir_path = temp_dir.to_path_buf();
-        let safenode_install_path = safenode_install_dir_path.join("safenode");
-        let safenode_install_path_clone = safenode_install_path.clone();
-        mock_release_repo
-            .expect_extract_release_archive()
-            .with(
-                eq(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                ))),
-                eq(safenode_install_dir_path),
-            )
-            .times(1)
-            .returning(move |_, _| Ok(safenode_install_path.clone()))
-            .in_sequence(&mut seq);
-
-        mock_service_control
-            .expect_create_service_user()
-            .with(eq("safe2"))
-            .times(1)
-            .returning(|_| Ok(()))
-            .in_sequence(&mut seq);
-
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
-            .returning(|| Ok(8080))
-            .in_sequence(&mut seq);
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
-            .returning(|| Ok(8081))
-            .in_sequence(&mut seq);
-
-        mock_service_control
-            .expect_install()
-            .times(1)
-            .with(
-                eq("safenode1"),
-                eq(safenode_install_path_clone),
-                eq(8080),
-                eq(8081),
-                eq("safe2"),
-            )
-            .returning(|_, _, _, _, _| Ok(()))
-            .in_sequence(&mut seq);
-
-        install(
-            temp_dir.to_path_buf(),
-            None,
-            Some("safe2".to_string()),
-            Some(latest_version.to_string()),
-            &mut node_registry,
-            &mock_service_control,
-            Box::new(mock_release_repo),
-        )
-        .await?;
-
-        assert_eq!(node_registry.installed_nodes.len(), 1);
-        assert_eq!(node_registry.installed_nodes[0].version, latest_version);
-        assert_eq!(node_registry.installed_nodes[0].service_name, "safenode1");
-        assert_eq!(node_registry.installed_nodes[0].user, "safe2");
         assert_eq!(node_registry.installed_nodes[0].number, 1);
         assert_eq!(node_registry.installed_nodes[0].port, 8080);
         assert_eq!(node_registry.installed_nodes[0].rpc_port, 8081);
@@ -686,6 +604,10 @@ mod tests {
             }],
         };
         let temp_dir = assert_fs::TempDir::new()?;
+        let node_data_dir = temp_dir.child("safenode1");
+        node_data_dir.create_dir_all()?;
+        let node_logs_dir = temp_dir.child("logs");
+        node_logs_dir.create_dir_all()?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -730,13 +652,6 @@ mod tests {
             .in_sequence(&mut seq);
 
         mock_service_control
-            .expect_create_service_user()
-            .with(eq("safe"))
-            .times(1)
-            .returning(|_| Ok(()))
-            .in_sequence(&mut seq);
-
-        mock_service_control
             .expect_get_available_port()
             .times(1)
             .returning(|| Ok(8082))
@@ -750,21 +665,27 @@ mod tests {
         mock_service_control
             .expect_install()
             .times(1)
-            .with(
-                eq("safenode2"),
-                eq(safenode_install_path_clone),
-                eq(8082),
-                eq(8083),
-                eq("safe"),
-            )
-            .returning(|_, _, _, _, _| Ok(()))
+            .with(eq(ServiceConfig {
+                name: "safenode2".to_string(),
+                safenode_path: safenode_install_path_clone,
+                node_port: 8082,
+                rpc_port: 8083,
+                service_user: "safe".to_string(),
+                log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
+                data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
+            }))
+            .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
         install(
-            temp_dir.to_path_buf(),
-            None,
-            None,
-            None,
+            InstallOptions {
+                safenode_dir_path: temp_dir.to_path_buf(),
+                service_data_dir_path: node_data_dir.to_path_buf(),
+                service_log_dir_path: node_logs_dir.to_path_buf(),
+                user: "safe".to_string(),
+                count: None,
+                version: None,
+            },
             &mut node_registry,
             &mock_service_control,
             Box::new(mock_release_repo),

@@ -15,13 +15,20 @@ const CI_USER: &str = "runner";
 /// build agent.
 #[test]
 fn cross_platform_service_install_and_control() {
+    // Since the addition of the `sn_node_rpc_client` binary, the `sn-releases` crate is no longer
+    // returning the correct version of `safenode`, so the `--version` argument is used explicitly.
+    // This will be fixed shortly.
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("install")
         .arg("--user")
         .arg(CI_USER)
         .arg("--count")
         .arg("3")
+        .arg("--version")
+        .arg("0.98.27")
         .assert()
         .success();
+    // Right now we can't really do any validation. When we have a status command, we can check
+    // that the services are running.
     cmd.arg("start").assert().success();
 }
