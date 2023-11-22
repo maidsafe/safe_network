@@ -481,15 +481,15 @@ impl Network {
                 )
                 .await;
 
-            // if we're not verifying a record, or it's fine we can return
-            if verify_store.is_none() || res.is_ok() {
-                return Ok(());
+            match res {
+                Ok(_) => return Ok(()),
+                Err(Error::RecordNotEnoughCopies(_)) | Err(Error::RecordNotFound)
+                    if verify_store.is_some() =>
+                {
+                    continue
+                }
+                Err(e) => return Err(e),
             }
-
-            // wait for a bit before re-trying
-            let wait_duration = rand::thread_rng()
-                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
-            tokio::time::sleep(wait_duration).await;
         }
 
         Err(Error::FailedToVerifyRecordWasStored(
