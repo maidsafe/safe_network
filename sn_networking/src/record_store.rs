@@ -148,36 +148,34 @@ impl NodeRecordStore {
             return Ok(());
         }
 
+        let this_addr = NetworkAddress::from_peer(*self.local_key.preimage());
         // sort records by distance to our local key
         let furthest = self
             .records
-            .keys()
-            .max_by_key(|k| {
-                let kbucket_key = KBucketKey::from(k.to_vec());
-                self.local_key.distance(&kbucket_key)
-            })
+            .values()
+            .max_by_key(|(k, _type)| this_addr.distance(k))
             .cloned();
 
         // now check if the incoming record is closer than our furthest
         // if it is, we can prune
-        if let Some(furthest_record) = furthest {
-            let furthest_record_key = KBucketKey::from(furthest_record.to_vec());
-            let incoming_record_key = KBucketKey::from(r.to_vec());
+        if let Some((furthest_record_addr, _type)) = furthest {
+            let incoming_record_addr = NetworkAddress::from_record_key(r);
 
-            if incoming_record_key.distance(&self.local_key)
-                < furthest_record_key.distance(&self.local_key)
+            if this_addr.distance(&incoming_record_addr) < this_addr.distance(&furthest_record_addr)
             {
                 trace!(
                     "{:?} will be pruned to make space for new record: {:?}",
-                    PrettyPrintRecordKey::from(&furthest_record),
-                    PrettyPrintRecordKey::from(r)
+                    &furthest_record_addr,
+                    r
                 );
+
+                let furthest_key = furthest_record_addr.to_record_key();
                 // we should prune and make space
-                self.remove(&furthest_record);
+                self.remove(&furthest_key);
 
                 // Warn if the furthest record was within our distance range
                 if let Some(distance_range) = self.distance_range {
-                    if furthest_record_key.distance(&self.local_key) < distance_range {
+                    if this_addr.distance(&furthest_record_addr) < distance_range {
                         warn!("Pruned record would also be within our distance range.");
                     }
                 }
