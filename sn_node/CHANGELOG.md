@@ -2248,6 +2248,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.98.27](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.26...sn_node-v0.98.27) - 2023-11-22
+
+### Added
+- *(cli)* add download batch-size option
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
