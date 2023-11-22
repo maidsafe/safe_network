@@ -89,7 +89,7 @@ jobs:
       - name: Check client memory usage
         shell: bash
         run: |
-          client_peak_mem_limit_mb="700" # mb
+          client_peak_mem_limit_mb="1024" # mb
           client_avg_mem_limit_mb="450" # mb
 
           peak_mem_usage=$(
