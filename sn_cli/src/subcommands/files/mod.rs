@@ -220,7 +220,6 @@ async fn upload_files(
                 continue;
             }
         };
-        chunk_manager.mark_paid(chunks_batch.iter().map(|(xor, _)| *xor));
 
         // upload paid chunks
         for join_result in join_all(upload_chunks_in_parallel(
@@ -237,10 +236,12 @@ async fn upload_files(
                 error!("Failed to upload a batch: {error}");
                 recorded_upload_errors.push(error);
             } else {
+                chunk_manager.mark_paid(chunks_batch.iter().map(|(xor, _)| *xor));
                 chunk_manager.mark_verified(chunks_batch.iter().map(|(xor, _)| *xor));
             }
         }
     }
+    progress_bar.finish_and_clear();
 
     // report errors
     let failed_payments = chunk_manager.get_unpaid_chunks();
@@ -264,7 +265,6 @@ async fn upload_files(
     }
 
     // log costs
-    progress_bar.finish_and_clear();
     let elapsed = format_elapsed_time(now.elapsed());
     println!("Uploaded {unpaid_chunks_to_upload_len} chunks in {elapsed}");
     info!("Uploaded {unpaid_chunks_to_upload_len} chunks in {elapsed}");
@@ -299,10 +299,6 @@ async fn upload_files(
         }
     }
     file.flush()?;
-
-    // cleanup chunk manager's cache
-    chunk_manager.mark_paid_all();
-    chunk_manager.mark_verified_all();
 
     Ok(())
 }

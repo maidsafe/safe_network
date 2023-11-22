@@ -465,11 +465,12 @@ impl Network {
         expected_holders: ExpectedHoldersList,
         quorum: Quorum,
     ) -> Result<()> {
-        for retry in 0..PUT_RECORD_RETRIES {
+        let pretty_key = PrettyPrintRecordKey::from(&record.key);
+        let mut last_err = Error::FailedToVerifyRecordWasStored(pretty_key.clone().into_owned());
+
+        for retry in 1..PUT_RECORD_RETRIES + 1 {
             info!(
-                "Attempting to PUT record with key: {:?} to network (attempt: {:})",
-                PrettyPrintRecordKey::from(&record.key),
-                retry + 1,
+                "Attempting to PUT record with key: {pretty_key:?} to network (attempt: {retry:})"
             );
 
             let res = self
@@ -483,18 +484,14 @@ impl Network {
 
             match res {
                 Ok(_) => return Ok(()),
-                Err(Error::RecordNotEnoughCopies(_)) | Err(Error::RecordNotFound)
-                    if verify_store.is_some() =>
-                {
-                    continue
+                Err(e) => {
+                    warn!("Failed to PUT record with key: {pretty_key:?} to network (attempt: {retry:}) with error: {e:?}");
+                    last_err = e;
                 }
-                Err(e) => return Err(e),
             }
         }
 
-        Err(Error::FailedToVerifyRecordWasStored(
-            PrettyPrintRecordKey::from(&record.key).into_owned(),
-        ))
+        Err(last_err)
     }
 
     async fn put_record_once(
@@ -538,13 +535,17 @@ impl Network {
             };
             // Verify the record is stored, requiring re-attempts
             self.get_record_from_network(
-                record_key,
+                record.key.clone(),
                 verify_store,
                 get_quorum,
                 true,
                 expected_holders,
             )
-            .await?;
+            .await
+            .map_err(|e| {
+                warn!("Failed to verify record {pretty_key:?} was stored: {e:?}");
+                Error::FailedToVerifyRecordWasStored(pretty_key.clone().into_owned())
+            })?;
         }
 
         response
