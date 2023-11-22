@@ -33,7 +33,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
         .collect::<Vec<_>>();
 
     // transfer to N_OUTPUTS recipients
-    let zero = DerivationIndex::from([0u8; 32]);
+    let zero = DerivationIndex([0u8; 32]);
     let offline_transfer = create_offline_transfer(
         vec![(starting_cashnote, starting_main_key.derive_key(&zero))],
         recipients,

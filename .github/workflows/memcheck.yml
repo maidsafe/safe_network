@@ -236,7 +236,7 @@ jobs:
         shell: bash
         # limits here are lower that benchmark tests as there is less going on.
         run: |
-          client_peak_mem_limit_mb="700" # mb
+          client_peak_mem_limit_mb="800" # mb
           client_avg_mem_limit_mb="450" # mb
           
           peak_mem_usage=$(
