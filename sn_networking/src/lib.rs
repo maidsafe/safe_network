@@ -183,6 +183,16 @@ impl Network {
         self.get_closest_peers(key, false).await
     }
 
+    /// Returns the map of ilog2 distance of the Kbucket to the peers in that bucket
+    /// Does not include self
+    pub async fn get_kbuckets(&self) -> Result<HashMap<u32, Vec<PeerId>>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetKBuckets { sender })?;
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
     /// Returns the closest peers to the given `NetworkAddress` that is fetched from the local
     /// Routing Table. It is ordered by increasing distance of the peers
     /// Note self peer_id is not included in the result.

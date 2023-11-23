@@ -65,7 +65,10 @@ use bytes::Bytes;
 use libp2p::PeerId;
 use sn_networking::{Network, SwarmLocalState};
 use sn_protocol::NetworkAddress;
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 use tokio::sync::broadcast;
 
 /// Once a node is started and running, the user obtains
@@ -117,6 +120,12 @@ impl RunningNode {
             .cloned()
             .collect();
         Ok(addresses)
+    }
+
+    /// Returns the map of ilog2 distance of the Kbucket to the peers in that bucket
+    pub async fn get_kbuckets(&self) -> Result<HashMap<u32, Vec<PeerId>>> {
+        let kbuckets = self.network.get_kbuckets().await?;
+        Ok(kbuckets)
     }
 
     /// Subscribe to given gossipsub topic

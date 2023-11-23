@@ -13,14 +13,16 @@ use bls::{PublicKey, PK_SIZE};
 use eyre::{ErrReport, Result};
 use sn_protocol::node_rpc::NodeCtrl;
 use sn_protocol::safenode_proto::{
+    k_buckets_response,
     safe_node_server::{SafeNode, SafeNodeServer},
     GossipsubPublishRequest, GossipsubPublishResponse, GossipsubSubscribeRequest,
     GossipsubSubscribeResponse, GossipsubUnsubscribeRequest, GossipsubUnsubscribeResponse,
-    NetworkInfoRequest, NetworkInfoResponse, NodeEvent, NodeEventsRequest, NodeInfoRequest,
-    NodeInfoResponse, RecordAddressesRequest, RecordAddressesResponse, RestartRequest,
-    RestartResponse, StopRequest, StopResponse, TransferNotifsFilterRequest,
-    TransferNotifsFilterResponse, UpdateRequest, UpdateResponse,
+    KBucketsRequest, KBucketsResponse, NetworkInfoRequest, NetworkInfoResponse, NodeEvent,
+    NodeEventsRequest, NodeInfoRequest, NodeInfoResponse, RecordAddressesRequest,
+    RecordAddressesResponse, RestartRequest, RestartResponse, StopRequest, StopResponse,
+    TransferNotifsFilterRequest, TransferNotifsFilterResponse, UpdateRequest, UpdateResponse,
 };
+use std::collections::HashMap;
 use std::{
     env,
     net::SocketAddr,
@@ -180,6 +182,32 @@ impl SafeNode for SafeNodeRpcService {
             .collect();
 
         Ok(Response::new(RecordAddressesResponse { addresses }))
+    }
+
+    async fn k_buckets(
+        &self,
+        request: Request<KBucketsRequest>,
+    ) -> Result<Response<KBucketsResponse>, Status> {
+        trace!(
+            "RPC request received at {}: {:?}",
+            self.addr,
+            request.get_ref()
+        );
+
+        let kbuckets: HashMap<u32, k_buckets_response::Peers> = self
+            .running_node
+            .get_kbuckets()
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|(ilog2_distance, peers)| {
+                let peers = peers.into_iter().map(|peer| peer.to_bytes()).collect();
+                let peers = k_buckets_response::Peers { peers };
+                (ilog2_distance, peers)
+            })
+            .collect();
+
+        Ok(Response::new(KBucketsResponse { kbuckets }))
     }
 
     async fn subscribe_to_topic(

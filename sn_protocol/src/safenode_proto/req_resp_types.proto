@@ -45,6 +45,16 @@ message RecordAddressesResponse {
     repeated bytes addresses = 1;
 }
 
+// KBuckets of this node
+message KBucketsRequest {}
+
+message KBucketsResponse {
+    message Peers {
+        repeated bytes peers = 1;
+    }
+    map<uint32, Peers> kbuckets = 1;
+}
+
 // Subsribe to a gossipsub topic
 message GossipsubSubscribeRequest {
   string topic = 1;
