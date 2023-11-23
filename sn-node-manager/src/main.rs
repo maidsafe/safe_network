@@ -12,8 +12,8 @@ use crate::service::{NodeServiceManager, ServiceControl};
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Help, Result};
 use libp2p_identity::PeerId;
+use sn_node_rpc_client::RpcClient;
 use sn_releases::SafeReleaseRepositoryInterface;
-use sn_rpc_client::RpcClient;
 use std::path::PathBuf;
 use std::str::FromStr;
 

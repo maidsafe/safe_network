@@ -1,12 +1,12 @@
 use crate::node::{InstalledNode, NodeStatus};
 use crate::service::ServiceControl;
 use color_eyre::Result;
-use sn_rpc_client::RpcClientInterface;
+use sn_node_rpc_client::RpcActions;
 
 pub async fn start(
     node: &mut InstalledNode,
     service_control: &dyn ServiceControl,
-    rpc_client: &dyn RpcClientInterface,
+    rpc_client: &dyn RpcActions,
 ) -> Result<()> {
     if let NodeStatus::Running = node.status {
         // The last time we checked the service was running, but it doesn't mean it's actually
@@ -48,16 +48,25 @@ mod tests {
     use libp2p_identity::PeerId;
     use mockall::mock;
     use mockall::predicate::*;
-    use sn_rpc_client::{NetworkInfo, NodeInfo, Result as RpcResult, RpcClientInterface};
+    use sn_node_rpc_client::{
+        NetworkInfo, NodeInfo, RecordAddress, Result as RpcResult, RpcActions,
+    };
     use std::path::PathBuf;
     use std::str::FromStr;
 
     mock! {
         pub RpcClient {}
         #[async_trait]
-        impl RpcClientInterface for RpcClient {
+        impl RpcActions for RpcClient {
             async fn node_info(&self) -> RpcResult<NodeInfo>;
             async fn network_info(&self) -> RpcResult<NetworkInfo>;
+            async fn record_addresses(&self) -> RpcResult<Vec<RecordAddress>>;
+            async fn gossipsub_subscribe(&self, topic: &str) -> RpcResult<()>;
+            async fn gossipsub_unsubscribe(&self, topic: &str) -> RpcResult<()>;
+            async fn gossipsub_publish(&self, topic: &str, message: &str) -> RpcResult<()>;
+            async fn node_restart(&self, delay_millis: u64) -> RpcResult<()>;
+            async fn node_stop(&self, delay_millis: u64) -> RpcResult<()>;
+            async fn node_update(&self, delay_millis: u64) -> RpcResult<()>;
         }
     }
 
