@@ -50,7 +50,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintKBucketKey,
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
@@ -493,6 +493,7 @@ impl NetworkBuilder {
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             is_gossip_handler: false,
+            network_discovery_candidates: generate_kbucket_specific_candidates(&peer_id),
         };
 
         Ok((
@@ -506,6 +507,51 @@ impl NetworkBuilder {
             swarm_driver,
         ))
     }
+}
+
+fn generate_kbucket_specific_candidates(self_peer_id: &PeerId) -> Vec<NetworkAddress> {
+    let mut candidates: BTreeMap<usize, NetworkAddress> = BTreeMap::new();
+    // To avoid deadlock or taking too much time, currently set a fixed generation attempts
+    let mut attempts = 0;
+    // Also an early return when got the first 20 furthest kBuckets covered.
+    let mut buckets_covered: BTreeSet<_> = (0..21).map(|index| index as usize).collect();
+
+    let local_key = NetworkAddress::from_peer(*self_peer_id).as_kbucket_key();
+    let local_key_bytes_len = local_key.hashed_bytes().len();
+    while attempts < 10000 && !buckets_covered.is_empty() {
+        let candiate = NetworkAddress::from_peer(PeerId::random());
+        let candidate_key = candiate.as_kbucket_key();
+        let candidate_key_bytes_len = candidate_key.hashed_bytes().len();
+
+        if local_key_bytes_len != candidate_key_bytes_len {
+            panic!("kBucketKey has different key length, {candiate:?} has {candidate_key_bytes_len:?}, {self_peer_id:?} has {local_key_bytes_len:?}");
+        }
+
+        let common_leading_bits =
+            common_leading_bits(local_key.hashed_bytes(), candidate_key.hashed_bytes());
+
+        let _ = candidates.insert(common_leading_bits, candiate);
+        let _ = buckets_covered.remove(&common_leading_bits);
+
+        attempts += 1;
+    }
+
+    let generated_buckets: Vec<_> = candidates.keys().copied().collect();
+    let generated_candidates: Vec<_> = candidates.values().cloned().collect();
+    trace!("Generated targets covering kbuckets {generated_buckets:?}");
+    generated_candidates
+}
+
+/// Returns the length of the common leading bits.
+/// e.g. when `11110000` and `11111111`, return as 4.
+/// Note: the length of two shall be the same
+fn common_leading_bits(one: &[u8], two: &[u8]) -> usize {
+    for byte_index in 0..one.len() {
+        if one[byte_index] != two[byte_index] {
+            return (byte_index * 8) + (one[byte_index] ^ two[byte_index]).leading_zeros() as usize;
+        }
+    }
+    8 * one.len()
 }
 
 pub struct SwarmDriver {
@@ -535,6 +581,10 @@ pub struct SwarmDriver {
     // (to ensure no miss-up by carrying out libp2p low level gossip forwarding),
     // they are not supposed to process the gossip msg that received from libp2p.
     pub(crate) is_gossip_handler: bool,
+    // A list of random `PeerId` candidates that falls into kbuckets,
+    // one for each furthest 30 kbuckets.
+    // This is to ensure a more accurate network discovery.
+    pub(crate) network_discovery_candidates: Vec<NetworkAddress>,
 }
 
 impl SwarmDriver {
@@ -572,6 +622,10 @@ impl SwarmDriver {
                     if let Some(new_interval) = self.run_bootstrap_continuously(bootstrap_interval.period()).await {
                         bootstrap_interval = new_interval;
                     }
+                    // execute extra `kbucket targeted query` to make RT filled up more accurately
+                    let start = std::time::Instant::now();
+                    self.query_specific_kbucket();
+                    trace!("Query specific kbuckets handled in {:?}", start.elapsed());
                 }
             }
         }

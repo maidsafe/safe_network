@@ -57,6 +57,18 @@ impl SwarmDriver {
             }
         };
     }
+
+    pub(crate) fn trigger_network_discovery(&mut self) {
+        // The query is just to trigger the network discovery,
+        // hence no need to wait for a result.
+        for addr in &self.network_discovery_candidates {
+            let _ = self
+                .swarm
+                .behaviour_mut()
+                .kademlia
+                .get_closest_peers(addr.as_bytes());
+        }
+    }
 }
 
 /// Tracks and helps with the continuous kad::bootstrapping process
