@@ -10,7 +10,7 @@ mod common;
 
 use assert_fs::TempDir;
 use common::{
-    get_funded_wallet, get_gossip_client_and_wallet, get_wallet, node_restart,
+    get_funded_wallet, get_gossip_client_and_wallet, get_wallet, node_restart, NODE_COUNT,
     PAYING_WALLET_INITIAL_BALANCE,
 };
 use eyre::{bail, eyre, Result};
@@ -37,8 +37,6 @@ use tempfile::tempdir;
 use tokio::{sync::RwLock, task::JoinHandle, time::sleep};
 use tracing::{debug, trace};
 use xor_name::XorName;
-
-const NODE_COUNT: u32 = 25;
 
 const EXTRA_CHURN_COUNT: u32 = 5;
 const CHURN_CYCLES: u32 = 1;
