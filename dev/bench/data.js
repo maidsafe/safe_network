@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700752855690,
+  "lastUpdate": 1700753043725,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "434b73a3b25650e4104e589c3c956fb9b18580e9",
-          "message": "ci: remove publish checks as throwing false positives",
-          "timestamp": "2023-07-17T16:45:27+02:00",
-          "tree_id": "85f3e45b72d6bff81c2a7f077eefa5312698a365",
-          "url": "https://github.com/maidsafe/safe_network/commit/434b73a3b25650e4104e589c3c956fb9b18580e9"
-        },
-        "date": 1689606490005,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 21.85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "0d7940670e4a633794db921a3e91bca74f8b3935",
           "message": "chore(networking): improve connected peers count log",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 119,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "ea4a9098747c45c3fc1d7bd76ab63fb11577445c",
+          "message": "test(node): increase timeout on gossipsub msg tests",
+          "timestamp": "2023-11-23T14:29:28Z",
+          "tree_id": "8598d3aee030ad324aa6c99d8f687a1a585094ef",
+          "url": "https://github.com/maidsafe/safe_network/commit/ea4a9098747c45c3fc1d7bd76ab63fb11577445c"
+        },
+        "date": 1700753043131,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 139,
             "unit": "MB"
           }
         ]
