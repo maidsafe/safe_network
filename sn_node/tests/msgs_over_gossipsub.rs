@@ -8,6 +8,7 @@
 
 mod common;
 
+use common::NODE_COUNT;
 use eyre::Result;
 use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
@@ -23,8 +24,7 @@ use tokio::time::timeout;
 use tokio_stream::StreamExt;
 use tonic::Request;
 
-const NODE_COUNT: u8 = 25;
-const NODES_SUBSCRIBED: u8 = NODE_COUNT / 2; // 12 out of 25 nodes will be subscribers
+const NODES_SUBSCRIBED: u32 = NODE_COUNT / 2; // 12 out of 25 nodes will be subscribers
 const TEST_CYCLES: u8 = 20;
 
 #[tokio::test]
@@ -47,7 +47,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
         // get a random subset of NODES_SUBSCRIBED out of NODE_COUNT nodes to subscribe to the topic
         let mut rng = rand::thread_rng();
         let random_subs_nodes: Vec<_> =
-            rand::seq::index::sample(&mut rng, NODE_COUNT.into(), NODES_SUBSCRIBED.into())
+            rand::seq::index::sample(&mut rng, NODE_COUNT as usize, NODES_SUBSCRIBED as usize)
                 .iter()
                 .map(|i| all_nodes_addrs[i])
                 .collect();
@@ -65,7 +65,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
                     .node_events(Request::new(NodeEventsRequest {}))
                     .await?;
 
-                let mut count = 0;
+                let mut count: u32 = 0;
 
                 let _ = timeout(Duration::from_secs(40), async {
                     let mut stream = response.into_inner();
@@ -87,7 +87,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
                 })
                 .await;
 
-                Ok::<u8, eyre::Error>(count)
+                Ok::<u32, eyre::Error>(count)
             });
 
             subs_handles.push((node_index, addr, handle));
@@ -141,7 +141,7 @@ async fn node_unsubscribe_from_topic(addr: SocketAddr, topic: String) -> Result<
 }
 
 async fn other_nodes_to_publish_on_topic(
-    nodes: Vec<(u8, SocketAddr)>,
+    nodes: Vec<(u32, SocketAddr)>,
     topic: String,
 ) -> Result<()> {
     for (node_index, addr) in nodes {

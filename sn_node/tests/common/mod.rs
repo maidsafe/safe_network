@@ -8,6 +8,7 @@
 
 #![allow(dead_code)]
 
+use libp2p::PeerId;
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client, Files};
 use sn_peers_acquisition::parse_peer_addr;
@@ -25,6 +26,7 @@ use rand::{
     Rng,
 };
 use sn_transfers::NanoTokens;
+use std::net::{IpAddr, Ipv4Addr};
 use std::{
     fs::File,
     io::Write,
@@ -38,6 +40,9 @@ use xor_name::XorName;
 type ResultRandomContent = Result<(Files, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
 
 pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
+pub const NODE_COUNT: u32 = 25;
+
+const RPC_CONCURRENT_REQUESTS: usize = 20;
 
 lazy_static! {
     // mutex to restrict access to faucet wallet from concurrent tests
@@ -131,6 +136,27 @@ pub fn random_content(
         ChunkAddress::new(file_addr),
         chunks,
     ))
+}
+
+// Returns all the PeerId for all the locally running nodes
+pub async fn get_all_peer_ids() -> Result<Vec<PeerId>> {
+    let mut all_peers = Vec::new();
+
+    let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
+    for node_index in 1..NODE_COUNT + 1 {
+        addr.set_port(12000 + node_index as u16);
+        let endpoint = format!("https://{addr}");
+        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+
+        // get the peer_id
+        let response = rpc_client
+            .node_info(Request::new(NodeInfoRequest {}))
+            .await?;
+        let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
+        all_peers.push(peer_id);
+    }
+    println!("Obtained the PeerId list for the locally running network with a node count of {NODE_COUNT}");
+    Ok(all_peers)
 }
 
 pub async fn node_restart(addr: SocketAddr) -> Result<()> {
