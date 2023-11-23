@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700750673908,
+  "lastUpdate": 1700750837390,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f174112c7e5091b513e887c247179f80c6699f3a",
-          "message": "fix(sn_networking): revert multiaddr pop fn\n\nThe function should only actually mutate/pop the multiaddr if it's in\nfact containing the /p2p/ protocol. Else it returns `None` and leaves\nthe address in its original state.",
-          "timestamp": "2023-07-17T13:25:59Z",
-          "tree_id": "7be1a171ea10e5b3985e3f437d770650a5df5f63",
-          "url": "https://github.com/maidsafe/safe_network/commit/f174112c7e5091b513e887c247179f80c6699f3a"
-        },
-        "date": 1689604848215,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 34.17,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 130,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "8b10c145fba734ebf4aa261e4297a377d871b13a",
+          "message": "feat: move derivation index random method to itself",
+          "timestamp": "2023-11-23T14:06:04Z",
+          "tree_id": "c94863b49e7c9d9d5c35aefef5f2e1fe0e55ea87",
+          "url": "https://github.com/maidsafe/safe_network/commit/8b10c145fba734ebf4aa261e4297a377d871b13a"
+        },
+        "date": 1700750836516,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 119,
             "unit": "MB"
           }
         ]
