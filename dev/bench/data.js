@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700746440245,
+  "lastUpdate": 1700746441887,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30956,6 +30956,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 11,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "9e03980c8493f55a191b794400ba7794f7f3b76c",
+          "message": "chore(networking): improve logs around replication",
+          "timestamp": "2023-11-23T12:51:46Z",
+          "tree_id": "76f03da7a91fc7ed583e2657a1176ae18b29cbfa",
+          "url": "https://github.com/maidsafe/safe_network/commit/9e03980c8493f55a191b794400ba7794f7f3b76c"
+        },
+        "date": 1700746441449,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5454,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 93778,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 17,
             "unit": "ms"
           }
         ]
