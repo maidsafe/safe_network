@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700754886088,
+  "lastUpdate": 1700754888201,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f174112c7e5091b513e887c247179f80c6699f3a",
-          "message": "fix(sn_networking): revert multiaddr pop fn\n\nThe function should only actually mutate/pop the multiaddr if it's in\nfact containing the /p2p/ protocol. Else it returns `None` and leaves\nthe address in its original state.",
-          "timestamp": "2023-07-17T13:25:59Z",
-          "tree_id": "7be1a171ea10e5b3985e3f437d770650a5df5f63",
-          "url": "https://github.com/maidsafe/safe_network/commit/f174112c7e5091b513e887c247179f80c6699f3a"
-        },
-        "date": 1689604851676,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 232.3,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 168,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 127,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5a22362b84d852a10a18aa63df5a6b4293f842fd",
+          "message": "chore: replace bootstrap with query specific kbucket",
+          "timestamp": "2023-11-23T14:53:32Z",
+          "tree_id": "c92d62a9111c9d32ad1e307c3e00679b221de769",
+          "url": "https://github.com/maidsafe/safe_network/commit/5a22362b84d852a10a18aa63df5a6b4293f842fd"
+        },
+        "date": 1700754887801,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 750,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 165,
             "unit": "MB"
           }
         ]
