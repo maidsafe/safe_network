@@ -183,11 +183,8 @@ impl Debug for NetworkEvent {
                 )
             }
             NetworkEvent::KeysForReplication(list) => {
-                let pretty_list: Vec<_> = list
-                    .iter()
-                    .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key)))
-                    .collect();
-                write!(f, "NetworkEvent::KeysForReplication({pretty_list:?})")
+                let keys_len = list.len();
+                write!(f, "NetworkEvent::KeysForReplication({keys_len:?})")
             }
             NetworkEvent::NewListenAddr(addr) => {
                 write!(f, "NetworkEvent::NewListenAddr({addr:?})")
