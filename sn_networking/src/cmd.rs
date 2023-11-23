@@ -53,6 +53,10 @@ pub enum SwarmCmd {
     GetAllLocalPeers {
         sender: oneshot::Sender<Vec<PeerId>>,
     },
+    // Get the map of ilog2 distance of the Kbucket to the peers in that bucket
+    GetKBuckets {
+        sender: oneshot::Sender<HashMap<u32, Vec<PeerId>>>,
+    },
     // Returns up to K_VALUE peers from all the k-buckets from the local Routing Table.
     // And our PeerId as well.
     GetClosestKLocalPeers {
@@ -240,9 +244,9 @@ impl Debug for SwarmCmd {
             SwarmCmd::GetAllLocalPeers { .. } => {
                 write!(f, "SwarmCmd::GetAllLocalPeers")
             }
-            // SwarmCmd::GetOurCloseGroup { .. } => {
-            //     write!(f, "SwarmCmd::GetOurCloseGroup")
-            // }
+            SwarmCmd::GetKBuckets { .. } => {
+                write!(f, "SwarmCmd::GetKBuckets")
+            }
             SwarmCmd::GetSwarmLocalState { .. } => {
                 write!(f, "SwarmCmd::GetSwarmLocalState")
             }
@@ -514,6 +518,23 @@ impl SwarmDriver {
             }
             SwarmCmd::GetAllLocalPeers { sender } => {
                 let _ = sender.send(self.get_all_local_peers());
+            }
+            SwarmCmd::GetKBuckets { sender } => {
+                let mut ilog2_kbuckets = HashMap::new();
+                for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+                    let range = kbucket.range();
+                    if let Some(distance) = range.0.ilog2() {
+                        let peers_in_kbucket = kbucket
+                            .iter()
+                            .map(|peer_entry| peer_entry.node.key.clone().into_preimage())
+                            .collect::<Vec<PeerId>>();
+                        let _ = ilog2_kbuckets.insert(distance, peers_in_kbucket);
+                    } else {
+                        // This shall never happen.
+                        error!("bucket is ourself ???!!!");
+                    }
+                }
+                let _ = sender.send(ilog2_kbuckets);
             }
             SwarmCmd::GetCloseGroupLocalPeers { key, sender } => {
                 let key = key.as_kbucket_key();
