@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700757066223,
+  "lastUpdate": 1700757284364,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "bebf323122d3fd2dc22a1ad690f673bf16db348e",
-          "message": "fix: address PR comments",
-          "timestamp": "2023-07-18T07:17:55Z",
-          "tree_id": "7c11e0ea9e3466b7e46f62e69162258d613b0523",
-          "url": "https://github.com/maidsafe/safe_network/commit/bebf323122d3fd2dc22a1ad690f673bf16db348e"
-        },
-        "date": 1689670958334,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 27.82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 126,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "11c29afcab912dffb83ee76d38a2dce0495421b8",
+          "message": "feat(networking): reduce batch size to 64\n\nThis should keep a lid on mem issues",
+          "timestamp": "2023-11-23T15:23:54Z",
+          "tree_id": "0ec33d82cfca3c35e3046c938202084379e17022",
+          "url": "https://github.com/maidsafe/safe_network/commit/11c29afcab912dffb83ee76d38a2dce0495421b8"
+        },
+        "date": 1700757283388,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 81,
             "unit": "MB"
           }
         ]
