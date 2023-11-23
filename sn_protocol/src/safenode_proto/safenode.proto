@@ -37,6 +37,9 @@ service SafeNode {
   // Returns the Addresses of all the Records stored by this node
   rpc RecordAddresses (RecordAddressesRequest) returns (RecordAddressesResponse);
 
+  // Returns the entire Kbucket of this node
+  rpc KBuckets (KBucketsRequest) returns (KBucketsResponse);
+
   // Subscribe to a Gossipsub topic
   rpc SubscribeToTopic (GossipsubSubscribeRequest) returns (GossipsubSubscribeResponse);
 
