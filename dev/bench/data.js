@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700746438486,
+  "lastUpdate": 1700746440245,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "78124d38bdc3b7c5a8b9d706cec53ff99f01f5f3",
-          "message": "chore(clippy): fix clippy warnings",
-          "timestamp": "2023-07-13T18:55:47Z",
-          "tree_id": "9d340387a71dd57af2c0229eee1a1c3ce4da8779",
-          "url": "https://github.com/maidsafe/safe_network/commit/78124d38bdc3b7c5a8b9d706cec53ff99f01f5f3"
-        },
-        "date": 1689279777749,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 228.42,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 222,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 124,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "9e03980c8493f55a191b794400ba7794f7f3b76c",
+          "message": "chore(networking): improve logs around replication",
+          "timestamp": "2023-11-23T12:51:46Z",
+          "tree_id": "76f03da7a91fc7ed583e2657a1176ae18b29cbfa",
+          "url": "https://github.com/maidsafe/safe_network/commit/9e03980c8493f55a191b794400ba7794f7f3b76c"
+        },
+        "date": 1700746439900,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 664,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 140,
             "unit": "MB"
           }
         ]
