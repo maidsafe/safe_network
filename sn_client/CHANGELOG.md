@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.98.16](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.15...sn_client-v0.98.16) - 2023-11-23
+
+### Added
+- *(networking)* reduce batch size to 64
+- add centralised retries for all data payment kinds
+
+### Fixed
+- previous code assumptions
+
 ## [0.98.15](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.14...sn_client-v0.98.15) - 2023-11-23
 
 ### Other

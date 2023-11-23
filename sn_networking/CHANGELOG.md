@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.20](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.19...sn_networking-v0.10.20) - 2023-11-23
+
+### Added
+- record put retry even when not verifying
+- adapt retry to only when verification fails
+- retry at the record level, remove all other retries, report errors
+- query specific kbuckets for bootstrap
+
+### Other
+- replace bootstrap with query specific kbucket
+
 ## [0.10.19](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.18...sn_networking-v0.10.19) - 2023-11-23
 
 ### Added
