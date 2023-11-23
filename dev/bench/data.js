@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700753045617,
+  "lastUpdate": 1700753047989,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -31034,6 +31034,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 15,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "ea4a9098747c45c3fc1d7bd76ab63fb11577445c",
+          "message": "test(node): increase timeout on gossipsub msg tests",
+          "timestamp": "2023-11-23T14:29:28Z",
+          "tree_id": "8598d3aee030ad324aa6c99d8f687a1a585094ef",
+          "url": "https://github.com/maidsafe/safe_network/commit/ea4a9098747c45c3fc1d7bd76ab63fb11577445c"
+        },
+        "date": 1700753047388,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6583,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 82202,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 12,
             "unit": "ms"
           }
         ]
